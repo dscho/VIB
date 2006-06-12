@@ -60,134 +60,124 @@ public class TransformedImage {
 		return res;
 	}
 
-	public static abstract class Iterator {
-		TransformedImage t;
-
-		boolean showProgress;
-
-		public Iterator(TransformedImage trans) {
-			this(trans, false);
-		}
-
-		public Iterator(TransformedImage trans, boolean showProgress) {
-			t = trans;
-			this.showProgress = showProgress;
-		}
-
+	public class Iterator implements java.util.Iterator {
 		// these are the original coordinates
 		int i, j, k;
 		// these are the transformed coordinates
 		double x, y, z;
 
-		// implement this!
-		abstract void step();
+		public boolean showProgress;
+		int x0, y0, z0, x1, y1, z1, xd, zd;
+		private boolean isIdentity;
 
-		void doit() {
-			doit(0, 0, 0, t.orig.w, t.orig.h, t.orig.d);
+		public Iterator(boolean showProgress, int x0, int y0, int z0,
+				int x1, int y1, int z1) {
+			this.showProgress = showProgress;
+			this.x0 = x0; this.y0 = y0; this.z0 = z0;
+			this.x1 = x1; this.y1 = y1; this.z1 = z1;
+			xd = x1 - x0; zd = z1 - z0;
+			i = x1; j = y0 - 1; k = z0;
+			isIdentity = matrix.isIdentity();
 		}
 
-		void doit(int x0, int y0, int z0, int x1, int y1, int z1) {
-			int zd = z1 - z0;
-			if (t.matrix.isIdentity()) {
-				for (k = z0; k < z1; k++) {
-					for (j = y0; j < y1; j++) {
-						for (i = x0; i < x1; i++) {
-							x = i;
-							y = j;
-							z = k;
-							step();
-						}
-					}
-					if (showProgress)
-						IJ.showProgress(k - z0 + 1, zd);
-				}
-				return;
-			}
+                public boolean hasNext() {
+                        return i + 1 < x1 || j + 1 < y1 || k + 1 < z1;
+                }
 
-			int xd = x1 - x0;
-			for (k = z0; k < z1; k++) {
-				for (j = y0; j < y1; j++) {
-					t.matrix.apply(0, j, k);
-					Point3d start = t.matrix.getResult();
-					t.matrix.apply(x1, j, k);
-					Point3d stop = t.matrix.getResult()
-						.minus(start);
-					for (i = x0; i < x1; i++) {
-						x = start.x + stop.x * i / x1;
-						y = start.y + stop.y * i / x1;
-						z = start.z + stop.z * i / x1;
-						step();
-					}
+		private Point3d start, stop;
+
+                public Object next() {
+                        if (++i >= x1) {
+                                i = x0;
+                                if (++j >= y1) {
+                                        j = y0;
+                                        if (++k >= z1)
+                                                return null;
+                                        if (showProgress)
+                                                IJ.showProgress(k - z0 + 1, zd);
+                                }
+				if (!isIdentity) {
+					matrix.apply(0, j, k);
+					start = matrix.getResult();
+					matrix.apply(x1, j, k);
+					stop = matrix.getResult().minus(start);
 				}
-				if (showProgress)
-					IJ.showProgress(k - z0 + 1, zd);
 			}
-		}
+			if (isIdentity) {
+				x = i; y = j; z = k;
+			} else {
+				x = start.x + stop.x * i / x1;
+				y = start.y + stop.y * i / x1;
+				z = start.z + stop.z * i / x1;
+			}
+			return this;
+                }
+
+                public void remove() {
+                        throw new UnsupportedOperationException();
+                }
 	}
+
+        public Iterator iterator() {
+                return iterator(false);
+        }
+
+        public Iterator iterator(boolean showProgress) {
+                return iterator(showProgress, 0, 0, 0, orig.w, orig.h, orig.d);
+        }
+
+        public Iterator iterator(boolean showProgress,
+                        int x0, int y0, int z0, int x1, int y1, int z1) {
+                return new Iterator(showProgress, x0, y0, z0, x1, y1, z1);
+        }
 
 	// the bounding box for the distance calculation
 	int x0, y0, z0, x1, y1, z1;
 
 	public float getDistance() {
-		Iterator iter = new Iterator(this) {
-			void step() {
-				float v1 = orig.getNoInterpol(i, j, k);
-				float v2 = (float)transform.interpol.get(x, y, z);
-				measure.add(v1, v2);
-			}
-		};
-
 		measure.reset();
-		iter.doit(x0, y0, z0, x1, y1, z1);
+		Iterator iter = new Iterator(false, x0, y0, z0, x1, y1, z1);
+		while (iter.next() != null) {
+			float v1 = orig.getNoInterpol(iter.i, iter.j, iter.k);
+			float v2 = (float)transform.interpol.get(iter.x,
+					iter.y, iter.z);
+			measure.add(v1, v2);
+		}
 		return measure.distance();
 	}
 
-	private static class GetTransformed extends Iterator {
-		public GetTransformed(TransformedImage t) {
-			super(t, true);
-		}
-
-		InterpolatedImage result = t.orig.cloneDimensionsOnly();
-
-		void step() {
-			result.set(i, j, k,
-					t.transform.getNoInterpol((int)x,
-						(int)y, (int)z));
-		}
-	}
-
 	public ImagePlus getTransformed() {
-		GetTransformed iter = new GetTransformed(this);
-		iter.doit();
-		iter.result.image.setTitle("transformed");
-		return iter.result.image;
-	}
+		InterpolatedImage result = orig.cloneDimensionsOnly();
 
-	private static class GetDifferenceImage extends Iterator {
-		public GetDifferenceImage(TransformedImage t) {
-			super(t, true);
-		}
+		Iterator iter = iterator();
+		while (iter.next() != null)
+			result.set(iter.i, iter.j, iter.k,
+					transform.getNoInterpol((int)iter.x,
+						(int)iter.y, (int)iter.z));
 
-		InterpolatedImage result =
-			InterpolatedImage.cloneDimensionsOnly(t.orig.image,
-					//ImagePlus.GRAY32);
-					ImagePlus.GRAY8);
-
-		void step() {
-			t.measure.reset();
-			t.measure.add(t.orig.getNoInterpol(i, j, k),
-					t.transform.getNoInterpol((int)x,
-						(int)y, (int)z));
-			//result.setFloat(i, j, k, measure.distance());
-			result.set(i, j, k, (byte)(int)t.measure.distance());
-		}
+		result.image.setTitle("transformed");
+		return result.image;
 	}
 
 	public ImagePlus getDifferenceImage() {
-		GetDifferenceImage iter = new GetDifferenceImage(this);
-		iter.doit(x0, y0, z0, x1, y1, z1);
-		iter.result.image.setTitle("difference");
-		return iter.result.image;
+		InterpolatedImage result =
+			InterpolatedImage.cloneDimensionsOnly(orig.image,
+					//ImagePlus.GRAY32);
+			ImagePlus.GRAY8);
+
+		Iterator iter = iterator(false, x0, y0, z0, x1, y1, z1);
+		while (iter.next() != null) {
+			measure.reset();
+			measure.add(orig.getNoInterpol(iter.i, iter.j, iter.k),
+					transform.getNoInterpol((int)iter.x,
+						(int)iter.y, (int)iter.z));
+			//result.setFloat(iter.i, iter.j, iter.k,
+			result.set(iter.i, iter.j, iter.k,
+					(byte)(int)measure.distance());
+		}
+
+		result.image.setTitle("difference");
+		return result.image;
 	}
 
 	public void narrowBBox(int x0, int x1, int y0, int y1, int z0, int z1) {

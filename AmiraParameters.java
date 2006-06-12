@@ -304,6 +304,19 @@ public class AmiraParameters {
 		}
 	}
 
+	public boolean changeLabelfieldToGray() {
+		Hashtable m = (Hashtable)parameters.get("Parameters");
+		if (parameters.get("MaterialList") == null &&
+				materials == null &&
+				(m == null || m.get("Materials") == null))
+			return false;
+		if (m != null)
+			m.remove("Materials");
+		materials = null;
+		parameters.remove("MaterialList");
+		return true;
+	}
+
 	public int addMaterial(String name,double red,double green,double blue) {
 		Hashtable m=getMaterials();
 		if(m==null) {

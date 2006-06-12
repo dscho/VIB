@@ -132,6 +132,16 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 			return imp;
 		}
 
+		// Packard InstantImager format (.img) handler -> check HERE before Analyze check below!
+		// Note that the InstantImager_Reader plugin extends the ImagePlus class.
+		// Check extension and signature bytes KAJ_
+		if (name.endsWith(".img") && buf[0]==75 && buf[1]==65 && buf[2]==74 && buf[3]==0) {
+			imp = (ImagePlus)IJ.runPlugIn("InstantImager_Reader", path);
+			if (imp==null) width = PLUGIN_NOT_FOUND;
+			if (imp!=null&&imp.getWidth()==0) imp = null;
+			return imp;
+		}
+
 		// Analyze format (.img/.hdr) handler
 		// Note that the Analyze_Reader plugin opens and displays the
 		// image and does not implement the ImagePlus class.
@@ -144,7 +154,7 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 		}
 
 		// Image Cytometry Standard (.ics) handler
-		// http://valelab.ucsf.edu/~nico/IJplugins/Ics_Opener.html		
+		// http://valelab.ucsf.edu/~nico/IJplugins/Ics_Opener.html
 		if (name.endsWith(".ics")) {
 			// Open ICS image and display it
 			IJ.runPlugIn("Ics_Opener", path);
@@ -154,7 +164,7 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 		}
 
 		//  Princeton Instruments SPE image file (.spe) handler
-		//  http://rsb.info.nih.gov/ij/plugins/spe.html 	
+		//  http://rsb.info.nih.gov/ij/plugins/spe.html
 		if (name.endsWith(".spe")) {
 			// Open SPEimage and display it
 			IJ.runPlugIn("OpenSPE_", path);
@@ -195,25 +205,49 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 		}
 
 		// ZVI file handler
-		// Little-endian ZVI files start with d0 cf 11 e0.
-		if (name.endsWith(".zvi") || (buf[0]==-48&& buf[1]==-49&&buf[2]==17&&buf[3]==-32)) {
+		// Little-endian ZVI and Thumbs.db files start with d0 cf 11 e0
+		// so we can only look at the extension.
+		if (name.endsWith(".zvi")) {
 			IJ.runPlugIn("ZVI_Reader", path);
 			width = IMAGE_OPENED;
 			return null;
 		}
 
-		// Amira file handler
-		if (//name.endsWith(".am") || name.endsWith(".labels")  ||
-			(buf[0]==0x23&& buf[1]==0x20&&buf[2]==0x41
-			 &&buf[3]==0x6d&&buf[4]==0x69&&buf[5]==0x72
-			 &&buf[6]==0x61&&buf[7]==0x4d&&buf[8]==0x65
-			 &&buf[9]==0x73&&buf[10]==0x68&&buf[11]==0x20)) {
-			Object o = IJ.runPlugIn("AmiraMeshReader_", path);
-			width = IMAGE_OPENED;
-			if (o instanceof ImagePlus)
-				return (ImagePlus)o;
+		//University of North Carolina (UNC) file format handler
+		// 'magic' numbers are (int) offsets to data structures and may change in future releases. 
+		if (name.endsWith(".unc") || (buf[3]==117&&buf[7]==-127&&buf[11]==36&&buf[14]==32&&buf[15]==-127)) {
+			IJ.runPlugIn("UNC_Reader", path);
+            width = IMAGE_OPENED;
 			return null;
 		}
+
+		//  Leica SP confocal .lei file handler
+        if (name.endsWith(".lei")) {
+            int dotIndex = name.lastIndexOf(".");
+            if (dotIndex>=0)
+                name = name.substring(0, dotIndex);
+            path = directory+name+".txt";
+            File f = new File(path);
+            if (!f.exists()){
+                IJ.error("Cannot find the Leica information file: "+path);
+                return null;
+            }
+            IJ.runPlugIn("Leica_TIFF_sequence", path);
+            width = IMAGE_OPENED;
+            return null;
+        } 
+
+		// Amira file handler
+		if (buf[0]==0x23&& buf[1]==0x20&&buf[2]==0x41
+				&&buf[3]==0x6d&&buf[4]==0x69&&buf[5]==0x72
+				&&buf[6]==0x61&&buf[7]==0x4d&&buf[8]==0x65
+				&&buf[9]==0x73&&buf[10]==0x68&&buf[11]==0x20) {
+			ImagePlus i;
+			i = (ImagePlus)IJ.runPlugIn("AmiraMeshReader_", path);
+			width = (i == null ? PLUGIN_NOT_FOUND : IMAGE_OPENED);
+			return i;
+		}
+
 		// ****************** MODIFY HERE ******************
 		// Do what ever you have to do to recognise your own file type
 		// and then call appropriate plugin 

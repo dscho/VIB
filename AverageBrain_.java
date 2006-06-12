@@ -24,13 +24,14 @@ public class AverageBrain_ implements PlugInFilter {
 		FastMatrix[] matrices = FastMatrix.parseMatrices(
 				gd.getNextString());
 
-		count = fileNames.length;
+		count = (fileNames[0] == "" ? 0 : fileNames.length);
 		if (count != matrices.length) {
 			IJ.error("Count mismatch: " + count
 				+ " files, but " + matrices.length
 				+ " matrices!");
 			return;
 		}
+		int realCount = count;
 
 		InterpolatedImage ii = new InterpolatedImage(image);
 		w = ii.w;
@@ -38,18 +39,33 @@ public class AverageBrain_ implements PlugInFilter {
 		d = ii.d;
 		cumul = new int[ii.d][ii.w * ii.h];
 		boolean isGray = !image.getProcessor().isColorLut();
-		final Method method = isGray ?
+		Method method = isGray ?
 			(Method)new AverageGray() : (Method)new AverageLabels();
+		method.cumul = cumul;
+		if (!isGray) {
+			AmiraParameters p = new AmiraParameters(image);
+			p.changeLabelfieldToGray();
+			p.setParameters(image);
+		}
 		for (int m = 0; m < count; m++) {
 			VIB.showStatus("Brain (" + (m + 1) + "/" + count + ")");
 			ImagePlus img = IJ.openImage(fileNames[m]);
+			if (img == null) {
+				realCount--;
+				continue;
+			}
 			method.t = new TransformedImage(image, img);
 			method.t.setTransformation(matrices[m]);
 			method.isIdentity = method.t.matrix.isIdentity();
-			method.doit();
+			TransformedImage.Iterator iter = method.t.iterator();
+			while (iter.next() != null) {
+				method.accumulate(iter.i, iter.j, iter.k,
+						iter.x, iter.y, iter.z);
+			}
 			method.t = null;
 			img.close();
 		}
+		method.count = (realCount < 1 ? 1 : realCount);
 		InterpolatedImage.Iterator iter = ii.iterator();
 		while (iter.next() != null) {
 			ii.set(iter.i, iter.j, iter.k,
@@ -57,20 +73,21 @@ public class AverageBrain_ implements PlugInFilter {
 		}
 	}
 
-	abstract class Method extends TransformedImage.Iterator {
+	abstract class Method {
 		boolean isIdentity = false;
+		TransformedImage t;
+		int[][] cumul;
+		int count;
 
-		public Method() {
-			super(null, true);
-		}
-
-		public void init() { }
+		public abstract void accumulate(int i, int j, int k,
+				double x, double y, double z);
 
 		public abstract int get(int i, int j, int k);
 	}
 
 	class AverageGray extends Method {
-		public void step() {
+		public void accumulate(int i, int j, int k,
+				double x, double y, double z) {
 			if (isIdentity) {
 				cumul[k][i + j * w] += t.transform.getNoInterpol(i, j, k);
 				return;
@@ -87,7 +104,7 @@ public class AverageBrain_ implements PlugInFilter {
 	class AverageLabels extends Method {
 		byte[][] labels;
 		Vector[] tuples;
-		final static int maxProb = 255; // Amira says 100?
+		final static int maxProb = 100;
 
 		public AverageLabels() {
 			super();
@@ -97,7 +114,8 @@ public class AverageBrain_ implements PlugInFilter {
 				tuples[i] = new Vector();
 		}
 
-		public void step() {
+		public void accumulate(int i, int j, int k,
+				double x, double y, double z) {
 			byte v = t.transform.getNearestByte(x, y, z);
 			if (v == 0)
 				return;
