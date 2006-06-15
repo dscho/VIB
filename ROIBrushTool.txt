@@ -18,9 +18,9 @@ print("Plugins path:", call("ij.Menus.getPlugInsPath"));
             getCursorLoc(x, y, z, flags);
             if (flags&leftClick==0) exit();
             if (flags&alt==0){
-                call("ROIBrush.label", x,y,z,flags,brushWidth);
+                call("ROIBrush_.label", x,y,z,flags,brushWidth);
             }else{
-                call("ROIBrush.unlabel", x,y,z,flags,brushWidth);
+                call("ROIBrush_.unlabel", x,y,z,flags,brushWidth);
             }
             wait(10);
         }
