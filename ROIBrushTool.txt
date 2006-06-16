@@ -1,6 +1,6 @@
 
 var brushWidth = 10;
-var leftClick=16, alt=8;
+var leftClick=16, alt=9;
 
 requires("1.37c");
 print("ImageJ version:", call("ij.IJ.getVersion")); // same as getVersion()
