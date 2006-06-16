@@ -22,7 +22,7 @@ public class ROIBrush_ implements PlugIn {
 	MacroInstaller installer = new MacroInstaller();
 	String macros =
 		"var brushWidth = 10;\n" +
-		"var leftClick=16, alt=8;\n" +
+		"var leftClick=16, alt=9;\n" +
 		"\n" +
 		"macro 'Roi Brush Tool - C111o11ff' {\n" +
 		" while (true) {\n" +
