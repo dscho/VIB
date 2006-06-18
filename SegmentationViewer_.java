@@ -5,6 +5,7 @@ import ij.process.*;
 import java.awt.*;
 import java.awt.image.*;
 import java.awt.event.*;
+import java.awt.geom.*;
 import java.util.*;
 
 /** This plugin is an example showing how to add a non-destructive 
@@ -48,7 +49,7 @@ public class SegmentationViewer_ implements PlugIn {
 		} else
 			labels=(ImagePlus)labelfields.get(0);
 
-		CustomCanvas cc = new CustomCanvas(imp,labels);
+		SegViewerCanvas cc = new SegViewerCanvas(imp, labels);
 		if (imp.getStackSize()>1)
 			new StackWindow(imp, cc);
 		else
@@ -74,7 +75,7 @@ public class SegmentationViewer_ implements PlugIn {
 
 */
 
-class CustomCanvas extends ImageCanvas {
+class SegViewerCanvas extends ImageCanvas {
 	final static int OUTLINE=1, FILL=2;
 	int mode=FILL;
 	int alpha=128; // if mode==FILL, use this transparency to fill
@@ -89,7 +90,7 @@ class CustomCanvas extends ImageCanvas {
 	IdleThread idle;
 	private final boolean debug = false;
 
-	CustomCanvas(ImagePlus imp,ImagePlus labels) {
+	SegViewerCanvas(ImagePlus imp,ImagePlus labels) {
 		super(imp);
 		this.labels=labels;
 		w=labels.getWidth();
@@ -115,121 +116,269 @@ class CustomCanvas extends ImageCanvas {
 		}
 	}
 
-	//TODO: getConnectedMaterials (returns Polygon[materials][no])
-	//do not work via Polygons! implement painter's algorithm
+	/*
+	 * This class implements a Cartesian polygon in progress.
+	 * The edges are supposed to be of unit length, and parallel to
+	 * one axis.
+	 * It is implemented as a deque to be able to add points to both
+	 * sides.
+	 * The points should be added such that for each pair of consecutive
+	 * points, the inner part is on the left.
+	 */
+	static class Outline {
+		int[] x, y;
+		int first, last, reserved;
+		final int GROW = 10;
+		private static int nextId = 0;
+		int id;
 
+		public Outline() {
+			reserved = GROW;
+			x = new int[reserved];
+			y = new int[reserved];
+			first = last = GROW / 2;
+			id = nextId++;
+		}
+
+		private void needs(int newCount, int offset) {
+			if (newCount > reserved || (offset > 0 && first == 0)) {
+				if (newCount < reserved + GROW + 1)
+					newCount = reserved + GROW + 1;
+				int[] newX = new int[newCount];
+				int[] newY = new int[newCount];
+				System.arraycopy(x, 0, newX, offset, last);
+				System.arraycopy(y, 0, newY, offset, last);
+				x = newX;
+				y = newY;
+				first += offset;
+				last += offset;
+				reserved = newCount;
+			}
+		}
+
+		public Outline push(int x, int y) {
+			needs(last + 1, 0);
+			this.x[last] = x;
+			this.y[last] = y;
+			last++;
+			return this;
+		}
+
+		public Outline shift(int x, int y) {
+			needs(last + 1, GROW);
+			first--;
+			this.x[first] = x;
+			this.y[first] = y;
+			return this;
+		}
+
+		public Outline push(Outline o) {
+			int count = o.last - o.first;
+			needs(last + count, 0);
+			System.arraycopy(o.x, o.first, x, last, count);
+			System.arraycopy(o.y, o.first, y, last, count);
+			last += count;
+			return this;
+		}
+
+		public Outline shift(Outline o) {
+			int count = o.last - o.first;
+			needs(last + count + GROW, count + GROW);
+			first -= count;
+			System.arraycopy(o.x, o.first, x, first, count);
+			System.arraycopy(o.y, o.first, y, first, count);
+			return this;
+		}
+
+		public Polygon getPolygon() {
+			// TODO: optimize out long straight lines
+			int count = last - first;
+			int[] x1 = new int[count];
+			int[] y1 = new int[count];
+			System.arraycopy(x, first, x1, 0, count);
+			System.arraycopy(y, first, y1, 0, count);
+			return new Polygon(x1, y1, count);
+		}
+
+		public String toString() {
+			String res = "(id: " + id + ",first:" + first
+				+ ",last:" + last + ",reserved:" + reserved + ":";
+			if (last > x.length) System.err.println("ERROR!");
+			for (int i = first; i < last && i < x.length; i++)
+				res += "(" + x[i] + "," + y[i] + ")";
+			return res + ")";
+		}
+	}
 
 	class ContourFinder {
 		int slice;
 		byte[] pixels;
-		Set donePixels; // contains (y*w+x)*256+label
-
-		final int xdelta[]={0,1,0,-1};
-		final int ydelta[]={1,0,-1,0};
-		final int directions=xdelta.length;
+		GeneralPath[] paths;
+		Outline[] outline;
 
 		public ContourFinder(int slice) {
 			this.slice=slice;
 			pixels=(byte[])labels.getStack().getProcessor(slice+1).getPixels();
-			donePixels=new HashSet();
+			paths = new GeneralPath[256];
 		}
 
 		// no check!
-		byte get(int x,int y) { return pixels[y*w+x]; }
+		final byte get(int x,int y) { return pixels[y * w + x]; }
 
-		// tells if this is the upper left border of a contour
-		boolean isUpperLeft(int x,int y) {
-			byte m=get(x,y);
-			return (m!=0 &&
-				(y==0 || get(x,y-1)!=m) &&
-				 (x==0 || get(x-1,y)!=m));
-		}
-
-		boolean done(int x,int y,byte m) {
-			Integer index=new Integer(256*(w*y+x)+m);
-			return (donePixels.contains(index));
-		}
-
-		void setDone(int x,int y,byte m) {
-			Integer index=new Integer(256*(w*y+x)+m);
-			donePixels.add(index);
-		}
-
-		boolean inside(int x,int y) {
-			return x>=0 && y>=0 && x<w && y<h;
-		}
-
-/*
-	dir=0: delta=(0,1),  left=(1,0),  right=(-1,0), leftright=(0,0, -1,0)
-	dir=1: delta=(1,0),  left=(0,-1), right=(0,1),  leftright=(0,-1, 0,0)
-	dir=2: delta=(0,-1), left=(-1,0), right=(1,0),  leftright=(-1,-1, 0,-1)
-	dir=3: delta=(-1,0), left=(0,1),  right=(0,-1), leftright=(-1,0, -1,-1)
-*/
-
-		boolean isBorder(int x,int y,byte m,int direction) {
-			int left=(direction+directions/4)%directions;
-			int right=(direction+3*directions/4)%directions;
-			int xdir=xdelta[direction],ydir=ydelta[direction];
-			int xleft=x+(xdir+xdelta[left]-1)/2,yleft=y+(ydir+ydelta[left]-1)/2;
-			int xright=x+(xdir+xdelta[right]-1)/2,yright=y+(ydir+ydelta[right]-1)/2;
-			return inside(xleft,yleft) && get(xleft,yleft)==m
-				&& (!inside(xright,yright) || get(xright,yright)!=m);
-		}
-
-		// TODO: remove
-		void assert1(boolean shouldBeTrue) {
-			/* if(!shouldBeTrue) {
-				double a=1.0/0;
-			} */
-		}
-
-		public Polygon getContour(int x,int y) {
-			if(!isUpperLeft(x,y))
-				return null;
-			byte m=get(x,y);
-			if(m==0 || done(x,y,m))
-				return null;
-			int direction=0;
-			Polygon poly=new Polygon();
-
-			int x0=x,y0=y;
-			while(true) {
-				poly.addPoint(x,y);
-				if(isUpperLeft(x,y))
-					setDone(x,y,m);
-				int i;
-				for(i=directions/2+1;
-					i<directions+directions/2
-					&& !isBorder(x,y,m,(direction+i)%directions);
-					i++);
-				assert1(i<directions+directions/2);
-				direction=(direction+i)%directions;
-				x+=xdelta[direction]; y+=ydelta[direction];
-				if(x==x0 && y==y0)
-					return poly;
-			}
-		}
-
+		/*
+		 * Construct all outlines simultaneously by traversing the rows
+		 * from top to bottom.
+		 *
+		 * The open ends of the polygons are stored in outline[]:
+		 * if the polygon ends at the left of the pixel at x in the
+		 * previous row, and the pixel is not contained in the polygin,
+		 * outline[2 * x] contains the partial outline;
+		 * if the polygon contains the pixel, outline[2 * x + 1] holds
+		 * the partial outline.
+		 */
 		public void initContours() {
 			contours[slice]=new Vector();
 			colors[slice]=new Vector();
 
 			// actually find the outlines
-			for(int i=0;i<w;i++)
-				for(int j=0;j<h;j++) {
-					Polygon poly=getContour(i,j);
-					if(poly!=null) {
-						contours[slice].add(poly);
-						colors[slice].add(label_colors[get(i,j)]);
-					}
+			ArrayList polygons = new ArrayList();
+
+			outline = new Outline[2 * w + 2];
+
+			for (int y = 0; y <= h; y++)
+				for (int x = 0; x < w; x++)
+					handle(x, y);
+
+			for (int i = 1; i < paths.length; i++) {
+				if (paths[i] != null) {
+					contours[slice].add(paths[i]);
+					colors[slice].add(label_colors[i]);
 				}
+			}
 		}
+
+		final private Outline newOutline(int left, int right,
+				int x1, int x2, int y) {
+			outline[left] = outline[right] = new Outline();
+			outline[left].push(x1, y);
+			outline[left].push(x2, y);
+			return outline[left];
+		}
+
+		final private Outline mergeOutlines(Outline left, Outline right) {
+			left.push(right);
+			for (int k = 0; k < outline.length; k++)
+				if (outline[k] == right) {
+					outline[k] = left;
+					return outline[k];
+				}
+			throw new RuntimeException("assertion failed!");
+		}
+
+		final private Outline moveOutline(int from, int to) {
+			outline[to] = outline[from];
+			outline[from] = null;
+			return outline[to];
+		}
+
+		private void closeOutline(byte material, Outline outline) {
+			int m = material & 0xff;
+			if (paths[m] == null)
+				paths[m] =
+					new GeneralPath(GeneralPath.WIND_EVEN_ODD);
+			paths[m].append(outline.getPolygon(), false);
+		}
+
+		private void handle(int x, int y) {
+			byte m = (y < h ? get(x, y) : 0);
+			byte mPrev = (y > 0 ? get(x, y - 1) : 0);
+			byte mLeft = (x > 0 && y < h ? get(x - 1, y) : 0);
+			byte mRight = (x < w - 1 && y < h ? get(x + 1, y) : 0);
+			byte mPrevLeft = (x > 0 && y > 0 ? get(x - 1, y - 1) : 0);
+			byte mPrevRight = (x < w - 1 && y > 0 ? get(x + 1, y - 1) : 0);
+			Outline left1 = outline[2 * x];
+			Outline left2 = outline[2 * x + 1];
+			Outline right2 = outline[2 * x + 2];
+			Outline right1 = outline[2 * x + 3];
+			outline[2 * x] = outline[2 * x + 3] = null;
+			outline[2 * x + 1] = outline[2 * x + 2] = null;
+			if (mPrev != 0 && mPrev != m) {
+				// lower edge
+				// - both null: new outline
+				// - left == null: shift
+				// - right == null: push
+				// - right == left: close
+				// - right != left: push
+				int l = 2 * x, r = 2 * x + 3;
+				if (left2 == null && right2 == null)
+					newOutline(l, r, x, x + 1, y);
+				else if (left2 == null)
+					outline[l] = right2.shift(x, y);
+				else if (right2 == null)
+					outline[r] = left2.push(x + 1, y);
+				else if (left2 == right2)
+					closeOutline(mPrev, left2);
+				else
+					mergeOutlines(left2, right2);
+				left2 = right2 = null;
+			}
+			if (m != 0 && mPrev != m) {
+				// upper edge:
+				// - left and right are null: new outline
+				// - left null: push
+				// - right null: shift
+				// - left == right: close
+				// - left != right: merge
+				int l = 2 * x + 1, r = 2 * x + 2;
+				if (left1 != null && mLeft != m) {
+					outline[2 * x] = left1;
+					left1 = null;
+				}
+				if (right1 != null && (mRight != m || mPrevRight != m)) {
+					outline[2 * x + 3] = right1;
+					right1 = null;
+				}
+				if (left1 == null && right1 == null)
+					newOutline(l, r, x + 1, x, y);
+				else if (left1 == null)
+					outline[l] = right1.push(x, y);
+				else if(right1 == null)
+					outline[r] = left1.shift(x + 1, y);
+				else if (left1 == right1)
+					closeOutline(m, left1);
+				else
+					mergeOutlines(right1, left1);
+				left1 = right1 = null;
+			}
+			if (left1 != null)
+				outline[2 * x] = left1;
+			if (left2 != null)
+				outline[2 * x + 1] = left2;
+			if (right1 != null)
+				outline[2 * x + 3] = right1;
+			if (right2 != null)
+				outline[2 * x + 2] = right2;
+			if (m != 0 && mLeft != m) {
+				// left edge
+				int l = 2 * x + 1;
+				if (outline[l] == null)
+					outline[l] = left2;
+				outline[l].push(x, y + 1);
+			}
+			if (mLeft != 0 && mLeft != m) {
+				// right edge
+				int l = 2 * x + 0;
+				if (outline[l] == null)
+					outline[l] = left1;
+				outline[l].shift(x, y + 1);
+			}
+		}
+
 	}
 
 	public synchronized void createContoursIfNotExist(int slice) {
 		if(contours[slice-1]!=null)
 			return;
-		//System.err.println(slice);
 		ContourFinder finder=new ContourFinder(slice-1);
 		finder.initContours();
 	}
@@ -279,42 +428,40 @@ class CustomCanvas extends ImageCanvas {
 				g.fillRect((int)magnification*iter.x,(int)magnification*iter.y,(int)magnification,(int)magnification);
 			} while(iter.next());
 
-/*
-			byte[] pixels1=(byte[])imp.getStack().getProcessor(slice).getPixels();
-			byte[] pixels2=(byte[])labels.getStack().getProcessor(slice).getPixels();
-			for(int i=0;i<w;i++)
-				for(int j=0;j<w;j++) {
-					byte b=pixels2[i+w*j];
-					if(b!=0) {
-						Color c1=label_colors[b<0?b+256:b];
-						int b1=(int)pixels1[i+w*j];
-						b1=(b1<0?b1+256:b1);
-						Color c=new Color(c1.getRed()*b1/255,c1.getGreen()*b1/255,c1.getBlue()*b1/255);
-						g.setColor(c);
-						g.fillRect((int)magnification*i,(int)magnification*j,(int)magnification,(int)magnification);
-					}
-				}
-*/
+			/*
+			   byte[] pixels1=(byte[])imp.getStack().getProcessor(slice).getPixels();
+			   byte[] pixels2=(byte[])labels.getStack().getProcessor(slice).getPixels();
+			   for(int i=0;i<w;i++)
+			   for(int j=0;j<w;j++) {
+			   byte b=pixels2[i+w*j];
+			   if(b!=0) {
+			   Color c1=label_colors[b & 0xff];
+			   int b1=pixels1[i+w*j] & 0xff;
+			   Color c=new Color(c1.getRed()*b1/255,c1.getGreen()*b1/255,c1.getBlue()*b1/255);
+			   g.setColor(c);
+			   g.fillRect((int)magnification*i,(int)magnification*j,(int)magnification,(int)magnification);
+			   }
+			   }
+			 */
 		} else {
 			for(int i=0;i<contours[slice-1].size();i++) {
 				g.setColor((Color)colors[slice-1].get(i));
-				Polygon poly=(Polygon)contours[slice-1].get(i);
+				Shape poly = (Shape)contours[slice-1].get(i);
 				// TODO: take offset into account (magnification very high)
 				if(magnification!=1.0) {
-					int x[]=new int[poly.npoints];
-					int y[]=new int[poly.npoints];
-					for(int j=0;j<poly.npoints;j++) {
-						x[j]=(int)(magnification*poly.xpoints[j]);
-						y[j]=(int)(magnification*poly.ypoints[j]);
-					}
-					poly=new Polygon(x,y,poly.npoints);
+					AffineTransform trans = (((Graphics2D)g).getDeviceConfiguration()).getDefaultTransform();
+					trans.setTransform(magnification, 0,
+							0, magnification,
+							-srcRect.x * magnification,
+							-srcRect.y * magnification);
+					poly = trans.createTransformedShape(poly);
 				}
-				g.drawPolygon(poly);
+				((Graphics2D)g).draw(poly);
 				if(mode==FILL) {
 					Color c=(Color)colors[slice-1].get(i);
 					Color c1=new Color(c.getRed(),c.getGreen(),c.getBlue(),alpha);
 					g.setColor(c1);
-					g.fillPolygon(poly);
+					((Graphics2D)g).fill(poly);
 				}
 			}
 		}
@@ -324,7 +471,5 @@ class CustomCanvas extends ImageCanvas {
 		super.mousePressed(e);
 		//IJ.log("mousePressed: ("+offScreenX(e.getX())+","+offScreenY(e.getY())+")");
 	}
-
-} // CustomCanvas inner class
-
+}
 
