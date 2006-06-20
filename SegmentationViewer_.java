@@ -141,7 +141,7 @@ class SegViewerCanvas extends ImageCanvas {
 		}
 
 		private void needs(int newCount, int offset) {
-			if (newCount > reserved || (offset > 0 && first == 0)) {
+			if (newCount > reserved || (offset > first)) {
 				if (newCount < reserved + GROW + 1)
 					newCount = reserved + GROW + 1;
 				int[] newX = new int[newCount];
