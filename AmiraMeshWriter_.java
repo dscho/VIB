@@ -56,37 +56,37 @@ public class AmiraMeshWriter_ implements PlugIn {
 			return;
 		}
 
-        writeImage(frame);
+		writeImage(frame);
 
-    }
+	}
 
-    public static void writeImage(Object frame) {
-        SaveDialog od = new SaveDialog("AmiraFile", null, ".am");
-        String dir=od.getDirectory();
-        String name=od.getFileName();
-        if(name==null)
-            return;
+	public static void writeImage(Object frame) {
+		SaveDialog od = new SaveDialog("AmiraFile", null, ".am");
+		String dir=od.getDirectory();
+		String name=od.getFileName();
+		if(name==null)
+			return;
 
-        if (frame instanceof TextWindow) {
-            TextWindow t = (TextWindow)frame;
-            AmiraTableEncoder e = new AmiraTableEncoder(t);
-            if (!e.write(dir + name))
-                IJ.error("Could not write to " + dir + name);
-            return;
-        }
+		if (frame instanceof TextWindow) {
+			TextWindow t = (TextWindow)frame;
+			AmiraTableEncoder e = new AmiraTableEncoder(t);
+			if (!e.write(dir + name))
+				IJ.error("Could not write to " + dir + name);
+			return;
+		}
 
-        AmiraMeshEncoder e=new AmiraMeshEncoder(dir+name);
+		AmiraMeshEncoder e=new AmiraMeshEncoder(dir+name);
 
-        if(!e.open()) {
-            IJ.error("Could not write "+dir+name);
-            return;
-        }
+		if(!e.open()) {
+			IJ.error("Could not write "+dir+name);
+			return;
+		}
 
-        if(!e.write((ImagePlus)frame))
-            IJ.error("Error writing "+dir+name);
-    }
+		if(!e.write((ImagePlus)frame))
+			IJ.error("Error writing "+dir+name);
+	}
 
-    public static String[] getWindowList() {
+	public static String[] getWindowList() {
 		Vector v = new Vector();
 		MenuBar mbar = Menus.getMenuBar();
 		Menu menu = null;
