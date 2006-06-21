@@ -279,7 +279,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
             populateLabelList(params);
 
-            SegmentationViewer_.SegViewerCanvas canvas = new SegmentationViewer_.SegViewerCanvas(currentImage, labelImage);
+            SegmentationViewerCanvas canvas = new SegmentationViewerCanvas(currentImage, labelImage);
 
             new SegmentatorModel(currentImage).setLabelCanvas(canvas);
 
