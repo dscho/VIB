@@ -15,7 +15,7 @@ import javax.swing.*;
  * Adds a panel containing all tools needed for a Segmentation Editor to
  * the left side of the current stack.
  * 
- * @author François KUSZTOS
+ * @author Francois KUSZTOS
  * @version 3.0
  */
 public class Segmentation_Editor implements PlugIn {

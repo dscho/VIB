@@ -13,7 +13,7 @@ import ij.measure.Calibration;
  * This class build all the interface of the Segmentation_Editor. It handle the
  * listeners too.
  * 
- * @author François KUSZTOS
+ * @author Francois KUSZTOS
  * @version 3.0
  */
 public class ContainerPanel extends Panel {
