@@ -118,70 +118,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
         }
     }
 
-    /*
-    public void populateLabelList(ImagePlus master) {
-        clearLabelsList();
-
-
-        ImageLabels labels = new ImageLabels(master);
-
-        for (ImageLabel label : labels.getLabels()) {
-            labelListModel.addElement(label);//todo add alphabetically
-        }
-
-    } */
-    /*
-    //draws the currentImage ROI boxes for the labels
-    //used with ImageLabels (soon to be depricated)
-    public void drawLabels(ImagePlus ip) {
-
-        int selectedIndex = labelList.getSelectedIndex();
-
-        //todo expand to allow multiple selection rather than first that is highlighted
-        if (selectedIndex != -1) {
-            ImageLabel selected = (ImageLabel) labelListModel.getElementAt(selectedIndex);
-
-
-
-            Roi label = selected.getLabelForSlice();
-            System.out.println(label);
-            if (label != null) {
-                ip.setRoi(label);
-            } else {
-                if (ip.getRoi() != null) ip.killRoi();
-            }
-        }
-    }  */
-    /*
-    public void drawLabels(ImagePlus ip, ImagePlus pixelData, SegmentationViewer_.SegViewerCanvas canvas) {
-
-        int selectedIndex = labelList.getSelectedIndex();
-
-        //todo expand to allow multiple selection rather than first that is highlighted
-        if (selectedIndex != -1) {
-            ImageLabel selected = (ImageLabel) labelListModel.getElementAt(selectedIndex);
-
-            Roi label = canvas.getContour(ip.getCurrentSlice(), new AmiraParameters(pixelData).getMaterialID(selected.getName()));
-
-            System.out.println(label);
-            if (label != null) {
-                ip.setRoi(label);
-            } else {
-                if (ip.getRoi() != null) ip.killRoi();
-            }
-        }
-    } */
-     /*
-    public void setLabel(ImagePlus ip) {
-        int selectedIndex = labelList.getSelectedIndex();
-//		todo expand to allow multiple selection rather than first that is highlighted
-        if (selectedIndex != -1) {
-            ImageLabel selected = (ImageLabel) labelListModel.getElementAt(selectedIndex);
-
-            selected.setLabelForSlice();
-        }
-    }*/
-
+    
 
     public static JList addLabelList(Container c) {
         final DefaultListModel model = new DefaultListModel();
