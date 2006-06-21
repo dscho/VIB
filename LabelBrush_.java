@@ -30,7 +30,7 @@ public class LabelBrush_ implements PlugIn {
                 "var brushWidth = 10;\n" +
                 "var leftClick=16, alt=9;\n" +
                 "\n" +
-                "macro 'Label Brush Tool - C111o11ff' {\n" +
+                "macro 'Label Brush Tool - C111O11ffC100T6c0aL' {\n" +
                 " while (true) {\n" +
                 "  getCursorLoc(x, y, z, flags);\n" +
                 "  if (flags&leftClick==0) exit();\n" +

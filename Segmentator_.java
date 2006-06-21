@@ -55,8 +55,9 @@ public class Segmentator_ extends JFrame implements PlugIn {
     public Segmentator_() {
         super("segmentator");
 
+        IJ.runPlugIn("ROIBrush_", ""); //load our drawing tool
         IJ.runPlugIn("LabelBrush_", ""); //load our drawing tool
-
+       
 //int toolId = Toolbar.getInstance().addTool("brush");
 
 

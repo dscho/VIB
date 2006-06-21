@@ -16,31 +16,31 @@ import java.awt.*;
 public class ROIBrush_ implements PlugIn {
 
     public void run(String arg) {
-	if (IJ.versionLessThan("1.37c"))
-		return;
+        if (IJ.versionLessThan("1.37c"))
+            return;
 
-	MacroInstaller installer = new MacroInstaller();
-	String macros =
-		"var brushWidth = 10;\n" +
-		"var leftClick=16, alt=9;\n" +
-		"\n" +
-		"macro 'Roi Brush Tool - C111o11ff' {\n" +
-		" while (true) {\n" +
-		"  getCursorLoc(x, y, z, flags);\n" +
-		"  if (flags&leftClick==0) exit();\n" +
-		"  if (flags&alt==0){\n" +
-		"   call('ROIBrush_.label', x,y,z,flags,brushWidth);\n" +
-		"  }else{\n" +
-		"   call('ROIBrush_.unlabel', x,y,z,flags,brushWidth);\n" +
-		"  }\n" +
-		"  wait(10);\n" +
-		" }\n" +
-		"}\n" +
-		"\n" +
-		"macro 'Roi Brush Tool Options...' {\n" +
-		" brushWidth = getNumber('Roi Brush Width (pixels):', brushWidth);\n" +
-		"}";
-	installer.install(macros);
+        MacroInstaller installer = new MacroInstaller();
+        String macros =
+                "var brushWidth = 10;\n" +
+                "var leftClick=16, alt=9;\n" +
+                "\n" +
+                "macro 'Roi Brush Tool - C111o11ff' {\n" +
+                " while (true) {\n" +
+                "  getCursorLoc(x, y, z, flags);\n" +
+                "  if (flags&leftClick==0) exit();\n" +
+                "  if (flags&alt==0){\n" +
+                "   call('ROIBrush_.label', x,y,z,flags,brushWidth);\n" +
+                "  }else{\n" +
+                "   call('ROIBrush_.unlabel', x,y,z,flags,brushWidth);\n" +
+                "  }\n" +
+                "  wait(10);\n" +
+                " }\n" +
+                "}\n" +
+                "\n" +
+                "macro 'Roi Brush Tool Options...' {\n" +
+                " brushWidth = getNumber('Roi Brush Width (pixels):', brushWidth);\n" +
+                "}";
+        installer.install(macros);
     }
 
     //methods in a macro accessable format
@@ -69,9 +69,9 @@ public class ROIBrush_ implements PlugIn {
 
             ShapeRoi roiShape = (ShapeRoi) roi;
 
-            roiShape.or(getBrushRoi(x, y,  width));
+            roiShape.or(getBrushRoi(x, y, width));
         } else {
-            roi = getBrushRoi(x, y,  width);
+            roi = getBrushRoi(x, y, width);
         }
 
         IJ.getImage().setRoi(roi);
@@ -86,7 +86,7 @@ public class ROIBrush_ implements PlugIn {
 
             ShapeRoi roiShape = (ShapeRoi) roi;
 
-            roiShape.not(getBrushRoi(x, y,  width));
+            roiShape.not(getBrushRoi(x, y, width));
 
             IJ.getImage().setRoi(roi);
         }
@@ -94,7 +94,7 @@ public class ROIBrush_ implements PlugIn {
 
 
     private static ShapeRoi getBrushRoi(int x, int y, int width) {
-        return new ShapeRoi(new OvalRoi(x- width/2, y - width/2, width, width));
+        return new ShapeRoi(new OvalRoi(x - width / 2, y - width / 2, width, width));
     }
 
 
