@@ -57,7 +57,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
         IJ.runPlugIn("ROIBrush_", ""); //load our drawing tool
         IJ.runPlugIn("LabelBrush_", ""); //load our drawing tool
-       
+
 //int toolId = Toolbar.getInstance().addTool("brush");
 
 
@@ -109,6 +109,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
     public void populateLabelList(AmiraParameters params) {
         clearLabelsList();
+        if(params==null) return;
         for (int id = 0; id < params.getMaterialCount(); id++) {
             labelListModel.addElement(params.getMaterial(id));
         }
@@ -295,6 +296,9 @@ public class Segmentator_ extends JFrame implements PlugIn {
             //we do not need to do this for ROIs becuase
             //they work by polling
             new SliceWatcher(currentImage).addSliceListener(this);
+
+
+            currentImage.getWindow().addWindowFocusListener(this);
             //new RoiWatcher(currentImage).addRoiListener(this);
         }
 
@@ -333,10 +337,14 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 }
 
                 if (newCurrent != null) {
+                    System.out.println("newCurrent = " + newCurrent);
                     new SliceWatcher(newCurrent).addSliceListener(this);
                     //new RoiWatcher(newCurrent).addRoiListener(this);
 
-                    //populateLabelList(newCurrent);
+                    //we temporaritly turn of list events while repopulating
+                    labelList.removeListSelectionListener(this);
+                    populateLabelList(new SegmentatorModel(newCurrent).getMaterialParams());
+                    labelList.addListSelectionListener(this);
                 }
                 currentImage = newCurrent;
             }

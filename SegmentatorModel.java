@@ -34,6 +34,7 @@ public class SegmentatorModel {
     }
 
     public AmiraParameters getMaterialParams() {
+        if(getLabelImagePlus() == null) return null;
         return new AmiraParameters(getLabelImagePlus());
     }
 
