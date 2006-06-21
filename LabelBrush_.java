@@ -5,6 +5,7 @@ import ij.gui.Roi;
 import ij.gui.ShapeRoi;
 import ij.gui.OvalRoi;
 import ij.plugin.MacroInstaller;
+import ij.plugin.PlugIn;
 
 import java.awt.*;
 
@@ -13,7 +14,7 @@ import java.awt.*;
  * Date: 21-Jun-2006
  * Time: 00:28:54
  */
-public class LabelBrush_ {
+public class LabelBrush_ implements PlugIn {
     public void run(String arg) {
         System.out.println("run of LabelBrush_ ...");
         if (IJ.versionLessThan("1.37c"))
