@@ -28,8 +28,6 @@ import events.RoiWatcher;
 import events.SliceEvent;
 import events.SliceListener;
 import events.SliceWatcher;
-import adt.ImageLabel;
-import adt.ImageLabels;
 import adt.Connectivity2D;
 import adt.Points;
 
@@ -43,7 +41,6 @@ import ij.plugin.PlugIn;
  */
 
 public class Segmentator_ extends JFrame implements PlugIn {
-
 
     private static final String SEGMENT = "segment";
     private static final String REMOVE_ISLANDS = "remove islands";
@@ -60,6 +57,8 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
     public Segmentator_() {
         super("segmentator");
+
+        IJ.runPlugIn("LabelBrush_", ""); //load our drawing tool
 
 //int toolId = Toolbar.getInstance().addTool("brush");
 
@@ -102,6 +101,24 @@ public class Segmentator_ extends JFrame implements PlugIn {
         labelListModel.clear();
     }
 
+
+    public void populateLabelList(AmiraParameters params) {
+        clearLabelsList();
+        for (int id = 0; id < params.getMaterialCount(); id++) {
+            labelListModel.addElement(params.getMaterial(id));
+        }
+    }
+
+
+    public AmiraParameters.Material getCurrentMaterial(){
+        int selectedIndex = labelList.getSelectedIndex();
+        if(selectedIndex == -1) return null;
+        else{
+            return (AmiraParameters.Material) labelListModel.get(selectedIndex);
+        }
+    }
+
+    /*
     public void populateLabelList(ImagePlus master) {
         clearLabelsList();
 
@@ -112,9 +129,10 @@ public class Segmentator_ extends JFrame implements PlugIn {
             labelListModel.addElement(label);//todo add alphabetically
         }
 
-    }
-
+    } */
+    /*
     //draws the currentImage ROI boxes for the labels
+    //used with ImageLabels (soon to be depricated)
     public void drawLabels(ImagePlus ip) {
 
         int selectedIndex = labelList.getSelectedIndex();
@@ -122,6 +140,8 @@ public class Segmentator_ extends JFrame implements PlugIn {
         //todo expand to allow multiple selection rather than first that is highlighted
         if (selectedIndex != -1) {
             ImageLabel selected = (ImageLabel) labelListModel.getElementAt(selectedIndex);
+
+
 
             Roi label = selected.getLabelForSlice();
             System.out.println(label);
@@ -131,8 +151,27 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 if (ip.getRoi() != null) ip.killRoi();
             }
         }
-    }
+    }  */
+    /*
+    public void drawLabels(ImagePlus ip, ImagePlus pixelData, SegmentationViewer_.SegViewerCanvas canvas) {
 
+        int selectedIndex = labelList.getSelectedIndex();
+
+        //todo expand to allow multiple selection rather than first that is highlighted
+        if (selectedIndex != -1) {
+            ImageLabel selected = (ImageLabel) labelListModel.getElementAt(selectedIndex);
+
+            Roi label = canvas.getContour(ip.getCurrentSlice(), new AmiraParameters(pixelData).getMaterialID(selected.getName()));
+
+            System.out.println(label);
+            if (label != null) {
+                ip.setRoi(label);
+            } else {
+                if (ip.getRoi() != null) ip.killRoi();
+            }
+        }
+    } */
+     /*
     public void setLabel(ImagePlus ip) {
         int selectedIndex = labelList.getSelectedIndex();
 //		todo expand to allow multiple selection rather than first that is highlighted
@@ -141,7 +180,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
             selected.setLabelForSlice();
         }
-    }
+    }*/
 
 
     public static JList addLabelList(Container c) {
@@ -162,8 +201,9 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 String name = IJ.getString("name?", "");
                 ImagePlus imagePlus = IJ.getImage();
 
-                ImageLabels labels = new ImageLabels(imagePlus);
-                model.addElement(labels.newLabel(name));
+                //todo
+                //ImageLabels labels = new ImageLabels(imagePlus);
+                //model.addElement(labels.newLabel(name));
             }
         });
 
@@ -177,12 +217,13 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
                 ImagePlus imagePlus = IJ.getImage();
 
-                ImageLabels labels = new ImageLabels(imagePlus);
-                ImageLabel selected = (ImageLabel) model.getElementAt(index);
+                //todo
+                //ImageLabels labels = new ImageLabels(imagePlus);
+                //ImageLabel selected = (ImageLabel) model.getElementAt(index);
 
                 //remove from the list of labels and the list model...
-                labels.removeLabel(selected.getName());
-                model.removeElementAt(index);
+                //labels.removeLabel(selected.getName());
+                //model.removeElementAt(index);
             }
         });
 
@@ -202,74 +243,10 @@ public class Segmentator_ extends JFrame implements PlugIn {
         return list;
     }
 
-    public void loadAmiraParams(AmiraParameters params, ImagePlus target, ImagePlus labelImage) {
-        //load the materials as labels
-        for (String material : params.getMaterialList()) {
-            int id = params.getMaterialID(material);
-
-            //insert the material object
-            ImageLabel newLabel = new ImageLabels(target).newLabel(material, params.getMaterialColor(id));
-
-        }
-
-        //now we need to go through all the pixel data and assign values to the ROIs
-
-        //first we draw out the pixel data into a useful form
-        System.out.println("loading voxels");
-        ImageStack stack = labelImage.getStack();
-        for (int z = 1; z < stack.getSize(); z++) {
-            IJ.showProgress(z, stack.getSize());
-
-            //we load a slice into a useful lookup form
-            HashMap<Integer, Connectivity2D> materialPoints = new HashMap<Integer, Connectivity2D>();
-
-            byte[] pixels = (byte[]) stack.getPixels(z);
-            int width = stack.getWidth();
-            int offset, i;
-            for (int y = 0; y < stack.getHeight(); y++) {
-                offset = y * width;
-                for (int x = 0; x < width; x++) {
-                    i = offset + x;
-
-
-
-                    int pixelValue = pixels[i];
-
-                    Connectivity2D connectivityGraph = materialPoints.get(pixelValue);
-                    if(connectivityGraph==null){
-                        connectivityGraph = new Connectivity2D();
-                        materialPoints.put(pixelValue, connectivityGraph);
-                    }
-
-                    connectivityGraph.addLowerRightPoint(new Point(x,y));
-                }
-            }
-            //now we need to convert the data for each material into a shape
-
-            for (Integer materialId : materialPoints.keySet()) {
-
-                Connectivity2D connectivityGraph = materialPoints.get(materialId);
-                ShapeRoi roi = null;
-                for (Points points : connectivityGraph.getIslands()) {
-                    Polygon outline = points.getOutline();
-                    if(roi == null){
-                        roi = new ShapeRoi(new PolygonRoi(outline, PolygonRoi.POLYGON));
-                    }else{
-                        roi.or(new ShapeRoi(new PolygonRoi(outline, PolygonRoi.POLYGON)));
-                    }
-                }
-                new ImageLabels(target).getLabel(params.getMaterialName(materialId)).setLabelForSlice(z, roi);
-            }
-        }
-
-
-
-    }
-
     private class Controllor implements ActionListener, ImageListener, WindowFocusListener, SliceListener, RoiListener, ListSelectionListener {
 
         ImagePlus currentImage;
-        ImagePlus currentLabels;
+
 
         public void actionPerformed(ActionEvent e) {
             //IJ.showMessage(e.getActionCommand());
@@ -277,13 +254,48 @@ public class Segmentator_ extends JFrame implements PlugIn {
             if (e.getActionCommand().equals(LOAD_IMAGE)) {
                 IJ.runPlugIn("AmiraMeshReader_", "");
 
-                updateCurrent(IJ.getImage());
+                if (AmiraParameters.isAmiraLabelfield(IJ.getImage())) {
+                    //load label data
+                    loadLabels(IJ.getImage());
+                } else {
+                    updateCurrent(IJ.getImage());
+                }
+
 
             } else if (e.getActionCommand().equals(SAVE_IMAGE)) {
-                IJ.runPlugIn("AmiraMeshWriter_", "");
+                //todo
             }
 
             currentImage.updateAndDraw();
+        }
+
+        private void loadLabels(ImagePlus labelImage) {
+
+            labelImage.hide();//don't want the extra one visible to the user
+
+            new SegmentatorModel(currentImage).setLabelImagePlus(labelImage);
+
+            AmiraParameters params = new AmiraParameters(labelImage);
+
+            populateLabelList(params);
+
+            SegmentationViewer_.SegViewerCanvas canvas = new SegmentationViewer_.SegViewerCanvas(currentImage, labelImage);
+
+            new SegmentatorModel(currentImage).setLabelCanvas(canvas);
+
+
+            if (currentImage.getStackSize() > 1)
+                new StackWindow(currentImage, canvas);
+            else
+                new ImageWindow(currentImage, canvas);
+
+            //after a new window is constructed. the old one is
+            //cloased and the listener tidied up
+            //so we need to make sure we add a new one
+            //we do not need to do this for ROIs becuase
+            //they work by polling
+            new SliceWatcher(currentImage).addSliceListener(this);
+            //new RoiWatcher(currentImage).addRoiListener(this);
         }
 
 
@@ -298,7 +310,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
         }
 
         public void imageUpdated(ImagePlus ip) {
-            System.out.println("image Updated");
+            //System.out.println("image Updated");
         }
 
         public void windowGainedFocus(WindowEvent e) {
@@ -311,54 +323,39 @@ public class Segmentator_ extends JFrame implements PlugIn {
         }
 
         private void updateCurrent(ImagePlus newCurrent) {
-            if (AmiraParameters.isAmiraLabelfield(newCurrent)) {
-                if (newCurrent == currentLabels)
-                    return;
-                else {
-                    currentLabels = newCurrent;
 
-
-                    if (currentLabels != null) {
-                        AmiraParameters params = new AmiraParameters(currentLabels);
-
-                        loadAmiraParams(params, currentImage, currentLabels);
-
-                        currentLabels.close();
-
-                        populateLabelList(currentImage);
-
-                    }
+            if (newCurrent == currentImage)
+                return;
+            else {
+                if (currentImage != null) {
+                    new SliceWatcher(currentImage).removeSliceListener(this);
+                    //new RoiWatcher(currentImage).removeRoiListener(this);
                 }
-            } else {
-                if (newCurrent == currentImage)
-                    return;
-                else {
-                    if (currentImage != null) {
-                        new SliceWatcher(currentImage).removeSliceListener(this);
-                        new RoiWatcher(currentImage).removeRoiListener(this);
-                    }
 
-                    if (newCurrent != null) {
-                        new SliceWatcher(newCurrent).addSliceListener(this);
-                        new RoiWatcher(newCurrent).addRoiListener(this);
-                        populateLabelList(newCurrent);
-                    }
-                    currentImage = newCurrent;
+                if (newCurrent != null) {
+                    new SliceWatcher(newCurrent).addSliceListener(this);
+                    //new RoiWatcher(newCurrent).addRoiListener(this);
+
+                    //populateLabelList(newCurrent);
                 }
+                currentImage = newCurrent;
             }
+
         }
 
         public void sliceNumberChanged(SliceEvent e) {
             System.out.println(e.getSource().getCurrentSlice());
-            drawLabels(currentImage);
+            //drawLabels(currentImage);
+            //drawLabels(currentImage, currentLabels, canvas);
         }
 
         public void roiChanged(RoiEvent e) {
-            setLabel(currentImage);
+            //todo
+            //setLabel(currentImage);
         }
 
         public void valueChanged(ListSelectionEvent e) {
-            drawLabels(currentImage);
+            new SegmentatorModel(currentImage).setCurrentMaterial(getCurrentMaterial());
         }
     }
 

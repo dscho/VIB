@@ -17,7 +17,7 @@ import java.util.ArrayList;
 public class RoiWatcher {
 public static final String MONITOR_LOC = "RoiWatcher.monitor";
 
-public static final long POLL_TIME = 50;
+public static final long POLL_TIME = 10;
 	
 	final ImagePlus data;
 	
@@ -71,7 +71,7 @@ public static final long POLL_TIME = 50;
 		
 		
 		public void fireRoiChange(RoiEvent e){
-			System.out.println("roi change");
+			System.out.println("roi change from " + this);
 			for(RoiListener l:listeners){
 				try{
 					l.roiChanged(e);
@@ -96,6 +96,7 @@ public static final long POLL_TIME = 50;
 
 		public void imageClosed(ImagePlus image) {
 			if(image == ip){
+                image.getProperties().remove(MONITOR_LOC);
 				listeners.clear();
 				ImagePlus.removeImageListener(this);
 			}
@@ -104,6 +105,7 @@ public static final long POLL_TIME = 50;
 
 		public void imageUpdated(ImagePlus image) {
 			if(image == ip){
+                System.out.println("Image update, loading new ROI");
 				oldRoi = ip.getRoi();
 			}
 		}
@@ -122,9 +124,11 @@ public static final long POLL_TIME = 50;
 				if(newRoi == null && newRoi == null) continue;
 				
 				if((newRoi == null && newRoi != null) ||  !newRoi.equals(oldRoi)){
+                    System.out.println("newRoi = " + newRoi);
+                    System.out.println("oldRoi = " + oldRoi);
 					fireRoiChange(new RoiEvent(ip));
 					
-					oldRoi = (Roi) newRoi.clone();
+					oldRoi = (Roi) newRoi;
 				}
 			}
 		}

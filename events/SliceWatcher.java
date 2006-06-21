@@ -91,6 +91,7 @@ public class SliceWatcher{
 
 		public void imageClosed(ImagePlus image) {
 			if(image == ip){
+                image.getProperties().remove(MONITOR_LOC);
 				listeners.clear();
 				ImagePlus.removeImageListener(this);
 			}

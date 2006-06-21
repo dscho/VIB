@@ -584,5 +584,24 @@ public class AmiraParameters {
 		g.addChoice(title, list, defaultValue);
 		return list.length;
 	}
+
+    public Material getMaterial(int id){
+        return  new Material(getMaterialName(id),id, getMaterialColor(id));
+    }
+
+
+    static class Material{
+        public Material(String name, int id, double[] colors) {
+            this.name = name;
+            this.id = id;
+            this.colors = colors;
+        }
+
+        final String name;
+        final int id;
+        final double[] colors;
+
+        public String toString(){return name;}
+    }
 }
 
