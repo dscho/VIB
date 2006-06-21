@@ -18,12 +18,13 @@ import java.awt.Frame;
  */
 
 public class AmiraParameters {
+    public static final String INFO = "Info";
 
-	public AmiraParameters(ImagePlus imp) {
+    public AmiraParameters(ImagePlus imp) {
 		parameters=new Properties();
 		if (isAmiraMesh(imp)) {
 			line = "Parameters {\n"
-				+ (String)imp.getProperty("Info")
+				+ (String)imp.getProperty(INFO)
 				+ "}\n";
 			parseParameters(parameters);
 		}

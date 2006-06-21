@@ -31,8 +31,11 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		w=labels.getWidth();
 		h=labels.getHeight();
 		AmiraParameters parameters=new AmiraParameters(labels);
-		label_colors=new Color[parameters.getMaterialCount()];
-		for(int i=0;i<label_colors.length;i++) {
+		//label_colors=new Color[parameters.getMaterialCount()];
+        label_colors = new Color[parameters.getMaterialCount()];
+        //System.out.println("parameters.getMaterialCount() = " + parameters.getMaterialCount());
+
+        for(int i=0;i<label_colors.length;i++) {
 			double[] c=parameters.getMaterialColor(i);
 			int red=(int)(255*c[0]);
 			int green=(int)(255*c[1]);
@@ -157,7 +160,7 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		public ContourFinder(int slice) {
 			this.slice=slice;
 			pixels=(byte[])labels.getStack().getProcessor(slice+1).getPixels();
-			paths = new GeneralPath[256];
+			paths = new GeneralPath[255];
 		}
 
 		// no check!
@@ -220,6 +223,8 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 
 		private void closeOutline(byte material, Outline outline) {
 			int m = material & 0xff;
+
+            if(material == -1) m = 0;//????? Tom
 			if (paths[m] == null)
 				paths[m] = new GeneralPath(GeneralPath.WIND_EVEN_ODD);
 			paths[m].append(outline.getPolygon(), false);

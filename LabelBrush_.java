@@ -68,19 +68,16 @@ public class LabelBrush_ implements PlugIn {
 
     public static void label(int x, int y, int z, int flags, int width) {
         z++;
-        System.out.println("current val = " + getProcessor(z).get(x,y));
-
+        System.out.println("label");
         fillOval(x-width / 2, y-width / 2,z,  width, width, getColor());
-
         updateSlice(z);
     }
 
 
 
     public static void unlabel(int x, int y, int z, int flags, int width) {
-        getProcessor(z).setColor(1);
-
-        fillOval(x-width / 2, y-width / 2,z,  width, width, getColor());
+        System.out.println("unlabel");
+        fillOval(x-width / 2, y-width / 2,z,  width, width, 0);
     }
 
     //had to write our own trivial implementation becuase the ImageJ one does not seem to work...
@@ -103,12 +100,7 @@ public class LabelBrush_ implements PlugIn {
 
     private static int getColor(){
         AmiraParameters.Material material = new SegmentatorModel(IJ.getImage()).getCurrentMaterial();
-
-        System.out.println("material = " + material);
-
         if(material == null) return 0;
-        System.out.println("material id a.k.a color= " + material.id);
-
         return material.id;
     }
 

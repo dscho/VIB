@@ -73,5 +73,22 @@ public class GuiBuilder {
 		c.add(b);
 	}
 
-	
+    public static void add2Command(Container c, String label, String actionCmd, String label2, String actionCmd2, ActionListener controllor) {
+		JPanel p  = new JPanel(new GridLayout(1,2));
+
+        JButton b = new JButton(label);
+		b.setActionCommand(actionCmd);
+		b.addActionListener(controllor);
+
+        JButton b2 = new JButton(label2);
+		b2.setActionCommand(actionCmd2);
+		b2.addActionListener(controllor);
+
+        p.add(b);
+        p.add(b2);                
+
+		c.add(p);
+	}
+
+
 }

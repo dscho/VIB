@@ -9,16 +9,7 @@ import java.awt.event.WindowFocusListener;
 import java.util.HashMap;
 import java.util.ArrayList;
 
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.ListModel;
-import javax.swing.SpinnerNumberModel;
+import javax.swing.*;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.ListSelectionEvent;
 
@@ -46,9 +37,11 @@ public class Segmentator_ extends JFrame implements PlugIn {
     private static final String REMOVE_ISLANDS = "remove islands";
     private static final String SET_LABEL = "set label";
 
-    private static final String LOAD_IMAGE = "load mesh";
-    private static final String SAVE_IMAGE = "save mesh";
-
+    private static final String LOAD_IMAGE = "load image";
+    private static final String SAVE_IMAGE = "save image";
+    private static final String LOAD_LABELS = "load labels";
+    private static final String SAVE_LABELS = "save labels";
+    private static final String LOAD_MATERIALS = "load materials";
 
     SpinnerNumberModel minArea;
 
@@ -86,8 +79,9 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
         labelList.addListSelectionListener(controllor);
 
-        GuiBuilder.addCommand(this, LOAD_IMAGE, LOAD_IMAGE, controllor);
-        GuiBuilder.addCommand(this, SAVE_IMAGE, SAVE_IMAGE, controllor);
+        GuiBuilder.add2Command(this, LOAD_IMAGE, LOAD_IMAGE, SAVE_IMAGE, SAVE_IMAGE, controllor);
+        GuiBuilder.add2Command(this, LOAD_LABELS, LOAD_LABELS, SAVE_LABELS, SAVE_LABELS, controllor);
+        GuiBuilder.addCommand(this, LOAD_MATERIALS, LOAD_MATERIALS, controllor);
 
         pack();
     }
@@ -118,7 +112,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
         }
     }
 
-    
+
 
     public static JList addLabelList(Container c) {
         final DefaultListModel model = new DefaultListModel();
@@ -128,9 +122,10 @@ public class Segmentator_ extends JFrame implements PlugIn {
         panel.add(new JLabel("labels..."), BorderLayout.NORTH);
 
         JPanel controlPanel = new JPanel(new GridLayout(1, 2));
-        panel.add(controlPanel, BorderLayout.SOUTH);
-        panel.add(list);
+        //panel.add(controlPanel, BorderLayout.SOUTH);
+        panel.add(new JScrollPane(list));
 
+        /*  REMOVED ADD AND REMOVE, thinkin might be better if the user is always forced to use a ready made .labels file
         JButton add = new JButton("add");
         add.addActionListener(new ActionListener() {
 
@@ -138,7 +133,6 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 String name = IJ.getString("name?", "");
                 ImagePlus imagePlus = IJ.getImage();
 
-                //todo
                 //ImageLabels labels = new ImageLabels(imagePlus);
                 //model.addElement(labels.newLabel(name));
             }
@@ -154,7 +148,6 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
                 ImagePlus imagePlus = IJ.getImage();
 
-                //todo
                 //ImageLabels labels = new ImageLabels(imagePlus);
                 //ImageLabel selected = (ImageLabel) model.getElementAt(index);
 
@@ -174,7 +167,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
         controlPanel.add(add);
         controlPanel.add(remove);
         controlPanel.add(deselect);
-
+        */
         c.add(panel);
 
         return list;
@@ -192,8 +185,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 IJ.runPlugIn("AmiraMeshReader_", "");
 
                 if (AmiraParameters.isAmiraLabelfield(IJ.getImage())) {
-                    //load label data
-                    loadLabels(IJ.getImage());
+                    IJ.showMessage("file was not an image file");
                 } else {
                     updateCurrent(IJ.getImage());
                 }
@@ -201,9 +193,55 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
             } else if (e.getActionCommand().equals(SAVE_IMAGE)) {
                 //todo
+                IJ.showMessage("greyscale edits not implemented yet, you can  save your labels though...");
+            }else if(e.getActionCommand().equals(LOAD_LABELS)){
+                IJ.runPlugIn("AmiraMeshReader_", "");
+                if (AmiraParameters.isAmiraLabelfield(IJ.getImage())) {
+                    //load label data
+                    loadLabels(IJ.getImage());
+                } else {
+                    IJ.showMessage("file was not a labels file");
+                }
+            }else if(e.getActionCommand().equals(SAVE_LABELS)){
+                AmiraMeshWriter_.writeImage(new SegmentatorModel(currentImage).getLabelImagePlus());
+            }else if(e.getActionCommand().equals(LOAD_MATERIALS)){
+                IJ.runPlugIn("AmiraMeshReader_", "");
+                if (AmiraParameters.isAmiraLabelfield(IJ.getImage())) {
+                    //load label data
+                    loadMaterials(IJ.getImage());
+                } else {
+                    IJ.showMessage("file was not a labels file");
+                }
             }
 
             currentImage.updateAndDraw();
+        }
+
+        //reads the parameters to get what the labels should be
+        //but does not use any of the pixel data
+        private void loadMaterials(ImagePlus materialImage) {
+
+
+            AmiraParameters params = new AmiraParameters(materialImage);
+
+            //create a blank image to work with
+            System.out.println("currentImage.getStackSize() = " + currentImage.getStackSize());
+
+            //todo does not work...
+            IJ.newImage("new", "8-bit", currentImage.getWidth(), currentImage.getHeight(), currentImage.getStackSize());
+
+            ImagePlus newImage = IJ.getImage();
+
+            newImage.setProperty(AmiraParameters.INFO, materialImage.getProperty(AmiraParameters.INFO));
+
+            //copy the parameter information across
+            AmiraParameters newParams = new AmiraParameters(newImage);
+
+            //close the initial image
+            materialImage.close();
+
+            //and load the new blank one as normal
+            loadLabels(newImage);
         }
 
         private void loadLabels(ImagePlus labelImage) {
