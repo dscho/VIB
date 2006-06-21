@@ -68,30 +68,14 @@ public class LabelBrush_ implements PlugIn {
 
     public static void label(int x, int y, int z, int flags, int width) {
         z++;
-        System.out.println("label");
-        fillOval(x-width / 2, y-width / 2,z,  width, width, getColor());
+        labelROI(getBrushRoi(x,y,width), getProcessor(z), getColor());
         updateSlice(z);
     }
 
-
-
     public static void unlabel(int x, int y, int z, int flags, int width) {
-        System.out.println("unlabel");
-        fillOval(x-width / 2, y-width / 2,z,  width, width, 0);
-    }
-
-    //had to write our own trivial implementation becuase the ImageJ one does not seem to work...
-    private static void fillOval(int x, int y, int z, int width, int height, int color) {
-        OvalRoi roi = new OvalRoi(x,y,width,height);
-
-        ImageProcessor ip = getProcessor(z);
-        ip.setRoi(roi);
-        for(int i=x;i<=x+width;i++){
-            for(int j=y;j<=y+height;j++){
-                if(roi.contains(i,j)) ip.set(i,j,color);
-            }
-        }
-        ip.resetRoi();
+        z++;
+        labelROI(getBrushRoi(x,y,width), getProcessor(z), 0);
+        updateSlice(z);
     }
 
     private static ImageProcessor getProcessor(int z) {
@@ -106,6 +90,19 @@ public class LabelBrush_ implements PlugIn {
 
     private static void updateSlice(int z) {
         new SegmentatorModel(IJ.getImage()).updateSlice(z);
+    }
+
+    public static Roi getBrushRoi(int x, int y, int width){
+        return new OvalRoi(x-width/2,y-width/2,width,width);
+    }
+
+    public static void labelROI(Roi roi, ImageProcessor ip, int color){
+        Rectangle bounds = roi.getBoundingRect();
+        for(int i=bounds.x;i<=bounds.x+bounds.width;i++){
+            for(int j=bounds.y;j<=bounds.y+bounds.height;j++){
+                if(roi.contains(i,j)) ip.set(i,j,color);
+            }
+        }
     }
 
 

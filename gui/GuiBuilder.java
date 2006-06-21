@@ -24,6 +24,7 @@ import javax.swing.JTextField;
 import javax.swing.ListModel;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeListener;
 
 public class GuiBuilder {
 	public static JComponent createField(String label, String actionCommand,
@@ -41,15 +42,16 @@ public class GuiBuilder {
 	}
 
 	public static JSpinner addLabeledNumericSpinner(Container c, String label, int initial,
-			int min, int max)
+			int min, int max, ChangeListener controllor)
 	{
 		SpinnerModel model = new SpinnerNumberModel(
 				initial, // initial value
 				min, // min
 				max, // max
 				1); // step
-		JSpinner spinner = addLabeledSpinner(c, label, model);		
-		
+		JSpinner spinner = addLabeledSpinner(c, label, model);
+
+        spinner.addChangeListener(controllor);
 		return spinner;
 	}
 	
@@ -85,7 +87,7 @@ public class GuiBuilder {
 		b2.addActionListener(controllor);
 
         p.add(b);
-        p.add(b2);                
+        p.add(b2);
 
 		c.add(p);
 	}

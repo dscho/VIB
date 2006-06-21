@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 
 import events.RoiEvent;
 import events.RoiListener;
@@ -33,20 +35,22 @@ import ij.plugin.PlugIn;
 
 public class Segmentator_ extends JFrame implements PlugIn {
 
-    private static final String SEGMENT = "segment";
-    private static final String REMOVE_ISLANDS = "remove islands";
-    private static final String SET_LABEL = "set label";
-
     private static final String LOAD_IMAGE = "load image";
     private static final String SAVE_IMAGE = "save image";
     private static final String LOAD_LABELS = "load labels";
     private static final String SAVE_LABELS = "save labels";
     private static final String LOAD_MATERIALS = "load materials";
 
-    SpinnerNumberModel minArea;
+    private static final String THRESHOLD = "threshold";
+    private static final String THRESHOLD_UNDO = "undo";
+
 
     JList labelList;
     DefaultListModel labelListModel;
+
+    JSpinner minThreshold;
+    JSpinner maxThreshold;
+
 
     public Segmentator_() {
         super("segmentator");
@@ -83,6 +87,12 @@ public class Segmentator_ extends JFrame implements PlugIn {
         GuiBuilder.add2Command(this, LOAD_LABELS, LOAD_LABELS, SAVE_LABELS, SAVE_LABELS, controllor);
         GuiBuilder.addCommand(this, LOAD_MATERIALS, LOAD_MATERIALS, controllor);
 
+
+        minThreshold = GuiBuilder.addLabeledNumericSpinner(this, "min", 10, 0, 255, controllor);
+        maxThreshold = GuiBuilder.addLabeledNumericSpinner(this, "max", 250, 0, 255, controllor);
+
+        GuiBuilder.add2Command(this, THRESHOLD, THRESHOLD, THRESHOLD_UNDO, THRESHOLD_UNDO, controllor);
+
         pack();
     }
 
@@ -104,14 +114,22 @@ public class Segmentator_ extends JFrame implements PlugIn {
     }
 
 
-    public AmiraParameters.Material getCurrentMaterial(){
+    public AmiraParameters.Material getCurrentMaterial() {
         int selectedIndex = labelList.getSelectedIndex();
-        if(selectedIndex == -1) return null;
-        else{
+        if (selectedIndex == -1)
+            return null;
+        else {
             return (AmiraParameters.Material) labelListModel.get(selectedIndex);
         }
     }
 
+
+    private void threshold() {
+        LabelThresholder_.min = ((SpinnerNumberModel) minThreshold.getModel()).getNumber().intValue();
+        LabelThresholder_.max = ((SpinnerNumberModel) maxThreshold.getModel()).getNumber().intValue();
+
+        IJ.runPlugIn("LabelThresholder_", "");
+    }
 
 
     public static JList addLabelList(Container c) {
@@ -173,7 +191,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
         return list;
     }
 
-    private class Controllor implements ActionListener, ImageListener, WindowFocusListener, SliceListener, RoiListener, ListSelectionListener {
+    private class Controllor implements ActionListener, ImageListener, WindowFocusListener, SliceListener, RoiListener, ListSelectionListener, ChangeListener {
 
         ImagePlus currentImage;
 
@@ -194,7 +212,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
             } else if (e.getActionCommand().equals(SAVE_IMAGE)) {
                 //todo
                 IJ.showMessage("greyscale edits not implemented yet, you can  save your labels though...");
-            }else if(e.getActionCommand().equals(LOAD_LABELS)){
+            } else if (e.getActionCommand().equals(LOAD_LABELS)) {
                 IJ.runPlugIn("AmiraMeshReader_", "");
                 if (AmiraParameters.isAmiraLabelfield(IJ.getImage())) {
                     //load label data
@@ -202,9 +220,9 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 } else {
                     IJ.showMessage("file was not a labels file");
                 }
-            }else if(e.getActionCommand().equals(SAVE_LABELS)){
+            } else if (e.getActionCommand().equals(SAVE_LABELS)) {
                 AmiraMeshWriter_.writeImage(new SegmentatorModel(currentImage).getLabelImagePlus());
-            }else if(e.getActionCommand().equals(LOAD_MATERIALS)){
+            } else if (e.getActionCommand().equals(LOAD_MATERIALS)) {
                 IJ.runPlugIn("AmiraMeshReader_", "");
                 if (AmiraParameters.isAmiraLabelfield(IJ.getImage())) {
                     //load label data
@@ -212,10 +230,16 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 } else {
                     IJ.showMessage("file was not a labels file");
                 }
+            } else if (e.getActionCommand().equals(THRESHOLD)) {
+                threshold();
+
+            } else if (e.getActionCommand().equals(THRESHOLD_UNDO)) {
+                LabelThresholder_.rollback();
             }
 
             currentImage.updateAndDraw();
         }
+
 
         //reads the parameters to get what the labels should be
         //but does not use any of the pixel data
@@ -331,6 +355,18 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
         public void valueChanged(ListSelectionEvent e) {
             new SegmentatorModel(currentImage).setCurrentMaterial(getCurrentMaterial());
+        }
+
+        public void stateChanged(ChangeEvent e) {
+            if (e.getSource().equals(minThreshold) || e.getSource().equals(maxThreshold)) {
+                //the spinners have changed. We will try a live update
+                //if we have an active ROI at the time
+                if(currentImage.getRoi() != null)
+                {
+                    LabelThresholder_.rollback();
+                    threshold();
+                }
+            }
         }
     }
 
