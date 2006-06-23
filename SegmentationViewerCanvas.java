@@ -9,6 +9,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.Vector;
+import java.util.HashMap;
 
 public class SegmentationViewerCanvas extends ImageCanvas {
 	final static int OUTLINE=1, FILL=2;
@@ -21,6 +22,7 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 
 	Vector[] contours; // each element is a vector of polygons
 	Vector[] colors; // these are the corresponding colors
+    HashMap<Integer, Integer> [] materialId_to_indexMap;
 
 	IdleThread idle;
 	private final boolean debug = false;
@@ -47,6 +49,8 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 			System.err.println("depth: "+depth);
 		contours=new Vector[depth];
 		colors=new Vector[depth];
+        materialId_to_indexMap = new HashMap[depth];
+
 		if(mode==OUTLINE) {
 			idle=new IdleThread(imp.getCurrentSlice());
 			idle.setPriority(Thread.MIN_PRIORITY);
@@ -59,6 +63,16 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		contours[slice-1] = null;
 		createContoursIfNotExist(slice);
 	}
+
+    public GeneralPath getOutline(int slice, int materialId){
+        createContoursIfNotExist(slice);
+
+        Integer index = materialId_to_indexMap[slice-1].get(materialId);
+        if(index==null) return null;
+        else{
+            return (GeneralPath) contours[slice].get(index);
+        }                                          
+    }
 
 	/*
 	 * This class implements a Cartesian polygon in progress.
@@ -180,6 +194,7 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		public void initContours() {
 			contours[slice]=new Vector();
 			colors[slice]=new Vector();
+            materialId_to_indexMap[slice] = new HashMap<Integer, Integer>();
 
 			// actually find the outlines
 			ArrayList polygons = new ArrayList();
@@ -189,10 +204,12 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 				for (int x = 0; x < w; x++)
 					handle(x, y);
 
+            int index=0;
 			for (int i = 1; i < paths.length; i++) {
 				if (paths[i] != null) {
 					contours[slice].add(paths[i]);
 					colors[slice].add(label_colors[i]);
+                    materialId_to_indexMap[slice].put(i, index++);
 				}
 			}
 		}
