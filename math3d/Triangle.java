@@ -36,6 +36,38 @@ public class Triangle {
 		return cRadius2;
 	}
 
+    /**
+     * finds where the line intersects the triangle and returns it
+     * returns null if their is no intersection
+     * @param l
+     * @return
+     */
+    public Point3d intersection(Line l){
+        Plane p = new Plane(a,b,c, b);
+        Point3d intersection = p.intersection(l);
+
+        if(intersection == null) return null;
+
+        //we need to determine whether this intersection is actually within the
+        //triangles bounds
+        //we do this by building planes that are perpendicular
+        //to the triangle, and that just touch the edges
+        Point3d tmp = p.getNormal().plus(a);
+        Plane sa = new Plane(a,b, tmp, center);
+        tmp = p.getNormal().plus(b);
+        Plane sb = new Plane(b,c, tmp, center);
+        tmp = p.getNormal().plus(c);
+        Plane sc = new Plane(c,a, tmp, center);
+
+
+        if(sa.isInside(intersection) && sb.isInside(intersection) && sc.isInside(intersection)){
+            return intersection;
+        }else{
+            return null;
+        }
+
+    }
+
 	public static void test() {
 		Triangle t = new Triangle();
 		t.a = Point3d.random();
@@ -59,6 +91,8 @@ public class Triangle {
 	public String toString() {
 		return "{" + a + "; "+ b + "; " + c + "} ";
 	}
+
+
 }
 
 

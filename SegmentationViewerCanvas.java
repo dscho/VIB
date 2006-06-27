@@ -70,8 +70,8 @@ public class SegmentationViewerCanvas extends ImageCanvas {
         Integer index = materialId_to_indexMap[slice-1].get(materialId);
         if(index==null) return null;
         else{
-            return (GeneralPath) contours[slice].get(index);
-        }                                          
+            return (GeneralPath) contours[slice-1].get(index);
+        }
     }
 
 	/*

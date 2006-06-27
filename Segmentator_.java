@@ -89,8 +89,8 @@ public class Segmentator_ extends JFrame implements PlugIn {
         GuiBuilder.addCommand(this, LOAD_MATERIALS, LOAD_MATERIALS, controllor);
 
 
-        minThreshold = GuiBuilder.addLabeledNumericSpinner(this, "min", 10, 0, 255, controllor);
-        maxThreshold = GuiBuilder.addLabeledNumericSpinner(this, "max", 250, 0, 255, controllor);
+        minThreshold = GuiBuilder.addLabeledNumericSpinner(this, "min", 45, 0, 255, controllor);
+        maxThreshold = GuiBuilder.addLabeledNumericSpinner(this, "max", 255, 0, 255, controllor);
 
         GuiBuilder.add2Command(this, THRESHOLD, THRESHOLD, THRESHOLD_UNDO, THRESHOLD_UNDO, controllor);
 

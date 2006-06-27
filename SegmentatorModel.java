@@ -50,4 +50,8 @@ public class SegmentatorModel {
         getLabelCanvas().updateSlice(z);
         data.updateAndDraw();
     }
+
+    public void updateSliceNoRedraw(int z) {
+        getLabelCanvas().updateSlice(z);              
+    }
 }
