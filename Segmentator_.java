@@ -28,6 +28,7 @@ import gui.GuiBuilder;
 import ij.*;
 import ij.gui.*;
 import ij.plugin.PlugIn;
+import ij.plugin.MacroInstaller;
 
 /*
  * Created on 29-May-2006
@@ -44,6 +45,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
     private static final String THRESHOLD = "threshold";
     private static final String THRESHOLD_UNDO = "undo";
 
+    private static final String INTERPOLATOR = "interpolate";
 
     JList labelList;
     DefaultListModel labelListModel;
@@ -55,16 +57,19 @@ public class Segmentator_ extends JFrame implements PlugIn {
     public Segmentator_() {
         super("segmentator");
 
-        IJ.runPlugIn("ROIBrush_", ""); //load our drawing tool
-        IJ.runPlugIn("LabelBrush_", ""); //load our drawing tool
+        //IJ.runPlugIn("LabelBrush_", ""); //load our drawing tool
+        //IJ.runPlugIn("ROIBrush_", ""); //load our drawing tool
 
-//int toolId = Toolbar.getInstance().addTool("brush");
 
 
         Controllor controllor = new Controllor();
 
 
-        //new ij.plugin.MacroInstaller().install("Roi Brush Tool");
+        MacroInstaller installer = new ij.plugin.MacroInstaller();
+
+        installer.install(ROIBrush_.MACRO_CMD);
+        installer.install(LabelBrush_.MACRO_CMD);
+
 
         ImagePlus.addImageListener(controllor);
 
@@ -93,6 +98,9 @@ public class Segmentator_ extends JFrame implements PlugIn {
         maxThreshold = GuiBuilder.addLabeledNumericSpinner(this, "max", 255, 0, 255, controllor);
 
         GuiBuilder.add2Command(this, THRESHOLD, THRESHOLD, THRESHOLD_UNDO, THRESHOLD_UNDO, controllor);
+
+        GuiBuilder.addCommand(this, INTERPOLATOR, INTERPOLATOR, controllor);
+
 
         pack();
     }
@@ -212,8 +220,8 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
 
             } else if (e.getActionCommand().equals(SAVE_IMAGE)) {
-                //todo
-                IJ.showMessage("greyscale edits not implemented yet, you can  save your labels though...");
+                IJ.runPlugIn("AmiraMeshWriter_","");
+                //IJ.showMessage("greyscale edits not implemented yet, you can  save your labels though...");
             } else if (e.getActionCommand().equals(LOAD_LABELS)) {
                 IJ.runPlugIn("AmiraMeshReader_", "");
                 if (AmiraParameters.isAmiraLabelfield(IJ.getImage())) {
@@ -234,9 +242,10 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 }
             } else if (e.getActionCommand().equals(THRESHOLD)) {
                 threshold();
-
             } else if (e.getActionCommand().equals(THRESHOLD_UNDO)) {
                 LabelThresholder_.rollback();
+            }else if(e.getActionCommand().equals(INTERPOLATOR)){
+                IJ.runPlugIn("LabelInterpolator_","");
             }
 
             currentImage.updateAndDraw();
@@ -358,7 +367,6 @@ public class Segmentator_ extends JFrame implements PlugIn {
         }
 
         public void roiChanged(RoiEvent e) {
-            //todo
             //setLabel(currentImage);
         }
 

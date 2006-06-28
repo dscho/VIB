@@ -74,8 +74,6 @@ public class LabelInterpolator_ implements PlugIn {
             this.label = label;
 
             findLabelledSlices();
-
-
         }
 
         private void findLabelledSlices() {
@@ -182,6 +180,9 @@ public class LabelInterpolator_ implements PlugIn {
                     } else {
                         //one slice at x,y is labelled and the other is not
                         //we need to do some math to work out what is labelled and what is not
+
+                        //we draw a line from the labelled pixel we know to the closest
+                        //labelled pixel in the other slice
                         Line fillLine;
                         //a unmatch pixel in one img,
                         if (getPixel(x, y, labelledPixels1) == color) {
@@ -209,7 +210,6 @@ public class LabelInterpolator_ implements PlugIn {
                             int sliceDepth = ++index;
 
                             //create a plane that replesents the slice
-                            //(probably quicker to jump straight in to plane equation) todo
                             Plane slice = new Plane(0,0,1, -sliceDepth);
 
                             Point3d intersect = slice.intersection(fillLine);

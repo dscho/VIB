@@ -15,6 +15,27 @@ import java.awt.*;
  * Time: 00:28:54
  */
 public class LabelBrush_ implements PlugIn {
+    public static final String MACRO_CMD = "var brushWidth = 10;\n" +
+                    "var leftClick=16, alt=9;\n" +
+                    "\n" +
+                    "macro 'Label Brush Tool - C111O11ffC100T6c0aL' {\n" +
+                    " while (true) {\n" +
+                    "  getCursorLoc(x, y, z, flags);\n" +
+                    "  if (flags&leftClick==0) exit();\n" +
+                    "  if (flags&alt==0){\n" +
+                    "   call('LabelBrush_.label', x,y,z,flags,brushWidth);\n" +
+                    "  }else{\n" +
+                    "   call('LabelBrush_.unlabel', x,y,z,flags,brushWidth);\n" +
+                    "  }\n" +
+                    "  wait(10);\n" +
+                    " }\n" +
+                    "}\n" +
+                    "\n" +
+                    "macro 'Label Brush Tool Options...' {\n" +
+                    " brushWidth = getNumber('Label Brush Width (pixels):', brushWidth);\n" +
+                    "}";
+
+
     public void run(String arg) {
         System.out.println("run of LabelBrush_ ...");
         if (IJ.versionLessThan("1.37c"))
@@ -26,27 +47,7 @@ public class LabelBrush_ implements PlugIn {
         }
 
         MacroInstaller installer = new MacroInstaller();
-        String macros =
-                "var brushWidth = 10;\n" +
-                "var leftClick=16, alt=9;\n" +
-                "\n" +
-                "macro 'Label Brush Tool - C111O11ffC100T6c0aL' {\n" +
-                " while (true) {\n" +
-                "  getCursorLoc(x, y, z, flags);\n" +
-                "  if (flags&leftClick==0) exit();\n" +
-                "  if (flags&alt==0){\n" +
-                "   call('LabelBrush_.label', x,y,z,flags,brushWidth);\n" +
-                "  }else{\n" +
-                "   call('LabelBrush_.unlabel', x,y,z,flags,brushWidth);\n" +
-                "  }\n" +
-                "  wait(10);\n" +
-                " }\n" +
-                "}\n" +
-                "\n" +
-                "macro 'Label Brush Tool Options...' {\n" +
-                " brushWidth = getNumber('Label Brush Width (pixels):', brushWidth);\n" +
-                "}";
-        installer.install(macros);
+        installer.install(MACRO_CMD);
     }
 
     //methods in a macro accessable format

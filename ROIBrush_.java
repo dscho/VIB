@@ -14,33 +14,32 @@ import java.awt.*;
  * Time: 17:32:42
  */
 public class ROIBrush_ implements PlugIn {
+    public static final String MACRO_CMD = "var brushWidth = 10;\n" +
+                    "var leftClick=16, alt=9;\n" +
+                    "\n" +
+                    "macro 'Roi Brush Tool - C111o11ff' {\n" +
+                    " while (true) {\n" +
+                    "  getCursorLoc(x, y, z, flags);\n" +
+                    "  if (flags&leftClick==0) exit();\n" +
+                    "  if (flags&alt==0){\n" +
+                    "   call('ROIBrush_.label', x,y,z,flags,brushWidth);\n" +
+                    "  }else{\n" +
+                    "   call('ROIBrush_.unlabel', x,y,z,flags,brushWidth);\n" +
+                    "  }\n" +
+                    "  wait(10);\n" +
+                    " }\n" +
+                    "}\n" +
+                    "\n" +
+                    "macro 'Roi Brush Tool Options...' {\n" +
+                    " brushWidth = getNumber('Roi Brush Width (pixels):', brushWidth);\n" +
+                    "}";
 
     public void run(String arg) {
         if (IJ.versionLessThan("1.37c"))
             return;
 
         MacroInstaller installer = new MacroInstaller();
-        String macros =
-                "var brushWidth = 10;\n" +
-                "var leftClick=16, alt=9;\n" +
-                "\n" +
-                "macro 'Roi Brush Tool - C111o11ff' {\n" +
-                " while (true) {\n" +
-                "  getCursorLoc(x, y, z, flags);\n" +
-                "  if (flags&leftClick==0) exit();\n" +
-                "  if (flags&alt==0){\n" +
-                "   call('ROIBrush_.label', x,y,z,flags,brushWidth);\n" +
-                "  }else{\n" +
-                "   call('ROIBrush_.unlabel', x,y,z,flags,brushWidth);\n" +
-                "  }\n" +
-                "  wait(10);\n" +
-                " }\n" +
-                "}\n" +
-                "\n" +
-                "macro 'Roi Brush Tool Options...' {\n" +
-                " brushWidth = getNumber('Roi Brush Width (pixels):', brushWidth);\n" +
-                "}";
-        installer.install(macros);
+        installer.install(MACRO_CMD);
     }
 
     //methods in a macro accessable format
