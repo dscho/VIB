@@ -5,10 +5,6 @@ import ij.measure.Calibration;
 import ij.process.ImageProcessor;
 import math3d.Point3d;
 
-import java.awt.geom.GeneralPath;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.PathIterator;
-
 public class InterpolatedImage {
 	ImagePlus image;
 	int w,h,d;
@@ -414,6 +410,5 @@ public class InterpolatedImage {
 			}
 		return res;
 	}
-
 }
 
