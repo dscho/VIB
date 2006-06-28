@@ -8,6 +8,12 @@ package math3d;
 public class Plane {
     double a,b,c,d;   //plane eqn  ax + by + cz + d > 0
 
+    public Plane(double a, double b, double c, double d) {
+        this.a = a;
+        this.b = b;
+        this.c = c;
+        this.d = d;
+    }
 
     public Plane(Point3d p1, Point3d p2, Point3d p3, Point3d insidePoint){
         double x1=p1.x,x2=p2.x,x3=p3.x;

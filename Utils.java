@@ -19,68 +19,86 @@ import math3d.Point3d;
  * Time: 23:16:32
  */
 public class Utils {
-    public static final ShapeRoi toShapeRoi(PathIterator iter){
-            
-            ArrayList<Float> pathData = new ArrayList<Float>();
+    public static final ShapeRoi toShapeRoi(PathIterator iter) {
 
-            while(!iter.isDone()){
-                float[] values = new float[6];
-                int type = iter.currentSegment(values);
+        ArrayList<Float> pathData = new ArrayList<Float>();
 
-                pathData.add((float)type);
-                if(type == PathIterator.SEG_MOVETO || type == PathIterator.SEG_LINETO){
-                    pathData.add(values[0]);
-                    pathData.add(values[1]);
-                }else if(type == PathIterator.SEG_CLOSE){
-                    //no coords for this type
-                }
-                else{
-                    throw new UnsupportedOperationException("upgrade ShapeBuilder " + type);
-                }
-                iter.next();
+        while (!iter.isDone()) {
+            float[] values = new float[6];
+            int type = iter.currentSegment(values);
+
+            pathData.add((float) type);
+            if (type == PathIterator.SEG_MOVETO || type == PathIterator.SEG_LINETO) {
+                pathData.add(values[0]);
+                pathData.add(values[1]);
+            } else if (type == PathIterator.SEG_CLOSE) {
+                //no coords for this type
+            } else {
+                throw new UnsupportedOperationException("upgrade ShapeBuilder " + type);
             }
-            float [] floatRepresentation = new float[pathData.size()];
-            for (int i = 0; i < floatRepresentation.length; i++) {
-                floatRepresentation[i] = pathData.get(i);
-            }
-            return new ShapeRoi(floatRepresentation);
+            iter.next();
+        }
+        float[] floatRepresentation = new float[pathData.size()];
+        for (int i = 0; i < floatRepresentation.length; i++) {
+            floatRepresentation[i] = pathData.get(i);
+        }
+        return new ShapeRoi(floatRepresentation);
 
-    }           
+    }
 
-    public static class Spiral implements Iterator<Point>{
+    public static class Spiral implements Iterator<Point> {
 
-        private Point current;
-
-        int depth=0;
+        private Point currentCorner;
+        private Point currentPoint;
+        int depth = 0;
 
         boolean applyX = false;
 
 
         public Spiral(Point start) {
-            this.current = start;
+            this.currentPoint = new Point(start.x, start.y);//just make sure it is not the start so the first step will take us to the start point
+            this.currentCorner = new Point(start.x, start.y);
         }
 
         public boolean hasNext() {
             return true;
         }
 
-        //returns point sin an outward spiral from and including the start point
-        public Point next() {
+        //returns corner points in an outward spiral from and including the start point
+
+        public Point nextCorner() {
 
             //the decision to add or subracts depending whether depth is divisable by 2 or not
-            int modAmount = depth%2==0?depth:-depth;
+            int modAmount = depth % 2 == 0 ? depth : -depth;
 
-            if(applyX){
+            if (applyX) {
                 applyX = false;
-                current.x = current.x + modAmount;
-            }
-            else{
+                currentCorner.x = currentCorner.x + modAmount;
+            } else {
                 applyX = true;
-                current.y = current.y + modAmount;
+                currentCorner.y = currentCorner.y + modAmount;
                 depth++; //increpent depth every other
             }
 
-            return current;
+            return currentCorner;
+        }
+
+        //returns point sin an outward spiral from and including the start point
+        public Point next() {
+            if (currentPoint.equals(currentCorner)) {
+                //we have reached the corner
+                currentCorner = nextCorner();
+            }
+            //we need to bring the point nearer to the corner
+            int xDiff = currentPoint.x - currentCorner.x;
+            if (xDiff > 0) currentPoint.x--;
+            if (xDiff < 0) currentPoint.x++;
+
+            int yDiff = currentPoint.y - currentCorner.y;
+            if (yDiff > 0) currentPoint.y--;
+            if (yDiff < 0) currentPoint.y++;
+
+            return currentPoint;
         }
 
         public void remove() {
@@ -89,8 +107,8 @@ public class Utils {
     }
 
     public static void main(String[] args) {
-        Spiral s = new Spiral(new Point(5,5));
-        for(int i=0;i<5; i++){
+        Spiral s = new Spiral(new Point(5, 5));
+        for (int i = 0; i < 20; i++) {
             System.out.println(s.next());
         }
     }

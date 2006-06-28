@@ -15,6 +15,18 @@ import math3d.*;
 
 /**
  * Generates label data for unlabelled slices based on the data in the nearest slices
+ *
+ * Algorithm:
+ * First unlabelled slices are differentiated from labelled ones via
+ * almost exhastive search of all pixels
+ * (implemented in StackData)
+ *
+ * Then a list interpolations are constructed. These are a list og unlabelled slices with labelled slices either end
+ *
+ * These interpolations are then interpolated.
+ * Pixels that appear in a position in one labelled slice but not the other slice are the tricky part
+ * a line is drawn from the pixel to its nearest neighbour in the other slice. All voxels that are touched by this line are colored
+ *
  * User: Tom Larkworthy
  * Date: 23-Jun-2006
  * Time: 19:11:01
@@ -99,8 +111,8 @@ public class LabelInterpolator_ implements PlugIn {
                 inter.labelledPixels1 = (byte[]) labelsData.getStack().getProcessor(firstIndex).getPixels();
                 inter.labelledPixels2 = (byte[]) labelsData.getStack().getProcessor(secondIndex).getPixels();
 
-                inter.outline1 = model.getLabelCanvas().getOutline(firstIndex, label);
-                inter.outline2 = model.getLabelCanvas().getOutline(secondIndex, label);
+                inter.bounds =   model.getLabelCanvas().getOutline(firstIndex, label).getBounds();
+                inter.bounds.add(model.getLabelCanvas().getOutline(secondIndex, label).getBounds());
 
 
                 for (int j = firstIndex + 1; j < secondIndex; j++) {
@@ -127,8 +139,7 @@ public class LabelInterpolator_ implements PlugIn {
         int width;
         int color;
 
-        GeneralPath outline1;
-        GeneralPath outline2;
+        Rectangle bounds;
 
         ArrayList<byte[]> interpolatedPixels = new ArrayList<byte[]>();
 
@@ -154,16 +165,9 @@ public class LabelInterpolator_ implements PlugIn {
          * runs the interpolation algorithm
          */
         void interpolate() {
-            Rectangle bounds1 = outline1.getBounds();
-            Rectangle bounds2 = outline2.getBounds();
 
-            Rectangle totalBounds = new Rectangle(bounds1);
-            totalBounds.add(bounds2);
-
-            //Polygon3d tightBounds = Utils.buildPolygon(outline1, firstIndex, outline2, secondIndex);
-
-            for (int x = totalBounds.x; x < totalBounds.x + totalBounds.width; x++) {
-                for (int y = totalBounds.y; y < totalBounds.y + totalBounds.height; y++) {
+            for (int x = bounds.x; x < bounds.x + bounds.width; x++) {
+                for (int y = bounds.y; y < bounds.y + bounds.height; y++) {
                     //if both end don't have a pixel at the location
                     //then we know that the interpolated image won't weith
                     if (getPixel(x, y, labelledPixels1) != color && getPixel(x, y, labelledPixels2) != color) {
@@ -182,7 +186,7 @@ public class LabelInterpolator_ implements PlugIn {
                         //a unmatch pixel in one img,
                         if (getPixel(x, y, labelledPixels1) == color) {
                             //unmatched in lowest slice
-                            Point oppPoint = getNearest(new Point(x, y), labelledPixels2, width, color,100);
+                            Point oppPoint = getNearest(new Point(x, y), labelledPixels2, width, color);
 
                             if(oppPoint == null) continue;
 
@@ -190,13 +194,13 @@ public class LabelInterpolator_ implements PlugIn {
                             fillLine = new Line(new Point3d(x, y, firstIndex), new Point3d(oppPoint.x, oppPoint.y, secondIndex));
                         } else {
                             //unmatched in highest slice
-                            Point oppPoint = getNearest(new Point(x, y), labelledPixels1, width, color,100);
+                            Point oppPoint = getNearest(new Point(x, y), labelledPixels1, width, color);
                             if(oppPoint == null) continue;
                             //draw a line between the nearest neighbours
                             fillLine = new Line(new Point3d(x, y, secondIndex), new Point3d(oppPoint.x, oppPoint.y, firstIndex));
                         }
 
-                        System.out.println("fillLine = " + fillLine);
+                        //System.out.println("fillLine = " + fillLine);
 
                         //now we need to see where this line intesects out unlabelled slices
                         //need to check each slice
@@ -206,17 +210,18 @@ public class LabelInterpolator_ implements PlugIn {
 
                             //create a plane that replesents the slice
                             //(probably quicker to jump straight in to plane equation) todo
-                            Plane slice = new Plane(new Point3d(0, 0, sliceDepth),
-                                    new Point3d(0, 1, sliceDepth),
-                                    new Point3d(1, 0, sliceDepth), new Point3d(1, 0, -sliceDepth));
+                            Plane slice = new Plane(0,0,1, -sliceDepth);
 
                             Point3d intersect = slice.intersection(fillLine);
                             //System.out.println("intersect = " + intersect);
 
-                            setPixel(Math.round((float) intersect.x), Math.round((float) intersect.y), color, pixels);
+                            setPixel((int)Math.floor(intersect.x), (int)Math.ceil(  intersect.y), color, pixels);
+                            setPixel((int)Math.floor(intersect.x), (int)Math.floor( intersect.y), color, pixels);
+                            setPixel((int)Math.ceil( intersect.x), (int)Math.floor( intersect.y), color, pixels);
+                            setPixel((int)Math.ceil( intersect.x), (int)Math.ceil( intersect.y), color, pixels);
 
                         }
-                        System.out.println("filled");
+                        //System.out.println("filled");
                     }
                 }
             }
@@ -226,23 +231,24 @@ public class LabelInterpolator_ implements PlugIn {
 
         /**
          * finds the nearest point to the one supplied with the specified colour in the supplied pixel data
-         *
+         * performs an outward spiral search starting with the start point
          * @param point
          * @param pixels
          * @param color
          * @return
          */
-        private Point getNearest(Point point, byte[] pixels, int width, int color, int max) {
+        private Point getNearest(Point point, byte[] pixels, int width, int color) {
             //should search in an ever increasing spiral circles to find the neairbour
             Utils.Spiral spiral = new Utils.Spiral(point);
 
             int count = 0;
             while (true) {
                 Point tstPoint = spiral.next();
+                /*
                 if(count++ > max) {
-                    System.out.println("spiral search failed");
+                    System.out.println("spiral search failed " + point);
                     return null;
-                }
+                } */
 
                 if (tstPoint.x < 0 || tstPoint.x >= width) continue;
                 if (tstPoint.y < 0 || tstPoint.y >= pixels.length / width) continue;
