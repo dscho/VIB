@@ -77,50 +77,30 @@ public class FastMatrix {
 
     public FastMatrix composeWith( FastMatrix followedBy ) {
 
-        if( followedBy.isJustTranslation() ) {
+        // Alias this and followedBy to A and B, with entries a_ij...
 
-            // Then we can just add on the translation from the second
-            // transformation...
+        FastMatrix A = this;
+        FastMatrix B = followedBy;
 
-            FastMatrix result = new FastMatrix( this );
-            result.a03 += followedBy.a03;
-            result.a13 += followedBy.a13;
-            result.a23 += followedBy.a23;
+        FastMatrix result = new FastMatrix();
 
-            return result;
+        result.a00 = (A.a00 * B.a00) + (A.a10 * B.a01) + (A.a20 * B.a02);
+        result.a10 = (A.a00 * B.a10) + (A.a10 * B.a11) + (A.a20 * B.a12);
+        result.a20 = (A.a00 * B.a20) + (A.a10 * B.a21) + (A.a20 * B.a22);
 
-        } else if( this.noTranslation() ) {
+        result.a01 = (A.a01 * B.a00) + (A.a11 * B.a01) + (A.a21 * B.a02);
+        result.a11 = (A.a01 * B.a10) + (A.a11 * B.a11) + (A.a21 * B.a12);
+        result.a21 = (A.a01 * B.a20) + (A.a11 * B.a21) + (A.a21 * B.a22);
 
-            // Then we can multiply the linear parts of the
-            // transformation.
+        result.a02 = (A.a02 * B.a00) + (A.a12 * B.a01) + (A.a22 * B.a02);
+        result.a12 = (A.a02 * B.a10) + (A.a12 * B.a11) + (A.a22 * B.a12);
+        result.a22 = (A.a02 * B.a20) + (A.a12 * B.a21) + (A.a22 * B.a22);
 
-            FastMatrix result = new FastMatrix();
-            FastMatrix f = followedBy;
+        result.a03 = (A.a03 * B.a00) + (A.a13 * B.a01) + (A.a23 * B.a02) + B.a03;
+        result.a13 = (A.a03 * B.a10) + (A.a13 * B.a11) + (A.a23 * B.a12) + B.a13;
+        result.a23 = (A.a03 * B.a20) + (A.a13 * B.a21) + (A.a23 * B.a22) + B.a23;
 
-            result.a00 = f.a00 * a00 + f.a01 * a10 + f.a02 * a20;
-            result.a10 = f.a10 * a00 + f.a11 * a10 + f.a12 * a20;
-            result.a20 = f.a20 * a00 + f.a21 * a10 + f.a22 * a20;
-
-            result.a01 = f.a00 * a01 + f.a01 * a11 + f.a02 * a21;
-            result.a11 = f.a10 * a01 + f.a11 * a11 + f.a12 * a21;
-            result.a21 = f.a20 * a01 + f.a21 * a11 + f.a22 * a21;
-
-            result.a02 = f.a00 * a02 + f.a01 * a12 + f.a02 * a22;
-            result.a12 = f.a10 * a02 + f.a11 * a12 + f.a12 * a22;
-            result.a22 = f.a20 * a02 + f.a21 * a12 + f.a22 * a22;
-
-            result.a03 = f.a03;
-            result.a13 = f.a13;
-            result.a23 = f.a23;
-
-            return result;
-
-        } else {
-
-            return null;
-
-        }
-
+        return result;
     }
 
     /* This decomposes the transformation into the 3x3 part (the first
@@ -204,6 +184,12 @@ public class FastMatrix {
         this.x = (double)(p.x * a00 + p.y * a01 + p.z * a02 + a03);
         this.y = (double)(p.x * a10 + p.y * a11 + p.z * a12 + a13);
         this.z = (double)(p.x * a20 + p.y * a21 + p.z * a22 + a23);
+    }
+
+    public void apply( double [] p ) {
+        this.x = (double)(p[0] * a00 + p[1] * a01 + p[2] * a02 + a03);
+        this.y = (double)(p[0] * a10 + p[1] * a11 + p[2] * a12 + a13);
+        this.z = (double)(p[0] * a20 + p[1] * a21 + p[2] * a22 + a23);
     }
 
     public void applyWithoutTranslation(double x, double y, double z) {

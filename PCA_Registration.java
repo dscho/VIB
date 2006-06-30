@@ -4,6 +4,8 @@ import ij.gui.*;
 import ij.plugin.*;
 import ij.plugin.filter.*;
 
+import ij.measure.Calibration;
+
 import java.awt.Color;
 import java.io.*;
 
@@ -251,8 +253,18 @@ class PrincipalComponents {
 
     }
 
-    public PrincipalComponents( double [] values, double [][] vectors, double meanXYZ[] ) {
+    public FastMatrix correctAspect;
 
+    public PrincipalComponents( double [] values,
+                                double [][] vectors,
+                                double meanXYZ[],
+                                double relativeSpacingX,
+                                double relativeSpacingY,
+                                double relativeSpacingZ ) {
+
+        correctAspect = (new FastMatrix(1.0)).scale( relativeSpacingX,
+                                                     relativeSpacingY,
+                                                     relativeSpacingZ );
         // The only subtlety here is that we sort the passed-in
         // eigevectors and eigenvalues based on the absolute size of
         // the eigenvalues.
@@ -362,13 +374,13 @@ public class PCA_Registration implements PlugIn {
 
         Color foregroundColor = Toolbar.getForegroundColor();
 
-        Color midColor = new Color( (foregroundColor.getRed() * 2) / 3,
-                                    (foregroundColor.getGreen() * 2) / 3,
-                                    (foregroundColor.getBlue() * 2) / 3 );
-
-        Color lowColor = new Color( foregroundColor.getRed() / 3,
+        Color midColor = new Color( foregroundColor.getRed() / 3,
                                     foregroundColor.getGreen() / 3,
                                     foregroundColor.getBlue() / 3 );
+
+        Color lowColor = new Color( foregroundColor.getRed() / 4,
+                                    foregroundColor.getGreen() / 4,
+                                    foregroundColor.getBlue() / 4 );
 
         switch( index ) {
         case 0:
@@ -396,6 +408,23 @@ public class PCA_Registration implements PlugIn {
             int height = image.getHeight();
             int depth = image.getStackSize();
 
+            Calibration calibration = image.getCalibration();
+
+            double x_spacing = 1.0;
+            double y_spacing = 1.0;
+            double z_spacing = 1.0;
+
+            if( (calibration.pixelWidth != 0.0) &&
+                (calibration.pixelHeight != 0.0) &&
+                (calibration.pixelDepth != 0.0) ) {
+
+                x_spacing = 1.0;
+                y_spacing = calibration.pixelHeight / calibration.pixelWidth;
+                z_spacing = calibration.pixelDepth / calibration.pixelWidth;
+            }
+
+            System.out.println( "Aspect ratio is: " + x_spacing + ", " + y_spacing + ", " + z_spacing );
+
             System.out.println( "Number below threshold is: " + threshold.belowThreshold );
             int overAndAtThreshold = (width * height * depth) - (int)threshold.belowThreshold;
             System.out.println( "Number over and at threshold is: " + overAndAtThreshold );
@@ -418,25 +447,29 @@ public class PCA_Registration implements PlugIn {
             for( int z = 0; z < image.getStackSize(); ++z )
                 data[z] = ( byte [] ) stack.getPixels( z + 1 );
 
+            double x_scaled, y_scaled, z_scaled;
+
             // Calculate the sum of each dimension...
 
             for( int z = 0; z < image.getStackSize(); ++z ) {
-
-                for( int y = 0; y < image.getHeight(); ++y )
+                z_scaled = z * z_spacing;
+                for( int y = 0; y < image.getHeight(); ++y ) {
+                    y_scaled = y * y_spacing;
                     for( int x = 0; x < image.getWidth(); ++x ) {
-
+                        x_scaled = x;
                         byte value = data[ z ][ y * width + x ];
                         int value_int = (int)( value & 0xFF );
 
                         if( value_int >= threshold.value ) {
-                            sum[0] += x;
-                            sum[1] += y;
-                            sum[2] += z;
+                            sum[0] += x_scaled;
+                            sum[1] += y_scaled;
+                            sum[2] += z_scaled;
                             i ++;
 
                         }
 
                     }
+                }
             }
 
             System.out.println( "Considered " + i + " points..." );
@@ -457,18 +490,19 @@ public class PCA_Registration implements PlugIn {
             double [][] covariance = new double[vectorLength][vectorLength];
 
             for( int z = 0; z < image.getStackSize(); ++z ) {
-
-                for( int y = 0; y < image.getHeight(); ++y )
+                z_scaled = z * z_spacing;
+                for( int y = 0; y < image.getHeight(); ++y ) {
+                    y_scaled = y * y_spacing;
                     for( int x = 0; x < image.getWidth(); ++x ) {
-
+                        x_scaled = x;
                         byte value = data[ z ][ y * width + x ];
                         int value_int = (int)( value & 0xFF );
 
                         if( value_int >= threshold.value ) {
 
-                            double diff0 = x - mean[0];
-                            double diff1 = y - mean[1];
-                            double diff2 = z - mean[2];
+                            double diff0 = x_scaled - mean[0];
+                            double diff1 = y_scaled - mean[1];
+                            double diff2 = z_scaled - mean[2];
 
                             variance[0] += diff0 * diff0;
                             variance[1] += diff1 * diff1;
@@ -488,6 +522,7 @@ public class PCA_Registration implements PlugIn {
                         }
 
                     }
+                }
             }
 
             for( int j = 0; j < vectorLength; ++j ) {
@@ -557,13 +592,17 @@ public class PCA_Registration implements PlugIn {
             PrincipalComponents pcaResults = new PrincipalComponents(
                 eigenValues,
                 vectorsPacked,
-                mean );
+                mean,
+                x_spacing,
+                y_spacing,
+                z_spacing );
 
             System.out.println( pcaResults );
 
-            if( drawAxes ) {
+            // if( drawAxes ) {
+            if( true ) {
 
-                assert false; // This was for early debugging; if you
+             // assert false; // This was for early debugging; if you
                               // draw the axes now, it'll disrupt the
                               // crude scaling done later...
 
@@ -582,23 +621,23 @@ public class PCA_Registration implements PlugIn {
                     imp.setColor( indexToColor( 0 ) );
 
                     imp.moveTo( (int)( mean[0] ),
-                                (int)( mean[1] ) );
+                                (int)( mean[1] / y_spacing) );
                     imp.lineTo( (int) ((mean[0]) + big0[0]),
-                                (int) ((mean[1]) + big0[1]) );
+                                (int) ((mean[1] / y_spacing) + big0[1]) );
 
                     imp.setColor( indexToColor( 1 ) );
 
                     imp.moveTo( (int)( mean[0] ),
-                                (int)( mean[1] ) );
+                                (int)( mean[1] / y_spacing ) );
                     imp.lineTo( (int)( (mean[0]) + big1[0] ),
-                                (int)( (mean[1]) + big1[1] ) );
+                                (int)( (mean[1] / y_spacing) + big1[1] ) );
 
                     imp.setColor( indexToColor( 2 ) );
 
                     imp.moveTo( (int)( mean[0] ),
-                                (int)( mean[1] ) );
+                                (int)( mean[1] / y_spacing) );
                     imp.lineTo( (int)( (mean[0]) + big2[0] ),
-                                (int)( (mean[1]) + big2[1] ) );
+                                (int)( (mean[1] / y_spacing) + big2[1] ) );
 
                 }
 
@@ -672,10 +711,32 @@ public class PCA_Registration implements PlugIn {
 
     }
 
-    public int aboveThresholdLengthAlong( double [] v,
-                                          double [] start_at,
+    public int aboveThresholdLengthAlong( PrincipalComponents pcaResults,
+                                          int eigenvectorNumber,
                                           ImagePlus image,
                                           Threshold threshold ) {
+
+        if( (eigenvectorNumber < 0) || (eigenvectorNumber >= 3) )
+            throw new IllegalArgumentException( "Eigenvector number must be 0, 1 or 2 (not " +
+                                                eigenvectorNumber + ")" );
+
+        FastMatrix backFromCorrectAspect = pcaResults.correctAspect.inverse();
+
+        backFromCorrectAspect.apply( pcaResults.vectors[eigenvectorNumber] );
+
+        double [] v = new double[3];
+
+        v[0] = backFromCorrectAspect.x;
+        v[1] = backFromCorrectAspect.y;
+        v[2] = backFromCorrectAspect.z;
+
+        backFromCorrectAspect.apply( pcaResults.meanXYZ );
+
+        double [] start_at = new double[3];
+
+        start_at[0] = backFromCorrectAspect.x;
+        start_at[1] = backFromCorrectAspect.y;
+        start_at[2] = backFromCorrectAspect.z;
 
         ImageStack stack = image.getStack();
 
@@ -864,13 +925,13 @@ public class PCA_Registration implements PlugIn {
 
         int lengthIn0, lengthIn1;
 
-        lengthIn0 = aboveThresholdLengthAlong( templatePCs.vectors[2],
-                                               templatePCs.meanXYZ,
+        lengthIn0 = aboveThresholdLengthAlong( templatePCs,
+                                               2,
                                                sourceImages[0],
                                                threshold0 );
 
-        lengthIn1 = aboveThresholdLengthAlong( domainPCs.vectors[2],
-                                               domainPCs.meanXYZ,
+        lengthIn1 = aboveThresholdLengthAlong( domainPCs,
+                                               2,
                                                sourceImages[1],
                                                threshold1 );
 
@@ -899,23 +960,21 @@ public class PCA_Registration implements PlugIn {
 
             transformations[i] = new OrderedTransformations();
 
+            transformations[i].add( domainPCs.correctAspect );
             transformations[i].add( translateDomainToMean );
             transformations[i].add( rotations[i] );
             transformations[i].add( scaling );
             transformations[i].add( translateDomainBackFromMean );
             transformations[i].add( finalTranslationsMatrix );
+            transformations[i].add( templatePCs.correctAspect.inverse() );
 
-            /*
             System.out.println( "... before reduction, transform has " + transformations[i].number()
                                 + " elements:\n" + transformations[i] );
-            */
 
             transformations[i].reduce( );
 
-            /*
             System.out.println( "... after reduction, transform has " + transformations[i].number()
                                 + " elements:\n" + transformations[i] );
-            */
 
             scores[i] = transformations[i].scoreTransformation(
                 sourceImages[0],
