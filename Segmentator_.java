@@ -32,6 +32,10 @@ import ij.plugin.MacroInstaller;
 
 /*
  * Created on 29-May-2006
+ RigidRegistration results after 2 hours of first canton
+-5.46005480365032  1.5882993139839305  3.725043376523524  3.0612490934121572  3.4673867538095906  2.4252573345013158
+    -4898.3026368170795 2631.3418518058224 2626.009767456783 67008.35532186428 67125.35178189375 67015.18689711517 15.216110139797248 19.561286307352486 2.4120241461431644
+
  */
 
 public class Segmentator_ extends JFrame implements PlugIn {
@@ -60,16 +64,14 @@ public class Segmentator_ extends JFrame implements PlugIn {
         //IJ.runPlugIn("LabelBrush_", ""); //load our drawing tool
         //IJ.runPlugIn("ROIBrush_", ""); //load our drawing tool
 
-
-
         Controllor controllor = new Controllor();
 
 
         MacroInstaller installer = new ij.plugin.MacroInstaller();
 
-        installer.install(ROIBrush_.MACRO_CMD);
-        installer.install(LabelBrush_.MACRO_CMD);
 
+        installer.install(LabelBrush_.MACRO_CMD);
+        installer.install(ROIBrush_.MACRO_CMD);
 
         ImagePlus.addImageListener(controllor);
 
