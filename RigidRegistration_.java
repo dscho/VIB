@@ -31,6 +31,7 @@ public class RigidRegistration_ implements PlugInFilter {
         public void run(ImageProcessor ip) {
 		gd = new GenericDialog("Registration Parameters");
 		gd.addStringField("initialTransform", "", 30);
+        gd.addNumericField("n initial positions to try", 1, 0);
 		//gd.addStringField("initialTransform", "-0.3370151014225546 -0.9288659560262381 0.15371680828266013 755.8137088210128   0.941495355781988 -0.3320225080549833 0.057858008830467406 103.04560651653787   -0.0027048944698707866 0.16422268381786176 0.9864195829694206 -58.1446172018889", 30);
 		int level = 0;
 		while ((image.getWidth() >> level) > 20)
@@ -69,6 +70,7 @@ public class RigidRegistration_ implements PlugInFilter {
 			return;
 
 		String initial = gd.getNextString();
+        int nInitialPositions = (int) gd.getNextNumber();
 		double tolerance = gd.getNextNumber();
 		level = (int)gd.getNextNumber();
 		int stopLevel = (int)gd.getNextNumber();
@@ -146,7 +148,38 @@ public class RigidRegistration_ implements PlugInFilter {
 			Optimizer opt = new Optimizer(trans, level, stopLevel,
 					tolerance);
 			opt.eulerParameters = params;
-			matrix = opt.doRegister(level - stopLevel);
+
+            if(opt.eulerParameters == null){
+                FastMatrix [] results = new FastMatrix[nInitialPositions];
+                double badnees[] = new double[nInitialPositions];
+
+                for(int i = 0; i < nInitialPositions; i++){
+                    opt.eulerParameters = null;
+                    results[i] = opt.doRegister(level - stopLevel, i);
+                    badnees[i] = opt.calculateBadness(results[i]);   //todo probably recalculated wastefully
+
+                }
+
+                //now select the best
+                double best = Double.MAX_VALUE;
+                int bestIndex = -1;
+                for (int i = 0; i < badnees.length; i++) {
+                    System.out.println((i+1) + " badness was " + badnees[i]);
+                    if(badnees[i] < best){
+                        best = badnees[i];
+                        bestIndex = i;
+                    }
+                }
+
+
+                matrix = results[bestIndex];
+                System.out.println("winner was " + (bestIndex+1) + " with " + matrix);
+
+            }else{
+                matrix = opt.doRegister(level - stopLevel);
+            }
+
+
 			opt = null;
 		} else
 			matrix = FastMatrix.parseMatrix(initial);
@@ -286,7 +319,18 @@ public class RigidRegistration_ implements PlugInFilter {
 			tolerance = tol;
 		}
 
-		public FastMatrix doRegister(int level) {
+        public FastMatrix doRegister(int level) {
+		    return doRegister(level, 0);
+		}
+
+        /**
+         *
+         * @param level
+         * @param initialGuessPlace 0 uses the best distance measure from the initial set of guesses if EulerParams were not supplied
+         * @return
+         */
+
+		public FastMatrix doRegister(int level, int initialGuessPlace) {
 			if (level > 0) {
 				TransformedImage backup = t;
 				t = t.resample(2);
@@ -303,6 +347,9 @@ public class RigidRegistration_ implements PlugInFilter {
 			int minFactor = (1 << start);
 			angleMax = Math.PI / 4 * factor / minFactor;
 			translateMax = 20.0 * factor / minFactor;
+            if(eulerParameters == null){
+                eulerParameters = searchInitialEulerParams()[initialGuessPlace];
+            }
 			return doRegister(tolerance / factor);
 		}
 
