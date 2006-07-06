@@ -63,7 +63,7 @@ public class FastMatrix {
 		toTest.a13 -= a13;
 		toTest.a23 -= a23;
 		
-		return isIdentity();
+		return toTest.isIdentity();
 		
 	}
 	
