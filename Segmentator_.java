@@ -70,8 +70,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
         MacroInstaller installer = new ij.plugin.MacroInstaller();
 
 
-        installer.install(LabelBrush_.MACRO_CMD);
-        installer.install(ROIBrush_.MACRO_CMD);
+        installer.install(LabelBrush_.MACRO_CMD + "\n" + ROIBrush_.MACRO_CMD);
 
         ImagePlus.addImageListener(controllor);
 

@@ -5,25 +5,14 @@ package gui;
 
 
 import ij.IJ;
+import ij.io.DirectoryChooser;
 
-import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.GridLayout;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.JTextField;
-import javax.swing.ListModel;
-import javax.swing.SpinnerModel;
-import javax.swing.SpinnerNumberModel;
+import javax.swing.*;
 import javax.swing.event.ChangeListener;
 
 public class GuiBuilder {
@@ -51,19 +40,22 @@ public class GuiBuilder {
 				1); // step
 		JSpinner spinner = addLabeledSpinner(c, label, model);
 
-        spinner.addChangeListener(controllor);
+		if(controllor != null) spinner.addChangeListener(controllor);
 		return spinner;
 	}
 	
 	public static JSpinner addLabeledSpinner(Container c, String label,
 			SpinnerModel model) {
 		JLabel l = new JLabel(label);
-		c.add(l);
+
+		Box b = new Box(BoxLayout.X_AXIS);
+		b.add(l);
 
 		JSpinner spinner = new JSpinner(model);
 		l.setLabelFor(spinner);
-		c.add(spinner);
+		b.add(spinner);
 
+		c.add(b);
 		return spinner;
 	}
 
@@ -92,5 +84,108 @@ public class GuiBuilder {
 		c.add(p);
 	}
 
+	public static JCheckBox addCheckBox(Container c, String label) {
+		JCheckBox check = new JCheckBox();
+		check.setSelected(false);
 
+		Box box = new Box(BoxLayout.X_AXIS);
+		box.add(new JLabel(label));
+		box.add(Box.createGlue());
+		box.add(check);
+
+		c.add(box);
+		return check;
+	}
+
+
+	public static JTextField addDirectoryField(Container container, String label) {
+		final JTextField field = new JTextField();
+
+		Box box = new Box(BoxLayout.X_AXIS);
+		box.add(new JLabel(label));
+		box.add(field);
+
+		field.setPreferredSize(new Dimension(10000, 25));
+		field.setMaximumSize(new Dimension(10000, 25));
+
+
+		JButton dialogButton = new JButton("...");
+
+		dialogButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser chooser = new JFileChooser(IJ.getDirectory("current"));
+				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				chooser.showOpenDialog(null);
+				File selected = chooser.getSelectedFile();
+				if(selected!=null){
+					field.setText(selected.getPath());
+				}
+			}
+		});
+
+		box.add(dialogButton);
+
+		container.add(box);
+		return field;
+	}
+
+	public static JTextField addFileField(Container container, String label) {
+		final JTextField field = new JTextField();
+
+		Box box = new Box(BoxLayout.X_AXIS);
+		box.add(new JLabel(label));
+		box.add(field);
+
+		field.setPreferredSize(new Dimension(10000, 25));
+		field.setMaximumSize(new Dimension(10000, 25));
+
+
+		JButton dialogButton = new JButton("...");
+
+		dialogButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser chooser = new JFileChooser(IJ.getDirectory("current"));
+				chooser.showOpenDialog(null);
+				File selected = chooser.getSelectedFile();
+				if(selected!=null){
+					field.setText(selected.getPath());
+				}
+			}
+		});
+
+		box.add(dialogButton);
+
+		container.add(box);
+		return field;
+	}
+
+	public static JTextField addFileSaveField(Container container, String label) {
+		final JTextField field = new JTextField();
+
+		Box box = new Box(BoxLayout.X_AXIS);
+		box.add(new JLabel(label));
+		box.add(field);
+
+		field.setPreferredSize(new Dimension(10000, 25));
+		field.setMaximumSize(new Dimension(10000, 25));
+
+
+		JButton dialogButton = new JButton("...");
+
+		dialogButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser chooser = new JFileChooser(IJ.getDirectory("current"));
+				chooser.showSaveDialog(null);
+				File selected = chooser.getSelectedFile();
+				if(selected!=null){
+					field.setText(selected.getPath());
+				}
+			}
+		});
+
+		box.add(dialogButton);
+
+		container.add(box);
+		return field;
+	}
 }

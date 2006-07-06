@@ -79,9 +79,9 @@ public class RigidRegistration_ implements PlugInFilter {
 		boolean showTransformed = gd.getNextBoolean();
 		boolean showDifferenceImage = gd.getNextBoolean();
 		int mat1 = (isLabels ? gd.getNextChoiceIndex() : -1);
-		ImagePlus templ = WindowManager.getImage(gd.getNextChoice());
+		ImagePlus template = WindowManager.getImage(gd.getNextChoice());
 		int mat2 = (isLabels ? gd.getNextChoiceIndex() : -1);
-		TransformedImage trans = new TransformedImage(templ, image);
+		TransformedImage trans = new TransformedImage(template, image);
 		if (isLabels) {
 			trans.measure = new distance.TwoValues(mat1, mat2);
 			VIB.println("working on materials " + mat1 + " "
@@ -102,15 +102,55 @@ public class RigidRegistration_ implements PlugInFilter {
 					new distance.Euclidean();
 		}
 
+			FastMatrix matrix = rigidRegistration(trans, materialBBox, initial, mat1, mat2, noOptimization, level, stopLevel, tolerance, nInitialPositions, showTransformed, showDifferenceImage);
+
+			if (!Interpreter.isBatchMode())
+			WindowManager.setWindow(new TextWindow("Matrix",
+						matrix.toStringForAmira(),
+						550, 150));
+
+		lastResult = matrix;
+	}
+
+	/**
+	 *
+	 *
+	 * @param trans TransformedImage, needs the .measure setup correctly along with the two images setup
+	 * @param materialBBox  //can be empty
+	 * @param mat1  //used in material distance measures
+	 * @param mat2  //used in material distance measures
+	 * @param initial  //can be empty, then 24 orientations are tried
+	 * @param noOptimization
+	 * @param level //start level
+	 * @param stopLevel //end level
+	 * @param tolerance
+	 * @param nInitialPositions  //number of promising initial positions to optimize further
+	 * @param showTransformed  boolean whether to show the resultant transofrmed image or not
+	 * @param showDifferenceImage boolean whether to show the resultant transofrmed image or not
+	 * @return The best FastMatrix
+	 */
+	public FastMatrix rigidRegistration(
+										 TransformedImage trans,
+										 String materialBBox,
+										 String initial,
+										 int mat1,
+										 int mat2,
+										 boolean noOptimization,
+										 int level,
+										 int stopLevel,
+										 double tolerance,
+										 int nInitialPositions,
+										 boolean showTransformed,
+										 boolean showDifferenceImage) {
 		if (mat1 >= 0)
 			trans.narrowSearchToMaterial(mat1, 10);
 
 		Point3d center = null;
-		if (!materialBBox.equals(""))
+		if (materialBBox!=null && !materialBBox.equals(""))
 			center = parseMaterialBBox(trans, materialBBox);
 
 		double[] params = null;
-		if (! initial.equals("")) {
+		if (initial!=null && ! initial.equals("")) {
 			params = new double[9];
 			try {
 				if (center == null)
@@ -120,7 +160,7 @@ public class RigidRegistration_ implements PlugInFilter {
 				FastMatrix m = FastMatrix.parseMatrix(
 						initial);
 				if (mat2 >= 0) {
-					/* 
+					/*
 					 * If registering labelfields, make
 					 * sure that the center of gravity
 					 * is transformed onto orig's
@@ -164,7 +204,7 @@ public class RigidRegistration_ implements PlugInFilter {
                 double best = Double.MAX_VALUE;
                 int bestIndex = -1;
                 for (int i = 0; i < badnees.length; i++) {
-                    System.out.println((i+1) + " badness was " + badnees[i]);
+
                     if(badnees[i] < best){
                         best = badnees[i];
                         bestIndex = i;
@@ -196,13 +236,7 @@ public class RigidRegistration_ implements PlugInFilter {
 		trans = null;
 		System.gc();
 		System.gc();
-
-		if (!Interpreter.isBatchMode())
-			WindowManager.setWindow(new TextWindow("Matrix",
-						matrix.toStringForAmira(),
-						550, 150));
-
-		lastResult = matrix;
+		return matrix;
 	}
 
 	Point3d parseMaterialBBox(TransformedImage trans, String bbox) {
