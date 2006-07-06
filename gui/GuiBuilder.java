@@ -84,6 +84,28 @@ public class GuiBuilder {
 		c.add(p);
 	}
 
+	public static void add3Command(Container c, String label, String actionCmd, String label2, String actionCmd2, String label3, String actionCmd3, ActionListener controllor) {
+		JPanel p  = new JPanel(new GridLayout(1,2));
+
+        JButton b = new JButton(label);
+		b.setActionCommand(actionCmd);
+		b.addActionListener(controllor);
+
+        JButton b2 = new JButton(label2);
+		b2.setActionCommand(actionCmd2);
+		b2.addActionListener(controllor);
+
+		JButton b3 = new JButton(label3);
+		b3.setActionCommand(actionCmd3);
+		b3.addActionListener(controllor);
+
+        p.add(b);
+        p.add(b2);
+        p.add(b3);
+
+		c.add(p);
+	}
+
 	public static JCheckBox addCheckBox(Container c, String label) {
 		JCheckBox check = new JCheckBox();
 		check.setSelected(false);

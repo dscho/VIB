@@ -51,6 +51,13 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
     private static final String INTERPOLATOR = "interpolate";
 
+
+	private static final String DILATE = "dilate";
+	private static final String ERODE = "erode";
+	private static final String CLOSE = "close";
+
+
+
     JList labelList;
     DefaultListModel labelListModel;
 
@@ -61,15 +68,9 @@ public class Segmentator_ extends JFrame implements PlugIn {
     public Segmentator_() {
         super("segmentator");
 
-        //IJ.runPlugIn("LabelBrush_", ""); //load our drawing tool
-        //IJ.runPlugIn("ROIBrush_", ""); //load our drawing tool
-
         Controllor controllor = new Controllor();
 
-
         MacroInstaller installer = new ij.plugin.MacroInstaller();
-
-
         installer.install(LabelBrush_.MACRO_CMD + "\n" + ROIBrush_.MACRO_CMD);
 
         ImagePlus.addImageListener(controllor);
@@ -102,6 +103,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
 
         GuiBuilder.addCommand(this, INTERPOLATOR, INTERPOLATOR, controllor);
 
+		GuiBuilder.add3Command(this, DILATE, DILATE, ERODE, ERODE, CLOSE, CLOSE, controllor);
 
         pack();
     }
@@ -247,6 +249,40 @@ public class Segmentator_ extends JFrame implements PlugIn {
                 LabelThresholder_.rollback();
             }else if(e.getActionCommand().equals(INTERPOLATOR)){
                 IJ.runPlugIn("LabelInterpolator_","");
+            }else if(e.getActionCommand().equals(DILATE)){
+				SegmentatorModel model = new SegmentatorModel(currentImage);
+
+				if(model.getCurrentMaterial() != null){
+					LabelBinaryOps.dilate(
+							  model.getLabelImagePlus().getStack().getProcessor(currentImage.getCurrentSlice())
+					  ,currentImage.getRoi(), (byte) model.getCurrentMaterial().id);
+					model.updateSlice(currentImage.getCurrentSlice());
+				}else{
+					IJ.showMessage("please select a label first");
+				}
+            }else if(e.getActionCommand().equals(ERODE)){
+            	SegmentatorModel model = new SegmentatorModel(currentImage);
+                System.out.println("eroding");
+				if(model.getCurrentMaterial() != null){
+					LabelBinaryOps.erode(
+							  model.getLabelImagePlus().getStack().getProcessor(currentImage.getCurrentSlice())
+					  ,currentImage.getRoi(), (byte) model.getCurrentMaterial().id);
+
+					model.updateSlice(currentImage.getCurrentSlice());
+				}else{
+					IJ.showMessage("please select a label first");
+				}
+            }else if(e.getActionCommand().equals(CLOSE)){
+            	SegmentatorModel model = new SegmentatorModel(currentImage);
+
+				if(model.getCurrentMaterial() != null){
+					LabelBinaryOps.close(
+							  model.getLabelImagePlus().getStack().getProcessor(currentImage.getCurrentSlice())
+					  ,currentImage.getRoi(), (byte) model.getCurrentMaterial().id);
+					model.updateSlice(currentImage.getCurrentSlice());
+				}else{
+					IJ.showMessage("please select a label first");
+				}
             }
 
             currentImage.updateAndDraw();
@@ -362,7 +398,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
         }
 
         public void sliceNumberChanged(SliceEvent e) {
-            System.out.println(e.getSource().getCurrentSlice());
+            //System.out.println(e.getSource().getCurrentSlice());
             //drawLabels(currentImage);
             //drawLabels(currentImage, currentLabels, canvas);
         }
