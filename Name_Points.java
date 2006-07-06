@@ -243,6 +243,23 @@ class NamedPoint {
 
 	}
 
+	public static ArrayList<String> pointsInBoth(ArrayList<NamedPoint> points0,
+						     ArrayList<NamedPoint> points1) {
+
+		ArrayList<String> common = new ArrayList<String>();
+		Iterator i0;
+		for(i0=points0.listIterator();i0.hasNext();) {
+			String pointName = ((NamedPoint)i0.next()).name;
+			for(Iterator i1=points1.listIterator();i1.hasNext();) {
+				if (pointName.equals(((NamedPoint)i1.next()).name)) {
+					common.add(new String(pointName));
+					break;
+				}
+			}
+		}
+		return common;
+	}
+					       
 	public static String escape(String s) {
 		String result = s.replaceAll("\\\\","\\\\\\\\");
 		result = result.replaceAll("\\\"","\\\\\"");
@@ -406,6 +423,9 @@ public class Name_Points implements PlugIn {
 			int z = imp.getCurrentSlice()-1;
 
 			if( false ) {
+
+				// Add a crosshair to the point we've just marked.
+				
 				processor.setColor(Toolbar.getForegroundColor());
 				processor.setLineWidth(1);
 				processor.moveTo(x+1,y);
