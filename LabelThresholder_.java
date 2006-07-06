@@ -60,7 +60,7 @@ public class LabelThresholder_ implements PlugInFilter{
         Rectangle bounds = roi.getBoundingRect();
         for (int x = bounds.x; x <= bounds.x + bounds.width; x++) {
             for (int y = bounds.y; y <= bounds.y + bounds.height; y++) {
-                if (imageData.get(x, y) >= min && imageData.get(x, y) <= max) {
+                if (roi.contains(x,y) && imageData.get(x, y) >= min && imageData.get(x, y) <= max) {
                     mem.rememberPixel(x,y);
                     labelData.set(x, y, label);
                 }
