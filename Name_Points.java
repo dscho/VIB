@@ -38,15 +38,17 @@ class PointsDialog extends Dialog implements ActionListener {
 
 	Name_Points plugin;
 	
-	public PointsDialog(String title,String[] pointNames,Name_Points plugin) {
+	public PointsDialog(String title,
+			    ArrayList<NamedPoint> points,
+			    Name_Points plugin) {
 		
 		super(IJ.getInstance(),title,false);
 		
 		this.plugin = plugin;
 		
-		coordinateLabels = new Label[pointNames.length];
-		markButtons = new Button[pointNames.length];
-	        showButtons = new Button[pointNames.length];
+		coordinateLabels = new Label[points.size()];
+		markButtons = new Button[points.size()];
+	        showButtons = new Button[points.size()];
 		
 		setLayout(new BorderLayout());
 		
@@ -54,36 +56,41 @@ class PointsDialog extends Dialog implements ActionListener {
 		Panel pointsPanel = new Panel();
 		Panel buttonsPanel = new Panel();
 		
-		Label instructions = new Label( "Mark the current point selection as:" );	
-		instructionsPanel.add(instructions);
+		Label instructions = new Label( "Mark the current point selection as:" );
+		instructionsPanel.setLayout(new BorderLayout());
+		instructionsPanel.add(instructions,BorderLayout.WEST);
 		
 		add(instructionsPanel,BorderLayout.NORTH);
 		
 		pointsPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
-		c.gridx = 0;
-		c.gridy = 0;
-		c.anchor = GridBagConstraints.LINE_START;
-		pointsPanel.add(instructions,c);
 		
-		int i;
-		for (i=0; i < pointNames.length; ++i) {			
+		int counter = 0;
+		Iterator i;
+		for (i=points.listIterator();i.hasNext();) {
+			NamedPoint p = (NamedPoint)i.next();
 			c.gridx = 0;
-			c.gridy = i + 1;
+			c.gridy = counter;
 			c.anchor = GridBagConstraints.LINE_END;			
-			markButtons[i] = new Button(pointNames[i]);
-			markButtons[i].addActionListener(this);
-			pointsPanel.add(markButtons[i],c);
+			markButtons[counter] = new Button(p.name);
+			markButtons[counter].addActionListener(this);
+			pointsPanel.add(markButtons[counter],c);
 			c.anchor = GridBagConstraints.LINE_START;
 			c.gridx = 1;
-			coordinateLabels[i] = new Label("<unset>");
-			pointsPanel.add(coordinateLabels[i],c);
+			coordinateLabels[counter] = new Label("<unset>");
+			pointsPanel.add(coordinateLabels[counter],c);
 			c.anchor = GridBagConstraints.LINE_START;
 			c.gridx = 2;
-			showButtons[i] = new Button("Show");
-			showButtons[i].addActionListener(this);
-			showButtons[i].setEnabled(false);
-			pointsPanel.add(showButtons[i],c);
+			showButtons[counter] = new Button("Show");
+			showButtons[counter].addActionListener(this);
+			showButtons[counter].setEnabled(false);
+			pointsPanel.add(showButtons[counter],c);
+			if (p.set)
+				setCoordinateLabel(counter,
+						   p.x,
+						   p.y,
+						   p.z);
+			++counter;
 		}
 		
 		add(pointsPanel,BorderLayout.CENTER);
@@ -165,6 +172,7 @@ class NamedPoint {
 
 	public double x,y,z;
 	String name;
+	boolean set;
 
 	public NamedPoint(String name,
 			  double x,
@@ -174,56 +182,19 @@ class NamedPoint {
 		this.y = y;
 		this.z = z;
 		this.name = name;
-	}
-}
-
-public class Name_Points implements PlugIn {
-
-	// FIXME: really we want different sets of points for
-	// different applications.
-
-	private String [] pointNames = {
-			"the centre of the ellipsoid body",
-			"the left tip of the protocerebral bridge",
-			"the right tip of the protocerebral bridge",
-			"the most dorsal point of the left part of the protocerebral bridge",
-			"the most dorsal point of the right part of the protocerebral bridge",
-			"the top of the left alpha lobe of the mushroom body",
-			"the top of the right alpha lobe of the mushroom body",
-			"the most lateral part of the mushroom body on the left",
-			"the most lateral part of the mushroom body on the right"
-	};
-
-	public void show(int i) {
-		assert pointsSet[i];
-		int slice = (int)pointPositions[i][2];
-		if(slice < 0)
-			slice = 0;
-		if(slice > imp.getStackSize())
-			slice = imp.getStackSize()-1;
-		imp.setSlice(slice+1);
-		Roi roi	= new PointRoi((int)pointPositions[i][0],
-				       (int)pointPositions[i][1],
-				       imp);
-		imp.setRoi(roi);
-	}
-	
-	public static String escape(String s) {
-		String result = s.replaceAll("\\\\","\\\\\\\\");
-		result = result.replaceAll("\\\"","\\\\\"");
-		return result;
+		this.set = true;
 	}
 
-	public static String unescape(String s) {
-		// FIXME: actually write the unescaping code...
-		return s;
+	public NamedPoint(String name) {
+		this.name = name;
+		this.set = false;
 	}
 
-	public void load() {
-	
+	static ArrayList<NamedPoint> pointsForImage( ImagePlus imp ) {
+		
 		FileInfo info = imp.getOriginalFileInfo();
 		if( info == null ) {
-			return;
+			return null;
 		}
 		String fileName = info.fileName;
 		String url = info.url;
@@ -231,11 +202,6 @@ public class Name_Points implements PlugIn {
 
 		String defaultFilename = directory+fileName+".points";
 
-		/*
-		System.out.println("Attempting to load default points file: "
-				   +defaultFilename);
-		*/
-				   
 		try {
 			ArrayList<NamedPoint> newNamedPoints = new ArrayList<NamedPoint>();
 			Pattern p_data =
@@ -248,15 +214,11 @@ public class Name_Points implements PlugIn {
 				new FileReader(defaultFilename));
 			String line;
 			while ((line=f.readLine())!=null) {
-				// System.out.println("Got line: "+line);
+
 				Matcher m_data = p_data.matcher(line);
 				Matcher m_empty = p_empty.matcher(line);
+
 				if (m_data.matches()) {
-					// System.out.println("Matched!");
-					// System.out.println(m_data.group(1));
-					// System.out.println(m_data.group(2));
-					// System.out.println(m_data.group(3));
-					// System.out.println(m_data.group(4));
 					newNamedPoints.add(
 						new NamedPoint(m_data.group(1),
 							       Double.parseDouble(m_data.group(2)),
@@ -271,53 +233,101 @@ public class Name_Points implements PlugIn {
 						 line);
 					break;
 				}
-				ListIterator i;
-				for (i = newNamedPoints.listIterator();i.hasNext();) {
-					NamedPoint current = (NamedPoint)i.next();
-					int j;
-					for(j=0;j<pointNames.length;++j) {
-						if (current.name.equals(pointNames[j])) {
-							pointPositions[j][0] = current.x;
-							pointPositions[j][1] = current.y;
-							pointPositions[j][2] = current.z;
-							pointsSet[j] = true;
-							i.remove();
-						}
+			}
+			
+			return newNamedPoints;
+			
+		} catch( IOException e ) {
+			return null;
+		}
 
-					}
-				}
-				int numberOfExtraPoints = newNamedPoints.size();
-				// System.out.println("Extra points: "+numberOfExtraPoints);
-				if( numberOfExtraPoints > 0 ) {
-					int oldLength = pointNames.length;
-					int newLength = numberOfExtraPoints + pointNames.length;
-					String[] newPointNames = new String[newLength];
-					double[][] newPointPositions = new double[newLength][3];
-					boolean[] newPointsSet = new boolean[newLength];
-					System.arraycopy(pointNames,0,newPointNames,0,oldLength);
-					System.arraycopy(pointPositions,0,newPointPositions,0,oldLength);
-					System.arraycopy(pointsSet,0,newPointsSet,0,oldLength);
-					for(i=newNamedPoints.listIterator();i.hasNext();) {
-						int indexInNewArray = i.nextIndex() + oldLength;
-						// System.out.println("Copying over index: "+indexInNewArray);
-						NamedPoint current = (NamedPoint)i.next();
-						newPointNames[indexInNewArray] = current.name;
-						newPointPositions[indexInNewArray][0] = current.x;
-						newPointPositions[indexInNewArray][1] = current.y;
-						newPointPositions[indexInNewArray][2] = current.z;
-						newPointsSet[indexInNewArray] = true;
-					}
-					this.pointNames = newPointNames;
-					this.pointPositions = newPointPositions;
-					this.pointsSet = newPointsSet;
+	}
+
+	public static String escape(String s) {
+		String result = s.replaceAll("\\\\","\\\\\\\\");
+		result = result.replaceAll("\\\"","\\\\\"");
+		return result;
+	}
+
+	public static String unescape(String s) {
+		// FIXME: actually write the unescaping code...
+		return s;
+	}
+
+	public String toYAML() {
+		String line = "\""+
+			escape(name)+
+			"\": [ "+
+			x+", "+
+			y+", "+
+			z+" ]";
+		return line;
+	}
+
+}
+
+public class Name_Points implements PlugIn {
+
+	// FIXME: really we want different sets of points for
+	// different applications.
+
+	private String [] defaultPointNames = {
+		"the centre of the ellipsoid body",
+		"the left tip of the protocerebral bridge",
+		"the right tip of the protocerebral bridge",
+		"the most dorsal point of the left part of the protocerebral bridge",
+		"the most dorsal point of the right part of the protocerebral bridge",
+		"the top of the left alpha lobe of the mushroom body",
+		"the top of the right alpha lobe of the mushroom body",
+		"the most lateral part of the mushroom body on the left",
+		"the most lateral part of the mushroom body on the right"
+	};
+
+	public void show(int i) {
+		NamedPoint p = (NamedPoint)points.get(i);
+		assert p.set;
+		int slice = (int)p.z;
+		if(slice < 0)
+			slice = 0;
+		if(slice > imp.getStackSize())
+			slice = imp.getStackSize()-1;
+		imp.setSlice(slice+1);
+		Roi roi	= new PointRoi((int)p.x,
+				       (int)p.y,
+				       imp);
+		imp.setRoi(roi);
+	}
+	
+	public void load() {
+
+		ArrayList<NamedPoint> newNamedPoints = NamedPoint.pointsForImage(imp);
+		
+		if(newNamedPoints==null)
+			return;
+
+		ListIterator i;
+		for (i = newNamedPoints.listIterator();i.hasNext();) {
+			NamedPoint current = (NamedPoint)i.next();
+			boolean foundName = false;
+			ListIterator j;
+			for(j=points.listIterator();j.hasNext();) {
+				NamedPoint p = (NamedPoint)j.next();
+				if (current.name.equals(p.name)) {
+					p.x = current.x;
+					p.y = current.y;
+					p.z = current.z;
+					p.set = true;
+					foundName = true;
 				}
 			}
-		} catch( IOException e ) {			
-
+			if (!foundName)
+				points.add(current);
 		}
-	}       
+
+	}
 
 	public void save() {
+
 		FileInfo info = imp.getOriginalFileInfo();
 		if( info == null ) {
 			IJ.error("There's no original file name that these points refer to.");
@@ -326,31 +336,10 @@ public class Name_Points implements PlugIn {
 		String fileName = info.fileName;
 		String url = info.url;
 		String directory = info.directory;
-		// System.out.println("fileName was: "+fileName);
-		// System.out.println("url was: "+url);
-		// System.out.println("directory was: "+directory);
 
 		String suggestedSaveFilename;
 
-		// Look for an extension...
-
-		/*
-		int lastDot = fileName.lastIndexOf('.');
-		if (lastDot == -1) {
-			suggestedSaveFilename = fileName + ".points";
-		} else if (lastDot == (fileName.length()-1)) { // The last character...
-			suggestedSaveFilename = fileName + "points";
-		} else {
-			suggestedSaveFilename = fileName.substring(0,lastDot) + ".points";
-		}
-		*/
-
-		// Just add ".points" to the filename, even if there's
-		// an existing extension...
-
 		suggestedSaveFilename = fileName+".points";
-
-		// System.out.println("Suggested save filename is: "+suggestedSaveFilename);
 
 		SaveDialog sd = new SaveDialog("Save points annotation file as...",
 					       directory,
@@ -366,8 +355,10 @@ public class Name_Points implements PlugIn {
 
 		File file = new File(savePath);
 		if ((file!=null)&&file.exists()) {
-			if (!IJ.showMessageWithCancel("Save points annotation file", "The file "+
-						      savePath+" already exists.\nDo you want to replace it?"))
+			if (!IJ.showMessageWithCancel(
+				    "Save points annotation file", "The file "+
+				    savePath+" already exists.\n"+
+				    "Do you want to replace it?"))
 				return;
 		}
 
@@ -375,14 +366,11 @@ public class Name_Points implements PlugIn {
 
 		try {
 			FileOutputStream fos = new FileOutputStream(savePath);
-			for(int i = 0; i<pointPositions.length; ++i) {
-				if(pointsSet[i]) {
-					String line = "\""+
-						escape(pointNames[i])+
-						"\": [ "+
-						pointPositions[i][0]+", "+
-						pointPositions[i][1]+", "+
-						pointPositions[i][2]+" ]\n";
+			Iterator i;
+			for(i=points.listIterator();i.hasNext();) {
+				NamedPoint p = (NamedPoint)i.next();
+				if(p.set) {
+					String line = p.toYAML() + "\n";
 					fos.write(line.getBytes("UTF-8"));
 				}
 			}
@@ -432,11 +420,15 @@ public class Name_Points implements PlugIn {
 			}
 				
 			// System.out.println("Got x: " + x + ", y: " + y + ", z: " + z);
+
 			dialog.setCoordinateLabel(i,x,y,z);
-			pointPositions[i][0] = x;
-			pointPositions[i][1] = y;
-			pointPositions[i][2] = z;
-			pointsSet[i] = true;
+
+			NamedPoint point = (NamedPoint)points.get(i);
+			point.x = x;
+			point.y = y;
+			point.z = z;
+			point.set = true;
+
 		} else {
 			IJ.error("You must have a current point selection in "+
 				 imp.getTitle()+" in order to mark points.");
@@ -451,8 +443,7 @@ public class Name_Points implements PlugIn {
 	PointsDialog dialog;
 	ImagePlus imp;
 	
-	double[][] pointPositions;
-	boolean[] pointsSet;
+	ArrayList<NamedPoint> points;
 
 	public void run(String arg) {
 		/*
@@ -466,22 +457,14 @@ public class Name_Points implements PlugIn {
 		if(imp == null)
 			IJ.error("There's no image to annotate.");
 
-		pointsSet = new boolean[pointNames.length];
-		for(int i = 0; i < pointNames.length; ++i)
-			pointsSet[i] = false;
-		pointPositions = new double[pointNames.length][3];
+		points = new ArrayList<NamedPoint>();
+		for (int i = 0; i < defaultPointNames.length; ++i)
+			points.add(new NamedPoint(defaultPointNames[i]));
 
 		load();
 
 		dialog = new PointsDialog("Marking up: "+imp.getTitle(),
-					  pointNames,this);
-		for (int i=0;i<pointNames.length;++i) {
-			if (pointsSet[i]) {
-				dialog.setCoordinateLabel(i,
-							  pointPositions[i][0],
-							  pointPositions[i][1],
-							  pointPositions[i][2]);
-			}
-		}
+					  points,this);
+
 	}
 }
