@@ -321,12 +321,13 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 
 	private class Controllor implements ActionListener, Runnable {
-
+        JComponent source;
 		public void actionPerformed(ActionEvent e) {
 			if (e.getActionCommand().equals(RUN_BATCH)) {
-
+                source = ((JComponent)e.getSource());
+				source.setEnabled(false);
 				Thread thread = new Thread(this);
-				thread.setPriority(Thread.NORM_PRIORITY-2); //run in a lower priority so it doesn't lock the machine up so much
+				thread.setPriority(Thread.MIN_PRIORITY); //run in a lower priority so it doesn't lock the machine up so much
                 thread.start();
 			} else {
 				System.err.println("unkown action command sent to BatchProcessor's controllor");
@@ -351,6 +352,11 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 			if (averageIntensity.isSelected())
 				averageIntensity(getFiles(), new File(averageIntensityLocation.getText()));
+
+			if(source!=null){
+				source.setEnabled(true);
+				source = null;
+			}
 		}
 
 

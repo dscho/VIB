@@ -41,33 +41,45 @@ public class LabelBinaryOps implements PlugInFilter{
     }
 
 	public static void dilate(ImageProcessor labelData, Roi roi, byte id){
-		ArrayList<Integer> dilateOffset = new ArrayList<Integer>();
 
+
+		int width = labelData.getWidth();
     	byte[] pixelData = (byte[]) labelData.getPixels();
 
-		Rectangle bounds = roi.getBoundingRect();
-        for (int x = bounds.x; x <= bounds.x + bounds.width; x++) {
-            for (int y = bounds.y; y <= bounds.y + bounds.height; y++) {
-                if (roi.contains(x,y)) {
-                	//found a pixel
+		dilate(roi, pixelData, width, id);
+
+	}
+
+	private static void dilate(Roi roi,  byte[] pixelData,int width, byte id) {
+		ArrayList<Integer> dilateOffset = new ArrayList<Integer>();
+        Rectangle bounds;
+		if(roi != null){
+			bounds = roi.getBoundingRect();
+		}else{
+			bounds = new Rectangle(0,0,width, pixelData.length/width);
+		}
+		for (int x = bounds.x; x <= bounds.x + bounds.width; x++) {
+			for (int y = bounds.y; y <= bounds.y + bounds.height; y++) {
+				if (roi.contains(x,y)) {
+					//found a pixel
 					//now superimpose 3x3 kernal
 					kernalLoop:
- 					for(int i=x-1; i<=x+1; i++){
+					 for(int i=x-1; i<=x+1; i++){
 						for(int j=y-1; j<=y+1; j++){
 							//if any pixels are labelled in the kernal then dilation adds the current label
-							int kernalOffset = i+ j*labelData.getWidth();
+							int kernalOffset = i+ j*width;
 
 							if(kernalOffset < 0 || kernalOffset >= pixelData.length) continue; //out of bounds
 
 							if(pixelData[kernalOffset] == id){
-								dilateOffset.add(x+y*labelData.getWidth());
+								dilateOffset.add(x+y*width);
 								break kernalLoop;
 							}
 						}
 					}
-                }
-            }
-        }
+				}
+			}
+		}
 
 		for (Integer offset : dilateOffset) {
 			pixelData[offset] = id;
@@ -75,33 +87,45 @@ public class LabelBinaryOps implements PlugInFilter{
 	}
 
 	public static void erode(ImageProcessor labelData,Roi roi,  byte id){
-		ArrayList<Integer> erodeOffsets = new ArrayList<Integer>();
 
      	byte[] pixelData = (byte[]) labelData.getPixels();
+		int width = labelData.getWidth();
 
-		Rectangle bounds = roi.getBoundingRect();
-        for (int x = bounds.x; x <= bounds.x + bounds.width; x++) {
-            for (int y = bounds.y; y <= bounds.y + bounds.height; y++) {
-                if (roi.contains(x,y)) {
-                	//found a pixel
+		erode(roi, pixelData, width, id);
+
+	}
+
+	private static void erode(Roi roi, byte[] pixelData,int width, byte id) {
+		ArrayList<Integer> erodeOffsets = new ArrayList<Integer>();
+
+		Rectangle bounds;
+		if(roi != null){
+			bounds = roi.getBoundingRect();
+		}else{
+			bounds = new Rectangle(0,0,width, pixelData.length/width);
+		}
+		for (int x = bounds.x; x <= bounds.x + bounds.width; x++) {
+			for (int y = bounds.y; y <= bounds.y + bounds.height; y++) {
+				if (roi.contains(x,y)) {
+					//found a pixel
 					//now superimpose 3x3 kernal
 					kernalLoop:
- 					for(int i=x-1; i<=x+1; i++){
+					 for(int i=x-1; i<=x+1; i++){
 						for(int j=y-1; j<=y+1; j++){
 							//if any pixels are unlabelled in the kernal then removes the current label
-							int kernalOffset = i+ j*labelData.getWidth();
+							int kernalOffset = i+ j*width;
 
 							if(kernalOffset < 0 || kernalOffset >= pixelData.length) continue; //out of bounds
 
-							if(pixelData[kernalOffset] != id && pixelData[x+y*labelData.getWidth()] == id){
-								erodeOffsets.add(x+y*labelData.getWidth());
+							if(pixelData[kernalOffset] != id && pixelData[x+y*width] == id){
+								erodeOffsets.add(x+y*width);
 								break kernalLoop;
 							}
 						}
 					}
-                }
-            }
-        }
+				}
+			}
+		}
 		for (Integer errodeOffset : erodeOffsets) {
 			pixelData[errodeOffset] = 0;
 		}
@@ -111,5 +135,18 @@ public class LabelBinaryOps implements PlugInFilter{
 	public static void close(ImageProcessor labelData, Roi roi,  byte id) {
    		dilate(labelData, roi, id);
 		erode(labelData, roi, id);
+	}
+
+	//performs a binary open operation on the label data for the specified material
+	public static void open(ImageProcessor labelData, Roi roi,  byte id) {
+   		erode(labelData, roi, id);
+		dilate(labelData, roi, id);
+	}
+
+	public static void clean(Roi roi, byte[] pixelData,int width, byte id) {
+   		dilate(roi, pixelData, width, id);
+		erode(roi, pixelData, width, id);
+		erode(roi, pixelData, width, id);
+		dilate(roi, pixelData, width, id);
 	}
 }
