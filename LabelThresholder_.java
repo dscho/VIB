@@ -53,6 +53,11 @@ public class LabelThresholder_ implements PlugInFilter{
         model.updateSlice(currentSlice);
     }
 
+	public static void commit(){
+		if(mem != null)
+			mem.clear();
+	}
+
 
     public static void threshold(Roi roi, int min, int max, ImageProcessor imageData, ImageProcessor labelData, int label) {
         mem = new Mem(labelData);
@@ -85,5 +90,9 @@ public class LabelThresholder_ implements PlugInFilter{
                 data.set(p.x, p.y, memory.get(p));
             }
         }
-    }
+
+		public void clear() {
+			memory.clear();
+		}
+	}
 }

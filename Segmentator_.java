@@ -421,6 +421,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
 		}
 
 		public void sliceNumberChanged(SliceEvent e) {
+			LabelThresholder_.commit(); //commit any thesholdings if any
 			//System.out.println(e.getSource().getCurrentSlice());
 			//drawLabels(currentImage);
 			//drawLabels(currentImage, currentLabels, canvas);
