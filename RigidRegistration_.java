@@ -28,10 +28,10 @@ public class RigidRegistration_ implements PlugInFilter {
 	GenericDialog gd;
 	String[] materials1, materials2;
 
-        public void run(ImageProcessor ip) {
+	public void run(ImageProcessor ip) {
 		gd = new GenericDialog("Registration Parameters");
 		gd.addStringField("initialTransform", "", 30);
-        gd.addNumericField("n initial positions to try", 1, 0);
+		gd.addNumericField("n initial positions to try", 1, 0);
 		//gd.addStringField("initialTransform", "-0.3370151014225546 -0.9288659560262381 0.15371680828266013 755.8137088210128   0.941495355781988 -0.3320225080549833 0.057858008830467406 103.04560651653787   -0.0027048944698707866 0.16422268381786176 0.9864195829694206 -58.1446172018889", 30);
 		int level = 0;
 		while ((image.getWidth() >> level) > 20)
@@ -62,7 +62,7 @@ public class RigidRegistration_ implements PlugInFilter {
 			String[] methods = {
 				"Euclidean", "MutualInfo", "Threshold55",
 				"Threshold155" };
-			gd.addChoice("measure", methods, "Euclidean");
+				gd.addChoice("measure", methods, "Euclidean");
 		}
 
 		gd.showDialog();
@@ -70,7 +70,7 @@ public class RigidRegistration_ implements PlugInFilter {
 			return;
 
 		String initial = gd.getNextString();
-        int nInitialPositions = (int) gd.getNextNumber();
+		int nInitialPositions = (int) gd.getNextNumber();
 		double tolerance = gd.getNextNumber();
 		level = (int)gd.getNextNumber();
 		int stopLevel = (int)gd.getNextNumber();
@@ -79,9 +79,9 @@ public class RigidRegistration_ implements PlugInFilter {
 		boolean showTransformed = gd.getNextBoolean();
 		boolean showDifferenceImage = gd.getNextBoolean();
 		int mat1 = (isLabels ? gd.getNextChoiceIndex() : -1);
-		ImagePlus template = WindowManager.getImage(gd.getNextChoice());
+		ImagePlus templ = WindowManager.getImage(gd.getNextChoice());
 		int mat2 = (isLabels ? gd.getNextChoiceIndex() : -1);
-		TransformedImage trans = new TransformedImage(template, image);
+		TransformedImage trans = new TransformedImage(templ, image);
 		if (isLabels) {
 			trans.measure = new distance.TwoValues(mat1, mat2);
 			VIB.println("working on materials " + mat1 + " "
@@ -102,9 +102,9 @@ public class RigidRegistration_ implements PlugInFilter {
 					new distance.Euclidean();
 		}
 
-			FastMatrix matrix = rigidRegistration(trans, materialBBox, initial, mat1, mat2, noOptimization, level, stopLevel, tolerance, nInitialPositions, showTransformed, showDifferenceImage);
+		FastMatrix matrix = rigidRegistration(trans, materialBBox, initial, mat1, mat2, noOptimization, level, stopLevel, tolerance, nInitialPositions, showTransformed, showDifferenceImage);
 
-			if (!Interpreter.isBatchMode())
+		if (!Interpreter.isBatchMode())
 			WindowManager.setWindow(new TextWindow("Matrix",
 						matrix.toStringForAmira(),
 						550, 150));
@@ -130,18 +130,18 @@ public class RigidRegistration_ implements PlugInFilter {
 	 * @return The best FastMatrix
 	 */
 	public FastMatrix rigidRegistration(
-										 TransformedImage trans,
-										 String materialBBox,
-										 String initial,
-										 int mat1,
-										 int mat2,
-										 boolean noOptimization,
-										 int level,
-										 int stopLevel,
-										 double tolerance,
-										 int nInitialPositions,
-										 boolean showTransformed,
-										 boolean showDifferenceImage) {
+			TransformedImage trans,
+			String materialBBox,
+			String initial,
+			int mat1,
+			int mat2,
+			boolean noOptimization,
+			int level,
+			int stopLevel,
+			double tolerance,
+			int nInitialPositions,
+			boolean showTransformed,
+			boolean showDifferenceImage) {
 		if (mat1 >= 0)
 			trans.narrowSearchToMaterial(mat1, 10);
 
@@ -189,35 +189,35 @@ public class RigidRegistration_ implements PlugInFilter {
 					tolerance);
 			opt.eulerParameters = params;
 
-            if(opt.eulerParameters == null){
-                FastMatrix [] results = new FastMatrix[nInitialPositions];
-                double badnees[] = new double[nInitialPositions];
+			if(opt.eulerParameters == null){
+				FastMatrix [] results = new FastMatrix[nInitialPositions];
+				double badnees[] = new double[nInitialPositions];
 
-                for(int i = 0; i < nInitialPositions; i++){
-                    opt.eulerParameters = null;
-                    results[i] = opt.doRegister(level - stopLevel, i);
-                    badnees[i] = opt.calculateBadness(results[i]);   //todo probably recalculated wastefully
+				for(int i = 0; i < nInitialPositions; i++){
+					opt.eulerParameters = null;
+					results[i] = opt.doRegister(level - stopLevel, i);
+					badnees[i] = opt.calculateBadness(results[i]);   //todo probably recalculated wastefully
 
-                }
+				}
 
-                //now select the best
-                double best = Double.MAX_VALUE;
-                int bestIndex = -1;
-                for (int i = 0; i < badnees.length; i++) {
+				//now select the best
+				double best = Double.MAX_VALUE;
+				int bestIndex = -1;
+				for (int i = 0; i < badnees.length; i++) {
 
-                    if(badnees[i] < best){
-                        best = badnees[i];
-                        bestIndex = i;
-                    }
-                }
+					if(badnees[i] < best){
+						best = badnees[i];
+						bestIndex = i;
+					}
+				}
 
 
-                matrix = results[bestIndex];
-                System.out.println("winner was " + (bestIndex+1) + " with " + matrix);
+				matrix = results[bestIndex];
+				System.out.println("winner was " + (bestIndex+1) + " with " + matrix);
 
-            }else{
-                matrix = opt.doRegister(level - stopLevel);
-            }
+			}else{
+				matrix = opt.doRegister(level - stopLevel);
+			}
 
 
 			opt = null;
@@ -331,10 +331,10 @@ public class RigidRegistration_ implements PlugInFilter {
 			c2.select(0);
 	}
 
-        public int setup(String arg, ImagePlus imp) {
-                image = imp;
-                return DOES_8G | DOES_8C;
-        }
+	public int setup(String arg, ImagePlus imp) {
+		image = imp;
+		return DOES_8G | DOES_8C;
+	}
 
 	static class Optimizer extends RegistrationOptimizer {
 		TransformedImage t;
@@ -353,16 +353,16 @@ public class RigidRegistration_ implements PlugInFilter {
 			tolerance = tol;
 		}
 
-        public FastMatrix doRegister(int level) {
-		    return doRegister(level, 0);
+		public FastMatrix doRegister(int level) {
+			return doRegister(level, 0);
 		}
 
-        /**
-         *
-         * @param level
-         * @param initialGuessPlace 0 uses the best distance measure from the initial set of guesses if EulerParams were not supplied
-         * @return
-         */
+		/**
+		 *
+		 * @param level
+		 * @param initialGuessPlace 0 uses the best distance measure from the initial set of guesses if EulerParams were not supplied
+		 * @return
+		 */
 
 		public FastMatrix doRegister(int level, int initialGuessPlace) {
 			if (level > 0) {
@@ -381,9 +381,9 @@ public class RigidRegistration_ implements PlugInFilter {
 			int minFactor = (1 << start);
 			angleMax = Math.PI / 4 * factor / minFactor;
 			translateMax = 20.0 * factor / minFactor;
-            if(eulerParameters == null){
-                eulerParameters = searchInitialEulerParams()[initialGuessPlace];
-            }
+			if(eulerParameters == null){
+				eulerParameters = searchInitialEulerParams()[initialGuessPlace];
+			}
 			return doRegister(tolerance / factor);
 		}
 
