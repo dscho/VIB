@@ -11,10 +11,7 @@ public class Resample_ implements PlugInFilter {
 	boolean verbose=false;
 
 	private static int getPixel(byte[] b,int index) {
-		int result=b[index];
-		if(result<0)
-			return result+256;
-		return result;
+		return b[index] & 0xff;
 	}
 
 	private static interface Accumulator {

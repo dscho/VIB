@@ -202,11 +202,7 @@ public class InterpolatedImage {
 
 	final public int getNoCheck(int x, int y, int z) {
 		/* no check; we know exactly that it is inside */
-		int result = pixels[z][x + w * y];
-		if (result < 0)
-			return result + 256;
-		else
-			return result;
+		return pixels[z][x + w * y] & 0xff;
 	}
 
 	final public int getNoInterpol(int x, int y, int z) {
