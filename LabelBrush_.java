@@ -17,7 +17,8 @@ import java.awt.*;
 public class LabelBrush_ implements PlugIn {
     public static final String MACRO_CMD = "var brushWidth = 10;\n" +
                     "var leftClick=16, alt=9;\n" +
-                    "\n" +
+					"var pollDelay = 10;\n" +
+                                        "\n" +
                     "macro 'Label Brush Tool - C111O11ffC100T6c0aL' {\n" +
                     " while (true) {\n" +
                     "  getCursorLoc(x, y, z, flags);\n" +
@@ -27,12 +28,13 @@ public class LabelBrush_ implements PlugIn {
                     "  }else{\n" +
                     "   call('LabelBrush_.unlabel', x,y,z,flags,brushWidth);\n" +
                     "  }\n" +
-                    "  wait(10);\n" +
+                    "  wait(pollDelay);\n" +
                     " }\n" +
                     "}\n" +
                     "\n" +
                     "macro 'Label Brush Tool Options...' {\n" +
                     " brushWidth = getNumber('Label Brush Width (pixels):', brushWidth);\n" +
+					" pollDelay = getNumber('Polling delay:', pollDelay);\n" +
                     "}";
 
 

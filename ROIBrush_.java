@@ -14,7 +14,9 @@ import java.awt.*;
  * Time: 17:32:42
  */
 public class ROIBrush_ implements PlugIn {
-    public static final String MACRO_CMD = "var brushWidth = 10;\n" +
+    public static final String MACRO_CMD =
+					"var roiBrushWidth = 10;\n" +
+					"var pollDelay = 10;\n" +
                     "var leftClick=16, alt=9;\n" +
                     "\n" +
                     "macro 'Roi Brush Tool - C111o11ff' {\n" +
@@ -22,16 +24,17 @@ public class ROIBrush_ implements PlugIn {
                     "  getCursorLoc(x, y, z, flags);\n" +
                     "  if (flags&leftClick==0) exit();\n" +
                     "  if (flags&alt==0){\n" +
-                    "   call('ROIBrush_.label', x,y,z,flags,brushWidth);\n" +
+                    "   call('ROIBrush_.label', x,y,z,flags,roiBrushWidth);\n" +
                     "  }else{\n" +
-                    "   call('ROIBrush_.unlabel', x,y,z,flags,brushWidth);\n" +
+                    "   call('ROIBrush_.unlabel', x,y,z,flags,roiBrushWidth);\n" +
                     "  }\n" +
-                    "  wait(10);\n" +
+                    "  wait(pollDelay);\n" +
                     " }\n" +
                     "}\n" +
                     "\n" +
                     "macro 'Roi Brush Tool Options...' {\n" +
-                    " brushWidth = getNumber('Roi Brush Width (pixels):', brushWidth);\n" +
+                    " roiBrushWidth = getNumber('Roi Brush Width (pixels):', brushWidth);\n" +
+					" pollDelay = getNumber('Polling delay:', pollDelay);\n" +
                     "}";
 
     public void run(String arg) {
