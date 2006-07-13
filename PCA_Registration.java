@@ -11,9 +11,8 @@ import ij.measure.Calibration;
 import java.awt.Color;
 import java.io.*;
 
-import Jama.*;
-
 import math3d.Point3d;
+import math3d.JacobiFloat;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -483,9 +482,9 @@ public class PCA_Registration implements PlugIn {
 			// Calculate the variance of each dimension,
 			// and the covariance matrix.
 			
-			double [][] covariance =
-				new double[vectorLength][vectorLength];
-			
+			float[][] covariance =
+				new float[vectorLength][vectorLength];
+
 			for( int z = 0; z < image.getStackSize(); ++z ) {
 				z_scaled = z * z_spacing;
 				for( int y = 0; y < image.getHeight(); ++y ) {
@@ -538,54 +537,32 @@ public class PCA_Registration implements PlugIn {
 					System.out.print( " " + covariance[j][i] + " " );
 				System.out.println( "]" );
 			}
+
+			JacobiFloat jc=new JacobiFloat(covariance,200);
+
+			float[] eigenValuesFloat=jc.getEigenValues();
+			float[][] eigenVectorMatrixFloat=jc.getEigenVectors();
+
+			double[][] vectorsPacked=new double[3][3];
+
+			vectorsPacked[0][0] = eigenVectorMatrixFloat[0][0];
+			vectorsPacked[0][1] = eigenVectorMatrixFloat[1][0];
+			vectorsPacked[0][2] = eigenVectorMatrixFloat[2][0];
+
+			vectorsPacked[1][0] = eigenVectorMatrixFloat[0][1];
+			vectorsPacked[1][1] = eigenVectorMatrixFloat[1][1];
+			vectorsPacked[1][2] = eigenVectorMatrixFloat[2][1];
+
+			vectorsPacked[2][0] = eigenVectorMatrixFloat[0][2];
+			vectorsPacked[2][1] = eigenVectorMatrixFloat[1][2];
+			vectorsPacked[2][2] = eigenVectorMatrixFloat[2][2];
+
+			double[] eigenValues=new double[3];
 			
-			Jama.Matrix c = new Jama.Matrix( covariance );
-			
-			System.out.println( "Doing Eigenvalue decomposition..." );
-			
-			EigenvalueDecomposition eig = c.eig();
-			
-			double [] eigenValues = eig.getRealEigenvalues();
-			
-			/*
-			  
-			System.out.println( "eigenValue 0: is " + eigenValues[0] );
-			System.out.println( "eigenValue 1: is " + eigenValues[1] );
-			System.out.println( "eigenValue 2: is " + eigenValues[2] );
-			
-			*/
-			
-			Matrix eigenVectorMatrix = eig.getV();
-			
-			/*
-			  
-			System.out.println( "First column:" );
-			System.out.println( "" + eigenVectorMatrix.get(0,0) );
-			System.out.println( "" + eigenVectorMatrix.get(1,0) );
-			System.out.println( "" + eigenVectorMatrix.get(2,0) );
-			
-			System.out.println( "Second column:" );
-			System.out.println( "" + eigenVectorMatrix.get(0,1) );
-			System.out.println( "" + eigenVectorMatrix.get(1,1) );
-			System.out.println( "" + eigenVectorMatrix.get(2,1) );
-			
-			System.out.println( "Third column:" );
-			System.out.println( "" + eigenVectorMatrix.get(0,2) );
-			System.out.println( "" + eigenVectorMatrix.get(1,2) );
-			System.out.println( "" + eigenVectorMatrix.get(2,2) );
-			
-			*/
-			
-			double [][] vectorsPacked =  { { eigenVectorMatrix.get(0,0),
-							 eigenVectorMatrix.get(1,0),
-							 eigenVectorMatrix.get(2,0) },
-						       { eigenVectorMatrix.get(0,1),
-							 eigenVectorMatrix.get(1,1),
-							 eigenVectorMatrix.get(2,1) },
-						       { eigenVectorMatrix.get(0,2),
-							 eigenVectorMatrix.get(1,2),
-							 eigenVectorMatrix.get(2,2) } };
-			
+			eigenValues[0] = eigenValuesFloat[0];
+			eigenValues[1] = eigenValuesFloat[1];
+			eigenValues[2] = eigenValuesFloat[2];
+
 			PrincipalComponents pcaResults = new PrincipalComponents(
 				eigenValues,
 				vectorsPacked,
