@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 import ij.*;
 import ij.process.*;
 import ij.gui.*;
@@ -81,9 +83,33 @@ class AmiraMeshDecoder {
 
 			Pattern latticePattern=Pattern.compile("define Lattice ([0-9]+) ([0-9]+) ([0-9]+).*");
 
+			/* The AmiraMesh file format documentation:
+
+			    https://amira.zib.de/usersguide31/amiramesh/HxFileFormat_AmiraMesh.html
+
+			   ... states that, "The first line of an
+			   AmiraMesh file should be a special comment
+			   including the identifier AmiraMesh."  It's
+			   not clear how strong the use of "should" is
+			   in this very informal documentation, but
+			   (a) we get into trouble by trying to parse
+			   non-AmiraMesh files and (b) Amira itself
+			   requires that the first line is a comment
+			   of that form, so we enforce that here. */
+
+			boolean firstLine=true;
+			Pattern firstLinePattern=Pattern.compile("^\\s*#.*AmiraMesh.*$");
+
 			while(true) {
 				if(!readPreambleLine())
 					return false;
+				if(firstLine) {
+					Matcher firstLineMatcher=firstLinePattern.matcher(line);
+					if(!firstLineMatcher.matches()) {
+						throw new Exception("This doesn't look like an AmiraMesh file; the first line must be a comment containing the text 'AmiraMesh'.");
+					}
+					firstLine=false;
+				}
 				Matcher m=latticePattern.matcher(line);
 				if(m.matches()) {
 					width=Integer.decode(m.group(1)).intValue();
