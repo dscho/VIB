@@ -8,6 +8,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.io.IOException;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionListener;
@@ -59,12 +60,16 @@ public class Segmentator_ extends JFrame implements PlugIn {
 	private static final String CLEAN = "clean";
 
 
+	private static final String NAIVE_LABEL = "naive auto label (optic lobes)";
+
+
 	JList labelList;
 	DefaultListModel labelListModel;
 
 	JSpinner minThreshold;
 	JSpinner maxThreshold;
 
+	JTextField autoLabelFileLoc;
 
 	public Segmentator_() {
 		super("segmentator");
@@ -107,6 +112,10 @@ public class Segmentator_ extends JFrame implements PlugIn {
 		GuiBuilder.add2Command(this, DILATE, DILATE, ERODE, ERODE, controllor);
 		GuiBuilder.add2Command(this, OPEN,OPEN,CLOSE,CLOSE, controllor);
 		GuiBuilder.addCommand(this, CLEAN, CLEAN, controllor);
+
+
+		autoLabelFileLoc = GuiBuilder.addFileField(this, "auto label file loc (av intensity");
+		GuiBuilder.addCommand(this, NAIVE_LABEL, NAIVE_LABEL, controllor);
 
 
 		pack();
@@ -306,9 +315,30 @@ public class Segmentator_ extends JFrame implements PlugIn {
 				} else {
 					IJ.showMessage("please select a label first");
 				}
+			}else if(e.getActionCommand().equals(NAIVE_LABEL)){
+                new RunAsyncronous(e.getActionCommand()).start();
 			}
 
-			currentImage.updateAndDraw();
+			if(currentImage != null)
+				currentImage.updateAndDraw();
+		}
+
+		private class RunAsyncronous extends Thread{
+			String cmd;
+			public RunAsyncronous (String command) {
+				cmd = command;
+			}
+
+			public void run() {
+				if(cmd.equals(NAIVE_LABEL)){
+					try {
+						AutoLabellerNaive naive = new AutoLabellerNaive(autoLabelFileLoc.getText());
+						naive.segment(new SegmentatorModel(currentImage));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 		}
 
 

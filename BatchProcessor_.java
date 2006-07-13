@@ -8,12 +8,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import gui.GuiBuilder;
 import imagescience.transforms.Affine;
 import imagescience.images.ByteImage;
+import adt.RunningStatistics;
 
 /**
  * User: Tom Larkworthy
@@ -27,7 +29,7 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 	public static final String RUN_BATCH = "run";
 
-	JCheckBox amiraConvert, scale, rigidRegistration, averageIntensity;
+	JCheckBox amiraConvert, scale, rigidRegistration, summeryImages;
 
 	JTextField amiraDirectory; //to put the amira files in
 
@@ -36,7 +38,7 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 	JSpinner initialPos, startLevel, stopLevel; //Rigid Reg params
 	JTextField templateFileLocation;
 
-	JTextField averageIntensityLocation;
+	JTextField summeryImagesName;
 
 	public BatchProcessor_() {
 		Controllor controllor = new Controllor();
@@ -63,8 +65,8 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 		templateFileLocation = GuiBuilder.addFileField(this, "template file");
 
 
-		averageIntensity = GuiBuilder.addCheckBox(this, "calc average intensity");
-		averageIntensityLocation = GuiBuilder.addFileSaveField(this, "save location");
+		summeryImages = GuiBuilder.addCheckBox(this, "calc average intensity & label distributions");
+		summeryImagesName = GuiBuilder.addFileSaveField(this, "save location");
 
 		GuiBuilder.addCommand(this, RUN_BATCH, RUN_BATCH, controllor);
 	}
@@ -243,60 +245,228 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 	}
 
 
-	private void averageIntensity(ArrayList<File> files, File saveLocation) {
-		ImagePlus result = null;
+	private void generateSummeryImages(ArrayList<File> files, File saveLocation) {
+		ImagePlus averageImage = null;
+		HashMap<Byte, RunningStatistics> materialStats = new HashMap<Byte, RunningStatistics>();
+		HashMap<Byte, String> materialNames = null;
 
-		int[][] pixelTotals = null;
+
+		int[][] averagePixels = null;
+		HashMap<Byte, byte[][]> materialPixels = new HashMap<Byte, byte[][]>();
 
 		int stackSize = 0;
 		int pixelSize = 0;
 
+		int width = -1;
+		int height = -1;
+
 
 		int n = 0;
 
-
 		for (File file : files) {
-			ImagePlus current = open(file);
+
 			n++;
 
-			if (result == null) {
-				result = current; //reuse the first image (which is setup) as our final data store
+			//process average image
+			ImagePlus current = open(file);
+			if (averageImage == null) {
+				averageImage = current; //reuse the first image (which is setup) as our final data store for the average intensity values
 
 
 				stackSize = current.getStackSize();
 				pixelSize = current.getWidth() * current.getHeight();
-				pixelTotals = new int[pixelSize][stackSize];
+
+				width = current.getWidth();
+				height = current.getHeight();
+
+				averagePixels = new int[pixelSize][stackSize];
 			}
 
 			//copy data across and do math
-
 			for (int stack = 1; stack <= stackSize; stack++) {
 				byte[] pixels = (byte[]) current.getStack().getProcessor(stack).getPixels();
 
 				for (int i = 0; i < pixelSize; i++) {
-					pixelTotals[i][stack - 1] += pixels[i] & 0xFF;
+					averagePixels[i][stack - 1] += pixels[i] & 0xFF;
 				}
 			}
 
 
-			if (current != result) {
+			//process associate labels (if exists)
+
+			ImagePlus currentLabels = open(getLabelFileFor(file));
+			if (currentLabels != null) {
+
+				System.out.println("found labels for " + file);
+
+				//retreive names of the bytes while we have a file open, and if we havn't allready
+				//an initialization routine onl called once
+				if (materialNames == null) {
+					materialNames = new HashMap<Byte, String>();
+					AmiraParameters params = new AmiraParameters(currentLabels);
+					String[] names = params.getMaterialList();
+					for (int i = 0; i < names.length; i++) {
+						materialNames.put((byte) i, names[i]);
+					}
+					System.out.println("materialNames = " + materialNames);
+				}
+
+				for (int stack = 1; stack <= stackSize; stack++) {
+					IJ.showProgress(stack,  stackSize);
+					byte[] currentLabelPixels = (byte[]) currentLabels.getStack().getProcessor(stack).getPixels();
+
+					for (int i = 0; i < pixelSize; i++) {
+						byte pixel = currentLabelPixels[i];
+
+						if (pixel == -1) pixel = 0; //255 -> 1 Dunno where that comes from (boundary??)
+
+						RunningStatistics stats = getRunningStats(pixel, materialStats);
+						//record the intensity value of the coresponding pixel in the stastitics for that material
+						stats.addData(((byte[]) current.getStack().getProcessor(stack).getPixels())[i] & 0xFF);
+						byte[][] labelPixels = getLabelPixels(pixel, materialPixels, pixelSize, stackSize);
+						labelPixels[i][stack - 1]++; //record the occurence
+
+					}
+
+
+				}
+				for (RunningStatistics statistics : materialStats.values()) {
+					statistics.endOfSequence();
+				}
+
+				currentLabels.close();
+			} else {
+				System.err.println("could not find labels file for " + file);
+			}
+
+
+			//close image data after use
+			if (current != averageImage) {
 				current.close();//close current after reading it (except if it is our results object)
 			}
+
+
 		}
 
-		//now we need to transfer the info  into the results image
+		//now we need to transfer the average pixel data info  into the results image
 
 		for (int stack = 1; stack <= stackSize; stack++) {
-			byte[] pixels = (byte[]) result.getStack().getProcessor(stack).getPixels();
+			byte[] pixels = (byte[]) averageImage.getStack().getProcessor(stack).getPixels();
 			for (int i = 0; i < pixelSize; i++) {
-				pixels[i] = (byte) (pixelTotals[i][stack - 1] / n);
+				pixels[i] = (byte) (averagePixels[i][stack - 1] / n);
 			}
 		}
 
-		saveAndClose(saveLocation, result);
+		saveAndClose(new File(saveLocation.getPath() + ".grey"), averageImage);
+
+		//we also need to generate all the images for the labels
+		for (Byte materialId : materialPixels.keySet()) {
+
+			String materialName = materialNames.get(materialId);
+			byte[][] labelPixels = materialPixels.get(materialId);
+
+			System.out.println(IJ.freeMemory());
+			ImagePlus saveImage = IJ.createImage(materialName, "8-bit", width, height, stackSize);
+
+			for (int stack = 1; stack <= stackSize; stack++) {
+				byte[] pixels = (byte[]) saveImage.getStack().getProcessor(stack).getPixels();
+				for (int i = 0; i < pixelSize; i++) {
+					pixels[i] = (byte) (255 * (double) labelPixels[i][stack - 1] / n);
+				}
+			}
+
+			saveAndClose(new File(saveLocation.getPath() + "_" + materialName + ".grey"), saveImage);
+		}
+
+		//save a summery file
+		saveSummery(saveLocation.getPath(), materialStats, materialNames, materialPixels);
+
 	}
 
+	private void saveSummery(String basePath, HashMap<Byte, RunningStatistics> materialStats, HashMap<Byte, String> materialNames, HashMap<Byte, byte[][]> pixels) {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter(basePath + ".txt"));
+
+			for (Byte materialId : materialStats.keySet()) {
+				out.append(materialId.toString());
+				out.append("\t");
+				out.append(materialNames.get(materialId));
+				out.append("\t");
+				out.append(String.valueOf(materialStats.get(materialId).getMean()));
+				out.append("\t");
+				out.append(String.valueOf(materialStats.get(materialId).getVariance()));
+				out.append("\t");
+				out.append(String.valueOf(materialStats.get(materialId).getMeanSequenceLength()));
+				out.append("\t");
+				out.append(String.valueOf(materialStats.get(materialId).getVarianceSequenceLength()));
+
+				if (pixels.get(materialId) != null) {
+					out.append("\t");
+					out.append(basePath + "_" + materialNames.get(materialId) + ".grey");
+				}
+
+				out.append("\n");
+			}
+
+			out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
+	 * retrieves the pixel array for the specified material, creating one if one does not exist allready
+	 *
+	 * @param material
+	 * @param materialPixelStore
+	 * @param pixelSize
+	 * @param stackSize
+	 * @return
+	 */
+	private byte[][] getLabelPixels(byte material, HashMap<Byte, byte[][]> materialPixelStore, int pixelSize, int stackSize) {
+		byte[][] pixels = materialPixelStore.get(new Byte(material));
+		if (pixels == null) {
+			pixels = new byte[pixelSize][stackSize];
+			materialPixelStore.put(new Byte(material), pixels);
+		}
+		return pixels;
+	}
+
+	/**
+	 * @return
+	 */
+	private RunningStatistics getRunningStats(byte material, HashMap<Byte, RunningStatistics> statsStore) {
+		RunningStatistics stats = statsStore.get(new Byte(material));
+		if (stats == null) {
+			stats = new RunningStatistics();
+			statsStore.put(new Byte(material), stats);
+		}
+		return stats;
+	}
+
+	/**
+	 * returns the file
+	 *
+	 * @param file
+	 * @return
+	 */
+
+	private File getLabelFileFor(File file) {
+		int suffixIndex = file.getName().lastIndexOf(".grey");
+		if (suffixIndex == -1) return null;
+
+		String trimmed = file.getName().substring(0, suffixIndex);
+		String labelName = trimmed + ".labels";
+
+		File labelsFileLocation = new File(file.getParentFile(), labelName);
+		System.out.println("labelsFileLocation = " + labelsFileLocation);
+		return labelsFileLocation;
+	}
+
+
 	private static ImagePlus open(File file) {
+		if (!file.exists()) return null;
 		AmiraMeshReader_ reader = new AmiraMeshReader_();
 		reader.run(file.getPath());
 		return reader;
@@ -321,14 +491,15 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 
 	private class Controllor implements ActionListener, Runnable {
-        JComponent source;
+		JComponent source;
+
 		public void actionPerformed(ActionEvent e) {
 			if (e.getActionCommand().equals(RUN_BATCH)) {
-                source = ((JComponent)e.getSource());
+				source = ((JComponent) e.getSource());
 				source.setEnabled(false);
 				Thread thread = new Thread(this);
 				thread.setPriority(Thread.MIN_PRIORITY); //run in a lower priority so it doesn't lock the machine up so much
-                thread.start();
+				thread.start();
 			} else {
 				System.err.println("unkown action command sent to BatchProcessor's controllor");
 			}
@@ -350,10 +521,10 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 			}
 
-			if (averageIntensity.isSelected())
-				averageIntensity(getFiles(), new File(averageIntensityLocation.getText()));
+			if (summeryImages.isSelected())
+				generateSummeryImages(getFiles(), new File(summeryImagesName.getText()));
 
-			if(source!=null){
+			if (source != null) {
 				source.setEnabled(true);
 				source = null;
 			}
