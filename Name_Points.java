@@ -13,8 +13,6 @@ import ij.measure.Calibration;
 import java.awt.Color;
 import java.io.*;
 
-import Jama.*;
-
 import math3d.Point3d;
 
 import java.util.ArrayList;
