@@ -18,7 +18,6 @@ public class ROIBrush_ implements PlugIn {
 					"var roiBrushWidth = 10;\n" +
 					"var pollDelay = 10;\n" +
                     "var leftClick=16, alt=9;\n" +
-                    "\n" +
                     "macro 'Roi Brush Tool - C111o11ff' {\n" +
                     " while (true) {\n" +
                     "  getCursorLoc(x, y, z, flags);\n" +

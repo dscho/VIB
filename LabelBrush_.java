@@ -18,7 +18,6 @@ public class LabelBrush_ implements PlugIn {
     public static final String MACRO_CMD = "var brushWidth = 10;\n" +
                     "var leftClick=16, alt=9;\n" +
 					"var pollDelay = 10;\n" +
-                                        "\n" +
                     "macro 'Label Brush Tool - C111O11ffC100T6c0aL' {\n" +
                     " while (true) {\n" +
                     "  getCursorLoc(x, y, z, flags);\n" +
