@@ -15,7 +15,8 @@ import java.util.HashMap;
 import gui.GuiBuilder;
 import imagescience.transforms.Affine;
 import imagescience.images.ByteImage;
-import adt.RunningStatistics;
+import adt.PixelStats;
+import adt.ByteProbability;
 
 /**
  * User: Tom Larkworthy
@@ -247,7 +248,7 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 	private void generateSummeryImages(ArrayList<File> files, File saveLocation) {
 		ImagePlus averageImage = null;
-		HashMap<Byte, RunningStatistics> materialStats = new HashMap<Byte, RunningStatistics>();
+		HashMap<Byte, PixelStats> materialStats = new HashMap<Byte, PixelStats>();
 		HashMap<Byte, String> materialNames = null;
 
 
@@ -321,9 +322,9 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 						if (pixel == -1) pixel = 0; //255 -> 1 Dunno where that comes from (boundary??)
 
-						RunningStatistics stats = getRunningStats(pixel, materialStats);
+						PixelStats stats = getRunningStats(pixel, materialStats);
 						//record the intensity value of the coresponding pixel in the stastitics for that material
-						stats.addData(currentIntensityPixels[i] & 0xFF);
+						stats.addData(currentIntensityPixels[i]);
 						byte[][] labelPixels = getLabelPixels(pixel, materialPixels, pixelSize, stackSize);
 						labelPixels[i][stack - 1]++; //record the occurence
 
@@ -331,7 +332,7 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 
 				}
-				for (RunningStatistics statistics : materialStats.values()) {
+				for (PixelStats statistics : materialStats.values()) {
 					statistics.endOfSequence();
 				}
 
@@ -372,7 +373,7 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 			for (int stack = 1; stack <= stackSize; stack++) {
 				byte[] pixels = (byte[]) saveImage.getStack().getProcessor(stack).getPixels();
 				for (int i = 0; i < pixelSize; i++) {
-					pixels[i] = (byte) (255 * (double) labelPixels[i][stack - 1] / n);
+					pixels[i] = (byte) ByteProbability.INTEGER_TO_BYTE[(int)(255 * (double) labelPixels[i][stack - 1] / n)];
 				}
 			}
 
@@ -384,25 +385,26 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 	}
 
-	private void saveSummery(String basePath, HashMap<Byte, RunningStatistics> materialStats, HashMap<Byte, String> materialNames, HashMap<Byte, byte[][]> pixels) {
+	private void saveSummery(String basePath, HashMap<Byte, PixelStats> materialStats, HashMap<Byte, String> materialNames, HashMap<Byte, byte[][]> pixels) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(basePath + ".txt"));
 
 			for (Byte materialId : materialStats.keySet()) {
+				PixelStats stats = materialStats.get(materialId);
 				out.append(materialId.toString());
 				out.append("\t");
 				out.append(materialNames.get(materialId));
 				out.append("\t");
-				out.append(String.valueOf(materialStats.get(materialId).getMean()));
+				out.append(String.valueOf(stats.getMeanSequenceLength()));
 				out.append("\t");
-				out.append(String.valueOf(materialStats.get(materialId).getVariance()));
-				out.append("\t");
-				out.append(String.valueOf(materialStats.get(materialId).getMeanSequenceLength()));
-				out.append("\t");
-				out.append(String.valueOf(materialStats.get(materialId).getVarianceSequenceLength()));
+				out.append(String.valueOf(stats.getVarianceSequenceLength()));
+                out.append("\t");
+				for(int i=0;i<256;i++){
+					out.append(String.valueOf(stats.getProb(ByteProbability.INTEGER_TO_BYTE[i])));
+					out.append("\t");
+				}
 
 				if (pixels.get(materialId) != null) {
-					out.append("\t");
 					out.append(basePath + "_" + materialNames.get(materialId) + ".grey");
 				}
 
@@ -437,10 +439,10 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 	/**
 	 * @return
 	 */
-	private RunningStatistics getRunningStats(byte material, HashMap<Byte, RunningStatistics> statsStore) {
-		RunningStatistics stats = statsStore.get(new Byte(material));
+	private PixelStats getRunningStats(byte material, HashMap<Byte, PixelStats> statsStore) {
+		PixelStats stats = statsStore.get(new Byte(material));
 		if (stats == null) {
-			stats = new RunningStatistics();
+			stats = new PixelStats();
 			statsStore.put(new Byte(material), stats);
 		}
 		return stats;

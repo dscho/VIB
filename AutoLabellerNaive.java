@@ -1,5 +1,6 @@
 
-import adt.RunningStatistics;
+import adt.PixelStats;
+import adt.ByteProbability;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,7 +18,6 @@ public class AutoLabellerNaive extends AutoLabeller {
 	}
 
 	public void segment(SegmentatorModel model) {
-        if(true) return;
 		
         System.out.println("starting naive segmentation");
 		int width = model.data.getWidth();
@@ -29,13 +29,11 @@ public class AutoLabellerNaive extends AutoLabeller {
 		//p(label|data) is proportioanl to
 		//p(data|label)p(label)
 		//where p(label) is what proportion on average is that label present
-		HashMap<Byte, Double> pLabels = new HashMap<Byte, Double>();
-
-		for (Byte materialId : stats.keySet()) {
-			MaterialStats stat = stats.get(materialId);
-			pLabels.put(materialId, stat.volumeMean / volume);
-
-			//System.out.println("p(label= " + (materialId&0xFF)+") = " + stat.volumeMean / volume);
+		byte[] pLabels = new byte[labelCount];
+		for(int i=0;i<labelCount;i++){
+			LabelStats stat = stats.get(labelIds[i]);
+            pLabels[i] = ByteProbability.toByte(stat.volumeMean / volume);
+			System.out.println("p(label= " + (labelIds[i]&0xFF)+") = " + pLabels[i]);
 		}
 
 
@@ -44,47 +42,50 @@ public class AutoLabellerNaive extends AutoLabeller {
 		//we can assume the labels are blank allready
 		//so only within the labels bounding box should we label
 		for (int z = zMin; z <= zMax; z++) {
-    	//for (int z = 65; z <= 70; z++) {
+    	//for (int z = 55; z <= 56; z++) {
 			IJ.showProgress(z, zMax);
             System.out.println("z = " + z);
 
 			byte[] pixels = (byte[]) model.data.getStack().getProcessor(z).getPixels();
+			byte[] labelPixels = (byte[])model.getLabelImagePlus().getStack().getProcessor(z).getPixels();
 			for(int x=xMin; x<xMax; x++)
 			for(int y=yMin; y<yMax; y++)
+			//for(int x=95; x<120; x++)
+			//for(int y=290; y<305; y++)
 			{
 				int i= y*width + x;
 
 				//probabilities based on pixel intensities
-				HashMap<Byte, Double> mixtureProbs = getMixtureProbs(pixels[i]);
+				byte[] intensityProbs = getIntensityProbs(pixels[i]);
+
+				byte[] spatialProbs = getSpatialProbs(x,y,z);
 
 				//now find which label is ML
-				double ML = Double.MIN_VALUE;
+				byte ML = 0;
 
 				//System.out.printf("(%d, %d)", x, y);
 				byte MLid = 0;
 
-				for(int materialIndex=0; materialIndex < numberOfMaterials; materialIndex++) {
-					byte materialId = materialIds[materialIndex];
-                    Byte materialIdObj =  materialId;
 
-					MaterialStats stat = stats.get(materialIdObj);
+				for(int materialIndex=0; materialIndex < labelCount; materialIndex++) {
+					byte materialId = labelIds[materialIndex];
 
+					LabelStats stat = stats.get(materialId);
 
 					//where p(data|label) depends on the spatial sposition, and intensity vals
-					double spatialProb = stat.spatialDistribution.getDouble(x,y,z);
+					byte spatialProb = spatialProbs[materialIndex];
 					//spatialProb = Math.min(spatialProb, .95);
-					double intensityProb = mixtureProbs.get(materialIdObj);
-					double pDataGLabel = spatialProb * intensityProb ;
-				    double p = pLabels.get(materialIdObj) *  pDataGLabel;
+					byte intensityProb = intensityProbs[materialIndex];
 
-					//System.out.printf("%d %f %f %f", materialId, spatialProb, intensityProb, p);
-					if(p > ML){
+					byte p = ByteProbability.multiply(spatialProb, intensityProb) ;
+				    
+					if((p&0xFF) > (ML&0xFF)){
 						ML = p;
 						MLid = materialId;
 					}
 
 				}
-				((byte [] )model.getLabelImagePlus().getStack().getProcessor(z).getPixels())[i] = MLid;
+				labelPixels[i] = MLid;
 			}
 			model.updateSlice(z);
 		}

@@ -19,17 +19,17 @@ import java.io.IOException;
  * Time: 19:10:47
  */
 public abstract class AutoLabeller {
-	HashMap<Byte, MaterialStats> stats = new LinkedHashMap<Byte, MaterialStats>();
+	HashMap<Byte, LabelStats> stats = new LinkedHashMap<Byte, LabelStats>();
 
 	//HashMap<Byte, HashMap<Byte, Double>> mixtureProbabilityCache = new HashMap<Byte, HashMap<Byte, Double>>();
 
-	HashMap<Byte, Double>[] mixtureProbabilityCache;
+	//HashMap<Byte, Double>[] mixtureProbabilityCache;
 
 
-	HashMap<Byte, Byte>[] mixtureFastProbabilityCache;
+	byte[][] intensityProbabilities;
 
-	final int numberOfMaterials;
-	byte [] materialIds;
+	final int labelCount;
+	byte[] labelIds;
 
 	//bounds of labels that are not external!
 	int xMin = Integer.MAX_VALUE, xMax = Integer.MIN_VALUE;
@@ -37,58 +37,87 @@ public abstract class AutoLabeller {
 	int zMin = Integer.MAX_VALUE, zMax = Integer.MIN_VALUE;
 
 
-
-
 	public AutoLabeller(String summeryLocation) throws IOException {
 		BufferedReader in = new BufferedReader(new FileReader(summeryLocation));
 		String line = in.readLine();
 
 
-		TreeSet<MaterialStats> orderedSet = new TreeSet<MaterialStats>();
+		TreeSet<LabelStats> orderedSet = new TreeSet<LabelStats>();
 		while (line != null) {
-			MaterialStats materialStats = readStats(line);
-			orderedSet.add(materialStats);
+			LabelStats labelStats = readStats(line);
+			orderedSet.add(labelStats);
 
-			System.out.println("loaded " + materialStats.toString());
+			System.out.println("loaded " + labelStats.toString());
 
 
 			line = in.readLine();
 		}
-		materialIds = new byte[orderedSet.size()];
-		numberOfMaterials = materialIds.length;
+		in.close();
 
-		int index =0;
-		for (MaterialStats materialStats : orderedSet) {
-			System.out.println("adding " + materialStats);
-			stats.put(materialStats.id, materialStats);
-			materialIds[index++] = materialStats.id;
+		labelIds = new byte[orderedSet.size()];
+		labelCount = labelIds.length;
+
+		int index = 0;
+		for (LabelStats labelStats : orderedSet) {
+			System.out.println("adding " + labelStats);
+			stats.put(labelStats.id, labelStats);
+			labelIds[index++] = labelStats.id;
 		}
 
 		System.out.println("summary file read");
 
-		mixtureProbabilityCache = new LinkedHashMap[256];
-		mixtureFastProbabilityCache = new LinkedHashMap[256];
-
-		for(int i=0; i<256; i++) {
-			byte t = ByteProbability.toByte(i);
-
-			System.out.println("intensity = " + i);
-
-			LinkedHashMap<Byte, Double> mp = calcMixtureProb(t);
-			mixtureProbabilityCache[t&0xFF] = mp;
-            LinkedHashMap<Byte, Byte> fmp = new LinkedHashMap<Byte, Byte>();
-			for (Byte materialId : stats.keySet()) {
-				fmp.put(materialId, ByteProbability.toByte(mp.get(materialId)));
-			}
-			mixtureFastProbabilityCache[t&0xFF] = fmp;
-
-			System.out.println("mp = " + mp);
-			System.out.println("fmp = " + fmp);
-		}
+		calculateLabelGivenIntensityProbabilites();
 
 		System.out.flush();
 	}
 
+	private void calculateLabelGivenIntensityProbabilites() {
+		//mixtureProbabilityCache = new LinkedHashMap[256];
+		intensityProbabilities = new byte[256][labelCount];
+		double[][] precicionCalc = new double[256][labelCount];
+
+
+		for (int i = 0; i < 256; i++) {
+			byte pixelIntensity = ByteProbability.INTEGER_TO_BYTE[i];
+			double total = 0;
+			double totalVolume=0;
+
+			StringBuffer buf = new StringBuffer("intesity = ").append(i).append(" ");
+
+            //buf.append("initial");
+			for (int j = 0; j < labelCount; j++) {
+				LabelStats stat = stats.get(labelIds[j]);
+
+				precicionCalc[i][j] = stat.getPixelProb(pixelIntensity);
+				total += precicionCalc[i][j];
+				totalVolume+=stat.volumeMean;
+			}
+			//normalize and add effect of volume
+			double total2=0;
+			//buf.append("Norm+vol ");
+            for (int j = 0; j < intensityProbabilities[i].length; j++) {
+				LabelStats stat = stats.get(labelIds[j]);
+				precicionCalc[i][j] = (precicionCalc[i][j] / total)/* * (stat.volumeMean/totalVolume)*/;
+				total2+=precicionCalc[i][j];
+
+				//buf.append(precicionCalc[i][j]).append(" ");
+			}
+
+			//normalize and pack into the byte version
+			for (int j = 0; j < intensityProbabilities[i].length; j++) {
+				LabelStats stat = stats.get(labelIds[j]);
+				precicionCalc[i][j]/=total2;
+
+				intensityProbabilities[i][j] = ByteProbability.toByte((precicionCalc[i][j]));
+
+				buf.append(intensityProbabilities[i][j]).append(" ");
+				//buf.append(precicionCalc[i][j]).append(" ");
+			}
+
+			System.out.println(buf);
+
+		}
+	}
 
 
 	/**
@@ -96,10 +125,13 @@ public abstract class AutoLabeller {
 	 *
 	 * @param pixel
 	 */
+	/*
 	private LinkedHashMap<Byte, Double> calcMixtureProb(byte pixel) {
 		LinkedHashMap<Byte, Double> ret = new LinkedHashMap<Byte, Double>();
 
 		double total = 0;
+
+
 
 		double totalVolume = 0;
 		for (Byte materialId : stats.keySet()) {
@@ -115,7 +147,7 @@ public abstract class AutoLabeller {
 		for (Byte materialId : stats.keySet()) {
 			ret.put(materialId, ret.get(materialId) / total);
 		}
-		total=0;
+		total = 0;
 		System.out.println("before volume = " + ret);
 		//mix
 		for (Byte materialId : stats.keySet()) {
@@ -126,33 +158,66 @@ public abstract class AutoLabeller {
 		for (Byte materialId : stats.keySet()) {
 			ret.put(materialId, ret.get(materialId) / total);
 		}
-        System.out.println("after volume = " + ret);
+		System.out.println("after volume = " + ret);
 
 
 		return ret;
 	}
 
-	public HashMap<Byte, Double> getMixtureProbs(byte pixel){
-		return mixtureProbabilityCache[pixel&0xFF];
+	public HashMap<Byte, Double> getMixtureProbs(byte pixel) {
+		return mixtureProbabilityCache[pixel & 0xFF];
+	}     */
+
+	/**
+	 * returns(normailized) probs of a label given its intensity (label id given my amterialIds)
+	 * @param pixel
+	 * @return
+	 */
+	public byte[] getIntensityProbs(byte pixel) {
+		return intensityProbabilities[pixel & 0xFF];
+	}
+	/**
+	 * returns(normailized) probs of a label given its location
+	 * @return
+	 */
+	public byte[] getSpatialProbs(int x, int y, int z) {
+		byte[] ret = new byte[labelCount];
+
+		for(int i=0; i < labelCount; i++){
+			byte id = labelIds[i];
+			LabelStats stat = stats.get(id);
+
+			ret[i] = stat.spatialDistribution.get(x,y,z);
+            //System.out.print(ret[i]);
+			//System.out.print(" ");
+		}
+		//System.out.println();
+
+
+
+		return ret;
 	}
 
-	public HashMap<Byte, Byte> getFastMixtureProbs(byte pixel){
-		return mixtureFastProbabilityCache[pixel&0xFF];
-	}
-
-	private MaterialStats readStats(String line) {
+	private LabelStats readStats(String line) {
 		StringTokenizer tokenizer = new StringTokenizer(line, "\t", false);
 
-		MaterialStats ret = new MaterialStats();
+		LabelStats ret = new LabelStats();
 
 		ret.id = Byte.parseByte(tokenizer.nextToken());
 		ret.name = tokenizer.nextToken();
 
+		/*
 		ret.intensityMean = Double.parseDouble(tokenizer.nextToken());
 		ret.intensityVarience = Double.parseDouble(tokenizer.nextToken());
+        */
 
 		ret.volumeMean = Double.parseDouble(tokenizer.nextToken());
 		ret.volumeVariance = Double.parseDouble(tokenizer.nextToken());
+
+		//read pixel intesity probs
+		for (int i = 0; i < 256; i++) {
+			ret.pixelProb[i] = Double.parseDouble(tokenizer.nextToken());
+		}
 
 		if (tokenizer.hasMoreTokens()) {
 			String file = tokenizer.nextToken();
@@ -198,23 +263,22 @@ public abstract class AutoLabeller {
 
 	public abstract void segment(SegmentatorModel model);
 
-	public class MaterialStats implements Comparable{
+	public class LabelStats implements Comparable {
 		byte id;
 		String name;
 
-		double intensityMean;
-		double intensityVarience;
+		//double intensityMean;
+		//double intensityVarience;
 
 		double volumeMean;
 		double volumeVariance;
 
 		Byte3DArray spatialDistribution;
+		double[] pixelProb = new double[256];
 
 		//returns a proportional probability of this intensity value being generated by this material
-		public double getProProb(byte pixel) {
-			int val = pixel & 0xFF;
-			//return a guassian based estimate of likelyness
-			return (Math.pow(Math.E, -(Math.pow(val - intensityMean, 2) / (2 * intensityVarience)))) / (Math.sqrt(intensityVarience) * Math.sqrt(2 * Math.PI));
+		public double getPixelProb(byte pixel) {
+			return pixelProb[pixel & 0xFF];
 		}
 
 		public String toString() {
@@ -232,7 +296,7 @@ public abstract class AutoLabeller {
 		}
 
 		public int compareTo(Object o) {
-			return ((MaterialStats)o).id < id ? 1:-1;
+			return ((LabelStats) o).id < id ? 1 : -1;
 		}
 	}
 }
