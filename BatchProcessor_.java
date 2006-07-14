@@ -314,6 +314,7 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 				for (int stack = 1; stack <= stackSize; stack++) {
 					IJ.showProgress(stack,  stackSize);
 					byte[] currentLabelPixels = (byte[]) currentLabels.getStack().getProcessor(stack).getPixels();
+                    byte[] currentIntensityPixels = (byte[]) current.getStack().getProcessor(stack).getPixels();
 
 					for (int i = 0; i < pixelSize; i++) {
 						byte pixel = currentLabelPixels[i];
@@ -322,7 +323,7 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 
 						RunningStatistics stats = getRunningStats(pixel, materialStats);
 						//record the intensity value of the coresponding pixel in the stastitics for that material
-						stats.addData(((byte[]) current.getStack().getProcessor(stack).getPixels())[i] & 0xFF);
+						stats.addData(currentIntensityPixels[i] & 0xFF);
 						byte[][] labelPixels = getLabelPixels(pixel, materialPixels, pixelSize, stackSize);
 						labelPixels[i][stack - 1]++; //record the occurence
 
