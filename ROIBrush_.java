@@ -33,7 +33,6 @@ public class ROIBrush_ implements PlugIn {
                     "\n" +
                     "macro 'Roi Brush Tool Options...' {\n" +
                     " roiBrushWidth = getNumber('Roi Brush Width (pixels):', brushWidth);\n" +
-					" pollDelay = getNumber('Polling delay:', pollDelay);\n" +
                     "}";
 
     public void run(String arg) {
@@ -61,7 +60,7 @@ public class ROIBrush_ implements PlugIn {
                 Integer.parseInt(width));
     }
 
-    public static void label(int x, int y, int z, int flags, int width) {
+    public synchronized static void label(int x, int y, int z, int flags, int width) {
         Roi roi = IJ.getImage().getRoi();
         if (roi != null) {
             if (!(roi instanceof ShapeRoi)) {
@@ -78,7 +77,7 @@ public class ROIBrush_ implements PlugIn {
         IJ.getImage().setRoi(roi);
     }
 
-    public static void unlabel(int x, int y, int z, int flags, int width) {
+    public synchronized static void unlabel(int x, int y, int z, int flags, int width) {
         Roi roi = IJ.getImage().getRoi();
         if (roi != null) {
             if (!(roi instanceof ShapeRoi)) {

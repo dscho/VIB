@@ -32,8 +32,7 @@ public class LabelBrush_ implements PlugIn {
                     "}\n" +
                     "\n" +
                     "macro 'Label Brush Tool Options...' {\n" +
-                    " brushWidth = getNumber('Label Brush Width (pixels):', brushWidth);\n" +
-					" pollDelay = getNumber('Polling delay:', pollDelay);\n" +
+                    " brushWidth = getNumber('Label Brush Width (pixels):', brushWidth);\n"+
                     "}";
 
 
@@ -52,7 +51,7 @@ public class LabelBrush_ implements PlugIn {
     }
 
     //methods in a macro accessable format
-    public static void label(String x, String y, String z, String flags, String width) {
+    public synchronized static void label(String x, String y, String z, String flags, String width) {
         label(Integer.parseInt(x),
                 Integer.parseInt(y),
                 Integer.parseInt(z),
@@ -60,7 +59,7 @@ public class LabelBrush_ implements PlugIn {
                 Integer.parseInt(width));
     }
 
-    public static void unlabel(String x, String y, String z, String flags, String width) {
+    public synchronized static void unlabel(String x, String y, String z, String flags, String width) {
         unlabel(Integer.parseInt(x),
                 Integer.parseInt(y),
                 Integer.parseInt(z),
