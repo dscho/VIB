@@ -1,4 +1,5 @@
 package vib.segment;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
@@ -7,6 +8,8 @@ import java.net.URL;
 import java.util.Vector;
 import ij.*;
 import ij.measure.Calibration;
+import ij.gui.GenericDialog;
+import vib.InterpolatedImage;
 
 /**
  * ContainerPanel: 
@@ -14,48 +17,63 @@ import ij.measure.Calibration;
  * listeners too.
  * 
  * @author Francois KUSZTOS
- * @version 3.0
+ * @version 5
  */
 public class ContainerPanel extends Panel {
-	
+	Window window;
 	Segmentation_Editor.CustomCanvas cc;
+
+	Choice labelImagesChoice;
+	Vector labelImages;
+
 	MainPanel pMain;
 	ToolsPanel pTools;
 	InfosPanel pInfos;
 	Font font = new Font("Helvetica", Font.PLAIN, 12);
 	
-	public ContainerPanel(Segmentation_Editor.CustomCanvas cc) {
+	public ContainerPanel(Segmentation_Editor.CustomCanvas cc, Window window) {
 		this.cc = cc;
+		this.window = window;
 		
 		setLayout(new BorderLayout());
-		setBackground(Color.LIGHT_GRAY);
-		
+
 		pMain = new MainPanel();
 		add(pMain, BorderLayout.NORTH);
 		
+		/*
 		pTools = new ToolsPanel();
 		add(pTools, BorderLayout.CENTER);
+		*/
 		
 		pInfos = new InfosPanel();
 		add(pInfos, BorderLayout.SOUTH);
 	}
 
-/*
-	public Dimension getMinimumSize() {
-		return getSize();
+	void setLabelImage(ImagePlus image) {
+		if (image == null) {
+			image = InterpolatedImage.cloneDimensionsOnly(
+					cc.getImage(),
+					ImagePlus.COLOR_256).getImage();
+			image.show();
+			// TODO: get initial parameters
+		}
+		cc.setLabels(image);
+		cc.repaint();
+		if (pMain != null) {
+			pMain.materials.initFrom(image);
+			pMain.materials.repaint();
+		}
 	}
-*/
 
 	//Build methods
-	public Button makeButton(String name, Object constr, Panel pan, ActionListener listener, Color bkgColor) {
+	private Button makeButton(String name, Object constr, Panel pan, ActionListener listener) {
 		Button button = new Button(name);
 		button.addActionListener(listener);
-		button.setBackground(bkgColor);
 		pan.add(button, constr);
 		return button;
 	}
 	
-	public ImageButton makeImageButton(String path, Object constr, Panel pan, ActionListener listener, Color bkgColor) {
+	private ImageButton makeImageButton(String path, Object constr, Panel pan, ActionListener listener) {
 		URL url;
 		Image img = null;
 		try {
@@ -65,120 +83,141 @@ public class ContainerPanel extends Panel {
 			e1.printStackTrace();
 		} catch(Exception e) {}
 		ImageButton button = new ImageButton(img);
-		button.setBackground(bkgColor);
 		button.addActionListener(listener);
 		pan.add(button, constr);
 		return button;
 	}
 	
-	public Label makeLabel(String txt, Object constr, Panel pan, Color bkgColor) {
+	Label makeLabel(String txt, Object constr, Panel pan) {
 		Label label = new Label(txt);
-		label.setBackground(bkgColor);
 		label.setFont(font);
 		pan.add(label, constr);
 		return label;
 	}
 
-	public Scrollbar makeScrollbar(Object constr, Panel pan, int orientation, int value, int visible, int minimum, int maximum, AdjustmentListener listener, Color bkgColor) {
+	private Scrollbar makeScrollbar(Object constr, Panel pan, int orientation, int value, int visible, int minimum, int maximum, AdjustmentListener listener) {
 		Scrollbar scroll = new Scrollbar(orientation, value, visible, minimum, maximum);
-		scroll.setBackground(bkgColor);
 		pan.add(scroll, constr);
 		scroll.addAdjustmentListener(listener);
 		return scroll;
 	}
 	
-	public TextField makeTextField (String init, Object constr, Panel pan, Color bkgColor) {
+	private TextField makeTextField (String init, Object constr, Panel pan) {
 		TextField text = new TextField(init);
-		text.setBackground(bkgColor);
 		text.setEditable(true);
 		text.setColumns(3);
 		pan.add(text, constr);
 		return text;
 	}
 
-	public Checkbox makeCheckbox (String text, boolean selected, Object constr, Panel pan, Color bkgColor) {
+	private Checkbox makeCheckbox (String text, boolean selected, Object constr, Panel pan) {
 		Checkbox check = new Checkbox(text, selected);
-		check.setBackground(bkgColor);
 		pan.add(check, constr);
 		return check;
 	}
 
 
-	//Main Panel
 	public class MainPanel extends Panel {
-
-		Color color = Color.LIGHT_GRAY;
+		Color color = Color.GRAY;
 		GridBagConstraints constr;
-		Labelizer iLabelizer;
-		MatList2 data;
+		MaterialList materials;
 		
 		ListenerZoom listenerZoom;
 		ListenerSelection listenerSelection;
 		ListenerTools listenerTools;
 		
-		Label lBlank, lBlank2, lBlank3, lBlank4, lBlank5;
-		Label lMaterials, lZoom, lSelection, lTools, lZoomLevel;
+		private Label lMaterials, lZoom, lSelection, lTools, lZoomLevel;
 		
-		ImageButton bZoomPlus, bZoomMinus, bArrow, bLetterC, bLetterR;
-		ImageButton bPlus, bMinus, bBrush, bLasso, bMagicWand;
-		ImageButton bPropagatingContour, bBlowTool, bCrossHair;
-		
+		private ImageButton bZoomPlus, bZoomMinus, bSave, bArrow, bLetterC, bLetterR;
+		private ImageButton bPlus, bMinus, bBrush, bLasso, bMagicWand;
+		private ImageButton bPropagatingContour, bBlowTool, bCrossHair;
 	
 		public MainPanel() {
 			setLayout(new GridBagLayout());
-			setBackground(color);
 
 			constr = new GridBagConstraints();
 			constr.fill = GridBagConstraints.BOTH;
 			constr.gridwidth = GridBagConstraints.REMAINDER;
 			
-			iLabelizer = new Labelizer(this);
+			addLabelImagesChoice();
 			addMaterialAndZoom();
 			addSelection();
-			addTools();
+			//addTools();
 		}
 		
-		public void addMaterialAndZoom() {
-			listenerZoom = new ListenerZoom();
-			
-			lMaterials = makeLabel("Materials:", constr, this, color);
-			
-			data = new MatList2();
-			add(data, constr);
+		void addLabelImagesChoice() {
+			makeLabel(" ", constr, this);
+			lMaterials = makeLabel("Labels:", constr, this);
+			labelImagesChoice = new Choice();
+			labelImages = new Vector();
+			int count = WindowManager.getWindowCount();
+			// TODO: add image listener
+			for (int i = 0; i < count; i++) {
+				ImagePlus image = WindowManager.getImage(i + 1);
+				if (image == cc.getImage() ||
+						image.getWidth() != 
+						cc.getImage().getWidth() ||
+						image.getHeight() != 
+						cc.getImage().getHeight() ||
+						image.getStack().getSize() != 
+						cc.getImage().getStack().getSize())
+					continue;
+				labelImagesChoice.add(image.getTitle());
+				labelImages.add(image);
+			}
+			labelImagesChoice.add("<new>");
+			labelImages.add(null);
+			setLabelImage((ImagePlus)labelImages.get(0));
+			add(labelImagesChoice, constr);
+			labelImagesChoice.addItemListener(new ItemListener() {
+					public void itemStateChanged(ItemEvent e) {
+					int selected =
+					labelImagesChoice.getSelectedIndex();
+					setLabelImage((ImagePlus)labelImages.get(selected));
+					}
+					});
+		}
 
-			lBlank = makeLabel(" ", constr, this, color);
-			lZoom = makeLabel("Zoom:", constr, this, color);
+	private void addMaterialAndZoom() {
+			listenerZoom = new ListenerZoom();
+			makeLabel(" ", constr, this);
+			lMaterials = makeLabel("Materials:", constr, this);
+			
+			materials = new MaterialList();
+			materials.initFrom(cc.getLabels());
+			add(materials, constr);
+
+			makeLabel(" ", constr, this);
+			lZoom = makeLabel("Zoom:", constr, this);
 				
 			constr.gridwidth = 1;
 			constr.weightx = 1.0;
-			bZoomPlus = makeImageButton("iconZoomPlus.png", constr, this, listenerZoom, color);
-			bZoomMinus = makeImageButton("iconZoomMinus.png", constr, this, listenerZoom, color);
-			lBlank2 = makeLabel(" ", constr, this, color);	
-			
-			constr.weightx = 2.0;
-			lZoomLevel = makeLabel(String.valueOf(cc.getMagnification()), constr, this, color);
+			bZoomPlus = makeImageButton("iconZoomPlus.png", constr, this, listenerZoom);
+			bZoomMinus = makeImageButton("iconZoomMinus.png", constr, this, listenerZoom);
+			makeLabel(" ", constr, this);	
+			lZoomLevel = makeLabel(String.valueOf(cc.getMagnification()), constr, this);
+			//bSave = makeImageButton("iconSaveAs.png", constr, this, listenerZoom);
 			
 			constr.gridwidth = GridBagConstraints.REMAINDER;
-			constr.weightx = 1.0;
-			lBlank3 = makeLabel(" ", constr, this, color);
+			makeLabel(" ", constr, this);
 		}
 		
 		public void addSelection() {
 			listenerSelection = new ListenerSelection();
 			
 			constr.weightx = 0.0;
-			lSelection = makeLabel("Selection:", constr, this, color);
+			lSelection = makeLabel("Selection:", constr, this);
 				
 			constr.gridwidth = 1;
 			constr.weightx = 1.0;
-			bArrow = makeImageButton("iconArrow.png", constr, this, listenerSelection, color);
-			bLetterC = makeImageButton("iconLetterC.png", constr, this, listenerSelection, color);
-			bLetterR = makeImageButton("iconLetterR.png", constr, this, listenerSelection, color);
-			bPlus = makeImageButton("iconPlus.png", constr, this, listenerSelection, color);
-			bMinus = makeImageButton("iconMinus.png", constr, this, listenerSelection, color);
+			//bArrow = makeImageButton("iconArrow.png", constr, this, listenerSelection);
+			//bLetterC = makeImageButton("iconLetterC.png", constr, this, listenerSelection);
+			//bLetterR = makeImageButton("iconLetterR.png", constr, this, listenerSelection);
+			bPlus = makeImageButton("iconPlus.png", constr, this, listenerSelection);
+			bMinus = makeImageButton("iconMinus.png", constr, this, listenerSelection);
 				
 			constr.gridwidth = GridBagConstraints.REMAINDER;
-			lBlank4 = makeLabel(" ", constr, this, color);
+			makeLabel(" ", constr, this);
 				
 		}
 		
@@ -186,18 +225,18 @@ public class ContainerPanel extends Panel {
 			listenerTools = new ListenerTools();
 			
 			constr.weightx = 0.0;
-			lTools = makeLabel("Tools:", constr, this, color);
+			lTools = makeLabel("Tools:", constr, this);
 				
 			constr.gridwidth = 1;
 			constr.weightx = 1.0;
-			bBrush = makeImageButton("iconBrush.png", constr, this, listenerTools, color);
-			bLasso = makeImageButton("iconLasso.png", constr, this, listenerTools, color);
-			bMagicWand = makeImageButton("iconMagicWand.png", constr, this, listenerTools, color);
-			bPropagatingContour = makeImageButton("iconPropagatingContour.png", constr, this, listenerTools, color);
-			bBlowTool = makeImageButton("iconBlowTool.png", constr, this, listenerTools, color);
+			bBrush = makeImageButton("iconBrush.png", constr, this, listenerTools);
+			bLasso = makeImageButton("iconLasso.png", constr, this, listenerTools);
+			bMagicWand = makeImageButton("iconMagicWand.png", constr, this, listenerTools);
+			bPropagatingContour = makeImageButton("iconPropagatingContour.png", constr, this, listenerTools);
+			bBlowTool = makeImageButton("iconBlowTool.png", constr, this, listenerTools);
 			
 			constr.gridwidth = GridBagConstraints.REMAINDER;
-			bCrossHair = makeImageButton("iconCrossHair.png", constr, this, listenerTools, color);
+			bCrossHair = makeImageButton("iconCrossHair.png", constr, this, listenerTools);
 		}
 		
 		public Color getColor() {
@@ -217,9 +256,11 @@ public class ContainerPanel extends Panel {
 				Object b = e.getSource();
 				if( b == bZoomPlus ) {
 					cc.zoomIn(cc.getWidth()/2, cc.getHeight()/2); //zoom from the center of the image
-				} else {
-					// b == bZoomMinus
+				} else if( b == bZoomMinus ) {
 					cc.zoomOut(cc.getWidth()/2, cc.getHeight()/2);
+				} else {
+					// b == bSave
+					
 				}
 			}
 		} //SegementationEditorMainPanel.ListenerZoom inner class
@@ -265,228 +306,12 @@ public class ContainerPanel extends Panel {
 			}
 		}
 		
-		
-/*		class MatList extends Panel {
-			
-			Object materials[][];
-			int indice;
-			
-			public MatList() {
-				super();
-				setSize(new Dimension(180, 100));
-				setBackground(Color.WHITE);
-				setVisible(true);
-				setLayout(new GridLayout(9,1));
-				addMaterial("Exterior", Color.GRAY);
-				addMaterial("Internal", Color.ORANGE);
-				addMaterial("Other", Color.RED);
-				addMaterial("?", Color.BLUE);
-				addMaterial("azeokbn", Color.GREEN);
-				addMaterial("adg", Color.CYAN);
-				addMaterial("dfgqsf", Color.MAGENTA);
-				addMaterial("qfq", Color.PINK);
-				addMaterial("dqfqdfqqdjkl", Color.YELLOW);
-				doLayout();
-			}
-			
-			public void addMaterial(String name, Color selectionColor) {
-				add(new Box(name, selectionColor));
-			}
-			
-			class Box extends Panel {
-				
-				private Rect rectangle;
-				private Color selectionColor;
-				private Label name;
-				private long id;
-				
-				public Box(String str, Color selectionColor) {
-					super();
-					//setSize(new Dimension(180, 26));
-					setBackground(Color.WHITE);
-					
-					id = System.currentTimeMillis();
-					name = new Label(str);
-					name.setFont(font);
-
-					this.selectionColor = selectionColor;
-					rectangle = new Rect(selectionColor);
-					
-					GridBagConstraints constr = new GridBagConstraints();
-					
-					setLayout(new GridBagLayout());
-					constr.fill = GridBagConstraints.BOTH;
-					
-					constr.weightx = 1.0;
-					add(rectangle, constr);
-					
-					constr.weightx = 4.0;
-					constr.gridwidth = GridBagConstraints.REMAINDER;
-					add(name, constr);
-				}
-				
-				public void setSelectionColor(Color c) {
-					selectionColor = c;
-					repaint();
-				}
-				
-				public void setLayerName(String str) {
-					name.setText(str);
-				}
-				
-				class Rect extends Panel {
-					
-					Color color;
-					
-					public Rect(Color c) {
-						super();
-						color = c;
-						setBackground(Color.WHITE);
-						setSize(new Dimension(35, 26));
-						setVisible(true);
-						repaint();
-					}
-					
-					public void paint(Graphics g) {
-						g.setColor(color);
-						g.fillRect(5, 4, 28, 18);
-					}
-					
-				} // ContainerPanel.MainPanel.MatList.Box.Rect inner class
-				
-			} // ContainerPanel.MainPanel.MatList.Box inner class
-			
-		} // ContainerPanel.MainPanel.MatList inner class
-*/		
-		
-		class MatList2 extends List implements MouseListener, ItemListener, ActionListener {
-			
-			PopupMenu popup;
-			
-			public MatList2() {
-				super(6, false);
-				add("Exterior");
-				add("Inside");
-				addMaterial();
-				addMaterial();
-				delMaterial();
-				addMaterial();
-				addMaterial();
-				addMaterial();
-				addMaterial();
-				addMaterial();
-				addMaterial();
-				addMaterial();
-				addMaterial();
-				addMouseListener(this);
-				createPopup();
-			}
-			
-			public void createPopup() { // create the PopupMenu which appear when a right-click is done
-				PopupMenu underPopup = new PopupMenu();
-		   		CheckboxMenuItem ci;
-		   		MenuItem mi;
-				String uItemList[] = {
-					"invisible", "contour", "hatched",
-					"dotted", "light dotted", "-", "3D view"
-				};
-				// 0=false, 1=true, 2=null
-				int uItemListChecked[] = {0, 1, 0, 0, 0, 2, 0};
-		   		for (int i = 0; i < uItemList.length; i++) {
-		   			if (uItemList[i].equals("-"))
-		   				underPopup.addSeparator();
-		   			else if (!uItemList[i].equals("")) {
-		   				boolean checked;
-		   				if(uItemListChecked[i] == 0)
-		   					checked = false;
-		   				else checked = true;
-		   				ci = new CheckboxMenuItem(uItemList[i], checked);
-		   				ci.addItemListener(this);
-		   				underPopup.add(ci);
-		   			}
-		   		}
-		   		underPopup.setLabel("Draw Style");
-
-				String itemList[] = {
-					"Locate", "Delete Material",
-					"Rename Material", "Edit Color",
-					"Lock Material", "-", "New Material",
-					"Lock All"
-				};
-				popup = new PopupMenu();
-				add(popup);
-				popup.add(underPopup);
-		   		for(int i = 0; i < itemList.length; i++) {
-					if (itemList[i].equals("-"))
-						popup.addSeparator();
-					else if (!itemList[i].equals("")) {
-						mi = new MenuItem(itemList[i]);
-						mi.addActionListener(this);
-						popup.add(mi);
-					}
-		   		}
-			}
-			/**
-			 * Add a new material in the materials list and then select it.
-			 * The name of the new material is made by the number of items 
-			 * in the list.
-			 */
-			public void addMaterial() {
-				int num = getItemCount();
-				num++;
-				add("Material"+num);
-				select(num);
-			}
-
-			/**
-			 * Delete the selected material in the list.
-			 */
-			public void delMaterial() {
-				int selected = getSelectedIndex()-1;
-				remove(selected);
-			}
-			
-			public void mouseClicked(MouseEvent e) {}
-			public void mouseReleased(MouseEvent e) {}
-			public void mouseEntered(MouseEvent e) {}
-			public void mouseExited(MouseEvent e) {}
-			public void mousePressed(MouseEvent e) {
-				if(e.isPopupTrigger() && popup != null)
-					popup.show(this, e.getX(), e.getY());
-			}
-
-			boolean altDown = false;
-			public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ALT)
-					altDown = true;
-			}
-			public void keyReleased(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ALT)
-					altDown = false;
-			}
-			public void keyTyped(KeyEvent e) { }
-
-			public void actionPerformed(ActionEvent e) {
-				IJ.write("actionPerformed... you see?");
-				
-			}
-
-			public void itemStateChanged(ItemEvent e) {
-				IJ.write("itemStateChanged... you see?");
-			}
-			
-			
-		} // ContainerPanel.MainPanel.Matlist2 inner class
-		
-	} // ContainerPanel.MainPanel inner class
-
-	
+	}
 	
 	//Tools Panel
 	public class ToolsPanel extends Panel {
 
 		Color color = Color.WHITE;
-		Dimension dimension = new Dimension(200, 170);
 		
 		CardLayout card;
 		
@@ -517,8 +342,8 @@ public class ContainerPanel extends Panel {
 			super();
 			card = new CardLayout();
 			setLayout(card);
-			setBackground(color);
-			setSize(dimension);
+			//setBackground(color);
+			//setSize(dimension);
 			
 			addBrushPanel();
 			addLassoPanel();
@@ -537,146 +362,146 @@ public class ContainerPanel extends Panel {
 			adjustmentListener = new AdjustmentListener4Scroll();
 			
 			pBrush = new Panel();
-			pBrush.setBackground(color);
+			//pBrush.setBackground(color);
 			
 			constrBrush = new GridBagConstraints();
 			constrBrush.fill = GridBagConstraints.BOTH;
 			pBrush.setLayout(new GridBagLayout());
 
 			constrBrush.gridwidth = GridBagConstraints.REMAINDER;
-			lBrush = makeLabel("Brush", constrBrush, pBrush, color);
+			lBrush = makeLabel("Brush", constrBrush, pBrush);
 			
 			constrBrush.gridwidth = GridBagConstraints.RELATIVE;
 			constrBrush.weightx = 4.0;
-			sBrush = makeScrollbar(constrBrush, pBrush, Scrollbar.HORIZONTAL, 10, 5, 0, 250, adjustmentListener, color);
+			sBrush = makeScrollbar(constrBrush, pBrush, Scrollbar.HORIZONTAL, 10, 5, 0, 250, adjustmentListener);
 			
 			constrBrush.gridwidth = GridBagConstraints.REMAINDER;
 			constrBrush.weightx = 2.0;
-			tBrush = makeTextField(String.valueOf(sBrush.getValue()), constrBrush, pBrush, color);
+			tBrush = makeTextField(String.valueOf(sBrush.getValue()), constrBrush, pBrush);
 
 			constrBrush.gridwidth = 1;
 			constrBrush.weightx = 1.0;
-			bBrush1px = makeImageButton("iconBrush-1px.png", constrBrush, pBrush, listener, color);
-			bBrush3px = makeImageButton("iconBrush-3px.png", constrBrush, pBrush, listener, color);
-			bBrush5px = makeImageButton("iconBrush-5px.png", constrBrush, pBrush, listener, color);
-			bBrush7px = makeImageButton("iconBrush-7px.png", constrBrush, pBrush, listener, color);
-			bBrush10px = makeImageButton("iconBrush-10px.png", constrBrush, pBrush, listener, color);
+			bBrush1px = makeImageButton("iconBrush-1px.png", constrBrush, pBrush, listener);
+			bBrush3px = makeImageButton("iconBrush-3px.png", constrBrush, pBrush, listener);
+			bBrush5px = makeImageButton("iconBrush-5px.png", constrBrush, pBrush, listener);
+			bBrush7px = makeImageButton("iconBrush-7px.png", constrBrush, pBrush, listener);
+			bBrush10px = makeImageButton("iconBrush-10px.png", constrBrush, pBrush, listener);
 			
 			constrBrush.gridwidth = GridBagConstraints.REMAINDER;
-			bBrush15px = makeImageButton("iconBrush-15px.png", constrBrush, pBrush, listener, color);
+			bBrush15px = makeImageButton("iconBrush-15px.png", constrBrush, pBrush, listener);
 			
 			add(pBrush, "brush");
 		}
 		
 		public void addLassoPanel() {
 			pLasso = new Panel();
-			pLasso.setBackground(color);
+			//pLasso.setBackground(color);
 			
 			constrLasso = new GridBagConstraints();
 			constrLasso.fill = GridBagConstraints.BOTH;
 			pLasso.setLayout(new GridBagLayout());
 
 			constrLasso.gridwidth = GridBagConstraints.REMAINDER;
-			lLasso = makeLabel("Lasso", constrLasso, pLasso, color);
+			lLasso = makeLabel("Lasso", constrLasso, pLasso);
 			
 			constrLasso.gridwidth = GridBagConstraints.REMAINDER;
-			cLassoAutoTrace = makeCheckbox("auto trace", true, constrLasso, pLasso, color);
-			cLassoTraceEdges = makeCheckbox("trace edges", true, constrLasso, pLasso, color);
+			cLassoAutoTrace = makeCheckbox("auto trace", true, constrLasso, pLasso);
+			cLassoTraceEdges = makeCheckbox("trace edges", true, constrLasso, pLasso);
 			
 			add(pLasso, "lasso");
 		}
 		
 		public void addMagicWandPanel() {
 			pMagicWand = new Panel();
-			pMagicWand.setBackground(color);
+			//pMagicWand.setBackground(color);
 			
 			constrMagicWand = new GridBagConstraints();
 			constrMagicWand.fill = GridBagConstraints.BOTH;
 			pMagicWand.setLayout(new GridBagLayout());
 
 			constrMagicWand.gridwidth = GridBagConstraints.REMAINDER;
-			lMagicWand = makeLabel("Magic Wand", constrMagicWand, pMagicWand, color);
+			lMagicWand = makeLabel("Magic Wand", constrMagicWand, pMagicWand);
 			
 			constrMagicWand.gridwidth = 1;
 			constrMagicWand.weightx = 1.0;
-			tMagicWand1 = makeTextField("-2", constrMagicWand, pMagicWand, color);
+			tMagicWand1 = makeTextField("-2", constrMagicWand, pMagicWand);
 			
-			tMagicWand2 = makeTextField("10", constrMagicWand, pMagicWand, color);
+			tMagicWand2 = makeTextField("10", constrMagicWand, pMagicWand);
 			
 			constrMagicWand.gridwidth = GridBagConstraints.REMAINDER;
-			lMagicWandBlank = makeLabel(" ", constrMagicWand, pMagicWand, color);
+			lMagicWandBlank = makeLabel(" ", constrMagicWand, pMagicWand);
 			
-			cMagicWandAbsoluteValues = makeCheckbox("absolute values", false, constrMagicWand, pMagicWand, color);
-			cMagicWandSameMaterialOnly = makeCheckbox("same material only", false, constrMagicWand, pMagicWand, color);
-			cMagicWandFillInterior = makeCheckbox("fill interior", false, constrMagicWand, pMagicWand, color);
+			cMagicWandAbsoluteValues = makeCheckbox("absolute values", false, constrMagicWand, pMagicWand);
+			cMagicWandSameMaterialOnly = makeCheckbox("same material only", false, constrMagicWand, pMagicWand);
+			cMagicWandFillInterior = makeCheckbox("fill interior", false, constrMagicWand, pMagicWand);
 			
-			lMagicWandDrawLimitLine = makeLabel("Draw limit line", constrMagicWand, pMagicWand, color);
+			lMagicWandDrawLimitLine = makeLabel("Draw limit line", constrMagicWand, pMagicWand);
 			
 			add(pMagicWand, "magicWand");
 		}
 		
 		public void addPropagatingContourPanel() {
 			pPropagatingContour = new Panel();
-			pPropagatingContour.setBackground(color);
+			//pPropagatingContour.setBackground(color);
 			
 			constrPropagatingContour = new GridBagConstraints();
 			constrPropagatingContour.fill = GridBagConstraints.BOTH;
 			pPropagatingContour.setLayout(new GridBagLayout());
 
 			constrPropagatingContour.gridwidth = GridBagConstraints.REMAINDER;
-			lPropagatingContour = makeLabel("Propagating Contour", constrPropagatingContour, pPropagatingContour, color);
+			lPropagatingContour = makeLabel("Propagating Contour", constrPropagatingContour, pPropagatingContour);
 			
 			constrPropagatingContour.gridwidth = 1;
 			constrPropagatingContour.weightx = 1.0;
-			lPropagatingContourTime = makeLabel("Time", constrPropagatingContour, pPropagatingContour, color);
+			lPropagatingContourTime = makeLabel("Time", constrPropagatingContour, pPropagatingContour);
 			
 			constrPropagatingContour.weightx = 2.0;
-			sPropagatingContour = makeScrollbar(constrPropagatingContour, pPropagatingContour, Scrollbar.HORIZONTAL, 5, 5, 0, 100, adjustmentListener, color);
+			sPropagatingContour = makeScrollbar(constrPropagatingContour, pPropagatingContour, Scrollbar.HORIZONTAL, 5, 5, 0, 100, adjustmentListener);
 			
 			constrPropagatingContour.weightx = 1.0;
 			constrPropagatingContour.gridwidth = GridBagConstraints.REMAINDER;
-			tPropagatingContour = makeTextField("5", constrPropagatingContour, pPropagatingContour, color);
+			tPropagatingContour = makeTextField("5", constrPropagatingContour, pPropagatingContour);
 			
 			constrPropagatingContour.weightx = 0.0;
-			bPropagatingContourMenu = makeButton("Menu", constrPropagatingContour, pPropagatingContour, listener, color);
-			bPropagatingContourClear = makeButton("Clear", constrPropagatingContour, pPropagatingContour, listener, color);
-			bPropagatingContourDolt = makeButton("Dolt", constrPropagatingContour, pPropagatingContour, listener, color);
+			bPropagatingContourMenu = makeButton("Menu", constrPropagatingContour, pPropagatingContour, listener);
+			bPropagatingContourClear = makeButton("Clear", constrPropagatingContour, pPropagatingContour, listener);
+			bPropagatingContourDolt = makeButton("Dolt", constrPropagatingContour, pPropagatingContour, listener);
 			
 			add(pPropagatingContour, "propagatingContour");
 		}
 		
 		public void addBlowToolPanel() {
 			pBlowTool = new Panel();
-			pBlowTool.setBackground(color);
+			//pBlowTool.setBackground(color);
 
 			constrBlowTool = new GridBagConstraints();
 			pBlowTool.setLayout(new GridBagLayout());
 
 			constrBlowTool.gridwidth = GridBagConstraints.REMAINDER;
-			lBlowTool = makeLabel("Blow Tool", constrBlowTool, pBlowTool, color);
+			lBlowTool = makeLabel("Blow Tool", constrBlowTool, pBlowTool);
 			
 			constrBlowTool.gridwidth = 1;
 			constrBlowTool.weightx = 1.0;
-			lBlowToolTolerance = makeLabel("Tolerance:", constrBlowTool, pBlowTool, color);
+			lBlowToolTolerance = makeLabel("Tolerance:", constrBlowTool, pBlowTool);
 			
 			constrBlowTool.gridwidth = GridBagConstraints.REMAINDER;
-			tBlowToolTolerance = makeTextField("35", constrBlowTool, pBlowTool, color);
+			tBlowToolTolerance = makeTextField("35", constrBlowTool, pBlowTool);
 			
 			constrBlowTool.gridwidth = 1;
-			lBlowToolGaussWidth = makeLabel("Gauss Width:", constrBlowTool, pBlowTool, color);
+			lBlowToolGaussWidth = makeLabel("Gauss Width:", constrBlowTool, pBlowTool);
 			
 			constrBlowTool.gridwidth = GridBagConstraints.REMAINDER;
-			tBlowToolGaussWidth = makeTextField("4", constrBlowTool, pBlowTool, color);
+			tBlowToolGaussWidth = makeTextField("4", constrBlowTool, pBlowTool);
 			
 			add(pBlowTool, "blowTool");
 		} //  ContainerPanel.ToolsPanel construtor
 		
 		public void addCrossHairPanel() {
 			pCrossHair = new Panel();
-			pCrossHair.setBackground(color);
+			//pCrossHair.setBackground(color);
 
 			lCrossHair = new Label("Cross Hair");
-			lCrossHair.setBackground(color);
+			//lCrossHair.setBackground(color);
 			pCrossHair.add(lCrossHair);
 			
 			add(pCrossHair, "crossHair");
@@ -750,40 +575,39 @@ public class ContainerPanel extends Panel {
 		
 		public InfosPanel() {
 			super();
-			setSize(new Dimension(200, 90));
-			setBackground(color);
+			//setBackground(color);
 			
 			GridBagConstraints constr = new GridBagConstraints();
 			
 			setLayout(new GridBagLayout());
 			
 			constr.weightx = 1.0;
-			lPos = makeLabel("Pos:", constr, this, color);
-			lPosX = makeLabel("____X____", constr, this, color);
-			lPosY = makeLabel("____Y____", constr, this, color);
+			lPos = makeLabel("Pos:", constr, this);
+			lPosX = makeLabel("____X____", constr, this);
+			lPosY = makeLabel("____Y____", constr, this);
 			
 			constr.gridwidth = GridBagConstraints.REMAINDER;
-			lPosZ = makeLabel("____Z____", constr, this, color);
+			lPosZ = makeLabel("____Z____", constr, this);
 
 			constr.gridwidth = 1;
-			lIndex = makeLabel("Index:", constr, this, color);
-			lIndexX = makeLabel(" X  ", constr, this, color);
-			lIndexY = makeLabel(" Y  ", constr, this, color);
+			lIndex = makeLabel("Index:", constr, this);
+			lIndexX = makeLabel(" X  ", constr, this);
+			lIndexY = makeLabel(" Y  ", constr, this);
 			
 			constr.gridwidth = GridBagConstraints.REMAINDER;
-			lIndexZ = makeLabel(" Z  ", constr, this, color);
+			lIndexZ = makeLabel(" Z  ", constr, this);
 			
 			constr.gridwidth = 1;
-			lMaterial = makeLabel("Material:", constr, this, color);
+			lMaterial = makeLabel("Material:", constr, this);
 			
 			constr.gridwidth = GridBagConstraints.REMAINDER;
-			lMaterialName = makeLabel("  name   ", constr, this, color);
+			lMaterialName = makeLabel("  name   ", constr, this);
 			
 			constr.gridwidth = 1;
-			lVoxelValue = makeLabel("Voxel Value:", constr, this, color);
+			lVoxelValue = makeLabel("Voxel Value:", constr, this);
 			
 			constr.gridwidth = GridBagConstraints.REMAINDER;
-			lVoxelValueNum = makeLabel("______ ~ ______", constr, this, color);
+			lVoxelValueNum = makeLabel("______ ~ ______", constr, this);
 		}
 		
 		public Color getColor() {
@@ -798,7 +622,10 @@ public class ContainerPanel extends Panel {
 		 * @param posZ		the depth of the photo (in touch with the slices) - double
 		 * @param value		the voxel value - String
 		 */
-		public void updateLabels(double posX, double posY, double posZ, String value) {
+		public void updateLabels(int x, int y, int z, double posX, double posY, double posZ, String value) {
+			lIndexX.setText(String.valueOf(x));
+			lIndexY.setText(String.valueOf(y));
+			lIndexZ.setText(String.valueOf(z));
 			lPosX.setText(String.valueOf(posX));
 			lPosY.setText(String.valueOf(posY));
 			lPosZ.setText(String.valueOf(posZ));
@@ -814,6 +641,9 @@ public class ContainerPanel extends Panel {
 		 * @param value		the voxel value - String
 		 */
 		public void updateLabels(String posX, String posY, String posZ, String value) {
+			lIndexX.setText(String.valueOf("   -   "));
+			lIndexY.setText(String.valueOf("   -   "));
+			lIndexZ.setText(String.valueOf("   -   "));
 			lPosX.setText(posX);
 			lPosY.setText(posY);
 			lPosZ.setText(posZ);

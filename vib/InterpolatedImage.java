@@ -44,6 +44,10 @@ public class InterpolatedImage {
 	protected InterpolatedImage() {
 	}
 
+	public ImagePlus getImage() {
+		return image;
+	}
+
 	interface Interpolate {
 		double get(double x, double y, double z);
 	}
@@ -349,11 +353,12 @@ public class InterpolatedImage {
 		pixelsFloat[z][x + w * y] = value;
 	}
 
-	InterpolatedImage cloneDimensionsOnly() {
+	public InterpolatedImage cloneDimensionsOnly() {
 		return cloneDimensionsOnly(image, image.getType());
 	}
 
-	static InterpolatedImage cloneDimensionsOnly(ImagePlus ip, int type) {
+	public static InterpolatedImage cloneDimensionsOnly(ImagePlus ip,
+			int type) {
 		InterpolatedImage result = new InterpolatedImage();
 		result.w = ip.getWidth();
 		result.h = ip.getHeight();

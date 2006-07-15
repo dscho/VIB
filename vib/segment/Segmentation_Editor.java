@@ -8,7 +8,7 @@ import ij.process.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-import javax.swing.*;
+import vib.SegmentationViewerCanvas;
 
 /**
  * Segmentation_Editor : ImageJ plugin.
@@ -33,19 +33,19 @@ public class Segmentation_Editor implements PlugIn {
 		new CustomStackWindow(imp);
 	}
 
-	class CustomCanvas extends ImageCanvas {
+	class CustomCanvas extends SegmentationViewerCanvas {
 
 		CustomCanvas(ImagePlus imp) {
 			super(imp);
-			setBounds(new Rectangle(getSize()));
+			//setBounds(new Rectangle(getSize()));
+		}
+
+		public ImagePlus getImage() {
+			return imp;
 		}
 
 		public Dimension getMinimumSize() {
 			return getSize();
-		}
-
-		public void mousePressed(MouseEvent e) {
-			super.mousePressed(e);
 		}
 
 		public void mouseExited(MouseEvent e) {
@@ -69,13 +69,13 @@ public class Segmentation_Editor implements PlugIn {
 
 				posY = cal.getY(y);
 				posY = Double.valueOf(IJ.d2s(posY)).doubleValue();
-
-				posZ = cal.getZ(imp.getCurrentSlice()-1);
+				int z = imp.getCurrentSlice()-1;
+				posZ = cal.getZ(z);
 				posZ = Double.valueOf(IJ.d2s(posZ)).doubleValue();
 
 				voxelValue = getValueAsString(x, y);
 
-				containerPanel.pInfos.updateLabels(posX, posY, posZ, voxelValue);
+				containerPanel.pInfos.updateLabels(x, y, z, posX, posY, posZ, voxelValue);
 			} else {
 				containerPanel.pInfos.updateLabels("     -     ", "     -     ", "     -     ", "     -     ");
 			}
@@ -123,22 +123,11 @@ public class Segmentation_Editor implements PlugIn {
 				containerPanel.pMain.updateLZoomLevel(magnification);
 		}
 
-		/** Overrides handlePopupMenu() in ImageCanvas to suppress the right-click popup menu. */
-		//protected void handlePopupMenu(MouseEvent e) {
-		//}
-
-	} // CustomCanvas inner class
-
+	}
 
 	class CustomStackWindow extends StackWindow {
-
-		Labelizer iLabelizer;
 		Roi[] svgRoi;
-		ImageStack segmentedImage;
 		int oldSlice;
-
-		ImagePlus ip;
-		StackWindow sw;
 
 		CustomStackWindow(ImagePlus imp) {
 			super(imp, cc);
@@ -154,21 +143,12 @@ public class Segmentation_Editor implements PlugIn {
 			sliceAndImage.add(sliceSelector, BorderLayout.NORTH);
 			sliceAndImage.add(new Label(" "));
 			sliceAndImage.add(cc, BorderLayout.CENTER);
-			repaint();
 
 			add(sliceAndImage, BorderLayout.CENTER);
 			pack();
 
 			svgRoi = new Roi[imp.getStack().getSize() + 1]; // "+1" is to have enough place if the slice
-			// number is handled from 1 to numSlices
-			int x = imp.getWidth();
-			int y = imp.getHeight();
-			segmentedImage = new ImageStack(x, y);
-			for(int i=0; i<= imp.getStack().getSize(); i++) {
-				segmentedImage.addSlice("slice"+i, new ByteProcessor(x, y));
-			}
 			oldSlice = sliceSelector.getValue();
-			new ImagePlus("labels", segmentedImage).show();
 		} 
 
 		public Dimension getMinimumSize() {
@@ -176,27 +156,15 @@ public class Segmentation_Editor implements PlugIn {
 		}
 
 		void addPanels() {
-			containerPanel = new ContainerPanel(cc);
-			containerPanel.setVisible(true);
+			containerPanel = new ContainerPanel(cc, this);
+			//containerPanel.setVisible(true);
 			add(containerPanel, BorderLayout.WEST);
-			pack();
 		}
 
 		public synchronized void adjustmentValueChanged(AdjustmentEvent e) {
 			super.adjustmentValueChanged(e);
 			svgRoi[oldSlice] = imp.getRoi();
-			segmentedImage.getProcessor(oldSlice).setRoi(imp.getRoi());
 			oldSlice = sliceSelector.getValue();
-			try {
-				imp.setRoi(svgRoi[oldSlice]);
-				iLabelizer.addToMaterial();
-			} catch(NullPointerException exc) {
-				System.out.println("Not yet ROI for this slice (number " + oldSlice + ")");
-			}
-		}
-
-		public void setLabelizer(Labelizer lab) {
-			iLabelizer = lab;
 		}
 
 		/**
