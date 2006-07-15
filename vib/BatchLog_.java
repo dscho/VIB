@@ -8,6 +8,8 @@
  *
  */
 
+package vib;
+
 import ij.IJ;
 import ij.Macro;
 import ij.macro.Interpreter;

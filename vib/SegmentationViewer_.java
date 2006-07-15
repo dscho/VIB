@@ -1,3 +1,5 @@
+package vib;
+
 import ij.plugin.*;
 import ij.*;
 import ij.gui.*;

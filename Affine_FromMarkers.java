@@ -18,6 +18,8 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Comparator;
 
+import vib.FastMatrix;
+
 /* This method doesn't work terribly well, and is here largely for
  * comparison purposes. */
 

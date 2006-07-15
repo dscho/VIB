@@ -1,3 +1,5 @@
+package vib;
+
 /*
  * TODO:
  * - make translateMax/angleMax be dependent on the data

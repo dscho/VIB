@@ -1,3 +1,5 @@
+package vib;
+
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
 import java.awt.Color;
@@ -17,62 +19,73 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 	int alpha=128; // if mode==FILL, use this transparency to fill
 
 	ImagePlus labels;
-	int w,h;
+	int w,h,d;
 	Color[] label_colors; // these are the up to 256 material colors
 
 	Vector[] contours; // each element is a vector of polygons
 	Vector[] colors; // these are the corresponding colors
-    HashMap<Integer, Integer> [] materialId_to_indexMap;
+	Vector[] indices; // these are the corresponding material IDs
 
-	IdleThread idle;
 	private final boolean debug = false;
 
-	SegmentationViewerCanvas(ImagePlus imp,ImagePlus labels) {
+	public SegmentationViewerCanvas(ImagePlus imp) {
 		super(imp);
-		this.labels=labels;
-		w=labels.getWidth();
-		h=labels.getHeight();
-		AmiraParameters parameters=new AmiraParameters(labels);
-		//label_colors=new Color[parameters.getMaterialCount()];
-        label_colors = new Color[parameters.getMaterialCount()];
-        //System.out.println("parameters.getMaterialCount() = " + parameters.getMaterialCount());
+		label_colors = new Color[256];
+		w=imp.getWidth();
+		h=imp.getHeight();
+		d=imp.getStack().getSize();
+		contours=new Vector[d];
+		colors=new Vector[d];
+		indices=new Vector[d];
+	}
 
-        for(int i=0;i<label_colors.length;i++) {
+	public SegmentationViewerCanvas(ImagePlus imp,ImagePlus labels) {
+		this(imp);
+		setLabels(labels);
+	}
+
+	public ImagePlus getLabels() {
+		return labels;
+	}
+
+	public void setLabels(ImagePlus labels) {
+		this.labels=labels;
+		contours=new Vector[d];
+		colors=new Vector[d];
+		indices=new Vector[d];
+		if (labels == null)
+			return;
+		AmiraParameters parameters=new AmiraParameters(labels);
+		int count = parameters.getMaterialCount();
+		for(int i=0;i<label_colors.length;i++) {
+			if (i >= count) {
+				label_colors[i] = Color.RED;
+				continue;
+			}
 			double[] c=parameters.getMaterialColor(i);
 			int red=(int)(255*c[0]);
 			int green=(int)(255*c[1]);
 			int blue=(int)(255*c[2]);
 			label_colors[i]=new Color(red,green,blue);
 		}
-		int depth=labels.getStack().getSize();
-		if(debug)
-			System.err.println("depth: "+depth);
-		contours=new Vector[depth];
-		colors=new Vector[depth];
-        materialId_to_indexMap = new HashMap[depth];
-
-		if(mode==OUTLINE) {
-			idle=new IdleThread(imp.getCurrentSlice());
-			idle.setPriority(Thread.MIN_PRIORITY);
-			idle.start();
-		}
 	}
 
 	public void updateSlice(int slice){
 		colors[slice-1] = null;
 		contours[slice-1] = null;
+		indices[slice-1] = null;
 		createContoursIfNotExist(slice);
 	}
 
-    public GeneralPath getOutline(int slice, int materialId){
-        createContoursIfNotExist(slice);
+	public GeneralPath getOutline(int slice, int materialId){
+		createContoursIfNotExist(slice);
 
-        Integer index = materialId_to_indexMap[slice-1].get(materialId);
-        if(index==null) return null;
-        else{
-            return (GeneralPath) contours[slice-1].get(index);
-        }
-    }
+		for (int i = 0; i < indices[slice-1].size(); i++)
+			if (((Integer)indices[slice-1].get(i)).intValue()
+					== materialId)
+				return (GeneralPath)contours[slice-1].get(i);
+		return null;
+	}
 
 	/*
 	 * This class implements a Cartesian polygon in progress.
@@ -194,7 +207,7 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		public void initContours() {
 			contours[slice]=new Vector();
 			colors[slice]=new Vector();
-            materialId_to_indexMap[slice] = new HashMap<Integer, Integer>();
+			indices[slice]=new Vector();
 
 			// actually find the outlines
 			ArrayList polygons = new ArrayList();
@@ -204,12 +217,11 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 				for (int x = 0; x < w; x++)
 					handle(x, y);
 
-            int index=0;
 			for (int i = 1; i < paths.length; i++) {
 				if (paths[i] != null) {
 					contours[slice].add(paths[i]);
 					colors[slice].add(label_colors[i]);
-                    materialId_to_indexMap[slice].put(i, index++);
+					indices[slice].add(new Integer(i));
 				}
 			}
 		}
@@ -336,47 +348,21 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 	}
 
 	public synchronized void createContoursIfNotExist(int slice) {
-		if(contours[slice-1]!=null)
+		if (labels == null || contours[slice-1]!=null)
 			return;
 		ContourFinder finder=new ContourFinder(slice-1);
 		finder.initContours();
 	}
 
-	class IdleThread extends Thread {
-		int counter,slice;
-
-		public IdleThread(int slice) {
-			this.slice=slice;
-			counter=0;
-		}
-
-		public void run() {
-			if(debug)
-				System.err.println("start idle thread");
-			while(true) {
-				if(slice-counter>0)
-					createContoursIfNotExist(slice-counter);
-				else if(slice+counter>contours.length) {
-					if(debug)
-						System.err.println("stop idle thread");
-					return;
-				}
-				if(slice+counter<=contours.length)
-					createContoursIfNotExist(slice+counter);
-				counter++;
-			}
-		}
-	}
-
 	public void paint(Graphics g) {
-		//ejp.tracer.TracerAPI.enableTracing();
 		createContoursIfNotExist(imp.getCurrentSlice());
 		super.paint(g);
 		drawOverlay(g);
-		//ejp.tracer.TracerAPI.disableTracing();
 	}
 
 	void drawOverlay(Graphics g) {
+		if (labels == null)
+			return;
 		int slice=imp.getCurrentSlice();
 		double magnification=getMagnification();
 

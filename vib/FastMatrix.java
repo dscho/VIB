@@ -1,5 +1,7 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+package vib;
+
 import ij.ImagePlus;
 import ij.measure.Calibration;
 import java.util.StringTokenizer;

@@ -13,6 +13,8 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import vib.AmiraMeshReader_;
+
 /**
  * User: Tom Larkworthy
  * Date: 12-Jul-2006

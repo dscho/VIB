@@ -17,6 +17,8 @@ import math3d.JacobiFloat;
 import java.util.ArrayList;
 import java.util.Comparator;
 
+import vib.FastMatrix;
+
 /* ------------------------------------------------------------------------
 
     Terminology note:

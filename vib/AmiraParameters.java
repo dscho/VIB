@@ -1,3 +1,5 @@
+package vib;
+
 import ij.*;
 import ij.gui.GenericDialog;
 import ij.macro.Interpreter;
@@ -592,16 +594,16 @@ public class AmiraParameters {
 	}
 
 
-	static class Material{
+	public static class Material{
 		public Material(String name, int id, double[] colors) {
 			this.name = name;
 			this.id = id;
 			this.colors = colors;
 		}
 
-		final String name;
-		final int id;
-		final double[] colors;
+		public final String name;
+		public final int id;
+		public final double[] colors;
 
 		public String toString(){return name;}
 	}

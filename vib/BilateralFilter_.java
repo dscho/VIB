@@ -1,3 +1,5 @@
+package vib;
+
 import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import ij.process.ImageProcessor;

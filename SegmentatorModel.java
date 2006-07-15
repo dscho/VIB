@@ -1,6 +1,9 @@
 
 import ij.ImagePlus;
 
+import vib.AmiraParameters;
+import vib.SegmentationViewerCanvas;
+
 /**
  * Wrapper clas for an ImagePlus, stored vairous objects in the properties of the Image plus
  * OBjects used for segmentating
@@ -8,6 +11,7 @@ import ij.ImagePlus;
  * Date: 21-Jun-2006
  * Time: 00:08:57
  */
+
 public class SegmentatorModel {
     final ImagePlus data;
 

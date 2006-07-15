@@ -1,3 +1,5 @@
+package vib;
+
 import ij.macro.Interpreter;
 import ij.text.TextPanel;
 import ij.text.TextWindow;

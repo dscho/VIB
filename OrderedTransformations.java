@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.ListIterator;
 
+import vib.FastMatrix;
+
 /* This class contains a sequence of transformations (currently just
  * FastMatrix applications, but in the future possibly others.) */
 

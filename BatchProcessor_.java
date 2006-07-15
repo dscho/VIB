@@ -18,6 +18,13 @@ import imagescience.images.ByteImage;
 import adt.PixelStats;
 import adt.ByteProbability;
 
+import vib.AmiraMeshEncoder;
+import vib.AmiraMeshReader_;
+import vib.AmiraParameters;
+import vib.FastMatrix;
+import vib.RigidRegistration_;
+import vib.TransformedImage;
+
 /**
  * User: Tom Larkworthy
  * Date: 05-Jul-2006

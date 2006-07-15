@@ -1,11 +1,7 @@
-/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+package vib;
 
-import ij.*;
-import ij.process.*;
-import ij.gui.*;
-import java.awt.*;
-import ij.plugin.*;
-import ij.io.OpenDialog;
+import ij.IJ;
+import ij.ImageStack;
 import ij.text.TextPanel;
 import ij.text.TextWindow;
 import java.io.BufferedInputStream;
@@ -17,34 +13,7 @@ import java.util.regex.*;
 import java.awt.image.*;
 import com.jcraft.jzlib.ZInputStream;
 
-public class AmiraMeshReader_ extends ImagePlus implements PlugIn {
-
-	public void run(String arg) {
-		boolean showIt = (IJ.getInstance() != null && arg.equals(""));
-		String dir="";
-		if(arg==null || arg.equals("")) {
-			OpenDialog od = new OpenDialog("AmiraFile", null);
-			dir=od.getDirectory();
-			arg=od.getFileName();
-		}
-		if(arg==null)
-			return;
-		AmiraMeshDecoder d=new AmiraMeshDecoder();
-		if(d.open(dir+arg)) {
-			if (d.isTable()) {
-				TextWindow table = d.getTable();
-			} else {
-				setStack(arg,d.getStack());
-				d.parameters.setParameters(this);
-				if (showIt)
-					show();
-			}
-		}
-	}
-
-}
-
-class AmiraMeshDecoder {
+public class AmiraMeshDecoder {
 	private int width,height,numSlices;
 	private int mode;
 	final public int RAW = 0;

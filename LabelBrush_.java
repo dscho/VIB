@@ -9,6 +9,8 @@ import ij.plugin.PlugIn;
 
 import java.awt.*;
 
+import vib.AmiraParameters;
+
 /**
  * User: Tom Larkworthy
  * Date: 21-Jun-2006

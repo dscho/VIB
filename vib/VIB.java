@@ -2,6 +2,8 @@
  * convenience class
  */
 
+package vib;
+
 import ij.IJ;
 
 public class VIB {
