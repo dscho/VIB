@@ -43,7 +43,7 @@ public class GuiBuilder {
 		if(controllor != null) spinner.addChangeListener(controllor);
 		return spinner;
 	}
-	
+
 	public static JSpinner addLabeledSpinner(Container c, String label,
 			SpinnerModel model) {
 		JLabel l = new JLabel(label);

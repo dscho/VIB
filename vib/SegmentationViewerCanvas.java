@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package vib;
 
 import ij.ImagePlus;
@@ -71,20 +73,24 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 	}
 
 	public void updateSlice(int slice){
-		colors[slice-1] = null;
-		contours[slice-1] = null;
-		indices[slice-1] = null;
-		createContoursIfNotExist(slice);
+		synchronized(this) {
+			colors[slice-1] = null;
+			contours[slice-1] = null;
+			indices[slice-1] = null;
+			createContoursIfNotExist(slice);
+		}
 	}
 
 	public GeneralPath getOutline(int slice, int materialId){
-		createContoursIfNotExist(slice);
-
-		for (int i = 0; i < indices[slice-1].size(); i++)
-			if (((Integer)indices[slice-1].get(i)).intValue()
-					== materialId)
-				return (GeneralPath)contours[slice-1].get(i);
-		return null;
+		synchronized(this) {
+			createContoursIfNotExist(slice);
+			
+			for (int i = 0; i < indices[slice-1].size(); i++)
+				if (((Integer)indices[slice-1].get(i)).intValue()
+				    == materialId)
+					return (GeneralPath)contours[slice-1].get(i);
+			return null;
+		}
 	}
 
 	/*
@@ -227,7 +233,7 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		}
 
 		final private Outline newOutline(int left, int right,
-				int x1, int x2, int y) {
+						 int x1, int x2, int y) {
 			outline[left] = outline[right] = new Outline();
 			outline[left].push(x1, y);
 			outline[left].push(x2, y);
@@ -253,7 +259,7 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		private void closeOutline(byte material, Outline outline) {
 			int m = material & 0xff;
 
-            if(material == -1) m = 0;//????? Tom
+			if(material == -1) m = 0;//????? Tom
 			if (paths[m] == null)
 				paths[m] = new GeneralPath(GeneralPath.WIND_EVEN_ODD);
 			paths[m].append(outline.getPolygon(), false);
@@ -347,7 +353,7 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		}
 	}
 
-	public synchronized void createContoursIfNotExist(int slice) {
+	public void createContoursIfNotExist(int slice) {
 		if (labels == null || contours[slice-1]!=null)
 			return;
 		ContourFinder finder=new ContourFinder(slice-1);
@@ -355,15 +361,17 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 	}
 
 	public void paint(Graphics g) {
-		createContoursIfNotExist(imp.getCurrentSlice());
-		super.paint(g);
-		drawOverlay(g);
+		int slice = imp.getCurrentSlice();
+		synchronized(this) {
+			createContoursIfNotExist(slice);
+			super.paint(g);
+			drawOverlay(g,slice);
+		}
 	}
 
-	void drawOverlay(Graphics g) {
+	void drawOverlay(Graphics g,int slice) {
 		if (labels == null)
 			return;
-		int slice=imp.getCurrentSlice();
 		double magnification=getMagnification();
 
 		for(int i=0;i<contours[slice-1].size();i++) {
@@ -374,9 +382,9 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 			if(magnification!=1.0) {
 				AffineTransform trans = (((Graphics2D)g).getDeviceConfiguration()).getDefaultTransform();
 				trans.setTransform(magnification, 0,
-						0, magnification,
-						-srcRect.x * magnification,
-						-srcRect.y * magnification);
+						   0, magnification,
+						   -srcRect.x * magnification,
+						   -srcRect.y * magnification);
 				poly = trans.createTransformedShape(poly);
 			}
 
@@ -390,4 +398,3 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		}
 	}
 }
-

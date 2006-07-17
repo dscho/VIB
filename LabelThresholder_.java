@@ -37,8 +37,11 @@ public class LabelThresholder_ implements PlugInFilter{
             IJ.showMessage("please select a label first");
             return;
         }
+        if(model.data.getRoi()==null) {
+            IJ.error("You need to have a region of interest selected in order to threshold an area.");
+            return;
+        }
         threshold(model.data.getRoi(), min, max, imageData, labelData, model.getCurrentMaterial().id);
-
 
         model.updateSlice(currentSlice);
     }

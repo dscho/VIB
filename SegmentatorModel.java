@@ -30,6 +30,10 @@ public class SegmentatorModel {
         data.setProperty(LABEL_IMAGE_PLUS, ip);
     }
 
+    public ImagePlus getOriginalImage() {
+        return data;
+    }
+
     public SegmentationViewerCanvas getLabelCanvas(){
         return (SegmentationViewerCanvas) data.getProperty(LABEL_CANVAS);
     }

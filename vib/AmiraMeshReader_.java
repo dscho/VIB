@@ -4,10 +4,13 @@ package vib;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.io.FileInfo;
 import ij.io.OpenDialog;
 import ij.plugin.PlugIn;
 import ij.text.TextWindow;
+
 import java.awt.*;
+import java.io.File;
 
 public class AmiraMeshReader_ extends ImagePlus implements PlugIn {
 
@@ -26,6 +29,11 @@ public class AmiraMeshReader_ extends ImagePlus implements PlugIn {
 			if (d.isTable()) {
 				TextWindow table = d.getTable();
 			} else {
+				FileInfo fi=new FileInfo();
+				File file = new File(dir+arg);
+				fi.fileName=file.getName();
+				fi.directory=file.getParent();				
+				setFileInfo(fi);				
 				setStack(arg,d.getStack());
 				d.parameters.setParameters(this);
 				if (showIt)
