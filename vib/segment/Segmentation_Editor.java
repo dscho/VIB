@@ -50,7 +50,7 @@ public class Segmentation_Editor implements PlugIn {
 
 		public void mouseExited(MouseEvent e) {
 			super.mouseExited(e);
-			containerPanel.pInfos.updateLabels("     -     ", "     -     ", "     -     ", "     -     ");
+			containerPanel.pInfos.updateLabels();
 		}
 
 		public void mouseMoved(MouseEvent e) {
@@ -60,7 +60,7 @@ public class Segmentation_Editor implements PlugIn {
 			int y = offScreenY(e.getY());
 
 			double posX, posY, posZ;
-			String voxelValue;
+			int voxelValue;
 
 			if(x<imp.getWidth() && y<imp.getHeight()) {
 				Calibration cal = imp.getCalibration();
@@ -73,47 +73,14 @@ public class Segmentation_Editor implements PlugIn {
 				posZ = cal.getZ(z);
 				posZ = Double.valueOf(IJ.d2s(posZ)).doubleValue();
 
-				voxelValue = getValueAsString(x, y);
+				voxelValue = imp.getProcessor().get(x, y);
 
-				containerPanel.pInfos.updateLabels(x, y, z, posX, posY, posZ, voxelValue);
-			} else {
-				containerPanel.pInfos.updateLabels("     -     ", "     -     ", "     -     ", "     -     ");
-			}
+				containerPanel.pInfos.updateLabels(x, y, z,
+						posX, posY, posZ,
+						voxelValue, "TODO");
+			} else
+				containerPanel.pInfos.updateLabels();
 
-		}
-
-		/**
-		 * Method copied from ij.ImagePlus. It calculates the voxel value of the
-		 * current location. It must be a copy because in ij.ImagePlus, this method
-		 * is inaccessible (private).
-		 * @param x		the horizontal position of the mouse - double
-		 * @param y		the vertical position of the mouse - double
-		 * @return		the value calculated - String
-		 */
-		public String getValueAsString(int x, int y) {
-			//the values of the types are dedined in the class ImagePlus
-			Calibration cal = imp.getCalibration();
-			int[] v = imp.getPixel(x, y);
-			int type = imp.getType();
-			switch (type) {
-				case 0 /*GRAY8*/: case 1 /*GRAY16*/: case 3 /*COLOR_256*/:
-					if (type==3 /*COLOR_256*/) {
-						if (cal.getCValue(v[3])==v[3]) // not calibrated
-							return("index=" + v[3] + ", value=" + v[0] + "," + v[1] + "," + v[2]);
-						else
-							v[0] = v[3];
-					}
-					double cValue = cal.getCValue(v[0]);
-					if (cValue==v[0])
-						return("" + v[0]);
-					else
-						return(IJ.d2s(cValue) + " ("+v[0]+")");
-				case 2 /*GRAY32*/:
-					return("" + Float.intBitsToFloat(v[0]));
-				case 4 /*COLOR_RGB*/:
-					return("" + v[0] + "," + v[1] + "," + v[2]);
-				default: return("");
-			}
 		}
 
 		public void setMagnification(double magnification) {
