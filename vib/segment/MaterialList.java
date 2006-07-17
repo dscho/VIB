@@ -12,26 +12,22 @@ import java.awt.AWTEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.util.Iterator;
 
+import javax.naming.OperationNotSupportedException;
+
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import vib.AmiraParameters;
 
 public class MaterialList extends List implements ActionListener {
 	PopupMenu popup;
 
-	int materialCount;
-	String[] materialNames;
-	Color[] materialColors;
+	AmiraParameters params;
 
-	public MaterialList() {
+	public MaterialList(ImagePlus ip) {
 		super(6, false);
-		materialNames = new String[256];
-		materialColors = new Color[256];
-		materialCount = 2;
-		materialNames[0] = "Ext";
-		materialColors[0] = Color.black;
-		materialNames[1] = "Int";
-		materialColors[1] = Color.red;
-		fillList();
+		params = new AmiraParameters(ip);
+		initFrom(ip);
 
 		createPopup();
 		enableEvents(AWTEvent.MOUSE_EVENT_MASK);
@@ -61,21 +57,10 @@ public class MaterialList extends List implements ActionListener {
 	}
 
 	public void initFrom(ImagePlus image) {
-		AmiraParameters p = new AmiraParameters(image);
-		materialCount = p.getMaterialCount();
-		if (materialCount == 0) {
-			materialCount = 2;
-			materialNames[0] = "Exterior";
-			materialColors[0] = Color.black;
-			materialNames[1] = "Interior";
-			materialColors[1] = Color.red;
-		} else {
-			for (int i = 0; i < materialCount; i++) {
-				materialNames[i] = p.getMaterialName(i);
-				double[] rgb = p.getMaterialColor(i);
-				materialColors[i] = new Color((float)rgb[0],
-						(float)rgb[1], (float)rgb[2]);
-			}
+		params = new AmiraParameters(image);
+		if (params.getMaterialCount() == 0) {
+			params.addMaterial("Exterior", 0,0,0);
+			params.addMaterial("Interior", 255,0,0);
 		}
 		fillList();
 	}
@@ -83,15 +68,16 @@ public class MaterialList extends List implements ActionListener {
 	public void addMaterial() {
 		int num = getItemCount();
 		num++;
-		add("Material"+num);
+		params.addMaterial("Material" + num, 255,0,0); // TODO change color
+		fillList();
 		select(num);
 	}
 
 	public void delMaterial() {
-		int selected = getSelectedIndex();
-		if (selected < 0)
-			return;
-		remove(selected);
+		throw new NotImplementedException();
+//		int selected = getSelectedIndex();
+//		if (selected < 0)
+//			return;
 	}
 
 	private void renameMaterial() {
@@ -105,7 +91,10 @@ public class MaterialList extends List implements ActionListener {
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
-		replaceItem(gd.getNextString(), selected);
+		
+		params.editMaterial(currentMaterialID(), gd.getNextString(),-1,-1,-1);
+		
+		fillList();
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -120,7 +109,24 @@ public class MaterialList extends List implements ActionListener {
 	// TODO: color
 	void fillList() {
 		removeAll();
-		for (int i = 0; i < materialCount; i++)
-			add(materialNames[i]);
+		String[] names = params.getMaterialList();
+		for (int i = 0;i<names.length;i++){
+			add(names[i]);
+		}
+	}
+	
+	public int currentMaterialID(){
+		if(getSelectedIndex()==-1){
+			return -1;
+		}
+		return params.getMaterialID(this.getSelectedItem());
+	}
+	
+	public double[] currentMaterialColor(){
+		int mID = currentMaterialID();
+		if(mID == -1){
+			return null;
+		}
+		return params.getMaterialColor(mID);
 	}
 }
