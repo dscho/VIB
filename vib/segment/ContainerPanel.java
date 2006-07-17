@@ -168,8 +168,7 @@ public class ContainerPanel extends Panel {
 			makeLabel(" ", constr, this);
 			makeLabel("Materials:", constr, this);
 			
-			materials = new MaterialList();
-			materials.initFrom(cc.getLabels());
+			materials = new MaterialList(cc.getLabels());
 			add(materials, constr);
 
 			makeLabel(" ", constr, this);
