@@ -131,6 +131,7 @@ public class ContainerPanel extends Panel {
 		private ImageButton bZoomPlus, bZoomMinus, bSave, bArrow, bLetterC, bLetterR;
 		private ImageButton bPlus, bMinus, bBrush, bLasso, bMagicWand;
 		private ImageButton bPropagatingContour, bBlowTool, bCrossHair;
+		private Checkbox check3d;
 	
 		public MainPanel() {
 			setLayout(new GridBagLayout());
@@ -215,6 +216,8 @@ public class ContainerPanel extends Panel {
 			//bLetterR = makeImageButton("iconLetterR.png", constr, this, listenerSelection);
 			bPlus = makeImageButton("iconPlus.png", constr, this, listenerSelection);
 			bMinus = makeImageButton("iconMinus.png", constr, this, listenerSelection);
+			Checkbox check3d = new Checkbox("3d", false);
+			add(check3d, constr);
 				
 			constr.gridwidth = GridBagConstraints.REMAINDER;
 			makeLabel(" ", constr, this);
