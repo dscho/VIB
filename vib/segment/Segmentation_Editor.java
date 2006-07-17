@@ -125,8 +125,8 @@ public class Segmentation_Editor implements PlugIn {
 
 	}
 
-	class CustomStackWindow extends StackWindow {
-		Roi[] svgRoi;
+	class CustomStackWindow extends StackWindow implements AdjustmentListener {
+		Roi[] savedRois;
 		int oldSlice;
 
 		CustomStackWindow(ImagePlus imp) {
@@ -147,8 +147,9 @@ public class Segmentation_Editor implements PlugIn {
 			add(sliceAndImage, BorderLayout.CENTER);
 			pack();
 
-			svgRoi = new Roi[imp.getStack().getSize() + 1]; // "+1" is to have enough place if the slice
+			savedRois = new Roi[imp.getStack().getSize() + 1];
 			oldSlice = sliceSelector.getValue();
+			sliceSelector.addAdjustmentListener(this);
 		} 
 
 		public Dimension getMinimumSize() {
@@ -163,8 +164,12 @@ public class Segmentation_Editor implements PlugIn {
 
 		public synchronized void adjustmentValueChanged(AdjustmentEvent e) {
 			super.adjustmentValueChanged(e);
-			svgRoi[oldSlice] = imp.getRoi();
+			savedRois[oldSlice] = imp.getRoi();
 			oldSlice = sliceSelector.getValue();
+			if (savedRois[oldSlice] == null)
+				imp.killRoi();
+			else
+				imp.setRoi(savedRois[oldSlice]);
 		}
 
 		/**
