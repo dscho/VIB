@@ -22,6 +22,7 @@ import vib.AmiraParameters;
 public class MaterialList extends List implements ActionListener {
 	PopupMenu popup;
 
+	ImagePlus labels;
 	AmiraParameters params;
 
 	public MaterialList(ImagePlus ip) {
@@ -57,6 +58,7 @@ public class MaterialList extends List implements ActionListener {
 	}
 
 	public void initFrom(ImagePlus image) {
+		labels = image;
 		params = new AmiraParameters(image);
 		if (params.getMaterialCount() == 0) {
 			params.addMaterial("Exterior", 0,0,0);
@@ -69,6 +71,7 @@ public class MaterialList extends List implements ActionListener {
 		int num = getItemCount();
 		num++;
 		params.addMaterial("Material" + num, 255,0,0); // TODO change color
+		params.setParameters(labels);
 		fillList();
 		select(num);
 	}
@@ -93,7 +96,7 @@ public class MaterialList extends List implements ActionListener {
 			return;
 		
 		params.editMaterial(currentMaterialID(), gd.getNextString(),-1,-1,-1);
-		
+		params.setParameters(labels);
 		fillList();
 	}
 

@@ -101,14 +101,6 @@ public class ContainerPanel extends Panel {
 		return scroll;
 	}
 	
-	private TextField makeTextField (String init, Object constr, Panel pan) {
-		TextField text = new TextField(init);
-		text.setEditable(true);
-		text.setColumns(3);
-		pan.add(text, constr);
-		return text;
-	}
-
 	public class MainPanel extends Panel implements ActionListener {
 		GridBagConstraints constr;
 		MaterialList materials;
