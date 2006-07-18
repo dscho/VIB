@@ -4,13 +4,20 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.GenericDialog;
 
-import java.awt.Color;
-import java.awt.List;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
 import java.awt.AWTEvent;
+import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Label;
+import java.awt.MenuItem;
+import java.awt.Point;
+import java.awt.PopupMenu;
+import java.awt.ScrollPane;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.util.Iterator;
 
@@ -19,26 +26,48 @@ import javax.naming.OperationNotSupportedException;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import vib.AmiraParameters;
 
-public class MaterialList extends List implements ActionListener {
+public class MaterialList extends ScrollPane implements ActionListener {
 	PopupMenu popup;
 
 	ImagePlus labels;
 	AmiraParameters params;
 
+	Font font;
+	int lineHeight, lineWidth;
+	List list;
+
 	public MaterialList(ImagePlus ip) {
-		super(6, false);
+		super();
 		params = new AmiraParameters(ip);
 		initFrom(ip);
 
 		createPopup();
-		enableEvents(AWTEvent.MOUSE_EVENT_MASK);
+
+		font = new Font("Monospaced", Font.PLAIN, 12);
+		lineHeight = font.getSize() + 1;
+		lineWidth = 200;
+		list = new List();
+		add(list);
 	}
 
-	public void processMouseEvent(MouseEvent e) {
-		if (e.isPopupTrigger())
-			popup.show(this, e.getX(), e.getY());
-		else
-			super.processMouseEvent(e);
+	private int getSelectedIndex() {
+		return list.selectedIndex;
+	}
+
+	private void select(int index) {
+		list.selectedIndex = index;
+	}
+
+	public int getItemCount() {
+		return params.getMaterialCount();
+	}
+
+	public String getItem(int index) {
+		return params.getMaterialName(index);
+	}
+
+	public String getSelectedItem() {
+		return getItem(getSelectedIndex());
 	}
 
 	MenuItem remove, add, rename;
@@ -64,7 +93,8 @@ public class MaterialList extends List implements ActionListener {
 			params.addMaterial("Exterior", 0,0,0);
 			params.addMaterial("Interior", 255,0,0);
 		}
-		fillList();
+		if (list != null)
+			list.repaint();
 	}
 
 	public void addMaterial() {
@@ -72,32 +102,32 @@ public class MaterialList extends List implements ActionListener {
 		num++;
 		params.addMaterial("Material" + num, 255,0,0); // TODO change color
 		params.setParameters(labels);
-		fillList();
 		select(num);
+		doLayout();
+		list.repaint();
 	}
 
 	public void delMaterial() {
+		int selected = getSelectedIndex();
+		if (selected < 1) {
+			IJ.error("Cannot delete first material!");
+			return;
+		}
 		throw new NotImplementedException();
-//		int selected = getSelectedIndex();
 //		if (selected < 0)
 //			return;
 	}
 
 	private void renameMaterial() {
-		int selected = getSelectedIndex();
-		if (selected < 0)
-			return;
-		if (IJ.isMacOSX())
-			IJ.wait(20);
 		GenericDialog gd = new GenericDialog("Rename");
-		gd.addStringField("name", getItem(selected));
+		gd.addStringField("name", getSelectedItem());
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
 		
 		params.editMaterial(currentMaterialID(), gd.getNextString(),-1,-1,-1);
 		params.setParameters(labels);
-		fillList();
+		list.repaint();
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -109,20 +139,11 @@ public class MaterialList extends List implements ActionListener {
 			renameMaterial();
 	}
 
-	// TODO: color
-	void fillList() {
-		removeAll();
-		String[] names = params.getMaterialList();
-		for (int i = 0;i<names.length;i++){
-			add(names[i]);
-		}
-	}
-	
 	public int currentMaterialID(){
 		if(getSelectedIndex()==-1){
 			return -1;
 		}
-		return params.getMaterialID(this.getSelectedItem());
+		return params.getMaterialID(getSelectedItem());
 	}
 	
 	public double[] currentMaterialColor(){
@@ -131,5 +152,74 @@ public class MaterialList extends List implements ActionListener {
 			return null;
 		}
 		return params.getMaterialColor(mID);
+	}
+
+	private class List extends Canvas {
+		Color fgCol = Color.BLACK;
+		Color bgCol = Color.LIGHT_GRAY;
+		private int selectedIndex = 0;
+
+
+		public List() {
+			enableEvents(AWTEvent.MOUSE_EVENT_MASK |
+					AWTEvent.KEY_EVENT_MASK);
+		}
+
+		public void processMouseEvent(MouseEvent e) {
+			if (e.getID() == MouseEvent.MOUSE_RELEASED) {
+				selectedIndex = e.getY() / lineHeight;
+				repaint();
+			}
+			if (e.isPopupTrigger())
+				popup.show(this, e.getX(), e.getY());
+		}
+
+		public void processKeyEvent(KeyEvent e) {
+			if (e.getID() == KeyEvent.KEY_PRESSED) {
+				int code = e.getKeyCode();
+				if (code == e.VK_UP && selectedIndex > 0)
+					ensureVisible(--selectedIndex, true);
+				else if (code == e.VK_DOWN && selectedIndex
+						< getItemCount() - 1)
+					ensureVisible(++selectedIndex, true);
+			}
+		}
+
+		public void ensureVisible(int index, boolean repaintAnyway) {
+			Point p = getScrollPosition();
+			Dimension d = getViewportSize();
+			if (p.y + d.height < (index + 1) * lineHeight ||
+					p.y > index * lineHeight) {
+				setScrollPosition(p.x, index * lineHeight);
+				repaint();
+			} else if (repaintAnyway)
+				repaint();
+		}
+
+		public void update(Graphics g) {
+			paint(g);
+		}
+
+		public void paint(Graphics g) {
+			g.setFont(font);
+			for (int i = 0; i < getItemCount(); i++) {
+				g.setColor(i == selectedIndex ? fgCol : bgCol);
+				g.fillRect(0, i * lineHeight,
+						lineWidth, lineHeight);
+				double[] c = params.getMaterialColor(i);
+				g.setColor(new Color((float)c[0], (float)c[1],
+							(float)c[2]));
+				g.fillRect(1, i * lineHeight + 1,
+						lineHeight - 2, lineHeight - 2);
+				g.setColor(i == selectedIndex ? bgCol : fgCol);
+				g.drawString(getItem(i), lineHeight,
+						(i + 1) * lineHeight - 1);
+			}
+		}
+
+		public Dimension getPreferredSize() {
+			return new Dimension(lineWidth, getItemCount() *
+					(font.getSize() + 1) + 1);
+		}
 	}
 }
