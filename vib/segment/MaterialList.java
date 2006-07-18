@@ -23,7 +23,6 @@ import java.util.Iterator;
 
 import javax.naming.OperationNotSupportedException;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import vib.AmiraParameters;
 
 public class MaterialList extends ScrollPane implements ActionListener {
@@ -113,9 +112,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 			IJ.error("Cannot delete first material!");
 			return;
 		}
-		throw new NotImplementedException();
-//		if (selected < 0)
-//			return;
+		throw new RuntimeException("delete not yet implemented");
 	}
 
 	private void renameMaterial() {
