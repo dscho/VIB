@@ -90,7 +90,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		params = new AmiraParameters(image);
 		if (params.getMaterialCount() == 0) {
 			params.addMaterial("Exterior", 0,0,0);
-			params.addMaterial("Interior", 255,0,0);
+			params.addMaterial("Interior", 1,0,0);
 		}
 		if (list != null)
 			list.repaint();
@@ -99,7 +99,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 	public void addMaterial() {
 		int num = getItemCount();
 		num++;
-		params.addMaterial("Material" + num, 255,0,0); // TODO change color
+		params.addMaterial("Material" + num, 1,0,0); // TODO change color
 		params.setParameters(labels);
 		select(num);
 		doLayout();
