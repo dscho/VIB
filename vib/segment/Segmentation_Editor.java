@@ -98,6 +98,11 @@ public class Segmentation_Editor implements PlugIn {
 
 		CustomStackWindow(ImagePlus imp) {
 			super(imp, cc);
+			
+			savedRois = new Roi[imp.getStack().getSize() + 1];
+			oldSlice = sliceSelector.getValue();
+			sliceSelector.addAdjustmentListener(this);
+			
 			setLayout(new BorderLayout());
 			setBackground(Color.LIGHT_GRAY);
 			remove(sliceSelector);
@@ -113,10 +118,6 @@ public class Segmentation_Editor implements PlugIn {
 
 			add(sliceAndImage, BorderLayout.CENTER);
 			pack();
-
-			savedRois = new Roi[imp.getStack().getSize() + 1];
-			oldSlice = sliceSelector.getValue();
-			sliceSelector.addAdjustmentListener(this);
 		} 
 
 		public Dimension getMinimumSize() {
@@ -124,7 +125,7 @@ public class Segmentation_Editor implements PlugIn {
 		}
 
 		void addPanels() {
-			containerPanel = new ContainerPanel(cc, this);
+			containerPanel = new ContainerPanel(cc, this, savedRois);
 			//containerPanel.setVisible(true);
 			add(containerPanel, BorderLayout.WEST);
 		}

@@ -8,7 +8,9 @@ import java.net.URL;
 import java.util.Vector;
 import ij.*;
 import ij.measure.Calibration;
+import ij.process.ImageProcessor;
 import ij.gui.GenericDialog;
+import ij.gui.Roi;
 import vib.InterpolatedImage;
 
 /**
@@ -21,6 +23,7 @@ import vib.InterpolatedImage;
  */
 public class ContainerPanel extends Panel {
 	Window window;
+	Roi[] savedRois;
 	Segmentation_Editor.CustomCanvas cc;
 
 	Choice labelImagesChoice;
@@ -30,9 +33,10 @@ public class ContainerPanel extends Panel {
 	InfosPanel pInfos;
 	Font font = new Font("Helvetica", Font.PLAIN, 12);
 	
-	public ContainerPanel(Segmentation_Editor.CustomCanvas cc, Window window) {
+	public ContainerPanel(Segmentation_Editor.CustomCanvas cc, Window window, Roi[] savedRois) {
 		this.cc = cc;
 		this.window = window;
+		this.savedRois = savedRois;
 		
 		setLayout(new BorderLayout());
 
@@ -189,7 +193,7 @@ public class ContainerPanel extends Panel {
 			//bLetterR = makeImageButton("iconLetterR.png", constr, this, listenerSelection);
 			bPlus = makeImageButton("iconPlus.png", constr, this, this);
 			bMinus = makeImageButton("iconMinus.png", constr, this, this);
-			Checkbox check3d = new Checkbox("3d", false);
+			check3d = new Checkbox("3d", false);
 			add(check3d, constr);
 				
 			constr.gridwidth = GridBagConstraints.REMAINDER;
@@ -209,10 +213,80 @@ public class ContainerPanel extends Panel {
 			} else if ( b == bZoomMinus) {
 				cc.zoomOut(cc.getWidth()/2, cc.getHeight()/2);
 			} else if ( b == bPlus) {
-
+				int currentSlice = cc.getImage().getCurrentSlice();
+				Roi roi = cc.getImage().getRoi();
+				assignSliceTo(currentSlice,roi,materials.currentMaterialID());	
+				cc.getImage().killRoi();
+				if(check3d.getState()){
+					for(int i=0;i<savedRois.length;i++){
+						roi = savedRois[i];
+						if(roi != null){
+							assignSliceTo(i,roi,materials.currentMaterialID());
+							savedRois[i] = null;
+						}
+					}
+				}
+				cc.getImage().setSlice(currentSlice);
+				cc.getLabels().setSlice(currentSlice);
+				cc.getImage().updateAndDraw();
+				cc.getLabels().updateAndDraw();
 			} else if (b == bMinus) {
-
+				int currentSlice = cc.getImage().getCurrentSlice();
+				Roi roi = cc.getImage().getRoi();
+				releaseSliceFrom(currentSlice, roi, materials.currentMaterialID());
+				cc.getImage().killRoi();
+				if(check3d.getState()){
+					for(int i=0;i<savedRois.length;i++){
+						roi = savedRois[i];
+						if(roi != null){
+							releaseSliceFrom(i,roi,materials.currentMaterialID());
+							savedRois[i] = null;
+						}
+					}
+				}
+				cc.getImage().setSlice(currentSlice);
+				cc.getLabels().setSlice(currentSlice);
+				cc.getImage().updateAndDraw();
+				cc.getLabels().updateAndDraw();
 			}
+		}
+		
+		public void assignSliceTo(int slice, Roi roi, int materialID){
+			ImagePlus grey = cc.getImage();
+			ImagePlus labels = cc.getLabels();
+			if (grey == null || labels == null)
+				return;			
+			if (roi == null)
+				return;
+			ImageProcessor labP = labels.getStack().getProcessor(slice);
+			labP.setRoi(roi);
+			Rectangle bounds = roi.getBoundingRect();
+	        for(int i=bounds.x;i<=bounds.x+bounds.width;i++){
+	            for(int j=bounds.y;j<=bounds.y+bounds.height;j++){
+	                if(roi.contains(i,j)) labP.set(i,j,materialID);
+	            }
+	        }
+	        cc.updateSlice(slice);
+	    }
+		
+		public void releaseSliceFrom(int slice, Roi roi, int materialID){
+			ImagePlus grey = cc.getImage();
+			ImagePlus labels = cc.getLabels();
+			if (grey == null || labels == null)
+				return;			
+			if (roi == null)
+				return;
+			ImageProcessor labP = labels.getStack().getProcessor(slice);
+			labP.setRoi(roi);
+			Rectangle bounds = roi.getBoundingRect();
+	        for(int i=bounds.x;i<=bounds.x+bounds.width;i++){
+	            for(int j=bounds.y;j<=bounds.y+bounds.height;j++){
+	                if(roi.contains(i,j) && labP.get(i,j)==materialID){ 
+	                	labP.set(i,j,materials.getDefaultMaterialID());
+	                }
+	            }
+	        }
+	        cc.updateSlice(slice);
 		}
 	}
 

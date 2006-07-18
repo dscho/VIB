@@ -153,6 +153,10 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		}
 		return params.getMaterialColor(mID);
 	}
+	
+	public int getDefaultMaterialID(){
+		return params.getMaterialID(getItem(0));
+	}
 
 	private class List extends Canvas {
 		Color fgCol = Color.BLACK;
