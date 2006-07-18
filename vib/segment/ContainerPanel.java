@@ -84,7 +84,9 @@ public class ContainerPanel extends Panel {
 			img = createImage((ImageProducer)url.getContent());
 		} catch (MalformedURLException e1) {
 			e1.printStackTrace();
-		} catch(Exception e) {}
+		} catch(Exception e) { e.printStackTrace(); }
+		if (img == null)
+			throw new RuntimeException("image not found: " + path);
 		ImageButton button = new ImageButton(img);
 		button.addActionListener(listener);
 		pan.add(button, constr);

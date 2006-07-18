@@ -87,6 +87,8 @@ public class ImageButton extends Canvas implements MouseListener {
      * @param image     the image, which is not supposed to be null
      */
 	private synchronized void setImage( int id, Image image ) {
+	    if (image == null)
+		throw new RuntimeException("Image is null!");
 	    if ( images[id] != image ) {
        	    images[id] = image;
         	if ( image != null ) {
