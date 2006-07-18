@@ -335,7 +335,7 @@ public class Segmenter_ extends JFrame implements PlugIn {
 					
 					markingLabel.setText("current image: \""+newCurrent.getTitle()+"\"");
 					
-					System.out.println("newCurrent = " + newCurrent);
+					// System.out.println("newCurrent = " + newCurrent);
 					new SliceWatcher(newCurrent).addSliceListener(this);
 					//new RoiWatcher(newCurrent).addRoiListener(this);
 					
@@ -393,7 +393,7 @@ public class Segmenter_ extends JFrame implements PlugIn {
 							      currentImage.getHeight(),
 							      currentImage.getStackSize());
 			
-			System.out.println("labelImage is: "+labelImage);
+			// System.out.println("labelImage is: "+labelImage);
 			
 			labelImage.setProperty(AmiraParameters.INFO,AmiraParameters.defaultMaterialsString);
 			AmiraParameters parameters=new AmiraParameters(labelImage);

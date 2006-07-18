@@ -9,6 +9,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.Shape;
+import java.awt.Image;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
@@ -360,13 +361,47 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		finder.initContours();
 	}
 
+	private int backBufferWidth;
+	private int backBufferHeight;
+
+	private Graphics backBufferGraphics;
+	private Image backBufferImage;
+
+	private void resetBackBuffer() {
+
+		if(backBufferGraphics!=null){
+			backBufferGraphics.dispose();
+			backBufferGraphics=null;
+		}
+
+		if(backBufferImage!=null){
+			backBufferImage.flush();
+			backBufferImage=null;
+		}
+
+		backBufferWidth=getSize().width;
+		backBufferHeight=getSize().height;
+
+		backBufferImage=createImage(backBufferWidth,backBufferHeight);
+	        backBufferGraphics=backBufferImage.getGraphics();
+
+	}
+
 	public void paint(Graphics g) {
+		
+		if(backBufferWidth!=getSize().width ||
+		   backBufferHeight!=getSize().height ||
+		   backBufferImage==null ||
+		   backBufferGraphics==null)
+			resetBackBuffer();
+
 		int slice = imp.getCurrentSlice();
 		synchronized(this) {
 			createContoursIfNotExist(slice);
-			super.paint(g);
-			drawOverlay(g,slice);
+			super.paint(backBufferGraphics);
+			drawOverlay(backBufferGraphics,slice);
 		}
+		g.drawImage(backBufferImage,0,0,this);
 	}
 
 	void drawOverlay(Graphics g,int slice) {
