@@ -16,7 +16,7 @@ import vib.InterpolatedImage;
 
 /**
  * ContainerPanel: 
- * This class build all the interface of the Segmentation_Editor. It handle the
+ * This class build all the interface of the SegmentationEditor. It handle the
  * listeners too.
  * 
  * @author Francois KUSZTOS
@@ -25,7 +25,7 @@ import vib.InterpolatedImage;
 public class ContainerPanel extends Panel {
 	Window window;
 	Roi[] savedRois;
-	Segmentation_Editor.CustomCanvas cc;
+	SegmentationEditor.CustomCanvas cc;
 
 	Choice labelImagesChoice;
 	Vector labelImages;
@@ -34,7 +34,7 @@ public class ContainerPanel extends Panel {
 	InfosPanel pInfos;
 	Font font = new Font("Helvetica", Font.PLAIN, 12);
 	
-	public ContainerPanel(Segmentation_Editor.CustomCanvas cc, Window window, Roi[] savedRois) {
+	public ContainerPanel(SegmentationEditor.CustomCanvas cc, Window window, Roi[] savedRois) {
 		this.cc = cc;
 		this.window = window;
 		this.savedRois = savedRois;

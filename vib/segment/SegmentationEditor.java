@@ -18,7 +18,7 @@ import vib.SegmentationViewerCanvas;
  * @author Francois KUSZTOS
  * @version 3.0
  */
-public class Segmentation_Editor implements PlugIn {
+public class SegmentationEditor implements PlugIn {
 	CustomCanvas cc;
 	ContainerPanel containerPanel;
 
