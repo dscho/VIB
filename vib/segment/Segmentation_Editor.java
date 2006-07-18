@@ -61,6 +61,8 @@ public class Segmentation_Editor implements PlugIn {
 
 			double posX, posY, posZ;
 			int voxelValue;
+			int materialID;
+			String materialName;
 
 			if(x<imp.getWidth() && y<imp.getHeight()) {
 				Calibration cal = imp.getCalibration();
@@ -74,10 +76,13 @@ public class Segmentation_Editor implements PlugIn {
 				posZ = Double.valueOf(IJ.d2s(posZ)).doubleValue();
 
 				voxelValue = imp.getProcessor().get(x, y);
-
+				
+				materialID = getLabels().getStack().getProcessor(z+1).get(x,y);
+				materialName = containerPanel.pMain.materials.params.getMaterialName(materialID);
+				
 				containerPanel.pInfos.updateLabels(x, y, z,
 						posX, posY, posZ,
-						voxelValue, "TODO");
+						voxelValue, materialName);
 			} else
 				containerPanel.pInfos.updateLabels();
 
@@ -138,12 +143,14 @@ public class Segmentation_Editor implements PlugIn {
 				imp.killRoi();
 			else
 				imp.setRoi(savedRois[oldSlice]);
+			this.invalidate();
+			this.repaint();
 		}
 
 		/**
 		 * overridden in order to fix the problem of drawing a rectangle close to the ImageCanvas
 		 */
-		public void update(Graphics g) {}
+		// public void update(Graphics g) {}
 		public void paint(Graphics g) {
 			drawInfo(g);
 		}
