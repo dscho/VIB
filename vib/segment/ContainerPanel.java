@@ -11,6 +11,7 @@ import ij.measure.Calibration;
 import ij.process.ImageProcessor;
 import ij.gui.GenericDialog;
 import ij.gui.Roi;
+import vib.AmiraParameters;
 import vib.InterpolatedImage;
 
 /**
@@ -138,7 +139,8 @@ public class ContainerPanel extends Panel {
 			// TODO: add image listener
 			for (int i = 0; i < count; i++) {
 				ImagePlus image = WindowManager.getImage(i + 1);
-				if (image == cc.getImage() ||
+				if (!AmiraParameters.isAmiraLabelfield(image) ||
+						image == cc.getImage() ||
 						image.getWidth() != 
 						cc.getImage().getWidth() ||
 						image.getHeight() != 
