@@ -29,6 +29,7 @@ import adt.Points;
 import vib.AmiraParameters;
 import vib.AmiraMeshWriter_;
 import vib.AmiraMeshEncoder;
+import vib.AmiraMeshDecoder;
 import vib.SegmentationViewerCanvas;
 
 import gui.GuiBuilder;
@@ -37,6 +38,57 @@ import ij.io.*;
 import ij.gui.*;
 import ij.plugin.PlugIn;
 import ij.plugin.MacroInstaller;
+
+class ChoicesDialog extends Dialog implements ActionListener {
+
+	private Button[] buttons;
+	private boolean[] chosen;
+	
+	public ChoicesDialog(Frame parent, String title, String msg, String[] options) {
+
+		super(parent, title, true);
+
+		setLayout(new BorderLayout());
+		Panel panel = new Panel();
+		panel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
+		MultiLineLabel message = new MultiLineLabel(msg);
+		message.setFont(new Font("Dialog", Font.BOLD, 12));
+		panel.add(message);
+		add("North", panel);
+
+		panel = new Panel();
+		panel.setLayout(new FlowLayout(FlowLayout.RIGHT, 15, 8));
+
+		buttons = new Button[options.length];
+		chosen = new boolean[options.length];
+
+		for (int i=0;i<options.length;++i) {
+			buttons[i]=new Button(options[i]);
+			buttons[i].addActionListener(this);
+			panel.add(buttons[i]);
+		}
+		add("South", panel);
+		if (ij.IJ.isMacintosh())
+			setResizable(false);
+		pack();
+		GUI.center(this);
+		show();
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		Object source=e.getSource();
+		for (int i=0;i<buttons.length;++i)
+			if(source==buttons[i])
+				chosen[i]=true;
+		setVisible(false);
+		dispose();
+	}
+
+	public boolean optionChosen(int optionIndex) {
+		return chosen[optionIndex];
+	}
+}
+
 
 public class Segmenter_ extends JFrame implements PlugIn {
 	
@@ -383,19 +435,61 @@ public class Segmenter_ extends JFrame implements PlugIn {
 					 ") already has a label field associated with it.");
 				return;
 			}
+
+			ImagePlus labelImage = null;
+
+			{
+				String fileName = info.fileName;
+				String directory = info.directory;
+
+				File possibleLoadFile = new File(directory,fileName+".labels");
+
+				if(possibleLoadFile.exists()) {
+
+					String[] choices = {"Load corresponding label file","Start with an empty label field"};
+					ChoicesDialog dialog=new ChoicesDialog(IJ.getInstance(),
+									       "Load default label file?",
+									       "There's a label file with the expected corresponding name to this file: '"+
+									       possibleLoadFile.getName()+"'.\nDo you want to load it, or start again with an empty label field?",
+									       choices);
+
+					if(dialog.optionChosen(0)) {
+
+						AmiraMeshDecoder d=new AmiraMeshDecoder();
+						if(d.open(possibleLoadFile.getPath())) {
+						
+							labelImage=new ImagePlus();
+						
+							FileInfo fi=new FileInfo();
+							fi.fileName=possibleLoadFile.getName();
+							fi.directory=possibleLoadFile.getParent();
+							labelImage.setFileInfo(fi);
+							labelImage.setStack("labels in "+possibleLoadFile.getName(),
+									    d.getStack());
+							d.parameters.setParameters(labelImage);
+						}
+						
+					}
+
+				}
+				
+			}
 			
-			// Then this image hasn't got an associated
-			// label field ImagePlus, so create one...
+
+			if(labelImage==null) {
+
+				// Then this image hasn't got an associated
+				// label field ImagePlus, so create one...
+				
+				labelImage = IJ.createImage("labels for "+currentImage.getTitle(),
+								      "8-bit",
+								      currentImage.getWidth(),
+								      currentImage.getHeight(),
+								      currentImage.getStackSize());
 			
-			ImagePlus labelImage = IJ.createImage("labels for "+currentImage.getTitle(),
-							      "8-bit",
-							      currentImage.getWidth(),
-							      currentImage.getHeight(),
-							      currentImage.getStackSize());
-			
-			// System.out.println("labelImage is: "+labelImage);
-			
-			labelImage.setProperty(AmiraParameters.INFO,AmiraParameters.defaultMaterialsString);
+				labelImage.setProperty(AmiraParameters.INFO,AmiraParameters.defaultMaterialsString);
+			}
+
 			AmiraParameters parameters=new AmiraParameters(labelImage);
 			
 			//we temporaritly turn of list events while repopulating
