@@ -217,42 +217,50 @@ public class ContainerPanel extends Panel {
 			} else if ( b == bZoomMinus) {
 				cc.zoomOut(cc.getWidth()/2, cc.getHeight()/2);
 			} else if ( b == bPlus) {
-				int currentSlice = cc.getImage().getCurrentSlice();
-				Roi roi = cc.getImage().getRoi();
-				assignSliceTo(currentSlice,roi,materials.currentMaterialID());	
-				cc.getImage().killRoi();
-				if(check3d.getState()){
-					for(int i=0;i<savedRois.length;i++){
-						roi = savedRois[i];
-						if(roi != null){
-							assignSliceTo(i,roi,materials.currentMaterialID());
-							savedRois[i] = null;
-						}
-					}
-				}
-				cc.getImage().setSlice(currentSlice);
-				cc.getLabels().setSlice(currentSlice);
-				cc.getImage().updateAndDraw();
-				cc.getLabels().updateAndDraw();
+				processPlusButton();
 			} else if (b == bMinus) {
-				int currentSlice = cc.getImage().getCurrentSlice();
-				Roi roi = cc.getImage().getRoi();
-				releaseSliceFrom(currentSlice, roi, materials.currentMaterialID());
-				cc.getImage().killRoi();
-				if(check3d.getState()){
-					for(int i=0;i<savedRois.length;i++){
-						roi = savedRois[i];
-						if(roi != null){
-							releaseSliceFrom(i,roi,materials.currentMaterialID());
-							savedRois[i] = null;
-						}
+				processMinusButton();
+			}
+		}
+		
+		public void processPlusButton(){
+			int currentSlice = cc.getImage().getCurrentSlice();
+			Roi roi = cc.getImage().getRoi();
+			assignSliceTo(currentSlice,roi,materials.currentMaterialID());	
+			cc.getImage().killRoi();
+			if(check3d.getState()){
+				for(int i=0;i<savedRois.length;i++){
+					roi = savedRois[i];
+					if(roi != null){
+						assignSliceTo(i,roi,materials.currentMaterialID());
+						savedRois[i] = null;
 					}
 				}
-				cc.getImage().setSlice(currentSlice);
-				cc.getLabels().setSlice(currentSlice);
-				cc.getImage().updateAndDraw();
-				cc.getLabels().updateAndDraw();
 			}
+			cc.getImage().setSlice(currentSlice);
+			cc.getLabels().setSlice(currentSlice);
+			cc.getImage().updateAndDraw();
+			cc.getLabels().updateAndDraw();
+		}
+		
+		public void processMinusButton(){
+			int currentSlice = cc.getImage().getCurrentSlice();
+			Roi roi = cc.getImage().getRoi();
+			releaseSliceFrom(currentSlice, roi, materials.currentMaterialID());
+			cc.getImage().killRoi();
+			if(check3d.getState()){
+				for(int i=0;i<savedRois.length;i++){
+					roi = savedRois[i];
+					if(roi != null){
+						releaseSliceFrom(i,roi,materials.currentMaterialID());
+						savedRois[i] = null;
+					}
+				}
+			}
+			cc.getImage().setSlice(currentSlice);
+			cc.getLabels().setSlice(currentSlice);
+			cc.getImage().updateAndDraw();
+			cc.getLabels().updateAndDraw();
 		}
 		
 		public void assignSliceTo(int slice, Roi roi, int materialID){

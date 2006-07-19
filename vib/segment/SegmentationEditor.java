@@ -97,7 +97,7 @@ public class SegmentationEditor implements PlugIn {
 
 	}
 
-	class CustomStackWindow extends StackWindow implements AdjustmentListener {
+	class CustomStackWindow extends StackWindow implements AdjustmentListener, KeyListener{
 		Roi[] savedRois;
 		int oldSlice;
 
@@ -107,6 +107,10 @@ public class SegmentationEditor implements PlugIn {
 			savedRois = new Roi[imp.getStack().getSize() + 1];
 			oldSlice = sliceSelector.getValue();
 			sliceSelector.addAdjustmentListener(this);
+			
+			// Remove ij from the key listeners to avoid zooming when pressing + or -
+			cc.removeKeyListener(ij);
+			cc.addKeyListener(this);
 			
 			setLayout(new BorderLayout());
 			setBackground(Color.LIGHT_GRAY);
@@ -143,8 +147,6 @@ public class SegmentationEditor implements PlugIn {
 				imp.killRoi();
 			else
 				imp.setRoi(savedRois[oldSlice]);
-			this.invalidate();
-			this.repaint();
 		}
 
 		/**
@@ -154,6 +156,29 @@ public class SegmentationEditor implements PlugIn {
 		public void paint(Graphics g) {
 			drawInfo(g);
 		}
-	}
+		
+		public void keyTyped(KeyEvent e) {}
+		public void keyPressed(KeyEvent e) {}
 
+		public void keyReleased(KeyEvent e) {
+			int c = e.getKeyCode();
+			if(c == KeyEvent.VK_UP || c == KeyEvent.VK_RIGHT){
+				imp.setSlice(oldSlice + 1);
+				adjustmentValueChanged(new AdjustmentEvent(sliceSelector,AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED,AdjustmentEvent.BLOCK_INCREMENT,oldSlice+1));
+			} else if (c == KeyEvent.VK_DOWN || c == KeyEvent.VK_LEFT){
+				imp.setSlice(oldSlice - 1);
+				adjustmentValueChanged(new AdjustmentEvent(sliceSelector,AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED,AdjustmentEvent.BLOCK_DECREMENT,oldSlice-1));
+			} else if (c == KeyEvent.VK_PAGE_DOWN){
+				imp.setSlice(oldSlice - 5);
+				adjustmentValueChanged(new AdjustmentEvent(sliceSelector,AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED,AdjustmentEvent.BLOCK_DECREMENT,oldSlice-5));
+			} else if (c == KeyEvent.VK_PAGE_UP){
+				imp.setSlice(oldSlice + 5);
+				adjustmentValueChanged(new AdjustmentEvent(sliceSelector,AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED,AdjustmentEvent.BLOCK_DECREMENT,oldSlice+5));
+			} else if (e.getKeyChar() == '+'){
+				containerPanel.pMain.processPlusButton();
+			}else if (e.getKeyChar() == '-'){
+				containerPanel.pMain.processMinusButton();
+			}			
+		}
+	}
 }
