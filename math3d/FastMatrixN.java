@@ -1,7 +1,13 @@
 package math3d;
 
+import ij.IJ;
+
 public class FastMatrixN {
 	public static void invert(double[][] matrix) {
+		invert(matrix, false);
+	}
+
+	public static void invert(double[][] matrix, boolean showStatus) {
 		int M = matrix.length;
 
 		if (M != matrix[0].length)
@@ -13,6 +19,9 @@ public class FastMatrixN {
 
 		// empty lower left triangle
 		for (int i = 0; i < M; i++) {
+			if (showStatus)
+				IJ.showStatus("invert matrix: "
+						+ i + "/" + (2 * M));
 			// find pivot
 			int p = i;
 			for (int j = i + 1; j < M; j++)
@@ -49,7 +58,10 @@ public class FastMatrixN {
 		}
 
 		// empty upper right triangle
-		for (int i = M - 1; i > 0; i--)
+		for (int i = M - 1; i > 0; i--) {
+			if (showStatus)
+				IJ.showStatus("invert matrix: "
+						+ (2 * M - i) + "/" + (2 * M));
 			for (int j = i - 1; j >= 0; j--) {
 				double f = matrix[j][i] / matrix[i][i];
 				for (int k = i; k < M; k++)
@@ -57,6 +69,7 @@ public class FastMatrixN {
 				for (int k = 0; k < M; k++)
 					other[j][k] -= f * other[i][k];
 			}
+		}
 
 		// exchange
 		for (int i = 0; i < M; i++)
