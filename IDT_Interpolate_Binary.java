@@ -35,7 +35,7 @@ public class IDT_Interpolate_Binary implements PlugInFilter {
 		h = ip.getHeight();
 		idt = new int[sliceCount][];
 		int first = sliceCount, last = -1;
-ImageStack st2 = new ImageStack(w, h);
+
 		for (int z = 0; z < sliceCount; z++) {
 			idt[z] = getIDT(stack.getProcessor(z + 1).getPixels());
 			if (idt[z] != null) {
@@ -43,9 +43,7 @@ ImageStack st2 = new ImageStack(w, h);
 					first = z;
 				last = z;
 			}
-st2.addSlice("", new ij.process.FloatProcessor(w, h, idt[z] != null ? idt[z] : new int[w * h]));
-		}
-new ImagePlus("test", st2).show();
+		 }
 
 		if (first == last || last < 0) {
 			IJ.error("Not enough to interpolate");
@@ -72,7 +70,7 @@ new ImagePlus("test", st2).show();
 	}
 
 	/*
-	 * This function calculates the signed integer distance transform.
+	 * The following calculates the signed integer distance transform.
 	 * Distance transform means that each pixel is assigned the distance
 	 * to the boundary.
 	 * IDT means that the distance is not the Euclidean, but the minimal
@@ -81,107 +79,80 @@ new ImagePlus("test", st2).show();
 	 * would be 5).
 	 * Signed means that the outside pixels have a negative sign.
 	 */
+	class IDT {
+		int[] result;
+
+		IDT() {
+			result = new int[w * h];
+			int infinity = (w + h) * 9;
+
+			for (int i = 0; i < result.length; i++)
+				result[i] = infinity;
+		}
+
+		int init(byte[] p) {
+			int count = 0;
+
+			for (int j = 0; j < h; j++)
+				for (int i = 0; i < w; i++) {
+					int idx = i + w * j;
+					if (isBoundary(p, i, j)) {
+						result[idx] = 0;
+						count++;
+					} else if (isJustOutside(p, i, j))
+						result[idx] = -1;
+				}
+			return count;
+		}
+
+		final void idt(int x, int y, int dx, int dy) {
+			if (x + dx < 0 || y + dy < 0 ||
+					x + dx >= w || y + dy >= h)
+				return;
+			int value = result[x + dx + w * (y + dy)];
+			int distance = (dx == 0 || dy == 0 ? 3 : 4);
+			value += distance * (value < 0 ? -1 : 1);
+			if (Math.abs(result[x + w * y]) > Math.abs(value))
+				result[x + w * y] = value;
+		}
+
+		void propagate() {
+			for (int j = 0; j < h; j++)
+				for (int i = 0; i < w; i++) {
+					idt(i, j, -1, 0);
+					idt(i, j, -1, -1);
+					idt(i, j, 0, -1);
+				}
+
+			for (int j = h - 1; j >= 0; j--)
+				for (int i = w - 1; i >= 0; i--) {
+					idt(i, j, +1, 0);
+					idt(i, j, +1, +1);
+					idt(i, j, 0, +1);
+				}
+
+			for (int i = w - 1; i >= 0; i--)
+				for (int j = h - 1; j >= 0; j--) {
+					idt(i, j, +1, 0);
+					idt(i, j, +1, +1);
+					idt(i, j, 0, +1);
+				}
+
+			for (int i = 0; i < w; i++)
+				for (int j = 0; j < h; j++) {
+					idt(i, j, -1, 0);
+					idt(i, j, -1, -1);
+					idt(i, j, 0, -1);
+				}
+		}
+	}
+
 	int[] getIDT(Object pixels) {
-		byte[] p = (byte[])pixels;
-		int[] result = new int[w * h];
-		final int t = (w + h) * 9; // way too large
-		int count = 0;
-
-		for (int i = 0; i < result.length; i++)
-			result[i] = t;
-
-		for (int j = 0; j < h; j++)
-			for (int i = 0; i < w; i++) {
-				int idx = i + w * j;
-				if (isBoundary(p, i, j)) {
-					result[idx] = 0;
-					count++;
-				} else {
-					int s = (p[idx] == 0 ? -1 : +1);
-					int v0 = t, v1 = t, v2 = t;
-					if (i > 0) {
-						v0 = result[idx - 1] + 3 * s;
-						if (j > 0)
-							v2 = result[idx - 1 - w]
-								+ 4 * s;
-					}
-					if (j > 0)
-						v1 = result[idx - w] + 3 * s;
-					if (Math.abs(v0) > Math.abs(v1))
-						v0 = v1;
-					if (Math.abs(v0) > Math.abs(v2))
-						v0 = v2;
-					result[idx] = v0;
-				}
-			}
-
-		if (count == 0)
+		IDT idt = new IDT();
+		if (idt.init((byte[])pixels) == 0)
 			return null;
-
-		for (int j = h - 1; j >= 0; j--)
-			for (int i = w - 1; i >= 0; i--) {
-				int idx = i + w * j;
-				int s = (p[idx] == 0 ? -1 : +1);
-				int v0 = t, v1 = t, v2 = t;
-				if (i < w - 1) {
-					v0 = result[idx + 1] + 3 * s;
-					if (j < h - 1)
-						v2 = result[idx + 1 + w]
-							+ 4 * s;
-				}
-				if (j < h - 1)
-					v1 = result[idx + w] + 3 * s;
-				if (Math.abs(v0) > Math.abs(v1))
-					v0 = v1;
-				if (Math.abs(v0) > Math.abs(v2))
-					v0 = v2;
-				if (Math.abs(v0) < Math.abs(result[idx]))
-					result[idx] = v0;
-			}
-
-		for (int i = w - 1; i >= 0; i--)
-			for (int j = h - 1; j >= 0; j--) {
-				int idx = i + w * j;
-				int s = (p[idx] == 0 ? -1 : +1);
-				int v0 = t, v1 = t, v2 = t;
-				if (i < w - 1) {
-					v0 = result[idx + 1] + 3 * s;
-					if (j < h - 1)
-						v2 = result[idx + 1 + w]
-							+ 4 * s;
-				}
-				if (j < h - 1)
-					v1 = result[idx + w] + 3 * s;
-				if (Math.abs(v0) > Math.abs(v1))
-					v0 = v1;
-				if (Math.abs(v0) > Math.abs(v2))
-					v0 = v2;
-				if (Math.abs(v0) < Math.abs(result[idx]))
-					result[idx] = v0;
-			}
-
-		for (int i = 0; i < w; i++)
-			for (int j = 0; j < h; j++) {
-				int idx = i + w * j;
-				int s = (p[idx] == 0 ? -1 : +1);
-				int v0 = t, v1 = t, v2 = t;
-				if (i > 0) {
-					v0 = result[idx - 1] + 3 * s;
-					if (j > 0)
-						v2 = result[idx - 1 - w]
-							+ 4 * s;
-				}
-				if (j > 0)
-					v1 = result[idx - w] + 3 * s;
-				if (Math.abs(v0) > Math.abs(v1))
-					v0 = v1;
-				if (Math.abs(v0) > Math.abs(v2))
-					v0 = v2;
-				if (Math.abs(v0) < Math.abs(result[idx]))
-					result[idx] = v0;
-			}
-
-		return result;
+		idt.propagate();
+		return idt.result;
 	}
 
 	final boolean isBoundary(byte[] pixels, int x, int y) {
@@ -203,6 +174,29 @@ new ImagePlus("test", st2).show();
 			return true;
 		if (x >= w - 1 || y >= h - 1 ||
 				pixels[x + 1 + w * (y + 1)] == 0)
+			return true;
+		return false;
+	}
+
+	final boolean isJustOutside(byte[] pixels, int x, int y) {
+		if (pixels[x + w * y] != 0)
+			return false;
+		if (x > 0 && pixels[x - 1 + w * y] != 0)
+			return true;
+		if (x < w - 1 && pixels[x + 1 + w * y] != 0)
+			return true;
+		if (y > 0 && pixels[x + w * (y - 1)] != 0)
+			return true;
+		if (y < h - 1 && pixels[x + w * (y + 1)] != 0)
+			return true;
+		if (x > 0 && y > 0 && pixels[x - 1 + w * (y - 1)] != 0)
+			return true;
+		if (x > 0 && y < h - 1 && pixels[x - 1 + w * (y + 1)] != 0)
+			return true;
+		if (x < w - 1 && y > 0 && pixels[x + 1 + w * (y - 1)] != 0)
+			return true;
+		if (x < w - 1 && y < h - 1 &&
+				pixels[x + 1 + w * (y + 1)] != 0)
 			return true;
 		return false;
 	}
