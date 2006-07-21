@@ -120,7 +120,7 @@ public class FastMatrixN {
 				sum += l[k][i] * l[k][i];
 			}
 			if(m[i][i] - sum < 0){
-				throw new RuntimeException("matrix must be symmetric and positive definite");
+				throw new RuntimeException("Matrix must be symmetric and positive definite");
 			}
 			l[i][i] = Math.sqrt(m[i][i] - sum);
 			// l[i][j]
@@ -146,7 +146,7 @@ public class FastMatrixN {
 	}
 	
 	/**
-	 * Solve Ax = b
+	 * Solve Ax = b. Note: A has to be symmetric and positive definite
 	 * @param A matrix to be applied
 	 * @param b result
 	 * @return x
@@ -155,7 +155,12 @@ public class FastMatrixN {
 	public static double[] solve(double[][]A, double[] b){
 		
 		// get the cholesky decomposition of A which is in upper triangle form
-		double [][] U = choleskyDecomposition(A);
+		double[][] U;
+		try {
+			U = choleskyDecomposition(A);
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Matrix must be symmetric and positive definite");
+		}
 		double [][] L = transpose(U);
 		// first solve Ly = b for y
 		double[] y = new double[b.length];
