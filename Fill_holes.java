@@ -68,12 +68,10 @@ public class Fill_holes implements PlugIn {
 		        for(int i=0;i<rois.length;i++){
 		        	root.add(new RoiNode(new ShapeRoi(rois[i])));
 		        }
-		        root.print();
 		        
 		        RoiNode clickedRoiNode = findNodeForPosition(root, x, y);		        
 		        clickedRoiNode.remove();
-		        root.print();
-		        
+		       
 		        ShapeRoi newRoi = new ShapeRoi(new Roi(0,0,imp.getWidth(),imp.getHeight()));
 		        root.createRoi(newRoi);
 		        
