@@ -4,7 +4,7 @@ case "$(uname)" in
 CYGWIN*) CP="$(echo $CP | tr \: \;)";;
 esac
 
-java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java"
+java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java"
 for i in $java5s; do
 	classfile=$(echo $i | sed "s/java$/class/")
 	if [ ! -e $i.five ]; then
@@ -70,6 +70,7 @@ for i in $java5s; do
 		-e '67s/c\.add(b)/((JFrame)c).getContentPane().add(b)/' \
 		-e '84s/c\.add(p)/((JFrame)c).getContentPane().add(p)/' \
 		-e '180s/container\.add(box)/((JFrame)container).getContentPane().add(box)/' \
+		-e 's/[^ ]*children(\?)\?\.get(i)/((RoiNode)(&))/' \
 	> $i
 #	if [ $i = gui/GuiBuilder.java ]; then
 #		diff -u $i $i.five
