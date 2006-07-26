@@ -19,7 +19,7 @@ import math3d.FastMatrixN;
  * It is based on the paper
  * Shape Transformation Using Variational Implicit Functions,
  * Greg Turk and James F. O'Brien
- * TODO: where?.
+ * See http://www.cc.gatech.edu/~turk/my_papers/schange.pdf
  */
 
 public class Implicit_Interpolate_Binary implements PlugInFilter {
