@@ -14,9 +14,12 @@ import ij.IJ;
 import ij.Macro;
 import ij.macro.Interpreter;
 import ij.plugin.PlugIn;
+
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.TextArea;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.FileWriter;
 import java.net.InetAddress;
 import java.text.DateFormat;
@@ -77,11 +80,17 @@ public class BatchLog_ implements PlugIn {
 				area.setText(message);
 				area.setEditable(false);
 				area.setVisible(true);
-				Frame frame = new Frame("Log");
+				final Frame frame = new Frame("Log");
+				frame.addWindowListener(new WindowAdapter(){
+					public void windowClosing(WindowEvent e){
+						area = null;
+						frame.dispose();
+					}
+				});
 				frame.add(area);
 				frame.setSize(new Dimension(400, 300));
 				frame.doLayout();
-				frame.show();
+				frame.setVisible(true);
 				area.setCaretPosition(Integer.MAX_VALUE);
 			} else
 				area.append(message);
