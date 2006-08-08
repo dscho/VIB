@@ -5,10 +5,12 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
+
 import java.util.ArrayList;
 import java.util.Iterator;
-import math3d.Point3d;
+
 import math3d.FastMatrixN;
+import math3d.Point3d;
 
 /*
  * This plugin takes a binary stack as input, where some slices are
@@ -23,6 +25,7 @@ import math3d.FastMatrixN;
  */
 
 public class Implicit_Interpolate_Binary implements PlugInFilter {
+	private double[]lut;
 	ImagePlus image;
 	public ImplicitSamples[] samples;
 	public ImplicitFunction implicitFunction;
@@ -118,7 +121,7 @@ public class Implicit_Interpolate_Binary implements PlugInFilter {
 			for (int i = 0; i < w; i++) {
 				double v0 = implicitFunction.evaluate(i, j, z);
 				p[i + j * w] = (byte)(v0 > 0 ? 255 : 0);
-			}
+			}		
 	}
 
 	public static class ImplicitSamples {
@@ -201,18 +204,55 @@ public class Implicit_Interpolate_Binary implements PlugInFilter {
 		}
 	}
 
-	final public static double phi(Point3d p, Point3d q) {
+	final public double phi(Point3d p, Point3d q) {
 		return phi(p.x, p.y, p.z, q);
 	}
 
-	final public static double phi(double x, double y, double z,
+	final public double phi(double x, double y, double z,
 			Point3d q) {
 		double squared = (x - q.x) * (x - q.x)
 			+ (y - q.y) * (y - q.y) + (z - q.z) * (z - q.z);
+		return phi(squared);
+	}
+	
+	final public static double phi(double squared){
 		return squared > 0 ? squared * Math.log(Math.sqrt(squared)) : 0;
 	}
+	
+	final public double phiLUT(double squared){
+		int w = image.getWidth(), h = image.getHeight(), z = image.getStackSize();
+		if(lut == null){
+			lut = new double[(w*w + h*h + z*z)];
+			for(int i=0;i<lut.length;i++)
+				lut[i] = -1.0;
+		}
+		/*
+		 * round squared to the neighbouring 0.1.
+		 * test if key is contained in lut
+		 * if not: calculate the value of key and store it in lut
+		 * return a linear interpolation between 
+		 */
+		int key_l = (int)Math.floor(squared);
+		int key_u = key_l + 1;
 
-	public static class ImplicitFunction {
+		
+		if(lut[key_l] < 0){
+			lut[key_l] = phi(key_l);
+		} 
+		if(lut[key_u] < 0){
+			lut[key_u] = phi(key_u);
+		} 
+		
+		double value_l = lut[key_l];
+		double value_u = lut[key_u];
+		
+		double ret = Math.abs(squared-key_l) * Math.abs(value_u-value_l)/(double)(key_u-key_l) + value_l;
+		
+		return ret;
+		
+	}
+
+	public class ImplicitFunction {
 		Point3d[] points;
 		double[] weights;
 		double p0, pX, pY, pZ;
