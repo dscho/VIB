@@ -5,6 +5,9 @@
 
 package math3d;
 
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
 public class Point3d {
 	public double /*dtype*/ x, y, z;
 
@@ -74,7 +77,39 @@ public class Point3d {
 	}
 
 	public String toString() {
-		return "" + x + " " + y + " " + z;
+		return x + " " + y + " " + z;
+	}
+	
+	public static Point3d parsePoint(String s){
+		StringTokenizer st = new StringTokenizer(s," ");
+		Point3d p = new Point3d();
+		p.x = Double.parseDouble(st.nextToken());
+		p.y = Double.parseDouble(st.nextToken());
+		p.z = Double.parseDouble(st.nextToken());
+		return p;
+	}
+	
+	public static Point3d[] parsePoints(String s){
+		ArrayList<Point3d> list = new ArrayList<Point3d>();
+		StringTokenizer st = new StringTokenizer(s,",");
+		while(st.hasMoreTokens()){
+			list.add(parsePoint(st.nextToken().trim()));
+		}
+		return list.toArray(new Point3d[]{});
+	}
+	
+	public static void print(Point3d[] points){
+		StringBuffer sb = new StringBuffer();
+		for(Point3d p : points){
+			sb.append(p + ",");
+		}
+		System.out.println(sb.deleteCharAt(sb.length()-1));
+	}
+	
+	public static void main(String[] args){
+		String s = "127.46979200950274 127.5047385083133 28.033169558193062,153.0 123.5 0.0";
+		Point3d[] p = Point3d.parsePoints(s);
+		print(p);
 	}
 }
 
