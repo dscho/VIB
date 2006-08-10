@@ -45,6 +45,10 @@ class PointList implements Iterable<NamedPoint>{
 		return points.get(index);
 	}
 	
+	public NamedPoint[] toArray(){
+		return points.toArray(new NamedPoint[]{});
+	}
+	
 	public int size(){
 		return points.size();
 	}
@@ -145,7 +149,7 @@ class PointList implements Iterable<NamedPoint>{
 		IJ.showStatus("Saved point annotations.");
 	}
 	
-	public static ArrayList<String> pointsInBoth(PointList points0,
+	public static ArrayList<String> pointsInBothAsString(PointList points0,
 		     PointList points1) {
 
 		ArrayList<String> common = new ArrayList<String>();
@@ -158,5 +162,25 @@ class PointList implements Iterable<NamedPoint>{
 			}
 		}
 		return common;
+	}
+	
+	public static PointList pointsInBoth(PointList points0, PointList points1){
+		
+		PointList common = new PointList();
+		for(NamedPoint point0 : points0){
+			for(NamedPoint point1 : points1){
+				if(point0.name.equals(point1.name)){
+					common.add(point0);
+					break;
+				}
+			}
+		}
+		return common;
+	}
+	
+	public void print(){
+		for(NamedPoint p : points){
+			System.out.println(p.toString());
+		}
 	}
 }
