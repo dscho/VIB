@@ -4,9 +4,10 @@ import ij.IJ;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-final class NamedPoint {
+import math3d.Point3d;
 
-	public double x,y,z;
+class NamedPoint extends Point3d {
+
 	String name;
 	boolean set;
 	static Pattern p_data = Pattern.compile("^\"(.*)\": *"+
@@ -78,5 +79,9 @@ final class NamedPoint {
 			escape(name)+
 			"\": " + coordinatesAsString();
 		return line;
+	}
+	
+	public String toString(){
+		return name + ": [" + x + ", " + y + ", " + z + "]";
 	}
 }
