@@ -100,7 +100,7 @@ public class LocalRigidRegistration_ implements PlugInFilter{
 						);
 			}
 			
-			AugmentedLandmarkWarp_mine aw = new AugmentedLandmarkWarp_mine();
+			AugmentedLandmarkWarp_ aw = new AugmentedLandmarkWarp_();
 			aw.setCenter(commonPoints.toArray());
 			aw.matrix = transformations;
 			aw.ii = new InterpolatedImage(templ);
