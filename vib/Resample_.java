@@ -116,10 +116,10 @@ public class Resample_ implements PlugInFilter {
 				resample(image, factor));
 
 		Calibration cal = image.getCalibration().copy();
-		cal.pixelWidth *= res.getWidth() / image.getWidth();
-		cal.pixelHeight *= res.getHeight() / image.getHeight();
-		cal.pixelDepth *= res.getStack().getSize()
-			/ image.getStack().getSize();
+		cal.pixelWidth *= image.getWidth() / (double)res.getWidth();
+		cal.pixelHeight *= image.getHeight() / (double)res.getHeight();
+		cal.pixelDepth *= image.getStack().getSize()
+			/ (double)res.getStack().getSize();
 		res.setCalibration(cal);
 		if (AmiraParameters.isAmiraMesh(image))
 			new AmiraParameters(image).setParameters(res);

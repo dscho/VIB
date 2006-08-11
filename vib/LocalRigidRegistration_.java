@@ -80,6 +80,7 @@ public class LocalRigidRegistration_ implements PlugInFilter{
 			FastMatrix[] transformations = new FastMatrix[n_landmarks]; 
 			for(int i=0;i<n_landmarks;i++){
 				NamedPoint p = commonPoints.get(i);
+				System.out.println("LANDMARK " + p);
 				String bb = p.x + " " + p.y + " " + p.z + " " +  
 							(p.x-50) + " " + (p.y-50) + " " + (p.z-50) + " " + 
 							(p.x+50) + " " + (p.y+50) + " " + (p.z+50);
