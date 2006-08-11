@@ -2,6 +2,7 @@ package vib;
 
 import ij.*;
 import ij.gui.*;
+import ij.measure.Calibration;
 import ij.plugin.*;
 import ij.process.*;
 import ij.plugin.filter.*;
@@ -113,6 +114,16 @@ public class Resample_ implements PlugInFilter {
 		ImagePlus res = (minEntropy ?
 				resampleMinEnt(image, factor) :
 				resample(image, factor));
+
+		Calibration cal = image.getCalibration().copy();
+		cal.pixelWidth *= res.getWidth() / image.getWidth();
+		cal.pixelHeight *= res.getHeight() / image.getHeight();
+		cal.pixelDepth *= res.getStack().getSize()
+			/ image.getStack().getSize();
+		res.setCalibration(cal);
+		if (AmiraParameters.isAmiraMesh(image))
+			new AmiraParameters(image).setParameters(res);
+
 		res.show();
 	}
 
