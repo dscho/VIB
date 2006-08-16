@@ -342,11 +342,11 @@ public class FastMatrix {
 	}
 	
 	public static double size(double[] a) {
-		return Math.sqrt(dotProduct(a,a));
+		return (double)Math.sqrt(dotProduct(a,a));
 	}
 	
 	public static double angleBetween(double[] v1, double[] v2) {
-		return Math.acos(dotProduct(v1,v2)/(size(v1)*size(v2)));
+		return (double)Math.acos(dotProduct(v1,v2)/(size(v1)*size(v2)));
 	}
 	
 	public static double[] crossProduct(double[] a, double[] b) {

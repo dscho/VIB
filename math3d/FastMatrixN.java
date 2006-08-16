@@ -160,7 +160,7 @@ public class FastMatrixN {
 			if(m[i][i] - sum < 0){
 				throw new RuntimeException("Matrix must be symmetric and positive definite");
 			}
-			l[i][i] = Math.sqrt(m[i][i] - sum);
+			l[i][i] = (double)Math.sqrt(m[i][i] - sum);
 			// l[i][j]
 			for(int j=i+1;j<N;j++){
 				sum = 0.0;
