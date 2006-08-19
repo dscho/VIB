@@ -11,6 +11,7 @@ import ij.gui.Roi;
 import ij.gui.StackWindow;
 import ij.plugin.PlugIn;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
@@ -26,6 +27,8 @@ public class Delaunay_Voronoi implements PlugIn {
 	public final int DELAUNAY = 1;
 	public final int VORONOI = 2;
 	int mode = DELAUNAY;
+
+	public final boolean drawZoom = IJ.getVersion().compareTo("1.37n") >= 0;
 
 	public void run(String arg) {
 		ImagePlus imp = IJ.getImage();
@@ -87,6 +90,22 @@ public class Delaunay_Voronoi implements PlugIn {
 				double x1 = (b.coord(0) - srcRect.x) * m;
 				double y1 = (b.coord(1) - srcRect.y) * m;
 				g.drawLine((int)x0, (int)y0, (int)x1, (int)y1);
+				if (drawZoom && srcRect.width != imageWidth) {
+					int xOffset = 10, yOffset = 10;
+					if (imageHeight > imageWidth)
+						m = 64.0 / imageHeight;
+					else
+						m = 64.0 / imageWidth;
+					x0 = a.coord(0) * m + xOffset;
+					y0 = a.coord(1) * m + yOffset;
+					x1 = b.coord(0) * m + xOffset;
+					y1 = b.coord(1) * m + yOffset;
+					Color color = g.getColor();
+					g.setColor(new Color(128, 128, 255));
+					g.drawLine((int)x0, (int)y0,
+							(int)x1, (int)y1);
+					g.setColor(color);
+				}
 			}
 		}
 
