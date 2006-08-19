@@ -10,6 +10,7 @@ PLUGINSHOME=$(shell pwd)
 CPSEP=:
 endif
 JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP).
+JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 
 all: $(CLASSES)
 
@@ -21,3 +22,13 @@ vib/FloatMatrix.java: vib/FastMatrix.java math3d/FloatMatrixN.class
 
 math3d/FloatMatrixN.java: math3d/FastMatrixN.java
 	sed -e "s/double/float/g" -e "s/FastMatrixN/FloatMatrixN/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
+
+Delaunay_Voronoi_SOURCES=$(wildcard Delaunay_Voronoi.java delaunay/*.java)
+
+JARS=Delaunay_Voronoi
+
+Delaunay_Voronoi.jar: $(Delaunay_Voronoi_SOURCES)
+	test ! -d tempdir || rm -rf tempdir
+	mkdir tempdir
+	tar cvf - $^ | (cd tempdir; tar xvf -)
+	(cd tempdir && javac $(JAVACOPTS) $(JAVACOPTSCOMPAT) $^ && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
