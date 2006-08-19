@@ -23,12 +23,17 @@ vib/FloatMatrix.java: vib/FastMatrix.java math3d/FloatMatrixN.class
 math3d/FloatMatrixN.java: math3d/FastMatrixN.java
 	sed -e "s/double/float/g" -e "s/FastMatrixN/FloatMatrixN/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
 
-Delaunay_Voronoi_SOURCES=$(wildcard Delaunay_Voronoi.java delaunay/*.java)
+Delaunay_Voronoi.jar: SOURCES=$(wildcard Delaunay_Voronoi.java delaunay/*.java)
 
-JARS=Delaunay_Voronoi
+AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
+	vib/AmiraParameters.java vib/AmiraMeshEncoder.java \
+	vib/AmiraMeshDecoder.java vib/AmiraTableEncoder.java vib/AmiraTable.java
 
-Delaunay_Voronoi.jar: $(Delaunay_Voronoi_SOURCES)
+JARS=Delaunay_Voronoi.jar AmiraMesh_.jar
+
+$(JARS):
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
-	tar cvf - $^ | (cd tempdir; tar xvf -)
-	(cd tempdir && javac $(JAVACOPTS) $(JAVACOPTSCOMPAT) $^ && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
+	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
+	(cd tempdir && javac $(JAVACOPTS) $(JAVACOPTSCOMPAT) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
+
