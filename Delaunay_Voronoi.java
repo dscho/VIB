@@ -38,6 +38,10 @@ public class Delaunay_Voronoi implements PlugIn {
 			new StackWindow(imp, cc).addKeyListener(cc);
 		else
 			new ImageWindow(imp, cc).addKeyListener(cc);
+		Roi roi = imp.getRoi();
+		if (roi != null)
+			// implicitely set the new image canvas
+			roi.setImage(imp);
 	}
 
 	class CustomCanvas extends ImageCanvas implements KeyListener {
