@@ -80,9 +80,14 @@ public class Delaunay_Voronoi implements PlugIn {
 
 		void draw(Graphics g, Pnt a, Pnt b) {
 			if (mode == VORONOI || (Math.abs(a.coord(0)) < inf &&
-					Math.abs(b.coord(0)) < inf))
-				g.drawLine((int)a.coord(0), (int)a.coord(1),
-						(int)b.coord(0), (int)b.coord(1));
+					Math.abs(b.coord(0)) < inf)) {
+				double m = magnification;
+				double x0 = (a.coord(0) - srcRect.x) * m;
+				double y0 = (a.coord(1) - srcRect.y) * m;
+				double x1 = (b.coord(0) - srcRect.x) * m;
+				double y1 = (b.coord(1) - srcRect.y) * m;
+				g.drawLine((int)x0, (int)y0, (int)x1, (int)y1);
+			}
 		}
 
 		void draw(Graphics g, Simplex a, Simplex b) {
