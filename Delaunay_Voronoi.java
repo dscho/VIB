@@ -6,10 +6,14 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
+import ij.gui.GenericDialog;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.gui.StackWindow;
+import ij.gui.Toolbar;
+import ij.macro.Interpreter;
 import ij.plugin.PlugIn;
+import ij.process.ImageProcessor;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -29,11 +33,32 @@ public class Delaunay_Voronoi implements PlugIn {
 	public final int VORONOI = 2;
 	int mode = DELAUNAY;
 
-	public final boolean drawZoom = IJ.getVersion().compareTo("1.37n") >= 0;
+	final boolean drawZoom = IJ.getVersion().compareTo("1.37n") >= 0;
 
 	public void run(String arg) {
 		ImagePlus imp = IJ.getImage();
+		if (imp == null)
+			return;
+
+		GenericDialog gd = new GenericDialog("Delaunay/Voronoi parameters");
+		gd.addChoice("mode", new String[] { "Delaunay", "Voronoi"},
+				"Delaunay");
+		gd.addCheckbox("interactive", !Interpreter.isBatchMode());
+		gd.showDialog();
+		if (gd.wasCanceled())
+			return;
+	
+		mode = gd.getNextChoiceIndex() + 1;
+		boolean interactive = gd.getNextBoolean();
+
 		CustomCanvas cc = new CustomCanvas(imp);
+
+		if (!interactive) {
+			cc.drawOverlay(null);
+			imp.updateAndDraw();
+			return;
+		}
+
 		if (imp.getStackSize()>1)
 			new StackWindow(imp, cc).addKeyListener(cc);
 		else
@@ -87,36 +112,47 @@ public class Delaunay_Voronoi implements PlugIn {
 		}
 
 		void draw(Graphics g, Pnt a, Pnt b) {
-			if (mode == VORONOI || (Math.abs(a.coord(0)) < inf &&
-					Math.abs(b.coord(0)) < inf)) {
-				double m = magnification;
-				double x0 = (a.coord(0) - srcRect.x) * m;
-				double y0 = (a.coord(1) - srcRect.y) * m;
-				double x1 = (b.coord(0) - srcRect.x) * m;
-				double y1 = (b.coord(1) - srcRect.y) * m;
-				g.setColor(imp.getRoi().getColor());
-				g.drawLine((int)x0, (int)y0, (int)x1, (int)y1);
-				if (drawZoom && srcRect.width != imageWidth) {
-					int xOffset = 10, yOffset = 10;
-					int w = 64, h = 64;
-					if (imageHeight > imageWidth) {
-						m = 64.0 / imageHeight;
-						w = (int)(imageWidth * m);
-					} else {
-						m = 64.0 / imageWidth;
-						h = (int)(imageHeight * m);
-					}
-					x0 = a.coord(0) * m + xOffset;
-					y0 = a.coord(1) * m + yOffset;
-					x1 = b.coord(0) * m + xOffset;
-					y1 = b.coord(1) * m + yOffset;
-					Shape clip = g.getClip();
-					g.setColor(new Color(128, 128, 255));
-					g.clipRect(xOffset, yOffset, w, h);
-					g.drawLine((int)x0, (int)y0,
-							(int)x1, (int)y1);
-					g.setClip(clip);
+			if (mode != VORONOI && (Math.abs(a.coord(0)) >= inf ||
+						Math.abs(b.coord(0)) >= inf))
+				return;
+
+			if (g == null) {
+				ImageProcessor ip = imp.getProcessor();
+				ip.drawLine((int)a.coord(0),
+						(int)a.coord(1),
+						(int)b.coord(0),
+						(int)b.coord(1));
+				return;
+			}
+
+			double m = magnification;
+			double x0 = (a.coord(0) - srcRect.x) * m;
+			double y0 = (a.coord(1) - srcRect.y) * m;
+			double x1 = (b.coord(0) - srcRect.x) * m;
+			double y1 = (b.coord(1) - srcRect.y) * m;
+			g.setColor(imp.getRoi().getColor());
+			g.drawLine((int)x0, (int)y0, (int)x1, (int)y1);
+			if (drawZoom && srcRect.width != imageWidth
+					&& g != null) {
+				int xOffset = 10, yOffset = 10;
+				int w = 64, h = 64;
+				if (imageHeight > imageWidth) {
+					m = 64.0 / imageHeight;
+					w = (int)(imageWidth * m);
+				} else {
+					m = 64.0 / imageWidth;
+					h = (int)(imageHeight * m);
 				}
+				x0 = a.coord(0) * m + xOffset;
+				y0 = a.coord(1) * m + yOffset;
+				x1 = b.coord(0) * m + xOffset;
+				y1 = b.coord(1) * m + yOffset;
+				Shape clip = g.getClip();
+				g.setColor(new Color(128, 128, 255));
+				g.clipRect(xOffset, yOffset, w, h);
+				g.drawLine((int)x0, (int)y0,
+						(int)x1, (int)y1);
+				g.setClip(clip);
 			}
 		}
 
