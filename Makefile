@@ -29,9 +29,9 @@ AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
 	vib/AmiraParameters.java vib/AmiraMeshEncoder.java \
 	vib/AmiraMeshDecoder.java vib/AmiraTableEncoder.java vib/AmiraTable.java
 
-JARS=Delaunay_Voronoi.jar AmiraMesh_.jar
+Two_Point_Correlation.jar: SOURCES=Two_Point_Correlation.java
 
-$(JARS):
+%.jar:
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
