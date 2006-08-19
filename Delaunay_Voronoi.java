@@ -14,6 +14,7 @@ import ij.plugin.PlugIn;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
+import java.awt.Shape;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -89,22 +90,28 @@ public class Delaunay_Voronoi implements PlugIn {
 				double y0 = (a.coord(1) - srcRect.y) * m;
 				double x1 = (b.coord(0) - srcRect.x) * m;
 				double y1 = (b.coord(1) - srcRect.y) * m;
+				g.setColor(imp.getRoi().getColor());
 				g.drawLine((int)x0, (int)y0, (int)x1, (int)y1);
 				if (drawZoom && srcRect.width != imageWidth) {
 					int xOffset = 10, yOffset = 10;
-					if (imageHeight > imageWidth)
+					int w = 64, h = 64;
+					if (imageHeight > imageWidth) {
 						m = 64.0 / imageHeight;
-					else
+						w = (int)(imageWidth * m);
+					} else {
 						m = 64.0 / imageWidth;
+						h = (int)(imageHeight * m);
+					}
 					x0 = a.coord(0) * m + xOffset;
 					y0 = a.coord(1) * m + yOffset;
 					x1 = b.coord(0) * m + xOffset;
 					y1 = b.coord(1) * m + yOffset;
-					Color color = g.getColor();
+					Shape clip = g.getClip();
 					g.setColor(new Color(128, 128, 255));
+					g.clipRect(xOffset, yOffset, w, h);
 					g.drawLine((int)x0, (int)y0,
 							(int)x1, (int)y1);
-					g.setColor(color);
+					g.setClip(clip);
 				}
 			}
 		}
