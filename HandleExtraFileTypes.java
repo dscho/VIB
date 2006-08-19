@@ -243,7 +243,7 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 				&&buf[6]==0x61&&buf[7]==0x4d&&buf[8]==0x65
 				&&buf[9]==0x73&&buf[10]==0x68&&buf[11]==0x20) {
 			ImagePlus i;
-			i = (ImagePlus)IJ.runPlugIn("vib.AmiraMeshReader_", path);
+			i = (ImagePlus)IJ.runPlugIn("AmiraMeshReader_", path);
 			if (i==null)
 				width=PLUGIN_NOT_FOUND;
 			return i;

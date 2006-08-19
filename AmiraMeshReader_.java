@@ -1,7 +1,5 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
-package vib;
-
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileInfo;
@@ -11,6 +9,9 @@ import ij.text.TextWindow;
 
 import java.awt.*;
 import java.io.File;
+
+import vib.AmiraMeshDecoder;
+import vib.AmiraTable;
 
 public class AmiraMeshReader_ extends ImagePlus implements PlugIn {
 

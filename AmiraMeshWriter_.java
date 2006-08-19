@@ -1,5 +1,3 @@
-package vib;
-
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Menus;
@@ -8,9 +6,14 @@ import ij.gui.GenericDialog;
 import ij.io.SaveDialog;
 import ij.plugin.PlugIn;
 import ij.text.TextWindow;
+
 import java.awt.Menu;
 import java.awt.MenuBar;
 import java.util.Vector;
+
+import vib.AmiraMeshEncoder;
+import vib.AmiraParameters;
+import vib.AmiraTableEncoder;
 
 public class AmiraMeshWriter_ implements PlugIn {
 
