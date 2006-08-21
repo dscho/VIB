@@ -27,7 +27,6 @@ import adt.Connectivity2D;
 import adt.Points;
 
 import vib.AmiraParameters;
-import vib.AmiraMeshWriter_;
 import vib.AmiraMeshEncoder;
 import vib.AmiraMeshDecoder;
 import vib.SegmentationViewerCanvas;

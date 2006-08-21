@@ -19,7 +19,6 @@ import adt.PixelStats;
 import adt.ByteProbability;
 
 import vib.AmiraMeshEncoder;
-import vib.AmiraMeshReader_;
 import vib.AmiraParameters;
 import vib.FastMatrix;
 import vib.RigidRegistration_;
