@@ -29,11 +29,21 @@ AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
 	vib/AmiraParameters.java vib/AmiraMeshEncoder.java \
 	vib/AmiraMeshDecoder.java vib/AmiraTableEncoder.java vib/AmiraTable.java
 
-JARS=Delaunay_Voronoi.jar AmiraMesh_.jar
+VIB_.jar: SOURCES=$(JAVAS)
+
+JARS=Delaunay_Voronoi.jar AmiraMesh_.jar VIB_.jar
 
 $(JARS):
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
 	(cd tempdir && javac $(JAVACOPTS) $(JAVACOPTSCOMPAT) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
+
+VIB_-compat.jar: SOURCES=$(JAVAS)
+
+$(patsubst %.jar,%-compat.jar,$(JARS)):
+	test ! -d tempdir || rm -rf tempdir
+	mkdir tempdir
+	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
+	(cd tempdir && sh ../compile1.3.sh && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
 
