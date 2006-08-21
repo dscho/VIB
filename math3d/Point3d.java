@@ -90,20 +90,20 @@ public class Point3d {
 	}
 	
 	public static Point3d[] parsePoints(String s){
-		ArrayList<Point3d> list = new ArrayList<Point3d>();
+		ArrayList list = new ArrayList();
 		StringTokenizer st = new StringTokenizer(s,",");
-		while(st.hasMoreTokens()){
+		while(st.hasMoreTokens())
 			list.add(parsePoint(st.nextToken().trim()));
-		}
-		return list.toArray(new Point3d[]{});
+
+		Point3d[] result = new Point3d[list.size()];
+		for (int i = 0; i < result.length; i++)
+			result[i] = (Point3d)list.get(i);
+		return result;
 	}
 	
 	public static void print(Point3d[] points){
-		StringBuffer sb = new StringBuffer();
-		for(Point3d p : points){
-			sb.append(p + ",");
-		}
-		System.out.println(sb.deleteCharAt(sb.length()-1));
+		for (int i = 0; i < points.length; i++)
+			System.out.println((i > 0 ? "," : "") + points[i]);
 	}
 	
 	public static void main(String[] args){
