@@ -23,6 +23,14 @@ vib/FloatMatrix.java: vib/FastMatrix.java math3d/FloatMatrixN.class
 math3d/FloatMatrixN.java: math3d/FastMatrixN.java
 	sed -e "s/double/float/g" -e "s/FastMatrixN/FloatMatrixN/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
 
+VIB_-compat.jar: SOURCES=$(JAVAS) vib/segment/icons/*.png
+
+%-compat.jar:
+	test ! -d tempdir || rm -rf tempdir
+	mkdir tempdir
+	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
+	(cd tempdir && sh ../compile1.3.sh && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
+
 Delaunay_Voronoi.jar: SOURCES=$(wildcard Delaunay_Voronoi.java delaunay/*.java)
 
 AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
@@ -38,12 +46,4 @@ JARS=Delaunay_Voronoi.jar AmiraMesh_.jar Two_PointCorrelation.jar VIB_-compat.ja
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
 	(cd tempdir && javac $(JAVACOPTS) $(JAVACOPTSCOMPAT) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
-
-VIB_-compat.jar: SOURCES=$(JAVAS)
-
-%-compat.jar:
-	test ! -d tempdir || rm -rf tempdir
-	mkdir tempdir
-	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
-	(cd tempdir && sh ../compile1.3.sh && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
 
