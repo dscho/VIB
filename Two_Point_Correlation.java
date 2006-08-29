@@ -66,7 +66,7 @@ public class Two_Point_Correlation implements PlugInFilter {
 						total++;
 					}
 				convolved[index] /= (float)total * 255.0f * 255.0f;
-				IJ.showProgress(index + 1, 4 * w * (h - 1);
+				IJ.showProgress(index + 0, 4 * w * (h - 1));
 			}
 	}
 
@@ -159,11 +159,7 @@ public class Two_Point_Correlation implements PlugInFilter {
 		}
 
 		if (normalize) {
-			long count = 0;
-			for (int j = 0; j < h; j++)
-				for (int i = 0; i < w; i++)
-					count += get(i, j);
-			float factor = count / 255.0f / w / h;
+			float factor = getConvolved(0, 0);
 			for (int i = 0; i < r.length; i++)
 				v[i] /= factor;
 			min_value /= factor;
