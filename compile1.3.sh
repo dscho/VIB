@@ -87,7 +87,10 @@ done
 
 javac -classpath "$CP" -source 1.3 -target 1.3 $(find . -name \*.java)
 
+result=$?
+
 for i in $java5s; do
 	mv $i.five $i
 done
 
+exit $result
