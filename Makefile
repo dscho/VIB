@@ -9,7 +9,7 @@ else
 PLUGINSHOME=$(shell pwd)
 CPSEP=:
 endif
-JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).
+JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).
 JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 
 all: $(CLASSES)
