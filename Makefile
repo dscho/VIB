@@ -29,9 +29,11 @@ AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
 	vib/AmiraParameters.java vib/AmiraMeshEncoder.java \
 	vib/AmiraMeshDecoder.java vib/AmiraTableEncoder.java vib/AmiraTable.java
 
-Two_Point_Correlation.jar: SOURCES=Two_Point_Correlation.java
+SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar
 
-JARS=Delaunay_Voronoi.jar AmiraMesh_.jar Two_PointCorrelation.jar VIB_-compat.jar
+$(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
+
+JARS=Delaunay_Voronoi.jar AmiraMesh_.jar VIB_-compat.jar $(SIMPLE_JARS)
 
 %.jar:
 	test ! -d tempdir || rm -rf tempdir

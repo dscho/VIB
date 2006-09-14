@@ -62,12 +62,11 @@ public class Two_Point_Correlation implements PlugInFilter {
 					for (int j = min(0, -y); y + j < h
 							&& j < h; j++) {
 						convolved[index] += get(i, j)
-							* get(x + i, y + j)
-							/ 255.0 / 255.0;
+							* get(x + i, y + j);
 						total++;
 					}
-				convolved[index] /= (float)total;
-				IJ.showProgress(index + 1, 4 * w * h);
+				convolved[index] /= (float)total * 255.0f * 255.0f;
+				IJ.showProgress(index + 0, 4 * w * (h - 1));
 			}
 	}
 
@@ -108,6 +107,7 @@ public class Two_Point_Correlation implements PlugInFilter {
 		gd.addNumericField("max_radius",  Math.sqrt(w * w + h * h), 1);
 		gd.addNumericField("radius_step", 0.3, 1);
 		gd.addCheckbox("invert", false);
+		gd.addCheckbox("normalize", false);
 		gd.addCheckbox("naive computation (slow)", false);
 		gd.addCheckbox("show convolved image", false);
 		gd.showDialog();
@@ -117,6 +117,7 @@ public class Two_Point_Correlation implements PlugInFilter {
 		double max_radius = gd.getNextNumber();
 		double radius_step = gd.getNextNumber();
 		boolean invert = gd.getNextBoolean();
+		boolean normalize = gd.getNextBoolean();
 		boolean naive = gd.getNextBoolean();
 		boolean show = gd.getNextBoolean();
 		pixels = (byte[])image.getProcessor().getPixels();
@@ -155,6 +156,14 @@ public class Two_Point_Correlation implements PlugInFilter {
 				max_value = v[i];
 			else if (min_value > v[i])
 				min_value = v[i];
+		}
+
+		if (normalize) {
+			float factor = getConvolved(0, 0);
+			for (int i = 0; i < r.length; i++)
+				v[i] /= factor;
+			min_value /= factor;
+			max_value /= factor;
 		}
 
 		PlotWindow plot = new PlotWindow("Two Point Correlation",
