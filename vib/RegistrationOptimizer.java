@@ -59,6 +59,7 @@ public abstract class RegistrationOptimizer {
 		do {
 			//CG.step = 8.1;
 			CG.optimize(refinement, x, tol,  tol);
+			x = refinement.best;
 			eulerParameters = refinement.adjustInitial(x);
 
 			//CG.step = 1;
@@ -178,6 +179,7 @@ img.show();
         */
         for (int i = 0; i < indexes.length; i++) {
             int index = indexes[i];
+	    x[index] = refinement[index].best;
             orderedEulerParams[i] = refinement[index].adjustInitial(x[index]);
             VIB.println((i+1) + " eulerParameters: " + orderedEulerParams[i][0] + ", " + orderedEulerParams[i][1] + ", " + orderedEulerParams[i][2]+ "; " + orderedEulerParams[i][3] + ", " + orderedEulerParams[i][4]+ ", " + orderedEulerParams[i][5] + "; " + orderedEulerParams[i][6] + ", " + orderedEulerParams[i][7] + ", " + orderedEulerParams[i][8]);
         }
@@ -210,6 +212,7 @@ img.show();
 	// TODO: static class Refinement implements MFWithGradient {
 		public boolean showStatus = false;
 		double min;
+		double[] best;
 		double[] initial;
 
 		double angleFactor;
@@ -217,6 +220,7 @@ img.show();
 		public Refinement(double[] start) {
 			VIB.println("translateMax: " + translateMax + ", angleMax: " + angleMax);
 			min = Double.MAX_VALUE;
+			evaluate(start);
 			initial = start;
 			angleFactor = angleMax / translateMax;
 		}
@@ -249,6 +253,7 @@ img.show();
 		public double evaluate(double[] x) {
 			double result = calculateBadness(getMatrix(x));
 			if (result < min) {
+				best = x.clone();
 				min = result;
 				if (showStatus)
 					VIB.showStatus("difference: " + min);
