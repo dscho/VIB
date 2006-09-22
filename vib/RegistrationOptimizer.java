@@ -138,8 +138,7 @@ public abstract class RegistrationOptimizer {
         Refinement[] refinement = new Refinement[24];
         double[][] x = new double[24][6];
         for (int i = 0; i < 24; i++) {
-            VIB.showStatus("Trying orientation " + (i + 1)
-                + " of 24...");
+            VIB.showStatus("Trying orientation " + (i + 1) + " of 24...");
             refinement[i] = new Refinement(p[i]);
 /* debug
 t.setTransformation(refinement[i].getMatrix(x[i]));
@@ -181,7 +180,7 @@ img.show();
             int index = indexes[i];
 	    x[index] = refinement[index].best;
             orderedEulerParams[i] = refinement[index].adjustInitial(x[index]);
-            VIB.println((i+1) + " eulerParameters: " + orderedEulerParams[i][0] + ", " + orderedEulerParams[i][1] + ", " + orderedEulerParams[i][2]+ "; " + orderedEulerParams[i][3] + ", " + orderedEulerParams[i][4]+ ", " + orderedEulerParams[i][5] + "; " + orderedEulerParams[i][6] + ", " + orderedEulerParams[i][7] + ", " + orderedEulerParams[i][8]);
+            VIB.println((i+1) + " eulerParameters (" + refinement[index].min + "): " + orderedEulerParams[i][0] + ", " + orderedEulerParams[i][1] + ", " + orderedEulerParams[i][2]+ "; " + orderedEulerParams[i][3] + ", " + orderedEulerParams[i][4]+ ", " + orderedEulerParams[i][5] + "; " + orderedEulerParams[i][6] + ", " + orderedEulerParams[i][7] + ", " + orderedEulerParams[i][8]);
         }
 
         //orderedEulerParams = refinement[bestIndex].adjustInitial(x[bestIndex]);
@@ -220,8 +219,8 @@ img.show();
 		public Refinement(double[] start) {
 			VIB.println("translateMax: " + translateMax + ", angleMax: " + angleMax);
 			min = Double.MAX_VALUE;
-			evaluate(start);
 			initial = start;
+			evaluate(new double[9]);
 			angleFactor = angleMax / translateMax;
 		}
 
