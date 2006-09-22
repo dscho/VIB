@@ -346,7 +346,7 @@ public class RigidRegistration_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
-		return DOES_8G | DOES_8C;
+		return DOES_8G | DOES_8C | NO_CHANGES;
 	}
 
 	static class Optimizer extends RegistrationOptimizer {
