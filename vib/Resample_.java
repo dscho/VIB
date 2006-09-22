@@ -115,12 +115,6 @@ public class Resample_ implements PlugInFilter {
 				resampleMinEnt(image, factor) :
 				resample(image, factor));
 
-		Calibration cal = image.getCalibration().copy();
-		cal.pixelWidth *= image.getWidth() / (double)res.getWidth();
-		cal.pixelHeight *= image.getHeight() / (double)res.getHeight();
-		cal.pixelDepth *= image.getStack().getSize()
-			/ (double)res.getStack().getSize();
-		res.setCalibration(cal);
 		if (AmiraParameters.isAmiraMesh(image))
 			new AmiraParameters(image).setParameters(res);
 
@@ -178,6 +172,14 @@ public class Resample_ implements PlugInFilter {
 			AmiraParameters p = new AmiraParameters(image);
 			p.setParameters(res);
 		}
+
+		Calibration cal = image.getCalibration().copy();
+		cal.pixelWidth *= image.getWidth() / (double)res.getWidth();
+		cal.pixelHeight *= image.getHeight() / (double)res.getHeight();
+		cal.pixelDepth *= image.getStack().getSize()
+			/ (double)res.getStack().getSize();
+		res.setCalibration(cal);
+
 		return res;
 	}
 
