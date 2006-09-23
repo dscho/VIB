@@ -223,8 +223,19 @@ public class RigidRegistration_ implements PlugInFilter {
 
 
 			opt = null;
-		} else
-			matrix = FastMatrix.parseMatrix(initial);
+		} else {
+			try {
+				matrix = FastMatrix.parseMatrix(initial);
+			} catch(Exception e) {
+				StringTokenizer t =
+					new StringTokenizer(initial);
+				for (int i = 0; i < 9; i++)
+					params[i] = Double.parseDouble(
+							t.nextToken());
+				matrix = RegistrationOptimizer.getEulerMatrix(
+					params);
+			}
+		}
 
 		trans.setTransformation(matrix);
 		VIB.println(matrix.toString());
@@ -335,7 +346,7 @@ public class RigidRegistration_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
-		return DOES_8G | DOES_8C;
+		return DOES_8G | DOES_8C | NO_CHANGES;
 	}
 
 	static class Optimizer extends RegistrationOptimizer {
