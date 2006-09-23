@@ -89,13 +89,17 @@ public class CropEditor_ implements PlugInFilter {
 			result.addSlice(null,pixels);
 		}
 
-		new ImagePlus(image.getTitle()+" cropped",result).show();
+		ImagePlus r = new ImagePlus(image.getTitle()+" cropped",result);
+		if (vib.AmiraParameters.isAmiraMesh(image))
+			new vib.AmiraParameters(image).setParameters(r);
+		if (IJ.getInstance() != null)
+			r.show();
 	}
 
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
 		// TODO: handle 16-bit and 32-bit
-		return DOES_8G;
+		return DOES_8G | DOES_8C | NO_CHANGES;
 	}
 }
 
