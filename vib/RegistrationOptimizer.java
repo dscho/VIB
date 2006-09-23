@@ -209,7 +209,7 @@ public abstract class RegistrationOptimizer {
 		public double evaluate(double[] x) {
 			double result = calculateBadness(getMatrix(x));
 			if (result < min) {
-				best = x.clone();
+				best = (double[])x.clone();
 				min = result;
 				if (showStatus)
 					VIB.showStatus("difference: " + min);
