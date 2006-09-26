@@ -1,5 +1,3 @@
-package vib;
-
 import Quick3dApplet.*;
 import ij.IJ;
 import ij.ImagePlus;
@@ -9,6 +7,8 @@ import ij.gui.StackWindow;
 import ij.io.OpenDialog;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
+import vib.AmiraParameters;
+import vib.Image3dCanvas;
 
 public class ShowAmiraSurface_ implements PlugIn {
 	public final int WIDTH = 400, HEIGHT = 400, BGCOLOR = 0x000000;
