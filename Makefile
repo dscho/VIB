@@ -37,6 +37,9 @@ AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
 	vib/AmiraParameters.java vib/AmiraMeshEncoder.java \
 	vib/AmiraMeshDecoder.java vib/AmiraTableEncoder.java vib/AmiraTable.java
 
+AmiraSurface_.jar: SOURCES=ShowAmiraSurface_.java vib/AmiraParameters.java \
+	vib/AmiraTable.java vib/Image3dCanvas.java
+
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar
 
 $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
