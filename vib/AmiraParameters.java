@@ -120,7 +120,7 @@ public class AmiraParameters {
 			parameterStringValuePattern=Pattern.compile("\\A([^\n]*?)([,}]?)\n(.*)\\z",Pattern.DOTALL);
 			parameterGroupValuePattern=Pattern.compile("\\A\\{(.*)\\z",Pattern.DOTALL);
 			parameterGroupEndPattern=Pattern.compile("\\A[ \t\n]*}(.*)\\z",Pattern.DOTALL);
-			colorPattern=Pattern.compile("^([0-9]*(\\.[0-9]*)?)[ \t]+([0-9]*(\\.[0-9]*)?)[ \t]+([0-9]*(\\.[0-9]*)?)");
+			colorPattern=Pattern.compile("^([0-9]*(\\.[0-9]*e?-?[0-9]*)?)[ \t]+([0-9]*(\\.[0-9]*e?-?[0-9]*)?)[ \t]+([0-9]*(\\.[0-9]*e?-?[0-9]*)?)");
 		}
 	}
 

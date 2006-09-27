@@ -2,7 +2,7 @@ prefix=.
 if [ ! -e $prefix/imagescience.jar ]; then
 	prefix=..
 fi
-CP=$prefix/../ImageJ/ij.jar:$prefix/jzlib-1.0.7.jar:$prefix/imagescience.jar 
+CP=$prefix/../ImageJ/ij.jar:$prefix/jzlib-1.0.7.jar:$prefix/Quick3dApplet-1.0.8.jar:$prefix/imagescience.jar 
 
 case "$(uname)" in
 CYGWIN*) CP="$(echo $CP | tr \: \;)";;

@@ -9,7 +9,7 @@ else
 PLUGINSHOME=$(shell pwd)
 CPSEP=:
 endif
-JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).
+JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).
 JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 
 all: $(CLASSES)
@@ -23,9 +23,9 @@ vib/FloatMatrix.java: vib/FastMatrix.java math3d/FloatMatrixN.class
 math3d/FloatMatrixN.java: math3d/FastMatrixN.java
 	sed -e "s/double/float/g" -e "s/FastMatrixN/FloatMatrixN/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
 
-VIB_-compat.jar: SOURCES=$(JAVAS) vib/segment/icons/*.png
+VIB_compat.jar: SOURCES=$(JAVAS) vib/segment/icons/*.png
 
-%-compat.jar:
+%_compat.jar:
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
@@ -36,6 +36,9 @@ Delaunay_Voronoi.jar: SOURCES=$(wildcard Delaunay_Voronoi.java delaunay/*.java)
 AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
 	vib/AmiraParameters.java vib/AmiraMeshEncoder.java \
 	vib/AmiraMeshDecoder.java vib/AmiraTableEncoder.java vib/AmiraTable.java
+
+AmiraSurface_.jar: SOURCES=ShowAmiraSurface_.java vib/AmiraParameters.java \
+	vib/AmiraTable.java vib/Image3dCanvas.java
 
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar
