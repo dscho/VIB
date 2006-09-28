@@ -104,7 +104,7 @@ class PointsDialog extends Dialog implements ActionListener {
 		panel.removeAll();
 		panel.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
-		for (NamedPoint p : points) {
+		for (NamedPoint p : (Iterable<NamedPoint>)points) {
 			addRow(p,panel,c);
 		}
 		this.pack();
@@ -182,7 +182,7 @@ class PointsDialog extends Dialog implements ActionListener {
 	}
 
 	public void resetAll() {
-		for(NamedPoint p : points) {
+		for(NamedPoint p : (Iterable<NamedPoint>)points) {
 			p.set = false;
 		}
 		updatePointsPanel();
@@ -235,9 +235,9 @@ public class Name_Points implements PlugIn {
 		if(newNamedPoints==null)
 			return;
 
-		for (NamedPoint current : newNamedPoints) {
+		for (NamedPoint current : (Iterable<NamedPoint>)newNamedPoints) {
 			boolean foundName = false;
-			for(NamedPoint p : points) {
+			for(NamedPoint p : (Iterable<NamedPoint>)points) {
 				if (current.name.equals(p.name)) {
 					p.set(current.x, current.y, current.z);
 					p.set = true;

@@ -3,6 +3,8 @@ package vib;
 import pal.math.*;
 import math3d.*;
 import ij.IJ;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public abstract class RegistrationOptimizer {
 	/*
@@ -13,7 +15,7 @@ public abstract class RegistrationOptimizer {
 	 */
 	double[] eulerParameters;
 
-    double[][] cachedInitialGuesses;
+	double[][] cachedInitialGuesses;
 
 	/*
 	 * If no initial transformation is given, the center of rotation and
@@ -34,7 +36,7 @@ public abstract class RegistrationOptimizer {
 	 * matrix == null)
 	 */
 	public FastMatrix doRegister(double tol) {
-        VIB.println("tol: " + tol);
+		VIB.println("tol: " + tol);
 		//ConjugateGradientSearch CG = new ConjugateGradientSearch();
 		ConjugateDirectionSearch CG = new ConjugateDirectionSearch();
 		//DifferentialEvolution CG = new DifferentialEvolution(6);
@@ -50,8 +52,8 @@ public abstract class RegistrationOptimizer {
 
 
 		if (eulerParameters == null) {
-            eulerParameters = searchInitialEulerParams()[0];
-        }
+			eulerParameters = searchInitialEulerParams()[0];
+		}
 
 		Refinement refinement = new Refinement(eulerParameters);
 		refinement.showStatus = true;
@@ -59,6 +61,7 @@ public abstract class RegistrationOptimizer {
 		do {
 			//CG.step = 8.1;
 			CG.optimize(refinement, x, tol,  tol);
+			x = refinement.best;
 			eulerParameters = refinement.adjustInitial(x);
 
 			//CG.step = 1;
@@ -70,126 +73,81 @@ public abstract class RegistrationOptimizer {
 		return refinement.getMatrix(x);
 	}
 
-    //returns an ordered list of the 24 principle orientations tried
-    //results[0] is a 9 dim matrix representing the best EulerParameter
-    //result[1] is the 2nd best etc, upto [23]
-    protected double[][] searchInitialEulerParams() {
+	//returns an ordered list of the 24 principle orientations tried
+	//results[0] is a 9 dim matrix representing the best EulerParameter
+	//result[1] is the 2nd best etc, upto [23]
+	protected double[][] searchInitialEulerParams() {
 
-        if(cachedInitialGuesses != null) return cachedInitialGuesses;
+		if (cachedInitialGuesses != null)
+			return cachedInitialGuesses;
 
-        double[][] p = new double[24][9];
+		double[][] p = new double[24][9];
 
-        angleMax = Math.PI / 4 ;
-        translateMax = 20.0 ;
+		angleMax = Math.PI / 4 ;
+		translateMax = 20.0 ;
 
+		ConjugateDirectionSearch CG = new ConjugateDirectionSearch();
+		CG.step = 10;
 
+		double [][] orderedEulerParams = new double[24][9];
 
-        ConjugateDirectionSearch CG = new ConjugateDirectionSearch();
+		getInitialCenters();
 
+		// translation
+		p[0][3] = origC.x - transC.x;
+		p[0][4] = origC.y - transC.y;
+		p[0][5] = origC.z - transC.z;
+		// center of rotation (not to be optimized)
+		p[0][6] = transC.x;
+		p[0][7] = transC.y;
+		p[0][8] = transC.z;
 
-        double [][] orderedEulerParams = new double[24][9];
+		/*
+		 * The 24 principal orientations correspond to
+		 * the Euler angles (0..3, 0..3, 0) * PI/2
+		 * and (0..3, 1, 1) * PI/2 and (0..3, 3, 1) * PI/2
+		 */
+		for (int i = 1; i < 24; i++)
+			System.arraycopy(p[0], 0, p[i], 0, 9);
 
-        double [] values = new double[24];
-        int [] indexes = new int[24];
+		double pi2 = Math.PI / 2.0;
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				p[i * 6 + j][0] = i * pi2;
+				p[i * 6 + j][1] = j * pi2;
+			}
+			for (int j = 0; j < 2; j++) {
+				p[i * 6 + 4 + j][0] = i * pi2;
+				p[i * 6 + 4 + j][1] = (j * 2 + 1) * pi2;
+				p[i * 6 + 4 + j][2] = pi2;
+			}
+		}
 
+		ArrayList refinements = new ArrayList();
+		double[][] x = new double[24][6];
+		for (int i = 0; i < 24; i++) {
+			VIB.showStatus("Trying orientation " + (i + 1) + " of 24...");
+			Refinement refinement = new Refinement(p[i]);
+			CG.optimize(refinement, x[i], 5, 5);
+			refinements.add(refinement);
 
-        for (int i = 0; i < values.length; i++)values[i] = Double.MAX_VALUE;
+			VIB.showProgress(i + 1, 24);
+		}
 
-        getInitialCenters();
+		Collections.sort(refinements);
 
-        // translation
-        p[0][3] = origC.x - transC.x;
-        p[0][4] = origC.y - transC.y;
-        p[0][5] = origC.z - transC.z;
-        // center of rotation (not to be optimized)
-        p[0][6] = transC.x;
-        p[0][7] = transC.y;
-        p[0][8] = transC.z;
+		for (int i = 0; i < refinements.size(); i++) {
+			Refinement refinement = (Refinement)refinements.get(i);
+			x[i] = refinement.best;
+			orderedEulerParams[i] = refinement.adjustInitial(x[i]);
+			VIB.println((i+1) + " eulerParameters (" + refinement.min + "): " + orderedEulerParams[i][0] + ", " + orderedEulerParams[i][1] + ", " + orderedEulerParams[i][2]+ "; " + orderedEulerParams[i][3] + ", " + orderedEulerParams[i][4]+ ", " + orderedEulerParams[i][5] + "; " + orderedEulerParams[i][6] + ", " + orderedEulerParams[i][7] + ", " + orderedEulerParams[i][8]);
+		}
 
-        /*
-         * The 24 principal orientations correspond to
-         * the Euler angles (0..3, 0..3, 0) * PI/2
-         * and (0..3, 1, 1) * PI/2 and (0..3, 3, 1) * PI/2
-         */
-        for (int i = 1; i < 24; i++)
-            System.arraycopy(p[0], 0, p[i], 0, 9);
+		cachedInitialGuesses = orderedEulerParams;
+		return orderedEulerParams;
+	}
 
-        double pi2 = Math.PI / 2.0;
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                p[i * 6 + j][0] = i * pi2;
-                p[i * 6 + j][1] = j * pi2;
-            }
-            for (int j = 0; j < 2; j++) {
-                p[i * 6 + 4 + j][0] = i * pi2;
-                p[i * 6 + 4 + j][1] = (j * 2 + 1) * pi2;
-                p[i * 6 + 4 + j][2] = pi2;
-            }
-        }
-        /*
-        int bestIndex = 0;
-        double bestValue = Double.MAX_VALUE;
-
-        int secondBestIndex = 0;
-        double secondBestValue = Double.MAX_VALUE;
-        */
-
-        Refinement[] refinement = new Refinement[24];
-        double[][] x = new double[24][6];
-        for (int i = 0; i < 24; i++) {
-            VIB.showStatus("Trying orientation " + (i + 1)
-                + " of 24...");
-            refinement[i] = new Refinement(p[i]);
-/* debug
-t.setTransformation(refinement[i].getMatrix(x[i]));
-ImagePlus img = t.getDifferenceImage();
-img.setTitle("Difference " + i + " dist " + t.getDistance());
-img.show();
-*/
-            CG.optimize(refinement[i], x[i], 1, 1);
-
-            //do a search through the list to find its position
-            for (int j = 0; j < values.length; j++) {
-                double value = values[j];
-                if(refinement[i].min < value){
-                    //we have found its correct position in the ordered list
-
-                    //shuffle all previous results up one to make room for our new result
-                    for(int k=values.length-1; k > j; k--){
-                        values[k] = values[k-1];
-                        indexes[k] = indexes[k-1];
-                    }
-
-                    values[j] = refinement[i].min;
-                    indexes[j] = i;
-
-                    break;
-                }
-            }
-            VIB.showProgress(i + 1, 24);
-        }
-        /*
-        VIB.println("winner: " + bestIndex + " with " + bestValue);
-        FastMatrix matrix = refinement[bestIndex].getMatrix(x[bestIndex]);
-        //t.setTransformation(matrix);
-        VIB.println("Matrix: " + matrix.toString());
-        //resTemplate.show();
-        //t.getTransformed().show();
-        */
-        for (int i = 0; i < indexes.length; i++) {
-            int index = indexes[i];
-            orderedEulerParams[i] = refinement[index].adjustInitial(x[index]);
-            VIB.println((i+1) + " eulerParameters: " + orderedEulerParams[i][0] + ", " + orderedEulerParams[i][1] + ", " + orderedEulerParams[i][2]+ "; " + orderedEulerParams[i][3] + ", " + orderedEulerParams[i][4]+ ", " + orderedEulerParams[i][5] + "; " + orderedEulerParams[i][6] + ", " + orderedEulerParams[i][7] + ", " + orderedEulerParams[i][8]);
-        }
-
-        //orderedEulerParams = refinement[bestIndex].adjustInitial(x[bestIndex]);
-        //VIB.println("eulerParameters: " + orderedEulerParams[0] + ", " + orderedEulerParams[1] + ", " + orderedEulerParams[2] + "; " + orderedEulerParams[3] + ", " + orderedEulerParams[4] + ", " + orderedEulerParams[5] + "; " + orderedEulerParams[6] + ", " + orderedEulerParams[7] + ", " + orderedEulerParams[8]);
-
-        cachedInitialGuesses = orderedEulerParams;
-        return orderedEulerParams;
-    }
-
-    public final static FastMatrix getEulerMatrix(double[] x) {
+	public final static FastMatrix getEulerMatrix(double[] x) {
 		return getEulerMatrix(x[0], x[1], x[2],
 				x[3], x[4], x[5], x[6], x[7], x[8]);
 	}
@@ -206,10 +164,11 @@ img.show();
 
 	double translateMax, angleMax;
 
-	class Refinement implements MultivariateFunction {
-	// TODO: static class Refinement implements MFWithGradient {
+	class Refinement implements MultivariateFunction, Comparable {
+		// TODO: static class Refinement implements MFWithGradient {
 		public boolean showStatus = false;
 		double min;
+		double[] best;
 		double[] initial;
 
 		double angleFactor;
@@ -218,6 +177,7 @@ img.show();
 			VIB.println("translateMax: " + translateMax + ", angleMax: " + angleMax);
 			min = Double.MAX_VALUE;
 			initial = start;
+			evaluate(new double[9]);
 			angleFactor = angleMax / translateMax;
 		}
 
@@ -249,6 +209,7 @@ img.show();
 		public double evaluate(double[] x) {
 			double result = calculateBadness(getMatrix(x));
 			if (result < min) {
+				best = (double[])x.clone();
 				min = result;
 				if (showStatus)
 					VIB.showStatus("difference: " + min);
@@ -300,6 +261,16 @@ img.show();
 				x[i] = 0;
 			}
 			return initial;
+		}
+
+		public int compareTo(Object other) {
+			Refinement o = (Refinement)other;
+			if (min < o.min)
+				return -1;
+			else if (min > o.min)
+				return +1;
+			else
+				return 0;
 		}
 	}
 }

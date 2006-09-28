@@ -2,7 +2,7 @@ prefix=.
 if [ ! -e $prefix/imagescience.jar ]; then
 	prefix=..
 fi
-CP=$prefix/../ImageJ/ij.jar:$prefix/jzlib-1.0.7.jar:$prefix/imagescience.jar 
+CP=$prefix/../ImageJ/ij.jar:$prefix/jzlib-1.0.7.jar:$prefix/Quick3dApplet-1.0.8.jar:$prefix/imagescience.jar 
 
 case "$(uname)" in
 CYGWIN*) CP="$(echo $CP | tr \: \;)";;
@@ -26,6 +26,9 @@ for i in $java5s; do
 		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
 		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
 		-e 's/for *(Frame  *\([^ ]*\) *:\(.*\)) *{/Frame[] frames\1 = \2; for(int i\1 = 0; i\1 < frames\1.length; i\1++) { Frame \1 = frames\1[i\1];/' \
+		-e "s/for *( *\([^ ]*\) \(.*\): *([^)]*)\(.*\)) *{/java.util.Iterator iter\2 = \3.iterator();\
+                      while (iter\2.hasNext()) {\
+                              \1 \2 = (\1)iter\2.next();/" \
 		-e "s/for *( *\([^ ]*\) \(.*\):\(.*\)) *{/java.util.Iterator iter\2 = \3.iterator();\
                       while (iter\2.hasNext()) {\
                               \1 \2 = (\1)iter\2.next();/" \
