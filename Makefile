@@ -1,4 +1,16 @@
-JAVAS=$(wildcard *.java */*.java */*/*.java)
+ALLJAVAS=$(wildcard *.java */*.java */*/*.java)
+
+# if no Java3d is available, do not attempt to compile the corresponding plugins
+ifeq ($(JAVA_HOME),)
+	J3DCORE=
+else
+	J3DCORE=$(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar)
+endif
+ifeq ($(J3DCORE),)
+	JAVAS=$(patsubst Viewer_3D.java,,$(ALLJAVAS))
+else
+	JAVAS=$(ALLJAVAS)
+endif
 CLASSES=$(patsubst %.java,%.class,$(JAVAS))
 
 uname_O := $(shell sh -c 'uname -o 2>/dev/null || echo not')
