@@ -45,6 +45,7 @@ public class RigidRegistration_ implements PlugInFilter {
 		gd.addCheckbox("noOptimization", false);
 		gd.addCheckbox("showTransformed", false);
 		gd.addCheckbox("showDifferenceImage", false);
+		gd.addCheckbox("Fast but inaccurate", true);
 		boolean isLabels = AmiraParameters.isAmiraLabelfield(image);
 
 		if (isLabels) {
@@ -80,6 +81,7 @@ public class RigidRegistration_ implements PlugInFilter {
 		boolean noOptimization = gd.getNextBoolean();
 		boolean showTransformed = gd.getNextBoolean();
 		boolean showDifferenceImage = gd.getNextBoolean();
+		boolean fastButInaccurate = gd.getNextBoolean();
 		int mat1 = (isLabels ? gd.getNextChoiceIndex() : -1);
 		ImagePlus templ = WindowManager.getImage(gd.getNextChoice());
 		int mat2 = (isLabels ? gd.getNextChoiceIndex() : -1);
@@ -104,7 +106,7 @@ public class RigidRegistration_ implements PlugInFilter {
 					new distance.Euclidean();
 		}
 
-		FastMatrix matrix = rigidRegistration(trans, materialBBox, initial, mat1, mat2, noOptimization, level, stopLevel, tolerance, nInitialPositions, showTransformed, showDifferenceImage);
+		FastMatrix matrix = rigidRegistration(trans, materialBBox, initial, mat1, mat2, noOptimization, level, stopLevel, tolerance, nInitialPositions, showTransformed, showDifferenceImage, fastButInaccurate);
 
 		if (!Interpreter.isBatchMode())
 			WindowManager.setWindow(new TextWindow("Matrix",
@@ -143,7 +145,8 @@ public class RigidRegistration_ implements PlugInFilter {
 			double tolerance,
 			int nInitialPositions,
 			boolean showTransformed,
-			boolean showDifferenceImage) {
+			boolean showDifferenceImage, 
+			boolean fastButInaccurate) {
 		if (mat1 >= 0)
 			trans.narrowSearchToMaterial(mat1, 10);
 
@@ -187,8 +190,9 @@ public class RigidRegistration_ implements PlugInFilter {
 
 		FastMatrix matrix;
 		if (!noOptimization) {
-			Optimizer opt = new Optimizer(trans, level, stopLevel,
-					tolerance);
+			Optimizer opt = fastButInaccurate 
+						? new FastOptimizer(trans, level, stopLevel, tolerance)
+						: new Optimizer(trans, level, stopLevel, tolerance);
 			opt.eulerParameters = params;
 
 			if(opt.eulerParameters == null){
@@ -419,5 +423,80 @@ public class RigidRegistration_ implements PlugInFilter {
 			return t.getDistance();
 		}
 	}
-}
+	
+	static class FastOptimizer extends Optimizer {
+		private int centerX, centerY, centerZ;
+		
+		public FastOptimizer(TransformedImage trans,
+				int startLevel, int stopLevel,
+				double tol) {
+			super(trans, startLevel, stopLevel, tol);
+			current = new Point3d();
+		}
 
+		public void getInitialCenters(){
+			super.getInitialCenters();
+			Calibration calib = t.orig.getImage().getCalibration();
+			centerX = (int)Math.round((origC.x - calib.xOrigin) 
+								/ calib.pixelWidth);
+			centerY = (int)Math.round((origC.y - calib.yOrigin) 
+								/ calib.pixelHeight);
+			centerZ = (int)Math.round((origC.z - calib.zOrigin) 
+								/ calib.pixelDepth);
+		}
+
+
+		private Point3d start, stop, current;
+		private FastMatrix matrix;
+		
+		public void initStartStop(int i0, int j0, int k0, 
+				int i1, int j1, int k1) {
+			matrix.apply(i0, j0, k0);
+			start = matrix.getResult();
+			matrix.apply(i1, j1, k1);
+			stop = matrix.getResult().minus(start);
+		}
+
+		public void calculateCurrent(int i, int total) {
+			current.x = start.x + i * stop.x / total;
+			current.y = start.y + i * stop.y / total;
+			current.z = start.z + i * stop.z / total;
+		}
+			
+		public double calculateBadness(FastMatrix matrix) {
+			this.matrix = matrix;
+			t.measure.reset();
+			for (int i = 0; i < t.orig.w; i++) {
+				initStartStop(i, 0, centerZ, i, t.orig.h, centerZ);
+				for (int j = 0; j < t.orig.h; j++) {
+					calculateCurrent(j, t.orig.h);
+					float vOrig = t.orig.getNoInterpol(i, j, centerZ);
+					float  vTrans = (float)t.transform.interpol.
+									get(current.x, current.y, current.z);
+					t.measure.add(vOrig, vTrans);
+				}
+			}
+			for (int i = 0; i < t.orig.d; i++) {
+				initStartStop(0, centerY, i, t.orig.w, centerY, i);
+				for (int j = 0; j < t.orig.w; j++) {
+					calculateCurrent(j, t.orig.w);
+					float vOrig = (float)t.orig.getNoInterpol(j, centerY, i);
+					float vTrans = (float) t.transform.interpol.
+									get(current.x, current.y, current.z);
+					t.measure.add(vOrig, vTrans);
+				}
+			}
+			for (int i = 0; i < t.orig.d; i++) {
+				initStartStop(centerX, 0, i, centerX, t.orig.h, i);
+				for (int j = 0; j < t.orig.h; j++) {
+					calculateCurrent(j, t.orig.h);
+					float vOrig = (float)t.orig.getNoInterpol(centerX, j, i);
+					float vTrans = (float)t.transform.interpol.
+									get(current.x, current.y, current.z);
+					t.measure.add(vOrig, vTrans);
+				}
+			}
+			return t.measure.distance();
+		}
+	}
+}
