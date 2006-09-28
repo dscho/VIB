@@ -1,17 +1,14 @@
-ALLJAVAS=$(wildcard *.java */*.java */*/*.java)
+JAVAS=$(wildcard *.java */*.java */*/*.java)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
-ifeq ($(JAVA_HOME),)
-	J3DCORE=
-else
-	J3DCORE=$(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar)
+JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java)
+FILTEROUT=$(JAVA3DS)
+ifneq ($(JAVA_HOME),)
+	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
+		FILTEROUT=
+	endif
 endif
-ifeq ($(J3DCORE),)
-	JAVAS=$(patsubst Viewer_3D.java,,$(ALLJAVAS))
-else
-	JAVAS=$(ALLJAVAS)
-endif
-CLASSES=$(patsubst %.java,%.class,$(JAVAS))
+CLASSES=$(patsubst %.java,%.class,$(filter-out $(FILTEROUT),$(JAVAS)))
 
 uname_O := $(shell sh -c 'uname -o 2>/dev/null || echo not')
 ifeq ($(uname_O),Cygwin)
@@ -35,7 +32,7 @@ vib/FloatMatrix.java: vib/FastMatrix.java math3d/FloatMatrixN.class
 math3d/FloatMatrixN.java: math3d/FastMatrixN.java
 	sed -e "s/double/float/g" -e "s/FastMatrixN/FloatMatrixN/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
 
-VIB_compat.jar: SOURCES=$(JAVAS) vib/segment/icons/*.png
+VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(JAVAS)) vib/segment/icons/*.png
 
 %_compat.jar:
 	test ! -d tempdir || rm -rf tempdir
