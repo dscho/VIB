@@ -102,18 +102,22 @@ public class Resample_ implements PlugInFilter {
 
 	public void run(ImageProcessor ip) {
 		GenericDialog gd = new GenericDialog("Parameters");
-		gd.addNumericField("factor", 2, 0);
-		gd.addCheckbox("minEntropy", false);
+		gd.addNumericField("Factor x", 2, 0);
+		gd.addNumericField("Factor y", 2, 0);
+		gd.addNumericField("Factor z", 2, 0);
+		gd.addCheckbox("MinEntropy", false);
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
 
-		int factor = (int)gd.getNextNumber();
+		int factorX = (int)gd.getNextNumber();
+		int factorY = (int)gd.getNextNumber();
+		int factorZ = (int)gd.getNextNumber();
 		boolean minEntropy = gd.getNextBoolean();
 
 		ImagePlus res = (minEntropy ?
-				resampleMinEnt(image, factor) :
-				resample(image, factor));
+				resampleMinEnt(image, factorX, factorY, factorZ) :
+				resample(image, factorX, factorY, factorZ));
 
 		if (AmiraParameters.isAmiraMesh(image))
 			new AmiraParameters(image).setParameters(res);
@@ -121,45 +125,56 @@ public class Resample_ implements PlugInFilter {
 		res.show();
 	}
 
-	public static ImagePlus resample(ImagePlus image, int factor) {
+	public static ImagePlus resample(ImagePlus image, int factorX, 
+					int factorY, int factorZ) {
 		Accumulator accu;
 		if (image.getProcessor().isColorLut())
 			accu = new MaxLikelihood();
 		else
 			accu = new Averager();
 
-		return resample(image, factor, accu);
+		return resample(image, factorX, factorY, factorZ, accu);
 	}
 
-	public static ImagePlus resampleMinEnt(ImagePlus image, int factor) {
-		return resample(image, factor, new MinEntropy(image));
+	public static ImagePlus resample(ImagePlus image, int factor){
+		return resample(image, factor, factor, factor);
+	}
+	
+	public static ImagePlus resampleMinEnt(ImagePlus image, int factorX, 
+					int factorY, int factorZ) {
+		return resample(image, factorX, factorY, factorZ,new MinEntropy(image));
 	}
 
-	public static ImagePlus resample(ImagePlus image, int factor,
-			Accumulator accu) {
+	public static ImagePlus resampleMinEnt(ImagePlus image, int factor){
+		return resampleMinEnt(image, factor, factor, factor);
+	}
+
+	public static ImagePlus resample(ImagePlus image, int factorX, int factorY,
+			int factorZ, Accumulator accu) {
 		ImageStack stack=image.getStack();
 		int w=image.getWidth(),h=image.getHeight(),d=stack.getSize();
 
-		ImageStack result = new ImageStack(w/factor,h/factor,
+		ImageStack result = new ImageStack(w/factorX,h/factorY,
 				stack.getColorModel());
 
-		for(int z=0;z<d;z+=factor) {
-			byte[][] slices = new byte[factor][];
-			int kfactor=(z+factor<d?factor:d-z);
+		for(int z=0;z<d;z+=factorZ) {
+			int kfactor=(z+factorZ<d?factorZ:d-z);
+			byte[][] slices = new byte[kfactor][];
 			for(int k=0;k<kfactor;k++)
 				slices[k]=(byte[])stack.getProcessor(z+k+1).getPixels();
 
-			byte[] newSlice = new byte[(w/factor)*(h/factor)];
-			for(int y=0;y<h;y+=factor) {
-				for(int x=0;x<w;x+=factor) {
-					int ifactor=(x+factor<w?factor:w-x);
-					int jfactor=(y+factor<h?factor:h-y);
+			byte[] newSlice = new byte[(w/factorX)*(h/factorY)];
+			for(int y=0;y<h;y+=factorY) {
+				for(int x=0;x<w;x+=factorX) {
+					int ifactor=(x+factorX<w?factorX:w-x);
+					int jfactor=(y+factorY<h?factorY:h-y);
 					accu.reset();
 					for(int i=0;i<ifactor;i++)
 						for(int j=0;j<jfactor;j++)
 							for(int k=0;k<kfactor;k++)
 								accu.add(getPixel(slices[k],x+i+w*(y+j)));
-					newSlice[(x/factor)+(w/factor)*(y/factor)]=(byte)accu.get();
+					newSlice[(x/factorX)+(w/factorX)*(y/factorY)]=
+									(byte)accu.get();
 				}
 				IJ.showProgress(z*h+y+1, h*d);
 			}
