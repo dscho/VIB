@@ -17,6 +17,7 @@ import java.awt.event.*;
 import java.util.Vector;
 
 import vib.Resample_;
+import vib.InterpolatedImage;
 
 import marchingcubes.MCPanel;
 
@@ -89,7 +90,8 @@ public class Viewer_3D implements PlugInFilter {
 	}
 
 	private void init(){
-		ret = Copy_Image.createCopy(image);
+		
+		ret = new InterpolatedImage(image).cloneImage().getImage();
 		w = ret.getWidth();
 		h = ret.getHeight();
 		d = ret.getStackSize();
