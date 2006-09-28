@@ -24,7 +24,9 @@ JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 all: $(CLASSES)
 
 %.class: %.java
-	javac -O $(JAVACOPTS) "$^"
+	javac -O $(JAVACOPTS) "$<"
+
+Affine_FromMarkers.class: Affine_FromMarkers.java Name_Points.class PCA_Registration.class
 
 vib/FloatMatrix.java: vib/FastMatrix.java math3d/FloatMatrixN.class
 	sed -e "s/double/float/g" -e "s/FastMatrix/FloatMatrix/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
