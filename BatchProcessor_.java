@@ -239,7 +239,7 @@ public class BatchProcessor_ extends JFrame implements PlugIn {
 		trans.measure = new distance.MutualInformation();
 
 
-		FastMatrix matrix = register.rigidRegistration(trans, null, null, -1, -1, false, startLevel, stopLevel, tolerance, intialPositions, false, false);
+		FastMatrix matrix = register.rigidRegistration(trans, null, null, -1, -1, false, startLevel, stopLevel, tolerance, intialPositions, false,false, false);
 
 		trans.setTransformation(matrix);
 
