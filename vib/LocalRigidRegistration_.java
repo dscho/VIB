@@ -58,7 +58,8 @@ public class LocalRigidRegistration_ implements PlugInFilter{
 					1.0,   //tolerance, 
 					1,     //nInitialPositions, 
 					true,  //showTransformed, 
-					true   //showDifferenceImage
+					true,  //showDifferenceImage
+					false  //fastButInaccurate
 					);
 
 			// Retrieve landmark sets and look for agreements
@@ -97,7 +98,8 @@ public class LocalRigidRegistration_ implements PlugInFilter{
 						1.0,    //tolerance, 
 						1,      //nInitialPositions, 
 						false,  //showTransformed, 
-						false   //showDifferenceImage
+						false,  //showDifferenceImage
+						false   //fastButInaccurate
 						);
 			}
 			
