@@ -40,7 +40,7 @@ math3d/JacobiFloat.java: math3d/JacobiDouble.java
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(JAVAS)) vib/segment/icons/*.png
 
 %_compat.jar:
-	test ! -d tempdir || rm -rf tempdir
+	test ! -d tempdir
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
 	(cd tempdir && sh ../compile1.3.sh && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
