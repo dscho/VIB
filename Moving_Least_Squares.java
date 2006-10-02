@@ -51,9 +51,9 @@ public class Moving_Least_Squares implements PlugInFilter {
 			titles = temp;
 		}
 
-		String[] methods = {"Affine", "Similar", "Rigid"};
+		String[] methods = {"Affine", "Similarity", "Rigid"};
 		GenericDialog gd = new GenericDialog("Align Images");
-		gd.addChoice("method", methods, methods[0]);
+		gd.addChoice("method", methods, methods[1]);
 		gd.addChoice("template", titles, titles[0]);
 		gd.showDialog();
 		if (gd.wasCanceled())
@@ -64,7 +64,7 @@ public class Moving_Least_Squares implements PlugInFilter {
 			case 0:
 				method = new Affine(); break;
 			case 1:
-				method = new Similar(); break;
+				method = new Similarity(); break;
 			default:
 				method = new Rigid(); break;
 		}
@@ -131,7 +131,7 @@ public class Moving_Least_Squares implements PlugInFilter {
 			}
 		}
 
-		public float alpha = 1;
+		public float alpha = 1.0f;
 
 		// both x, y and px, py are supposed to be absolute
 		public float w(float x, float y, float px, float py) {
@@ -229,8 +229,22 @@ public class Moving_Least_Squares implements PlugInFilter {
 		}
 	}
 
-	static class Similar extends Method {
+	static class Similarity extends Method {
 		public void calculateM(float x, float y) {
+			float mu = 0;
+			m11 = m12 = m21 = m22 = 0;
+			for (int i = 0; i < n; i++) {
+				float w = w(x, y, pX[i], pY[i]);
+				float pXi = pX[i] - pCX, pYi = pY[i] - pCY;
+				float qXi = qX[i] - qCX, qYi = qY[i] - qCY;
+				m11 += w * (pXi * qXi + pYi * qYi);
+				m12 += w * (-pXi * qYi + pYi * qXi);
+				mu += w * (pXi * pXi + pYi +pYi);
+			}
+			m11 /= mu;
+			m12 /= mu;
+			m21 = m12;
+			m22 = m11;
 		}
 	}
 
