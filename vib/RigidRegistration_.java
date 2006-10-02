@@ -57,11 +57,19 @@ public class RigidRegistration_ implements PlugInFilter {
 			gd.addChoice("templateMaterial", materials1, materials1[0]);
 			getMaterials2();
 		} else {
-			if (!AmiraParameters.addAmiraMeshList(gd, "Template")) {
-				IJ.error("No possible template found!");
+			int[] wIDs = WindowManager.getIDList();
+			if(wIDs == null){
+				IJ.error("No images open");
 				return;
 			}
-
+			String[] titles = new String[wIDs.length];
+			for(int i=0;i<wIDs.length;i++){
+				titles[i] = WindowManager.getImage(wIDs[i]).getTitle();
+			}
+			
+			gd.addChoice("Template",
+					titles,WindowManager.getCurrentImage().getTitle());
+															
 			String[] methods = {
 				"Euclidean", "MutualInfo", "Threshold55",
 				"Threshold155" };
