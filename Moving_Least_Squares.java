@@ -53,7 +53,7 @@ public class Moving_Least_Squares implements PlugInFilter {
 
 		String[] methods = {"Affine", "Similarity", "Rigid"};
 		GenericDialog gd = new GenericDialog("Align Images");
-		gd.addChoice("method", methods, methods[1]);
+		gd.addChoice("method", methods, methods[2]);
 		gd.addChoice("template", titles, titles[0]);
 		gd.showDialog();
 		if (gd.wasCanceled())
@@ -250,6 +250,22 @@ public class Moving_Least_Squares implements PlugInFilter {
 
 	static class Rigid extends Method {
 		public void calculateM(float x, float y) {
+			float mu1 = 0, mu2 = 0;
+			m11 = m12 = m21 = m22 = 0;
+			for (int i = 0; i < n; i++) {
+				float w = w(x, y, pX[i], pY[i]);
+				float pXi = pX[i] - pCX, pYi = pY[i] - pCY;
+				float qXi = qX[i] - qCX, qYi = qY[i] - qCY;
+				m11 += w * (pXi * qXi + pYi * qYi);
+				m12 += w * (-pXi * qYi + pYi * qXi);
+				mu1 += w * (qXi * pXi + qYi +pYi);
+				mu2 += w * (-qXi * pYi + qYi * pXi);
+			}
+			float mu = (float)Math.sqrt(mu1 * mu1 + mu2 * mu2);
+			m11 /= mu;
+			m12 /= mu;
+			m21 = m12;
+			m22 = m11;
 		}
 	}
 
