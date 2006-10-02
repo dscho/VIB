@@ -8,6 +8,7 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 import math3d.Point3d;
 import math3d.Triangle;
+import math3d.JacobiDouble;
 import math3d.FastMatrixN;
 
 public class FastMatrix {
@@ -679,6 +680,109 @@ public class FastMatrix {
 		result.a21 = r[2][1];
 		result.a22 = r[2][2];
 		result.a23 = r[2][3];
+		return result;
+	}
+
+	/**
+	 * Find the best rigid transformation from set1 to set2.
+	 * This function uses the method by Horn, using quaternions:
+	 * Closed-form solution of absolute orientation using unit quaternions,
+	 * Horn, B. K. P., Journal of the Optical Society of America A,
+	 * Vol. 4, page 629, April 1987
+	 */
+	public static FastMatrix bestRigid(Point3d[] set1, Point3d[] set2) {
+		if (set1.length != set2.length)
+			throw new RuntimeException("different lengths");
+
+		double c1x, c1y, c1z, c2x, c2y, c2z;
+		c1x = c1y = c1z = c2x = c2y = c2z = 0;
+
+		for (int i = 0; i < set1.length; i++) {
+			c1x += (double)set1[i].x;
+			c1y += (double)set1[i].y;
+			c1z += (double)set1[i].z;
+			c2x += (double)set2[i].x;
+			c2y += (double)set2[i].y;
+			c2z += (double)set2[i].z;
+		}
+		c1x /= set1.length;
+		c1y /= set1.length;
+		c1z /= set1.length;
+		c2x /= set1.length;
+		c2y /= set1.length;
+		c2z /= set1.length;
+
+		// calculate N
+		double Sxx, Sxy, Sxz, Syx, Syy, Syz, Szx, Szy, Szz;
+		Sxx = Sxy = Sxz = Syx = Syy = Syz = Szx = Szy = Szz = 0;
+		double r1, r2;
+		r1 = r2 = 0;
+		for (int i = 0; i < set1.length; i++) {
+			double x1 = (double)set1[i].x - c1x;
+			double y1 = (double)set1[i].y - c1y;
+			double z1 = (double)set1[i].z - c1z;
+			double x2 = (double)set2[i].x - c2x;
+			double y2 = (double)set2[i].y - c2y;
+			double z2 = (double)set2[i].z - c2z;
+			Sxx += x1 * x2;
+			Sxy += x1 * y2;
+			Sxz += x1 * z2;
+			Syx += y1 * x2;
+			Syy += y1 * y2;
+			Syz += y1 * z2;
+			Szx += z1 * x2;
+			Szy += z1 * y2;
+			Szz += z1 * z2;
+			r1 += x1 * x1 + y1 * y1 + z1 * z1;
+			r2 += x2 * x2 + y2 * y2 + z2 * z2;
+		}
+		r1 /= set1.length;
+		r2 /= set1.length;
+		double[][] N = new double[4][4];
+		N[0][0] = Sxx + Syy + Szz;
+		N[0][1] = Syz - Szy;
+		N[0][2] = Szx - Sxz;
+		N[0][3] = Sxy - Syx;
+		N[1][0] = Syz - Szy;
+		N[1][1] = Sxx - Syy - Szz;
+		N[1][2] = Sxy + Syx;
+		N[1][3] = Szx + Sxz;
+		N[2][0] = Szx - Sxz;
+		N[2][1] = Sxy + Syx;
+		N[2][2] = -Sxx + Syy - Szz;
+		N[2][3] = Syz + Szy;
+		N[3][0] = Sxy - Syx;
+		N[3][1] = Szx + Sxz;
+		N[3][2] = Syz + Szy;
+		N[3][3] = -Sxx - Syy + Szz;
+
+		// calculate eigenvector with maximal eigenvalue
+		JacobiDouble jacobi = new JacobiDouble(N);
+		double[][] eigenvectors = jacobi.getEigenVectors();
+		double[] eigenvalues = jacobi.getEigenValues();
+		int index = 0;
+		for (int i = 1; i < 4; i++)
+			if (eigenvalues[i] > eigenvalues[index])
+				index = i;
+		double[] q = eigenvectors[index];
+		double q0 = q[0], qx = q[1], qy = q[2], qz = q[3];
+
+		// turn into matrix
+		double s = (double)Math.sqrt(r2 / r1);
+
+		FastMatrix result = new FastMatrix();
+		result.a00 = s * (q0 * q0 + qx * qx - qy * qy - qz * qz);
+		result.a01 = s * 2 * (qx * qy - q0 * qz);
+		result.a02 = s * 2 * (qx * qz - q0 * qy);
+		result.a10 = s * 2 * (qy * qx - q0 * qy);
+		result.a11 = s * (q0 * q0 - qx * qx + qy * qy - qz * qz);
+		result.a12 = s * 2 * (qy * qz - q0 * qx);
+		result.a20 = s * 2 * (qz * qx - q0 * qy);
+		result.a21 = s * 2 * (qz * qy - q0 * qx);
+		result.a22 = s * (q0 * q0 - qx * qx - qy * qy + qz * qz);
+		result.a03 = c2x - c1x;
+		result.a13 = c2y - c1y;
+		result.a23 = c2z - c1z;
 		return result;
 	}
 	
