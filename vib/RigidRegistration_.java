@@ -455,14 +455,13 @@ public class RigidRegistration_ implements PlugInFilter {
 
 
 		private Point3d start, stop, current;
-		private FastMatrix matrix;
 		
 		public void initStartStop(int i0, int j0, int k0, 
 				int i1, int j1, int k1) {
-			matrix.apply(i0, j0, k0);
-			start = matrix.getResult();
-			matrix.apply(i1, j1, k1);
-			stop = matrix.getResult().minus(start);
+			t.matrix.apply(i0, j0, k0);
+			start = t.matrix.getResult();
+			t.matrix.apply(i1, j1, k1);
+			stop = t.matrix.getResult().minus(start);
 		}
 
 		public void calculateCurrent(int i, int total) {
@@ -472,7 +471,7 @@ public class RigidRegistration_ implements PlugInFilter {
 		}
 			
 		public double calculateBadness(FastMatrix matrix) {
-			this.matrix = matrix;
+			t.setTransformation(matrix);
 			t.measure.reset();
 			for (int i = 0; i < t.orig.w; i++) {
 				initStartStop(i, 0, centerZ, i, t.orig.h, centerZ);
