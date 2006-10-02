@@ -9,6 +9,12 @@ import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import java.awt.Rectangle;
 
+/**
+ * This plugin implements the algorithms from the paper
+ * Image Deformation Using Moving Least Squares, Schaefer S. and McPhail T.
+ * and Warrent J.
+ * (http://faculty.cs.tamu.edu/schaefer/research/mls.pdf)
+ */
 public class Moving_Least_Squares implements PlugInFilter {
 	ImagePlus image;
 
