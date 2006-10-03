@@ -12,7 +12,7 @@ import java.awt.Color;
 import java.io.*;
 
 import math3d.Point3d;
-import math3d.JacobiFloat;
+import math3d.JacobiDouble;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -484,8 +484,8 @@ public class PCA_Registration implements PlugIn {
 			// Calculate the variance of each dimension,
 			// and the covariance matrix.
 			
-			float[][] covariance =
-				new float[vectorLength][vectorLength];
+			double[][] covariance =
+				new double[vectorLength][vectorLength];
 
 			for( int z = 0; z < image.getStackSize(); ++z ) {
 				z_scaled = z * z_spacing;
@@ -540,34 +540,14 @@ public class PCA_Registration implements PlugIn {
 				System.out.println( "]" );
 			}
 
-			JacobiFloat jc=new JacobiFloat(covariance,200);
+			JacobiDouble jc=new JacobiDouble(covariance,200);
 
-			float[] eigenValuesFloat=jc.getEigenValues();
-			float[][] eigenVectorMatrixFloat=jc.getEigenVectors();
-
-			double[][] vectorsPacked=new double[3][3];
-
-			vectorsPacked[0][0] = eigenVectorMatrixFloat[0][0];
-			vectorsPacked[0][1] = eigenVectorMatrixFloat[1][0];
-			vectorsPacked[0][2] = eigenVectorMatrixFloat[2][0];
-
-			vectorsPacked[1][0] = eigenVectorMatrixFloat[0][1];
-			vectorsPacked[1][1] = eigenVectorMatrixFloat[1][1];
-			vectorsPacked[1][2] = eigenVectorMatrixFloat[2][1];
-
-			vectorsPacked[2][0] = eigenVectorMatrixFloat[0][2];
-			vectorsPacked[2][1] = eigenVectorMatrixFloat[1][2];
-			vectorsPacked[2][2] = eigenVectorMatrixFloat[2][2];
-
-			double[] eigenValues=new double[3];
-			
-			eigenValues[0] = eigenValuesFloat[0];
-			eigenValues[1] = eigenValuesFloat[1];
-			eigenValues[2] = eigenValuesFloat[2];
+			double[] eigenValues=jc.getEigenValues();
+			double[][] eigenVectors=jc.getEigenVectors();
 
 			PrincipalComponents pcaResults = new PrincipalComponents(
 				eigenValues,
-				vectorsPacked,
+				eigenVectors,
 				mean,
 				x_spacing,
 				y_spacing,

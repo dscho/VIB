@@ -31,6 +31,9 @@ public class JacobiFloat {
 	/** returns the eigenvectors as an array,
 	    such that result[0] is the first vector */
 	public float[][] getEigenVectors() {
+		return FloatMatrixN.transpose(eigenmatrix);
+	}
+	public float[][] getEigenMatrix() {
 		return eigenmatrix;
 	}
 	/** returns the eigenvalues corresponding to

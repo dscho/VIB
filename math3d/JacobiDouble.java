@@ -31,6 +31,9 @@ public class JacobiDouble {
 	/** returns the eigenvectors as an array,
 	    such that result[0] is the first vector */
 	public double[][] getEigenVectors() {
+		return FastMatrixN.transpose(eigenmatrix);
+	}
+	public double[][] getEigenMatrix() {
 		return eigenmatrix;
 	}
 	/** returns the eigenvalues corresponding to

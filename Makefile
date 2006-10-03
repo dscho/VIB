@@ -35,7 +35,7 @@ math3d/FloatMatrixN.java: math3d/FastMatrixN.java
 	sed -e "s/double/float/g" -e "s/FastMatrixN/FloatMatrixN/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
 
 math3d/JacobiFloat.java: math3d/JacobiDouble.java
-	sed -e "s/double/float/g" -e "s/Double/Float/g" < $< > $@
+	sed -e "s/double/float/g" -e "s/FastMatrix/FloatMatrix/g" -e "s/Double/Float/g" < $< > $@
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(JAVAS)) vib/segment/icons/*.png
 
