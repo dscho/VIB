@@ -691,6 +691,11 @@ public class FastMatrix {
 	 * Vol. 4, page 629, April 1987
 	 */
 	public static FastMatrix bestRigid(Point3d[] set1, Point3d[] set2) {
+		return bestRigid(set1, set2, true);
+	}
+
+	public static FastMatrix bestRigid(Point3d[] set1, Point3d[] set2,
+			boolean allowScaling) {
 		if (set1.length != set2.length)
 			throw new RuntimeException("different lengths");
 
@@ -712,15 +717,30 @@ public class FastMatrix {
 		c2y /= set1.length;
 		c2z /= set1.length;
 
+		double s = 1;
+		if (allowScaling) {
+			double r1, r2;
+			r1 = r2 = 0;
+			for (int i = 0; i < set1.length; i++) {
+				double x1 = (double)set1[i].x - c1x;
+				double y1 = (double)set1[i].y - c1y;
+				double z1 = (double)set1[i].z - c1z;
+				double x2 = (double)set2[i].x - c2x;
+				double y2 = (double)set2[i].y - c2y;
+				double z2 = (double)set2[i].z - c2z;
+				r1 += x1 * x1 + y1 * y1 + z1 * z1;
+				r2 += x2 * x2 + y2 * y2 + z2 * z2;
+			}
+			s = (double)Math.sqrt(r2 / r1);
+		}
+
 		// calculate N
 		double Sxx, Sxy, Sxz, Syx, Syy, Syz, Szx, Szy, Szz;
 		Sxx = Sxy = Sxz = Syx = Syy = Syz = Szx = Szy = Szz = 0;
-		double r1, r2;
-		r1 = r2 = 0;
 		for (int i = 0; i < set1.length; i++) {
-			double x1 = (double)set1[i].x - c1x;
-			double y1 = (double)set1[i].y - c1y;
-			double z1 = (double)set1[i].z - c1z;
+			double x1 = ((double)set1[i].x - c1x) * s;
+			double y1 = ((double)set1[i].y - c1y) * s;
+			double z1 = ((double)set1[i].z - c1z) * s;
 			double x2 = (double)set2[i].x - c2x;
 			double y2 = (double)set2[i].y - c2y;
 			double z2 = (double)set2[i].z - c2z;
@@ -733,11 +753,7 @@ public class FastMatrix {
 			Szx += z1 * x2;
 			Szy += z1 * y2;
 			Szz += z1 * z2;
-			r1 += x1 * x1 + y1 * y1 + z1 * z1;
-			r2 += x2 * x2 + y2 * y2 + z2 * z2;
 		}
-		r1 /= set1.length;
-		r2 /= set1.length;
 		double[][] N = new double[4][4];
 		N[0][0] = Sxx + Syy + Szz;
 		N[0][1] = Syz - Szy;
@@ -764,25 +780,28 @@ public class FastMatrix {
 		for (int i = 1; i < 4; i++)
 			if (eigenvalues[i] > eigenvalues[index])
 				index = i;
+
 		double[] q = eigenvectors[index];
 		double q0 = q[0], qx = q[1], qy = q[2], qz = q[3];
 
-		// turn into matrix
-		double s = (double)Math.sqrt(r2 / r1);
 
+		// turn into matrix
 		FastMatrix result = new FastMatrix();
+		// rotational part
 		result.a00 = s * (q0 * q0 + qx * qx - qy * qy - qz * qz);
 		result.a01 = s * 2 * (qx * qy - q0 * qz);
-		result.a02 = s * 2 * (qx * qz - q0 * qy);
-		result.a10 = s * 2 * (qy * qx - q0 * qy);
+		result.a02 = s * 2 * (qx * qz + q0 * qy);
+		result.a10 = s * 2 * (qy * qx + q0 * qz);
 		result.a11 = s * (q0 * q0 - qx * qx + qy * qy - qz * qz);
 		result.a12 = s * 2 * (qy * qz - q0 * qx);
 		result.a20 = s * 2 * (qz * qx - q0 * qy);
-		result.a21 = s * 2 * (qz * qy - q0 * qx);
+		result.a21 = s * 2 * (qz * qy + q0 * qx);
 		result.a22 = s * (q0 * q0 - qx * qx - qy * qy + qz * qz);
-		result.a03 = c2x - c1x;
-		result.a13 = c2y - c1y;
-		result.a23 = c2z - c1z;
+		// translational part
+		result.apply(c1x, c1y, c1z);
+		result.a03 = c2x - result.x;
+		result.a13 = c2y - result.y;
+		result.a23 = c2z - result.z;
 		return result;
 	}
 	
