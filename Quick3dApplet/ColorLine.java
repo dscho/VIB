@@ -1,6 +1,6 @@
 package Quick3dApplet;
 
-public final class Line extends Tri
+public final class ColorLine extends Tri
 {
 	private int col;
 	private float normx, normy, normz;
@@ -24,7 +24,7 @@ public final class Line extends Tri
 						0.5f), w));
 	}
 
-	public Line(Vertex ai, Vertex bi, int colour) {
+	public ColorLine(Vertex ai, Vertex bi, int colour) {
 		super(ai, bi, find3rdVertex(ai, bi));
 		col = colour;
 		Vec norm = getOrigNorm();

@@ -87,7 +87,7 @@ public class ShowAmiraNeuronTree_ implements PlugIn {
 				continue;
 			Vertex v1 = vertices[segments[i - 1]];
 			Vertex v2 = vertices[segments[i]];
-			ro.addTri(new Line(v1, v2, color));
+			ro.addTri(new ColorLine(v1, v2, color));
 		}
 		ro.optimise();
 		ic.objects.addElement(ro);
