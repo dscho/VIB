@@ -60,7 +60,9 @@ public class Moving_Least_Squares implements PlugInFilter {
 		String[] methods = {"Affine", "Similarity", "Rigid"};
 		GenericDialog gd = new GenericDialog("Align Images");
 		gd.addChoice("method", methods, methods[2]);
-		gd.addChoice("template", titles, titles[0]);
+		gd.addChoice("source", titles, titles[0]);
+		gd.addNumericField("alpha", 1.0, 3);
+		gd.addCheckbox("drawGrid", false);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -74,37 +76,33 @@ public class Moving_Least_Squares implements PlugInFilter {
 			default:
 				method = new Rigid(); break;
 		}
-
 		id = ids[gd.getNextChoiceIndex()];
-		ImagePlus templ = WindowManager.getImage(id);
-		int w = templ.getWidth(), h = templ.getHeight();
-		Interpolator inter = new BilinearInterpolator(ip);
+		method.alpha = (float)gd.getNextNumber();
+		boolean drawGrid = gd.getNextBoolean();
 
-		PointRoi points2 = (PointRoi)templ.getRoi();
-		method.setCoordinates(points2, points1);
+		ImagePlus source = WindowManager.getImage(id);
+		Interpolator inter =
+			new BilinearInterpolator(source.getProcessor());
 
-		ImageProcessor result = new FloatProcessor(w, h);
-		float[] pixels = (float[])result.getPixels();
-		method.warpImage(inter, w, h, pixels);
+		PointRoi points2 = (PointRoi)source.getRoi();
+		method.setCoordinates(points1, points2);
 
-		result.setMinAndMax(ip.getMin(), ip.getMax());
-		ImagePlus res = new ImagePlus("warped "
-				+ image.getTitle(), result);
-		res.setCalibration(templ.getCalibration());
-		res.setRoi(points2);
-		res.show();
+		int w = ip.getWidth(), h = ip.getHeight();
+		method.warpImage(inter, w, h, ip.getPixels());
+		if (drawGrid)
+			method.drawGrid(w, h, 10, ip.getPixels());
+		image.updateAndDraw();
 	}
 
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
-		return DOES_8G | DOES_16 | DOES_32 | NO_CHANGES;
+		return DOES_8G | DOES_16 | DOES_32;
 	}
 
 	static abstract class Method {
 		int n;
 		// the centroids
 		float pCX, pCY, qCX, qCY;
-		// these coordinates are relative to the centroid
 		float[] pX, pY, qX, qY;
 
 		public void setCoordinates(int[] x1, int[] y1,
@@ -156,24 +154,21 @@ public class Moving_Least_Squares implements PlugInFilter {
 		// x, y is supposed to be absolute
 		public void calculateCentroids(float x, float y) {
 			pCX = pCY = qCX = qCY = 0;
-			float totalP = 0, totalQ = 0;
+			float total = 0;
 			for (int i = 0; i < n; i++) {
 				float w = w(x, y, pX[i], pY[i]);
-				totalP += w;
+				total += w;
 				pCX += w * pX[i];
 				pCY += w * pY[i];
-				w = w(x, y, qX[i], qY[i]);
-				totalQ += w;
 				qCX += w * qX[i];
 				qCY += w * qY[i];
 			}
-			pCX /= totalP;
-			pCY /= totalP;
-			qCX /= totalQ;
-			qCY /= totalQ;
+			pCX /= total;
+			pCY /= total;
+			qCX /= total;
+			qCY /= total;
 		}
 
-		// x, y is supposed to be relative to pCX, pCY
 		public abstract void calculateM(float x, float y);
 
 		// resultX, resultY is absolute
@@ -181,15 +176,24 @@ public class Moving_Least_Squares implements PlugInFilter {
 
 		// x, y is supposed to be absolute
 		public void calculate(float x, float y) {
-			try {
-				calculateCentroids(x, y);
-				calculateM(x, y);
-				resultX = qCX + m11 * (x - pCX)
-					+ m12 * (y - pCY);
-				resultY = qCY + m21 * (x - pCX)
-					+ m22 * (y - pCY);
-			} catch(RuntimeException e) {
-			}
+			calculateCentroids(x, y);
+			calculateM(x, y);
+			resultX = qCX + m11 * (x - pCX)
+				+ m12 * (y - pCY);
+			resultY = qCY + m21 * (x - pCX)
+				+ m22 * (y - pCY);
+		}
+
+		public void warpImage(Interpolator inter,
+				int w, int h, Object pixels) {
+			if (pixels instanceof byte[])
+				warpImage(inter, w, h, (byte[])pixels);
+			else if (pixels instanceof short[])
+				warpImage(inter, w, h, (short[])pixels);
+			else if (pixels instanceof float[])
+				warpImage(inter, w, h, (float[])pixels);
+			else
+				IJ.error("Unknown pixel type");
 		}
 
 		public void warpImage(Interpolator inter,
@@ -198,7 +202,93 @@ public class Moving_Least_Squares implements PlugInFilter {
 				for (int i = 0; i < w; i++) {
 					calculate(i, j);
 					pixels[i + w * j] =
+						//qCX;
 						inter.get(resultX, resultY);
+				}
+				IJ.showProgress(j + 1, h);
+			}
+		}
+
+		public void warpImage(Interpolator inter,
+				int w, int h, short[] pixels) {
+			for (int j = 0; j < h; j++) {
+				for (int i = 0; i < w; i++) {
+					calculate(i, j);
+					pixels[i + w * j] = (short)
+						inter.get(resultX, resultY);
+				}
+				IJ.showProgress(j + 1, h);
+			}
+		}
+
+		public void warpImage(Interpolator inter,
+				int w, int h, byte[] pixels) {
+			for (int j = 0; j < h; j++) {
+				for (int i = 0; i < w; i++) {
+					calculate(i, j);
+					pixels[i + w * j] = (byte)
+						inter.get(resultX, resultY);
+				}
+				IJ.showProgress(j + 1, h);
+			}
+		}
+
+		public void drawGrid(int w, int h, float step, Object pixels) {
+			if (pixels instanceof byte[])
+				drawGrid(w, h, step, (byte[])pixels);
+			else if (pixels instanceof short[])
+				drawGrid(w, h, step, (short[])pixels);
+			else if (pixels instanceof float[])
+				drawGrid(w, h, step, (float[])pixels);
+			else
+				IJ.error("Unknown pixel type");
+		}
+
+		boolean gridCondition(int i, int j, float step) {
+			float x0, y0, x1, y1, x2, y2, x3, y3;
+			x0 = (float)Math.floor(resultX / step);
+			y0 = (float)Math.floor(resultY / step);
+			calculate(i, j - 0.5f);
+			x1 = (float)Math.floor(resultX / step);
+			y1 = (float)Math.floor(resultY / step);
+			calculate(i, j + 0.5f);
+			x2 = (float)Math.floor(resultX / step);
+			y2 = (float)Math.floor(resultY / step);
+			calculate(i + 0.5f, j);
+			x3 = (float)Math.floor(resultX / step);
+			y3 = (float)Math.floor(resultY / step);
+			return x0 != x1 || x0 != x2 || x0 != x3 || y0 != y1 ||
+				y0 != y2 || y0 != y3;
+		}
+
+		public void drawGrid(int w, int h, float step, float[] pixels) {
+			for (int j = 0; j < h; j++) {
+					calculate(-0.5f, j - 0.5f);
+				for (int i = 0; i < w; i++) {
+					if (gridCondition(i, j, step))
+						pixels[i + w * j] = 0;
+				}
+				IJ.showProgress(j + 1, h);
+			}
+		}
+
+		public void drawGrid(int w, int h, float step, short[] pixels) {
+			for (int j = 0; j < h; j++) {
+					calculate(-0.5f, j - 0.5f);
+				for (int i = 0; i < w; i++) {
+					if (gridCondition(i, j, step))
+						pixels[i + w * j] = 0;
+				}
+				IJ.showProgress(j + 1, h);
+			}
+		}
+
+		public void drawGrid(int w, int h, float step, byte[] pixels) {
+			for (int j = 0; j < h; j++) {
+					calculate(-0.5f, j - 0.5f);
+				for (int i = 0; i < w; i++) {
+					if (gridCondition(i, j, step))
+						pixels[i + w * j] = 0;
 				}
 				IJ.showProgress(j + 1, h);
 			}
@@ -211,14 +301,9 @@ public class Moving_Least_Squares implements PlugInFilter {
 			float b11, b12, b21, b22;
 			a11 = a12 = a22 = b11 = b12 = b21 = b22 = 0;
 			for (int i = 0; i < n; i++) {
+				float w = w(x, y, pX[i], pY[i]);
 				float pXi = pX[i] - pCX, pYi = pY[i] - pCY;
 				float qXi = qX[i] - qCX, qYi = qY[i] - qCY;
-				if (x == pX[i] && y == pY[i]) {
-					resultX = qX[i];
-					resultY = qY[i];
-					throw new RuntimeException("");
-				}
-				float w = w(x, y, pX[i], pY[i]);
 				a11 += w * pXi * pXi;
 				a12 += w * pXi * pYi;
 				a22 += w * pYi * pYi;
@@ -229,8 +314,8 @@ public class Moving_Least_Squares implements PlugInFilter {
 			}
 			float detA = a11 * a22 - a12 * a12;
 			m11 = (a22 * b11 - a12 * b21) / detA;
-			m12 = (a22 * b12 - a12 * b22) / detA;
-			m21 = (-a12 * b11 + a11 * b21) / detA;
+			m12 = (-a12 * b11 + a11 * b21) / detA;
+			m21 = (a22 * b12 - a12 * b22) / detA;
 			m22 = (-a12 * b12 + a11 * b22) / detA;
 		}
 	}
@@ -244,12 +329,12 @@ public class Moving_Least_Squares implements PlugInFilter {
 				float pXi = pX[i] - pCX, pYi = pY[i] - pCY;
 				float qXi = qX[i] - qCX, qYi = qY[i] - qCY;
 				m11 += w * (pXi * qXi + pYi * qYi);
-				m12 += w * (-pXi * qYi + pYi * qXi);
-				mu += w * (pXi * pXi + pYi +pYi);
+				m12 += w * (pYi * qXi - pXi * qYi);
+				mu += w * (pXi * pXi + pYi * pYi);
 			}
 			m11 /= mu;
 			m12 /= mu;
-			m21 = m12;
+			m21 = -m12;
 			m22 = m11;
 		}
 	}
@@ -263,14 +348,12 @@ public class Moving_Least_Squares implements PlugInFilter {
 				float pXi = pX[i] - pCX, pYi = pY[i] - pCY;
 				float qXi = qX[i] - qCX, qYi = qY[i] - qCY;
 				m11 += w * (pXi * qXi + pYi * qYi);
-				m12 += w * (-pXi * qYi + pYi * qXi);
-				mu1 += w * (qXi * pXi + qYi +pYi);
-				mu2 += w * (-qXi * pYi + qYi * pXi);
+				m12 += w * (pYi * qXi - pXi * qYi);
 			}
-			float mu = (float)Math.sqrt(mu1 * mu1 + mu2 * mu2);
+			float mu = (float)Math.sqrt(m11 * m11 + m12 * m12);
 			m11 /= mu;
 			m12 /= mu;
-			m21 = m12;
+			m21 = -m12;
 			m22 = m11;
 		}
 	}
