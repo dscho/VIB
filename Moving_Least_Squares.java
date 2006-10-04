@@ -62,7 +62,7 @@ public class Moving_Least_Squares implements PlugInFilter {
 		gd.addChoice("method", methods, methods[2]);
 		gd.addChoice("source", titles, titles[0]);
 		gd.addNumericField("alpha", 1.0, 3);
-		gd.addCheckbox("drawGrid", false);
+		gd.addNumericField("gridSize", 0.0, 3);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -78,7 +78,7 @@ public class Moving_Least_Squares implements PlugInFilter {
 		}
 		id = ids[gd.getNextChoiceIndex()];
 		method.alpha = (float)gd.getNextNumber();
-		boolean drawGrid = gd.getNextBoolean();
+		float gridSize = (float)gd.getNextNumber();
 
 		ImagePlus source = WindowManager.getImage(id);
 		Interpolator inter =
@@ -89,8 +89,8 @@ public class Moving_Least_Squares implements PlugInFilter {
 
 		int w = ip.getWidth(), h = ip.getHeight();
 		method.warpImage(inter, w, h, ip.getPixels());
-		if (drawGrid)
-			method.drawGrid(w, h, 10, ip.getPixels());
+		if (gridSize > 0)
+			method.drawGrid(w, h, gridSize, ip.getPixels());
 		image.updateAndDraw();
 	}
 
