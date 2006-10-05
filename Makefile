@@ -55,7 +55,7 @@ AmiraSurface_.jar: SOURCES=ShowAmiraSurface_.java vib/AmiraParameters.java \
 	vib/AmiraTable.java vib/Image3dCanvas.java
 
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
-	Align_Image.jar
+	Align_Image.jar Moving_Least_Squares.jar
 
 $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 
