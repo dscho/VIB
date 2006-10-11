@@ -30,17 +30,17 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 
-class PointsDialog extends Dialog implements ActionListener {
+class BenesPointsDialog extends Dialog implements ActionListener {
 	
 	private PointList points;
-	private Name_Points plugin;	
+	private BenesName_Points plugin;	
 	private Panel panel;
 	private final PopupMenu popup = createPopup();
-	private NamedPoint current;
+	private BenesNamedPoint current;
 	
-	public PointsDialog(String title,
+	public BenesPointsDialog(String title,
 			    PointList points,
-			    Name_Points plugin) {
+			    BenesName_Points plugin) {
 		
 		super(IJ.getInstance(),title,false);
 		
@@ -104,13 +104,13 @@ class PointsDialog extends Dialog implements ActionListener {
 		panel.removeAll();
 		panel.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
-		for (NamedPoint p : (Iterable<NamedPoint>)points) {
+		for (BenesNamedPoint p : (Iterable<BenesNamedPoint>)points) {
 			addRow(p,panel,c);
 		}
 		this.pack();
 	}
 	
-	private void addRow(final NamedPoint p, Panel panel, GridBagConstraints c){
+	private void addRow(final BenesNamedPoint p, Panel panel, GridBagConstraints c){
 		c.gridx = 0;
 		c.gridy = GridBagConstraints.RELATIVE;
 		c.anchor = GridBagConstraints.LINE_START;			
@@ -131,7 +131,7 @@ class PointsDialog extends Dialog implements ActionListener {
 		});
 		button.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				PointsDialog.this.plugin.mark(p);
+				BenesPointsDialog.this.plugin.mark(p);
 			}
 		});
 		panel.add(button,c);
@@ -148,7 +148,7 @@ class PointsDialog extends Dialog implements ActionListener {
 		Button showB = new Button("Show");
 		showB.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				PointsDialog.this.plugin.show(p);
+				BenesPointsDialog.this.plugin.show(p);
 			}
 		});
 		showB.setEnabled(p.set);
@@ -156,17 +156,17 @@ class PointsDialog extends Dialog implements ActionListener {
 	}
 	
 	public void addEmptyPoint(){
-		NamedPoint p = new NamedPoint("point" + points.size());
+		BenesNamedPoint p = new BenesNamedPoint("point" + points.size());
 		points.add(p);
 		updatePointsPanel();
 	}
 	
-	public void removePoint(NamedPoint p){
+	public void removePoint(BenesNamedPoint p){
 		points.remove(p);
 		updatePointsPanel();
 	}
 	
-	public void renamePoint(NamedPoint p){
+	public void renamePoint(BenesNamedPoint p){
 		GenericDialog gd = new GenericDialog("Rename point");
 		gd.addStringField("New name ", p.name);
 		gd.showDialog();
@@ -176,13 +176,13 @@ class PointsDialog extends Dialog implements ActionListener {
 		updatePointsPanel();
 	}
 
-	public void resetPoint(NamedPoint p) {
+	public void resetPoint(BenesNamedPoint p) {
 		p.set = false;
 		updatePointsPanel();
 	}
 
 	public void resetAll() {
-		for(NamedPoint p : (Iterable<NamedPoint>)points) {
+		for(BenesNamedPoint p : (Iterable<BenesNamedPoint>)points) {
 			p.set = false;
 		}
 		updatePointsPanel();
@@ -205,14 +205,14 @@ class PointsDialog extends Dialog implements ActionListener {
 		} else if (command.equals("Reset point")){
 			resetPoint(current);
 		} else if (command.equals("Load")){
-			PointsDialog.this.plugin.load();
+			BenesPointsDialog.this.plugin.load();
 		} 
 	}
 }
 
-public class Name_Points implements PlugIn {
+public class BenesName_Points implements PlugIn {
 
-	public void show(NamedPoint p) {
+	public void show(BenesNamedPoint p) {
 		if(!p.set){
 			IJ.error("Point is not set yet");
 			return;
@@ -235,9 +235,9 @@ public class Name_Points implements PlugIn {
 		if(newNamedPoints==null)
 			return;
 
-		for (NamedPoint current : (Iterable<NamedPoint>)newNamedPoints) {
+		for (BenesNamedPoint current : (Iterable<BenesNamedPoint>)newNamedPoints) {
 			boolean foundName = false;
-			for(NamedPoint p : (Iterable<NamedPoint>)points) {
+			for(BenesNamedPoint p : (Iterable<BenesNamedPoint>)points) {
 				if (current.name.equals(p.name)) {
 					p.set(current.x, current.y, current.z);
 					p.set = true;
@@ -264,7 +264,7 @@ public class Name_Points implements PlugIn {
 		IJ.showStatus("Saved point annotations.");
 	}
 
-	public void mark(NamedPoint point) {
+	public void mark(BenesNamedPoint point) {
 		Roi roi = imp.getRoi();
 		if (roi!=null && roi.getType()==Roi.POINT) {
 			Polygon p = roi.getPolygon();
@@ -288,7 +288,7 @@ public class Name_Points implements PlugIn {
 		}
 	}
 
-	PointsDialog dialog;
+	BenesPointsDialog dialog;
 	ImagePlus imp;	
 	PointList points;
 
@@ -306,7 +306,7 @@ public class Name_Points implements PlugIn {
 
 		points = new PointList();
 
-		dialog = new PointsDialog("Marking up: "+imp.getTitle(),
+		dialog = new BenesPointsDialog("Marking up: "+imp.getTitle(),
 					points,
 					this);
 

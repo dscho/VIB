@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 import math3d.Point3d;
 
-class NamedPoint extends Point3d {
+class BenesNamedPoint extends Point3d {
 
 	String name;
 	boolean set;
@@ -16,7 +16,7 @@ class NamedPoint extends Point3d {
 									"([eE0-9\\.\\-]+) *\\] *$");
 	static Pattern p_empty = Pattern.compile("^ *$");
 
-	public NamedPoint(String name,
+	public BenesNamedPoint(String name,
 			  double x,
 			  double y,
 			  double z) {
@@ -27,7 +27,7 @@ class NamedPoint extends Point3d {
 		this.set = true;
 	}
 
-	public NamedPoint(String name) {
+	public BenesNamedPoint(String name) {
 		this.name = name;
 		this.set = false;
 	}
@@ -36,13 +36,13 @@ class NamedPoint extends Point3d {
 		this.x = x; this.y = y; this.z = z;
 	}
 	
-	public static NamedPoint fromLine(String line){
+	public static BenesNamedPoint fromLine(String line){
 		Matcher m_data = p_data.matcher(line);
 		Matcher m_empty = p_empty.matcher(line);
 
 		if (m_data.matches()) {
 			return
-				new NamedPoint(m_data.group(1),
+				new BenesNamedPoint(m_data.group(1),
 					       Double.parseDouble(m_data.group(2)),
 					       Double.parseDouble(m_data.group(3)),
 					       Double.parseDouble(m_data.group(4)));

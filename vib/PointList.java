@@ -21,40 +21,40 @@ import java.util.List;
  * 
  * @author Benjamin Schmid
  */
-class PointList implements Iterable<NamedPoint>{
+class PointList implements Iterable<BenesNamedPoint>{
 	
-	private List<NamedPoint> points;
+	private List<BenesNamedPoint> points;
 	
 	public PointList(){
-		points = new ArrayList<NamedPoint>();
+		points = new ArrayList<BenesNamedPoint>();
 	}
 		
-	public void add(NamedPoint point){
+	public void add(BenesNamedPoint point){
 		points.add(point);
 	}
 	
-	public void remove(NamedPoint point){
+	public void remove(BenesNamedPoint point){
 		points.remove(point);
 	}
 	
-	public void rename(NamedPoint point, String name){
+	public void rename(BenesNamedPoint point, String name){
 		point.name = name;
 	}
 	
-	public NamedPoint get(int index){
+	public BenesNamedPoint get(int index){
 		return points.get(index);
 	}
 	
-	public NamedPoint[] toArray(){
-		return points.toArray(new NamedPoint[]{});
+	public BenesNamedPoint[] toArray(){
+		return points.toArray(new BenesNamedPoint[]{});
 	}
 	
 	public int size(){
 		return points.size();
 	}
 	
-	public NamedPoint get(String name){
-		for(NamedPoint p : points){
+	public BenesNamedPoint get(String name){
+		for(BenesNamedPoint p : points){
 			if(p.name.equals(name)){
 				return p;
 			}
@@ -62,7 +62,7 @@ class PointList implements Iterable<NamedPoint>{
 		return null;
 	}
 	
-	public Iterator<NamedPoint> iterator() {
+	public Iterator<BenesNamedPoint> iterator() {
 		return points.iterator();
 	}
 	
@@ -99,7 +99,7 @@ class PointList implements Iterable<NamedPoint>{
 							new FileReader(openPath));
 			String line;
 			while ((line=f.readLine())!=null) {
-				NamedPoint p = NamedPoint.fromLine(line);
+				BenesNamedPoint p = BenesNamedPoint.fromLine(line);
 				if(p != null)
 					list.add(p);
 			}
@@ -137,7 +137,7 @@ class PointList implements Iterable<NamedPoint>{
 
 		try {
 			PrintStream fos = new PrintStream(savePath);
-			for(NamedPoint p : points){
+			for(BenesNamedPoint p : points){
 				if(p.set) {
 					fos.println(p.toYAML() + "\n");
 				}
@@ -153,8 +153,8 @@ class PointList implements Iterable<NamedPoint>{
 		     PointList points1) {
 
 		ArrayList<String> common = new ArrayList<String>();
-		for(NamedPoint point0 : points0){
-			for(NamedPoint point1 : points1){
+		for(BenesNamedPoint point0 : points0){
+			for(BenesNamedPoint point1 : points1){
 				if(point0.name.equals(point1.name)){
 					common.add(point0.name);
 					break;
@@ -167,8 +167,8 @@ class PointList implements Iterable<NamedPoint>{
 	public static PointList pointsInBoth(PointList points0, PointList points1){
 		
 		PointList common = new PointList();
-		for(NamedPoint point0 : points0){
-			for(NamedPoint point1 : points1){
+		for(BenesNamedPoint point0 : points0){
+			for(BenesNamedPoint point1 : points1){
 				if(point0.name.equals(point1.name)){
 					common.add(point0);
 					break;
@@ -179,7 +179,7 @@ class PointList implements Iterable<NamedPoint>{
 	}
 	
 	public void print(){
-		for(NamedPoint p : points){
+		for(BenesNamedPoint p : points){
 			System.out.println(p.toString());
 		}
 	}

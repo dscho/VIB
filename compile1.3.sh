@@ -8,7 +8,7 @@ case "$(uname)" in
 CYGWIN*) CP="$(echo $CP | tr \: \;)";;
 esac
 
-java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java vib/PointList.java vib/Name_Points.java vib/LocalRigidRegistration_.java Particle_Analyzer_3D.java"
+java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java vib/PointList.java vib/BenesName_Points.java vib/LocalRigidRegistration_.java Particle_Analyzer_3D.java"
 for i in $java5s; do
 	if [ -e $i ]; then
 	classfile=$(echo $i | sed "s/java$/class/")
@@ -17,6 +17,7 @@ for i in $java5s; do
 	fi
 	cat $i.five | \
 	sed \
+		-e '24s/implements Iterable<BenesNamedPoint>//' \
 		-e '24s/implements Iterable<NamedPoint>//' \
 		-e 's/<[A-Za-z][]A-Za-z3[]*>//g' \
 		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
@@ -81,9 +82,10 @@ for i in $java5s; do
 		-e '84s/c\.add(p)/((JFrame)c).getContentPane().add(p)/' \
 		-e '180s/container\.add(box)/((JFrame)container).getContentPane().add(box)/' \
 		-e 's/[^ ]*children(\?)\?\.get(i)/((RoiNode)(&))/' \
+		-e '48s/BenesNamedPoint/Object/g' \
 		-e '48s/NamedPoint/Object/g' \
-		-e '45s/points.get/(NamedPoint)&/g' \
-		-e '105s/aw.setCenter(commonPoints.toArray());/Object[] oa = commonPoints.toArray(); math3d.Point3d[] pa = new math3d.Point3d[oa.length]; for (int i = 0; i < pa.length; i++) pa[i] = (math3d.Point3d)oa[i]; aw.setCenter(pa);/' \
+		-e '45s/points.get/(BenesNamedPoint)&/g' \
+		-e '107s/aw.setCenter(commonPoints.toArray());/Object[] oa = commonPoints.toArray(); math3d.Point3d[] pa = new math3d.Point3d[oa.length]; for (int i = 0; i < pa.length; i++) pa[i] = (math3d.Point3d)oa[i]; aw.setCenter(pa);/' \
 		-e '246s/List<Set>/List/g' \
 		-e '302s/for(Integer i : set)/java.util.Iterator iter = set.iterator(); Integer i; while(iter.hasNext() \&\& (i = (Integer)iter.next()) != null) /' \
 		-e '184s/\(map.get(\)\(res_pixels\[i\]\))/((Integer)\1new Integer(\2))).intValue()/' \
