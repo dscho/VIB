@@ -125,7 +125,7 @@ public class SegmentationEditor implements PlugIn {
 			sliceAndImage.add(new Label(" "));
 			sliceAndImage.add(cc, BorderLayout.CENTER);
 
-			add(sliceAndImage, BorderLayout.CENTER);
+			add(sliceAndImage, BorderLayout.EAST);
 			pack();
 		} 
 
