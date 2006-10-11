@@ -32,7 +32,7 @@ public class ContainerPanel extends Panel {
 
 	MainPanel pMain;
 	InfosPanel pInfos;
-	Font font = new Font("Helvetica", Font.PLAIN, 12);
+	Font font = new Font("Helvetica", Font.PLAIN, 10);
 	
 	public ContainerPanel(SegmentationEditor.CustomCanvas cc, Window window, Roi[] savedRois) {
 		this.cc = cc;
