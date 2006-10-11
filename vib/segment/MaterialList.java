@@ -91,6 +91,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		if (params.getMaterialCount() == 0) {
 			params.addMaterial("Exterior", 0,0,0);
 			params.addMaterial("Interior", 1,0,0);
+			params.setParameters(labels);
 		}
 		if (list != null)
 			list.repaint();
