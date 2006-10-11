@@ -42,6 +42,7 @@ public class ContainerPanel extends Panel {
 		setLayout(new BorderLayout());
 
 		pMain = new MainPanel();
+		pMain.materials.cc = cc;
 		add(pMain, BorderLayout.NORTH);
 		
 		/*

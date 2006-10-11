@@ -71,6 +71,8 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 			int blue=(int)(255*c[2]);
 			label_colors[i]=new Color(red,green,blue);
 		}
+		if (backBufferGraphics != null)
+			repaint();
 	}
 
 	public void updateSlice(int slice){

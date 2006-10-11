@@ -2,6 +2,7 @@ package vib.segment;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.ColorChooser;
 import ij.gui.GenericDialog;
 
 import java.awt.AWTEvent;
@@ -30,6 +31,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 
 	ImagePlus labels;
 	AmiraParameters params;
+	SegmentationEditor.CustomCanvas cc;
 
 	Font font;
 	int lineHeight, lineWidth;
@@ -69,7 +71,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		return getItem(getSelectedIndex());
 	}
 
-	MenuItem remove, add, rename;
+	MenuItem remove, add, rename, color;
 
 	public void createPopup() {
 		popup = new PopupMenu("");
@@ -79,9 +81,12 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		popup.add(remove);
 		rename = new MenuItem("Rename Material");
 		popup.add(rename);
+		color = new MenuItem("Change Color");
+		popup.add(color);
 		add.addActionListener(this);
 		remove.addActionListener(this);
 		rename.addActionListener(this);
+		color.addActionListener(this);
 		add(popup);
 	}
 
@@ -128,6 +133,26 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		list.repaint();
 	}
 
+	private void setColor() {
+		int id = currentMaterialID();
+		double[] values = params.getMaterialColor(id);
+		Color current = new Color((float)values[0],
+				(float)values[1], (float)values[2]);
+		String name = params.getMaterialName(id) + " Color";
+		ColorChooser chooser = new ColorChooser(name, current, false);
+		Color changed = chooser.getColor();
+		if (changed != null) {
+			params.editMaterial(id, null, changed.getRed() / 255.0,
+					changed.getGreen() / 255.0,
+					changed.getBlue() / 255.0);
+			params.setParameters(labels);
+			labels.updateAndDraw();
+			list.repaint();
+			if (cc != null)
+				cc.setLabels(labels);
+		}
+	}
+
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == remove)
 			delMaterial();
@@ -135,6 +160,8 @@ public class MaterialList extends ScrollPane implements ActionListener {
 			addMaterial();
 		else if (e.getSource() == rename)
 			renameMaterial();
+		else if (e.getSource() == color)
+			setColor();
 	}
 
 	public int currentMaterialID(){
