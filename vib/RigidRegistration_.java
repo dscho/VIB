@@ -105,10 +105,10 @@ public class RigidRegistration_ implements PlugInFilter {
 					new distance.MutualInformation();
 			else if (measureIndex == 2)
 				trans.measure =
-					new distance.Threshold(55);
+					new distance.Thresholded(55);
 			else if (measureIndex == 3)
 				trans.measure =
-					new distance.Threshold(155);
+					new distance.Thresholded(155);
 			else
 				trans.measure =
 					new distance.Euclidean();

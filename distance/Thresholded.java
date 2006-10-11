@@ -3,11 +3,11 @@ package distance;
 /*
  * Treat pixels as different when one is below threshold, and the other above.
  */
-public class Threshold implements PixelPairs {
+public class Thresholded implements PixelPairs {
 	private float threshold;
 	private long count, total;
 
-	public Threshold(int threshold) {
+	public Thresholded(int threshold) {
 		this.threshold = threshold;
 	}
 
