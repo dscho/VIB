@@ -39,6 +39,10 @@ math3d/JacobiFloat.java: math3d/JacobiDouble.java
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(JAVAS)) vib/segment/icons/*.png
 
+Segmentation_Editor_compat.jar: SOURCES=vib/AmiraParameters.java \
+	vib/AmiraTable.java vib/InterpolatedImage.java math3d/Point3d.java \
+	vib/SegmentationViewerCanvas.java vib/segment/*.java
+
 %_compat.jar:
 	test ! -d tempdir
 	mkdir tempdir
