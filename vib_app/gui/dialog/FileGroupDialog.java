@@ -13,7 +13,7 @@ import java.awt.Label;
 import java.awt.Insets;
 import java.awt.Font;
 import java.awt.ScrollPane;
-import java.awt.Window;
+import java.awt.Frame;
 import java.awt.Panel;
 import java.awt.FlowLayout;
 import java.awt.Button;
@@ -43,7 +43,7 @@ public class FileGroupDialog extends Dialog implements ActionListener {
 	private Button ok, add, delete, cancel;
 	private Checkbox wholePath;
 
-	public FileGroupDialog(Window owner, FileGroup fg) {
+	public FileGroupDialog(Frame owner, FileGroup fg) {
 		super(owner);
 		setModal(true);
 		setTitle("Edit filegroup");
