@@ -95,7 +95,7 @@ public class MainFrame extends Frame {
 				int numChannel = options.getNumChannels();
 				Module m = null;
 				for(int i = 0; i < fg.size(); i++) {
-					System.out.println("loading...");
+					System.out.println("loading " + fg.get(i).getName() +"...");
 					m = new Load(fg.get(i), numChannel);
 					ImagePlus imp = (ImagePlus)m.execute();
 					System.out.println(imp.getTitle());
