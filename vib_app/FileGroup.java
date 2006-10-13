@@ -3,6 +3,7 @@ package vib_app;
 import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.StringTokenizer;
 
 public class FileGroup {
 	
@@ -76,6 +77,27 @@ public class FileGroup {
 	public void debug() {
 		System.out.println(name + ": ");
 		System.out.println(files);
+	}
+
+	public String toCSV() {
+		StringBuffer buf = new StringBuffer();
+		for(int i = 0; i < files.size(); i++) {
+			buf.append(files.get(i).getAbsolutePath());
+			if(i != files.size() - 1)
+				buf.append(',');
+		}
+		return buf.toString();
+	}
+
+	public boolean fromCSV(String s) {
+		boolean success = true;
+		files.clear();
+		StringTokenizer st = new StringTokenizer(s, ",");
+		while(st.hasMoreTokens()){
+			if(!add(st.nextToken()))
+				success = false;
+		}
+		return success;
 	}
 
 	public FileGroup clone() {

@@ -147,9 +147,9 @@ public class FilesPanel extends Panel implements ActionListener {
 			}
 			if(options.getTemplate() != null) {
 				templateChoice.select(options.getTemplate().getName());
-				options.setTemplate(fg.getFileForName(
-						templateChoice.getSelectedItem()));
 			}
+			options.setTemplate(fg.getFileForName(
+						templateChoice.getSelectedItem()));
 		}
 	}
 }

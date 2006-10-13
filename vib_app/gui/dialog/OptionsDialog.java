@@ -3,13 +3,15 @@ package vib_app.gui.dialog;
 import vib_app.Options;
 import vib_app.FileGroup;
 
+import ij.IJ;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 
 public class OptionsDialog extends Panel implements ActionListener {
 
-	private Button okButton, cancelButton;
+	private Button saveButton, loadButton, okButton, cancelButton;
 	private Button workingDirButton;
 	private Button fileGroupButton;
 	private Choice templateChoice;
@@ -24,6 +26,8 @@ public class OptionsDialog extends Panel implements ActionListener {
 	private AlgorithmsPanel algorithmsPanel;
 
 	private ActionListener listener;
+	
+	private FileDialog fd = new FileDialog(new Frame());
 	
 	/*
 	public OptionsDialog(Frame parent, Options o) {
@@ -91,6 +95,12 @@ public class OptionsDialog extends Panel implements ActionListener {
 		cancelButton.addActionListener(this);
 		cancelButton.addActionListener(listener);
 		buttons.add(cancelButton);
+		loadButton = new Button("Load options");
+		loadButton.addActionListener(this);
+		buttons.add(loadButton);
+		saveButton = new Button("Save options");
+		saveButton.addActionListener(this);
+		buttons.add(saveButton);
 		okButton = new Button("Continue with preprocessing >>");
 		okButton.setActionCommand("preprocessing");
 		okButton.addActionListener(this);
@@ -123,6 +133,27 @@ public class OptionsDialog extends Panel implements ActionListener {
 			//this.dispose();
 		} else if(e.getSource() == cancelButton) {
 			//this.dispose();
+		} else if(e.getSource() == loadButton) {
+			fd.setVisible(true);
+			String f = fd.getDirectory() + fd.getFile();
+			if(f != null){
+				File file = new File(f);
+				if(file.exists()) {
+					copyOptions.loadFrom(f);
+					this.filesPanel.setOptions(copyOptions);
+					this.channelsPanel.setOptions(copyOptions);
+					this.algorithmsPanel.setOptions(copyOptions);
+				} else {
+					IJ.showMessage("Can't load options file " + f);	
+					return;
+				}
+			}
+		} else if(e.getSource() == saveButton) {
+			copyOptions.setResamplingFactor(
+					algorithmsPanel.getResamplingFactor());
+			fd.setVisible(true);
+			String f = fd.getDirectory() + fd.getFile();
+			copyOptions.saveTo(f);
 		}
 	}
 }

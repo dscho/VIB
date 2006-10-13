@@ -34,6 +34,8 @@ public class Load extends Module {
 		ImagePlus ret = null;
 		for(int i = 0; i < numChannels; i++) {
 			try {
+				broadcast("Reading channel + " + (i+1) + " of image " 
+											+ file.getName());
 				ImagePlus img = reader.getImage(
 					file.getParent() + File.separator, file.getName(), i);
 				
@@ -41,13 +43,15 @@ public class Load extends Module {
 					ret = img;
 				String dirS = App.instance().getOptions().getWorkingDirectory()
 									+ File.separator
-									+ "images-" + i + File.separator;
+									+ "images-" + (i+1) + File.separator;
 				File dir = new File(dirS);
-				dir.mkdir();
+				if(!dir.exists()) 
+					dir.mkdir();
 				
 				String path = dirS + File.separator + file.getName();
 				
 				FileSaver fs = new FileSaver(img);
+				broadcast("Saving channel + " + (i+1) + " of image " + path);
 				fs.saveAsTiffStack(path);
 			} catch (IOException e) {
 				throw new RuntimeException("Cannot load file " + file + ": "

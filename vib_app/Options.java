@@ -1,6 +1,16 @@
 package vib_app;
 
 import java.io.File;
+import java.io.OutputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+import java.util.Properties;
+
+import ij.IJ;
 
 public class Options {
 	
@@ -16,8 +26,8 @@ public class Options {
 	private File workingDirectory;
 	private FileGroup filegroup;
 	private File template;
-	private int numChannels = 1;
-	private int refChannel = 1;
+	private int numChannels = 2;
+	private int refChannel = 2;
 	private float resamplingFactor = 1f;
 	private String transformationMethod = VIBlabelDiffusionTransformation;
 
@@ -154,6 +164,67 @@ public class Options {
 		this.resamplingFactor = options.resamplingFactor;
 	}
 
+	public void saveTo(String path) {
+		Properties properties = new Properties();
+		properties.setProperty("workingDirectory", 
+									workingDirectory.getAbsolutePath());
+		properties.setProperty("template", 
+									template.getAbsolutePath());
+		properties.setProperty("numChannels", 
+									Integer.toString(numChannels));
+		properties.setProperty("refChannel", 
+									Integer.toString(refChannel));
+		properties.setProperty("resamplingFactor",
+									Float.toString(resamplingFactor));
+		properties.setProperty("transformationMethod", 
+									transformationMethod);
+		properties.setProperty("filegroup", filegroup.toCSV());
+
+		try {
+			OutputStream out = new FileOutputStream(path);
+			properties.store(out, "Created by the VIB application");
+		} catch(FileNotFoundException e) {
+			IJ.showMessage("Can't find file " + path);
+		} catch(IOException e) {
+			IJ.showMessage("Can't write to file " + path);
+		}
+	}
+
+	public void loadFrom(String path) {
+		Properties properties = null;
+		try {
+			properties = new Properties();
+			properties.load(new FileInputStream(path));
+		} catch (FileNotFoundException e) {
+			IJ.showMessage("Can't find file " + path);
+			return;
+		} catch(IOException e) {
+			IJ.showMessage("Can't write to file " + path);
+			return;
+		}
+		this.workingDirectory = 
+			new File(properties.getProperty("workingDirectory"));
+		this.template = 
+			new File(properties.getProperty("template"));
+		this.numChannels = 
+			Integer.parseInt(properties.getProperty("numChannels"));
+		this.refChannel = 
+			Integer.parseInt(properties.getProperty("refChannel"));
+		this.transformationMethod = 
+			properties.getProperty("transformationMethod");
+		this.resamplingFactor = 
+			Float.parseFloat(properties.getProperty("resamplingFactor"));
+		if(!filegroup.fromCSV(properties.getProperty("filegroup"))) {
+			IJ.showMessage("Not all files specified in the file group exist.");
+		}
+		if(!isValid()){
+			IJ.showMessage("There occured an error while setting the " + 
+					"options. I set some of them, but you should check them " +
+					"manually.");
+			return;
+		}
+	}
+		
 	// debug
 	public void debug() {
 		System.out.println("\nOptions:");

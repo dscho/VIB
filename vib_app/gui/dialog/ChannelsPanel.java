@@ -77,8 +77,8 @@ public class ChannelsPanel extends Panel implements ItemListener {
 	}
 
 	public void fillForms() {
-		refChannelChoice.select(options.getRefChannel());
-		numChannelChoice.select(options.getNumChannels());
+		refChannelChoice.select(Integer.toString(options.getRefChannel()));
+		numChannelChoice.select(Integer.toString(options.getNumChannels()));
 	}
 
 	public void setOptions(Options options) {
