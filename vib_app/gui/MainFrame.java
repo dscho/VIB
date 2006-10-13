@@ -10,6 +10,7 @@ import vib_app.module.Module;
 
 import vib_app.gui.dialog.NewOptions;
 import vib_app.gui.dialog.OptionsDialog;
+import vib_app.gui.dialog.PreprocessingDialog;
 
 import java.awt.Color;
 import java.awt.Panel;
@@ -39,6 +40,7 @@ public class MainFrame extends Frame {
 	private MainCanvas menu;
 	private Panel cards;
 	private OptionsDialog optionsPanel;
+	private PreprocessingDialog preprocessingPanel;
 	private Panel emptyPanel;
 	private ActionListener vibListener = new VIBActionListener();
 
@@ -58,13 +60,13 @@ public class MainFrame extends Frame {
 		
 		emptyPanel = new Panel();
 		optionsPanel = new OptionsDialog(options, vibListener);
-		
+		preprocessingPanel = new PreprocessingDialog("Everything fine");
 		
 		cards = new Panel(new CardLayout());
 		cards.setBackground(Color.ORANGE);
-		
 		cards.add(emptyPanel, "empty");
 		cards.add(optionsPanel, "options");
+		cards.add(preprocessingPanel, "preprocessing");
 		cards.setPreferredSize(new Dimension(520, 480));
 		add(cards);
 		
@@ -91,12 +93,15 @@ public class MainFrame extends Frame {
 				CardLayout cl = (CardLayout)(cards.getLayout());
 				cl.show(cards, command);
 			} else if(command.equals("preprocessing")) {
+				CardLayout cl = (CardLayout)(cards.getLayout());
+				cl.show(cards, command);
 				FileGroup fg = options.getFileGroup();
 				int numChannel = options.getNumChannels();
 				Module m = null;
 				for(int i = 0; i < fg.size(); i++) {
 					System.out.println("loading " + fg.get(i).getName() +"...");
 					m = new Load(fg.get(i), numChannel);
+					m.addMessageReceiver(preprocessingPanel);
 					ImagePlus imp = (ImagePlus)m.execute();
 					System.out.println(imp.getTitle());
 					System.out.println("labelling...");
