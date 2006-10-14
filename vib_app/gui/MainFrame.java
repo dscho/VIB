@@ -8,7 +8,6 @@ import vib_app.module.Load;
 import vib_app.module.Label;
 import vib_app.module.Module;
 
-import vib_app.gui.dialog.NewOptions;
 import vib_app.gui.dialog.OptionsDialog;
 import vib_app.gui.dialog.PreprocessingDialog;
 
@@ -52,7 +51,7 @@ public class MainFrame extends Frame {
 				System.exit(0);
 			}
 		});
-		
+
 		this.setMenuBar(new VIBMenuBar(vibListener));
 		
 		menu = new MainCanvas(vibListener);
@@ -63,11 +62,11 @@ public class MainFrame extends Frame {
 		preprocessingPanel = new PreprocessingDialog("Everything fine");
 		
 		cards = new Panel(new CardLayout());
+		cards.setPreferredSize(new Dimension(520, 480));
 		cards.setBackground(Color.ORANGE);
 		cards.add(emptyPanel, "empty");
 		cards.add(optionsPanel, "options");
 		cards.add(preprocessingPanel, "preprocessing");
-		cards.setPreferredSize(new Dimension(520, 480));
 		add(cards);
 		
 		pack();

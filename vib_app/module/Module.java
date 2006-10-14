@@ -31,22 +31,18 @@ public abstract class Module {
 	}
 
 	protected void broadcast(String message) {
-		new Thread(new Broadcaster(message)).start();
+		for(int i = 0; i < messageReceiver.size(); i++) {
+			messageReceiver.get(i).setMessage(message);
+		}
+	}
+
+	protected void reportState(boolean busy) {
+		for(int i = 0; i < messageReceiver.size(); i++) {
+			messageReceiver.get(i).setState(busy);
+		}
 	}
 	
 	public abstract Error checkDependency();
 	
 	public abstract Object execute();
-	
-	private class Broadcaster implements Runnable {
-		private String message;
-		public Broadcaster(String message) {
-			this.message = message;
-		}
-		public void run() {
-			for(int i = 0; i < messageReceiver.size(); i++) {
-				messageReceiver.get(i).setMessage(message);
-			}
-		}
-	}
 }

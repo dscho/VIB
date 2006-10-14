@@ -29,12 +29,14 @@ public class Load extends Module {
 	}
 
 	public ImagePlus execute() {
+		boolean busy = true;
+		reportState(busy);
 		int refChannel = App.instance().getOptions().getRefChannel();
 		VIB_Leica_Reader reader = new VIB_Leica_Reader();
 		ImagePlus ret = null;
 		for(int i = 0; i < numChannels; i++) {
 			try {
-				broadcast("Reading channel + " + (i+1) + " of image " 
+				broadcast("Reading channel " + (i+1) + " of image " 
 											+ file.getName());
 				ImagePlus img = reader.getImage(
 					file.getParent() + File.separator, file.getName(), i);
@@ -51,13 +53,18 @@ public class Load extends Module {
 				String path = dirS + File.separator + file.getName();
 				
 				FileSaver fs = new FileSaver(img);
-				broadcast("Saving channel + " + (i+1) + " of image " + path);
+				broadcast("Saving channel " + (i+1) 
+									+ " of image " + file.getName());
 				fs.saveAsTiffStack(path);
 			} catch (IOException e) {
+				busy = false;
+				reportState(busy);
 				throw new RuntimeException("Cannot load file " + file + ": "
 								+ e.getMessage());
 			}
 		}
+		busy = false;
+		reportState(busy);
 		return ret;
 	}
 }
