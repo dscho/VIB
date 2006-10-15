@@ -8,7 +8,7 @@ case "$(uname)" in
 CYGWIN*) CP="$(echo $CP | tr \: \;)";;
 esac
 
-java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java vib/PointList.java vib/BenesName_Points.java vib/LocalRigidRegistration_.java Particle_Analyzer_3D.java"
+java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java vib/PointList.java vib/BenesName_Points.java vib/LocalRigidRegistration_.java Particle_Analyzer_3D.java marchingcubes/MCCube.java marchingcubes/MCShape.java vib_app/FileGroup.java vib_app/gui/Bubble.java vib_app/Options.java vib_app/gui/dialog/FileGroupDialog.java vib_app/gui/dialog/OptionsDialog.java vib_app/module/Module.java vib_app/module/Load.java"
 for i in $java5s; do
 	if [ -e $i ]; then
 	classfile=$(echo $i | sed "s/java$/class/")
@@ -94,6 +94,18 @@ for i in $java5s; do
 		-e '278s/contains(n)/contains(new Integer(n))/' \
 		-e '288s/\(map.put(\)\(.*\),\(.*\));/\1new Integer(\2), new Integer(\3));/' \
 		-e '295s/classes.get/(Set)&/' \
+		-e 's/public Options clone/public Object clone/' \
+		-e 's/public FileGroup clone/public Object clone/' \
+		-e '35s/files.remove(/(File)&/' \
+		-e '53s/files.get(/(File)&/'  \
+		-e '58s/files.get(i)/((File)&)/' \
+		-e '59s/files.get(/(File)&/' \
+		-e '85s/files.get(i)/((File)&)/' \
+		-e '31s/public ImagePlus execute/public Object execute/' \
+		-e 's/messageReceiver.get(i)/((MessageReceiver)&)/' \
+		-e '54s/o.clone/(Options)&/' \
+		-e '122s/origOptions.clone/(Options)&/' \
+		-e '57s/fg.clone/(FileGroup)&/' \
 	> $i
 	fi
 done
