@@ -36,7 +36,8 @@ public class Load extends Module {
 		ImagePlus ret = null;
 		for(int i = 0; i < numChannels; i++) {
 			try {
-				broadcast("Reading channel " + (i+1) + " of image " 
+				if(i == 0)
+					broadcast("Reading " + numChannels + " channels of image " 
 											+ file.getName());
 				ImagePlus img = reader.getImage(
 					file.getParent() + File.separator, file.getName(), i);
@@ -65,6 +66,7 @@ public class Load extends Module {
 		}
 		busy = false;
 		reportState(busy);
+		broadcast("Finished reading filegroup");
 		return ret;
 	}
 }

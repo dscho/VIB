@@ -2,6 +2,7 @@ package vib_app.module;
 
 import java.util.List;
 import java.util.ArrayList;
+import vib_app.App;
 
 public abstract class Module {
 
@@ -29,7 +30,7 @@ public abstract class Module {
 	public void removeMessageReceiver(MessageReceiver mReceiver) {
 		messageReceiver.remove(mReceiver);
 	}
-
+	
 	protected void broadcast(String message) {
 		for(int i = 0; i < messageReceiver.size(); i++) {
 			messageReceiver.get(i).setMessage(message);

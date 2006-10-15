@@ -26,6 +26,10 @@ public class App {
 		return mainFrame;
 	}
 
+	public Object getLockObject() {
+		return this;
+	}
+
 	public void setOptions(Options options) {
 		this.options = options;
 		mainFrame.setOptions(options);

@@ -32,10 +32,11 @@ public class VIBTextArea extends Panel {
 	public void setText(String text) {
 		this.text = text;
 		this.chars = text.toCharArray();
-		Graphics g = getGraphics();
-		if(g != null){
-			paint(g);
-		}
+//		Graphics g = getGraphics();
+//		if(g != null){
+//			paint(g);
+//		}
+		repaint();
 	}
 
 	public void setMarginX(int m) {

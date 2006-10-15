@@ -59,7 +59,7 @@ public class MainFrame extends Frame {
 		
 		emptyPanel = new Panel();
 		optionsPanel = new OptionsDialog(options, vibListener);
-		preprocessingPanel = new PreprocessingDialog("Everything fine");
+		preprocessingPanel = new PreprocessingDialog("Ready");
 		
 		cards = new Panel(new CardLayout());
 		cards.setPreferredSize(new Dimension(520, 480));
@@ -71,6 +71,11 @@ public class MainFrame extends Frame {
 		
 		pack();
 		setVisible(true);
+	}
+
+	public void setActivePanel(String name) {
+		CardLayout cl = (CardLayout)(cards.getLayout());
+		cl.show(cards, name);
 	}
 
 	public void setOptions(Options options) {
@@ -90,26 +95,26 @@ public class MainFrame extends Frame {
 				menu.deactivateActiveBubble();
 			} if(command.equals("options")) {
 				optionsPanel.setOptions(options);
-				CardLayout cl = (CardLayout)(cards.getLayout());
-				cl.show(cards, command);
+				setActivePanel("options");
 			} else if(command.equals("preprocessing")) {
-				CardLayout cl = (CardLayout)(cards.getLayout());
-				cl.show(cards, command);
-				FileGroup fg = options.getFileGroup();
-				int numChannel = options.getNumChannels();
-				Module m = null;
-				for(int i = 0; i < fg.size(); i++) {
-					m = new Load(fg.get(i), numChannel);
-					m.addMessageReceiver(preprocessingPanel);
-					ImagePlus imp = (ImagePlus)m.execute();
-					m = new Label(imp);
-					m.execute();
-				}
+				new Thread(new Runnable() {
+					public void run() {
+						setActivePanel("preprocessing");
+						FileGroup fg = options.getFileGroup();
+						int numChannel = options.getNumChannels();
+						Module m = null;
+						for(int i = 0; i < fg.size(); i++) {
+							m = new Load(fg.get(i), numChannel);
+							m.addMessageReceiver(preprocessingPanel);
+							ImagePlus imp = (ImagePlus)m.execute();
+							m = new Label(imp);
+							m.execute();
+						}
+					}
+				}).start();
 			} else if(command.equals("Quit")) {
 				System.exit(0);
 			} else if(command.equals("registration")) {
-//				vib_app.module.Module m = new vib_app.module.Label();
-//				m.execute();
 			} else if(command.equals("results")) {
 			}
 		}
