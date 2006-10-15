@@ -26,35 +26,45 @@ public class Bubble extends Component {
 
 	private static final Font FONT = new Font("Monospace", Font.BOLD, 14);
 
-	private Color bg;
-	private Color fg = Color.BLACK;
+	private Color bg = Color.YELLOW;
+	private Color fontColor = Color.BLACK;
+	private Color selected_bg = new Color(255,160,90);
 	private String line1;
 	private String line2;
+	private boolean selected = false;
 
 	private String actionCommand;
 	private List<ActionListener> listeners = new ArrayList<ActionListener>();
 
 	private boolean repaintStringOnly = false;
 	
-	public Bubble(Color bg, String line1, String line2){
+	public Bubble(String line1, String line2){
 		super();
 		this.setSize(new Dimension(BUBBLE_W+2*LINE_W, BUBBLE_H+2*LINE_W));
-		this.bg = bg;
 		this.line1 = line1;
 		this.line2 = line2;
 		this.addMouseListener(new MouseAdapter(){
 			public void mouseEntered(MouseEvent e) {
-				setColor(Color.BLUE);
+				setFontColor(Color.BLUE);
 			}
 			public void mouseExited(MouseEvent e) {
-				setColor(Color.BLACK);
+				setFontColor(Color.BLACK);
 			}
 			public void mouseClicked(MouseEvent e) {
-				ActionEvent event = new ActionEvent(this, 
+				ActionEvent event = new ActionEvent(Bubble.this, 
 						ActionEvent.ACTION_PERFORMED, actionCommand);
 				processActionEvent(event);
 			}
 		});
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
+		repaint();
+	}
+
+	public boolean isSelected() {
+		return selected;
 	}
 
 	public void setActionCommand(String command) {
@@ -85,13 +95,14 @@ public class Bubble extends Component {
 		return p.distance(getCenter()) < 50;
 	}
 
-	public void setColor(Color c) {
-		this.fg = c;
+	public void setFontColor(Color c) {
+		this.fontColor = c;
 		repaintStringOnly = true;
 		repaint();
 	}
 
 	public void update(Graphics g) {
+		paint(g);
 	}
 
 	public void paint(Graphics g) {
@@ -103,7 +114,8 @@ public class Bubble extends Component {
 					RenderingHints.VALUE_ANTIALIAS_ON);
 			
 			g2d.setStroke(new BasicStroke(LINE_W));
-			g2d.setColor(bg);
+			Color backg = selected ? selected_bg : bg;
+			g2d.setColor(backg);
 			g2d.fillOval(loc.x + LINE_W, loc.y + LINE_W, BUBBLE_W, BUBBLE_H);
 			g2d.setColor(Color.BLACK);
 			g2d.drawOval(loc.x + LINE_W, loc.y + LINE_W, BUBBLE_W, BUBBLE_H);
@@ -111,7 +123,7 @@ public class Bubble extends Component {
 			repaintStringOnly = false;
 		}
 		g2d.setFont(FONT);
-		g2d.setColor(fg);
+		g2d.setColor(fontColor);
 		g2d.drawString(line1, loc.x + INDENT, loc.y + BUBBLE_H/2 - 3);
 		g2d.drawString(line2, loc.x + INDENT, 
 				loc.y + BUBBLE_H/2 + FONT.getSize());
