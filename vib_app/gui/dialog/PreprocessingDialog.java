@@ -41,10 +41,12 @@ public class PreprocessingDialog extends Panel
 	}
 
 	public void setState(boolean busy) {
-		Frame f = App.instance().getFrame();
-		int c = busy ? Cursor.WAIT_CURSOR : Cursor.DEFAULT_CURSOR;
-		System.out.println("setCursor");
-		f.setCursor(c);
+		synchronized(this) {
+			Frame f = App.instance().getFrame();
+			int c = busy ? Cursor.WAIT_CURSOR : Cursor.DEFAULT_CURSOR;
+			System.out.println("setCursor");
+			f.setCursor(c);
+		}
 	}
 
 	public void actionPerformed(ActionEvent e) {
