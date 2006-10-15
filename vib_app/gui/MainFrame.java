@@ -108,6 +108,7 @@ public class MainFrame extends Frame {
 							m.addMessageReceiver(preprocessingPanel);
 							ImagePlus imp = (ImagePlus)m.execute();
 							m = new Label(imp);
+							m.addMessageReceiver(preprocessingPanel);
 							m.execute();
 						}
 					}

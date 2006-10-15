@@ -12,7 +12,7 @@ public class PreprocessingDialog extends Panel
 						implements ActionListener, MessageReceiver {
 
 	private VIBTextArea messageTA;
-	private Button cancelButton;
+	private Panel buttons;
 
 	public PreprocessingDialog(String message) {
 		super();
@@ -34,6 +34,31 @@ public class PreprocessingDialog extends Panel
 		c.fill = GridBagConstraints.BOTH;
 		gridbag.setConstraints(messageTA, c);
 		this.add(messageTA);
+		
+		buttons = new Panel(new FlowLayout());
+		buttons.add(new Button("Cancel"));
+		c.gridy++;
+		c.weighty = 0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.anchor = GridBagConstraints.SOUTH;
+		gridbag.setConstraints(buttons, c);
+		this.add(buttons);
+	}
+
+	public void addButton(String label, ActionListener l) {
+		Button b = new Button(label);
+		b.addActionListener(l);
+		buttons.add(b);
+	}
+
+	public void removeButton(String label) {
+		Component[] c = buttons.getComponents();
+		for(int i = 0; i < c.length; i++) {
+			if(c[i] instanceof Button && 
+					((Button)c[i]).getLabel().equals(label)) {
+				buttons.remove(i);
+			}
+		}
 	}
 
 	public void setMessage(String message) {

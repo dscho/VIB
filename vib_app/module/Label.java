@@ -16,6 +16,9 @@ public class Label extends Module {
 	}
 
 	public Object execute() {
+		boolean busy = true;
+		reportState(busy);
+		broadcast("Please label the brain in the segmentation editor");
 		grey.show();
 		IJ.runPlugIn("Segmentation_Editor","");
 		return null;
