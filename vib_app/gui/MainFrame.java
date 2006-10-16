@@ -1,6 +1,5 @@
 package vib_app.gui;
 
-import vib_app.App;
 import vib_app.Options;
 import vib_app.FileGroup;
 
@@ -104,7 +103,7 @@ public class MainFrame extends Frame {
 						int numChannel = options.getNumChannels();
 						Module m = null;
 						for(int i = 0; i < fg.size(); i++) {
-							m = new Load(fg.get(i), numChannel);
+							m = new Load(fg.get(i), numChannel, options);
 							m.addMessageReceiver(preprocessingPanel);
 							ImagePlus imp = (ImagePlus)m.execute();
 							m = new Label(imp);

@@ -1,7 +1,7 @@
 package vib_app.module;
 
 import vib_app.VIB_Leica_Reader;
-import vib_app.App;
+import vib_app.Options;
 
 import ij.ImagePlus;
 import ij.io.FileSaver;
@@ -11,17 +11,18 @@ import java.io.IOException;
 
 public class Load extends Module {
 
+	private Options options;
 	private File file;
 	private int numChannels;
 	
-	
-	public Load(File file, int numChannels) {
+	public Load(File file, int numChannels, Options options) {
 		this.file = file;
 		this.numChannels = numChannels;
+		this.options = options;
 	}
 	
 	public Module.Error checkDependency() {
-		if(!App.instance().getOptions().isValid()) {
+		if(!options.isValid()) {
 			return new Module.Error(Module.DATA_MISSING, 
 					"The current project contains invalid data");
 		}
@@ -31,7 +32,7 @@ public class Load extends Module {
 	public ImagePlus execute() {
 		boolean busy = true;
 		reportState(busy);
-		int refChannel = App.instance().getOptions().getRefChannel();
+		int refChannel = options.getRefChannel();
 		VIB_Leica_Reader reader = new VIB_Leica_Reader();
 		ImagePlus ret = null;
 		for(int i = 0; i < numChannels; i++) {
@@ -44,7 +45,7 @@ public class Load extends Module {
 				
 				if(i+1 == refChannel)
 					ret = img;
-				String dirS = App.instance().getOptions().getWorkingDirectory()
+				String dirS = options.getWorkingDirectory()
 									+ File.separator
 									+ "images-" + (i+1) + File.separator;
 				File dir = new File(dirS);

@@ -2,7 +2,6 @@ package vib_app.module;
 
 import java.util.List;
 import java.util.ArrayList;
-import vib_app.App;
 
 public abstract class Module {
 

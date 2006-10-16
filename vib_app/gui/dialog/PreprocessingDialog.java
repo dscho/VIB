@@ -3,8 +3,6 @@ package vib_app.gui.dialog;
 import java.awt.event.*;
 import java.awt.*;
 
-import vib_app.App;
-
 import vib_app.gui.VIBTextArea;
 import vib_app.module.MessageReceiver;
 
@@ -36,7 +34,6 @@ public class PreprocessingDialog extends Panel
 		this.add(messageTA);
 		
 		buttons = new Panel(new FlowLayout());
-		buttons.add(new Button("Cancel"));
 		c.gridy++;
 		c.weighty = 0;
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -66,9 +63,8 @@ public class PreprocessingDialog extends Panel
 	}
 
 	public void setState(boolean busy) {
-		Frame f = App.instance().getFrame();
 		int c = busy ? Cursor.WAIT_CURSOR : Cursor.DEFAULT_CURSOR;
-		f.setCursor(c);
+		this.setCursor(new Cursor(c));
 	}
 
 	public void actionPerformed(ActionEvent e) {

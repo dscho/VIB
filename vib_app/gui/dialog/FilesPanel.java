@@ -2,7 +2,6 @@ package vib_app.gui.dialog;
 
 import vib_app.Options;
 import vib_app.FileGroup;
-import vib_app.App;
 
 import java.awt.event.*;
 import java.awt.*;
@@ -118,7 +117,7 @@ public class FilesPanel extends Panel implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == fileGroupButton) {
 			FileGroupDialog fgd = new FileGroupDialog(
-						App.instance().getFrame(), options.getFileGroup());
+						new Frame(), options.getFileGroup());
 			updateTemplateChoice();
 		} else if (e.getSource() == workingDirButton) {
 			fd.setVisible(true);
