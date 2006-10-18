@@ -1,10 +1,10 @@
-package vib_app.gui.dialog;
+package vib.app.gui.dialog;
 
 import java.awt.event.*;
 import java.awt.*;
 
-import vib_app.gui.VIBTextArea;
-import vib_app.module.MessageReceiver;
+import vib.app.gui.VIBTextArea;
+import vib.app.module.MessageReceiver;
 
 public class PreprocessingDialog extends Panel 
 						implements ActionListener, MessageReceiver {

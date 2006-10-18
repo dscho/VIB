@@ -1,4 +1,4 @@
-package vib_app;
+package vib.app;
 
 import java.io.File;
 import java.util.List;

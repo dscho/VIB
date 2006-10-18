@@ -27,6 +27,7 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 	
 	// Called from io/Opener.java
 	public void run(String path) {
+		System.out.println("HandleExtraFileT...");
 		if (IJ.versionLessThan("1.30u")) return;
 		if (path.equals("")) return;
 		File theFile=new File(path);
@@ -251,6 +252,47 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 				i = null;
 			}
 			return i;
+		}
+
+		// Leica TIFF Decoder
+		if(name.endsWith(".tif") || 
+				name.toUpperCase().endsWith(".scan")) {
+						
+			try {
+				RandomAccessFile f = new RandomAccessFile(name, "r");
+				f.seek(f.length() - 1658);
+				byte[] bytes = new byte[44];
+				f.readFully(bytes);
+				if (new String(bytes).equals("Leica Lasertechnik GmbH," + 
+							"Heidelberg, Germany")) {
+					// run plugin
+					leica.Leica_SP_Reader reader = (leica.Leica_SP_Reader)IJ.
+									runPlugIn("leica.Leica_SP_Reader", path);
+					if (reader == null)
+						width = PLUGIN_NOT_FOUND;
+					else if (reader.getWidth() == 0) {
+						width = IMAGE_OPENED;
+						reader = null;
+					}
+					// The reader itself is the first channel, all the other 
+					// channels can be retrieved from it. So the first one 
+					// is not added to the batchModeImages, as it will treated 
+					// so anyway, but the others are added.
+					if(ij.macro.Interpreter.isBatchMode()) {
+						for(int i = 0; i < reader.getNumberOfChannels(); i++) {
+							ij.macro.Interpreter.getInstance().
+								addBatchModeImage(reader.getImage(i));
+						}
+					}
+					return reader;
+				}
+			} catch(FileNotFoundException e) {
+				// huh? trying other formats
+			} catch(SecurityException e) {
+				// cannot read file; assuming no Leica
+			} catch(IOException e) {
+				// cannot read file; assuming no Leica
+			}
 		}
 
 		// ****************** MODIFY HERE ******************

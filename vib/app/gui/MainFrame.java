@@ -1,14 +1,14 @@
-package vib_app.gui;
+package vib.app.gui;
 
-import vib_app.Options;
-import vib_app.FileGroup;
+import vib.app.Options;
+import vib.app.FileGroup;
 
-import vib_app.module.Load;
-import vib_app.module.Label;
-import vib_app.module.Module;
+import vib.app.module.Load;
+import vib.app.module.Label;
+import vib.app.module.Module;
 
-import vib_app.gui.dialog.OptionsDialog;
-import vib_app.gui.dialog.PreprocessingDialog;
+import vib.app.gui.dialog.OptionsDialog;
+import vib.app.gui.dialog.PreprocessingDialog;
 
 import java.awt.Color;
 import java.awt.Panel;
@@ -47,12 +47,10 @@ public class MainFrame extends Frame {
 		this.options = options;
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				System.exit(0);
+				dispose();
 			}
 		});
 
-		this.setMenuBar(new VIBMenuBar(vibListener));
-		
 		menu = new MainCanvas(vibListener);
 		add(menu, BorderLayout.WEST);
 		
@@ -113,7 +111,7 @@ public class MainFrame extends Frame {
 					}
 				}).start();
 			} else if(command.equals("Quit")) {
-				System.exit(0);
+				dispose();
 			} else if(command.equals("registration")) {
 			} else if(command.equals("results")) {
 			}

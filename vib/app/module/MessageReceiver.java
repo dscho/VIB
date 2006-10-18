@@ -1,4 +1,4 @@
-package vib_app.module;
+package vib.app.module;
 
 public interface MessageReceiver {
 

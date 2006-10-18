@@ -1,6 +1,6 @@
-package vib_app.gui.dialog;
+package vib.app.gui.dialog;
 
-import vib_app.FileGroup;
+import vib.app.FileGroup;
 
 import java.io.File;
 

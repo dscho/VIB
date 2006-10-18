@@ -1,4 +1,4 @@
-package vib_app.module;
+package vib.app.module;
 
 import ij.IJ;
 import ij.ImagePlus;

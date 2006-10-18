@@ -1,7 +1,7 @@
-package vib_app.gui.dialog;
+package vib.app.gui.dialog;
 
-import vib_app.Options;
-import vib_app.FileGroup;
+import vib.app.Options;
+import vib.app.FileGroup;
 
 import java.awt.event.*;
 import java.awt.*;

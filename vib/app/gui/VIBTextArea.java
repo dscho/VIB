@@ -1,4 +1,4 @@
-package vib_app.gui;
+package vib.app.gui;
 
 import java.awt.*;
 import java.awt.event.*;

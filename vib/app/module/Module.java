@@ -1,4 +1,4 @@
-package vib_app.module;
+package vib.app.module;
 
 import java.util.List;
 import java.util.ArrayList;
