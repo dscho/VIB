@@ -426,6 +426,9 @@ public class AmiraParameters {
 	}
 	public void setCalibration(Calibration cal) {
 		String boundingBoxString = (String)get("BoundingBox");
+		if (boundingBoxString == null)
+			return;
+
 		StringTokenizer boundingBox = new StringTokenizer(boundingBoxString);
 		if(boundingBox.hasMoreTokens())
 			cal.xOrigin = -Double.parseDouble(boundingBox.nextToken());

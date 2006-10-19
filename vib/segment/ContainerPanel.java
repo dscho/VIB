@@ -3,6 +3,8 @@ package vib.segment;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Vector;
@@ -27,9 +29,6 @@ public class ContainerPanel extends Panel {
 	Roi[] savedRois;
 	SegmentationEditor.CustomCanvas cc;
 
-	Choice labelImagesChoice;
-	Vector labelImages;
-
 	MainPanel pMain;
 	InfosPanel pInfos;
 	Font font = new Font("Helvetica", Font.PLAIN, 10);
@@ -42,6 +41,7 @@ public class ContainerPanel extends Panel {
 		setLayout(new BorderLayout());
 
 		pMain = new MainPanel();
+		pMain.itemStateChanged(null);
 		pMain.materials.cc = cc;
 		add(pMain, BorderLayout.NORTH);
 		
@@ -109,7 +109,8 @@ public class ContainerPanel extends Panel {
 		return scroll;
 	}
 	
-	public class MainPanel extends Panel implements ActionListener {
+	public class MainPanel extends Panel
+			implements ActionListener, ItemListener {
 		GridBagConstraints constr;
 		MaterialList materials;
 		
@@ -118,23 +119,43 @@ public class ContainerPanel extends Panel {
 		private ImageButton bPlus, bMinus;
 		private Checkbox check3d;
 	
+		private Choice labelImagesChoice;
+		private Vector labelImages;
+		private Vector defaultMaterials;
+		private boolean currentLabelsAreNew = false;
+
 		public MainPanel() {
 			setLayout(new GridBagLayout());
 
 			constr = new GridBagConstraints();
 			constr.fill = GridBagConstraints.BOTH;
 			constr.gridwidth = GridBagConstraints.REMAINDER;
+			materials = new MaterialList();
 			
 			addLabelImagesChoice();
 			addMaterialAndZoom();
 			addSelection();
 		}
-		
+
+		private String readFile(String path) {
+			try {
+				File file = new File(path);
+				byte[] contents = new byte[(int)file.length()];
+				FileInputStream input =
+					new FileInputStream(file);
+				input.read(contents);
+				return new String(contents);
+			} catch(Exception e) {
+				return null;
+			}
+		}
+
 		void addLabelImagesChoice() {
 			makeLabel(" ", constr, this);
 			makeLabel("Labels:", constr, this);
 			labelImagesChoice = new Choice();
 			labelImages = new Vector();
+			defaultMaterials = new Vector();
 			int count = WindowManager.getWindowCount();
 
 			// TODO: add image listener
@@ -152,24 +173,65 @@ public class ContainerPanel extends Panel {
 				labelImagesChoice.add(image.getTitle());
 				labelImages.add(image);
 			}
-			labelImagesChoice.add("<new>");
-			labelImages.add(null);
-			setLabelImage((ImagePlus)labelImages.get(0));
-			add(labelImagesChoice, constr);
-			labelImagesChoice.addItemListener(new ItemListener() {
-					public void itemStateChanged(ItemEvent e) {
-					int selected =
-					labelImagesChoice.getSelectedIndex();
-					setLabelImage((ImagePlus)labelImages.get(selected));
+
+			URL materials = getClass().getResource("materials");
+			File folder = new File(materials.getPath());
+			if (folder != null && folder.isDirectory()) {
+				String[] files = folder.list();
+				for (int i = 0; i < files.length; i++) {
+					String path = materials.getPath()
+						+ File.separator + files[i];
+					String contents = readFile(path);
+					if (contents != null) {
+						defaultMaterials.add(contents);
+						labelImagesChoice.add(files[i]);
 					}
-					});
+				}
+			}
+
+			labelImagesChoice.add("<new>");
+			defaultMaterials.add("Parameters {\n"
+				+ "\tMaterials {\n"
+				+ "\t\tExterior {\n"
+				+ "\t\t\tColor 0.0 0.0 0.0\n"
+				+ "\t\t}\n"
+				+ "\t\tInterior {\n"
+				+ "\t\t\tColor 1.0 0.0 0.0\n"
+				+ "\t\t}\n"
+				+ "\t}\n"
+				+ "}\n");
+			add(labelImagesChoice, constr);
+			labelImagesChoice.addItemListener(this);
 		}
 
-	private void addMaterialAndZoom() {
+		public void itemStateChanged(ItemEvent e) {
+			int selected =
+				labelImagesChoice.getSelectedIndex();
+			if (selected < labelImages.size()) {
+				Object image = labelImages.get(selected);
+				setLabelImage((ImagePlus)image);
+				currentLabelsAreNew = false;
+				return;
+			}
+			selected -= labelImages.size();
+			String materials =
+				(String)defaultMaterials.get(selected);
+			if (!currentLabelsAreNew)
+				setLabelImage(null);
+			ImagePlus labels = cc.getLabels();
+			AmiraParameters params = new AmiraParameters(materials);
+			params.setParameters(labels);
+			// force repaint
+			setLabelImage(labels);
+			if (pMain == null)
+				this.materials.params = params;
+			currentLabelsAreNew = true;
+		}
+
+		private void addMaterialAndZoom() {
 			makeLabel(" ", constr, this);
 			makeLabel("Materials:", constr, this);
 			
-			materials = new MaterialList(cc.getLabels());
 			add(materials, constr);
 
 			makeLabel(" ", constr, this);

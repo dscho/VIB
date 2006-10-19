@@ -37,18 +37,21 @@ public class MaterialList extends ScrollPane implements ActionListener {
 	int lineHeight, lineWidth;
 	List list;
 
-	public MaterialList(ImagePlus ip) {
+	public MaterialList() {
 		super();
-		params = new AmiraParameters(ip);
-		initFrom(ip);
 
 		createPopup();
-
 		font = new Font("Monospaced", Font.PLAIN, 12);
 		lineHeight = font.getSize() + 1;
 		lineWidth = 200;
 		list = new List();
 		add(list);
+	}
+
+	public MaterialList(ImagePlus ip) {
+		this();
+		params = new AmiraParameters(ip);
+		initFrom(ip);
 	}
 
 	private int getSelectedIndex() {
@@ -98,8 +101,18 @@ public class MaterialList extends ScrollPane implements ActionListener {
 			params.addMaterial("Interior", 1,0,0);
 			params.setParameters(labels);
 		}
-		if (list != null)
+		if (list != null) {
+			list.invalidate();
 			list.repaint();
+		}
+	}
+
+	public void setMaterials(String materials) {
+		params = new AmiraParameters(materials);
+		if (list != null) {
+			list.invalidate();
+			list.repaint();
+		}
 	}
 
 	public void addMaterial() {
@@ -243,6 +256,11 @@ public class MaterialList extends ScrollPane implements ActionListener {
 				g.setColor(i == selectedIndex ? bgCol : fgCol);
 				g.drawString(getItem(i), lineHeight,
 						(i + 1) * lineHeight - 1);
+			}
+			int y = lineHeight * getItemCount();
+			if (y < getHeight()) {
+				g.setColor(bgCol);
+				g.fillRect(0, y, lineWidth, getHeight() - y);
 			}
 		}
 
