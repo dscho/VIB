@@ -31,7 +31,6 @@ public class SegmentationEditor implements PlugIn {
 		}
 		CustomCanvas cc = new CustomCanvas(imp);
 		CustomStackWindow csw = new CustomStackWindow(imp, cc);
-		System.out.println("SE.run(): " + Thread.currentThread().getName());
 	}
 
 	public ImagePlus getLabels() {

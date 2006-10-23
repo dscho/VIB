@@ -3,14 +3,21 @@ package vib.segment;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
+
 import java.net.MalformedURLException;
 import java.net.URL;
+
+import java.io.File;
+import java.io.FileInputStream;
+
 import java.util.Vector;
+
 import ij.*;
 import ij.measure.Calibration;
 import ij.process.ImageProcessor;
 import ij.gui.GenericDialog;
 import ij.gui.Roi;
+
 import vib.AmiraParameters;
 import vib.InterpolatedImage;
 
@@ -22,7 +29,8 @@ import vib.InterpolatedImage;
  * @author Francois KUSZTOS
  * @version 5
  */
-public class Sidebar extends Panel implements CustomCanvas.CanvasListener {
+public class Sidebar extends Panel implements CustomCanvas.CanvasListener, 
+												ItemListener {
 
 	private CustomCanvas cc;
 	
@@ -39,6 +47,8 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener {
 
 	private ActionListener al;
 	private MaterialList materials;
+	private Vector defaultMaterials;
+	private boolean currentLabelsAreNew = false;
 	private InfoPanel pInfos;
 	
 	
@@ -60,7 +70,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener {
 		add(addLabelImageChoice(), constr);
 		
 		addLabel("Materials:");
-		materials = new MaterialList(cc.getLabels());
+		materials = new MaterialList();
 		add(materials, constr);
 
 		addZoom();
@@ -69,6 +79,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener {
 		pInfos = new InfoPanel(font);
 		constr.insets = new Insets(20, 5, 0, 5);
 		add(pInfos, constr);
+		this.itemStateChanged(null);
 	}
 
 	public void updateLZoomLevel(double magnification) {
@@ -116,6 +127,27 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener {
 			materials.repaint();
 		}
 	}
+
+	public void itemStateChanged(ItemEvent e) {
+		int selected = labelImagesChoice.getSelectedIndex();
+		if (selected < labelImages.size()) {
+			Object image = labelImages.get(selected);
+			setLabelImage((ImagePlus)image);
+			currentLabelsAreNew = false;
+			return;
+		}
+		selected -= labelImages.size();
+	    String materials = (String)defaultMaterials.get(selected);
+		if (!currentLabelsAreNew)
+			setLabelImage(null);
+		ImagePlus labels = cc.getLabels();
+		AmiraParameters params = new AmiraParameters(materials);
+		params.setParameters(labels);
+		// force repaint
+		setLabelImage(labels);
+		this.materials.params = params;
+		currentLabelsAreNew = true;
+	}
 	
 	private ImageButton addImageButton(String path, ActionListener l) {
 		URL url;
@@ -147,6 +179,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener {
 	private Choice addLabelImageChoice() {
 		labelImagesChoice = new Choice();
 		labelImages = new Vector();
+		defaultMaterials = new Vector();
 		int count = WindowManager.getWindowCount();
 
 		// TODO: add image listener
@@ -164,18 +197,33 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener {
 			labelImagesChoice.add(image.getTitle());
 			labelImages.add(image);
 		}
-		labelImagesChoice.add("<new>");
-		labelImages.add(null);
-		setLabelImage((ImagePlus)labelImages.get(0));
-		
-		labelImagesChoice.addItemListener(new ItemListener() {
-			public void itemStateChanged(ItemEvent e) {
-				int selected =
-				labelImagesChoice.getSelectedIndex();
-				setLabelImage((ImagePlus)labelImages.get(selected));
+		URL materials = getClass().getResource("materials");
+		File folder = new File(materials.getPath());
+		if (folder != null && folder.isDirectory()) {
+			String[] files = folder.list();
+			for (int i = 0; i < files.length; i++) {
+				String path = materials.getPath() + File.separator + files[i];
+				String contents = readFile(path);
+				if (contents != null) {
+					defaultMaterials.add(contents);
+					labelImagesChoice.add(files[i]);
+				}
 			}
-		});
-
+		}
+		
+		labelImagesChoice.add("<new>");
+		defaultMaterials.add("Parameters {\n"
+				                + "\tMaterials {\n"
+				                + "\t\tExterior {\n"
+				                + "\t\t\tColor 0.0 0.0 0.0\n"
+				                + "\t\t}\n"
+				                + "\t\tInterior {\n"
+				                + "\t\t\tColor 1.0 0.0 0.0\n"
+				                + "\t\t}\n"
+				                + "\t}\n"
+				                + "}\n");
+		
+		labelImagesChoice.addItemListener(this);
 		return labelImagesChoice;
 	}
 	
@@ -210,6 +258,18 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener {
 		check3d = new Checkbox("3d", false);
 		add(check3d, constr);
 		constr.fill = GridBagConstraints.BOTH;
+	}
+
+	private String readFile(String path) {
+		try {
+			File file = new File(path);
+			byte[] contents = new byte[(int)file.length()];
+			FileInputStream input = new FileInputStream(file);
+			input.read(contents);
+			return new String(contents);
+		} catch(Exception e) {
+			return null;
+		}
 	}
 }
 

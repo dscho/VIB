@@ -111,7 +111,6 @@ public class OptionsDialog extends Panel implements ActionListener {
 	}
 
 	public void fillForms() {
-		System.out.println("fillForms()");
 		this.filesPanel.fillForms();
 		this.channelsPanel.fillForms();
 		this.algorithmsPanel.fillForms();

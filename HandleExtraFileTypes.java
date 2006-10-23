@@ -27,7 +27,6 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 	
 	// Called from io/Opener.java
 	public void run(String path) {
-		System.out.println("HandleExtraFileT...");
 		if (IJ.versionLessThan("1.30u")) return;
 		if (path.equals("")) return;
 		File theFile=new File(path);
