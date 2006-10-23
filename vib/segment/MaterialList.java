@@ -31,7 +31,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 
 	ImagePlus labels;
 	AmiraParameters params;
-	SegmentationEditor.CustomCanvas cc;
+	CustomCanvas cc;
 
 	Font font;
 	int lineHeight, lineWidth;

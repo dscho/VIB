@@ -56,6 +56,7 @@ public class ImageButton extends Canvas implements MouseListener {
     private boolean mousedown = false;
 
     private int buttonState = UNARMED;
+	private String command = "";
     
     /**
      * Constructs an ImageButton
@@ -64,7 +65,7 @@ public class ImageButton extends Canvas implements MouseListener {
         tracker = new MediaTracker( this );
         setUnarmedBorder( defaultUnarmedBorder );
         setArmedBorder( defaultArmedBorder );
-	addMouseListener(this);
+		addMouseListener(this);
     }
 
     /**
@@ -417,6 +418,10 @@ public class ImageButton extends Canvas implements MouseListener {
 
     Vector actionListeners = new Vector();
 
+	public void setActionCommand(String command) {
+		this.command = command;
+	}
+
     public void addActionListener(ActionListener l) {
 	actionListeners.add(l);
     }
@@ -444,7 +449,7 @@ public class ImageButton extends Canvas implements MouseListener {
     public void mouseReleased(MouseEvent arg0) {
         mousedown = false;
 	setButtonState( UNARMED );
-	processActionEvent(new ActionEvent(this, 0, null));
+	processActionEvent(new ActionEvent(this, 0, command));
     }
 
     public void mouseEntered(MouseEvent arg0) {

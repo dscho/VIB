@@ -1,5 +1,6 @@
 package vib.app.module;
 
+import vib.segment.SegmentationEditor;
 import ij.IJ;
 import ij.ImagePlus;
 
@@ -20,7 +21,10 @@ public class Label extends Module {
 		reportState(busy);
 		broadcast("Please label the brain in the segmentation editor");
 		grey.show();
-		IJ.runPlugIn("Segmentation_Editor","");
+		SegmentationEditor editor = 
+			(SegmentationEditor)IJ.runPlugIn("Segmentation_Editor","");
+		//editor.cc.getLabels();
+		broadcast("Finished labelling");
 		return null;
 	}
 }

@@ -84,6 +84,10 @@ public class Bubble extends Component {
 			((ActionListener)listeners.get(i)).actionPerformed(e);
 		}
 	}
+
+	public String getActionCommand() {
+		return actionCommand;
+	}
 	
 	public Point getCenter() {
 		Point loc = this.getLocation();

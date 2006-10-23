@@ -91,7 +91,7 @@ public class AlgorithmsPanel extends Panel {
 	}
 
 	public void fillForms() {
-		resamplingTF.setText(Float.toString(options.getResamplingFactor()));
+		resamplingTF.setText(Integer.toString(options.getResamplingFactor()));
 		transformationChoice.select(options.getTransformationMethod());
 	}
 
@@ -100,13 +100,13 @@ public class AlgorithmsPanel extends Panel {
 		fillForms();
 	}
 
-	public float getResamplingFactor() {
-		float f = 1.0f;
+	public int getResamplingFactor() {
+		int f = 1;
 		try {
-			f = Float.parseFloat(resamplingTF.getText());
+			f = Integer.parseInt(resamplingTF.getText());
 		} catch(NumberFormatException e) {
-			IJ.showMessage("The resampling factor is not a valid floating " + 
-					"point number. Using 1.0 instead");
+			IJ.showMessage("The resampling factor is not a valid integer. " + 
+					"Using 1 instead");
 		}
 		return f;
 	}

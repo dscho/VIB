@@ -3,6 +3,7 @@ package vib.app.gui;
 import vib.app.Options;
 import vib.app.FileGroup;
 
+import vib.app.module.Resample;
 import vib.app.module.Load;
 import vib.app.module.Label;
 import vib.app.module.Module;
@@ -106,6 +107,9 @@ public class MainFrame extends Frame {
 							ImagePlus imp = (ImagePlus)m.execute();
 							m = new Label(imp);
 							m.addMessageReceiver(preprocessingPanel);
+							m.execute();
+							// save labels
+							m = new Resample(imp,options.getResamplingFactor());
 							m.execute();
 						}
 					}

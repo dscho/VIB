@@ -28,7 +28,7 @@ public class Options {
 	private File template;
 	private int numChannels = 2;
 	private int refChannel = 2;
-	private float resamplingFactor = 1f;
+	private int resamplingFactor = 1;
 	private String transformationMethod = VIBlabelDiffusionTransformation;
 
 	// Constructors
@@ -89,7 +89,7 @@ public class Options {
 		return false;
 	}
 
-	public void setResamplingFactor(float factor) {
+	public void setResamplingFactor(int factor) {
 		this.resamplingFactor = factor;
 	}
 
@@ -118,7 +118,7 @@ public class Options {
 		return transformationMethod;
 	}
 
-	public float getResamplingFactor() {
+	public int getResamplingFactor() {
 		return resamplingFactor;
 	}
 
@@ -175,7 +175,7 @@ public class Options {
 		properties.setProperty("refChannel", 
 									Integer.toString(refChannel));
 		properties.setProperty("resamplingFactor",
-									Float.toString(resamplingFactor));
+									Integer.toString(resamplingFactor));
 		properties.setProperty("transformationMethod", 
 									transformationMethod);
 		properties.setProperty("filegroup", filegroup.toCSV());
@@ -213,7 +213,7 @@ public class Options {
 		this.transformationMethod = 
 			properties.getProperty("transformationMethod");
 		this.resamplingFactor = 
-			Float.parseFloat(properties.getProperty("resamplingFactor"));
+			Integer.parseInt(properties.getProperty("resamplingFactor"));
 		if(!filegroup.fromCSV(properties.getProperty("filegroup"))) {
 			IJ.showMessage("Not all files specified in the file group exist.");
 		}

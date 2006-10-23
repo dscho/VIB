@@ -1,4 +1,4 @@
-JAVAS=$(wildcard *.java */*.java */*/*.java */*/*/*.java)
+JAVAS=$(wildcard *.java */*.java */*/*.java */*/*/*.java */*/*/*/*.java)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
 JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java)
