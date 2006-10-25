@@ -63,7 +63,7 @@ public class Load extends Module {
 			FileSaver fs = new FileSaver(img);
 			broadcast("Saving channel " + (i+1) 
 								+ " of image " + file.getName());
-			fs.saveAsTiffStack(savepath);
+			//fs.saveAsTiffStack(savepath);
 		}
 		busy = false;
 		reportState(busy);

@@ -53,6 +53,11 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		initFrom(ip);
 	}
 
+	public void setBackground(Color color) {
+		super.setBackground(color);
+		list.setBackground(color);
+	}
+
 	private int getSelectedIndex() {
 		return list.selectedIndex;
 	}
@@ -204,6 +209,10 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		public List() {
 			enableEvents(AWTEvent.MOUSE_EVENT_MASK |
 					AWTEvent.KEY_EVENT_MASK);
+		}
+
+		public void setBackground(Color color) {
+			this.bgCol = color;
 		}
 
 		public void processMouseEvent(MouseEvent e) {

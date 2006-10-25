@@ -20,7 +20,7 @@ import vib.SegmentationViewerCanvas;
  */
 public class SegmentationEditor implements PlugIn {
 
-	private CustomCanvas cc;
+	private CustomStackWindow csw;
 	
 	public void run(String arg) {
 		ImagePlus imp = WindowManager.getCurrentImage();
@@ -29,11 +29,10 @@ public class SegmentationEditor implements PlugIn {
 			IJ.error("No image?");
 			return;
 		}
-		CustomCanvas cc = new CustomCanvas(imp);
-		CustomStackWindow csw = new CustomStackWindow(imp, cc);
+		csw = new CustomStackWindow(imp);
 	}
 
 	public ImagePlus getLabels() {
-		return cc == null ? null : cc.getLabels();
+		return csw.getLabels();
 	}
 }

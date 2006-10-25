@@ -10,7 +10,7 @@ import ij.gui.Roi;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
 
-public class CustomStackWindow extends StackWindow 
+public class CustomStackWindow extends StackWindow
 					 implements AdjustmentListener, 
 								KeyListener, 
 								ActionListener, 
@@ -22,9 +22,9 @@ public class CustomStackWindow extends StackWindow
 	private Sidebar sidebar;
 	private CustomCanvas cc;
 
-	public CustomStackWindow(ImagePlus imp, CustomCanvas cc) {
-		super(imp, cc);
-		this.cc = cc;
+	public CustomStackWindow(ImagePlus imp) {
+		super(imp, new CustomCanvas(imp));
+		this.cc = (CustomCanvas)getCanvas();
 		
 		savedRois = new Roi[imp.getStack().getSize() + 1];
 		oldSlice = sliceSelector.getValue();
@@ -50,20 +50,21 @@ public class CustomStackWindow extends StackWindow
 		sliceAndImage.add(new Label(" "));
 		sliceAndImage.add(cc, BorderLayout.CENTER);
 
-		add(sliceAndImage, BorderLayout.EAST);
-		
-		Panel buttons = new Panel(new FlowLayout());
-		Button okButton = new Button("OK");
-		okButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				dispose();
-			}
-		});
-		buttons.add(okButton);
-		add(buttons, BorderLayout.SOUTH);
-		
+		add(sliceAndImage, BorderLayout.EAST); 
 		pack();
 	} 
+
+	public ImagePlus getLabels() {
+		return cc.getLabels();
+	}
+	
+	public Sidebar getSidebar() {
+		return sidebar;
+	}
+
+	public CustomCanvas getCustomCanvas() {
+		return cc;
+	}
 
 	public Dimension getMinimumSize() {
 		return getSize();

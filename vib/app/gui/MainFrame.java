@@ -8,6 +8,7 @@ import vib.app.module.Load;
 import vib.app.module.Label;
 import vib.app.module.Module;
 
+import vib.app.gui.dialog.LabelPanel;
 import vib.app.gui.dialog.OptionsDialog;
 import vib.app.gui.dialog.PreprocessingDialog;
 
@@ -40,6 +41,7 @@ public class MainFrame extends Frame {
 	private Panel cards;
 	private OptionsDialog optionsPanel;
 	private PreprocessingDialog preprocessingPanel;
+	private LabelPanel labelPanel;
 	private Panel emptyPanel;
 	private ActionListener vibListener = new VIBActionListener();
 
@@ -58,6 +60,7 @@ public class MainFrame extends Frame {
 		emptyPanel = new Panel();
 		optionsPanel = new OptionsDialog(options, vibListener);
 		preprocessingPanel = new PreprocessingDialog("Ready");
+		labelPanel = new LabelPanel(vibListener);
 		
 		cards = new Panel(new CardLayout());
 		cards.setPreferredSize(new Dimension(520, 480));
@@ -65,6 +68,7 @@ public class MainFrame extends Frame {
 		cards.add(emptyPanel, "empty");
 		cards.add(optionsPanel, "options");
 		cards.add(preprocessingPanel, "preprocessing");
+		cards.add(labelPanel, "label");
 		add(cards);
 		
 		pack();
@@ -105,12 +109,11 @@ public class MainFrame extends Frame {
 							m = new Load(fg.get(i), numChannel, options);
 							m.addMessageReceiver(preprocessingPanel);
 							ImagePlus imp = (ImagePlus)m.execute();
-							m = new Label(imp);
-							m.addMessageReceiver(preprocessingPanel);
-							m.execute();
+							labelPanel.setImage(imp);
+							setActivePanel("label");
 							// save labels
-							m = new Resample(imp,options.getResamplingFactor());
-							m.execute();
+							//m = new Resample(imp,options.getResamplingFactor());
+							//m.execute();
 						}
 					}
 				}).start();

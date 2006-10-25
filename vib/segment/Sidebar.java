@@ -112,12 +112,18 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 		pInfos.updateLabels(x, y, z, posX, posY, posZ, voxelValue, material);
 	}
 
+	public void setBackground(Color bg) {
+		super.setBackground(bg);
+		materials.setBackground(bg);
+	}
+
 	public void setLabelImage(ImagePlus image) {
 		if (image == null) {
 			image = InterpolatedImage
 						.cloneDimensionsOnly(cc.getImage(),ImagePlus.COLOR_256)
 						.getImage();
-			image.show();
+			// Do NOT show the labels
+			//image.show();
 			// TODO: get initial parameters
 		}
 		cc.setLabels(image);
