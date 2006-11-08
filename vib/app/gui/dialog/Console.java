@@ -3,23 +3,25 @@ package vib.app.gui.dialog;
 import java.awt.event.*;
 import java.awt.*;
 
-import vib.app.gui.VIBTextArea;
-import vib.app.module.MessageReceiver;
+public class Console extends Panel 
+						implements ActionListener {
 
-public class PreprocessingDialog extends Panel 
-						implements ActionListener, MessageReceiver {
-
-	private VIBTextArea messageTA;
+	private TextArea messageTA;
 	private Panel buttons;
+	private static Console instance = new Console();
 
-	public PreprocessingDialog(String message) {
+	public static Console instance() {
+		return instance;
+	}
+	
+	private Console() {
 		super();
-		messageTA = new VIBTextArea(message, 0);
-		messageTA.setFont(new Font("Monospace", Font.BOLD, 18));
+		messageTA = new TextArea("Welcome to the VIB protocoll\n");
+		messageTA.append("============================\n");
+		messageTA.setFont(new Font("Monospace", Font.BOLD, 12));
 		messageTA.setForeground(Color.RED);
 		messageTA.setBackground(Color.ORANGE);
-		messageTA.setMarginX(20);
-		messageTA.setMarginY(100);
+		messageTA.setEditable(false);
 		this.setBackground(Color.ORANGE);
 		
 		GridBagLayout gridbag = new GridBagLayout();
@@ -62,7 +64,11 @@ public class PreprocessingDialog extends Panel
 		messageTA.setText(message);
 	}
 
-	public void setState(boolean busy) {
+	public void append(String text) {
+		messageTA.append(text + '\n');
+	}
+
+	public void setBusy(boolean busy) {
 		int c = busy ? Cursor.WAIT_CURSOR : Cursor.DEFAULT_CURSOR;
 		this.setCursor(new Cursor(c));
 	}

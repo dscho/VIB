@@ -21,6 +21,11 @@ public class CustomCanvas extends SegmentationViewerCanvas {
 		return imp;
 	}
 
+	public void releaseImage() {
+		super.imp = null;
+		super.labels = null;
+	}	
+
 	public Dimension getMinimumSize() {
 		return getSize();
 	}

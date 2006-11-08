@@ -30,6 +30,7 @@ public class SegmentationEditor implements PlugIn {
 			return;
 		}
 		csw = new CustomStackWindow(imp);
+		csw.getLabels().show();
 	}
 
 	public ImagePlus getLabels() {

@@ -21,7 +21,7 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 	int mode=FILL;
 	int alpha=128; // if mode==FILL, use this transparency to fill
 
-	ImagePlus labels;
+	protected ImagePlus labels;
 	int w,h,d;
 	Color[] label_colors; // these are the up to 256 material colors
 

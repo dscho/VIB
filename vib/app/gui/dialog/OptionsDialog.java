@@ -102,7 +102,7 @@ public class OptionsDialog extends Panel implements ActionListener {
 		saveButton.addActionListener(this);
 		buttons.add(saveButton);
 		okButton = new Button("Continue with preprocessing >>");
-		okButton.setActionCommand("preprocessing");
+		okButton.setActionCommand("next");
 		okButton.addActionListener(this);
 		okButton.addActionListener(listener);
 		buttons.add(okButton);
@@ -122,6 +122,26 @@ public class OptionsDialog extends Panel implements ActionListener {
 		this.filesPanel.setOptions(copyOptions);
 		this.channelsPanel.setOptions(copyOptions);
 		this.algorithmsPanel.setOptions(copyOptions);
+	}
+
+	public void cleanUp() {
+		this.removeAll();
+		saveButton = null;
+		loadButton = null;
+		okButton = null;
+		cancelButton = null;
+		workingDirButton = null;
+		fileGroupButton = null;
+		templateChoice = null;
+		workingDirTF = null;
+		copyOptions = null;
+		origOptions = null;
+		cards = null;
+		filesPanel = null;
+		channelsPanel = null;
+		algorithmsPanel = null;
+		listener = null;
+		fd = null;
 	}
 
 	public void actionPerformed(ActionEvent e) {

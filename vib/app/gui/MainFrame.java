@@ -1,6 +1,7 @@
 package vib.app.gui;
 
 import vib.app.Options;
+import vib.app.Executer;
 import vib.app.FileGroup;
 
 import vib.app.module.Resample;
@@ -10,7 +11,7 @@ import vib.app.module.Module;
 
 import vib.app.gui.dialog.LabelPanel;
 import vib.app.gui.dialog.OptionsDialog;
-import vib.app.gui.dialog.PreprocessingDialog;
+import vib.app.gui.dialog.Console;
 
 import java.awt.Color;
 import java.awt.Panel;
@@ -39,10 +40,10 @@ public class MainFrame extends Frame {
 	private Options options;
 	private MainCanvas menu;
 	private Panel cards;
-	private OptionsDialog optionsPanel;
-	private PreprocessingDialog preprocessingPanel;
-	private LabelPanel labelPanel;
-	private Panel emptyPanel;
+	//private OptionsDialog optionsPanel;
+	//private PreprocessingDialog preprocessingPanel;
+	//private LabelPanel labelPanel;
+	//private Panel emptyPanel;
 	private ActionListener vibListener = new VIBActionListener();
 
 	public MainFrame(Options options) {
@@ -57,70 +58,40 @@ public class MainFrame extends Frame {
 		menu = new MainCanvas(vibListener);
 		add(menu, BorderLayout.WEST);
 		
-		emptyPanel = new Panel();
-		optionsPanel = new OptionsDialog(options, vibListener);
-		preprocessingPanel = new PreprocessingDialog("Ready");
-		labelPanel = new LabelPanel(vibListener);
-		
-		cards = new Panel(new CardLayout());
+		cards = new Panel();
 		cards.setPreferredSize(new Dimension(520, 480));
 		cards.setBackground(Color.ORANGE);
-		cards.add(emptyPanel, "empty");
-		cards.add(optionsPanel, "options");
-		cards.add(preprocessingPanel, "preprocessing");
-		cards.add(labelPanel, "label");
 		add(cards);
 		
 		pack();
 		setVisible(true);
 	}
 
-	public void setActivePanel(String name) {
-		CardLayout cl = (CardLayout)(cards.getLayout());
-		cl.show(cards, name);
-	}
-
 	public void setOptions(Options options) {
 		this.options = options;
 	}
 
-	public void disposeCurrentPanel() {
-		CardLayout cl = (CardLayout)(cards.getLayout());
-		cl.show(cards, "empty");
+	public void enableAllInput(boolean b) {
+		// TODO
 	}
 
 	private class VIBActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e){
 			String command = e.getActionCommand();
 			if(command.equals("Cancel")) {
-				disposeCurrentPanel();
-				menu.deactivateActiveBubble();
-			} if(command.equals("options")) {
-				optionsPanel.setOptions(options);
-				setActivePanel("options");
-			} else if(command.equals("preprocessing")) {
-				new Thread(new Runnable() {
-					public void run() {
-						setActivePanel("preprocessing");
-						FileGroup fg = options.getFileGroup();
-						int numChannel = options.getNumChannels();
-						Module m = null;
-						for(int i = 0; i < fg.size(); i++) {
-							m = new Load(fg.get(i), numChannel, options);
-							m.addMessageReceiver(preprocessingPanel);
-							ImagePlus imp = (ImagePlus)m.execute();
-							labelPanel.setImage(imp);
-							setActivePanel("label");
-							// save labels
-							//m = new Resample(imp,options.getResamplingFactor());
-							//m.execute();
-						}
-					}
-				}).start();
+				// do nothing
+			} else if(command.equals("options")) {
+				Executer ex = new Executer(options);
+				ex.setOutputPanel(cards);
+				ex.run();
 			} else if(command.equals("Quit")) {
-				dispose();
 			} else if(command.equals("registration")) {
 			} else if(command.equals("results")) {
+				remove(cards);
+				java.util.Vector v = new java.util.Vector();
+				for(int i = 0; i < 8000; i++) {
+					v.add(new byte[1024]);
+				}
 			}
 		}
 	}

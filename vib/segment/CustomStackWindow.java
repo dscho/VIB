@@ -70,6 +70,13 @@ public class CustomStackWindow extends StackWindow
 		return getSize();
 	}
 
+	public void cleanUp() {
+		super.imp = null;
+		sidebar.cleanUp();
+		cc.releaseImage();
+		sidebar = null;
+	}
+
 	public void processPlusButton(){
 		int currentSlice = cc.getImage().getCurrentSlice();
 		Roi roi = cc.getImage().getRoi();

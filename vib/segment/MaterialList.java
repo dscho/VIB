@@ -53,6 +53,10 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		initFrom(ip);
 	}
 
+	public void releaseImage() {
+		labels = null;
+	}
+
 	public void setBackground(Color color) {
 		super.setBackground(color);
 		list.setBackground(color);

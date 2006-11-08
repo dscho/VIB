@@ -1,17 +1,21 @@
 package vib.app.module;
 
+import vib.app.gui.dialog.Console;
+
+import java.awt.Component;
+import java.awt.Panel;
 import java.util.List;
 import java.util.ArrayList;
 
 public abstract class Module {
 
-	public static final int DEPENDENCY_FINE = 0;
-	public static final int DEPENDENDY_VIOLATED = 1;
-	public static final int DATA_MISSING = 2;
+	public static final int DEPENDENCIES_MET = 0;
+	public static final int DEPENDENCIES_UNMET = 1;
+	public static final int RESULTS_AVAILABLE = 2;
 
-	private List<MessageReceiver> messageReceiver = 
-		new ArrayList<MessageReceiver>();
-	
+	protected Panel outputPanel;
+	protected Console console = Console.instance();
+
 	public static class Error {
 		String message;
 		int id;
@@ -20,25 +24,37 @@ public abstract class Module {
 			this.id = id; 
 			this.message = message;
 		}
-	}
 
-	public void addMessageReceiver(MessageReceiver mReceiver) {
-		messageReceiver.add(mReceiver);
-	}
+		public int id() { return id; }
+		
+		public String message() { return message; }
 
-	public void removeMessageReceiver(MessageReceiver mReceiver) {
-		messageReceiver.remove(mReceiver);
-	}
-	
-	protected void broadcast(String message) {
-		for(int i = 0; i < messageReceiver.size(); i++) {
-			messageReceiver.get(i).setMessage(message);
+		public boolean equals(Object o) {
+			return (o instanceof Error  && ((Error)o).id == this.id);
 		}
 	}
 
-	protected void reportState(boolean busy) {
-		for(int i = 0; i < messageReceiver.size(); i++) {
-			messageReceiver.get(i).setState(busy);
+	public void setOutputPanel(Panel p) {
+		this.outputPanel = p;
+	}
+
+	protected void fillOutputPanel(Panel p) {
+		if(outputPanel != null) {	
+			outputPanel.removeAll();
+			outputPanel.add(p);
+			outputPanel.validate();
+		}
+	}
+
+	protected void clearOutputPanel() {
+		if(outputPanel != null) {
+			Component[] c = outputPanel.getComponents();
+			if(c.length == 0 || 
+					(c.length == 1 && c[0] == Console.instance()))
+				return;
+			outputPanel.removeAll();
+			outputPanel.add(Console.instance());
+			outputPanel.validate();
 		}
 	}
 	

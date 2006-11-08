@@ -2,6 +2,7 @@ package vib.app.gui.dialog;
 
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import ij.gui.ImageLayout;
 import ij.gui.StackWindow;
 import ij.ImagePlus;
@@ -11,10 +12,11 @@ import vib.segment.CustomStackWindow;
 public class LabelPanel extends Panel {
 	
 	private CustomStackWindow window;
+	private Button okButton;
 
 	public LabelPanel(ActionListener l) {
 		Panel buttons = new Panel(new FlowLayout());
-		Button okButton = new Button("OK");
+		okButton = new Button("OK");
 		okButton.addActionListener(l);
 		buttons.add(okButton);
 		this.setLayout(new BorderLayout());
@@ -27,6 +29,14 @@ public class LabelPanel extends Panel {
 		setImage(imp);
 	}
 
+	public void addActionListener(ActionListener l) {
+		okButton.addActionListener(l);
+	}
+
+	public void removeActionListener(ActionListener l) {
+		okButton.removeActionListener(l);
+	}
+
 	public void setImage(ImagePlus imp) {
 		window = new CustomStackWindow(imp);
 		window.setVisible(false);
@@ -36,6 +46,12 @@ public class LabelPanel extends Panel {
 			c[i].setBackground(Color.ORANGE);
 			this.add(c[i], lm.getConstraints(c[i]));
 		}
+	}
+
+	public void cleanUp() {
+		window.close();
+		window.cleanUp();
+		window = null;
 	}
 
 	public ImagePlus getLabels() {
