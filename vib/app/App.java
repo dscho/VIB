@@ -34,6 +34,8 @@ public class App  implements PlugIn {
 
 	public void run(String arg) {
 		options = new Options();
+		if(arg != null && !arg.trim().equals(""))
+			options.loadFrom(arg);
 		mainFrame = new MainFrame(options);
 	}
 

@@ -65,6 +65,12 @@ public class MainFrame extends Frame {
 		
 		pack();
 		setVisible(true);
+
+		if(options.isValid()) {
+			Executer ex = new Executer(options);
+			ex.setOutputPanel(cards);
+			ex.run();
+		}
 	}
 
 	public void setOptions(Options options) {
