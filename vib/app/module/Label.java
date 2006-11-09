@@ -26,22 +26,29 @@ public class Label extends Module {
 		this.options = options;
 	}
 
+	public String getName() {
+		return "Labelling";
+	}
+
 	public Module.Error checkDependency() {
-		console.append("\n * Labelling...\n");
-		// check requirements
+		// check requirements available
 		File ref = new File(image.getReferencePath());
 		if(!ref.exists())
-			return new Error(
-					Module.DEPENDENCIES_UNMET, "Reference file does not exist");
+			return new Error(Module.REQUIREMENTS_UNAVAILABLE, 
+									"Reference file does not exist");
 		// check availability of results
 		File labels = new File(image.getLabelsPath());
+		if(!labels.exists()) {
+			return new Error(Module.RESULTS_UNAVAILABLE, "");
+		}
+		
+		// available, check uptodate
 		if(labels.lastModified() != 0L && 
 				labels.lastModified() > ref.lastModified()) {
-			console.append("...skipping, since results are already available");
-			return new Error(Module.RESULTS_AVAILABLE, "");
+			return new Error(Module.RESULTS_OK, "");
 		}
-		// not available, but at least the requirements are fullfilled		
-		return new Error(Module.DEPENDENCIES_MET, "");
+		// available, but out of date
+		return new Error(Module.RESULTS_OUT_OF_DATE, "");
 	}
 
 	public Object execute() {
@@ -70,11 +77,8 @@ public class Label extends Module {
 		label.removeActionListener(a);
 		label.cleanUp();
 		fillOutputPanel(console);
-		console.append("Labelling done");
-		console.append("Saving labels...");
-		boolean w = image.saveLabels();
-		if(w) console.append("Labels successfully written");
-		else console.append("Could not write labels");
+		if(!image.saveLabels())
+			console.append("Could not write labels");
 		clearOutputPanel();
 		return image;
 	}

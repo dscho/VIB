@@ -26,62 +26,65 @@ public class Load extends Module {
 		this.options = options;
 		this.image = image;
 	}
+
+	public String getName() {
+		return "Loading";
+	}
 	
 	public Module.Error checkDependency() {
-		console.append("\n * Loading...\n");
-		// check requirements
+		// check requirements available
 		if(!options.isValid()) {
-			return new Module.Error(Module.DEPENDENCIES_UNMET, 
+			return new Module.Error(Module.REQUIREMENTS_UNAVAILABLE, 
 					"The options are not valid");
 		}
-		// check if results are already available
+		// check if results are already available and uptodate
 		boolean resultsAvailable = true;
+		boolean resultsUptodate = true;
 		for(int i = 1; i <= options.getNumChannels(); i++) {
 			File channelFile = new File(image.getChannelPath(i));
+			if(!channelFile.exists()){
+				resultsAvailable = false;
+			}
 			if(channelFile.lastModified() == 0L || 
 					channelFile.lastModified() < file.lastModified()) {
-				resultsAvailable = false;
-				break;
+				resultsUptodate = false;
 			}
 		}
-		// they are avaiable
-		if(resultsAvailable) {
-			console.append("...skipping. Results are already available");
-			return new Module.Error(Module.RESULTS_AVAILABLE, "");
+		// they are uptodate
+		if(resultsUptodate) {
+			return new Module.Error(Module.RESULTS_OK, "");
+		}
+		// they are just avaiable
+		else if(resultsAvailable) {
+			return new Module.Error(Module.RESULTS_OUT_OF_DATE, "");
 		}
 		// not available, but at least the calculations can be done
-		return new Module.Error(Module.DEPENDENCIES_MET, "");
+		return new Module.Error(Module.RESULTS_UNAVAILABLE, "");
 	}
 
 	public VIBImage execute() {
 		fillOutputPanel(console);
-		console.setBusy(true);
 		int refChannel = options.getRefChannel();
-		console.append("Reading " + 
-				numChannels + " channels of image " + file.getName());
 		String path = file.getParent() + File.separator + file.getName();
 		
 		// Now just read the first numChannels channels of the stored images
 		// (and return the one corresponding to the reference channel).
 		leica.Leica_SP_Reader reader = (leica.Leica_SP_Reader)IJ.
 							runPlugIn("leica.Leica_SP_Reader", path);
-		if(reader.getNumberOfChannels() < numChannels)
-			IJ.error("File " + file.getName() + 
+		if(reader.getNumberOfChannels() < numChannels){
+			console.append("File " + file.getName() + 
 					" does not contain " + numChannels + " channels");
+			throw new RuntimeException();
+		}
 		for(int i = 0; i < numChannels; i++) {
 			ImagePlus img = reader.getImage(i);
 			if(i+1 == refChannel) {
 				image.setReferenceChannel(img);
 				img.setTitle(file.getName());
 			}
-			console.append("Saving channel " + (i+1));
-			boolean w = image.saveChannel(i+1, img);
-			if(w)
-				console.append("Successfully written channel " + (i+1));
-			else
+			if(!image.saveChannel(i+1, img));
 				console.append("Could not write channel " + (i+1));
 		}
-		console.setBusy(false);
 		clearOutputPanel();
 		return image;
 	}

@@ -46,19 +46,25 @@ public class Executer {
 	}
 
 	private void finishedNextStep() {
-		System.out.println("Finished step " + state);
 		finished[state++] = true;
 	}
 
 	private void executeModule(Module m) {
+		Console console = Console.instance();
+		console.append("...executing " + m.getName());
 		Module.Error error = m.checkDependency();
-		if(error.id() == Module.RESULTS_AVAILABLE) {
-			System.out.println("step " + state + ": skipping, since available");
+		if(error.id() == Module.RESULTS_OK) {
+			console.append("skipping! Results are available and uptodate");
 			finishedNextStep();
 		}
-		if(error.id() == Module.DEPENDENCIES_UNMET)
+		else if(error.id() == Module.RESULTS_OUT_OF_DATE) {
+			console.append("skipping! Results are not uptodate, but available");
+			finishedNextStep();
+		}
+		else if(error.id() == Module.REQUIREMENTS_UNAVAILABLE) {
 			throw new RuntimeException(error.message());
-		if(error.id() == Module.DEPENDENCIES_MET) {
+		}
+		else if(error.id() == Module.RESULTS_UNAVAILABLE) {
 			m.setOutputPanel(panel);
 			m.execute();
 			finishedNextStep();
@@ -74,9 +80,11 @@ public class Executer {
 		// new thread to ensure that the GUI isn't blocked
 		execution_thread = new Thread(new Runnable() {
 			public void run() {
-				Console.instance().append("-------------------------");
-				Console.instance().append("1. Preprocessing");
-				Console.instance().append("-------------------------");
+				Console console = Console.instance();
+				console.clear();
+				console.append("----------------------------------------");
+				console.append("1. Preprocessing");
+				console.append("----------------------------------------");
 				Module m = new OptionsModule(options);
 				m.setOutputPanel(panel);
 				m.execute();
@@ -104,9 +112,10 @@ public class Executer {
 					image.releaseLabels();
 					m = new Resample(image, options);
 					executeModule(m);
+					m = new TissueStatistics(image, options);
+					executeModule(m);
 				}
-				System.out.println("finished thread " + 
-					Thread.currentThread().getName());
+				console.append("\n\n...done");	
 			}
 		}, "Executer");
 		execution_thread.start();

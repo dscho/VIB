@@ -23,8 +23,13 @@ public class OptionsModule extends Module {
 		this.options = options;
 	}
 	
-	public Module.Error checkDependency() {
-		return new Module.Error(Module.DEPENDENCIES_MET, "");
+	public String getName() {
+		return "Setting options";
+	}
+
+	public Error checkDependency() {
+		// no dependencies, always return RESULTS_UNAVAILABLE;
+		return new Error(Module.RESULTS_UNAVAILABLE, "");
 	}
 
 	public Object execute() {

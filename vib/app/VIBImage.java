@@ -2,6 +2,8 @@ package vib.app;
 
 import vib.AmiraMeshDecoder;
 import vib.AmiraMeshEncoder;
+import vib.AmiraTable;
+import vib.AmiraTableEncoder;
 
 import java.io.File;
 
@@ -151,6 +153,18 @@ public class VIBImage {
 		FileSaver fs = new FileSaver(imp);
 		return fs.saveAsTiffStack(getResampledChannelPath(channel));
 	}
+
+	public boolean saveStatistics(AmiraTable t) {
+		File dir = new File(getStatisticsDir());
+		if(!dir.exists())
+			dir.mkdir();
+		else if(!dir.isDirectory())
+			return false;
+		AmiraTableEncoder e = new AmiraTableEncoder(t);
+		if(!e.write(getStatisticsPath()))
+			return false;
+		return true;
+	}
 	
 	// getter - images
 	public ImagePlus getReferenceChannel() {
@@ -186,6 +200,10 @@ public class VIBImage {
 			loadResampledLabels();
 		return labels_r;
 	}
+
+	public AmiraTable getStatistics() {
+		return loadStatistics();
+	}
 	
 	// getter - paths
 	public String getLabelsDir() {
@@ -194,6 +212,10 @@ public class VIBImage {
 
 	public String getLabelsName() {
 		return name.substring(0, name.lastIndexOf('.')) + ".labels";
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public String getLabelsPath() {
@@ -241,6 +263,18 @@ public class VIBImage {
 	public String getResampledLabelsPath() {
 		return getResampledLabelsDir() + getLabelsName();
 	}
+
+	public String getStatisticsDir() {
+		return wd + File.separator + "statistics" + File.separator;
+	}
+
+	public String getStatisticsName() {
+		return name.substring(0, name.lastIndexOf('.')) + ".statistics";
+	}
+
+	public String getStatisticsPath() {
+		return getStatisticsDir() + getStatisticsName();
+	}
 	
 	// load methods
 	private void loadRef() {
@@ -265,6 +299,17 @@ public class VIBImage {
 
 	private ImagePlus loadResampledChannel(int channel) {
 		return new Opener().openImage(getResampledChannelPath(channel));
+	}
+
+	private AmiraTable loadStatistics() {
+		AmiraMeshDecoder d=new AmiraMeshDecoder();
+		if(d.open(getStatisticsPath())) {
+			if (d.isTable()) {
+				AmiraTable table = d.getTable();
+				return table;
+			} 
+		}
+		return null;
 	}
 
 	public void print() {

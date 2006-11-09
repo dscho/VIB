@@ -9,9 +9,14 @@ import java.util.ArrayList;
 
 public abstract class Module {
 
-	public static final int DEPENDENCIES_MET = 0;
-	public static final int DEPENDENCIES_UNMET = 1;
-	public static final int RESULTS_AVAILABLE = 2;
+	/** the required files etc are not here, calculation is impossible */
+	public static final int REQUIREMENTS_UNAVAILABLE = 0;
+	/** requirements ok, and results do not exist */
+	public static final int RESULTS_UNAVAILABLE = 2;
+	/** requirements ok and results exist, but are out of date */
+	public static final int RESULTS_OUT_OF_DATE = 3;
+	/** requirements are ok and results both exist and are uptodate */
+	public static final int RESULTS_OK = 4;
 
 	protected Panel outputPanel;
 	protected Console console = Console.instance();
@@ -57,6 +62,8 @@ public abstract class Module {
 			outputPanel.validate();
 		}
 	}
+
+	public abstract String getName();
 	
 	public abstract Error checkDependency();
 	

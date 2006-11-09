@@ -10,20 +10,26 @@ public class TissueStatistics_ implements PlugInFilter {
 	ImagePlus image;
 
 	public void run(ImageProcessor ip) {
-		if (!AmiraParameters.isAmiraLabelfield(image)) {
+		AmiraTable table = calculateStatistics(image);
+		table.show();
+	}
+
+	public static AmiraTable calculateStatistics(ImagePlus labelfield) {
+		if (!AmiraParameters.isAmiraLabelfield(labelfield)) {
 			IJ.error("Need a labelfield!");
-			return;
+			return null;
 		}
+		String title = "Statistics for " + labelfield.getTitle();
+		String headings = "Nr\tMaterial\tCount\tVolume\t" + 
+							"CenterX\tCenterY\tCenterZ\t" + 
+							"MinX\tMaxX\tMinY\tMaxY\tMinZ\tMaxZ";
 
-		String title = "Statistics for " + image.getTitle();
-		String headings = "Nr\tMaterial\tCount\tVolume\tCenterX\tCenterY\tCenterZ\tMinX\tMaxX\tMinY\tMaxY\tMinZ\tMaxZ";
-
-		InterpolatedImage ii = new InterpolatedImage(image);
+		InterpolatedImage ii = new InterpolatedImage(labelfield);
 		Statistics stat = new Statistics(ii);
 
 		AmiraTable table = new AmiraTable(title, headings,
 				stat.getResult(), true);
-		table.show();
+		return table;
 	}
 
 	private static class Statistics {
