@@ -8,7 +8,7 @@ case "$(uname)" in
 CYGWIN*) CP="$(echo $CP | tr \: \;)";;
 esac
 
-java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java vib/PointList.java vib/BenesName_Points.java vib/LocalRigidRegistration_.java Particle_Analyzer_3D.java marchingcubes/MCCube.java marchingcubes/MCShape.java vib_app/FileGroup.java vib_app/gui/Bubble.java vib_app/Options.java vib_app/gui/dialog/FileGroupDialog.java vib_app/gui/dialog/OptionsDialog.java vib_app/module/Module.java vib_app/module/Load.java"
+java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java vib/PointList.java vib/BenesName_Points.java vib/LocalRigidRegistration_.java Particle_Analyzer_3D.java marchingcubes/MCCube.java marchingcubes/MCShape.java vib/app/FileGroup.java vib/app/gui/Bubble.java vib/app/Options.java vib/app/gui/dialog/FileGroupDialog.java vib/app/gui/dialog/OptionsDialog.java vib/app/module/Module.java vib/app/module/Load.java vib/app/VIB_Leica_Reader.java"
 for i in $java5s; do
 	if [ -e $i ]; then
 	classfile=$(echo $i | sed "s/java$/class/")
@@ -104,8 +104,11 @@ for i in $java5s; do
 		-e '31s/public ImagePlus execute/public Object execute/' \
 		-e 's/messageReceiver.get(i)/((MessageReceiver)&)/' \
 		-e '54s/o.clone/(Options)&/' \
-		-e '122s/origOptions.clone/(Options)&/' \
+		-e '121s/origOptions.clone/(Options)&/' \
 		-e '57s/fg.clone/(FileGroup)&/' \
+		-e '65s/public VIBImage execute/public Object execute/' \
+		-e '70s/ String.class, String.class/ new Class[] { String.class, String.class }/' \
+		-e '72s/m.invoke(this, dir, file)/m.invoke(this, new Object[] { dir, file })/' \
 	> $i
 	fi
 done
