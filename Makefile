@@ -58,12 +58,29 @@ AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
 AmiraSurface_.jar: SOURCES=ShowAmiraSurface_.java vib/AmiraParameters.java \
 	vib/AmiraTable.java vib/Image3dCanvas.java
 
+Rigid_Registration.jar: SOURCES=vib/RigidRegistration_.java \
+	vib/InterpolatedImage.java vib/TransformedImage.java \
+	vib/FastMatrix.java vib/RegistrationOptimizer.java \
+	vib/AmiraParameters.java vib/AmiraTable.java vib/VIB.java \
+	vib/BatchLog_.java vib/Resample_.java \
+	distance/PixelPairs.java distance/Euclidean.java \
+	distance/TwoValues.java distance/MutualInformation.java \
+	distance/Thresholded.java \
+	pal/math/*.java \
+	math3d/Point3d.java math3d/Triangle.java math3d/Line.java \
+	math3d/Plane.java math3d/JacobiDouble.java math3d/FastMatrixN.java
+
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar
 
 $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 
 JARS=Delaunay_Voronoi.jar AmiraMesh_.jar VIB_-compat.jar $(SIMPLE_JARS)
+
+%-compat.jar: %.jar
+	test ! -d tempdir || rm -rf tempdir
+	mkdir tempdir
+	(cd tempdir && jar xvf ../$< && find -name \*.class -exec rm {} \; && sh ../compile1.3.sh && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
 
 %.jar:
 	test ! -d tempdir || rm -rf tempdir
