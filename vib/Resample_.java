@@ -163,7 +163,8 @@ public class Resample_ implements PlugInFilter {
 			for(int k=0;k<kfactor;k++)
 				slices[k]=(byte[])stack.getProcessor(z+k+1).getPixels();
 
-			byte[] newSlice = new byte[(w/factorX)*(h/factorY)];
+			byte[] newSlice = new byte[(1+(w-1)/factorX)
+				*(1+(h-1)/factorY)];
 			for(int y=0;y<h;y+=factorY) {
 				for(int x=0;x<w;x+=factorX) {
 					int ifactor=(x+factorX<w?factorX:w-x);
