@@ -45,7 +45,7 @@ public class RigidRegistration_ implements PlugInFilter {
 		gd.addCheckbox("noOptimization", false);
 		gd.addCheckbox("showTransformed", false);
 		gd.addCheckbox("showDifferenceImage", false);
-		gd.addCheckbox("Fast but inaccurate", true);
+		gd.addCheckbox("Fast but inaccurate", !true);
 		boolean isLabels = AmiraParameters.isAmiraLabelfield(image);
 
 		if (isLabels) {
