@@ -70,6 +70,11 @@ Rigid_Registration.jar: SOURCES=vib/RigidRegistration_.java \
 	math3d/Point3d.java math3d/Triangle.java math3d/Line.java \
 	math3d/Plane.java math3d/JacobiDouble.java math3d/FastMatrixN.java
 
+Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
+	vib/DoubleArray.java vib/Extract_Surface.java \
+	vib/InterpolatedImage.java vib/Image3dCanvas.java \
+	math3d/Point3d.java math3d/NormalEstimator.java
+
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar
 
