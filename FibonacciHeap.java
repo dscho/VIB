@@ -1,3 +1,11 @@
+/*
+ * This class does not implement a complete Fibonacci Heap:
+ *
+ * Since we will use it as a PriorityQueue, where (key,element)
+ * pairs will not be changed, but only pushed into, and popped out
+ * of the queue, we do not need DecreaseKey, Union, and Cut.
+ */
+
 public class FibonacciHeap
 {
 	private static class Node {
