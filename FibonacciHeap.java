@@ -1,13 +1,13 @@
 public class FibonacciHeap
 {
 	private static class Node {
-		double key;
+		Comparable key;
 		Object object;
 		Node next, previous, parent, firstChild;
 		int degree;
 		boolean marked;
 
-		public Node(double key, Object object, Node parent) {
+		public Node(Comparable key, Object object, Node parent) {
 			this.key = key;
 			this.object = object;
 			this.parent = parent;
@@ -66,9 +66,9 @@ public class FibonacciHeap
 		root = new Node(0, null, null);
 	}
 
-	public void add(double key, Object object) {
+	public void add(Comparable key, Object object) {
 		Node node = new Node(key, object, root);
-		if (min == null || min.key > key)
+		if (min == null || min.key.compareTo(key) > 0)
 			min = node;
 		root.insertChild(node);
 		count++;
@@ -107,7 +107,7 @@ public class FibonacciHeap
 	}
 
 	final private Node link(Node a, Node b) {
-		if (a.key > b.key)
+		if (a.key.compareTo(b.key) > 0)
 			return link(b, a);
 		b.extract();
 		b.parent = a;
@@ -151,7 +151,7 @@ public class FibonacciHeap
 					list[i].previous = last;
 					last = list[i];
 					last.next = null;
-					if (min.key > last.key)
+					if (min.key.compareTo(last.key) > 0)
 						min = last;
 				}
 			}
@@ -162,14 +162,15 @@ public class FibonacciHeap
 		double[] prios = {
 			9, -5, Math.PI, 132, 15.223, 9e5, 1997, 0.001, 0.0012, 0
 		};
-		for (int i = 0; i < prios.length; i++)
-			heap.add(prios[i], new Double(prios[i]));
+		for (int i = 0; i < prios.length; i++) {
+			Double p = new Double(prios[i]);
+			heap.add(p, p);
+		}
 		int i = 0;
 		while (heap.hasMore()) {
 			i++;
 			System.out.println("Extract " + i + ": " +
-				(Double)heap.pop());
+					(Double)heap.pop());
 		}
 	}
 }
-
