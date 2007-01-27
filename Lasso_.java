@@ -60,6 +60,8 @@ public class Lasso_ implements PlugIn {
 		int[] yPoints = new int[instance.w * instance.h];
 		int i = 0;
 		do {
+			if (i >= instance.w * instance.h)
+				break;
 			xPoints[i] = x;
 			yPoints[i] = y;
 			i++;
@@ -111,6 +113,7 @@ public class Lasso_ implements PlugIn {
 
 		pixels = (byte[])ip.getPixels();
 		previous = new int[w * h];
+		previous[x + w * y] = x + w * y;
 		dijkstra = new int[w * h];
 		for (int i = 0; i < w * h; i++)
 			dijkstra[i] = Integer.MAX_VALUE;
@@ -128,6 +131,8 @@ public class Lasso_ implements PlugIn {
 			int x = pixel.x;
 			int y = pixel.y;
 			int cost = pixel.cost;
+			if (dijkstra[x + w * y] <= cost)
+				continue;
 
 			dijkstra[x + w * y] = cost;
 			int value = get(x, y);
@@ -139,7 +144,7 @@ public class Lasso_ implements PlugIn {
 				if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h)
 					continue;
 				int newC = cost + stepW[i]
-					* Math.abs(get(x2, y2) - value);
+					+ (1 + Math.abs(get(x2, y2) - value));
 				if (dijkstra[x2 + w * y2] > newC) {
 					queue.add(newC, new PixelCost(x2,
 								y2, newC));
