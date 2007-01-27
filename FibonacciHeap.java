@@ -71,7 +71,7 @@ public class FibonacciHeap implements Comparable
 	int count;
 
 	public FibonacciHeap() {
-		root = new Node(0, null, null);
+		root = new Node(null, null, null);
 	}
 
 	public void add(Comparable key, Object object) {
