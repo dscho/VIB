@@ -21,19 +21,16 @@ public class Lasso_ implements PlugIn {
 		"var clicked = 0;\n" +
 		"var leftClick = 16;\n" +
 		"\n" +
-		"macro 'Lasso - C037T0d14<T7d14<' {\n" +
+		"macro 'Lasso Tool - C037T0d14<T7d14<' {\n" +
 		"  while (true) {\n" +
 		"    getCursorLoc(x, y, z, flags);\n" +
-		"    if (flags & leftClick == 0) {\n" +
-		"      if (!clicked) {\n" +
+		"    if ((flags & leftClick) != 0) {\n" +
 		"        clicked = 1;\n" +
 		"        call('Lasso_.start', x, y);\n" +
-		"      } else\n" +
+		"      } else if (clicked)\n" +
 		"        call('Lasso_.move', x, y);\n" +
-		"    } else\n" +
-		"      clicked = 0;\n" +
 		"    }\n" +
-		"    wait(10);\n" +
+		"    wait(100);\n" +
 		"  }\n" +
 		"}";
 
@@ -81,7 +78,7 @@ public class Lasso_ implements PlugIn {
 		return pixels[x + w * y] & 0xff;
 	}
 
-	private class PixelCost implements Comparable {
+	private class PixelCost {
 		int x, y, cost;
 
 		public PixelCost(int x, int y, int cost) {
@@ -90,44 +87,8 @@ public class Lasso_ implements PlugIn {
 			this.cost = cost;
 		}
 
-		public int compareTo(Object other) {
-			PixelCost o = (PixelCost)other;
-			if (cost != o.cost)
-				return cost - o.cost;
-			if (x != o.x)
-				return x - o.x;
-			return y - o.y;
-		}
-	}
-
-	private class PixelQueue extends TreeMap {
-		public int x, y, cost;
-
-		public int getNextCost() {
-			if (size() > 0) {
-				PixelCost c = (PixelCost)firstKey();
-				return c.cost;
-			}
-			return Integer.MAX_VALUE;
-		}
-
-		public void push(int x, int y, int cost) {
-			PixelCost c = new PixelCost(x, y, cost);
-			put(c, c);
-		}
-
-		public boolean pop() {
-			while (size() > 0) {
-				PixelCost c = (PixelCost)firstKey();
-				remove(c);
-				if (dijkstra[c.x + w * c.y] > c.cost) {
-					x = c.x;
-					y = c.y;
-					cost = c.cost;
-					return true;
-				}
-			}
-			return false;
+		public String toString() {
+			return "(" + x + ", " + y + ": " + cost + ")";
 		}
 	}
 
@@ -135,7 +96,7 @@ public class Lasso_ implements PlugIn {
 	final static int[] stepY = { -1, -1, -1, 0, 1, 1, 1, 0 };
 	final static int[] stepW = { 4, 3, 4, 3, 4, 3, 4, 3 };
 
-	PixelQueue queue;
+	FibonacciHeapInt queue;
 	int startX, startY;
 
 	private void initDijkstra(int x, int y) {
@@ -154,18 +115,20 @@ public class Lasso_ implements PlugIn {
 		for (int i = 0; i < w * h; i++)
 			dijkstra[i] = Integer.MAX_VALUE;
 
-		queue = new PixelQueue();
-		queue.push(x, y, 0);
+		queue = new FibonacciHeapInt();
+		queue.add(0, new PixelCost(x, y, 0));
 		startX = x;
 		startY = y;
 	}
 
 	private void getDijkstra(int x_, int y_) {
-		while (queue.getNextCost() < dijkstra[x_ + w * y_]
-				&& queue.pop()) {
-			int x = queue.x;
-			int y = queue.y;
-			int cost = queue.cost;
+		PixelCost pixel;
+		while (queue.compareTo(dijkstra[x_ + w * y_]) < 0
+				&& (pixel = (PixelCost)queue.pop()) != null) {
+			int x = pixel.x;
+			int y = pixel.y;
+			int cost = pixel.cost;
+
 			dijkstra[x + w * y] = cost;
 			int value = get(x, y);
 
@@ -178,7 +141,8 @@ public class Lasso_ implements PlugIn {
 				int newC = cost + stepW[i]
 					* Math.abs(get(x2, y2) - value);
 				if (dijkstra[x2 + w * y2] > newC) {
-					queue.push(x2, y2, newC);
+					queue.add(newC, new PixelCost(x2,
+								y2, newC));
 					previous[x2 + w * y2] = x + w * y;
 				}
 			}
