@@ -6,7 +6,7 @@
  * of the queue, we do not need DecreaseKey, Union, and Cut.
  */
 
-public class FibonacciHeap
+public class FibonacciHeap implements Comparable
 {
 	private static class Node {
 		Comparable key;
@@ -59,7 +59,7 @@ public class FibonacciHeap
 		}
 
 		public void print(String label, String indent) {
-			System.out.println(indent + label + ": " + key + ", " + degree);
+			System.out.println(indent + label + ": " + key + ", " + object);
 			int i = 1;
 			for (Node n = firstChild; n != null; n = n.next)
 				n.print(label + ":" + (i++), indent + "    ");
@@ -106,12 +106,18 @@ public class FibonacciHeap
 		}
 		if (root.firstChild != null)
 			consolidate();
+		else
+			min = null;
 		count--;
 		return ret.object;
 	}
 
 	public boolean hasMore() {
 		return root.firstChild != null;
+	}
+
+	public int compareTo(Object other) {
+		return min == null ? 1 : min.key.compareTo(other);
 	}
 
 	final private Node link(Node a, Node b) {
