@@ -20,6 +20,8 @@ public class Lasso_ implements PlugIn {
 	public static final String MACRO_CMD =
 		"var clicked = 0;\n" +
 		"var leftClick = 16;\n" +
+		"var currentX = -1;\n" +
+		"var currentY = -1;\n" +
 		"\n" +
 		"macro 'Lasso Tool - C037T0d14<T7d14<' {\n" +
 		"  while (true) {\n" +
@@ -27,8 +29,11 @@ public class Lasso_ implements PlugIn {
 		"    if ((flags & leftClick) != 0) {\n" +
 		"        clicked = 1;\n" +
 		"        call('Lasso_.start', x, y);\n" +
-		"      } else if (clicked)\n" +
+		"      } else if (clicked && (x != currentX || y != currentY)) {\n" +
 		"        call('Lasso_.move', x, y);\n" +
+		"        currentX = x;\n" +
+		"        currentY = y;\n" +
+		"      }\n" +
 		"    }\n" +
 		"    wait(100);\n" +
 		"  }\n" +
