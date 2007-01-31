@@ -61,9 +61,9 @@ public final class MCShape extends Shape3D{
 		ta.setCoordinates(0, coords);
 		ta.setColors(0, colors);
 
-		GeometryInfo gi = new GeometryInfo(ta);
 		// initialize the geometry info here
-		//          
+		GeometryInfo gi = new GeometryInfo(ta);
+		
 		// generate normals
 		NormalGenerator ng = new
 		NormalGenerator();

@@ -93,11 +93,6 @@ public class MainFrame extends Frame {
 			} else if(command.equals("Quit")) {
 			} else if(command.equals("registration")) {
 			} else if(command.equals("results")) {
-				remove(cards);
-				java.util.Vector v = new java.util.Vector();
-				for(int i = 0; i < 8000; i++) {
-					v.add(new byte[1024]);
-				}
 			}
 		}
 	}

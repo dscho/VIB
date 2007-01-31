@@ -60,7 +60,7 @@ public class AlgorithmsPanel extends Panel {
 		this.add(panel);
 
 		panel = new Panel(new FlowLayout());
-		l = new Label("Transformation method");
+		l = new Label("Transformation");
 		panel.add(l);
 		transformationChoice = new Choice();
 		transformationChoice.add("VIBgreyTransformation");
