@@ -33,71 +33,50 @@ public class Viewer_3D implements PlugInFilter {
 	private int threshold;
 	private byte[][][] voxData;
 	private MCPanel canvas;
-	private Dialog gd;
 	private Frame frame;
 
-	private final class Dialog extends GenericDialog {
-		public Dialog(String s){
-			super(s);
-			setModal(false);
-		}
-
-		public void actionPerformed(ActionEvent e){
-			if(e.getActionCommand().equals("Cancel")) {
-				if(frame != null){ 
-					frame.dispose();
-					frame = null;
-				}
-				this.dispose();
-			}
-			else if(e.getActionCommand().equals("  OK  ")){
-				process();
-				if(frame == null)
-					showViewer(voxData);
-				else 
-					updateViewer(voxData);
-			}
-		}
-	}
-
-	public void run(ImageProcessor ip){
-
-		gd = new Dialog("3D view");
+	public void run(ImageProcessor ip) {
+		GenericDialog gd = new GenericDialog("3D view");
 		gd.addNumericField("Threshold", 50, 0);
 		gd.addCheckbox("Smooth", false);
 		gd.addNumericField("Resample x", 4, 0);
 		gd.addNumericField("Resample y", 4, 0);
 		gd.addNumericField("Resample z", 2, 0);
 		gd.showDialog();
+		if (gd.wasCanceled())
+			return;
+
+		int threshold = (int)gd.getNextNumber();
+		boolean smooth = gd.getNextBoolean();
+		int resampleX = (int)gd.getNextNumber();
+		int resampleY = (int)gd.getNextNumber();
+		int resampleZ = (int)gd.getNextNumber();
+		process(threshold, smooth, resampleX, resampleY, resampleZ);
+		if(frame == null)
+			showViewer(voxData);
+		else 
+			updateViewer(voxData);
 	}
 
-	public void process(){ 
-		Vector nums = gd.getNumericFields();
-		Vector chbxs = gd.getCheckboxes();
-		
-		boolean smooth = ((Checkbox)chbxs.get(0)).getState();
-		threshold = Integer.parseInt(((TextField)nums.get(0)).getText());
-		int resampleX = Integer.parseInt(((TextField)nums.get(1)).getText());
-		int resampleY = Integer.parseInt(((TextField)nums.get(2)).getText());
-		int resampleZ = Integer.parseInt(((TextField)nums.get(3)).getText());
-		
+	public void process(int threshold, boolean smooth,
+			int resampleX, int resampleY, int resampleZ) { 
 		init();
-		if(smooth) smooth();
+		if(smooth)
+			smooth();
 		if(resampleX != 1 || resampleY != 1 || resampleZ != 1)
 			resample(resampleX, resampleY, resampleZ);
 
 		byte[][][] voxData = calcVoxData();
 	}
 
-	private void init(){
-		
+	private void init() {
 		ret = new InterpolatedImage(image).cloneImage().getImage();
 		w = ret.getWidth();
 		h = ret.getHeight();
 		d = ret.getStackSize();
 	}
 	
-	private void smooth(){
+	private void smooth() {
 		for(int z=0; z< d; z++)	{
 			ImageStack stack = ret.getStack();
 			ImageProcessor ip = stack.getProcessor(z+1);
@@ -105,7 +84,7 @@ public class Viewer_3D implements PlugInFilter {
 		}
 	}
 
-	public void resample(int facX, int facY, int facZ){
+	public void resample(int facX, int facY, int facZ) {
 		ImagePlus resampled = Resample_.resample(ret, facX, facY, facZ);
 		w = resampled.getWidth();
 		h = resampled.getHeight();
@@ -113,7 +92,7 @@ public class Viewer_3D implements PlugInFilter {
 		ret = resampled;
 	}
 
-	public byte[][][] calcVoxData(){
+	public byte[][][] calcVoxData() {
 		voxData = new byte[w][h][d];
 		ImageStack stack = ret.getStack();
 		for(int z=0; z<d; z++){
@@ -127,7 +106,7 @@ public class Viewer_3D implements PlugInFilter {
 		return voxData;
 	}
 
-	public void showViewer(byte[][][] voxData){
+	public void showViewer(byte[][][] voxData) {
 		canvas = new MCPanel(voxData, w, threshold);
 		frame = new Frame();
 		frame.addWindowListener(new WindowAdapter(){
@@ -142,11 +121,11 @@ public class Viewer_3D implements PlugInFilter {
 		frame.setVisible(true);
 	}
 
-	public void updateViewer(byte[][][]voxData){
+	public void updateViewer(byte[][][]voxData) {
 		canvas.updateShape(voxData, w, threshold);
 	}
 
-	public int setup(String arg, ImagePlus img){
+	public int setup(String arg, ImagePlus img) {
 		this.image = img;
 		return DOES_8G;
 	}
