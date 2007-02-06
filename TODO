@@ -1,8 +1,4 @@
-- display 3D objects
-- use Java3D
-- extend an ImageCanvas
 - integrate with ImageJ's tool bar (rotate tool, reuse zoom and pan)
-- properly handle resize events (make the ImageCanvas larger)
 - overlay objects (reuse the 3D window)
 - organize as 3 plugins (sharing a core): slice, surface and volume 
   rendering
@@ -16,4 +12,3 @@
 - segmentation tool (as scissors, but works only on isosurfaces, i.e. 
   thresholded objects, and does not remove, but rather label it)
 - add listener interfaces (looking at, entering, 3D coordinate, etc.)
-
