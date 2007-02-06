@@ -18,8 +18,8 @@ import com.sun.j3d.utils.picking.*;
 
 public class MCPanel extends Panel {
 
-	private SimpleUniverse simpleU;
-	private Canvas3D canvas;
+	public SimpleUniverse simpleU;
+	public Canvas3D canvas;
 	private BranchGroup scene;
 
 	private TransformGroup objTransform;

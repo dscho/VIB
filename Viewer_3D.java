@@ -4,6 +4,9 @@ import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import ij.gui.GenericDialog;
 
+import ij3d.IJ3DImageWindow;
+
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Panel;
 import java.awt.TextField;
@@ -108,17 +111,9 @@ public class Viewer_3D implements PlugInFilter {
 
 	public void showViewer(byte[][][] voxData) {
 		canvas = new MCPanel(voxData, w, threshold);
-		frame = new Frame();
-		frame.addWindowListener(new WindowAdapter(){
-			public void windowClosing(WindowEvent e){
-				frame.dispose();
-				frame = null;
-			}
-		});
-		frame.setTitle("3D Viewer");
-		frame.setSize(512,512);
-		frame.add(canvas);
-		frame.setVisible(true);
+		canvas.canvas.setSize(new Dimension(512, 512));
+		IJ3DImageWindow win = new IJ3DImageWindow("title",
+				canvas.canvas, canvas.simpleU);
 	}
 
 	public void updateViewer(byte[][][]voxData) {
