@@ -8,6 +8,7 @@ import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import ij.plugin.MacroInstaller;
 import ij.plugin.PlugIn;
+import ij.plugin.filter.ThresholdToSelection;
 
 import java.util.TreeMap;
 
@@ -48,6 +49,7 @@ public class Lasso_ implements PlugIn {
 	}
 
 	private static Lasso_ instance;
+	private static boolean doBlowToolInstead = true;
 
 	public synchronized static void start(String x_, String y_) {
 		if (instance == null)
@@ -60,25 +62,55 @@ public class Lasso_ implements PlugIn {
 	public synchronized static void move(String x_, String y_) {
 		int x = (int)Float.parseFloat(x_);
 		int y = (int)Float.parseFloat(y_);
-		instance.getDijkstra(x, y);
-		int[] xPoints = new int[instance.w * instance.h];
-		int[] yPoints = new int[instance.w * instance.h];
+try {
+		if (doBlowToolInstead)
+			instance.moveBlow(x, y);
+		else
+			instance.moveLasso(x, y);
+} catch (Throwable t) {
+	System.err.println("Caught throwable " + t);
+	t.printStackTrace();
+}
+	}
+
+	private void moveLasso(int x, int y) {
+		getDijkstra(x, y);
+		int[] xPoints = new int[w * h];
+		int[] yPoints = new int[w * h];
 		int i = 0;
 		do {
-			if (i >= instance.w * instance.h)
+			if (i >= w * h)
 				break;
 			xPoints[i] = x;
 			yPoints[i] = y;
 			i++;
-			int j = instance.previous[x + instance.w * y];
-			x = j % instance.w;
-			y = j / instance.w;
-		} while (x != instance.startX || y != instance.startY);
+			int j = previous[x + w * y];
+			x = j % w;
+			y = j / w;
+		} while (x != startX || y != startY);
 		Roi roi = new PolygonRoi(xPoints, yPoints, i,
 				PolygonRoi.POLYGON);
 		ImagePlus image = WindowManager.getCurrentImage();
 		image.setRoi(roi);
 		image.updateAndDraw();
+	}
+
+	private void moveBlow(int x, int y) {
+//System.err.println("move to " + x + ", " + y);
+		getDijkstra(x, y);
+		FloatProcessor fp = new FloatProcessor(w, h, dijkstra);
+		fp.setThreshold(Double.MIN_VALUE, dijkstra[x + w * y] + 1,
+				ImageProcessor.NO_LUT_UPDATE);
+//fp.setMinAndMax(Double.MIN_VALUE, dijkstra[x + w * y]);
+		ImagePlus blowImage = new ImagePlus("blow", fp);
+		ThresholdToSelection t2s = new ThresholdToSelection();
+		t2s.setup("", blowImage);
+		t2s.run(fp);
+		ImagePlus image = WindowManager.getCurrentImage();
+//blowImage.show();
+		image.setRoi(blowImage.getRoi());
+		image.updateAndDraw();
+//System.err.println("set selection at " + x + ", " + y + ": " + image.getRoi());
 	}
 
 	final private int get(int x, int y) {
