@@ -10,7 +10,7 @@ public class Volume_Renderer implements PlugInFilter {
 	private ImagePlus image;
 
 	public void run(ImageProcessor ip){
-		new VolRendEdit(image.getStack());
+		new VolRendEdit(image);
 	}
 
 	public int setup(String arg, ImagePlus img){

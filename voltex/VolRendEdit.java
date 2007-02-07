@@ -16,7 +16,7 @@ import java.util.Enumeration;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import java.net.*;
 import java.lang.String.*;
-import ij.ImageStack;
+import ij.ImagePlus;
 
 
 public class VolRendEdit extends JFrame {
@@ -25,10 +25,10 @@ public class VolRendEdit extends JFrame {
     Canvas3D canvas;
 
 
-    public VolRendEdit(ImageStack stack) {
+    public VolRendEdit(ImagePlus imp) {
 		super("Java3D Volume Rendering Editor");
 		volRend = new VolRend();
-		volRend.initContext(stack); // initializes the renderers
+		volRend.initContext(imp); // initializes the renderers
 	
 		// Setup the frame
 		getContentPane().setLayout(new BorderLayout());

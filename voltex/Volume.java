@@ -8,11 +8,11 @@ import javax.vecmath.*;
 import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import java.net.*;
-import ij.ImageStack;
+import ij.ImagePlus;
 
 public class Volume implements VolRendConstants {
 
-	private ImageStack stack;
+	private ImagePlus imp;
 
     // should loadXXX flip the t axis
     private boolean	tFlip = true;
@@ -64,9 +64,9 @@ public class Volume implements VolRendConstants {
 	
 	Point3d volRefPt = null;
 
-    public Volume(ImageStack stack) {
+    public Volume(ImagePlus imp) {
 
-		this.stack = stack;
+		this.imp = imp;
 
 		for (int i = 0; i < 8; i++) {
 		   voiPts[i] = new Point3d();
@@ -116,7 +116,7 @@ public class Volume implements VolRendConstants {
 		// Going to reload the volume, bump the id
 		editId++;
 
-		vol = new VolFile(stack);
+		vol = new VolFile(imp);
 
 		// These are the real size of the data
 		xDim = vol.xDim;

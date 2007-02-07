@@ -90,9 +90,9 @@ public class VolRend implements MouseBehaviorCallback {
 		updateBehavior.postId(POST_AWT_CHANGE);
     }
 
-    void initContext(ImageStack stack) {
+    void initContext(ImagePlus imp) {
 		// initialize the volume
-		volume = new Volume(stack);
+		volume = new Volume(imp);
 
 		// initialize the scene graph
 		setupScene();
