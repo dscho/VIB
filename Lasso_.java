@@ -41,7 +41,7 @@ public class Lasso_ implements PlugIn {
 		"}";
 
 	public void run(String arg){
-		if (IJ.versionLessThan("1.37c"))
+		if (IJ.versionLessThan("1.37j"))
 			return;
 
 		MacroInstaller installer = new MacroInstaller();
