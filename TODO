@@ -12,3 +12,5 @@
 - segmentation tool (as scissors, but works only on isosurfaces, i.e. 
   thresholded objects, and does not remove, but rather label it)
 - add listener interfaces (looking at, entering, 3D coordinate, etc.)
+
+segmentation editor: CustomStackWindow -> SegmentationEditorPanel
