@@ -96,3 +96,6 @@ JARS=Delaunay_Voronoi.jar AmiraMesh_.jar VIB_-compat.jar $(SIMPLE_JARS)
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
 	(cd tempdir && javac $(JAVACOPTS) $(JAVACOPTSCOMPAT) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
 
+clean:
+	find -name \*.class -exec rm {} \;
+	rm -f $(JARS)
