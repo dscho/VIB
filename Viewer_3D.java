@@ -33,10 +33,9 @@ public class Viewer_3D implements PlugInFilter {
 	private int w;
 	private int h;
 	private int d;
-	private int threshold;
 	private byte[][][] voxData;
 	private MCPanel canvas;
-	private Frame frame;
+	private static Frame frame;
 
 	public void run(ImageProcessor ip) {
 		GenericDialog gd = new GenericDialog("3D view");
@@ -56,13 +55,14 @@ public class Viewer_3D implements PlugInFilter {
 		int resampleZ = (int)gd.getNextNumber();
 		process(threshold, smooth, resampleX, resampleY, resampleZ);
 		if(frame == null)
-			showViewer(voxData);
+			showViewer(voxData, threshold);
 		else 
-			updateViewer(voxData);
+			updateViewer(voxData, threshold);
 	}
 
 	public void process(int threshold, boolean smooth,
 			int resampleX, int resampleY, int resampleZ) { 
+System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " + resampleX);
 		init();
 		if(smooth)
 			smooth();
@@ -109,14 +109,14 @@ public class Viewer_3D implements PlugInFilter {
 		return voxData;
 	}
 
-	public void showViewer(byte[][][] voxData) {
+	public void showViewer(byte[][][] voxData, int threshold) {
 		canvas = new MCPanel(voxData, w, threshold);
 		canvas.canvas.setSize(new Dimension(512, 512));
 		IJ3DImageWindow win = new IJ3DImageWindow("title",
 				canvas.canvas, canvas.simpleU);
 	}
 
-	public void updateViewer(byte[][][]voxData) {
+	public void updateViewer(byte[][][]voxData, int threshold) {
 		canvas.updateShape(voxData, w, threshold);
 	}
 
