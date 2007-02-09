@@ -24,19 +24,19 @@ import javax.media.j3d.GraphicsConfigTemplate3D;
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Screen3D;
 
-public class IJ3DImageWindow extends ImageWindow {
+public class ImageWindow3D extends ImageWindow {
 	SimpleUniverse universe;
 	Canvas3D canvas3D;
 
-	public IJ3DImageWindow(String title, int width, int height) {
+	public ImageWindow3D(String title, int width, int height) {
 		this(title, getCanvas3D(width, height));
 	}
 
-	private IJ3DImageWindow(String title, Canvas3D canvas3D) {
+	private ImageWindow3D(String title, Canvas3D canvas3D) {
 		this(title, canvas3D, new SimpleUniverse(canvas3D));
 	}
 
-	public IJ3DImageWindow(String title, Canvas3D canvas3D,
+	public ImageWindow3D(String title, Canvas3D canvas3D,
 			SimpleUniverse universe) {
 		super(title);
 		imp = new ImagePlus();

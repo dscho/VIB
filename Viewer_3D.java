@@ -4,7 +4,7 @@ import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import ij.gui.GenericDialog;
 
-import ij3d.IJ3DImageWindow;
+import ij3d.ImageWindow3D;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -112,7 +112,7 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 	public void showViewer(byte[][][] voxData, int threshold) {
 		canvas = new MCPanel(voxData, w, threshold);
 		canvas.canvas.setSize(new Dimension(512, 512));
-		IJ3DImageWindow win = new IJ3DImageWindow("title",
+		ImageWindow3D win = new ImageWindow3D("title",
 				canvas.canvas, canvas.simpleU);
 	}
 
