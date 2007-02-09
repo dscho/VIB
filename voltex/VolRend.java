@@ -24,7 +24,7 @@ import ij.ImagePlus;
  */
 public class VolRend implements MouseBehaviorCallback {
 
-    static final int 	POST_AWT_CHANGE = 1;
+    private static final int POST_AWT_CHANGE = 1;
 
     Volume volume;
     Renderer renderer;
@@ -38,7 +38,6 @@ public class VolRend implements MouseBehaviorCallback {
     Transform3D centerXform = new Transform3D();
     Vector3d centerOffset = new Vector3d(-0.5, -0.5, -0.5);
 
-    Group staticAttachGroup;
     Group dynamicAttachGroup;
 
     Canvas3D 		canvas;
@@ -81,7 +80,7 @@ public class VolRend implements MouseBehaviorCallback {
 
 		// Add the volume to the scene
 		clearAttach();
-		renderer.attach(dynamicAttachGroup, staticAttachGroup);
+		renderer.attach(dynamicAttachGroup);
 
     }
 
@@ -160,14 +159,6 @@ public class VolRend implements MouseBehaviorCallback {
 		scaleGroup.addChild(scaleOGroup);
 
 
-		// Create the static attachment group
-		staticAttachGroup = new Group();
-		staticAttachGroup.setCapability(Group.ALLOW_CHILDREN_READ);
-		staticAttachGroup.setCapability(Group.ALLOW_CHILDREN_WRITE);
-		staticAttachGroup.setCapability(Group.ALLOW_CHILDREN_EXTEND);
-		scaleOGroup.addChild(staticAttachGroup);
-
-
 		// Create a TG at the origin
 		objectGroup = new TransformGroup();
 
@@ -225,9 +216,6 @@ public class VolRend implements MouseBehaviorCallback {
     }
 
     private void clearAttach() {
-		while(staticAttachGroup.numChildren() > 0) {
-			staticAttachGroup.removeChild(0);
-		}
 		while(dynamicAttachGroup.numChildren() > 0) {
 			dynamicAttachGroup.removeChild(0);
 		}

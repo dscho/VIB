@@ -69,7 +69,7 @@ abstract public class AxisRenderer extends Renderer
 		root.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
     }
 
-    public void attach(Group dynamicGroup, Group staticGroup) {
+    public void attach(Group dynamicGroup) {
 		dynamicGroup.addChild(root);
     }
 

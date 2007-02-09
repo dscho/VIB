@@ -24,7 +24,7 @@ abstract public class Renderer {
     /** 
      * Attach the branchgroups for this renderer to the display
      */
-    abstract public void attach(Group dynamicGroup, Group staticGroup);
+    abstract public void attach(Group dynamicGroup);
 
     /**
      * Called to make changes to the renderer state
