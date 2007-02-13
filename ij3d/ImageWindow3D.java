@@ -9,11 +9,15 @@ import ij.WindowManager;
 import ij.gui.ImageWindow;
 import ij.process.ColorProcessor;
 
+import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Robot;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
@@ -27,6 +31,7 @@ import javax.media.j3d.Screen3D;
 public class ImageWindow3D extends ImageWindow {
 	SimpleUniverse universe;
 	Canvas3D canvas3D;
+	private boolean noOffScreen = false;
 
 	public ImageWindow3D(String title, int width, int height) {
 		this(title, getCanvas3D(width, height));
@@ -39,15 +44,19 @@ public class ImageWindow3D extends ImageWindow {
 	public ImageWindow3D(String title, Canvas3D canvas3D,
 			SimpleUniverse universe) {
 		super(title);
+		String j3dNoOffScreen = System.getProperty("j3d.noOffScreen");
+		if (j3dNoOffScreen != null && j3dNoOffScreen.equals("true"))
+			noOffScreen = true;
 		imp = new ImagePlus();
-		setSize(canvas3D.getWidth(), canvas3D.getHeight());
 		this.universe = universe;
 		this.canvas3D = canvas3D;
 
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
+
 		add(canvas3D);
-		setSize(canvas3D.getWidth(), canvas3D.getHeight());
+		pack();
+
 		ImageJ ij = IJ.getInstance();
 		if (ij != null)
 			addKeyListener(ij);
@@ -93,10 +102,32 @@ public class ImageWindow3D extends ImageWindow {
 		return offScreenCanvas3D;
 	}
 
+	private static ImagePlus makeDummyImagePlus() {
+		ColorProcessor cp = new ColorProcessor(1, 1);
+		return new ImagePlus("3D", cp);
+	}
+
+	private int top = 25, bottom = 4, left = 4, right = 4;
 	public ImagePlus getImagePlus() {
-		if (getWidth() <= 0 || getHeight() <= 0) {
-			ColorProcessor cp = new ColorProcessor(1, 1);
-			return new ImagePlus("3D", cp);
+		if (getWidth() <= 0 || getHeight() <= 0)
+			return makeDummyImagePlus();
+		if (noOffScreen) {
+			toFront();
+			Point p = canvas3D.getLocationOnScreen();
+			int w = canvas3D.getWidth();
+			int h = canvas3D.getHeight();
+			Robot robot;
+			try {
+				robot = new Robot(getGraphicsConfiguration()
+					.getDevice());
+			} catch (AWTException e) {
+				return makeDummyImagePlus();
+			}
+			Rectangle r = new Rectangle(p.x + left, p.y + top,
+					w - left - right, h - top - bottom);
+			BufferedImage bImage = robot.createScreenCapture(r);
+			ColorProcessor cp = new ColorProcessor(bImage);
+			return new ImagePlus("3d", cp);
 		}
 		BufferedImage bImage = new BufferedImage(canvas3D.getWidth(),
 				canvas3D.getHeight(),
