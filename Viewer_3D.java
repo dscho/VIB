@@ -122,6 +122,6 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 
 	public int setup(String arg, ImagePlus img) {
 		this.image = img;
-		return DOES_8G;
+		return DOES_8G | NO_CHANGES;
 	}
 }
