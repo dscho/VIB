@@ -1,4 +1,4 @@
-package vib.app.gui.dialog;
+package vib.app.gui;
 
 import java.awt.event.*;
 import java.awt.*;
@@ -19,10 +19,10 @@ public class Console extends Panel
 		messageTA = new TextArea("Welcome to the VIB protocoll\n");
 		messageTA.append("========================================\n");
 		messageTA.setFont(new Font("Monospace", Font.BOLD, 12));
-		messageTA.setForeground(Color.RED);
-		messageTA.setBackground(Color.ORANGE);
+		//messageTA.setForeground(Color.RED);
+		//messageTA.setBackground(Color.ORANGE);
 		messageTA.setEditable(false);
-		this.setBackground(Color.ORANGE);
+		//this.setBackground(Color.ORANGE);
 		
 		GridBagLayout gridbag = new GridBagLayout();
 		GridBagConstraints c = new GridBagConstraints();

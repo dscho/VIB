@@ -7,10 +7,7 @@ import java.awt.event.ActionEvent;
 import vib.app.VIBImage;
 import vib.app.Options;
 
-import vib.AmiraMeshEncoder;
-
-import vib.app.gui.dialog.Console;
-import vib.app.gui.dialog.LabelPanel;
+import vib.segment.CustomStackWindow;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -18,43 +15,36 @@ import ij.io.FileSaver;
 
 public class Label extends Module {
 
-	private VIBImage image;
-	private Options options;
-	
 	public Label(VIBImage imp, Options options) {
-		this.image = imp;
-		this.options = options;
+		super(imp, options, false);
+		dependingOn.add(Load.class);
 	}
 
 	public String getName() {
 		return "Labelling";
 	}
 
-	public Module.Error checkDependency() {
-		// check requirements available
-		File ref = new File(image.getReferencePath());
-		if(!ref.exists())
-			return new Error(Module.REQUIREMENTS_UNAVAILABLE, 
-									"Reference file does not exist");
+	public int checkResults() {
 		// check availability of results
-		File labels = new File(image.getLabelsPath());
+		File ref = new File(image.referencePath);
+		File labels = new File(image.labelsPath);
 		if(!labels.exists()) {
-			return new Error(Module.RESULTS_UNAVAILABLE, "");
+			return RESULTS_UNAVAILABLE;
 		}
 		
 		// available, check uptodate
 		if(labels.lastModified() != 0L && 
 				labels.lastModified() > ref.lastModified()) {
-			return new Error(Module.RESULTS_OK, "");
+			return RESULTS_OK;
 		}
 		// available, but out of date
-		return new Error(Module.RESULTS_OUT_OF_DATE, "");
+		return RESULTS_OUT_OF_DATE;
 	}
 
-	public Object execute() {
+	protected void runThisModule() {
 		ActionListener a = new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				if(e.getActionCommand().equals("OK")) {
+				if(e.getActionCommand().equals("Ok")) {
 					synchronized(Label.this) {
 						Label.this.notifyAll();
 					}
@@ -62,8 +52,9 @@ public class Label extends Module {
 			}
 		};
 		
-		LabelPanel label = new LabelPanel(image.getReferenceChannel(),a);
-		fillOutputPanel(label);
+		CustomStackWindow csw = 
+			new CustomStackWindow(image.getReferenceChannel());
+		csw.addActionListener(a);
 		synchronized(this) {
 			try {
 				this.wait();
@@ -71,15 +62,13 @@ public class Label extends Module {
 				e.printStackTrace();
 			}
 		}
-		ImagePlus labels = label.getLabels();
+		ImagePlus labels = csw.getLabels();
+		csw.cleanUp();
 		image.setLabels(labels);
-		clearOutputPanel();
-		label.removeActionListener(a);
-		label.cleanUp();
-		fillOutputPanel(console);
+		console.append("...saving labels");
 		if(!image.saveLabels())
 			console.append("Could not write labels");
-		clearOutputPanel();
-		return image;
+		image.releaseReferenceChannel();
+		image.releaseLabels();
 	}
 }

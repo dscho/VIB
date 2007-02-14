@@ -68,8 +68,8 @@ public class VolRend implements MouseBehaviorCallback {
 		view = u.getViewer().getView();
 
 		// switch to a parallel projection, which is faster for texture mapping
-		//view.setProjectionPolicy(View.PARALLEL_PROJECTION);
-		view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
+		view.setProjectionPolicy(View.PARALLEL_PROJECTION);
+		//view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
 
 		u.addBranchGraph(scene);
 
@@ -100,8 +100,8 @@ public class VolRend implements MouseBehaviorCallback {
     private void doUpdate() {
 		System.out.println("VolRend.doUpdate()");
 		canvas.setDoubleBufferEnable(true);
-		//view.setProjectionPolicy(View.PARALLEL_PROJECTION);
-		view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
+		view.setProjectionPolicy(View.PARALLEL_PROJECTION);
+		//view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
 		renderer.update();
 		int newVolEditId;
 		if ((newVolEditId = volume.update()) != volEditId) {
@@ -205,7 +205,7 @@ public class VolRend implements MouseBehaviorCallback {
 		MouseZoom mz = new MouseZoom();
 		mz.setTransformGroup(objectGroup);
 		mz.setSchedulingBounds(bounds);
-		mz.setFactor(0.1);
+		mz.setFactor(0.01);
 		objRoot.addChild(mz);
 		
 		updateBehavior = new UpdateBehavior();

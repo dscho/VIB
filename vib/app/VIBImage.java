@@ -25,7 +25,8 @@ import ij.ImagePlus;
  */
 public class VIBImage {
 
-	private String name;
+	private Options options;
+
 	private String wd;
 	private int refChannel;
 	private int resamplingF;
@@ -34,24 +35,31 @@ public class VIBImage {
 	private ImagePlus labels = null;
 	private ImagePlus ref_r = null;
 	private ImagePlus labels_r = null;
-	
-	public VIBImage(String wd, String name, int refChannel, int res) {
-		this.wd = wd;
-		this.name = name;
-		this.refChannel = refChannel;
-		this.resamplingF = res;
-	}
 
-	public VIBImage(String wd, 
-			String name, int refChannel, int res, ImagePlus ref) {
-		this(wd, name, refChannel, res);
-		this.ref = ref;
-	}
+	public String originalPath = null;
+	public String name = null;
+	public String labelsDir = null;
+	public String labelsName = null;
+	public String labelsPath = null;
+	public String referenceDir = null;
+	public String referencePath = null;
+	public String resampledReferenceDir = null;
+	public String resampledReferencePath = null;
+	public String resampledLabelsDir = null;
+	public String resampledLabelsPath = null;
+	public String statisticsDir = null;
+	public String statisticsName = null;
+	public String statisticsPath = null;
 
-	public VIBImage(String wd, String name, int refChannel, int res,
-										ImagePlus ref, ImagePlus labels) {
-		this(wd, name, refChannel, res, ref);
-		this.labels = labels;
+	// Constructor
+	public VIBImage(File file, Options options) {
+		this.options = options;
+		this.wd = options.getWorkingDirectory().getAbsolutePath();
+		this.name = file.getName();
+		this.originalPath = file.getAbsolutePath();
+		this.refChannel = options.getRefChannel();
+		this.resamplingF = options.getResamplingFactor();
+		initPaths();
 	}
 
 	// setter
@@ -91,20 +99,26 @@ public class VIBImage {
 	public boolean saveReferenceChannel() {
 		if(ref == null)
 			return false;
+		File dir = new File(referenceDir);
+		if(!dir.exists())
+			dir.mkdir();
 		FileSaver fs = new FileSaver(ref);
-		return fs.saveAsTiffStack(getReferencePath());
+		return fs.saveAsTiffStack(referencePath);
 	}
 
 	public boolean saveResampledReferenceChannel() {
 		if(ref_r == null)
 			return false;
+		File dir = new File(resampledReferenceDir);
+		if(!dir.exists())
+			dir.mkdir();
 		FileSaver fs = new FileSaver(ref_r);
-		return fs.saveAsTiffStack(getResampledReferencePath());
+		return fs.saveAsTiffStack(resampledReferencePath);
 	}
 
 	public boolean saveLabels() {
-	    String path = getLabelsPath(); 
-		File dir = new File(getLabelsDir());
+	    String path = labelsPath; 
+		File dir = new File(labelsDir);
 		if(!dir.exists())
 			dir.mkdir();
 		else if(!dir.isDirectory())
@@ -118,8 +132,8 @@ public class VIBImage {
 	}
 	
 	public boolean saveResampledLabels() {
-	    String path = getResampledLabelsPath(); 
-		File dir = new File(getResampledLabelsDir());
+	    String path = resampledLabelsPath; 
+		File dir = new File(resampledLabelsDir);
 		if(!dir.exists())
 			dir.mkdir();
 		else if(!dir.isDirectory())
@@ -155,15 +169,41 @@ public class VIBImage {
 	}
 
 	public boolean saveStatistics(AmiraTable t) {
-		File dir = new File(getStatisticsDir());
+		File dir = new File(statisticsDir);
 		if(!dir.exists())
 			dir.mkdir();
 		else if(!dir.isDirectory())
 			return false;
 		AmiraTableEncoder e = new AmiraTableEncoder(t);
-		if(!e.write(getStatisticsPath()))
+		if(!e.write(statisticsPath))
 			return false;
 		return true;
+	}
+	
+	// getter - paths
+	public String getChannelDir(int channel) {
+		return wd + File.separator + "images_" + channel + File.separator;
+	}
+
+	public String getChannelPath(int channel) {
+		return getChannelDir(channel) + name;
+	}
+
+	public String getResampledChannelDir(int channel) {
+		String dir = wd + File.separator;
+		dir += resamplingF == 1 ? "images" : "resampled" + resamplingF;
+		return dir + "_" + channel + File.separator;
+	}
+
+	public String getResampledChannelPath(int channel) {
+		return getResampledChannelDir(channel) + name;
+	}	
+
+	public String getResampledLabelsDir() {
+		String dir = wd + File.separator;
+		dir += resamplingF == 1 ? "labels" 
+								: "resampled" + resamplingF + "_labels";
+		return dir + File.separator;
 	}
 	
 	// getter - images
@@ -204,93 +244,27 @@ public class VIBImage {
 	public AmiraTable getStatistics() {
 		return loadStatistics();
 	}
-	
-	// getter - paths
-	public String getLabelsDir() {
-		return wd + File.separator + "labels" + File.separator;
-	}
 
-	public String getLabelsName() {
-		return name.substring(0, name.lastIndexOf('.')) + ".labels";
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public String getLabelsPath() {
-		return getLabelsDir() + getLabelsName();
-	}
-
-	public String getReferenceDir() {
-		return wd + File.separator + "images-" + refChannel + File.separator;
-	}
-
-	public String getReferencePath() {
-		return getReferenceDir() + name;
-	}
-
-	public String getChannelDir(int channel) {
-		return wd + File.separator + "images-" + channel + File.separator;
-	}
-
-	public String getChannelPath(int channel) {
-		return getChannelDir(channel) + name;
-	}
-
-	public String getResampledChannelDir(int channel) {
-		return wd + File.separator + "resampled" + resamplingF
-					+ "_" + channel + File.separator;
-	}
-
-	public String getResampledChannelPath(int channel) {
-		return getResampledChannelDir(channel) + name;
-	}
-
-	public String getResampledReferenceDir() {
-		return getResampledChannelDir(refChannel);
-	}
-
-	public String getResampledReferencePath() {
-		return getResampledChannelPath(refChannel);
-	}
-
-	public String getResampledLabelsDir() {
-		return wd + File.separator + "resampled" + resamplingF
-					+ "_labels" + File.separator;
-	}
-
-	public String getResampledLabelsPath() {
-		return getResampledLabelsDir() + getLabelsName();
-	}
-
-	public String getStatisticsDir() {
-		return wd + File.separator + "statistics" + File.separator;
-	}
-
-	public String getStatisticsName() {
-		return name.substring(0, name.lastIndexOf('.')) + ".statistics";
-	}
-
-	public String getStatisticsPath() {
-		return getStatisticsDir() + getStatisticsName();
+	public void print() {
+		System.out.println("ref = " + ref);
+		System.out.println("label = " + labels);
 	}
 	
 	// load methods
 	private void loadRef() {
-		this.ref = new Opener().openImage(getReferencePath());
+		this.ref = new Opener().openImage(referencePath);
 	}
 
 	private void loadLabels() {
-		this.labels = new Opener().openImage(getLabelsPath());
+		this.labels = new Opener().openImage(labelsPath);
 	}
 
 	private void loadResampledRef() {
-		this.ref_r = new Opener().openImage(getResampledReferencePath());
+		this.ref_r = new Opener().openImage(resampledReferencePath);
 	}
 
 	private void loadResampledLabels() {
-		this.labels_r = new Opener().openImage(getResampledLabelsPath());
+		this.labels_r = new Opener().openImage(resampledLabelsPath);
 	}
 
 	private ImagePlus loadChannel(int channel) {
@@ -303,7 +277,7 @@ public class VIBImage {
 
 	private AmiraTable loadStatistics() {
 		AmiraMeshDecoder d=new AmiraMeshDecoder();
-		if(d.open(getStatisticsPath())) {
+		if(d.open(statisticsPath)) {
 			if (d.isTable()) {
 				AmiraTable table = d.getTable();
 				return table;
@@ -312,8 +286,29 @@ public class VIBImage {
 		return null;
 	}
 
-	public void print() {
-		System.out.println("ref = " + ref);
-		System.out.println("label = " + labels);
+
+	private void initPaths() {
+		// labels
+		labelsDir 		= wd + File.separator + "labels" + File.separator;
+		labelsName 		= name.substring(0, name.lastIndexOf('.')) + ".labels";
+		labelsPath 		= labelsDir + labelsName;
+
+		// refChannel
+		referenceDir	= getChannelDir(refChannel);
+		referencePath 	= getChannelPath(refChannel);
+
+		// resampledRef
+		resampledReferenceDir 	= getResampledChannelDir(refChannel);
+		resampledReferencePath	= getResampledChannelPath(refChannel);
+
+		// resampledLabels
+		resampledLabelsDir		= getResampledLabelsDir();
+		resampledLabelsPath 	= resampledLabelsDir + labelsName;
+
+		// statistics
+		statisticsDir	= wd + File.separator + "statistics" + File.separator;
+		statisticsName  = name.substring(0, name.lastIndexOf('.')) 
+												+ ".statistics";
+		statisticsPath 	= statisticsDir + statisticsName;
 	}
 }

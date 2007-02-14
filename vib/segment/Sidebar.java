@@ -278,22 +278,5 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 			return null;
 		}
 	}
-
-	public void cleanUp() {
-		cc = null;
-		constr = null;
-		lZoomLevel = null;
-		bZoomPlus = null;
-		bZoomMinus = null;
-		bPlus = null;
-		bMinus = null;
-		check3d = null;
-		labelImagesChoice = null;
-		labelImages = null;
-		materials.releaseImage();
-		materials = null;
-		defaultMaterials = null;
-		pInfos = null;
-	}												
 }
 

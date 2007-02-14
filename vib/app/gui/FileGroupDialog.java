@@ -1,4 +1,4 @@
-package vib.app.gui.dialog;
+package vib.app.gui;
 
 import vib.app.FileGroup;
 
@@ -63,7 +63,7 @@ public class FileGroupDialog extends Dialog implements ActionListener {
 		GridBagConstraints c = new GridBagConstraints();
 		this.setLayout(gridbag);
 
-		Label name = new Label(workingFG.getName());
+		Label name = new Label("File group name");
 		name.setFont(new Font("Monospace", Font.BOLD, 14));
 		c.gridx = c.gridy = 0;
 		c.insets = new Insets(5,5,5,5);

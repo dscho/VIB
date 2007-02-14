@@ -3,42 +3,30 @@ package vib.app.module;
 import java.io.File;
 import ij.io.Opener;
 import ij.ImagePlus;
+import ij.IJ;
 import vib.app.VIBImage;
 import vib.app.Options;
+import vib.app.FileGroup;
 import vib.Resample_;
 
 public class Resample extends Module {
 
-	private VIBImage image;
-	private Options options;
-	
 	public Resample(VIBImage imp, Options options) {
-		this.image = imp;
-		this.options = options;
+		super(imp, options, true);
+		dependingOn.add(Label.class);
 	}
 
 	public String getName() {
 		return "Resampling";
 	}
 
-	public Module.Error checkDependency() {
-		// check requirements available
-		for(int i = 0; i < options.getNumChannels(); i++) {
-			File channel = new File(image.getChannelPath(i+1));
-			if(!channel.exists())
-				return new Error(REQUIREMENTS_UNAVAILABLE, 
-						"Channel " + (i+1) + "does not exist");
-		}
-		File labels = new File(image.getLabelsPath());
-		if(!labels.exists())
-				return new Error(
-					Module.REQUIREMENTS_UNAVAILABLE, "Labels do not exist");
+	public int checkResults() {
 		// check availability of results
 		boolean available = true;
 		boolean uptodate = true;
-		for(int i = 0; i < options.getNumChannels(); i++) {
-			File lowRes = new File(image.getResampledChannelPath(i+1));
-			File highRes = new File(image.getChannelPath(i+1));
+		for(int i = 1; i <= options.getNumChannels(); i++) {
+			File lowRes = new File(image.getResampledChannelPath(i));
+			File highRes = new File(image.getChannelPath(i));
 			if(!lowRes.exists())
 				available = false;
 			if(lowRes.lastModified() == 0L || 
@@ -46,7 +34,8 @@ public class Resample extends Module {
 				uptodate = false;
 			}
 		}
-		File labels_r = new File(image.getResampledLabelsPath());
+		File labels = new File(image.labelsPath);
+		File labels_r = new File(image.resampledLabelsPath);
 		if(!labels_r.exists())
 			available = false;
 		if(labels_r.lastModified() == 0L ||
@@ -55,37 +44,48 @@ public class Resample extends Module {
 
 		// uptodate
 		if(uptodate) {
-			return new Error(RESULTS_OK,"");
+			return RESULTS_OK;
 		}
 		// just available
 		else if(available) {
-			return new Error(RESULTS_OUT_OF_DATE, "");
+			return RESULTS_OUT_OF_DATE;
 		}
 		// not available, but at least the requirements are fullfilled		
-		return new Error(RESULTS_UNAVAILABLE, "");
+		return RESULTS_UNAVAILABLE;
 	}
 	
-	public Object execute() {
+	protected void runThisModule() {
 		int resamplingFactor = options.getResamplingFactor();
 		int referenceChannel = options.getRefChannel();
-		for(int i = 0; i < options.getNumChannels(); i++) {
+		for(int i = 1; i <= options.getNumChannels(); i++) {
 			if(i == referenceChannel) {
+				console.append("...retrieve and resample channel " + i + 
+						" of " + image.name);
 				ImagePlus resampled = Resample_.
 					resample(image.getReferenceChannel(), resamplingFactor);
 				image.setResampledReferenceChannel(resampled);
+				console.append("...save channel " + i + " of " + image.name);
 				image.saveResampledReferenceChannel();
+				image.releaseReferenceChannel();
+				image.releaseResampledReferenceChannel();
 			} else {
+				console.append("...retrieve and resample channel " + i + 
+						" of " + image.name);
 				ImagePlus resampled = 
-					Resample_.resample(image.getChannel(i+1), resamplingFactor);
-				image.saveResampledChannel(i+1, resampled);
+					Resample_.resample(image.getChannel(i), resamplingFactor);
+				console.append("...save channel " + i + " of " + image.name);
+				image.saveResampledChannel(i, resampled);
 			}
 		}
+		console.append("...retrieve and resample labels of " + image.name);
 		ImagePlus resampled = 
 			Resample_.resample(image.getLabels(), resamplingFactor);
+		image.releaseLabels();
 		image.setResampledLabels(resampled);
+		console.append("...save labels of " + image.name);
 		if(!image.saveResampledLabels()) {
-			console.append("Could not save resampled " + image.getName());
+			console.append("Could not save resampled " + image.name);
 		}
-		return null;
+		image.releaseResampledLabels();
 	}
 }

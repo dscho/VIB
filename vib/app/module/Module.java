@@ -1,16 +1,17 @@
 package vib.app.module;
 
-import vib.app.gui.dialog.Console;
+import ij.IJ;
 
-import java.awt.Component;
-import java.awt.Panel;
+import vib.app.gui.Console;
+import vib.app.Options;
+import vib.app.VIBImage;
+import vib.app.FileGroup;
+
 import java.util.List;
 import java.util.ArrayList;
 
 public abstract class Module {
 
-	/** the required files etc are not here, calculation is impossible */
-	public static final int REQUIREMENTS_UNAVAILABLE = 0;
 	/** requirements ok, and results do not exist */
 	public static final int RESULTS_UNAVAILABLE = 2;
 	/** requirements ok and results exist, but are out of date */
@@ -18,54 +19,81 @@ public abstract class Module {
 	/** requirements are ok and results both exist and are uptodate */
 	public static final int RESULTS_OK = 4;
 
-	protected Panel outputPanel;
+	protected Options options;
+	protected List<Class> dependingOn;
+	protected VIBImage image;
 	protected Console console = Console.instance();
+	protected boolean runDependingModulesWithAllImages;
 
-	public static class Error {
-		String message;
-		int id;
-
-		public Error(int id, String message) {
-			this.id = id; 
-			this.message = message;
-		}
-
-		public int id() { return id; }
-		
-		public String message() { return message; }
-
-		public boolean equals(Object o) {
-			return (o instanceof Error  && ((Error)o).id == this.id);
-		}
+	public Module(VIBImage image, Options options, 
+							boolean runDependingModulesWithAllImg) {
+		this.image = image;
+		this.options = options;
+		this.dependingOn = new ArrayList<Class>();
+		this.runDependingModulesWithAllImages = runDependingModulesWithAllImg;
 	}
 
-	public void setOutputPanel(Panel p) {
-		this.outputPanel = p;
-	}
-
-	protected void fillOutputPanel(Panel p) {
-		if(outputPanel != null) {	
-			outputPanel.removeAll();
-			outputPanel.add(p);
-			outputPanel.validate();
-		}
-	}
-
-	protected void clearOutputPanel() {
-		if(outputPanel != null) {
-			Component[] c = outputPanel.getComponents();
-			if(c.length == 0 || 
-					(c.length == 1 && c[0] == Console.instance()))
-				return;
-			outputPanel.removeAll();
-			outputPanel.add(Console.instance());
-			outputPanel.validate();
+	public void run() {
+		runDependingModules();
+		if(decideWhetherToRun()) {
+			System.out.println("running " + getName());
+			Console.instance().append("running " + getName());
+			runThisModule();
 		}
 	}
 
 	public abstract String getName();
 	
-	public abstract Error checkDependency();
+	public abstract int checkResults();
 	
-	public abstract Object execute();
+	protected abstract void runThisModule();
+
+	protected void runDependingModules() {
+		if(runDependingModulesWithAllImages)
+			runDependingModulesWithAllImages();
+		else
+			runDependingModulesWithOneImage();
+	}
+
+	private boolean decideWhetherToRun() {
+		int dep = checkResults();
+		if(dep == RESULTS_OK)
+            return false;
+        else if(dep == RESULTS_OUT_OF_DATE) {
+            IJ.showMessage("Results are out of date, but I won't recalculate");
+            return false;
+        }
+		return true;
+	}
+
+
+	private Module getModule(Class modClass, VIBImage img, Options o) {
+		Module module = null;
+		try {
+			module = (Module)modClass.getConstructors()[0].newInstance(
+		                 img, o);
+		} catch (Exception e) {
+			console.append("Can't load module " +  modClass.getName());
+			throw new RuntimeException();
+		}
+		return module;
+	}
+
+	private void runDependingModulesWithAllImages(){
+		FileGroup fg = options.getFileGroup();
+		for(int i = 0; i < fg.size(); i++) {
+			VIBImage image = new VIBImage(fg.get(i), options);
+			for(Class modClass : dependingOn) {
+				Module module = getModule(modClass, image, options);
+				module.run();
+			}
+		}
+	}
+
+	private void runDependingModulesWithOneImage(){
+		for(Class modClass : dependingOn) {
+			Module module = getModule(modClass, image, options);
+			module.run();
+		}
+	}
 }

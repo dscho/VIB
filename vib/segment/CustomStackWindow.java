@@ -19,8 +19,15 @@ public class CustomStackWindow extends StackWindow
 	private Roi[] savedRois;
 	private int oldSlice;
 
+	/* Listener for the ok button, to get informed when 
+	 * labelling is finished */
+	private ActionListener al;
+
 	private Sidebar sidebar;
 	private CustomCanvas cc;
+	private Button ok;
+
+	
 
 	public CustomStackWindow(ImagePlus imp) {
 		super(imp, new CustomCanvas(imp));
@@ -51,11 +58,34 @@ public class CustomStackWindow extends StackWindow
 		sliceAndImage.add(cc, BorderLayout.CENTER);
 
 		add(sliceAndImage, BorderLayout.EAST); 
+
+		Panel buttonPanel = new Panel(new FlowLayout());
+        ok = new Button("Ok");
+        ok.addActionListener(this);
+        buttonPanel.add(ok);
+        add(buttonPanel, BorderLayout.SOUTH);
+
 		pack();
-	} 
+	}
+
+	public void cleanUp() {
+		savedRois = null;
+		al = null;
+		sidebar.getMaterials().labels = null;
+		sidebar = null;
+		ok = null;
+		cc.releaseImage();
+		cc = null;
+		imp.close();
+		imp = null;
+	}
 
 	public ImagePlus getLabels() {
 		return cc.getLabels();
+	}
+
+	public void addActionListener(ActionListener al) {
+		this.al = al;
 	}
 	
 	public Sidebar getSidebar() {
@@ -68,13 +98,6 @@ public class CustomStackWindow extends StackWindow
 
 	public Dimension getMinimumSize() {
 		return getSize();
-	}
-
-	public void cleanUp() {
-		super.imp = null;
-		sidebar.cleanUp();
-		cc.releaseImage();
-		sidebar = null;
 	}
 
 	public void processPlusButton(){
@@ -221,6 +244,12 @@ public class CustomStackWindow extends StackWindow
 			processPlusButton();
 		} else if (command.equals("minus")) {
 			processMinusButton();
+		} else if (command.equals("Ok")) {
+			// call the action listener before destroying the window
+			if(al != null)
+				al.actionPerformed(e);
+			// new StackWindow(getImagePlus());
+			getImagePlus().close();
 		}
 	}
 
