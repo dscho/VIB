@@ -11,11 +11,6 @@ Cygwin*)
 	;;
 esac
 
-case $(hostname) in
-racer)
-	EXTRADEFS="$EXTRADEFS -Dj3d.noOffScreen=true"
-esac
-
 case "$1" in
 app)
 	shift
