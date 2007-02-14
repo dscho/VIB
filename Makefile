@@ -1,7 +1,7 @@
 JAVAS=$(wildcard *.java */*.java */*/*.java */*/*/*.java */*/*/*/*.java)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
-JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java voltex/*.java Volume_Renderer.java)
+JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java voltex/*.java Volume_Renderer.java ij3d/*.java)
 FILTEROUT=$(JAVA3DS)
 ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
@@ -96,3 +96,6 @@ JARS=Delaunay_Voronoi.jar AmiraMesh_.jar VIB_-compat.jar $(SIMPLE_JARS)
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
 	(cd tempdir && javac $(JAVACOPTS) $(JAVACOPTSCOMPAT) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
 
+clean:
+	find -name \*.class -exec rm {} \;
+	rm -f $(JARS)
