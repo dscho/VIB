@@ -7,6 +7,7 @@ import ij.ImageJ;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.ImageWindow;
+import ij.gui.MessageDialog;
 import ij.process.ColorProcessor;
 
 import java.awt.AWTException;
@@ -26,6 +27,8 @@ import java.awt.image.Raster;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.GraphicsConfigTemplate3D;
 import javax.media.j3d.ImageComponent2D;
+import javax.media.j3d.RenderingError;
+import javax.media.j3d.RenderingErrorListener;
 import javax.media.j3d.Screen3D;
 
 public class ImageWindow3D extends ImageWindow {
@@ -50,6 +53,8 @@ public class ImageWindow3D extends ImageWindow {
 		imp = new ImagePlus();
 		this.universe = universe;
 		this.canvas3D = canvas3D;
+
+		universe.addRenderingErrorListener(new ErrorListener());
 
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
@@ -136,17 +141,35 @@ public class ImageWindow3D extends ImageWindow {
 			new ImageComponent2D(ImageComponent2D.FORMAT_RGBA,
 					bImage);
 
-		getOffScreenCanvas();
-		offScreenCanvas3D.setOffScreenBuffer(buffer);
-		offScreenCanvas3D.renderOffScreenBuffer();
-		offScreenCanvas3D.waitForOffScreenRendering();
-		bImage = offScreenCanvas3D.getOffScreenBuffer().getImage();
+		try {
+			getOffScreenCanvas();
+			offScreenCanvas3D.setOffScreenBuffer(buffer);
+			offScreenCanvas3D.renderOffScreenBuffer();
+			offScreenCanvas3D.waitForOffScreenRendering();
+			bImage = offScreenCanvas3D.getOffScreenBuffer()
+				.getImage();
+		} catch (Exception e) {
+			noOffScreen = true;
+			universe.getViewer().getView()
+				.removeCanvas3D(offScreenCanvas3D);
+			offScreenCanvas3D = null;
+			new MessageDialog(this, "Java3D error",
+				"Off-screen rendering not supported by this\n"
+				 + "setup. Falling back to screen capturing");
+			return getImagePlus();
+		}
 
 		// To release the reference of buffer inside Java 3D.
 		offScreenCanvas3D.setOffScreenBuffer(null);
 
 		ColorProcessor cp = new ColorProcessor(bImage);
 		return new ImagePlus("3d", cp);
+	}
+
+	private class ErrorListener implements RenderingErrorListener {
+		public void errorOccurred(RenderingError error) {
+			throw new RuntimeException(error.getDetailMessage());
+		}
 	}
 }
 
