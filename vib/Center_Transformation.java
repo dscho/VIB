@@ -31,16 +31,17 @@ public class Center_Transformation implements PlugIn {
 		bestRigid(tableModel, tableTemplate);
 	}
 		
-	public static void bestRigid(AmiraTable tModel, AmiraTable tTemplate) {
+	public static FastMatrix bestRigid(AmiraTable tModel,AmiraTable tTemplate) {
 		Point3d[] setModel = getList(tModel);
 		Point3d[] setTemplate = getList(tTemplate);
 
 		FastMatrix transform = FastMatrix.bestRigid(setModel,setTemplate, true);
 		// write this into amira parameters
 		Hashtable h = (Hashtable)tModel.properties.get("Parameters");
-		String key = tModel.getTitle() + "SCenterTransformation ";
+		String key = tTemplate.getTitle() + "SCenterTransformation ";
 		String value = transform.toStringForAmira();
 		h.put(key,value);
+		return transform;
 	}
 
 	public static Point3d[] getList(AmiraTable table) {

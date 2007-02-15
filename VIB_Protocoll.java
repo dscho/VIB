@@ -85,7 +85,7 @@ public class VIB_Protocoll implements PlugIn, ActionListener {
 
 	public void initTextFields() {
 		setString(WD, options.getWorkingDirectory().getAbsolutePath());
-		setString(TEMPL, options.getWorkingDirectory().getAbsolutePath());
+		setString(TEMPL, options.getTemplate().getAbsolutePath());
 		setNumber(NO_CHANNEL, options.getNumChannels());
 		setNumber(REF_CHANNEL, options.getRefChannel());
 		setNumber(RES_F, options.getResamplingFactor());

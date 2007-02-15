@@ -30,7 +30,8 @@ public class VIBImage {
 	private String wd;
 	private int refChannel;
 	private int resamplingF;
-	
+
+	private VIBImage template = null;
 	private ImagePlus ref = null;
 	private ImagePlus labels = null;
 	private ImagePlus ref_r = null;
@@ -207,6 +208,13 @@ public class VIBImage {
 	}
 	
 	// getter - images
+	public VIBImage getTemplate() {
+		if(template == null) {
+			template = new VIBImage(options.getTemplate(), options);
+		}
+		return template;
+	}
+	
 	public ImagePlus getReferenceChannel() {
 		if(ref == null) {
 			loadRef();

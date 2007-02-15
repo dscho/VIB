@@ -35,9 +35,8 @@ public abstract class Module {
 
 	public void run() {
 		runDependingModules();
+		Console.instance().append("running " + getName());
 		if(decideWhetherToRun()) {
-			System.out.println("running " + getName());
-			Console.instance().append("running " + getName());
 			runThisModule();
 		}
 	}
@@ -57,10 +56,12 @@ public abstract class Module {
 
 	private boolean decideWhetherToRun() {
 		int dep = checkResults();
-		if(dep == RESULTS_OK)
+		if(dep == RESULTS_OK) {
+			console.append("...results available...skipping");
             return false;
+		}
         else if(dep == RESULTS_OUT_OF_DATE) {
-            IJ.showMessage("Results are out of date, but I won't recalculate");
+            console.append("...results out of date,nevertheless...skipping");
             return false;
         }
 		return true;
@@ -74,6 +75,7 @@ public abstract class Module {
 		                 img, o);
 		} catch (Exception e) {
 			console.append("Can't load module " +  modClass.getName());
+			e.printStackTrace();
 			throw new RuntimeException();
 		}
 		return module;

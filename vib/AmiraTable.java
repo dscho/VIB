@@ -40,6 +40,10 @@ public class AmiraTable extends TextWindow {
 		return p;
 	}
 
+	public Properties getProperties() {
+		return properties;
+	}
+
 	public void show() {
 		if (!Interpreter.isBatchMode())
 			super.show();
