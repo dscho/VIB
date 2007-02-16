@@ -74,8 +74,14 @@ public class LabelCenterTransformation extends Module {
 		// index 0 is 'exterior'
 		for (int i = 1; i < count; i++) {
 			String[] line = Tools.split(panel.getLine(i), "\t");
+			String materialName = line[1];
 			console.append("...material: " + line[1]);
 			int material = i;
+			// check if labelfield is empty:
+			int voxelCount = Integer.parseInt(line[2]);
+			if(voxelCount == 0) {
+				continue;
+			}
 			String initialTransform = centerTransform.toStringForAmira();
 			int level = 4;
 			int stoplevel = 2;
@@ -99,8 +105,8 @@ public class LabelCenterTransformation extends Module {
 			// write this into amira parameters
 			Hashtable h = (Hashtable)modelStatistics.
 									getProperties().get("Parameters");
-			String key = templateStatistics.
-									getTitle() + "SLabelTransformation ";
+			String key = templateStatistics.getTitle() 
+								+ "SLabelTransformation-" + materialName;
 			String value = matrix.toStringForAmira();
 			h.put(key,value);
 			console.append("...save statistics");
