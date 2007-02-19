@@ -10,15 +10,15 @@ import com.sun.j3d.utils.universe.*;
 import com.sun.j3d.utils.geometry.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
-
+import ij.ImagePlus;
 
 import java.util.List;
 import java.util.ArrayList;
 
 public final class MCShape extends Shape3D{
 
-	public MCShape(byte[][][] voxData, int seekV){
-		this.setGeometry(createGeometry(voxData,seekV));
+	public MCShape(ImagePlus image, int seekV){
+		this.setGeometry(createGeometry(image, seekV));
 		this.setAppearance(createAppearance());
 	}	
 
@@ -42,9 +42,9 @@ public final class MCShape extends Shape3D{
 		return appearance;
 	}
 	
-	private Geometry createGeometry(byte[][][] voxData, int seekValue) {
+	private Geometry createGeometry(ImagePlus image, int seekValue) {
 
-		List<Point3f> tList = getTriangles(voxData, seekValue);
+		List<Point3f> tList = MCCube.getTriangles(image, seekValue);
 		Point3f[] coords = (Point3f[])tList.toArray(new Point3f[]{});
 			
 		int N = coords.length;
@@ -58,6 +58,9 @@ public final class MCShape extends Shape3D{
 					TriangleArray.COORDINATES | 
 					TriangleArray.COLOR_3 |
 					TriangleArray.NORMALS);
+		for(int i=0; i<N; i++) 
+			if(coords[i]==null)
+				System.out.println("coord " + i + " is null");
 		ta.setCoordinates(0, coords);
 		ta.setColors(0, colors);
 
@@ -74,33 +77,5 @@ public final class MCShape extends Shape3D{
 		GeometryArray result = gi.getGeometryArray();
 		
 		return result;
-	}
-
-	private static final List<Point3f> getTriangles(byte[][][] img, int seekV){
-		List<Point3f> ret = new ArrayList<Point3f>();
-		int w = img.length;
-		int h = img[0].length;
-		int d = img[0][0].length;
-
-		for(int z = 0; z < d-1; z++){
-			if(z%10==0) System.out.println(z + " of " + (d-2));
-			for(int x = 0; x < w-1; x++){
-				for(int y = 1; y < h; y++){
-					int[] densities = new int[]{
-						img[x][y][z] & 0xff, 
-						img[x+1][y][z] & 0xff, 
-						img[x+1][y-1][z] & 0xff, 
-						img[x][y-1][z] & 0xff,
-						img[x][y][z+1] & 0xff,
-						img[x+1][y][z+1] & 0xff, 
-						img[x+1][y-1][z+1] & 0xff,
-						img[x][y-1][z+1] & 0xff};
-
-					Point3f pos = new Point3f(x-w/2, y-h/2, z-d/2);
-					new MCCube(pos, densities, seekV).getTriangles(ret);
-				}
-			}
-		}
-		return ret;
 	}
 }

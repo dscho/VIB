@@ -55,9 +55,9 @@ public class Viewer_3D implements PlugInFilter {
 		int resampleZ = (int)gd.getNextNumber();
 		process(threshold, smooth, resampleX, resampleY, resampleZ);
 		if(frame == null)
-			showViewer(voxData, threshold);
+			showViewer(threshold);
 		else 
-			updateViewer(voxData, threshold);
+			updateViewer(threshold);
 	}
 
 	public void process(int threshold, boolean smooth,
@@ -69,7 +69,7 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 		if(resampleX != 1 || resampleY != 1 || resampleZ != 1)
 			resample(resampleX, resampleY, resampleZ);
 
-		byte[][][] voxData = calcVoxData();
+		//byte[][][] voxData = calcVoxData();
 	}
 
 	private void init() {
@@ -102,22 +102,22 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 			byte[] pixels = (byte[])stack.getProcessor(z+1).getPixels();
 			for(int y=0; y<h; y++){
 				for(int x=0; x<w; x++){
-					voxData[x][y][z] = pixels[x*w+y];
+					voxData[x][y][z] = pixels[x+y*w];
 				}
 			}
 		}
 		return voxData;
 	}
 
-	public void showViewer(byte[][][] voxData, int threshold) {
-		canvas = new MCPanel(voxData, w, threshold);
+	public void showViewer(int threshold) {
+		canvas = new MCPanel(ret, threshold);
 		canvas.canvas.setSize(new Dimension(512, 512));
 		ImageWindow3D win = new ImageWindow3D("title",
 				canvas.canvas, canvas.simpleU);
 	}
 
-	public void updateViewer(byte[][][]voxData, int threshold) {
-		canvas.updateShape(voxData, w, threshold);
+	public void updateViewer(int threshold) {
+		canvas.updateShape(ret, threshold);
 	}
 
 	public int setup(String arg, ImagePlus img) {

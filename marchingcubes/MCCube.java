@@ -3,24 +3,184 @@ package marchingcubes;
 import java.util.List;
 import java.util.ArrayList;
 import javax.vecmath.Point3f;
+import ij.ImagePlus;
 
 public final class MCCube {
     // default size of the cubes
-    public static final float SIZE = 1.0f;
-    
-    // default value used for linear interpolation of surface extraction
-    public static final float DEFAULT_SEEK_VALUE = 50.0f;
-    
-	// current seek value
-    private float seekValue = DEFAULT_SEEK_VALUE;
+    public static float SIZE = 1.0f;
     
     // vertexes
-    private MCVertex[] v;
+    private Point3f[] v;
 
     // interpolated values
     private Point3f[] e;
     
-    // triangles to be drawn in each case
+    // constructor    
+	/**
+     * constructor of a MCCube object
+     *        _________           0______x
+	 *       /v0    v1/|         /|
+	 *      /________/ |        / | 
+	 *      |v3    v2| /v5    y/  |z 
+	 *      |________|/
+	 *       v7    v6
+     */
+	public MCCube(int x, int y, int z){
+		this.v = new Point3f[8];
+		x -= w/2; y -= h/2; z -= d/2;
+		v[0] = new Point3f(x,     y,     z);
+		v[1] = new Point3f(x+SIZE,y,     z);
+		v[2] = new Point3f(x+SIZE,y-SIZE,z);
+		v[3] = new Point3f(x,     y-SIZE,z);
+		v[4] = new Point3f(x,     y,     z+SIZE);
+		v[5] = new Point3f(x+SIZE,y,     z+SIZE);
+		v[6] = new Point3f(x+SIZE,y-SIZE,z+SIZE);
+		v[7] = new Point3f(x,     y-SIZE,z+SIZE);
+		this.e = new Point3f[12];
+		computeEdges();
+    } 
+    
+    /**
+     * computes the case number of the cube
+     * @return the number of the case corresponding to the cube
+     */
+    private int caseNumber() {
+        int caseNumber = 0;
+        for (int index = -1; 
+			++index < v.length; 
+			caseNumber += (intensity(v[index]) - threshold > 0)?1 << index:0);
+        return caseNumber;
+    }
+    
+    /**
+     * computes the interpolated point along a specified whose 
+	 * intensity equals the reference value
+     * @param v1 first extremity of the edge
+     * @param v2 second extremity of the edge
+     * @return the point on the edge where intensity equals the isovalue; 
+	 * null is interpolated point is beyond edge boundaries
+     */
+    private Point3f computeEdge(Point3f v1, Point3f v2) {
+		// 30 --- 50 --- 70 : t=0.5
+		// 70 --- 50 --- 30 : t=0.5
+        float t = (threshold - intensity(v1))/
+					(float) (intensity(v2) - intensity(v1));
+        if (t >= 0 && t <= 1) {
+			// v1 + t*(v2-v1)
+            Point3f vDir = new Point3f(v2);
+			vDir.sub(v1);
+			vDir.scale(t);
+			vDir.add(v1);
+            return vDir;
+        }
+        return null;
+    }
+
+	private Point3f computeEdge2(Point3f v1, Point3f v2){
+		Point3f v1_cp = new Point3f(v1);
+		Point3f v2_cp = new Point3f(v2);
+		if(intensity(v1_cp) > intensity(v2_cp)) {
+			Point3f tmp = v1_cp;
+			v1_cp = v2_cp;
+			v2_cp = tmp;
+		}
+		if(intensity(v1_cp) <= threshold && intensity(v2_cp) >= threshold) {
+			while(intensity(v1_cp) < threshold){
+				stepTo(v1_cp, v2_cp);
+			}
+			return v1_cp;
+		}
+		return null;
+	}
+
+	private void stepTo(Point3f p1, Point3f p2) {
+		if(p1.x != p2.x && p1.y == p2.y && p1.z == p2.z) {
+			p1.x = p1.x < p2.x ? ++p1.x : --p1.x;
+		} else if (p1.y != p2.y && p1.x == p2.x && p1.z == p2.z) {
+			p1.y = p1.y < p2.y ? ++p1.y : --p1.y;
+		} else if (p1.z != p2.z && p1.x == p2.x && p1.y == p2.y) {
+			p1.z = p1.z < p2.z ? ++p1.z : --p1.z;
+		} else {
+			System.out.println("difference in more than one coordinate:");
+			System.out.println("p1 = " + p1);
+			System.out.println("p2 = " + p2);
+			System.out.println("vertices: ");
+			for(int i=0;i<8;i++) System.out.print(v[i] + ", ");
+			System.out.println();
+			System.exit(1);
+		}
+	}
+    
+    /**
+     * computes interpolated values along each edge of the cube 
+	 * (null if interpolated value doesn't belong to the edge)
+     */
+    private void computeEdges() {
+        this.e[0] = this.computeEdge(v[0], v[1]);
+        this.e[1] = this.computeEdge(v[1], v[2]);
+        this.e[2] = this.computeEdge(v[2], v[3]);
+        this.e[3] = this.computeEdge(v[3], v[0]);
+        
+        this.e[4] = this.computeEdge(v[4], v[5]);
+        this.e[5] = this.computeEdge(v[5], v[6]);
+        this.e[6] = this.computeEdge(v[6], v[7]);
+        this.e[7] = this.computeEdge(v[7], v[4]);
+        
+        this.e[8] = this.computeEdge(v[0], v[4]);
+        this.e[9] = this.computeEdge(v[1], v[5]);
+        this.e[10] = this.computeEdge(v[3], v[7]);
+        this.e[11] = this.computeEdge(v[2], v[6]);
+    }
+    
+	private void getTriangles(List<Point3f> list){
+		int cn = this.caseNumber();
+		int offset = cn*15;
+		for(int index = 0; index < 5; index++){
+            // if there's a triangle
+            if (faces[offset] != -1) {
+                // pick up vertexes of the current triangle
+                list.add(this.e[faces[offset + 0]]);
+                list.add(this.e[faces[offset + 1]]);
+                list.add(this.e[faces[offset + 2]]);
+			} 
+			offset += 3;
+		}
+	}
+
+	private static int w, h, d;
+	private static byte[][] voxData;
+	private static int threshold;
+
+	private static int intensity(Point3f p) {
+		int x = (int)p.x + w/2, y = (int)p.y + h/2, z = (int)p.z + d/2;
+		return voxData[z][y * w + x] & 0xff;
+	}
+
+	public static final List<Point3f> getTriangles(ImagePlus image, int thresh){
+		List<Point3f> ret = new ArrayList<Point3f>();
+		w = image.getWidth();
+		h = image.getHeight();
+		d = image.getStackSize();
+		threshold = thresh;
+		voxData = new byte[d][];
+		for(int z = 0; z < d; z++) {
+			voxData[z] = (byte[])image.getStack().getProcessor(z+1).getPixels();
+		}
+		int SIZE = 1;
+		MCCube.SIZE = SIZE;
+		for(int z = 0; z < d-1; z+=SIZE){
+			if(z%10==0) System.out.println(z + " of " + (d-2));
+			for(int x = 0; x < w-SIZE; x+=SIZE){
+				for(int y = SIZE; y < h; y+=SIZE){
+					MCCube cube = new MCCube(x, y, z);
+					cube.getTriangles(ret);
+				}
+			}
+		}
+		return ret;
+	}
+
+	// triangles to be drawn in each case
     private static int faces[] =
     {
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -280,150 +440,4 @@ public final class MCCube {
         0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
     };
-    
-    /**
-     * contructor of a MCCube object
-	 * @param pos position
-	 * @param d densities
-     */
-
-	public MCCube(Point3f pos, int[] d, int seekValue){
-        this( 
-		new MCVertex(new Point3f(pos.x,     pos.y,     pos.z),d[0]),
-		new MCVertex(new Point3f(pos.x+SIZE,pos.y,     pos.z),d[1]),
-		new MCVertex(new Point3f(pos.x+SIZE,pos.y-SIZE,pos.z),d[2]), 
-		new MCVertex(new Point3f(pos.x,     pos.y-SIZE,pos.z),d[3]), 
-		new MCVertex(new Point3f(pos.x,     pos.y,     pos.z+SIZE),d[4]),
-		new MCVertex(new Point3f(pos.x+SIZE,pos.y,     pos.z+SIZE),d[5]),
-		new MCVertex(new Point3f(pos.x+SIZE,pos.y-SIZE,pos.z+SIZE),d[6]),
-		new MCVertex(new Point3f(pos.x,     pos.y-SIZE,pos.z+SIZE),d[7]),
-		seekValue);
-    }
-    
-    /**
-     * constructor of a MCCube object
-     * @param v0 first vertex
-     * @param v1 second vertex
-     * @param v2 third vertex
-     * @param v3 fourth vertex
-     * @param v4 fifth vertex
-     * @param v5 sixth vertex
-     * @param v6 seventh vertex
-     * @param v7 eighth vertex
-     */
-    public MCCube(
-			MCVertex v0, MCVertex v1, MCVertex v2, MCVertex v3, 
-			MCVertex v4, MCVertex v5, MCVertex v6, MCVertex v7, int seekValue) {
-        
-        this.v = new MCVertex[8];
-        this.v[0] = v0;
-        this.v[1] = v1;
-        this.v[2] = v2;
-        this.v[3] = v3;
-        this.v[4] = v4;
-        this.v[5] = v5;
-        this.v[6] = v6;
-        this.v[7] = v7;
-        
-        this.e = new Point3f[12];
-		this.seekValue = seekValue;
-        this.computeEdges();
-    }
-    
-    /**
-     * constructor of a MCCube object
-     * @param v array containing the vertexes
-     */
-    public MCCube(MCVertex[] v, int seekValue) {
-        this.v = v;
-		this.seekValue = seekValue;
-        this.e = new Point3f[12];
-        this.computeEdges();
-    }
-    
-    /**
-     * computes the case number of the cube
-     * @return the number of the case corresponding to the cube
-     */
-    private int caseNumber() {
-        int caseNumber = 0;
-        for (int index = -1; 
-			++index < v.length; 
-			caseNumber += (v[index].weight() - seekValue > 0)?1 << index:0);
-        return caseNumber;
-    }
-    
-    /**
-     * computes the interpolated point along a specified whose 
-	 * weight equals the reference value
-     * @param v1 first extremity of the edge
-     * @param v2 second extremity of the edge
-     * @return the point on the edge where weight equals the isovalue; 
-	 * null is interpolated point is beyond edge boundaries
-     */
-    private Point3f computeEdge(MCVertex v1, MCVertex v2) {
-        float t = (seekValue - v1.weight())/
-					(float) (v2.weight() - v1.weight());
-        if (t >= 0 && t <= 1) {
-            Point3f vDir = new Point3f(v2.position);
-			vDir.sub(v1.position);
-			vDir.scale(t);
-			vDir.add(v1.position);
-            return vDir;
-        }
-        return null;
-    }
-    
-    /**
-     * computes interpolated values along each edge of the cube 
-	 * (null if interpolated value doesn't belong to the edge)
-     */
-    private void computeEdges() {
-        this.e[0] = this.computeEdge(v[0], v[1]);
-        this.e[1] = this.computeEdge(v[1], v[2]);
-        this.e[2] = this.computeEdge(v[2], v[3]);
-        this.e[3] = this.computeEdge(v[3], v[0]);
-        
-        this.e[4] = this.computeEdge(v[4], v[5]);
-        this.e[5] = this.computeEdge(v[5], v[6]);
-        this.e[6] = this.computeEdge(v[6], v[7]);
-        this.e[7] = this.computeEdge(v[7], v[4]);
-        
-        this.e[8] = this.computeEdge(v[0], v[4]);
-        this.e[9] = this.computeEdge(v[1], v[5]);
-        this.e[10] = this.computeEdge(v[3], v[7]);
-        this.e[11] = this.computeEdge(v[2], v[6]);
-    }
-    
-	public void getTriangles(List<Point3f> list){
-		int cn = this.caseNumber();
-		int offset = cn*15;
-		for(int index = 0; index < 5; index++){
-            // if there's a triangle
-            if (faces[offset] != -1) {
-                // pick up vertexes of the current triangle
-                list.add(this.e[faces[offset + 0]]);
-                list.add(this.e[faces[offset + 1]]);
-                list.add(this.e[faces[offset + 2]]);
-			} 
-			offset += 3;
-		}
-	}
-    
-	public static void main(String[] args){
-		MCVertex v0 = new MCVertex(new Point3f(-SIZE, SIZE, -SIZE),100);
-		MCVertex v1 = new MCVertex(new Point3f(SIZE, SIZE, -SIZE),-100);
-		MCVertex v2 = new MCVertex(new Point3f(SIZE, -SIZE, -SIZE),-100);
-		MCVertex v3 = new MCVertex(new Point3f(-SIZE, -SIZE, -SIZE),-100);
-		MCVertex v4 = new MCVertex(new Point3f(-SIZE, SIZE, SIZE),-100);
-		MCVertex v5 = new MCVertex(new Point3f(SIZE, SIZE, SIZE),-100);
-		MCVertex v6 = new MCVertex(new Point3f(SIZE, -SIZE, SIZE),-100);
-		MCVertex v7 = new MCVertex(new Point3f(-SIZE, -SIZE, SIZE),-100);
-
-
-		int d[] = new int[]{100,-100,-100,-100,-100,-100,-100,-100};
-		MCCube cube = new MCCube(new Point3f(0,1,0),d, 50);
-//		MCCube cube = new MCCube(v0,v2,v2,v3,v4,v5,v6,v7);
-		cube.getTriangles(new ArrayList<Point3f>());
-	}
 }

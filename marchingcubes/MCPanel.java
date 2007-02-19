@@ -1,5 +1,6 @@
 package marchingcubes;
 
+import ij.ImagePlus;
 import java.awt.Panel;
 import java.awt.BorderLayout;
 import java.awt.Frame;
@@ -24,8 +25,7 @@ public class MCPanel extends Panel {
 
 	private TransformGroup objTransform;
 
-	public BranchGroup createSceneGraph(byte[][][] voxData,
-			int xRange, int seekValue) {
+	public BranchGroup createSceneGraph(ImagePlus image, int seekValue) {
 
 		BranchGroup objRoot = new BranchGroup();
 		
@@ -42,7 +42,7 @@ public class MCPanel extends Panel {
 		objTransform.setCapability(TransformGroup.ALLOW_CHILDREN_EXTEND);
 		objRoot.addChild(objTransform);
 		
-		objTransform.addChild(new MCShape(voxData, seekValue));
+		objTransform.addChild(new MCShape(image, seekValue));
 		
 		// Picking
 		BoundingSphere b = new BoundingSphere();
@@ -76,7 +76,7 @@ public class MCPanel extends Panel {
 
 	// Create a simple scene and attach it to the virtual universe
 
-	public MCPanel(byte[][][] voxData, int xRange, int seekValue) {
+	public MCPanel(ImagePlus image, int seekValue) {
 		setLayout(new BorderLayout());
 	
 		GraphicsConfiguration config =
@@ -87,6 +87,7 @@ public class MCPanel extends Panel {
 			public void mousePressed(MouseEvent e) {
 				Point3d location = getPointForMouseEvent(e);
 				if(location != null) {
+					System.out.println("location: (" + location.x + "," + location.y + "," + location.z + ")");
 					Transform3D transl = new Transform3D();
 					transl.setTranslation(new Vector3f(location));
 					TransformGroup tg = new TransformGroup(transl);
@@ -100,7 +101,7 @@ public class MCPanel extends Panel {
 		});
 		add("Center", canvas);
 
-		scene = createSceneGraph(voxData, xRange, seekValue);
+		scene = createSceneGraph(image, seekValue);
 
 		// SimpleUniverse is a Convenience Utility class
 		simpleU = new SimpleUniverse(canvas);
@@ -133,9 +134,9 @@ public class MCPanel extends Panel {
 		return point; 
 	}
 
-	public void updateShape(byte[][][] voxData, int xRange, int seekValue){
+	public void updateShape(ImagePlus image, int seekValue){
 		BranchGroup old = scene;
-		scene = createSceneGraph(voxData, xRange, seekValue);
+		scene = createSceneGraph(image, seekValue);
 		scene.compile();
 		simpleU.getLocale().replaceBranchGraph(old, scene);
 	}
