@@ -85,7 +85,8 @@ public class MCPanel extends Panel {
 		canvas = new Canvas3D(config);
 		canvas.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
-				Point3d location = getPointForMouseEvent(e);
+				Point3d location = getPointForMouseEvent(e.getX(), e.getY());
+				/*
 				if(location != null) {
 					System.out.println("location: (" + location.x + "," + location.y + "," + location.z + ")");
 					Transform3D transl = new Transform3D();
@@ -96,7 +97,7 @@ public class MCPanel extends Panel {
 					bg.addChild(tg);
 					bg.compile();
 					objTransform.addChild(bg);
-				}
+				}*/
 			}
 		});
 		add("Center", canvas);
@@ -121,17 +122,34 @@ public class MCPanel extends Panel {
 		simpleU.addBranchGraph(scene);
 	}
 
-	public Point3d getPointForMouseEvent(MouseEvent mouseEvent) {
+	public Point3d getPointForMouseEvent(int x, int y) {
 	    PickCanvas pickCanvas = new PickCanvas(canvas, scene); 
 		pickCanvas.setMode(PickTool.GEOMETRY_INTERSECT_INFO); 
 		pickCanvas.setTolerance(4.0f); 
-		pickCanvas.setShapeLocation(mouseEvent); 
+		pickCanvas.setShapeCylinderRay(new Point3d(0,0,0),
+				new Vector3d(0,0,1), 20.0); 
+		pickCanvas.setShapeLocation(x, y); 
 		PickResult result = pickCanvas.pickClosest(); 
 		if(result == null) 
 			return null;
-		PickIntersection intersection = result.getIntersection(0); 
-		Point3d point = intersection.getPointCoordinates(); 
-		return point; 
+		int intersectionCount = result.numIntersections();
+		for(int j=0; j<intersectionCount; j++) {
+			PickIntersection intersection = result.getIntersection(j); 
+			Point3d point = intersection.getPointCoordinates(); 
+			GeometryArray geometryArr = intersection.getGeometryArray();
+			int vertexCount = geometryArr.getVertexCount();
+			Point3d closestVertexCoord = 
+				intersection.getClosestVertexCoordinates();
+			Point3d coord = new Point3d();
+			Color3f red = new Color3f(1.0f, 0.0f, 0.0f);
+			for(int i=0; i<vertexCount; i++){
+				geometryArr.getCoordinate(i, coord);
+				if(coord.equals(closestVertexCoord)){
+					geometryArr.setColor(i,red);
+				}
+			}
+		}
+		return null; 
 	}
 
 	public void updateShape(ImagePlus image, int seekValue){

@@ -33,7 +33,6 @@ public class Viewer_3D implements PlugInFilter {
 	private int w;
 	private int h;
 	private int d;
-	private byte[][][] voxData;
 	private MCPanel canvas;
 	private static Frame frame;
 
@@ -69,7 +68,6 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 		if(resampleX != 1 || resampleY != 1 || resampleZ != 1)
 			resample(resampleX, resampleY, resampleZ);
 
-		//byte[][][] voxData = calcVoxData();
 	}
 
 	private void init() {
@@ -93,20 +91,6 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 		h = resampled.getHeight();
 		d = resampled.getStackSize();
 		ret = resampled;
-	}
-
-	public byte[][][] calcVoxData() {
-		voxData = new byte[w][h][d];
-		ImageStack stack = ret.getStack();
-		for(int z=0; z<d; z++){
-			byte[] pixels = (byte[])stack.getProcessor(z+1).getPixels();
-			for(int y=0; y<h; y++){
-				for(int x=0; x<w; x++){
-					voxData[x][y][z] = pixels[x+y*w];
-				}
-			}
-		}
-		return voxData;
 	}
 
 	public void showViewer(int threshold) {

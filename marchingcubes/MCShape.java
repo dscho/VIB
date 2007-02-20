@@ -58,12 +58,8 @@ public final class MCShape extends Shape3D{
 					TriangleArray.COORDINATES | 
 					TriangleArray.COLOR_3 |
 					TriangleArray.NORMALS);
-		for(int i=0; i<N; i++) 
-			if(coords[i]==null)
-				System.out.println("coord " + i + " is null");
 		ta.setCoordinates(0, coords);
 		ta.setColors(0, colors);
-
 		// initialize the geometry info here
 		GeometryInfo gi = new GeometryInfo(ta);
 		
@@ -75,6 +71,7 @@ public final class MCShape extends Shape3D{
 		Stripifier st = new Stripifier();
 		st.stripify(gi);
 		GeometryArray result = gi.getGeometryArray();
+		result.setCapability(TriangleArray.ALLOW_COLOR_WRITE);
 		
 		return result;
 	}
