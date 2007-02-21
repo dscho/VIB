@@ -10,6 +10,7 @@ import javax.vecmath.Point3d;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.TransformGroup;
+import javax.media.j3d.Transform3D;
 
 import ij.gui.Toolbar;
 
@@ -17,9 +18,12 @@ import java.util.Enumeration;
 
 public class MouseNavigation {
 
+	private TransformGroup objectGroup;
+
 	public MouseNavigation(TransformGroup objectGroup, BranchGroup objRoot, 
 								MouseBehaviorCallback callback) {
 
+		this.objectGroup = objectGroup;
 		BoundingSphere bounds =
 				new BoundingSphere(new Point3d(0.0,0.0,0.0), 100000.0);
 
@@ -61,5 +65,9 @@ public class MouseNavigation {
 		mz.setSchedulingBounds(bounds);
 		mz.setFactor(0.1);
 		objRoot.addChild(mz);
+	}
+
+	public void resetView() {
+		objectGroup.setTransform(new Transform3D());
 	}
 }

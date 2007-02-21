@@ -8,7 +8,6 @@ import java.awt.image.*;
 import java.awt.color.ColorSpace;
 
 import javax.swing.*;
-import javax.swing.border.BevelBorder;
 
 import com.sun.j3d.utils.applet.MainFrame;
 import com.sun.j3d.utils.universe.*;
@@ -43,11 +42,13 @@ public class VolRend implements MouseBehaviorCallback {
     Renderer renderer;
     View view; // primary view for renderers
 
-    private TransformGroup objectGroup;
+	private MouseNavigation navigation;
+	private TransformGroup objectGroup;
     TransformGroup centerGroup;
     Transform3D centerXform = new Transform3D();
 
-    private Vector3d centerOffset = new Vector3d(-0.5, -0.5, -0.5);
+	private CoordinateSystem coordBG;    
+	private Vector3d centerOffset = new Vector3d(-0.5, -0.5, -0.5);
 
 	BranchGroup scene;
     Group dynamicAttachGroup;
@@ -59,43 +60,10 @@ public class VolRend implements MouseBehaviorCallback {
 
     public VolRend() {
 		canvas = new RoiCanvas3D(SimpleUniverse.getPreferredConfiguration());
-		final PopupMenu popup = new PopupMenu();
-		MenuItem mi = new MenuItem("Fill");
-		mi.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				int intensity = 
-						(int)IJ.getNumber("Intensity: [0..255]", 0);
-				if(intensity == IJ.CANCELED) return;
-				intensity = intensity < 0 ? 0 : intensity;
-				intensity = intensity > 255 ? 255 : intensity;
-				final byte fillVal = (byte)intensity;
-				new Thread(new Runnable() {
-					public void run() {
-						fillRoiBlack(fillVal);
-						update();
-					}
-				}).start();
-			}
-		});
-		popup.add(mi);
-		canvas.add(popup);
-   		canvas.addMouseListener(new MouseAdapter(){
-			public void mousePressed(MouseEvent e){
-				showPopup(e);	
-			}
-			public void mouseReleased(MouseEvent e){
-				showPopup(e);	
-			}
-			private void showPopup(MouseEvent e) {
-				Polygon p = canvas.getPolygon();
-				if(e.isPopupTrigger() && p != null && p.contains(e.getPoint())){
-					popup.show(canvas, e.getX(),e.getY());
-				}
-			}
-		});
+		CanvasPopup popup = new CanvasPopup(this);
 	}
 
-    public Canvas3D getCanvas() {
+    public RoiCanvas3D getCanvas() {
 		return canvas;
     }
 
@@ -184,6 +152,8 @@ public class VolRend implements MouseBehaviorCallback {
 		centerGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		centerGroup.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
 		centerGroup.setCapability(TransformGroup.ALLOW_CHILDREN_EXTEND);
+		centerGroup.setCapability(TransformGroup.ALLOW_CHILDREN_WRITE);
+		centerGroup.setCapability(TransformGroup.ALLOW_CHILDREN_READ);
 		objectGroup.addChild(centerGroup);
 
 		// create the dynamic attachment point
@@ -193,21 +163,26 @@ public class VolRend implements MouseBehaviorCallback {
 		dynamicAttachGroup.setCapability(Group.ALLOW_CHILDREN_EXTEND);
 		centerGroup.addChild(dynamicAttachGroup);
 
-		
-		Cylinder c = new Cylinder(0.01f, 0.01f);
-		Appearance app = new Appearance();
-		ColoringAttributes col = new ColoringAttributes();
-		col.setColor(1.0f, 0.0f, 0.0f);
-		app.setColoringAttributes(col);
-		TransparencyAttributes ta = new TransparencyAttributes();
-		ta.setTransparency(0.6f);
-		app.setTransparencyAttributes(ta);
-		c.setAppearance(app);
-		centerGroup.addChild(c);
+		// attach the coordinate system
+		coordBG = new CoordinateSystem();
+		coordBG.setCapability(BranchGroup.ALLOW_DETACH);
+		centerGroup.addChild(coordBG);
 
-		new MouseNavigation(objectGroup, objRoot, this);
+		navigation = new MouseNavigation(objectGroup, objRoot, this);
 		return objRoot;
     }
+
+	public void showCoordinateSystem(boolean flag) {
+		if(flag)
+			centerGroup.addChild(coordBG);
+		else 
+			centerGroup.removeChild(coordBG);
+	}
+
+	public void resetView() {
+		navigation.resetView();
+		renderer.eyePtChanged();		
+	}
 
     public void transformChanged(int type, Transform3D xform) {
 		renderer.eyePtChanged();
