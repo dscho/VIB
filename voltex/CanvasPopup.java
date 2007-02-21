@@ -13,18 +13,23 @@ public class CanvasPopup extends PopupMenu
 	private MenuItem reset;
 	private MenuItem fill;
 	private CheckboxMenuItem coord_cb;
+	private CheckboxMenuItem perspective_cb;
 
 	public CanvasPopup(VolRend volr) {
 		super();
 		this.volrend = volr;
 
-		fill = new MenuItem("Fill");
+		fill = new MenuItem("Fill selection");
 		fill.addActionListener(this);
 		this.add(fill);
 
 		coord_cb = new CheckboxMenuItem("Coordinate system", true);
 		coord_cb.addItemListener(this);
 		this.add(coord_cb);
+		
+		perspective_cb = new CheckboxMenuItem("Perspective Projection", true);
+		perspective_cb.addItemListener(this);
+		this.add(perspective_cb);
 
 		reset = new MenuItem("Reset view");
 		reset.addActionListener(this);
@@ -73,6 +78,10 @@ public class CanvasPopup extends PopupMenu
 	public void itemStateChanged(ItemEvent e) {
 		if(e.getSource() == coord_cb) {
 			volrend.showCoordinateSystem(coord_cb.getState());
+		}
+
+		if(e.getSource() == perspective_cb) {
+			volrend.setPerspectiveProjection(perspective_cb.getState());
 		}
 	}
 }

@@ -87,7 +87,6 @@ public class VolRend implements MouseBehaviorCallback {
 		view = simpleU.getViewer().getView();
 
 		// switch to a parallel projection, which is faster for texture mapping
-		//view.setProjectionPolicy(View.PARALLEL_PROJECTION);
 		view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
 
 		simpleU.addBranchGraph(scene);
@@ -179,6 +178,12 @@ public class VolRend implements MouseBehaviorCallback {
 			centerGroup.removeChild(coordBG);
 	}
 
+	public void setPerspectiveProjection(boolean flag) {
+		int policy = flag ? View.PERSPECTIVE_PROJECTION 
+							: View.PARALLEL_PROJECTION;
+		view.setProjectionPolicy(policy);
+	}
+
 	public void resetView() {
 		navigation.resetView();
 		renderer.eyePtChanged();		
@@ -188,20 +193,25 @@ public class VolRend implements MouseBehaviorCallback {
 		renderer.eyePtChanged();
     }
 
-	public Point2d volumePointInCanvas(int x, int y, int z) {
+	public Transform3D volumeToImagePlate() {
+		Transform3D toVWorld = new Transform3D();
+		dynamicAttachGroup.getLocalToVworld(toVWorld);
+		
+		Transform3D toImagePlate = new Transform3D();
+		canvas.getImagePlateToVworld(toImagePlate);
+		toImagePlate.invert();
+
+		toImagePlate.mul(toVWorld);
+		return toImagePlate;
+	}
+
+	public Point2d volumePointInCanvas(Transform3D volToIP,int x,int y,int z) {
 		double px = x * volume.xSpace;
 		double py = y * volume.ySpace;
 		double pz = z * volume.zSpace;
 		Point3d locInImagePlate = new Point3d(px, py, pz);
 		
-		Transform3D toVWorld = new Transform3D();
-		dynamicAttachGroup.getLocalToVworld(toVWorld);
-		toVWorld.transform(locInImagePlate);
-
-		Transform3D toImagePlate = new Transform3D();
-		canvas.getImagePlateToVworld(toImagePlate);
-		toImagePlate.invert();
-		toImagePlate.transform(locInImagePlate);
+		volToIP.transform(locInImagePlate);
 
 		Point2d onCanvas = new Point2d();
 		canvas.getPixelLocationFromImagePlate(locInImagePlate, onCanvas);
@@ -211,6 +221,7 @@ public class VolRend implements MouseBehaviorCallback {
 
 	public void fillRoiBlack(byte fillValue) {
 		Polygon p = canvas.getPolygon();
+		Transform3D volToIP = volumeToImagePlate();
 		int w = image.getWidth(), h = image.getHeight();
 		int d = image.getStackSize();
 		for(int z = 0; z < d; z++) {
@@ -219,7 +230,7 @@ public class VolRend implements MouseBehaviorCallback {
 			for(int y = 0; y < h; y++) {
 				for(int x = 0; x < w; x++) {
 					int index = y * w + x;
-					Point2d onCanvas = volumePointInCanvas(x, y, z);
+					Point2d onCanvas = volumePointInCanvas(volToIP, x, y, z);
 					if(p.contains(onCanvas.x, onCanvas.y)) {
 						data[index] = fillValue;
 					}
