@@ -63,12 +63,18 @@ public class VolRend implements MouseBehaviorCallback {
 		MenuItem mi = new MenuItem("Fill");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				int intensity = (int)IJ.getNumber("Intensity: [0..255]", 0);
+				int intensity = 
+						(int)IJ.getNumber("Intensity: [0..255]", 0);
 				if(intensity == IJ.CANCELED) return;
 				intensity = intensity < 0 ? 0 : intensity;
 				intensity = intensity > 255 ? 255 : intensity;
-				fillRoiBlack((byte)intensity);
-				update();
+				final byte fillVal = (byte)intensity;
+				new Thread(new Runnable() {
+					public void run() {
+						fillRoiBlack(fillVal);
+						update();
+					}
+				}).start();
 			}
 		});
 		popup.add(mi);
@@ -229,15 +235,17 @@ public class VolRend implements MouseBehaviorCallback {
 	}
 
 	public void fillRoiBlack(byte fillValue) {
+		Polygon p = canvas.getPolygon();
 		int w = image.getWidth(), h = image.getHeight();
 		int d = image.getStackSize();
 		for(int z = 0; z < d; z++) {
-			byte[] data =(byte[])image.getStack().getProcessor(z+1).getPixels();
+			byte[] data =(byte[])image.getStack().
+								getProcessor(z+1).getPixels();
 			for(int y = 0; y < h; y++) {
 				for(int x = 0; x < w; x++) {
 					int index = y * w + x;
 					Point2d onCanvas = volumePointInCanvas(x, y, z);
-					if(canvas.getPolygon().contains(onCanvas.x, onCanvas.y)) {
+					if(p.contains(onCanvas.x, onCanvas.y)) {
 						data[index] = fillValue;
 					}
 				}
