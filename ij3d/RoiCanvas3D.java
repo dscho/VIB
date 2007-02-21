@@ -47,8 +47,9 @@ public class RoiCanvas3D extends Canvas3D implements MouseListener,
 	public void mouseExited(MouseEvent e) {}
 	public void mouseEntered(MouseEvent e) {}
 	public void mouseClicked(MouseEvent e) {
-		if(checkMouse(e)) {
+		if(checkMouse(e) && isLeftMouseButton(e)) {
 			points.clear();
+			polygon = null;
 			selecting = false;
 		}
 	}

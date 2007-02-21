@@ -22,9 +22,11 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
 import java.net.*;
+
 import ij.process.PolygonFiller;
 import ij.process.ImageProcessor;
 
+import ij.IJ;
 import ij.ImageStack; 
 import ij.ImagePlus;
 import ij.gui.Toolbar;
@@ -56,8 +58,36 @@ public class VolRend implements MouseBehaviorCallback {
     int	volEditId = -1;
 
     public VolRend() {
-	    canvas = new RoiCanvas3D(SimpleUniverse.getPreferredConfiguration());
-    }
+		canvas = new RoiCanvas3D(SimpleUniverse.getPreferredConfiguration());
+		final PopupMenu popup = new PopupMenu();
+		MenuItem mi = new MenuItem("Fill");
+		mi.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int intensity = (int)IJ.getNumber("Intensity: [0..255]", 0);
+				if(intensity == IJ.CANCELED) return;
+				intensity = intensity < 0 ? 0 : intensity;
+				intensity = intensity > 255 ? 255 : intensity;
+				fillRoiBlack((byte)intensity);
+				update();
+			}
+		});
+		popup.add(mi);
+		canvas.add(popup);
+   		canvas.addMouseListener(new MouseAdapter(){
+			public void mousePressed(MouseEvent e){
+				showPopup(e);	
+			}
+			public void mouseReleased(MouseEvent e){
+				showPopup(e);	
+			}
+			private void showPopup(MouseEvent e) {
+				Polygon p = canvas.getPolygon();
+				if(e.isPopupTrigger() && p != null && p.contains(e.getPoint())){
+					popup.show(canvas, e.getX(),e.getY());
+				}
+			}
+		});
+	}
 
     public Canvas3D getCanvas() {
 		return canvas;
@@ -169,50 +199,7 @@ public class VolRend implements MouseBehaviorCallback {
 		c.setAppearance(app);
 		centerGroup.addChild(c);
 
-		BoundingSphere bounds =
-				new BoundingSphere(new Point3d(0.0,0.0,0.0), 100000.0);
-
-		
-		MouseRotate mr = new MouseRotate() {
-			public void processStimulus(Enumeration criteria) {
-				if(Toolbar.getToolId() == Toolbar.HAND) {
-					super.processStimulus(criteria);
-				} else 
-					wakeupOn (mouseCriterion);
-			}				
-		};
-		mr.setupCallback(this);
-		mr.setTransformGroup(objectGroup);
-		mr.setSchedulingBounds(bounds);
-		mr.setFactor(0.05);
-		objRoot.addChild(mr);
-		
-		MouseTranslate mt = new MouseTranslate() {
-			public void processStimulus(Enumeration criteria) {
-				if(Toolbar.getToolId() == Toolbar.HAND) {
-					super.processStimulus(criteria);
-				} else 
-					wakeupOn (mouseCriterion);
-			}	
-		};
-		mt.setTransformGroup(objectGroup);
-		mt.setSchedulingBounds(bounds);
-		objRoot.addChild(mt);
-		
-		MouseZoom mz = new MouseZoom() {
-			public void processStimulus(Enumeration criteria) {
-				if(Toolbar.getToolId() == Toolbar.HAND) {
-					super.processStimulus(criteria);
-				} else 
-					wakeupOn (mouseCriterion);
-			}	
-		};
-		mz.setTransformGroup(objectGroup);
-		mz.setSchedulingBounds(bounds);
-		mz.setFactor(0.1);
-		objRoot.addChild(mz);
-		
-
+		new MouseNavigation(objectGroup, objRoot, this);
 		return objRoot;
     }
 
@@ -241,7 +228,7 @@ public class VolRend implements MouseBehaviorCallback {
 		return onCanvas;
 	}
 
-	public void fillRoiBlack() {
+	public void fillRoiBlack(byte fillValue) {
 		int w = image.getWidth(), h = image.getHeight();
 		int d = image.getStackSize();
 		for(int z = 0; z < d; z++) {
@@ -251,10 +238,12 @@ public class VolRend implements MouseBehaviorCallback {
 					int index = y * w + x;
 					Point2d onCanvas = volumePointInCanvas(x, y, z);
 					if(canvas.getPolygon().contains(onCanvas.x, onCanvas.y)) {
-						data[index] = (byte)255;
+						data[index] = fillValue;
 					}
 				}
 			}
+			IJ.showStatus("Filling...");
+			IJ.showProgress(z, d);
 		}
 	}
 }
