@@ -1,22 +1,34 @@
 package voltex;
 
 import java.applet.Applet;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
 import java.awt.color.ColorSpace;
+
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
+
 import com.sun.j3d.utils.applet.MainFrame;
 import com.sun.j3d.utils.universe.*;
+import com.sun.j3d.utils.behaviors.mouse.*;
+import com.sun.j3d.utils.geometry.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
+
 import java.io.*;
 import java.util.Enumeration;
-import com.sun.j3d.utils.behaviors.mouse.*;
+import java.util.List;
+import java.util.ArrayList;
 import java.net.*;
+import ij.process.PolygonFiller;
+import ij.process.ImageProcessor;
+
 import ij.ImageStack; 
 import ij.ImagePlus;
+import ij.gui.Toolbar;
+import ij3d.RoiCanvas3D;
 
 /**
  * The base class for VolRend applets and applications.  Sets up the basic
@@ -24,54 +36,57 @@ import ij.ImagePlus;
  */
 public class VolRend implements MouseBehaviorCallback {
 
-    private static final int POST_AWT_CHANGE = 1;
-
     Volume volume;
+	private ImagePlus image;
     Renderer renderer;
     View view; // primary view for renderers
 
-    UpdateBehavior updateBehavior;
-
-
-    TransformGroup objectGroup;
+    private TransformGroup objectGroup;
     TransformGroup centerGroup;
     Transform3D centerXform = new Transform3D();
-    Vector3d centerOffset = new Vector3d(-0.5, -0.5, -0.5);
 
+    private Vector3d centerOffset = new Vector3d(-0.5, -0.5, -0.5);
+
+	BranchGroup scene;
     Group dynamicAttachGroup;
 
-    Canvas3D 		canvas;
+	SimpleUniverse simpleU;
+    RoiCanvas3D canvas;
 
-    int			volEditId = -1;
+    int	volEditId = -1;
 
     public VolRend() {
-	    canvas = new Canvas3D(SimpleUniverse.getPreferredConfiguration());
+	    canvas = new RoiCanvas3D(SimpleUniverse.getPreferredConfiguration());
     }
 
-    Canvas3D getCanvas() {
+    public Canvas3D getCanvas() {
 		return canvas;
     }
+
+	public SimpleUniverse getUniverse() {
+		return simpleU;
+	}
 
     void setupScene() {
 
 		// Setup the graphics
 		// Create a simple scene and attach it to the virtual universe
-		BranchGroup scene = createSceneGraph();
+		scene = createSceneGraph();
 		scene.compile();
-		SimpleUniverse u = new SimpleUniverse(canvas);
+		simpleU = new SimpleUniverse(canvas);
 
         // This will move the ViewPlatform back a bit so the
         // objects in the scene can be viewed.
-		u.getViewingPlatform().setNominalViewingTransform();
+		simpleU.getViewingPlatform().setNominalViewingTransform();
 
 		// get the primary view
-		view = u.getViewer().getView();
+		view = simpleU.getViewer().getView();
 
 		// switch to a parallel projection, which is faster for texture mapping
-		view.setProjectionPolicy(View.PARALLEL_PROJECTION);
-		//view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
+		//view.setProjectionPolicy(View.PARALLEL_PROJECTION);
+		view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
 
-		u.addBranchGraph(scene);
+		simpleU.addBranchGraph(scene);
 
 		canvas.setDoubleBufferEnable(true);
 
@@ -79,29 +94,22 @@ public class VolRend implements MouseBehaviorCallback {
 		renderer = new Axis2DRenderer(view, volume);
 
 		// Add the volume to the scene
-		clearAttach();
 		renderer.attach(dynamicAttachGroup);
 
     }
 
-    void update() {
+    public void update() {
 		System.out.println("VolRend.update()");
-		updateBehavior.postId(POST_AWT_CHANGE);
+		doUpdate();
     }
 
-    void initContext(ImagePlus imp) {
-		// initialize the volume
+    public void initContext(ImagePlus imp) {
+		this.image = imp;
 		volume = new Volume(imp);
-
-		// initialize the scene graph
 		setupScene();
     }
 
     private void doUpdate() {
-		System.out.println("VolRend.doUpdate()");
-		canvas.setDoubleBufferEnable(true);
-		view.setProjectionPolicy(View.PARALLEL_PROJECTION);
-		//view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
 		renderer.update();
 		int newVolEditId;
 		if ((newVolEditId = volume.update()) != volEditId) {
@@ -110,26 +118,7 @@ public class VolRend implements MouseBehaviorCallback {
 		}
     }
 
-
-    private class UpdateBehavior extends Behavior {
-		WakeupCriterion criterion[] = {
-			new WakeupOnBehaviorPost(null, POST_AWT_CHANGE)
-		};
-		
-		WakeupCondition conditions = new WakeupOr( criterion );
-
-		public void initialize() {
-			wakeupOn(conditions);
-		}
-
-		public void processStimulus( Enumeration criteria) {
-			// Do the update
-			doUpdate();
-			wakeupOn(conditions);
-		}
-    }
-
-    void updateCenter(Point3d minCoord, Point3d maxCoord) {
+    private void updateCenter(Point3d minCoord, Point3d maxCoord) {
 		centerOffset.x = -(maxCoord.x - minCoord.x)/2.0;
 		centerOffset.y = -(maxCoord.y - minCoord.y)/2.0;
 		centerOffset.z = -(maxCoord.z - minCoord.z)/2.0;
@@ -138,26 +127,8 @@ public class VolRend implements MouseBehaviorCallback {
     }
 
     BranchGroup createSceneGraph() {
-
-		Color3f lColor1 = new Color3f(0.7f, 0.7f, 0.7f);
-		Vector3f lDir1  = new Vector3f(0.0f, 0.0f, 1.0f);
-		Color3f alColor = new Color3f(1.0f, 1.0f, 1.0f);
-
 		// Create the root of the branch graph
 		BranchGroup objRoot = new BranchGroup();
-
-		// Create a transform group to scale the whole scene
-		TransformGroup scaleGroup = new TransformGroup();
-		Transform3D scaleXform = new Transform3D();
-		double scale = 1.2;
-		scaleXform.setScale(scale);
-		scaleGroup.setTransform(scaleXform);
-		objRoot.addChild(scaleGroup);
-
-		// Create the static ordered group
-		OrderedGroup scaleOGroup = new OrderedGroup();
-		scaleGroup.addChild(scaleOGroup);
-
 
 		// Create a TG at the origin
 		objectGroup = new TransformGroup();
@@ -167,7 +138,7 @@ public class VolRend implements MouseBehaviorCallback {
 		//
 		objectGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		objectGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		scaleOGroup.addChild(objectGroup);
+		objRoot.addChild(objectGroup);
 
 
 		// Create the transform group node and initialize it center the
@@ -175,53 +146,115 @@ public class VolRend implements MouseBehaviorCallback {
 		centerGroup = new TransformGroup();
 		updateCenter(new Point3d(0.0, 0.0, 0.0), new Point3d(1.0, 1.0, 1.0));
 		centerGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		centerGroup.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
+		centerGroup.setCapability(TransformGroup.ALLOW_CHILDREN_EXTEND);
 		objectGroup.addChild(centerGroup);
-
-		// Set up the annotation/volume/annotation sandwitch
-		OrderedGroup centerOGroup = new OrderedGroup();
-		centerGroup.addChild(centerOGroup);
 
 		// create the dynamic attachment point
 		dynamicAttachGroup = new Group();
 		dynamicAttachGroup.setCapability(Group.ALLOW_CHILDREN_READ);
 		dynamicAttachGroup.setCapability(Group.ALLOW_CHILDREN_WRITE);
 		dynamicAttachGroup.setCapability(Group.ALLOW_CHILDREN_EXTEND);
-		centerOGroup.addChild(dynamicAttachGroup);
+		centerGroup.addChild(dynamicAttachGroup);
+
+		
+		Cylinder c = new Cylinder(0.01f, 0.01f);
+		Appearance app = new Appearance();
+		ColoringAttributes col = new ColoringAttributes();
+		col.setColor(1.0f, 0.0f, 0.0f);
+		app.setColoringAttributes(col);
+		TransparencyAttributes ta = new TransparencyAttributes();
+		ta.setTransparency(0.6f);
+		app.setTransparencyAttributes(ta);
+		c.setAppearance(app);
+		centerGroup.addChild(c);
 
 		BoundingSphere bounds =
 				new BoundingSphere(new Point3d(0.0,0.0,0.0), 100000.0);
 
-		MouseRotate mr = new MouseRotate();
+		
+		MouseRotate mr = new MouseRotate() {
+			public void processStimulus(Enumeration criteria) {
+				if(Toolbar.getToolId() == Toolbar.HAND) {
+					super.processStimulus(criteria);
+				} else 
+					wakeupOn (mouseCriterion);
+			}				
+		};
 		mr.setupCallback(this);
 		mr.setTransformGroup(objectGroup);
 		mr.setSchedulingBounds(bounds);
-		mr.setFactor(0.007);
+		mr.setFactor(0.05);
 		objRoot.addChild(mr);
 		
-		MouseTranslate mt = new MouseTranslate();
+		MouseTranslate mt = new MouseTranslate() {
+			public void processStimulus(Enumeration criteria) {
+				if(Toolbar.getToolId() == Toolbar.HAND) {
+					super.processStimulus(criteria);
+				} else 
+					wakeupOn (mouseCriterion);
+			}	
+		};
 		mt.setTransformGroup(objectGroup);
 		mt.setSchedulingBounds(bounds);
 		objRoot.addChild(mt);
-		MouseZoom mz = new MouseZoom();
+		
+		MouseZoom mz = new MouseZoom() {
+			public void processStimulus(Enumeration criteria) {
+				if(Toolbar.getToolId() == Toolbar.HAND) {
+					super.processStimulus(criteria);
+				} else 
+					wakeupOn (mouseCriterion);
+			}	
+		};
 		mz.setTransformGroup(objectGroup);
 		mz.setSchedulingBounds(bounds);
-		mz.setFactor(0.01);
+		mz.setFactor(0.1);
 		objRoot.addChild(mz);
 		
-		updateBehavior = new UpdateBehavior();
-		updateBehavior.setSchedulingBounds(bounds);
-		objRoot.addChild(updateBehavior);
 
 		return objRoot;
-    }
-
-    private void clearAttach() {
-		while(dynamicAttachGroup.numChildren() > 0) {
-			dynamicAttachGroup.removeChild(0);
-		}
     }
 
     public void transformChanged(int type, Transform3D xform) {
 		renderer.eyePtChanged();
     }
+
+	public Point2d volumePointInCanvas(int x, int y, int z) {
+		double px = x * volume.xSpace;
+		double py = y * volume.ySpace;
+		double pz = z * volume.zSpace;
+		Point3d locInImagePlate = new Point3d(px, py, pz);
+		
+		Transform3D toVWorld = new Transform3D();
+		dynamicAttachGroup.getLocalToVworld(toVWorld);
+		toVWorld.transform(locInImagePlate);
+
+		Transform3D toImagePlate = new Transform3D();
+		canvas.getImagePlateToVworld(toImagePlate);
+		toImagePlate.invert();
+		toImagePlate.transform(locInImagePlate);
+
+		Point2d onCanvas = new Point2d();
+		canvas.getPixelLocationFromImagePlate(locInImagePlate, onCanvas);
+
+		return onCanvas;
+	}
+
+	public void fillRoiBlack() {
+		int w = image.getWidth(), h = image.getHeight();
+		int d = image.getStackSize();
+		for(int z = 0; z < d; z++) {
+			byte[] data =(byte[])image.getStack().getProcessor(z+1).getPixels();
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					int index = y * w + x;
+					Point2d onCanvas = volumePointInCanvas(x, y, z);
+					if(canvas.getPolygon().contains(onCanvas.x, onCanvas.y)) {
+						data[index] = (byte)255;
+					}
+				}
+			}
+		}
+	}
 }

@@ -12,26 +12,25 @@ abstract public class AxisRenderer extends Renderer
 				implements VolRendConstants{
 
 
-    // current settings derived from attrs
-    protected boolean				fullReloadNeeded = true;
+    protected boolean fullReloadNeeded = true;
 
-    private int 					curAxis = Z_AXIS;
-    private int						curDir = FRONT;
-    private int						autoAxis, autoDir;
+    private int	curAxis = Z_AXIS;
+    private int	curDir = FRONT;
+    private int	autoAxis, autoDir;
 
-    private BranchGroup				root;
-    protected Switch 				axisSwitch;
-    protected int[][]				axisIndex = new int[3][2];
-    private OrderedGroup[][]		groups = new OrderedGroup[3][2];
+    private BranchGroup root;
+    protected Switch axisSwitch;
+    protected int[][] axisIndex = new int[3][2];
+    private OrderedGroup[][] groups = new OrderedGroup[3][2];
 
-    protected double[] 				quadCoords;
+    protected double[] quadCoords;
 
 
-    protected TextureAttributes 		texAttr = new TextureAttributes();
+    protected TextureAttributes texAttr = new TextureAttributes();
 
     protected TransparencyAttributes t = new TransparencyAttributes();
-    protected PolygonAttributes		p = new PolygonAttributes();
-    protected Material 				m = new Material();
+    protected PolygonAttributes	     p = new PolygonAttributes();
+    protected Material 				 m = new Material();
 
 
     public AxisRenderer(View view, Volume vol) {
@@ -158,6 +157,7 @@ abstract public class AxisRenderer extends Renderer
     }
 
     protected void setCoordsZ() {
+		System.out.println("setCoordsZ()");
 		checkCoords();
 
 		// lower left

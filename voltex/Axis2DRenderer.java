@@ -46,6 +46,7 @@ public class Axis2DRenderer extends AxisRenderer {
 		loadAxis(Z_AXIS);
 		loadAxis(Y_AXIS);
 		loadAxis(X_AXIS);
+		for(int i=0;i<12;i++) System.out.println(quadCoords[i] + " ");
     }
 
     private void loadAxis(int axis) {

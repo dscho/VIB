@@ -8,6 +8,7 @@ import java.awt.color.ColorSpace;
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import com.sun.j3d.utils.applet.MainFrame;
+import com.sun.j3d.utils.picking.*;
 import com.sun.j3d.utils.universe.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
@@ -17,9 +18,9 @@ import com.sun.j3d.utils.behaviors.mouse.*;
 import java.net.*;
 import java.lang.String.*;
 import ij.ImagePlus;
+import com.sun.j3d.utils.geometry.*;
 
-
-public class VolRendEdit extends JFrame {
+public class VolRendEdit extends Frame {
 
     VolRend	volRend;
     Canvas3D canvas;
@@ -31,11 +32,12 @@ public class VolRendEdit extends JFrame {
 		volRend.initContext(imp); // initializes the renderers
 	
 		// Setup the frame
-		getContentPane().setLayout(new BorderLayout());
+		setLayout(new BorderLayout());
 
 		canvas = volRend.getCanvas();
+
 		canvas.setSize(600, 600);
-		getContentPane().add(canvas, BorderLayout.CENTER);
+		add(canvas, BorderLayout.CENTER);
 		
 		volRend.update();
 		pack();

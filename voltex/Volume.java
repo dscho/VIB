@@ -13,10 +13,8 @@ import ij.ImagePlus;
 public class Volume implements VolRendConstants {
 
 	private ImagePlus imp;
-
     // should loadXXX flip the t axis
     private boolean	tFlip = true;
-
     // current values derived from attrs
     private String 	filename = null;
 
@@ -60,7 +58,6 @@ public class Volume implements VolRendConstants {
     private Point3d 	initVolRefPt = new Point3d();
 
     private byte[] emptyByteRow = new byte[1024];
-    private int[] emptyIntRow = new int[1024];
 	
 	Point3d volRefPt = null;
 
@@ -74,7 +71,15 @@ public class Volume implements VolRendConstants {
         for (int i = 0; i < 6; i++) {
             facePoints[i] = new Point3d[4];
         }
-
+		
+		// the rectangle at PLUS_X is the right side
+		// of the VOI:
+		//    ____________     PLUS_X:
+		//   /3          /|7      ______
+		//  /___________/ |      |6     |7
+		//  |2         6| |4     |______|
+		//  |___________|/        5      4
+		//  1           5
 		facePoints[PLUS_X][0] =  voiPts[5];
 		facePoints[PLUS_X][1] =  voiPts[4];
 		facePoints[PLUS_X][2] =  voiPts[7];
@@ -106,19 +111,13 @@ public class Volume implements VolRendConstants {
 		facePoints[MINUS_Z][3] =  voiPts[4];
     }
 
-    public void setTFlip(boolean tFlip) {
-		this.tFlip  = tFlip;
-    }
-
     // returns the edit id for the volume
     public int update() {
-
 		// Going to reload the volume, bump the id
 		editId++;
-
 		vol = new VolFile(imp);
 
-		// These are the real size of the data
+		// These are the real size of the data in pixels
 		xDim = vol.xDim;
 		yDim = vol.yDim;
 		zDim = vol.zDim;
@@ -134,16 +133,20 @@ public class Volume implements VolRendConstants {
 		/// of the points).
 
 		// tex size is next power of two greater than max - min
+		// regarding pixels
 		xTexSize = powerOfTwo(xMax - xMin);
 		yTexSize = powerOfTwo(yMax - yMin);
 		zTexSize = powerOfTwo(zMax - zMin);
 
-		System.out.println("tex size is " + xTexSize + "x" + yTexSize + "x" +
-			zTexSize);
+		System.out.println("tex size is " + xTexSize + "x" + yTexSize + "x" + zTexSize);
 
+		// real coords
 		maxCoord.x = xMax * vol.xSpace;
 		maxCoord.y = yMax * vol.ySpace;
 		maxCoord.z = zMax * vol.zSpace;
+		System.out.println("maxCoord = (" + maxCoord.x + ", " + maxCoord.y + ", " + maxCoord.z + ")");
+
+		// scale everything so that the longenst dim has length 1.0
 		double max = maxCoord.x;
 		if (max < maxCoord.y) {
 			max = maxCoord.y;
@@ -152,13 +155,19 @@ public class Volume implements VolRendConstants {
 			max = maxCoord.z;
 		}
 		double scale = 1.0 / max;
+
+		// normalised pixel spaces
 		xSpace = vol.xSpace * scale;
 		ySpace = vol.ySpace * scale;
 		zSpace = vol.zSpace * scale;
+		System.out.println("vol.space = " + xSpace + ", " + ySpace + ", " + zSpace + ")");
 
-		xTexGenScale =  (float)(1.0 / (xSpace * xTexSize));
-		yTexGenScale =  (float)(1.0 / (ySpace * yTexSize));
-		zTexGenScale =  (float)(1.0 / (zSpace * zTexSize));
+		// xTexSize is the pixel dim of the file in x-dir, e.g. 256
+		// xSpace is the normalised length of a pixel
+		xTexGenScale = (float)(1.0 / (xSpace * xTexSize));
+		yTexGenScale = (float)(1.0 / (ySpace * yTexSize));
+		zTexGenScale = (float)(1.0 / (zSpace * zTexSize));
+		System.out.println("xTexGenScaple = " + xTexGenScale + ", y = " + yTexGenScale + ", z = " + zTexGenScale);
 
 		// the min and max coords are for the usable area of the texture,
 		// which is has a half-texel boundary.  Otherwise the boundary
@@ -166,10 +175,12 @@ public class Volume implements VolRendConstants {
 		minCoord.x = (xMin + 0.5f) * xSpace;
 		minCoord.y = (yMin + 0.5f) * ySpace;
 		minCoord.z = (zMin + 0.5f) * zSpace;
+		System.out.println("minCoord = (" + minCoord.x + ", " + minCoord.y + ", " + minCoord.z + ")");
 
 		maxCoord.x = (xMax - 0.5f) * xSpace;
 		maxCoord.y = (yMax - 0.5f) * ySpace;
 		maxCoord.z = (zMax - 0.5f) * zSpace;
+		System.out.println("maxCoord = (" + maxCoord.x + ", " + maxCoord.y + ", " + maxCoord.z + ")");
 
 		// setup the VOI box points
         voiPts[0].x = voiPts[1].x = voiPts[2].x = voiPts[3].x = minCoord.x;

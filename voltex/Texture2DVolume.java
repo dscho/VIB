@@ -8,25 +8,51 @@ import javax.vecmath.*;
 import java.io.*;
 import java.text.NumberFormat;
 
-public class Texture2DVolume extends TextureVolume {
+public class Texture2DVolume implements VolRendConstants {
 
-    // sets of textures, one for each axis, sizes of the arrays are set
-    // by the dimensions of the Volume
-    protected Texture2D[]		xTextures;	
-    protected Texture2D[]		yTextures;	
-    protected Texture2D[]		zTextures;	
+	protected static final int RELOAD_NONE = 0;
+	protected static final int RELOAD_VOLUME = 1;
 
-    protected TexCoordGeneration 	xTg = new TexCoordGeneration();
-    protected TexCoordGeneration 	yTg = new TexCoordGeneration();
-    protected TexCoordGeneration 	zTg = new TexCoordGeneration();
+    protected Texture2D[] xTextures;	
+    protected Texture2D[] yTextures;	
+    protected Texture2D[] zTextures;	
 
-    private ColorModel          colorModel;
-    private WritableRaster      raster;
+    protected TexCoordGeneration xTg = new TexCoordGeneration();
+    protected TexCoordGeneration yTg = new TexCoordGeneration();
+    protected TexCoordGeneration zTg = new TexCoordGeneration();
+
+    private ColorModel colorModel;
+    private WritableRaster raster;
+    private int	volEditId = -1;
+    private boolean	volumeReloadNeeded = true;
+
+	protected Volume volume;
 
     public Texture2DVolume(Volume volume) {
-		super(volume);
+		this.volume = volume;
     }
 
+    int update() {
+		int newVolEditId = -1;
+		if ((newVolEditId = volume.update()) != volEditId) {
+			volEditId = newVolEditId;
+			volumeReloadNeeded = true;
+		}
+		if (volumeReloadNeeded) {
+			volumeReload();
+			return RELOAD_VOLUME;
+		} else {
+			return RELOAD_NONE;
+		}
+    }
+
+    void volumeReload() {
+		if (volume.hasData()) {
+			loadTexture();
+		}
+		volumeReloadNeeded = false;
+    }
+	
     void loadTexture() {
 	    ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
 	    int[] nBits = {8};
