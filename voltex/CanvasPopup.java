@@ -45,9 +45,7 @@ public class CanvasPopup extends PopupMenu
 				showPopup(e);	
 			}
 			private void showPopup(MouseEvent e) {
-				Polygon p = volrend.getCanvas().getPolygon();
-				if(e.isPopupTrigger()
-					/* && p != null && p.contains(e.getPoint())*/ ){
+				if(e.isPopupTrigger()){
 					show(volrend.getCanvas(), e.getX(),e.getY());
 				}
 			}
@@ -56,6 +54,10 @@ public class CanvasPopup extends PopupMenu
 
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == fill) {
+			if(volrend.getCanvas().getRoi() == null) {
+				IJ.showMessage("Selection required");
+				return;
+			}
 			int intensity = (int)IJ.getNumber("Intensity: [0..255]", 0);
 			if(intensity == IJ.CANCELED) 
 				return;

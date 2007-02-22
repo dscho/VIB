@@ -30,6 +30,7 @@ import ij.ImageStack;
 import ij.ImagePlus;
 import ij.gui.Toolbar;
 import ij3d.RoiCanvas3D;
+import ij3d.ImageCanvas3D;
 
 /**
  * The base class for VolRend applets and applications.  Sets up the basic
@@ -54,16 +55,17 @@ public class VolRend implements MouseBehaviorCallback {
     Group dynamicAttachGroup;
 
 	SimpleUniverse simpleU;
-    RoiCanvas3D canvas;
+    ImageCanvas3D canvas;
 
     int	volEditId = -1;
 
     public VolRend() {
-		canvas = new RoiCanvas3D(SimpleUniverse.getPreferredConfiguration());
+		canvas = new ImageCanvas3D(SimpleUniverse.getPreferredConfiguration(), 
+						512, 512);
 		CanvasPopup popup = new CanvasPopup(this);
 	}
 
-    public RoiCanvas3D getCanvas() {
+    public ImageCanvas3D getCanvas() {
 		return canvas;
     }
 
@@ -220,7 +222,7 @@ public class VolRend implements MouseBehaviorCallback {
 	}
 
 	public void fillRoiBlack(byte fillValue) {
-		Polygon p = canvas.getPolygon();
+		Polygon p = canvas.getRoi().getPolygon();
 		Transform3D volToIP = volumeToImagePlate();
 		int w = image.getWidth(), h = image.getHeight();
 		int d = image.getStackSize();
