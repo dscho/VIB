@@ -38,7 +38,9 @@ public class Center_Transformation implements PlugIn {
 		FastMatrix transform = FastMatrix.bestRigid(setModel,setTemplate, true);
 		// write this into amira parameters
 		Hashtable h = (Hashtable)tModel.properties.get("Parameters");
-		String key = tTemplate.getTitle() + "SCenterTransformation ";
+		String templName = tTemplate.getTitle();
+		templName = templName.substring(0, templName.lastIndexOf('.'));
+		String key = tTemplate.getTitle() + "SCenterTransformation";
 		String value = transform.toStringForAmira();
 		h.put(key,value);
 		return transform;

@@ -39,6 +39,7 @@ public class VIBImage {
 
 	public String originalPath = null;
 	public String name = null;
+	public String basename = null;
 	public String labelsDir = null;
 	public String labelsName = null;
 	public String labelsPath = null;
@@ -296,6 +297,7 @@ public class VIBImage {
 
 
 	private void initPaths() {
+		basename		= name.substring(0, name.lastIndexOf('.'));
 		// labels
 		labelsDir 		= wd + File.separator + "labels" + File.separator;
 		labelsName 		= name.substring(0, name.lastIndexOf('.')) + ".labels";

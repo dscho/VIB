@@ -34,11 +34,12 @@ public class LabelCenterTransformation extends Module {
 
 		Hashtable modelH = 
 			(Hashtable)modelStatistics.getProperties().get("Parameters");
-		
+		System.out.println(modelH);
 		// test if center transformation is stored:
-		String key = modelStatistics.getTitle() + "SCenterTransformation ";
-		if(!modelH.contains(key))
+		String key = template.basename + "SCenterTransformation";
+		if(!modelH.containsKey(key)){
 			return RESULTS_UNAVAILABLE;
+		}
 		
 		// test if label transformation is stored for each non-empty
 		// label:
@@ -55,10 +56,12 @@ public class LabelCenterTransformation extends Module {
 				continue;
 			}
 			// write this into amira parameters
-			key = template.statisticsName 
+			key = template.basename
 							+ "SLabelTransformation-" + materialName;
-			if(!modelH.contains(key))
+			if(!modelH.containsKey(key)){
+				System.out.println("model does not contain " + key);
 				return RESULTS_UNAVAILABLE;
+			}
 		}
 		return RESULTS_OK;
 	}
@@ -114,11 +117,11 @@ public class LabelCenterTransformation extends Module {
 			// write this into amira parameters
 			Hashtable h = (Hashtable)modelStatistics.
 									getProperties().get("Parameters");
-			String key = templateStatistics.getTitle() 
-								+ "SLabelTransformation-" + materialName;
+			String key = template.basename 
+							+ "SLabelTransformation-" + materialName;
 			String value = matrix.toStringForAmira();
 			h.put(key,value);
-			console.append("...save statistics");
+			console.append("...save " + materialName + " in statistics");
 			if(!image.saveStatistics(modelStatistics))
 				console.append("Could not save statistics for " + image.name);
 		}
