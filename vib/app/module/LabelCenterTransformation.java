@@ -29,29 +29,38 @@ public class LabelCenterTransformation extends Module {
 	}
 
 	public int checkResults() {
-		// check requirements available
-		File statisticsM = new File(image.statisticsPath);
-		File statisticsT = new File(template.statisticsPath);
-		// check availability of results
-		// TODO
-		/*
-		boolean available = true;
-		boolean uptodate = true;
-		if(!statistic.exists())
-			available = false;
-		if(statistic.lastModified() == 0L || 
-				statistic.lastModified() < labels_r.lastModified())
-			uptodate = false;
-		// uptodate
-		if(uptodate) {
-			return RESULTS_OK;
+		AmiraTable modelStatistics = image.getStatistics();
+		modelStatistics.hide();
+
+		Hashtable modelH = 
+			(Hashtable)modelStatistics.getProperties().get("Parameters");
+		
+		// test if center transformation is stored:
+		String key = modelStatistics.getTitle() + "SCenterTransformation ";
+		if(!modelH.contains(key))
+			return RESULTS_UNAVAILABLE;
+		
+		// test if label transformation is stored for each non-empty
+		// label:
+		TextPanel panel = modelStatistics.getTextPanel();
+		int count = panel.getLineCount();
+		// index 0 is 'exterior'
+		for (int i = 1; i < count; i++) {
+			String[] line = Tools.split(panel.getLine(i), "\t");
+			String materialName = line[1];
+			int material = i;
+			// check if labelfield is empty:
+			int voxelCount = Integer.parseInt(line[2]);
+			if(voxelCount == 0) {
+				continue;
+			}
+			// write this into amira parameters
+			key = template.statisticsName 
+							+ "SLabelTransformation-" + materialName;
+			if(!modelH.contains(key))
+				return RESULTS_UNAVAILABLE;
 		}
-		// just available
-		else if(available) {
-			return RESULTS_OUT_OF_DATE;
-		}
-		// not available, but at least the requirements are fullfilled */
-		return RESULTS_UNAVAILABLE;
+		return RESULTS_OK;
 	}
 	
 	protected void runThisModule() {
