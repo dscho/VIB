@@ -7,14 +7,15 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
+import ij.ImagePlus;
 
 public class Axis2DRenderer extends AxisRenderer {
 
     private Texture2DVolume texVol;
 
-    public Axis2DRenderer(View view,Volume vol) {
-		super(view, vol);
-		texVol = new Texture2DVolume(vol);
+    public Axis2DRenderer(View view,ImagePlus img, Color3f color) {
+		super(view, img, color);
+		texVol = new Texture2DVolume(volume);
     }
 
     void update() {
@@ -106,8 +107,9 @@ public class Axis2DRenderer extends AxisRenderer {
 			a.setTextureAttributes(texAttr);
 			a.setTexCoordGeneration(tg);
 			a.setPolygonAttributes(p);
+//			a.setColoringAttributes(colAttr);
 
-			QuadArray quadArray = new QuadArray(4, GeometryArray.COORDINATES);
+			QuadArray quadArray = new QuadArray(4, GeometryArray.COORDINATES );
 			quadArray.setCoordinates(0, quadCoords);
 
 			Shape3D frontShape = new Shape3D(quadArray, a);

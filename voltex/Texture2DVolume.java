@@ -28,6 +28,8 @@ public class Texture2DVolume implements VolRendConstants {
 
 	protected Volume volume;
 
+	int[][] texColorMap;
+
     public Texture2DVolume(Volume volume) {
 		this.volume = volume;
     }
@@ -52,12 +54,16 @@ public class Texture2DVolume implements VolRendConstants {
 		}
 		volumeReloadNeeded = false;
     }
-	
+
     void loadTexture() {
-	    ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
-	    int[] nBits = {8};
-	    colorModel = new ComponentColorModel(cs, nBits, false, false, 
-		Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
+		if (volume.is8C) {
+			colorModel = ColorModel.getRGBdefault();
+		} else {
+			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
+			int[] nBits = {8};
+			colorModel = new ComponentColorModel(cs, nBits, false, false, 
+							Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
+		}
 
 		System.out.print("Loading Z axis texture maps");
 		loadAxis(Z_AXIS);
@@ -111,22 +117,29 @@ public class Texture2DVolume implements VolRendConstants {
 		BufferedImage bImage = 
 			new BufferedImage(colorModel, raster, false, null); 
 
-		byte[] byteData = null;
-		byteData = ((DataBufferByte)raster.getDataBuffer()).getData(); 
+		Object data = null;
+		int textureMode, componentType; 
+		if (volume.is8C) {
+			data = ((DataBufferInt)raster.getDataBuffer()).getData();
+			textureMode = Texture.RGBA;
+			componentType = ImageComponent.FORMAT_RGBA;
+		} else {
+			data = ((DataBufferByte)raster.getDataBuffer()).getData();
+			textureMode = Texture.INTENSITY;
+			componentType = ImageComponent.FORMAT_CHANNEL8;
+		}
 
 		for (int i=0; i < rSize; i ++) { 
 			switch (axis) {
-			  case Z_AXIS: volume.loadZIntensity(i, byteData); break;
-			  case Y_AXIS: volume.loadYIntensity(i, byteData); break;
-			  case X_AXIS: volume.loadXIntensity(i, byteData); break;
+			  case Z_AXIS: volume.loadZ(i, data); break;
+			  case Y_AXIS: volume.loadY(i, data); break;
+			  case X_AXIS: volume.loadX(i, data); break;
 			}
 
 			Texture2D tex;
 			ImageComponent2D pArray;
-			tex = new Texture2D(Texture.BASE_LEVEL, 
-				Texture.INTENSITY, sSize, tSize);
-			pArray = new ImageComponent2D(
-				ImageComponent.FORMAT_CHANNEL8, sSize, tSize);
+			tex = new Texture2D(Texture.BASE_LEVEL, textureMode, sSize, tSize);
+			pArray = new ImageComponent2D(componentType, sSize, tSize);
 			pArray.set(bImage);
 		
 			tex.setImage(0, pArray);

@@ -7,6 +7,7 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
+import ij.ImagePlus;
 
 abstract public class AxisRenderer extends Renderer 
 				implements VolRendConstants{
@@ -27,15 +28,14 @@ abstract public class AxisRenderer extends Renderer
 
 
     protected TextureAttributes texAttr = new TextureAttributes();
-
+	protected ColoringAttributes colAttr;
     protected TransparencyAttributes t = new TransparencyAttributes();
     protected PolygonAttributes	     p = new PolygonAttributes();
     protected Material 				 m = new Material();
 
 
-    public AxisRenderer(View view, Volume vol) {
-		super(view, vol);
-
+    public AxisRenderer(View view, ImagePlus image, Color3f color) {
+		super(view, image);
 		axisIndex[X_AXIS][FRONT] = 0;
 		axisIndex[X_AXIS][BACK] = 1;
 		axisIndex[Y_AXIS][FRONT] = 2;
@@ -55,9 +55,11 @@ abstract public class AxisRenderer extends Renderer
         axisSwitch.addChild(getOrderedGroup());
         axisSwitch.addChild(getOrderedGroup());
 
-		//texAttr.setTextureMode(TextureAttributes.MODULATE);
+		colAttr = new ColoringAttributes(color, ColoringAttributes.FASTEST); 
+//		texAttr.setTextureMode(TextureAttributes.MODULATE);
 		texAttr.setTextureMode(TextureAttributes.REPLACE);
 		texAttr.setCapability(TextureAttributes.ALLOW_COLOR_TABLE_WRITE);
+		t.setTransparency(0.5f);
 		t.setTransparencyMode(TransparencyAttributes.BLENDED);
 		m.setLightingEnable(false);
 		p.setCullFace(PolygonAttributes.CULL_NONE);
@@ -68,9 +70,9 @@ abstract public class AxisRenderer extends Renderer
 		root.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
     }
 
-    public void attach(Group dynamicGroup) {
-		dynamicGroup.addChild(root);
-    }
+	public BranchGroup getVolumeNode() {
+		return root;
+	}
 
     protected void clearData() {
 		clearGroup(axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]));

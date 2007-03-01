@@ -9,6 +9,7 @@ import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import java.net.*;
 import ij.ImagePlus;
+import ij.IJ;
 
 public class Volume implements VolRendConstants {
 
@@ -61,10 +62,44 @@ public class Volume implements VolRendConstants {
 	
 	Point3d volRefPt = null;
 
-    public Volume(ImagePlus imp) {
-
+    boolean is8C = true;
+	private int[] cmap = null;
+	private IndexColorModel cmodel = null;
+	
+	public Volume(ImagePlus imp) {
 		this.imp = imp;
-
+		int imageType = imp.getType();
+		if(imageType != ImagePlus.GRAY8 && imageType != ImagePlus.COLOR_256){
+			IJ.error("8 bit image required");
+		}
+		is8C = imageType == ImagePlus.COLOR_256;
+		if(is8C) {
+			byte[] r = new byte[256];
+			byte[] g = new byte[256];
+			byte[] b = new byte[256];
+			byte[] a = new byte[256];
+			cmodel = (IndexColorModel)imp.getProcessor().getColorModel();
+			cmodel.getReds(r);
+			cmodel.getGreens(g);
+			cmodel.getBlues(b);
+			for(int i=0; i<256; i++) {
+				int red = (int)(r[i] & 0xff);
+				int green = (int)(g[i] & 0xff);
+				int blue = (int)(b[i] & 0xff);
+				
+				float weightr = 0.1f;
+				float weightg = 3.0f;
+				float weightb = 0.1f;
+				int meanInt = (int)Math.round(
+						(weightr * red + weightg * green + weightb * blue)/3.0);
+				
+				a[i] = (byte)(meanInt);
+			}
+			
+			cmodel = new IndexColorModel(8, 256, r, g, b, a); 
+			cmap = new int[256];
+			cmodel.getRGBs(cmap);
+		}
 		for (int i = 0; i < 8; i++) {
 		   voiPts[i] = new Point3d();
 		}
@@ -214,7 +249,31 @@ public class Volume implements VolRendConstants {
 		return retval;
     }
 
-    // Note:
+	void loadZ(int zValue, Object data) {
+		if(!is8C) {
+			loadZIntensity(zValue, (byte[]) data);
+		} else {
+			loadZRGBA(zValue, (int[]) data);
+		}
+	}
+
+	void loadY(int yValue, Object data) {
+		if(!is8C) {
+			loadYIntensity(yValue, (byte[]) data);
+		} else {
+			loadYRGBA(yValue, (int[]) data);
+		}
+	}
+
+    void loadX(int xValue, Object data) {
+		if(!is8C) {
+			loadXIntensity(xValue, (byte[]) data);
+		} else {
+			loadXRGBA(xValue, (int[]) data);
+		}
+	}
+	
+	// Note:
     // Java3D "flips" images along the "t" axis, so we load the images into
     // the buffer from the "top" down.  That is, we use (numRows - row - 1)
     // instead of (row).
@@ -285,4 +344,90 @@ public class Volume implements VolRendConstants {
 			}
 		}
     }
+	
+	// this routine loads values for constant zValue, into byteData in x,y
+    // order (x changes fastest)
+    void loadZRGBA(int zValue, int[] intData) {
+		loadZRGBA(zValue, intData, 0);
+    }
+
+    // this routine loads values for constant zValue, into byteData in x,y
+    // order (x changes fastest)
+    void loadZRGBA(int zValue, int[] intData, int intOffset) {
+		for (int y=0; y < yDim; y++){
+			byte[] vRow = vol.fileData[zValue][y];
+			int rowIndex;
+			if (tFlip) {
+				rowIndex = (yTexSize - y - 1) * xTexSize;
+			} else {
+				rowIndex = y * xTexSize;
+			}
+			for (int x=0; x < xDim; x++){
+				byte value = vRow[x];
+				int mapIndex = value;
+				if (mapIndex < 0) {
+				   mapIndex += 256;
+				}
+				int tIndex = intOffset + rowIndex + x;
+				intData[tIndex] = cmap[mapIndex];
+			}
+		}
+    }
+
+    // this routine loads values for constant yValue, into byteData in x,y
+    // order (x changes fastest)
+    void loadYRGBA(int yValue, int[] intData) {
+
+		for (int z=0; z < zTexSize; z++){
+			byte[] vRow;
+			if (z < zDim) {
+				vRow = vol.fileData[z][yValue];
+			} else {
+				vRow = emptyByteRow;
+			}
+			int rowIndex;
+			if (tFlip) {
+				rowIndex = (zTexSize - z - 1) * xTexSize;
+			} else {
+				rowIndex = z * xTexSize;
+			}
+			for (int x=0; x < xDim; x++){
+				byte value = vRow[x];
+				int mapIndex = value;
+				if (mapIndex < 0) {
+				   mapIndex += 256;
+				}
+				int tIndex = rowIndex + x;
+				intData[tIndex] = cmap[mapIndex];
+			}
+		}
+    }
+
+
+    // this routine loads values for constant xValue, into byteData in y,z
+    // order (y changes fastest)
+    void loadXRGBA(int xValue, int[] intData) {
+		for (int z=0; z < zTexSize; z++){
+			int rowIndex;
+			if (tFlip) {
+				rowIndex = (zTexSize - z - 1) * yTexSize;
+			} else {
+				rowIndex = z * yTexSize;
+			}
+			for (int y=0; y < yDim; y++){
+				byte value;
+				if (z < zDim) {
+					value = vol.fileData[z][y][xValue];
+				} else {
+					value = 0;
+				}
+				int mapIndex = value;
+				if (mapIndex < 0) {
+				   mapIndex += 256;
+				}
+				int tIndex = rowIndex + y;
+				intData[tIndex] = cmap[mapIndex];
+			}
+		}
+	}
 }

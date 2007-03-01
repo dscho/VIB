@@ -2,22 +2,34 @@ package voltex;
 
 import java.awt.event.*;
 import java.awt.*;
+import java.util.Vector;
 
+import ij.gui.GenericDialog;
 import ij.IJ;
+import ij.WindowManager;
+import ij.ImagePlus;
+
+import javax.vecmath.Color3f;
 
 public class CanvasPopup extends PopupMenu 
 						 implements ActionListener, ItemListener {
 
 	private VolRend volrend;
 
+	private MenuItem image;
 	private MenuItem reset;
 	private MenuItem fill;
+	private MenuItem reload;
 	private CheckboxMenuItem coord_cb;
 	private CheckboxMenuItem perspective_cb;
 
 	public CanvasPopup(VolRend volr) {
 		super();
 		this.volrend = volr;
+
+		image = new MenuItem("Open image");
+		image.addActionListener(this);
+		this.add(image);
 
 		fill = new MenuItem("Fill selection");
 		fill.addActionListener(this);
@@ -34,6 +46,10 @@ public class CanvasPopup extends PopupMenu
 		reset = new MenuItem("Reset view");
 		reset.addActionListener(this);
 		this.add(reset);
+
+		reload = new MenuItem("Reload image");
+		reload.addActionListener(this);
+		this.add(reload);
 
 		volrend.getCanvas().add(this);
    		
@@ -74,6 +90,43 @@ public class CanvasPopup extends PopupMenu
 
 		if(e.getSource() == reset) {
 			volrend.resetView();
+		}
+
+		if(e.getSource() == image) {
+			GenericDialog gd = new GenericDialog("Display image");
+			int img_count = WindowManager.getImageCount();
+			Vector imageV = new Vector();
+			String[] images;
+			System.out.println("img_count = " + img_count);
+			for(int i=1; i<=img_count; i++) {
+				int id = WindowManager.getNthImageID(i);
+				ImagePlus imp = WindowManager.getImage(id);
+				System.out.println("testing " + imp);
+				if(imp != null){
+					 imageV.add(imp.getTitle());
+				}
+			}
+			if(imageV.size() == 0)
+				IJ.error("No images open");
+			images = (String[])imageV.toArray(new String[]{});
+			gd.addChoice("Image", images, images[0]);
+
+			String[] colors = ColorTable.colors();
+			gd.addChoice("Color", colors, colors[0]);
+
+//			gd.addCheckbox("Replace current image", true);
+			gd.showDialog();
+			if(gd.wasCanceled())
+				return;
+			
+			ImagePlus newImage = WindowManager.getImage(gd.getNextChoice());
+			Color3f color = ColorTable.getColor(gd.getNextChoice());
+			boolean replace = true; //gd.getNextBoolean();
+			volrend.initContext(newImage, color, replace);
+		}
+
+		if(e.getSource() == reload) {
+			volrend.reload();
 		}
 	}
 

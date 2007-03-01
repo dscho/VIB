@@ -1,5 +1,6 @@
 package voltex;
 
+import ij.ImagePlus;
 import java.awt.*;
 import java.awt.image.*;
 import java.awt.color.ColorSpace;
@@ -12,17 +13,20 @@ import com.sun.j3d.utils.behaviors.mouse.*;
 abstract public class Renderer {
 
     private View view;
-    Volume volume;
+    
+	ImagePlus image;
+	Volume volume;
 
-    public Renderer(View vw, Volume vol) {
-		view = vw;
-		volume = vol;
+    public Renderer(View vw, ImagePlus image) {
+		this.view = vw;
+		this.image = image;
+		this.volume = new Volume(image);
     }
 
     /** 
-     * Attach the branchgroups for this renderer to the display
-     */
-    abstract public void attach(Group dynamicGroup);
+     * Retrieve the branchgroup of this renderer
+	 */
+	abstract public BranchGroup getVolumeNode();
 
     /**
      * Called to make changes to the renderer state

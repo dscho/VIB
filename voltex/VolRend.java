@@ -38,31 +38,28 @@ import ij3d.ImageCanvas3D;
  */
 public class VolRend implements MouseBehaviorCallback {
 
-    Volume volume;
-	private ImagePlus image;
-    Renderer renderer;
-    View view; // primary view for renderers
+    private List<Renderer> renderer = new ArrayList<Renderer>();
 
 	private MouseNavigation navigation;
-	private TransformGroup objectGroup;
-    TransformGroup centerGroup;
-    Transform3D centerXform = new Transform3D();
+
+	private TransformGroup objectTG;
+    private TransformGroup centerTG;
+    private Transform3D centerXform = new Transform3D();
 
 	private CoordinateSystem coordBG;    
-	private Vector3d centerOffset = new Vector3d(-0.5, -0.5, -0.5);
 
-	BranchGroup scene;
-    Group dynamicAttachGroup;
+    private BranchGroup dynamicAttachGroup;
 
-	SimpleUniverse simpleU;
-    ImageCanvas3D canvas;
+	private SimpleUniverse simpleU;
+    private ImageCanvas3D canvas;
 
-    int	volEditId = -1;
+    private int volEditId = -1;
 
     public VolRend() {
 		canvas = new ImageCanvas3D(SimpleUniverse.getPreferredConfiguration(), 
 						512, 512);
 		CanvasPopup popup = new CanvasPopup(this);
+		setupUniverse();
 	}
 
     public ImageCanvas3D getCanvas() {
@@ -73,11 +70,10 @@ public class VolRend implements MouseBehaviorCallback {
 		return simpleU;
 	}
 
-    void setupScene() {
-
+    private void setupUniverse() {
 		// Setup the graphics
 		// Create a simple scene and attach it to the virtual universe
-		scene = createSceneGraph();
+		BranchGroup scene = createSceneGraph();
 		scene.compile();
 		simpleU = new SimpleUniverse(canvas);
 
@@ -86,113 +82,125 @@ public class VolRend implements MouseBehaviorCallback {
 		simpleU.getViewingPlatform().setNominalViewingTransform();
 
 		// get the primary view
-		view = simpleU.getViewer().getView();
+		View view = simpleU.getViewer().getView();
 
 		// switch to a parallel projection, which is faster for texture mapping
 		view.setProjectionPolicy(View.PERSPECTIVE_PROJECTION);
-
 		simpleU.addBranchGraph(scene);
-
 		canvas.setDoubleBufferEnable(true);
-
-		// setup the renderers
-		renderer = new Axis2DRenderer(view, volume);
-
-		// Add the volume to the scene
-		renderer.attach(dynamicAttachGroup);
-
     }
 
     public void update() {
-		System.out.println("VolRend.update()");
-		doUpdate();
-    }
-
-    public void initContext(ImagePlus imp) {
-		this.image = imp;
-		volume = new Volume(imp);
-		setupScene();
-    }
-
-    private void doUpdate() {
-		renderer.update();
-		int newVolEditId;
-		if ((newVolEditId = volume.update()) != volEditId) {
-			updateCenter(volume.minCoord, volume.maxCoord);
-			newVolEditId = volEditId;
+		for(Renderer rend : renderer) {
+			int newVolEditId;
+			Volume volume = rend.volume;
+			if ((newVolEditId = volume.update()) != volEditId) {
+				updateCenter(volume.minCoord, volume.maxCoord);
+				newVolEditId = volEditId;
+			}
+			rend.update();
 		}
     }
 
+    public void initContext(ImagePlus imp, Color3f color, boolean replace) {
+		if(renderer != null && renderer.size() != 0 && replace) {
+			Renderer rend = renderer.get(renderer.size()-1);
+			dynamicAttachGroup.removeChild(rend.getVolumeNode());
+		}
+		View view = simpleU.getViewer().getView();
+		Renderer rend = new Axis2DRenderer(view, imp, color);
+		renderer.add(rend);
+		dynamicAttachGroup.addChild(rend.getVolumeNode());
+		update();
+    }
+
+	public void reload() {
+		if(renderer != null && renderer.size() != 0) {
+			ImagePlus image = renderer.get(renderer.size()-1).image;
+			initContext(image, new Color3f(), true);
+		}
+	}
+
     private void updateCenter(Point3d minCoord, Point3d maxCoord) {
+		Vector3d centerOffset = new Vector3d();
 		centerOffset.x = -(maxCoord.x - minCoord.x)/2.0;
 		centerOffset.y = -(maxCoord.y - minCoord.y)/2.0;
 		centerOffset.z = -(maxCoord.z - minCoord.z)/2.0;
 		centerXform.setTranslation(centerOffset);
-		centerGroup.setTransform(centerXform);
+		centerTG.setTransform(centerXform);
     }
 
-    BranchGroup createSceneGraph() {
+	private BranchGroup objRoot;
+
+    private BranchGroup createSceneGraph() {
 		// Create the root of the branch graph
-		BranchGroup objRoot = new BranchGroup();
+		objRoot = new BranchGroup();
 
 		// Create a TG at the origin
-		objectGroup = new TransformGroup();
+		objectTG = new TransformGroup();
 
 		// Enable the TRANSFORM_WRITE capability so that our behavior code
 		// can modify it at runtime.  Add it to the root of the subgraph.
 		//
-		objectGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		objectGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		objRoot.addChild(objectGroup);
+		objectTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		objectTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		objRoot.addChild(objectTG);
 
 
 		// Create the transform group node and initialize it center the
 		// object around the origin
-		centerGroup = new TransformGroup();
+		centerTG = new TransformGroup();
 		updateCenter(new Point3d(0.0, 0.0, 0.0), new Point3d(1.0, 1.0, 1.0));
-		centerGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		centerGroup.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
-		centerGroup.setCapability(TransformGroup.ALLOW_CHILDREN_EXTEND);
-		centerGroup.setCapability(TransformGroup.ALLOW_CHILDREN_WRITE);
-		centerGroup.setCapability(TransformGroup.ALLOW_CHILDREN_READ);
-		objectGroup.addChild(centerGroup);
+		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		centerTG.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
+		centerTG.setCapability(TransformGroup.ALLOW_CHILDREN_EXTEND);
+		centerTG.setCapability(TransformGroup.ALLOW_CHILDREN_WRITE);
+		centerTG.setCapability(TransformGroup.ALLOW_CHILDREN_READ);
+		objectTG.addChild(centerTG);
 
 		// create the dynamic attachment point
-		dynamicAttachGroup = new Group();
+		dynamicAttachGroup = new BranchGroup();
 		dynamicAttachGroup.setCapability(Group.ALLOW_CHILDREN_READ);
 		dynamicAttachGroup.setCapability(Group.ALLOW_CHILDREN_WRITE);
 		dynamicAttachGroup.setCapability(Group.ALLOW_CHILDREN_EXTEND);
-		centerGroup.addChild(dynamicAttachGroup);
+		centerTG.addChild(dynamicAttachGroup);
 
 		// attach the coordinate system
 		coordBG = new CoordinateSystem();
 		coordBG.setCapability(BranchGroup.ALLOW_DETACH);
-		centerGroup.addChild(coordBG);
+		showCoordinateSystem(true);
 
-		navigation = new MouseNavigation(objectGroup, objRoot, this);
+		// attach the Mouse tools
+		navigation = new MouseNavigation(objectTG, objRoot, this);
+
 		return objRoot;
     }
 
 	public void showCoordinateSystem(boolean flag) {
 		if(flag)
-			centerGroup.addChild(coordBG);
+			centerTG.addChild(coordBG);
 		else 
-			centerGroup.removeChild(coordBG);
+			centerTG.removeChild(coordBG);
 	}
 
 	public void setPerspectiveProjection(boolean flag) {
 		int policy = flag ? View.PERSPECTIVE_PROJECTION 
 							: View.PARALLEL_PROJECTION;
-		view.setProjectionPolicy(policy);
+		simpleU.getViewer().getView().setProjectionPolicy(policy);
 	}
 
 	public void resetView() {
 		navigation.resetView();
-		renderer.eyePtChanged();		
+		for(Renderer rend : renderer) {
+			rend.eyePtChanged();		
+		}
 	}
 
     public void transformChanged(int type, Transform3D xform) {
-		renderer.eyePtChanged();
+		for(Renderer rend : renderer) {
+			rend.eyePtChanged();
+		}
     }
 
 	public Transform3D volumeToImagePlate() {
@@ -207,7 +215,10 @@ public class VolRend implements MouseBehaviorCallback {
 		return toImagePlate;
 	}
 
-	public Point2d volumePointInCanvas(Transform3D volToIP,int x,int y,int z) {
+	public Point2d volumePointInCanvas(Renderer rend, Transform3D volToIP,
+														int x,int y,int z) {
+		
+		Volume volume = rend.volume;
 		double px = x * volume.xSpace;
 		double py = y * volume.ySpace;
 		double pz = z * volume.zSpace;
@@ -224,22 +235,26 @@ public class VolRend implements MouseBehaviorCallback {
 	public void fillRoiBlack(byte fillValue) {
 		Polygon p = canvas.getRoi().getPolygon();
 		Transform3D volToIP = volumeToImagePlate();
-		int w = image.getWidth(), h = image.getHeight();
-		int d = image.getStackSize();
-		for(int z = 0; z < d; z++) {
-			byte[] data =(byte[])image.getStack().
-								getProcessor(z+1).getPixels();
-			for(int y = 0; y < h; y++) {
-				for(int x = 0; x < w; x++) {
-					int index = y * w + x;
-					Point2d onCanvas = volumePointInCanvas(volToIP, x, y, z);
-					if(p.contains(onCanvas.x, onCanvas.y)) {
-						data[index] = fillValue;
+		for(Renderer rend : renderer) {
+			ImagePlus image = rend.image;
+			int w = image.getWidth(), h = image.getHeight();
+			int d = image.getStackSize();
+			for(int z = 0; z < d; z++) {
+				byte[] data =(byte[])image.getStack().
+									getProcessor(z+1).getPixels();
+				for(int y = 0; y < h; y++) {
+					for(int x = 0; x < w; x++) {
+						int index = y * w + x;
+						Point2d onCanvas = 
+								volumePointInCanvas(rend,volToIP,x,y,z);
+						if(p.contains(onCanvas.x, onCanvas.y)) {
+							data[index] = fillValue;
+						}
 					}
 				}
+				IJ.showStatus("Filling...");
+				IJ.showProgress(z, d);
 			}
-			IJ.showStatus("Filling...");
-			IJ.showProgress(z, d);
 		}
 	}
 }
