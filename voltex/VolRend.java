@@ -70,6 +70,14 @@ public class VolRend implements MouseBehaviorCallback {
 		return simpleU;
 	}
 
+	public List<Renderer> getRenderer() {
+		return renderer;
+	}
+
+	public Renderer getLastRenderer() {
+		return renderer.get(renderer.size()-1);
+	}
+
     private void setupUniverse() {
 		// Setup the graphics
 		// Create a simple scene and attach it to the virtual universe
@@ -104,7 +112,7 @@ public class VolRend implements MouseBehaviorCallback {
 
     public void initContext(ImagePlus imp, Color3f color, boolean replace) {
 		if(renderer != null && renderer.size() != 0 && replace) {
-			Renderer rend = renderer.get(renderer.size()-1);
+			Renderer rend = getLastRenderer();
 			dynamicAttachGroup.removeChild(rend.getVolumeNode());
 		}
 		View view = simpleU.getViewer().getView();
@@ -116,7 +124,7 @@ public class VolRend implements MouseBehaviorCallback {
 
 	public void reload() {
 		if(renderer != null && renderer.size() != 0) {
-			ImagePlus image = renderer.get(renderer.size()-1).image;
+			ImagePlus image = getLastRenderer().image;
 			initContext(image, new Color3f(), true);
 		}
 	}

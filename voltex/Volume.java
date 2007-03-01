@@ -73,29 +73,7 @@ public class Volume implements VolRendConstants {
 		}
 		is8C = imageType == ImagePlus.COLOR_256;
 		if(is8C) {
-			byte[] r = new byte[256];
-			byte[] g = new byte[256];
-			byte[] b = new byte[256];
-			byte[] a = new byte[256];
-			cmodel = (IndexColorModel)imp.getProcessor().getColorModel();
-			cmodel.getReds(r);
-			cmodel.getGreens(g);
-			cmodel.getBlues(b);
-			for(int i=0; i<256; i++) {
-				int red = (int)(r[i] & 0xff);
-				int green = (int)(g[i] & 0xff);
-				int blue = (int)(b[i] & 0xff);
-				
-				float weightr = 0.1f;
-				float weightg = 3.0f;
-				float weightb = 0.1f;
-				int meanInt = (int)Math.round(
-						(weightr * red + weightg * green + weightb * blue)/3.0);
-				
-				a[i] = (byte)(meanInt);
-			}
-			
-			cmodel = new IndexColorModel(8, 256, r, g, b, a); 
+			adjustColorModel();
 		}
 		for (int i = 0; i < 8; i++) {
 		   voiPts[i] = new Point3d();
@@ -142,6 +120,36 @@ public class Volume implements VolRendConstants {
 		facePoints[MINUS_Z][2] =  voiPts[7];
 		facePoints[MINUS_Z][3] =  voiPts[4];
     }
+
+	public void adjustColorModel() {
+		byte[] r = new byte[256];
+		byte[] g = new byte[256];
+		byte[] b = new byte[256];
+		byte[] a = new byte[256];
+		cmodel = (IndexColorModel)imp.getProcessor().getColorModel();
+		cmodel.getReds(r);
+		cmodel.getGreens(g);
+		cmodel.getBlues(b);
+		adjustAlpha(r, g, b, a);
+		cmodel = new IndexColorModel(8, 256, r, g, b, a); 
+	}
+
+	float weightr = 0.1f;
+	float weightg = 3.0f;
+	float weightb = 0.1f;
+
+	public void adjustAlpha(byte[]r, byte[]g, byte[]b, byte[]a) {
+		for(int i=0; i<256; i++) {
+			int red = (int)(r[i] & 0xff);
+			int green = (int)(g[i] & 0xff);
+			int blue = (int)(b[i] & 0xff);
+			
+			int meanInt = (int)Math.round(
+					(weightr * red + weightg * green + weightb * blue)/3.0);
+			
+			a[i] = (byte)(meanInt);
+		}
+	}
 
     // returns the edit id for the volume
     public int update() {

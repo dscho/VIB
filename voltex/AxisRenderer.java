@@ -59,7 +59,7 @@ abstract public class AxisRenderer extends Renderer
 //		texAttr.setTextureMode(TextureAttributes.MODULATE);
 		texAttr.setTextureMode(TextureAttributes.REPLACE);
 		texAttr.setCapability(TextureAttributes.ALLOW_COLOR_TABLE_WRITE);
-		applyTextureColorMap();
+		applyTextureColorTable();
 		t.setTransparency(0.5f);
 		t.setTransparencyMode(TransparencyAttributes.BLENDED);
 		m.setLightingEnable(false);
@@ -71,7 +71,7 @@ abstract public class AxisRenderer extends Renderer
 		root.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
     }
 
-	public void applyTextureColorMap() {
+	public void applyTextureColorTable() {
 		if(!volume.is8C)
 			return;
 		int[][] cmap = new int[4][256];

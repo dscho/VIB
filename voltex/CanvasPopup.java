@@ -17,6 +17,7 @@ public class CanvasPopup extends PopupMenu
 	private VolRend volrend;
 
 	private MenuItem image;
+	private MenuItem transparency;
 	private MenuItem reset;
 	private MenuItem fill;
 	private MenuItem reload;
@@ -30,6 +31,10 @@ public class CanvasPopup extends PopupMenu
 		image = new MenuItem("Open image");
 		image.addActionListener(this);
 		this.add(image);
+		
+		transparency = new MenuItem("Adjust transparency");
+		transparency.addActionListener(this);
+		this.add(transparency);
 
 		fill = new MenuItem("Fill selection");
 		fill.addActionListener(this);
@@ -121,6 +126,23 @@ public class CanvasPopup extends PopupMenu
 			Color3f color = ColorTable.getColor(gd.getNextChoice());
 			boolean replace = true; //gd.getNextBoolean();
 			volrend.initContext(newImage, color, replace);
+		}
+
+		if(e.getSource() == transparency) {
+			Volume vol = volrend.getLastRenderer().volume;
+			GenericDialog gd = new GenericDialog("Adjust transparency");
+			gd.addSlider("red  ", 0.0, 100.0, vol.weightr * 100);
+			gd.addSlider("green", 0.0, 100.0, vol.weightg * 100);
+			gd.addSlider("blue ", 0.0, 100.0, vol.weightb * 100);
+
+			gd.showDialog();
+			if(gd.wasCanceled())
+				return;
+			vol.weightr = (float)gd.getNextNumber() / 100;
+			vol.weightg = (float)gd.getNextNumber() / 100;
+			vol.weightb = (float)gd.getNextNumber() / 100;
+
+			((AxisRenderer)volrend.getLastRenderer()).applyTextureColorTable();
 		}
 
 		if(e.getSource() == reload) {
