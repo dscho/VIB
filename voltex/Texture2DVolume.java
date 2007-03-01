@@ -1,5 +1,7 @@
 package voltex;
 
+import ij.IJ;
+
 import java.awt.*;
 import java.awt.image.*;
 import java.awt.color.ColorSpace;
@@ -65,15 +67,12 @@ public class Texture2DVolume implements VolRendConstants {
 							Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
 		}
 
-		System.out.print("Loading Z axis texture maps");
+		IJ.showStatus("Loading Z axis texture maps");
 		loadAxis(Z_AXIS);
-		System.out.println("done");
-		System.out.print("Loading Y axis texture maps");
+		IJ.showStatus("Loading Y axis texture maps");
 		loadAxis(Y_AXIS);
-		System.out.println("done");
-		System.out.print("Loading X axis texture maps");
+		IJ.showStatus("Loading X axis texture maps");
 		loadAxis(X_AXIS);
-		System.out.println("done");
     }
 
     private void loadAxis(int axis) {
@@ -135,6 +134,7 @@ public class Texture2DVolume implements VolRendConstants {
 			  case Y_AXIS: volume.loadY(i, data); break;
 			  case X_AXIS: volume.loadX(i, data); break;
 			}
+			IJ.showProgress(i, rSize);
 
 			Texture2D tex;
 			ImageComponent2D pArray;
@@ -151,7 +151,6 @@ public class Texture2DVolume implements VolRendConstants {
 			tex.setBoundaryModeT(Texture.CLAMP);
 
 			textures[i] = tex;
-			System.out.print(".");
 		} 
     } 
 }

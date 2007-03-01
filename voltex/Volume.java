@@ -173,13 +173,10 @@ public class Volume implements VolRendConstants {
 		yTexSize = powerOfTwo(yMax - yMin);
 		zTexSize = powerOfTwo(zMax - zMin);
 
-		System.out.println("tex size is " + xTexSize + "x" + yTexSize + "x" + zTexSize);
-
 		// real coords
 		maxCoord.x = xMax * vol.xSpace;
 		maxCoord.y = yMax * vol.ySpace;
 		maxCoord.z = zMax * vol.zSpace;
-		System.out.println("maxCoord = (" + maxCoord.x + ", " + maxCoord.y + ", " + maxCoord.z + ")");
 
 		// scale everything so that the longenst dim has length 1.0
 		double max = maxCoord.x;
@@ -195,14 +192,12 @@ public class Volume implements VolRendConstants {
 		xSpace = vol.xSpace * scale;
 		ySpace = vol.ySpace * scale;
 		zSpace = vol.zSpace * scale;
-		System.out.println("vol.space = " + xSpace + ", " + ySpace + ", " + zSpace + ")");
 
 		// xTexSize is the pixel dim of the file in x-dir, e.g. 256
 		// xSpace is the normalised length of a pixel
 		xTexGenScale = (float)(1.0 / (xSpace * xTexSize));
 		yTexGenScale = (float)(1.0 / (ySpace * yTexSize));
 		zTexGenScale = (float)(1.0 / (zSpace * zTexSize));
-		System.out.println("xTexGenScaple = " + xTexGenScale + ", y = " + yTexGenScale + ", z = " + zTexGenScale);
 
 		// the min and max coords are for the usable area of the texture,
 		// which is has a half-texel boundary.  Otherwise the boundary
@@ -210,12 +205,10 @@ public class Volume implements VolRendConstants {
 		minCoord.x = (xMin + 0.5f) * xSpace;
 		minCoord.y = (yMin + 0.5f) * ySpace;
 		minCoord.z = (zMin + 0.5f) * zSpace;
-		System.out.println("minCoord = (" + minCoord.x + ", " + minCoord.y + ", " + minCoord.z + ")");
 
 		maxCoord.x = (xMax - 0.5f) * xSpace;
 		maxCoord.y = (yMax - 0.5f) * ySpace;
 		maxCoord.z = (zMax - 0.5f) * zSpace;
-		System.out.println("maxCoord = (" + maxCoord.x + ", " + maxCoord.y + ", " + maxCoord.z + ")");
 
 		// setup the VOI box points
         voiPts[0].x = voiPts[1].x = voiPts[2].x = voiPts[3].x = minCoord.x;

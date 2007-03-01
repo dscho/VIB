@@ -159,7 +159,6 @@ abstract public class AxisRenderer extends Renderer
     }
 
     protected void setCoordsZ() {
-		System.out.println("setCoordsZ()");
 		checkCoords();
 
 		// lower left

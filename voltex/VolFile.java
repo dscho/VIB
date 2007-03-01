@@ -37,9 +37,6 @@ public class VolFile {
 		xSpace = (float)c.pixelWidth;
 		ySpace = (float)c.pixelHeight;
 		zSpace = (float)c.pixelDepth;
-		System.out.println("xSpace = " + xSpace);
-		System.out.println("ySpace = " + ySpace);
-		System.out.println("zSpace = " + zSpace);
 		xDim = stack.getWidth();
 		yDim = stack.getHeight();
 		zDim = stack.getSize();

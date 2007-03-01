@@ -97,11 +97,9 @@ public class CanvasPopup extends PopupMenu
 			int img_count = WindowManager.getImageCount();
 			Vector imageV = new Vector();
 			String[] images;
-			System.out.println("img_count = " + img_count);
 			for(int i=1; i<=img_count; i++) {
 				int id = WindowManager.getNthImageID(i);
 				ImagePlus imp = WindowManager.getImage(id);
-				System.out.println("testing " + imp);
 				if(imp != null){
 					 imageV.add(imp.getTitle());
 				}

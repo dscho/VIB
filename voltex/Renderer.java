@@ -62,7 +62,6 @@ abstract public class Renderer {
 		// get parent transform
 		Transform3D parentInv = new Transform3D();
 		node.getLocalToVworld(parentInv);
-		//System.out.println("node xform is \n" + parentInv);
 		parentInv.invert();
 
 		// transform the eye position into the parent's coordinate system
