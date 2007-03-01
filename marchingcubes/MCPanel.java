@@ -85,7 +85,7 @@ public class MCPanel extends Panel {
 		canvas = new Canvas3D(config);
 		canvas.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
-				Point3d location = getPointForMouseEvent(e.getX(), e.getY());
+				//Point3d location = getPointForMouseEvent(e.getX(), e.getY());
 				/*
 				if(location != null) {
 					System.out.println("location: (" + location.x + "," + location.y + "," + location.z + ")");
