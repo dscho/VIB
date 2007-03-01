@@ -20,6 +20,23 @@ public class DiffusionInterpol2_ implements PlugInFilter {
 	ImagePlus image;
 	FloatMatrix[] labelTransformations;
 	FloatMatrix globalTransformation;
+	boolean reuse;
+	boolean remember;
+	float tolerance;
+
+	public void initialize(ImagePlus image, ImagePlus templateLabels, 
+			ImagePlus model, FloatMatrix[] labelTransformations, boolean reuse, 
+			boolean remember, float tolerance) {
+
+		this.image = image;
+		this.template = new InterpolatedImage(image);
+		this.templateLabels = new InterpolatedImage(templateLabels);
+		this.model = new InterpolatedImage(model);
+		this.labelTransformations = labelTransformations;
+		this.reuse = reuse;
+		this.remember = remember;
+		this.tolerance = tolerance;
+	}
 
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
@@ -29,7 +46,6 @@ public class DiffusionInterpol2_ implements PlugInFilter {
 	static float[][] savedDisplace;
 
 	public void run(ImageProcessor ip) {
-try {
 		GenericDialog gd = new GenericDialog("DiffusionInterpol2");
 		if (!AmiraParameters.addAmiraLabelsList(gd, "TemplateLabels"))
 			return;
@@ -38,61 +54,69 @@ try {
 		if (savedDisplace != null)
 			gd.addCheckbox("reuseDistortion", true);
 		gd.addCheckbox("rememberDistortion", false);
-		gd.addStringField("LabelTransformationList","1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1");
+		gd.addStringField("LabelTransformationList",
+							"1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1");
 		gd.addNumericField("tolerance", 0.5, 2);
 
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
-
+		
 		template = new InterpolatedImage(image);
 		templateLabels = new InterpolatedImage(
 				WindowManager.getImage(gd.getNextChoice()));
 		model = new InterpolatedImage(
 			WindowManager.getImage(gd.getNextChoice()));
-		boolean reuse = (savedDisplace != null ?
-				gd.getNextBoolean() : false);
-		boolean remember = gd.getNextBoolean();
-		labelTransformations = FloatMatrix.parseMatrices(gd.getNextString());
-		float tolerance = (float)gd.getNextNumber();
+		reuse = gd.getNextBoolean();
+		remember = gd.getNextBoolean();
+		labelTransformations =FloatMatrix.parseMatrices(gd.getNextString());
+		tolerance = (float)gd.getNextNumber();
+		doit();
+	}
 
-		FloatMatrix fromTemplate = FloatMatrix.fromCalibration(template.image);
-		FloatMatrix toModel = FloatMatrix.fromCalibration(model.image).inverse();
+	public void doit() {
+		try {
+			reuse = savedDisplace != null ? reuse : false;
+			FloatMatrix fromTemplate = FloatMatrix.fromCalibration(image);
+			FloatMatrix toModel = FloatMatrix.fromCalibration(image).inverse();
+	
+			for (int i = 1; i < labelTransformations.length; i++) {
+				if (labelTransformations[i] != null)
+					labelTransformations[i] = toModel.times(
+						labelTransformations[i].inverse().times(fromTemplate));
+				System.err.println("matrix " + i + " = " + labelTransformations[i]);
+			}
+			labelTransformations[0] = null; // Exterior does not matter
 
-		for (int i = 1; i < labelTransformations.length; i++) {
-			if (labelTransformations[i] != null)
-				labelTransformations[i] = toModel.times(labelTransformations[i].inverse().times(fromTemplate));
-		}
-		labelTransformations[0] = null; // Exterior does not matter
+			globalTransformation = FloatMatrix.average(labelTransformations);
+			if (reuse)
+				displace = savedDisplace;
+			else {
+				if (savedDisplace != null) {
+					// give the garbage collector a chance
+					savedDisplace = null;
+					System.gc();
+					System.gc();
+				}
 
-		globalTransformation = FloatMatrix.average(labelTransformations);
-		if (reuse)
-			displace = savedDisplace;
-		else {
-			if (savedDisplace != null) {
-				// give the garbage collector a chance
-				savedDisplace = null;
-				System.gc();
-				System.gc();
+				displace = new float[template.d][];
+				for (int k = 0; k < template.d; k++)
+					displace[k] = new float[3
+						* template.w * template.h];
+
+				init();
+				iterate(tolerance, false);
 			}
 
-			displace = new float[template.d][];
-			for (int k = 0; k < template.d; k++)
-				displace[k] = new float[3
-					* template.w * template.h];
+			apply();
 
-			init();
-			iterate(tolerance, false);
+			savedDisplace = (remember ? displace : null);
+		} catch(OutOfMemoryError e) {
+			System.err.println("Out of Memory: DiffusionInterpol2 " + 
+									ij.Macro.getOptions());
+			e.printStackTrace();
+			throw e;
 		}
-
-		apply();
-
-		savedDisplace = (remember ? displace : null);
-} catch(OutOfMemoryError e) {
-	System.err.println("Out of Memory: DiffusionInterpol2 " + ij.Macro.getOptions());
-	e.printStackTrace();
-	throw e;
-}
 	}
 
 	InterpolatedImage template;

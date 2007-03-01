@@ -35,7 +35,7 @@ public class Center_Transformation implements PlugIn {
 		Point3d[] setModel = getList(tModel);
 		Point3d[] setTemplate = getList(tTemplate);
 
-		FastMatrix transform = FastMatrix.bestRigid(setModel,setTemplate, true);
+		FastMatrix transform = FastMatrix.bestRigid(setModel,setTemplate,false);
 		// write this into amira parameters
 		Hashtable h = (Hashtable)tModel.properties.get("Parameters");
 		String templName = tTemplate.getTitle();

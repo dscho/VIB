@@ -34,6 +34,12 @@ public class VIB_Protocoll implements PlugIn, ActionListener {
 	
 	public void run(String arg) {
 		options = new Options();
+// TODO
+//		String configfile = ij.Macro.getValue(ij.Macro.getOptions(), 
+//				"configfile", "");
+//		if(!configfile.equals(""))
+//			options.loadFrom("/home/bene/gitakt/results/images_small/options.config");
+
 		gd = new GenericDialog("VIB Protocoll");
 		
 		Panel loadsave = new Panel(new FlowLayout());
@@ -61,6 +67,10 @@ public class VIB_Protocoll implements PlugIn, ActionListener {
 		gd.addNumericField("Resampling factor", 2, 0);
 		String[] algorithms = new String[]{"LabelDiffusionInterpolation"};
 		gd.addChoice("Transformation", algorithms, algorithms[0]);
+
+		options.loadFrom(
+				"/home/bene/gitakt/results/images_small/options.config");
+		initTextFields();
 
 		gd.showDialog();
 		if(gd.wasCanceled())

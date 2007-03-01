@@ -34,7 +34,6 @@ public class LabelCenterTransformation extends Module {
 
 		Hashtable modelH = 
 			(Hashtable)modelStatistics.getProperties().get("Parameters");
-		System.out.println(modelH);
 		// test if center transformation is stored:
 		String key = template.basename + "SCenterTransformation";
 		if(!modelH.containsKey(key)){
@@ -59,7 +58,6 @@ public class LabelCenterTransformation extends Module {
 			key = template.basename
 							+ "SLabelTransformation-" + materialName;
 			if(!modelH.containsKey(key)){
-				System.out.println("model does not contain " + key);
 				return RESULTS_UNAVAILABLE;
 			}
 		}
@@ -80,6 +78,7 @@ public class LabelCenterTransformation extends Module {
 		if(!image.saveStatistics(modelStatistics))
 			console.append("Could not save statistics for " + image.name);
 
+		/*
 		// rigid registration for each label
 		TextPanel panel = modelStatistics.getTextPanel();
 		int count = panel.getLineCount();
@@ -124,6 +123,6 @@ public class LabelCenterTransformation extends Module {
 			console.append("...save " + materialName + " in statistics");
 			if(!image.saveStatistics(modelStatistics))
 				console.append("Could not save statistics for " + image.name);
-		}
+		}*/
 	}
 }

@@ -73,6 +73,7 @@ public class LabelDiffusionTransformation extends Module {
 	}
 
 	private FloatMatrix[] readTransformations() {
+		System.out.println(image.statisticsPath);
 		AmiraTable modelStatistics = image.getStatistics();
 		modelStatistics.hide();
 
@@ -105,6 +106,10 @@ public class LabelDiffusionTransformation extends Module {
 	}
 	
 	protected void runThisModule() {
+		/*
+		if(image.getTemplate().name.equals(image.name)) {
+			return;
+		}*/
 		ImagePlus templateLabels = template.getResampledLabels();
 		// duplicate
 		ImagePlus scratch = new ImagePlus(template.resampledLabelsPath);
@@ -120,6 +125,9 @@ public class LabelDiffusionTransformation extends Module {
 			interpol.initialize(scratch, templateLabels, model, trans, 
 					reuseDistortion, rememberDistortion, tolerance);
 			interpol.doit();
+			//scratch.show();
+			//scratch.updateAndDraw();
+			//Thread.currentThread().stop();
 			if(!image.saveWarped(i+1, model))
 				console.append("could not save " + image.getWarpedPath(i+1));
 		}

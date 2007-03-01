@@ -52,6 +52,8 @@ public class VIBImage {
 	public String statisticsDir = null;
 	public String statisticsName = null;
 	public String statisticsPath = null;
+	public String warpedLabelsPath = null;
+	public String warpedLabelsDir = null;
 
 	// Constructor
 	public VIBImage(File file, Options options) {
@@ -182,6 +184,27 @@ public class VIBImage {
 		return true;
 	}
 	
+	public boolean saveWarped(int channel, ImagePlus imp) {
+		String warpedDir = getWarpedDir(channel);
+		File dir = new File(warpedDir);
+		if(!dir.exists())
+			dir.mkdir();
+		else if(!dir.isDirectory())
+			return false;
+		FileSaver fs = new FileSaver(imp);
+		return fs.saveAsTiffStack(getWarpedPath(channel));
+	}	
+
+	public boolean saveWarpedLabels(ImagePlus imp) {
+		File dir = new File(warpedLabelsDir);
+		if(!dir.exists())
+			dir.mkdir();
+		else if(!dir.isDirectory())
+			return false;
+		FileSaver fs = new FileSaver(imp);
+		return fs.saveAsTiffStack(warpedLabelsPath);
+	}
+	
 	// getter - paths
 	public String getChannelDir(int channel) {
 		return wd + File.separator + "images_" + channel + File.separator;
@@ -206,6 +229,14 @@ public class VIBImage {
 		dir += resamplingF == 1 ? "labels" 
 								: "resampled" + resamplingF + "_labels";
 		return dir + File.separator;
+	}
+
+	public String getWarpedDir(int channel) {
+		return wd + File.separator + "warped_" + channel + File.separator;
+	}
+
+	public String getWarpedPath(int channel) {
+		return getWarpedDir(channel) + basename + ".warped";
 	}
 	
 	// getter - images
@@ -254,6 +285,14 @@ public class VIBImage {
 		return loadStatistics();
 	}
 
+	public ImagePlus getWarped(int channel) {
+		return loadWarped(channel);
+	}
+
+	public ImagePlus getWarpedLabels() {
+		return loadWarpedLabels();
+	}
+
 	public void print() {
 		System.out.println("ref = " + ref);
 		System.out.println("label = " + labels);
@@ -295,6 +334,13 @@ public class VIBImage {
 		return null;
 	}
 
+	private ImagePlus loadWarped(int channel) {
+		return new Opener().openImage(getWarpedPath(channel));
+	}
+
+	private ImagePlus loadWarpedLabels() {
+		return new Opener().openImage(warpedLabelsPath);
+	}
 
 	private void initPaths() {
 		basename		= name.substring(0, name.lastIndexOf('.'));
@@ -320,5 +366,9 @@ public class VIBImage {
 		statisticsName  = name.substring(0, name.lastIndexOf('.')) 
 												+ ".statistics";
 		statisticsPath 	= statisticsDir + statisticsName;
+
+		// warped labels
+		warpedLabelsDir = wd+File.separator+"warped_labels"+File.separator;
+		warpedLabelsPath = warpedLabelsDir + basename + ".warped";
 	}
 }

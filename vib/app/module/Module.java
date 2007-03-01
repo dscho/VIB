@@ -35,7 +35,10 @@ public abstract class Module {
 
 	public void run() {
 		runDependingModules();
-		Console.instance().append("running " + getName());
+		String msg = "running " + getName();
+		if(image != null) 
+			msg += " with " + image.basename;
+		Console.instance().append(msg);
 		if(decideWhetherToRun()) {
 			runThisModule();
 		}
