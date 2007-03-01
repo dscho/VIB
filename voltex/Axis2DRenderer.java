@@ -33,6 +33,26 @@ public class Axis2DRenderer extends AxisRenderer {
 		}
     }
 
+	public void reloadTextureColorTable() {
+		System.out.println("applyTextureColorTable");
+		if(!volume.is8C)
+			return;
+		int[][] cmap = new int[4][256];
+		IndexColorModel cmodel = volume.cmodel;
+		for(int i = 0; i < 256; i++) {
+			cmap[0][i] = cmodel.getRed(i);
+			cmap[1][i] = cmodel.getGreen(i);
+			cmap[2][i] = cmodel.getBlue(i);
+			cmap[3][i] = cmodel.getAlpha(i);
+		}
+
+		int num = axisSwitch.numChildren();
+		for(int i = 0; i < num; i++) {
+			((Shape3D)axisSwitch.getChild(i)).getAppearance().
+				getTextureAttributes().setTextureColorTable(cmap);
+		}
+	}
+
     void fullReload() {
 		clearData();
 		if (volume.hasData()) {

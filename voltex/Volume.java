@@ -134,9 +134,9 @@ public class Volume implements VolRendConstants {
 		cmodel = new IndexColorModel(8, 256, r, g, b, a); 
 	}
 
-	float weightr = 0.1f;
-	float weightg = 3.0f;
-	float weightb = 0.1f;
+	float weightr = 1.0f;
+	float weightg = 1.0f;
+	float weightb = 1.0f;
 
 	public void adjustAlpha(byte[]r, byte[]g, byte[]b, byte[]a) {
 		for(int i=0; i<256; i++) {

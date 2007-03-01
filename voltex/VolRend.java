@@ -123,10 +123,7 @@ public class VolRend implements MouseBehaviorCallback {
     }
 
 	public void reload() {
-		if(renderer != null && renderer.size() != 0) {
-			ImagePlus image = getLastRenderer().image;
-			initContext(image, new Color3f(), true);
-		}
+		update();
 	}
 
     private void updateCenter(Point3d minCoord, Point3d maxCoord) {

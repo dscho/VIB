@@ -142,7 +142,8 @@ public class CanvasPopup extends PopupMenu
 			vol.weightg = (float)gd.getNextNumber() / 100;
 			vol.weightb = (float)gd.getNextNumber() / 100;
 
-			((AxisRenderer)volrend.getLastRenderer()).applyTextureColorTable();
+			volrend.getLastRenderer().volume.adjustColorModel();
+			volrend.reload();
 		}
 
 		if(e.getSource() == reload) {
