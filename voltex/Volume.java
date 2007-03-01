@@ -63,8 +63,7 @@ public class Volume implements VolRendConstants {
 	Point3d volRefPt = null;
 
     boolean is8C = true;
-	private int[] cmap = null;
-	private IndexColorModel cmodel = null;
+	IndexColorModel cmodel = null;
 	
 	public Volume(ImagePlus imp) {
 		this.imp = imp;
@@ -97,8 +96,6 @@ public class Volume implements VolRendConstants {
 			}
 			
 			cmodel = new IndexColorModel(8, 256, r, g, b, a); 
-			cmap = new int[256];
-			cmodel.getRGBs(cmap);
 		}
 		for (int i = 0; i < 8; i++) {
 		   voiPts[i] = new Point3d();
@@ -243,27 +240,15 @@ public class Volume implements VolRendConstants {
     }
 
 	void loadZ(int zValue, Object data) {
-		if(!is8C) {
-			loadZIntensity(zValue, (byte[]) data);
-		} else {
-			loadZRGBA(zValue, (int[]) data);
-		}
+		loadZIntensity(zValue, (byte[]) data);
 	}
 
 	void loadY(int yValue, Object data) {
-		if(!is8C) {
-			loadYIntensity(yValue, (byte[]) data);
-		} else {
-			loadYRGBA(yValue, (int[]) data);
-		}
+		loadYIntensity(yValue, (byte[]) data);
 	}
 
     void loadX(int xValue, Object data) {
-		if(!is8C) {
-			loadXIntensity(xValue, (byte[]) data);
-		} else {
-			loadXRGBA(xValue, (int[]) data);
-		}
+		loadXIntensity(xValue, (byte[]) data);
 	}
 	
 	// Note:
@@ -337,90 +322,4 @@ public class Volume implements VolRendConstants {
 			}
 		}
     }
-	
-	// this routine loads values for constant zValue, into byteData in x,y
-    // order (x changes fastest)
-    void loadZRGBA(int zValue, int[] intData) {
-		loadZRGBA(zValue, intData, 0);
-    }
-
-    // this routine loads values for constant zValue, into byteData in x,y
-    // order (x changes fastest)
-    void loadZRGBA(int zValue, int[] intData, int intOffset) {
-		for (int y=0; y < yDim; y++){
-			byte[] vRow = vol.fileData[zValue][y];
-			int rowIndex;
-			if (tFlip) {
-				rowIndex = (yTexSize - y - 1) * xTexSize;
-			} else {
-				rowIndex = y * xTexSize;
-			}
-			for (int x=0; x < xDim; x++){
-				byte value = vRow[x];
-				int mapIndex = value;
-				if (mapIndex < 0) {
-				   mapIndex += 256;
-				}
-				int tIndex = intOffset + rowIndex + x;
-				intData[tIndex] = cmap[mapIndex];
-			}
-		}
-    }
-
-    // this routine loads values for constant yValue, into byteData in x,y
-    // order (x changes fastest)
-    void loadYRGBA(int yValue, int[] intData) {
-
-		for (int z=0; z < zTexSize; z++){
-			byte[] vRow;
-			if (z < zDim) {
-				vRow = vol.fileData[z][yValue];
-			} else {
-				vRow = emptyByteRow;
-			}
-			int rowIndex;
-			if (tFlip) {
-				rowIndex = (zTexSize - z - 1) * xTexSize;
-			} else {
-				rowIndex = z * xTexSize;
-			}
-			for (int x=0; x < xDim; x++){
-				byte value = vRow[x];
-				int mapIndex = value;
-				if (mapIndex < 0) {
-				   mapIndex += 256;
-				}
-				int tIndex = rowIndex + x;
-				intData[tIndex] = cmap[mapIndex];
-			}
-		}
-    }
-
-
-    // this routine loads values for constant xValue, into byteData in y,z
-    // order (y changes fastest)
-    void loadXRGBA(int xValue, int[] intData) {
-		for (int z=0; z < zTexSize; z++){
-			int rowIndex;
-			if (tFlip) {
-				rowIndex = (zTexSize - z - 1) * yTexSize;
-			} else {
-				rowIndex = z * yTexSize;
-			}
-			for (int y=0; y < yDim; y++){
-				byte value;
-				if (z < zDim) {
-					value = vol.fileData[z][y][xValue];
-				} else {
-					value = 0;
-				}
-				int mapIndex = value;
-				if (mapIndex < 0) {
-				   mapIndex += 256;
-				}
-				int tIndex = rowIndex + y;
-				intData[tIndex] = cmap[mapIndex];
-			}
-		}
-	}
 }

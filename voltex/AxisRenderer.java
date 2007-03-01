@@ -59,6 +59,7 @@ abstract public class AxisRenderer extends Renderer
 //		texAttr.setTextureMode(TextureAttributes.MODULATE);
 		texAttr.setTextureMode(TextureAttributes.REPLACE);
 		texAttr.setCapability(TextureAttributes.ALLOW_COLOR_TABLE_WRITE);
+		applyTextureColorMap();
 		t.setTransparency(0.5f);
 		t.setTransparencyMode(TransparencyAttributes.BLENDED);
 		m.setLightingEnable(false);
@@ -69,6 +70,20 @@ abstract public class AxisRenderer extends Renderer
 		root.setCapability(BranchGroup.ALLOW_DETACH);
 		root.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
     }
+
+	public void applyTextureColorMap() {
+		if(!volume.is8C)
+			return;
+		int[][] cmap = new int[4][256];
+		IndexColorModel cmodel = volume.cmodel;
+		for(int i = 0; i < 256; i++) {
+			cmap[0][i] = cmodel.getRed(i);
+			cmap[1][i] = cmodel.getGreen(i);
+			cmap[2][i] = cmodel.getBlue(i);
+			cmap[3][i] = cmodel.getAlpha(i);
+		}
+		texAttr.setTextureColorTable(cmap);
+	}
 
 	public BranchGroup getVolumeNode() {
 		return root;

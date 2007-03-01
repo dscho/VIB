@@ -23,7 +23,6 @@ public class Texture2DVolume implements VolRendConstants {
     protected TexCoordGeneration yTg = new TexCoordGeneration();
     protected TexCoordGeneration zTg = new TexCoordGeneration();
 
-    private ColorModel colorModel;
     private WritableRaster raster;
     private int	volEditId = -1;
     private boolean	volumeReloadNeeded = true;
@@ -58,14 +57,6 @@ public class Texture2DVolume implements VolRendConstants {
     }
 
     void loadTexture() {
-		if (volume.is8C) {
-			colorModel = ColorModel.getRGBdefault();
-		} else {
-			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
-			int[] nBits = {8};
-			colorModel = new ComponentColorModel(cs, nBits, false, false, 
-							Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
-		}
 
 		IJ.showStatus("Loading Z axis texture maps");
 		loadAxis(Z_AXIS);
@@ -111,19 +102,27 @@ public class Texture2DVolume implements VolRendConstants {
 			break;
 		}
 
+		ColorModel colorModel = null;
+		if (volume.is8C) {
+			colorModel = volume.cmodel;
+		} else {
+			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
+			int[] nBits = {8};
+			colorModel = new ComponentColorModel(cs, nBits, false, false, 
+							Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
+		}
+
 		raster = colorModel.createCompatibleWritableRaster(sSize, tSize); 
+		byte[] data = ((DataBufferByte)raster.getDataBuffer()).getData();
 
 		BufferedImage bImage = 
 			new BufferedImage(colorModel, raster, false, null); 
 
-		Object data = null;
 		int textureMode, componentType; 
 		if (volume.is8C) {
-			data = ((DataBufferInt)raster.getDataBuffer()).getData();
 			textureMode = Texture.RGBA;
 			componentType = ImageComponent.FORMAT_RGBA;
 		} else {
-			data = ((DataBufferByte)raster.getDataBuffer()).getData();
 			textureMode = Texture.INTENSITY;
 			componentType = ImageComponent.FORMAT_CHANNEL8;
 		}
