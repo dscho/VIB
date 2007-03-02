@@ -15,7 +15,7 @@ public class Volume implements VolRendConstants {
 
 	private ImagePlus imp;
     // should loadXXX flip the t axis
-    private boolean	tFlip = true;
+    private boolean	tFlip = false;
     // current values derived from attrs
     private String 	filename = null;
 
@@ -285,6 +285,7 @@ public class Volume implements VolRendConstants {
     // this routine loads values for constant yValue, the texture map is
     // stored in x,z format (x changes fastest)
     void loadYIntensity(int yValue, byte[] byteData)  {
+		//boolean tFlip = true;
 		for (int z=0; z < zDim; z++){
 			int rowIndex;
 			if (tFlip) {

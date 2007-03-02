@@ -137,8 +137,11 @@ public class Texture2DVolume implements VolRendConstants {
 
 			Texture2D tex;
 			ImageComponent2D pArray;
+			boolean byRef = false;
+			boolean yUp = true;
 			tex = new Texture2D(Texture.BASE_LEVEL, textureMode, sSize, tSize);
-			pArray = new ImageComponent2D(componentType, sSize, tSize);
+			pArray = new ImageComponent2D(
+							componentType, sSize, tSize, byRef, yUp);
 			pArray.set(bImage);
 		
 			tex.setImage(0, pArray);
