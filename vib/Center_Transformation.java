@@ -9,6 +9,8 @@ import ij.plugin.PlugIn;
 import ij.process.ImageProcessor;
 import math3d.Point3d;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Center_Transformation implements PlugIn {
 	
@@ -49,13 +51,19 @@ public class Center_Transformation implements PlugIn {
 	public static Point3d[] getList(AmiraTable table) {
 		TextPanel panel = table.getTextPanel();
 		int count = panel.getLineCount();
-		Point3d[] result = new Point3d[count - 1];
+		List<Point3d> points = new ArrayList<Point3d>();
+		// start with 1, since 0 is 'Exterior'
 		for (int i = 1; i < count; i++) {
 			String[] line = Tools.split(panel.getLine(i), "\t");
-			result[i - 1] = new Point3d(Double.parseDouble(line[4]),
+			int voxelCount = Integer.parseInt(line[2]);
+			// only take materials into account which have more
+			// than 0 voxels (which are labelled)
+			if(voxelCount == 0)
+				continue;
+			points.add(new Point3d(Double.parseDouble(line[4]),
 					Double.parseDouble(line[5]),
-					Double.parseDouble(line[6]));
+					Double.parseDouble(line[6])));
 		}
-		return result;
+		return (Point3d[])points.toArray(new Point3d[]{});
 	}
 }
