@@ -78,7 +78,6 @@ public class LabelCenterTransformation extends Module {
 		if(!image.saveStatistics(modelStatistics))
 			console.append("Could not save statistics for " + image.name);
 
-		/*
 		// rigid registration for each label
 		TextPanel panel = modelStatistics.getTextPanel();
 		int count = panel.getLineCount();
@@ -123,6 +122,6 @@ public class LabelCenterTransformation extends Module {
 			console.append("...save " + materialName + " in statistics");
 			if(!image.saveStatistics(modelStatistics))
 				console.append("Could not save statistics for " + image.name);
-		}*/
+		}
 	}
 }
