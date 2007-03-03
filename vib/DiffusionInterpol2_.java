@@ -77,8 +77,8 @@ public class DiffusionInterpol2_ implements PlugInFilter {
 	public void doit() {
 		try {
 			reuse = savedDisplace != null ? reuse : false;
-			FloatMatrix fromTemplate = FloatMatrix.fromCalibration(image);
-			FloatMatrix toModel = FloatMatrix.fromCalibration(image).inverse();
+			FloatMatrix fromTemplate = FloatMatrix.fromCalibration(template.image);
+			FloatMatrix toModel = FloatMatrix.fromCalibration(model.image).inverse();
 	
 			for (int i = 1; i < labelTransformations.length; i++) {
 				if (labelTransformations[i] != null)

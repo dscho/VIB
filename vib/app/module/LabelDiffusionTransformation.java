@@ -9,6 +9,7 @@ import ij.ImagePlus;
 import ij.text.TextPanel;
 import ij.util.Tools;
 import vib.RigidRegistration_;
+import vib.InterpolatedImage;
 import vib.TransformedImage;
 import vib.app.VIBImage;
 import vib.app.Options;
@@ -73,17 +74,21 @@ public class LabelDiffusionTransformation extends Module {
 	}
 
 	private FloatMatrix[] readTransformations() {
-		System.out.println(image.statisticsPath);
 		AmiraTable modelStatistics = image.getStatistics();
 		modelStatistics.hide();
 
 		Hashtable modelH = 
 			(Hashtable)modelStatistics.getProperties().get("Parameters");
-		List transformations = new ArrayList();
 		TextPanel panel = modelStatistics.getTextPanel();
 		int count = panel.getLineCount();
-		// index 0 is 'exterior', include exterior (see DiffusionInterpol2)
-		transformations.add(null);
+		FloatMatrix[] transformations = new FloatMatrix[count];
+		/*
+		 * DiffusionInterpol2_ needs an array of transformations with 
+		 * an entry for _ALL_ materials, even if they are not labelled.
+		 * Then, the transformation is just null. The same holds true 
+		 * for 'Exterior'
+		 */
+		transformations[0] = null;
 		for (int i = 1; i < count; i++) {
 			String[] line = Tools.split(panel.getLine(i), "\t");
 			String materialName = line[1];
@@ -91,6 +96,7 @@ public class LabelDiffusionTransformation extends Module {
 			// check if labelfield is empty:
 			int voxelCount = Integer.parseInt(line[2]);
 			if(voxelCount == 0) {
+				transformations[i] = null;
 				continue;
 			}
 			String key = template.basename
@@ -99,102 +105,62 @@ public class LabelDiffusionTransformation extends Module {
 			if(value == null)
 				console.append("transformation for material " + materialName + 
 						" could not be read");
-			transformations.add(FloatMatrix.parseMatrix(value));
+			transformations[i] = FloatMatrix.parseMatrix(value);
 		}
 
-		return (FloatMatrix[])transformations.toArray(new FloatMatrix[]{});
+		return transformations;
+	}
+
+	private FloatMatrix[] copyMatrices(FloatMatrix[] orig) {
+		FloatMatrix[] res = new FloatMatrix[orig.length];
+		for(int i = 0; i < orig.length; i++) {
+			if(orig[i] == null)
+				res[i] = null;
+			else 
+				res[i] = new FloatMatrix(orig[i]);
+		}
+		return res;
 	}
 	
 	protected void runThisModule() {
-		/*
-		if(image.getTemplate().name.equals(image.name)) {
-			return;
-		}*/
 		ImagePlus templateLabels = template.getResampledLabels();
+		// workaround: Labelfields have a wrong Calibration
+		templateLabels.setCalibration(
+				template.getResampledReferenceChannel().getCalibration());
 		// duplicate
-		ImagePlus scratch = new ImagePlus(template.resampledLabelsPath);
-		FloatMatrix[] trans = readTransformations();
+		ImagePlus scratch = new InterpolatedImage(templateLabels)
+										.cloneDimensionsOnly().getImage();
+		DiffusionInterpol2_ interpol = new DiffusionInterpol2_();
+		boolean rememberDistortion = true;
+		boolean reuseDistortion = false;
+		float tolerance = 0.5f;
+		FloatMatrix[] transformations = readTransformations();
 
+		// DiffusionInterpolation for all channels
 		for(int i=0; i<options.getNumChannels(); i++) {
 			ImagePlus model = image.getResampledChannel(i+1);
-			boolean rememberDistortion = true;
-			boolean reuseDistortion = false; //i>0;
-			float tolerance = 0.5f;
-
-			DiffusionInterpol2_ interpol = new DiffusionInterpol2_();
+			// copy transformations because they get transformed in 
+			// DiffusionInterpol2_.
+			FloatMatrix[] trans = copyMatrices(transformations);
 			interpol.initialize(scratch, templateLabels, model, trans, 
 					reuseDistortion, rememberDistortion, tolerance);
 			interpol.doit();
-			//scratch.show();
-			//scratch.updateAndDraw();
-			//Thread.currentThread().stop();
-			if(!image.saveWarped(i+1, model))
+			reuseDistortion = true; // true after the first channel
+			scratch.show();
+			if(!image.saveWarped(i+1, scratch))
 				console.append("could not save " + image.getWarpedPath(i+1));
 		}
 
-		// same wih labels
-
-		/*
-		run("DiffusionInterpol2 ", "model=model templatelabels=templateLabels labeltransformationlist=\[$trans\] rememberdistortion$reuse");
-
-
-		console.append("...Loading model statistics");
-		AmiraTable modelStatistics = image.getStatistics();
-		modelStatistics.hide();
-		console.append("...Loading template statistics");
-		AmiraTable templateStatistics = template.getStatistics();
-		templateStatistics.hide();
-		console.append("...calculate center transformation");
-		FastMatrix centerTransform = Center_Transformation.
-							bestRigid(modelStatistics, templateStatistics);
-		console.append("...saving center transformation in statistics file");
-		if(!image.saveStatistics(modelStatistics))
-			console.append("Could not save statistics for " + image.name);
-
-		// rigid registration for each label
-		TextPanel panel = modelStatistics.getTextPanel();
-		int count = panel.getLineCount();
-		// index 0 is 'exterior'
-		for (int i = 1; i < count; i++) {
-			String[] line = Tools.split(panel.getLine(i), "\t");
-			String materialName = line[1];
-			console.append("...material: " + line[1]);
-			int material = i;
-			// check if labelfield is empty:
-			int voxelCount = Integer.parseInt(line[2]);
-			if(voxelCount == 0) {
-				continue;
-			}
-			String initialTransform = centerTransform.toStringForAmira();
-			int level = 4;
-			int stoplevel = 2;
-			double tolerance = 4.0;
-			String materialBBox = "";
-			boolean noOptimization = false;
-			int nInitialPositions = 1;
-			boolean showTransformed = false;
-			boolean showDifferenceImage = false;
-			boolean fastButInaccurate = false;
-		 	TransformedImage trans = new TransformedImage(
-					template.getLabels(), image.getLabels());
-			trans.measure = new TwoValues(material, material);
-			RigidRegistration_ rr = new RigidRegistration_();
-
-			console.append("...rigidRegistration");
-			FastMatrix matrix = rr.rigidRegistration(trans, materialBBox, 
-					initialTransform, material, material, noOptimization, level,
-					stoplevel, tolerance, nInitialPositions, showTransformed, 
-					showDifferenceImage, fastButInaccurate);
-			// write this into amira parameters
-			Hashtable h = (Hashtable)modelStatistics.
-									getProperties().get("Parameters");
-			String key = template.basename 
-							+ "SLabelTransformation-" + materialName;
-			String value = matrix.toStringForAmira();
-			h.put(key,value);
-			console.append("...save " + materialName + " in statistics");
-			if(!image.saveStatistics(modelStatistics))
-				console.append("Could not save statistics for " + image.name);
-		}*/
+		// DiffusionInterpolation for labels
+		ImagePlus model = image.getResampledLabels();
+		// workaround for wrong calibration of Labelfields
+		model.setCalibration(
+				image.getResampledReferenceChannel().getCalibration());
+		FloatMatrix[] trans = copyMatrices(transformations);
+		interpol.initialize(scratch, templateLabels, model, trans, 
+				reuseDistortion, rememberDistortion, tolerance);
+		interpol.doit();
+		if(!image.saveWarpedLabels(scratch))
+			console.append("could not save " + image.warpedLabelsPath);
 	}
 }
