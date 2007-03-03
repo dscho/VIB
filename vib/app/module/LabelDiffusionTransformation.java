@@ -34,43 +34,31 @@ public class LabelDiffusionTransformation extends Module {
 	}
 
 	public int checkResults() {
-		/*
-		AmiraTable modelStatistics = image.getStatistics();
-		modelStatistics.hide();
-
-		Hashtable modelH = 
-			(Hashtable)modelStatistics.getProperties().get("Parameters");
-		System.out.println(modelH);
-		// test if center transformation is stored:
-		String key = template.basename + "SCenterTransformation";
-		if(!modelH.containsKey(key)){
-			return RESULTS_UNAVAILABLE;
-		}
-		
-		// test if label transformation is stored for each non-empty
-		// label:
-		TextPanel panel = modelStatistics.getTextPanel();
-		int count = panel.getLineCount();
-		// index 0 is 'exterior'
-		for (int i = 1; i < count; i++) {
-			String[] line = Tools.split(panel.getLine(i), "\t");
-			String materialName = line[1];
-			int material = i;
-			// check if labelfield is empty:
-			int voxelCount = Integer.parseInt(line[2]);
-			if(voxelCount == 0) {
-				continue;
-			}
-			// write this into amira parameters
-			key = template.basename
-							+ "SLabelTransformation-" + materialName;
-			if(!modelH.containsKey(key)){
-				System.out.println("model does not contain " + key);
+		// check availability
+		File statistics = new File(image.statisticsPath);
+		File warped = null;
+		boolean uptodate = true;
+		for(int i=0; i<options.getNumChannels(); i++) {
+			warped = new File(image.getWarpedPath(i+1));
+			if(!warped.exists()) {
 				return RESULTS_UNAVAILABLE;
 			}
+			if(warped.lastModified() == 0L || 
+				warped.lastModified() < statistics.lastModified()) {
+				uptodate = false;
+			}
 		}
-		return RESULTS_OK;*/
-		return RESULTS_UNAVAILABLE;
+		warped = new File(image.warpedLabelsPath);
+		if(!warped.exists()) {
+			return RESULTS_UNAVAILABLE;
+		}
+		if(warped.lastModified() == 0L || 
+			warped.lastModified() < statistics.lastModified()) {
+			uptodate = false;
+		}
+		if(!uptodate)
+			return RESULTS_OUT_OF_DATE;
+		return RESULTS_OK;
 	}
 
 	private FloatMatrix[] readTransformations() {
@@ -146,7 +134,6 @@ public class LabelDiffusionTransformation extends Module {
 					reuseDistortion, rememberDistortion, tolerance);
 			interpol.doit();
 			reuseDistortion = true; // true after the first channel
-			scratch.show();
 			if(!image.saveWarped(i+1, scratch))
 				console.append("could not save " + image.getWarpedPath(i+1));
 		}
