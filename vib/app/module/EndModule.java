@@ -13,7 +13,7 @@ public class EndModule extends Module {
 
 	public EndModule(VIBImage imp, Options options) {
 		super(imp, options, true);
-		dependingOn.add(LabelDiffusionTransformation.class);
+		dependingOn.add(AverageBrain.class);
 	}
 
 	public String getName() {
