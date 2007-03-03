@@ -54,6 +54,9 @@ public class VIBImage {
 	public String statisticsPath = null;
 	public String warpedLabelsPath = null;
 	public String warpedLabelsDir = null;
+	public String averageDir = null;
+	public String averageLabelsName = null;
+	public String averageLabelsPath = null;
 
 	// Constructor
 	public VIBImage(File file, Options options) {
@@ -204,7 +207,28 @@ public class VIBImage {
 		FileSaver fs = new FileSaver(imp);
 		return fs.saveAsTiffStack(warpedLabelsPath);
 	}
+
+	public boolean saveAverageChannel(ImagePlus imp, int channel) {
+		File dir = new File(averageDir);
+		if(!dir.exists())
+			dir.mkdir();
+		else if(!dir.isDirectory())
+			return false;
+		FileSaver fs = new FileSaver(imp);
+		return fs.saveAsTiffStack(getAverageChannelPath(channel));
+	}
+
+	public boolean saveAverageLabels(ImagePlus imp) {
+		File dir = new File(averageDir);
+		if(!dir.exists())
+			dir.mkdir();
+		else if(!dir.isDirectory())
+			return false;
+		FileSaver fs = new FileSaver(imp);
+		return fs.saveAsTiffStack(averageLabelsPath);
+	}
 	
+
 	// getter - paths
 	public String getChannelDir(int channel) {
 		return wd + File.separator + "images_" + channel + File.separator;
@@ -237,6 +261,14 @@ public class VIBImage {
 
 	public String getWarpedPath(int channel) {
 		return getWarpedDir(channel) + basename + ".warped";
+	}
+
+	public String getAverageChannelPath(int channel) {
+		return averageDir + File.separator + getAverageChannelName(channel);
+	}
+
+	public String getAverageChannelName(int channel) {
+		return "channel" + channel + ".average";
 	}
 	
 	// getter - images
@@ -293,6 +325,14 @@ public class VIBImage {
 		return loadWarpedLabels();
 	}
 
+	public ImagePlus getAverageChannel(int channel) {
+		return loadAverageChannel(channel);
+	}
+
+	public ImagePlus getAverageLabels() {
+		return loadAverageLabels();
+	}
+
 	public void print() {
 		System.out.println("ref = " + ref);
 		System.out.println("label = " + labels);
@@ -342,6 +382,14 @@ public class VIBImage {
 		return new Opener().openImage(warpedLabelsPath);
 	}
 
+	private ImagePlus loadAverageChannel(int channel) {
+		return new Opener().openImage(getAverageChannelPath(channel));
+	}
+
+	private ImagePlus loadAverageLabels() {
+		return new Opener().openImage(averageLabelsPath);
+	}
+
 	private void initPaths() {
 		basename		= name.substring(0, name.lastIndexOf('.'));
 		// labels
@@ -370,5 +418,10 @@ public class VIBImage {
 		// warped labels
 		warpedLabelsDir = wd+File.separator+"warped_labels"+File.separator;
 		warpedLabelsPath = warpedLabelsDir + basename + ".warped";
+
+		// average brains
+		averageDir 			= wd+File.separator+"average"+File.separator;
+		averageLabelsName 	= "labels.average";
+		averageLabelsPath 	= averageDir + averageLabelsName;
 	}
 }
