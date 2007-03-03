@@ -84,7 +84,6 @@ public class DiffusionInterpol2_ implements PlugInFilter {
 				if (labelTransformations[i] != null)
 					labelTransformations[i] = toModel.times(
 						labelTransformations[i].inverse().times(fromTemplate));
-				System.err.println("matrix " + i + " = " + labelTransformations[i]);
 			}
 			labelTransformations[0] = null; // Exterior does not matter
 
