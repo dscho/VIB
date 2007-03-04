@@ -35,43 +35,53 @@ public class AverageBrain extends Module {
 	}
 
 	public int checkResults() {
-		/*
-		AmiraTable modelStatistics = image.getStatistics();
-		modelStatistics.hide();
+		FileGroup fg = options.getFileGroup();
+		int numFiles = fg.size();
+		int numChannels = options.getNumChannels();
+		boolean uptodate = true;
 
-		Hashtable modelH = 
-			(Hashtable)modelStatistics.getProperties().get("Parameters");
-		System.out.println(modelH);
-		// test if center transformation is stored:
-		String key = template.basename + "SCenterTransformation";
-		if(!modelH.containsKey(key)){
-			return RESULTS_UNAVAILABLE;
-		}
-		
-		// test if label transformation is stored for each non-empty
-		// label:
-		TextPanel panel = modelStatistics.getTextPanel();
-		int count = panel.getLineCount();
-		// index 0 is 'exterior'
-		for (int i = 1; i < count; i++) {
-			String[] line = Tools.split(panel.getLine(i), "\t");
-			String materialName = line[1];
-			int material = i;
-			// check if labelfield is empty:
-			int voxelCount = Integer.parseInt(line[2]);
-			if(voxelCount == 0) {
-				continue;
-			}
-			// write this into amira parameters
-			key = template.basename
-							+ "SLabelTransformation-" + materialName;
-			if(!modelH.containsKey(key)){
-				System.out.println("model does not contain " + key);
+		// for each channels
+		for(int ch = 0; ch < numChannels; ch++) {
+			File averageCh = new File(image.getAverageChannelPath(ch+1));
+			if(!averageCh.exists())
 				return RESULTS_UNAVAILABLE;
+			long lm = averageCh.lastModified();
+			VIBImage imp = null;
+			File warped = null;
+			for(int i = 0; i < numFiles; i++) {
+				imp = new VIBImage(fg.get(i), options);	
+				warped = new File(imp.getWarpedPath(ch+1));
+				if(!warped.exists())
+					return RESULTS_UNAVAILABLE;
+				if(averageCh.lastModified() == 0L || 
+						averageCh.lastModified() < warped.lastModified()){
+					uptodate = false;
+				}
 			}
 		}
-		return RESULTS_OK;*/
-		return RESULTS_UNAVAILABLE;
+
+		// for labels
+		File averageLabels = new File(image.averageLabelsPath);
+		if(!averageLabels.exists())
+			return RESULTS_UNAVAILABLE;
+		long lm = averageLabels.lastModified();
+		VIBImage imp = null;
+		File warped = null;
+		for(int i = 0; i < numFiles; i++) {
+			imp = new VIBImage(fg.get(i), options);	
+			warped = new File(imp.warpedLabelsPath);
+			if(!warped.exists())
+				return RESULTS_UNAVAILABLE;
+			if(averageLabels.lastModified() == 0L || 
+					averageLabels.lastModified() < warped.lastModified()){
+				uptodate = false;
+			}
+		}
+
+		if(!uptodate) 
+			return RESULTS_OUT_OF_DATE;
+
+		return RESULTS_OK;
 	}
 
 	protected void runThisModule() {
@@ -91,7 +101,8 @@ public class AverageBrain extends Module {
 			}
 			AverageBrain_ ab = new AverageBrain_();
 			ImagePlus scratch = new InterpolatedImage(
-					template.getResampledReferenceChannel()).cloneDimensionsOnly().getImage();
+					template.getResampledReferenceChannel()).
+					cloneDimensionsOnly().getImage();
 			ab.doit(scratch, files, matrices);
 			image.saveAverageChannel(scratch, ch+1);
 		}
