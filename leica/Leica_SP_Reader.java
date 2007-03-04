@@ -16,7 +16,8 @@ import java.util.*;
 public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 	
 	private ImagePlus[] images;
-	private int nr_channels = 1; 
+	private int nr_channels = 1;
+	private String imageInfo;
 	
 	public void run(String arg) {
 		if (IJ.versionLessThan("1.18h"))
@@ -59,6 +60,8 @@ public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 							file + " (channel" + l + ")", stack);
 					images[channel].setCalibration(cal);
 					images[channel].setFileInfo(fi[0]);
+					images[channel].setProperty("Info",
+							imageInfo);
 					if(showIt)
 						images[channel].show();
 				}
@@ -83,7 +86,6 @@ public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 		LeicaTiffDecoder td = new LeicaTiffDecoder(directory, name);
 		if (IJ.debugMode) td.enableDebugging();
 		FileInfo[] info = td.getTiffInfo();
-		nr_channels = td.nr_channels;
 		if (info==null)
 			throw new IOException("This file does not appear to be in " + 
 					"TIFF format.");
@@ -126,9 +128,7 @@ public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 	 * number of channels in a Leica SP TIFF file is given within the image 
 	 * description as "NumOfVisualisations"=x.
 	 */ 
-	static class LeicaTiffDecoder extends TiffDecoder {
-
-		public int nr_channels = 1;
+	class LeicaTiffDecoder extends TiffDecoder {
 
 		public  LeicaTiffDecoder(String directory, String name) {
 			super(directory, name);
@@ -138,6 +138,7 @@ public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 			decodeImageDescription(description,fi);
 		}
 		public void decodeImageDescription(byte[] description, FileInfo fi) {	
+			imageInfo = new String(description);
 			if (new String (description,0,8).equals("[GLOBAL]")) {
 				if (debugMode) IJ.write ("Leica file detected..." + "\n");
 				String file_specs = new String (description);
