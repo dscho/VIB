@@ -42,7 +42,7 @@ public class Center_Transformation implements PlugIn {
 		Hashtable h = (Hashtable)tModel.properties.get("Parameters");
 		String templName = tTemplate.getTitle();
 		templName = templName.substring(0, templName.lastIndexOf('.'));
-		String key = tTemplate.getTitle() + "SCenterTransformation";
+		String key = templName + "SCenterTransformation";
 		String value = transform.toStringForAmira();
 		h.put(key,value);
 		return transform;
