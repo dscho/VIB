@@ -121,6 +121,11 @@ public class Resample_ implements PlugInFilter {
 
 		if (AmiraParameters.isAmiraMesh(image))
 			new AmiraParameters(image).setParameters(res);
+		else {
+			Object info = image.getProperty("Info");
+			if (info != null)
+				res.setProperty("Info", info);
+		}
 
 		res.show();
 	}
@@ -202,7 +207,7 @@ public class Resample_ implements PlugInFilter {
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
 		// TODO: handle 16-bit and 32-bit
-		return DOES_8G | DOES_8C;
+		return DOES_8G | DOES_8C | NO_CHANGES;
 	}
 }
 
