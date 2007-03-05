@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import javax.vecmath.Point3f;
 import ij.ImagePlus;
+import ij.IJ;
 
 public final class MCCube {
     // default size of the cubes
@@ -169,13 +170,13 @@ public final class MCCube {
 		int SIZE = 1;
 		MCCube.SIZE = SIZE;
 		for(int z = 0; z < d-1; z+=SIZE){
-			if(z%10==0) System.out.println(z + " of " + (d-2));
 			for(int x = 0; x < w-SIZE; x+=SIZE){
 				for(int y = SIZE; y < h; y+=SIZE){
 					MCCube cube = new MCCube(x, y, z);
 					cube.getTriangles(ret);
 				}
 			}
+			IJ.showProgress(z, d-2);
 		}
 		return ret;
 	}

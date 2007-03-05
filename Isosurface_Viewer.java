@@ -24,7 +24,7 @@ import vib.InterpolatedImage;
 
 import marchingcubes.MCPanel;
 
-public class Viewer_3D implements PlugInFilter {
+public class Isosurface_Viewer implements PlugInFilter {
 
 	private ImagePlus image;
 	private ImagePlus ret;
@@ -37,7 +37,7 @@ public class Viewer_3D implements PlugInFilter {
 	private static Frame frame;
 
 	public void run(ImageProcessor ip) {
-		GenericDialog gd = new GenericDialog("3D view");
+		GenericDialog gd = new GenericDialog("Isosurface Viewer");
 		gd.addNumericField("Threshold", 50, 0);
 		gd.addCheckbox("Smooth", false);
 		gd.addNumericField("Resample x", 4, 0);
@@ -96,7 +96,7 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 	public void showViewer(int threshold) {
 		canvas = new MCPanel(ret, threshold);
 		canvas.canvas.setSize(new Dimension(512, 512));
-		ImageWindow3D win = new ImageWindow3D("title",
+		ImageWindow3D win = new ImageWindow3D("Surface Viewer",
 				canvas.canvas, canvas.simpleU);
 	}
 
