@@ -18,7 +18,7 @@ import vib.app.Options;
 import vib.app.module.EndModule;
 import vib.app.module.Module;
 
-public class VIB_Protocoll implements PlugIn, ActionListener {
+public class VIB_Protocol implements PlugIn, ActionListener {
 
 	// indices in the getStringFields() / getNumericFields()
 	static final int WD = 0;
@@ -40,7 +40,7 @@ public class VIB_Protocoll implements PlugIn, ActionListener {
 //		if(!configfile.equals(""))
 //			options.loadFrom("/home/bene/gitakt/results/images_small/options.config");
 
-		gd = new GenericDialog("VIB Protocoll");
+		gd = new GenericDialog("VIB Protocol");
 		
 		Panel loadsave = new Panel(new FlowLayout());
 		load = new Button("Load config");
