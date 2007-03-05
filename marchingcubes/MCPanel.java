@@ -85,19 +85,24 @@ public class MCPanel extends Panel {
 		canvas = new Canvas3D(config);
 		canvas.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
-				//Point3d location = getPointForMouseEvent(e.getX(), e.getY());
-				/*
+				Point3d location = getPointForMouseEvent(e.getX(), e.getY());
+				
 				if(location != null) {
-					System.out.println("location: (" + location.x + "," + location.y + "," + location.z + ")");
 					Transform3D transl = new Transform3D();
 					transl.setTranslation(new Vector3f(location));
 					TransformGroup tg = new TransformGroup(transl);
-					tg.addChild(new Sphere(1.0f));
+					Sphere sphere = new Sphere(1.0f);
+					Appearance papp = new Appearance();
+					ColoringAttributes cattr = new ColoringAttributes(
+							1.0f, 1.0f, 0.0f, ColoringAttributes.FASTEST);
+					papp.setColoringAttributes(cattr);
+					sphere.setAppearance(papp);
+					tg.addChild(sphere);
 					BranchGroup bg = new BranchGroup();
 					bg.addChild(tg);
 					bg.compile();
 					objTransform.addChild(bg);
-				}*/
+				}
 			}
 		});
 		add("Center", canvas);
@@ -132,6 +137,9 @@ public class MCPanel extends Panel {
 		PickResult result = pickCanvas.pickClosest(); 
 		if(result == null) 
 			return null;
+		PickIntersection intersection = result.getIntersection(0);
+		Point3d point = intersection.getPointCoordinates();
+		/*
 		int intersectionCount = result.numIntersections();
 		for(int j=0; j<intersectionCount; j++) {
 			PickIntersection intersection = result.getIntersection(j); 
@@ -148,8 +156,8 @@ public class MCPanel extends Panel {
 					geometryArr.setColor(i,red);
 				}
 			}
-		}
-		return null; 
+		}*/
+		return point; 
 	}
 
 	public void updateShape(ImagePlus image, int seekValue){
