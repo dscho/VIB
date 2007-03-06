@@ -5,6 +5,7 @@ import vib.app.FileGroup;
 import java.io.File;
 
 import java.awt.List;
+import java.awt.GridLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Dialog;
@@ -29,41 +30,31 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-public class FileGroupDialog extends Dialog implements ActionListener {
+public class FileGroupDialog extends Panel implements ActionListener {
 
-	private final FileDialog fd = new FileDialog(this, "Open...", 
+	private final FileDialog fd = new FileDialog(new Frame(), "Open...", 
 			FileDialog.LOAD);
 
-	private FileGroup workingFG;
-	private FileGroup originalFG;
+	private FileGroup files;
 	private boolean showWholePath = false;
 	
 	private List list;
 	private TextField nameTF;
-	private Button ok, add, delete, cancel;
+	private Button add, delete, template;
 	private Checkbox wholePath;
 
-	public FileGroupDialog(Frame owner, FileGroup fg) {
-		super(owner);
-		setModal(true);
-		setTitle("Edit filegroup");
-		this.addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				dispose();
-			}
-		});
-		setPreferredSize(new Dimension(300,480));
-		this.originalFG = fg;
-		this.workingFG = fg.clone(); // working copy
+	public FileGroupDialog(FileGroup fg) {
+		super();
+		this.files = fg;
 		list = new List();
-		list.setMultipleMode(true);
+	//	list.setMultipleMode(true);
 		createList();
 
 		GridBagLayout gridbag = new GridBagLayout();
 		GridBagConstraints c = new GridBagConstraints();
 		this.setLayout(gridbag);
 
-		Label name = new Label("File group name");
+		Label name = new Label("Files: ");
 		name.setFont(new Font("Monospace", Font.BOLD, 14));
 		c.gridx = c.gridy = 0;
 		c.insets = new Insets(5,5,5,5);
@@ -72,17 +63,18 @@ public class FileGroupDialog extends Dialog implements ActionListener {
 		gridbag.setConstraints(name, c);
 		this.add(name);
 
-		nameTF = new TextField(20);
-		nameTF.setText(this.workingFG.getName());
-		c.gridx++;
-		c.gridwidth = GridBagConstraints.REMAINDER;
-		c.fill = GridBagConstraints.HORIZONTAL;
-		c.weightx = 0.5;
-		gridbag.setConstraints(nameTF, c);
-		this.add(nameTF);
+//		nameTF = new TextField(20);
+//		nameTF.setText(this.workingFG.getName());
+//		c.gridx++;
+//		c.gridwidth = GridBagConstraints.REMAINDER;
+//		c.fill = GridBagConstraints.HORIZONTAL;
+//		c.weightx = 0.5;
+//		gridbag.setConstraints(nameTF, c);
+//		this.add(nameTF);
 
 		ScrollPane scroll = new ScrollPane();
 		scroll.add(list);
+		scroll.setPreferredSize(new Dimension(300,100));
 		c.gridx = 0;
 		c.gridy++;
 		c.fill = GridBagConstraints.BOTH;
@@ -90,7 +82,22 @@ public class FileGroupDialog extends Dialog implements ActionListener {
 		gridbag.setConstraints(scroll, c);
 		this.add(scroll);
 
-		wholePath = new Checkbox("Show whole path", showWholePath);
+		Panel buttons = new Panel(new GridLayout(3,1));
+		add = new Button("Add to files");
+		add.addActionListener(this);
+		buttons.add(add);
+		delete = new Button("Delete from files");
+		delete.addActionListener(this);
+		buttons.add(delete);
+		template = new Button("Use as template");
+		template.addActionListener(this);
+		buttons.add(template);
+		c.gridx++;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		gridbag.setConstraints(buttons, c);
+		this.add(buttons);
+
+		wholePath = new Checkbox("Show absolute path", showWholePath);
 		wholePath.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
 				showWholePath = wholePath.getState();
@@ -99,46 +106,31 @@ public class FileGroupDialog extends Dialog implements ActionListener {
 			}
 		});
 		c.gridy++;
+		c.gridx--;
 		c.fill = GridBagConstraints.NONE;
 		c.weightx = c.weighty = 0.0;
 		gridbag.setConstraints(wholePath, c);
 		this.add(wholePath);
 		
-		Panel buttons = new Panel(new FlowLayout());
-		add = new Button("Add");
-		add.addActionListener(this);
-		buttons.add(add);
-		delete = new Button("Delete");
-		delete.addActionListener(this);
-		buttons.add(delete);
-		cancel = new Button("Cancel");
-		cancel.addActionListener(this);
-		buttons.add(cancel);
-		ok = new Button("OK");
-		ok.addActionListener(this);
-		buttons.add(ok);
-		c.gridy++;
-		c.fill = GridBagConstraints.HORIZONTAL;
-		gridbag.setConstraints(buttons, c);
-		this.add(buttons);
-		
-		pack();
-		setVisible(true);
+	}
+
+	public File getSelected() {
+		int selected = list.getSelectedIndex();
+		if(selected != -1)
+			return files.get(selected);
+		return null;
+	}
+
+	public Button getTemplateButton() {
+		return template;
 	}
 
 	public void actionPerformed(ActionEvent e) {
-		if(e.getSource() == ok) {
-			originalFG.copy(workingFG);
-			originalFG.setName(nameTF.getText());
-			setModal(false);
-			this.dispose();			
-		} else if(e.getSource() == cancel) {
-			this.dispose();
-		} else if(e.getSource() == add) {
+		if(e.getSource() == add) {
 			fd.setVisible(true);
 			String f = fd.getDirectory() + fd.getFile();
 			if(f != null)
-				if(!workingFG.add(f))
+				if(!files.add(f))
 					System.out.println("File " + f + 
 							" could not be added to the filegroup");
 			createList();
@@ -146,20 +138,25 @@ public class FileGroupDialog extends Dialog implements ActionListener {
 		} else if(e.getSource() == delete) {
 			int[] idx = list.getSelectedIndexes();
 			for(int i = 0; i < idx.length; i++){
-				workingFG.remove(idx[i]);
+				files.remove(idx[i]);
 			}
 			createList();
 			repaint();
 		}
 	}
 
+	public void update() {
+		createList();
+		repaint();
+	}
+
 	private void createList() {
 		list.clear();
-		for(int i = 0; i < workingFG.size(); i++) {
+		for(int i = 0; i < files.size(); i++) {
 			if(showWholePath)
-				list.add(workingFG.get(i).getAbsolutePath());
+				list.add(files.get(i).getAbsolutePath());
 			else
-				list.add(workingFG.get(i).getName());
+				list.add(files.get(i).getName());
 		}
 	}
 
@@ -170,8 +167,10 @@ public class FileGroupDialog extends Dialog implements ActionListener {
 		fg.add("/home/bene/tmp.class");
 
 		java.awt.Frame f = new java.awt.Frame();
-
-		FileGroupDialog d = new FileGroupDialog(f, fg);
+		FileGroupDialog d = new FileGroupDialog(fg);
+		f.add(d);
+		f.pack();
+		f.show();
 		fg.debug();
 	}
 }

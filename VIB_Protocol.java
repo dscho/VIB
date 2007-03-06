@@ -26,11 +26,12 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	static final int NO_CHANNEL = 0;
 	static final int REF_CHANNEL = 1;
 	static final int RES_F = 2;
-	static final int TRANSF = 0;
 
-	private Button fg, load, save;
+	private Button fg, load, save, templateButton;
 	private Options options;
 	private GenericDialog gd;
+	private FileGroupDialog fgd;
+	private File template;
 	
 	public void run(String arg) {
 		options = new Options();
@@ -41,6 +42,9 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 //			options.loadFrom("/home/bene/gitakt/results/images_small/options.config");
 
 		gd = new GenericDialog("VIB Protocol");
+		fgd = new FileGroupDialog(options.fileGroup);
+		templateButton = fgd.getTemplateButton();
+		templateButton.addActionListener(this);
 		
 		Panel loadsave = new Panel(new FlowLayout());
 		load = new Button("Load config");
@@ -49,28 +53,24 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		save = new Button("Save config");
 		save.addActionListener(this);
 		loadsave.add(save);
+
 		gd.addPanel(loadsave, GridBagConstraints.CENTER, new Insets(5,0,0,0));
-
-		Panel filegroupedit = new Panel(new FlowLayout());
-		fg = new Button("Edit file group");
-		fg.addActionListener(this);
-		filegroupedit.add(fg);
-
-		gd.addStringField("Working directory","", 12);
-		gd.addPanel(filegroupedit, 
-				GridBagConstraints.CENTER, new Insets(5,0,0,0));
-		gd.addStringField("Template", "", 12);
+		gd.addPanel(fgd);
+		gd.addStringField("Working directory","", 25);
+		gd.addStringField("Template", "", 25);
 
 		gd.addNumericField("No of channels", 2, 0);
 		gd.addNumericField("No of the reference channel", 2, 0);
 
 		gd.addNumericField("Resampling factor", 2, 0);
-		String[] algorithms = new String[]{"LabelDiffusionInterpolation"};
-		gd.addChoice("Transformation", algorithms, algorithms[0]);
 
 		options.loadFrom(
 				"/home/bene/gitakt/results/images_small/options.config");
 		initTextFields();
+
+		// make the template textfield ineditable
+		TextField tf = (TextField)gd.getStringFields().get(TEMPL);
+		tf.setEditable(false);
 
 		gd.showDialog();
 		if(gd.wasCanceled())
@@ -93,22 +93,24 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	}
 
 	public void initTextFields() {
+		template = new File(options.templatePath);
 		setString(WD, options.workingDirectory);
 		setString(TEMPL, options.templatePath);
 		setNumber(NO_CHANNEL, options.numChannels);
 		setNumber(REF_CHANNEL, options.refChannel);
 		setNumber(RES_F, options.resamplingFactor);
-		int method = options.transformationMethod;
-		setChoice(TRANSF, Options.TRANSFORMS[method]);
+		//int method = options.transformationMethod;
+		//setChoice(TRANSF, Options.TRANSFORMS[method]);
+		fgd.update();
 	}
 
 	public void initOptions() {
 		options.workingDirectory = getString(WD);
-		options.templatePath = getString(TEMPL);
+		options.templatePath = template.getAbsolutePath();
 		options.numChannels = getNumber(NO_CHANNEL);
 		options.refChannel = getNumber(REF_CHANNEL);
 		options.resamplingFactor = getNumber(RES_F);
-		options.setTransformationMethod(getChoice(TRANSF));
+		//options.setTransformationMethod(getChoice(TRANSF));
 	}
 
 	private String getChoice(int i) {
@@ -146,10 +148,12 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	}
 
 	public void actionPerformed(ActionEvent e) {
-		if(e.getSource() == fg) {
-			FileGroupDialog fgd = new FileGroupDialog(
-					IJ.getInstance(), options.fileGroup);
-			fg.setLabel(options.fileGroup.name);
+		if(e.getSource() == templateButton) {
+			File selected = fgd.getSelected();
+			if(selected != null) {
+				template = selected;
+				setString(TEMPL, selected.getName());
+			}
 		} else if(e.getSource() == load) {
 			OpenDialog op = new OpenDialog("Open config",null);
 			options.loadFrom(op.getDirectory() + op.getFileName());
