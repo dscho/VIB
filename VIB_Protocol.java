@@ -35,48 +35,42 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	
 	public void run(String arg) {
 		options = new Options();
-// TODO
-//		String configfile = ij.Macro.getValue(ij.Macro.getOptions(), 
-//				"configfile", "");
-//		if(!configfile.equals(""))
-//			options.loadFrom("/home/bene/gitakt/results/images_small/options.config");
+		System.out.println(System.getProperty("user.dir"));
 
 		gd = new GenericDialog("VIB Protocol");
 		fgd = new FileGroupDialog(options.fileGroup);
 		templateButton = fgd.getTemplateButton();
 		templateButton.addActionListener(this);
 		
-		Panel loadsave = new Panel(new FlowLayout());
-		load = new Button("Load config");
-		load.addActionListener(this);
-		loadsave.add(load);
-		save = new Button("Save config");
-		save.addActionListener(this);
-		loadsave.add(save);
-
-		gd.addPanel(loadsave, GridBagConstraints.CENTER, new Insets(5,0,0,0));
 		gd.addPanel(fgd);
 		gd.addStringField("Working directory","", 25);
 		gd.addStringField("Template", "", 25);
-
 		gd.addNumericField("No of channels", 2, 0);
 		gd.addNumericField("No of the reference channel", 2, 0);
-
 		gd.addNumericField("Resampling factor", 2, 0);
 
-		options.loadFrom(
-				"/home/bene/gitakt/results/images_small/options.config");
-		initTextFields();
+		final TextField wdtf = (TextField)gd.getStringFields().get(WD);
+		wdtf.addFocusListener(new FocusAdapter() {
+			public void focusLost(FocusEvent e) {
+				File f = new File(wdtf.getText() + 
+							File.separator + "options.config");
+				if(f.exists()) {
+					options.loadFrom(f.getAbsolutePath());
+					initTextFields();
+				}
+			}
+		});
 
 		// make the template textfield ineditable
-		TextField tf = (TextField)gd.getStringFields().get(TEMPL);
-		tf.setEditable(false);
+		((TextField)gd.getStringFields().get(TEMPL)).setEditable(false);
 
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
 
 		initOptions();
+		options.saveTo(options.workingDirectory
+					+ File.separator + "options.config");
 
 		Console console = Console.instance();
 		final Frame f = new Frame();
@@ -154,14 +148,6 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 				template = selected;
 				setString(TEMPL, selected.getName());
 			}
-		} else if(e.getSource() == load) {
-			OpenDialog op = new OpenDialog("Open config",null);
-			options.loadFrom(op.getDirectory() + op.getFileName());
-			initTextFields();
-		} else if(e.getSource() == save) {
-			initOptions();
-			SaveDialog sa = new SaveDialog("Save config", "options", ".config");
-			options.saveTo(sa.getDirectory() + sa.getFileName());
 		}
 	}
 }
