@@ -11,6 +11,12 @@ Cygwin*)
 	;;
 esac
 
+MEM=256m
+case $HOSTNAME in
+wbgn129)
+	MEM=1500m
+esac
+
 case "$1" in
 app)
 	shift
@@ -18,7 +24,7 @@ app)
 		-classpath "$curdir"/../ImageJ/ij.jar$CPSEP. vib.app.App "$@"
 	;;
 *)
-	java -Xmx256m -Dplugins.dir="$curdir" $EXTRADEFS \
+	java -Xmx$MEM -Dplugins.dir="$curdir" $EXTRADEFS \
 		-jar "$curdir"/../ImageJ/ij.jar "$@"
 	;;
 esac
