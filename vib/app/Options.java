@@ -167,17 +167,17 @@ public class Options {
 	public void saveTo(String path) {
 		Properties properties = new Properties();
 		properties.setProperty("workingDirectory",
-									workingDirectory.getAbsolutePath());
+				workingDirectory.getAbsolutePath());
 		properties.setProperty("template",
-									template.getAbsolutePath());
+				template.getAbsolutePath());
 		properties.setProperty("numChannels",
-									Integer.toString(numChannels));
+				Integer.toString(numChannels));
 		properties.setProperty("refChannel",
-									Integer.toString(refChannel));
+				Integer.toString(refChannel));
 		properties.setProperty("resamplingFactor",
-									Integer.toString(resamplingFactor));
+				Integer.toString(resamplingFactor));
 		properties.setProperty("transformationMethod",
-									transformationMethod);
+				transformationMethod);
 		properties.setProperty("filegroup", filegroup.toCSV());
 
 		try {
@@ -191,10 +191,9 @@ public class Options {
 	}
 
 	public void loadFrom(String path) {
-		Properties properties = null;
+		Properties p = new Properties();
 		try {
-			properties = new Properties();
-			properties.load(new FileInputStream(path));
+			p.load(new FileInputStream(path));
 		} catch (FileNotFoundException e) {
 			IJ.showMessage("Can't find file " + path);
 			return;
@@ -203,24 +202,27 @@ public class Options {
 			return;
 		}
 		workingDirectory =
-			new File(properties.getProperty("workingDirectory"));
+			new File(p.getProperty("workingDirectory", ""));
 		template =
-			new File(properties.getProperty("template"));
+			new File(p.getProperty("template", ""));
 		numChannels =
-			Integer.parseInt(properties.getProperty("numChannels"));
+			Integer.parseInt(p.getProperty("numChannels", "2"));
 		refChannel =
-			Integer.parseInt(properties.getProperty("refChannel"));
+			Integer.parseInt(p.getProperty("refChannel", "2"));
 		transformationMethod =
-			properties.getProperty("transformationMethod");
+			p.getProperty("transformationMethod",
+					VIBlabelDiffusionTransformation);
 		resamplingFactor =
-			Integer.parseInt(properties.getProperty("resamplingFactor"));
-		if(!filegroup.fromCSV(properties.getProperty("filegroup"))) {
-			IJ.showMessage("Not all files specified in the file group exist.");
-		}
+			Integer.parseInt(p.getProperty("resamplingFactor",
+						"2"));
+		if(!filegroup.fromCSV(p.getProperty("filegroup", "")))
+			IJ.showMessage("Not all files specified in the "
+					+ "file group exist.");
 		if(!isValid()){
-			IJ.showMessage("There occured an error while setting the " +
-					"options. I set some of them, but you should check them " +
-					"manually.");
+			IJ.showMessage("There occured an error while setting "
+					+ "the options. I set some of them, "
+					+ "but you should check them "
+					+ "manually.");
 			return;
 		}
 	}
@@ -240,5 +242,13 @@ public class Options {
 
 	public static void main(String[] args){
 		System.out.println("Options");
+		if (args.length > 0) {
+			Options o = new Options();
+			if (args[0].equals("--save") && args.length > 1)
+				o.saveTo(args[1]);
+			else
+				o.loadFrom(args[0]);
+			o.debug();
+		}
 	}
 }
