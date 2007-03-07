@@ -199,7 +199,7 @@ public class Options {
 			IJ.showMessage("Can't find file " + path);
 			return;
 		} catch(IOException e) {
-			IJ.showMessage("Can't write to file " + path);
+			IJ.showMessage("Can't read from file " + path);
 			return;
 		}
 		this.workingDirectory = 
