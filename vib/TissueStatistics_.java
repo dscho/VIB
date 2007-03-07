@@ -1,5 +1,8 @@
 package vib;
 
+import amira.AmiraParameters;
+import amira.AmiraTable;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;

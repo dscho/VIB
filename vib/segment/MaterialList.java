@@ -24,7 +24,7 @@ import java.util.Iterator;
 
 import javax.naming.OperationNotSupportedException;
 
-import vib.AmiraParameters;
+import amira.AmiraParameters;
 
 public class MaterialList extends ScrollPane implements ActionListener {
 	PopupMenu popup;

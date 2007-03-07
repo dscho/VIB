@@ -10,8 +10,8 @@ import ij.text.TextWindow;
 import java.awt.*;
 import java.io.File;
 
-import vib.AmiraMeshDecoder;
-import vib.AmiraTable;
+import amira.AmiraMeshDecoder;
+import amira.AmiraTable;
 
 public class AmiraMeshReader_ extends ImagePlus implements PlugIn {
 

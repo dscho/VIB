@@ -7,7 +7,7 @@ import vib.app.VIBImage;
 import vib.app.Options;
 import vib.app.FileGroup;
 import vib.TissueStatistics_;
-import vib.AmiraTable;
+import amira.AmiraTable;
 
 public class EndModule extends Module {
 

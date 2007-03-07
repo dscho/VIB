@@ -11,7 +11,7 @@ import ij.gui.ImageCanvas;
 
 import java.awt.*;
 
-import vib.AmiraParameters;
+import amira.AmiraParameters;
 
 /**
  * User: Tom Larkworthy

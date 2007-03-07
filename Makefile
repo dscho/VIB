@@ -42,8 +42,8 @@ FibonacciHeapInt.java: FibonacciHeap.java Makefile
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(JAVAS)) vib/segment/icons/*.png
 
-Segmentation_Editor_compat.jar: SOURCES=vib/AmiraParameters.java \
-	vib/AmiraTable.java vib/InterpolatedImage.java math3d/Point3d.java \
+Segmentation_Editor_compat.jar: SOURCES=amira/AmiraParameters.java \
+	amira/AmiraTable.java vib/InterpolatedImage.java math3d/Point3d.java \
 	vib/SegmentationViewerCanvas.java vib/segment/*.java
 
 %_compat.jar:
@@ -55,16 +55,16 @@ Segmentation_Editor_compat.jar: SOURCES=vib/AmiraParameters.java \
 Delaunay_Voronoi.jar: SOURCES=$(wildcard Delaunay_Voronoi.java delaunay/*.java)
 
 AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
-	vib/AmiraParameters.java vib/AmiraMeshEncoder.java \
-	vib/AmiraMeshDecoder.java vib/AmiraTableEncoder.java vib/AmiraTable.java
+	amira/AmiraParameters.java amira/AmiraMeshEncoder.java \
+	amira/AmiraMeshDecoder.java amira/AmiraTableEncoder.java amira/AmiraTable.java
 
-AmiraSurface_.jar: SOURCES=ShowAmiraSurface_.java vib/AmiraParameters.java \
-	vib/AmiraTable.java vib/Image3dCanvas.java
+AmiraSurface_.jar: SOURCES=ShowAmiraSurface_.java amira/AmiraParameters.java \
+	amira/AmiraTable.java vib/Image3dCanvas.java
 
 Rigid_Registration.jar: SOURCES=vib/RigidRegistration_.java \
 	vib/InterpolatedImage.java vib/TransformedImage.java \
 	vib/FastMatrix.java vib/RegistrationOptimizer.java \
-	vib/AmiraParameters.java vib/AmiraTable.java vib/VIB.java \
+	amira/AmiraParameters.java amira/AmiraTable.java vib/VIB.java \
 	vib/BatchLog_.java vib/Resample_.java \
 	distance/PixelPairs.java distance/Euclidean.java \
 	distance/TwoValues.java distance/MutualInformation.java \

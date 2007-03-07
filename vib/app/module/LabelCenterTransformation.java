@@ -9,7 +9,7 @@ import vib.RigidRegistration_;
 import vib.TransformedImage;
 import vib.app.VIBImage;
 import vib.app.Options;
-import vib.AmiraTable;
+import amira.AmiraTable;
 import vib.Center_Transformation;
 import vib.FastMatrix;
 import distance.TwoValues;

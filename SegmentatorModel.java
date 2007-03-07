@@ -1,7 +1,7 @@
 
 import ij.ImagePlus;
 
-import vib.AmiraParameters;
+import amira.AmiraParameters;
 import vib.SegmentationViewerCanvas;
 
 /**

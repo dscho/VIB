@@ -25,7 +25,7 @@ import events.SliceWatcher;
 import adt.Connectivity2D;
 import adt.Points;
 
-import vib.AmiraParameters;
+import amira.AmiraParameters;
 import vib.SegmentationViewerCanvas;
 
 import gui.GuiBuilder;

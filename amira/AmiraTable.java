@@ -1,4 +1,4 @@
-package vib;
+package amira;
 
 import ij.macro.Interpreter;
 import ij.text.TextPanel;

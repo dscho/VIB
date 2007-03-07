@@ -18,7 +18,7 @@ import ij.process.ImageProcessor;
 import ij.gui.GenericDialog;
 import ij.gui.Roi;
 
-import vib.AmiraParameters;
+import amira.AmiraParameters;
 import vib.InterpolatedImage;
 
 /**

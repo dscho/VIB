@@ -26,9 +26,9 @@ import events.SliceWatcher;
 import adt.Connectivity2D;
 import adt.Points;
 
-import vib.AmiraParameters;
-import vib.AmiraMeshEncoder;
-import vib.AmiraMeshDecoder;
+import amira.AmiraParameters;
+import amira.AmiraMeshEncoder;
+import amira.AmiraMeshDecoder;
 import vib.SegmentationViewerCanvas;
 
 import gui.GuiBuilder;

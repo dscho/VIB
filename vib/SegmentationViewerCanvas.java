@@ -2,8 +2,11 @@
 
 package vib;
 
+import amira.AmiraParameters;
+
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
+
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;

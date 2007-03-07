@@ -7,6 +7,8 @@ package vib;
  *   (refactor center determination)
  */
 
+import amira.AmiraParameters;
+
 import distance.*;
 import ij.IJ;
 import ij.ImagePlus;

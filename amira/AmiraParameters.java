@@ -1,4 +1,4 @@
-package vib;
+package amira;
 
 import ij.*;
 import ij.gui.GenericDialog;

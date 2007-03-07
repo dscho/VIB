@@ -1,9 +1,9 @@
 package vib.app;
 
-import vib.AmiraMeshDecoder;
-import vib.AmiraMeshEncoder;
-import vib.AmiraTable;
-import vib.AmiraTableEncoder;
+import amira.AmiraMeshDecoder;
+import amira.AmiraMeshEncoder;
+import amira.AmiraTable;
+import amira.AmiraTableEncoder;
 
 import java.io.File;
 

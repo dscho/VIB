@@ -1,5 +1,7 @@
 package vib;
 
+import amira.AmiraParameters;
+
 import ij.plugin.*;
 import ij.*;
 import ij.gui.*;

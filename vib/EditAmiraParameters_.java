@@ -1,5 +1,8 @@
 package vib;
 
+import amira.AmiraParameters;
+import amira.AmiraTable;
+
 import ij.*;
 import ij.process.*;
 import ij.gui.*;
@@ -76,8 +79,7 @@ public class EditAmiraParameters_ implements PlugIn, ActionListener,
 			return;
 		}
 		AmiraTable table = (AmiraTable)frame;
-		Hashtable h = (Hashtable)table.properties.get("Parameters");
-		h.put(key, value);
+		table.getProperties().put(key, value);
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -98,7 +100,7 @@ public class EditAmiraParameters_ implements PlugIn, ActionListener,
 		else {
 			AmiraTable table =
 				(AmiraTable)WindowManager.getFrame(title);
-			p = new AmiraParameters(table.properties);
+			p = new AmiraParameters(table.getProperties());
 		}
 		String key = keyField.getText();
 		Object o = p.get(key);

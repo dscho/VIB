@@ -1,3 +1,5 @@
+import amira.AmiraParameters;
+
 import ij.*;
 import ij.gui.*;
 import ij.plugin.*;
@@ -90,8 +92,8 @@ public class CropEditor_ implements PlugInFilter {
 		}
 
 		ImagePlus r = new ImagePlus(image.getTitle()+" cropped",result);
-		if (vib.AmiraParameters.isAmiraMesh(image))
-			new vib.AmiraParameters(image).setParameters(r);
+		if (AmiraParameters.isAmiraMesh(image))
+			new AmiraParameters(image).setParameters(r);
 		if (IJ.getInstance() != null)
 			r.show();
 	}

@@ -18,8 +18,8 @@ import imagescience.images.ByteImage;
 import adt.PixelStats;
 import adt.ByteProbability;
 
-import vib.AmiraMeshEncoder;
-import vib.AmiraParameters;
+import amira.AmiraMeshEncoder;
+import amira.AmiraParameters;
 import vib.FastMatrix;
 import vib.RigidRegistration_;
 import vib.TransformedImage;

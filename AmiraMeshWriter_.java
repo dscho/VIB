@@ -11,9 +11,9 @@ import java.awt.Menu;
 import java.awt.MenuBar;
 import java.util.Vector;
 
-import vib.AmiraMeshEncoder;
-import vib.AmiraParameters;
-import vib.AmiraTableEncoder;
+import amira.AmiraMeshEncoder;
+import amira.AmiraParameters;
+import amira.AmiraTableEncoder;
 
 public class AmiraMeshWriter_ implements PlugIn {
 

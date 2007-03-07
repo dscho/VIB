@@ -7,7 +7,7 @@ import ij.gui.StackWindow;
 import ij.io.OpenDialog;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
-import vib.AmiraParameters;
+import amira.AmiraParameters;
 import vib.Image3dCanvas;
 
 public class ShowAmiraSurface_ implements PlugIn {

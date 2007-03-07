@@ -6,7 +6,7 @@ import ij.IJ;
 import vib.app.VIBImage;
 import vib.app.Options;
 import vib.TissueStatistics_;
-import vib.AmiraTable;
+import amira.AmiraTable;
 
 public class TissueStatistics extends Module {
 
