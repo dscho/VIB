@@ -13,16 +13,16 @@ import java.util.Properties;
 import ij.IJ;
 
 public class Options {
-	
-	public static String VIBgreyTransformation = 
+
+	public static String VIBgreyTransformation =
 											"VIBgreyTransformation";
-	public static String VIBlabelSurfaceTransformation = 
+	public static String VIBlabelSurfaceTransformation =
 											"VIBlabelSurfaceTransformation";
-	public static String VIBcenterTransformation = 
+	public static String VIBcenterTransformation =
 											"VIBcenterTransformation";
-	public static String VIBlabelDiffusionTransformation = 
+	public static String VIBlabelDiffusionTransformation =
 											"VIBlabelDiffusionTransformation";
-	
+
 	private File workingDirectory;
 	private FileGroup filegroup;
 	private File template;
@@ -33,7 +33,7 @@ public class Options {
 
 	// Constructors
 	public Options() {
-		this.filegroup = new FileGroup("NewFilegroup");
+		filegroup = new FileGroup("NewFilegroup");
 	}
 
 	public Options(String dirname) {
@@ -42,25 +42,25 @@ public class Options {
 		if(!dir.exists()){
 			dir.mkdir();
 		}
-		this.workingDirectory = dir;
+		workingDirectory = dir;
 	}
 
 	public Options(File dir) {
 		this();
-		this.workingDirectory = dir;
+		workingDirectory = dir;
 	}
 
 	// Setter
 	public void setWorkingDirectory(File f) {
-		this.workingDirectory = f;
+		workingDirectory = f;
 	}
 
 	public void setFileGroup(FileGroup fg) {
-		this.filegroup = fg;
+		filegroup = fg;
 	}
 
 	public void setTemplate(File f){
-		this.template = f;
+		template = f;
 	}
 
 	public boolean setTemplate(String path) {
@@ -68,29 +68,29 @@ public class Options {
 		if(!file.exists()){
 			return false;
 		}
-		this.template = file;
+		template = file;
 		return true;
 	}
-		
+
 
 	public void setNumChannels(int i) {
-		this.numChannels = i;
+		numChannels = i;
 	}
 
 	public void setRefChannel(int i) {
-		this.refChannel = i;
+		refChannel = i;
 	}
 
 	public boolean setTransformationMethod(String method) {
 		if(transformationValid(method)) {
-			this.transformationMethod = method;
+			transformationMethod = method;
 			return true;
 		}
 		return false;
 	}
 
 	public void setResamplingFactor(int factor) {
-		this.resamplingFactor = factor;
+		resamplingFactor = factor;
 	}
 
 	// Getter
@@ -123,28 +123,28 @@ public class Options {
 	}
 
 	// Validity
-	
+
 	public boolean transformationValid(String method) {
 		return (method.equals(VIBgreyTransformation) ||
 				method.equals(VIBlabelSurfaceTransformation) ||
 				method.equals(VIBcenterTransformation) ||
-				method.equals(VIBlabelDiffusionTransformation)); 
-		
+				method.equals(VIBlabelDiffusionTransformation));
+
 	}
-	
+
 	public boolean isValid(){
-		return !this.filegroup.isEmpty() && 
-			this.template != null && this.template.exists() &&
-			this.numChannels > 0 &&
-			this.refChannel > 0 && this.refChannel <= numChannels &&
-			this.workingDirectory.exists() && 
-			this.workingDirectory.isDirectory() && 
+		return !filegroup.isEmpty() &&
+			template != null && template.exists() &&
+			numChannels > 0 &&
+			refChannel > 0 && refChannel <= numChannels &&
+			workingDirectory.exists() &&
+			workingDirectory.isDirectory() &&
 			transformationValid(transformationMethod);
 	}
 
 	// Utility functions
 	public Options clone() {
-		Options clone = new Options(this.workingDirectory);
+		Options clone = new Options(workingDirectory);
 		clone.template = template;
 		clone.numChannels = numChannels;
 		clone.refChannel = refChannel;
@@ -155,28 +155,28 @@ public class Options {
 	}
 
 	public void copy(Options options) {
-		this.workingDirectory = options.workingDirectory;
-		this.template = options.template;
-		this.numChannels = options.numChannels;
-		this.refChannel = options.refChannel;
-		this.filegroup = options.filegroup;
-		this.transformationMethod = options.transformationMethod;
-		this.resamplingFactor = options.resamplingFactor;
+		workingDirectory = options.workingDirectory;
+		template = options.template;
+		numChannels = options.numChannels;
+		refChannel = options.refChannel;
+		filegroup = options.filegroup;
+		transformationMethod = options.transformationMethod;
+		resamplingFactor = options.resamplingFactor;
 	}
 
 	public void saveTo(String path) {
 		Properties properties = new Properties();
-		properties.setProperty("workingDirectory", 
+		properties.setProperty("workingDirectory",
 									workingDirectory.getAbsolutePath());
-		properties.setProperty("template", 
+		properties.setProperty("template",
 									template.getAbsolutePath());
-		properties.setProperty("numChannels", 
+		properties.setProperty("numChannels",
 									Integer.toString(numChannels));
-		properties.setProperty("refChannel", 
+		properties.setProperty("refChannel",
 									Integer.toString(refChannel));
 		properties.setProperty("resamplingFactor",
 									Integer.toString(resamplingFactor));
-		properties.setProperty("transformationMethod", 
+		properties.setProperty("transformationMethod",
 									transformationMethod);
 		properties.setProperty("filegroup", filegroup.toCSV());
 
@@ -202,29 +202,29 @@ public class Options {
 			IJ.showMessage("Can't read from file " + path);
 			return;
 		}
-		this.workingDirectory = 
+		workingDirectory =
 			new File(properties.getProperty("workingDirectory"));
-		this.template = 
+		template =
 			new File(properties.getProperty("template"));
-		this.numChannels = 
+		numChannels =
 			Integer.parseInt(properties.getProperty("numChannels"));
-		this.refChannel = 
+		refChannel =
 			Integer.parseInt(properties.getProperty("refChannel"));
-		this.transformationMethod = 
+		transformationMethod =
 			properties.getProperty("transformationMethod");
-		this.resamplingFactor = 
+		resamplingFactor =
 			Integer.parseInt(properties.getProperty("resamplingFactor"));
 		if(!filegroup.fromCSV(properties.getProperty("filegroup"))) {
 			IJ.showMessage("Not all files specified in the file group exist.");
 		}
 		if(!isValid()){
-			IJ.showMessage("There occured an error while setting the " + 
+			IJ.showMessage("There occured an error while setting the " +
 					"options. I set some of them, but you should check them " +
 					"manually.");
 			return;
 		}
 	}
-		
+
 	// debug
 	public void debug() {
 		System.out.println("\nOptions:");
