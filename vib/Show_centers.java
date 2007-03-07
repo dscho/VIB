@@ -49,7 +49,7 @@ public class Show_centers implements PlugInFilter {
 		Calibration cal = ret.getCalibration();
 
 		for(int z = 0; z < d; z++) {
-			double coordz = (double)(-z * cal.pixelDepth);
+			double coordz = (double)Math.abs(z * cal.pixelDepth);
 			byte[] p = (byte[])ret.getStack().getProcessor(z+1).getPixels();
 			for(int x = 0; x < w; x++) {
 				for(int y = 0; y < h; y++) {
