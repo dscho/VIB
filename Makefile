@@ -83,7 +83,7 @@ SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 
 $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 
-JARS=Delaunay_Voronoi.jar AmiraMesh_.jar VIB_-compat.jar $(SIMPLE_JARS)
+JARS=Delaunay_Voronoi.jar AmiraMesh_.jar VIB_compat.jar $(SIMPLE_JARS)
 
 %-compat.jar: %.jar
 	test ! -d tempdir || rm -rf tempdir
