@@ -927,11 +927,9 @@ public class FloatMatrix {
 	public static FloatMatrix fromCalibration(ImagePlus image) {
 		Calibration calib = image.getCalibration();
 		FloatMatrix result = new FloatMatrix();
-		result.a00 = (float)calib.pixelWidth;
-		result.a11 = (float)calib.pixelHeight;
-		result.a22 = (float)calib.pixelDepth;
-		if (result.a22 < 0)
-			result.a22 *= -1;
+		result.a00 = (float)Math.abs(calib.pixelWidth);
+		result.a11 = (float)Math.abs(calib.pixelHeight);
+		result.a22 = (float)Math.abs(calib.pixelDepth);
 		result.a03 = (float)calib.xOrigin;
 		result.a13 = (float)calib.yOrigin;
 		result.a23 = (float)calib.zOrigin;

@@ -927,9 +927,9 @@ public class FastMatrix {
 	public static FastMatrix fromCalibration(ImagePlus image) {
 		Calibration calib = image.getCalibration();
 		FastMatrix result = new FastMatrix();
-		result.a00 = (double)calib.pixelWidth;
-		result.a11 = (double)calib.pixelHeight;
-		result.a22 = (double)calib.pixelDepth;
+		result.a00 = (double)Math.abs(calib.pixelWidth);
+		result.a11 = (double)Math.abs(calib.pixelHeight);
+		result.a22 = (double)Math.abs(calib.pixelDepth);
 		result.a03 = (double)calib.xOrigin;
 		result.a13 = (double)calib.yOrigin;
 		result.a23 = (double)calib.zOrigin;
