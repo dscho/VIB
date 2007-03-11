@@ -24,4 +24,9 @@ public class Module {
 		for (int i = 0; i < state.getFileCount(); i++)
 			runOnOneImage(state, i);
 	}
+
+	public static void runOnAllImagesAndTemplate(State state) {
+		for (int i = -1; i < state.getFileCount(); i++)
+			runOnOneImage(state, i);
+	}
 }

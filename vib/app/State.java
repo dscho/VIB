@@ -11,6 +11,10 @@ import java.io.File;
 
 import vib.FastMatrix;
 
+/*
+ * Convention: index < 0 means template
+ */
+
 public class State {
         Options options;
 
@@ -50,6 +54,8 @@ public class State {
         private ImagePlus template;
 
 	public String getBaseName(int index) {
+		if (index < 0)
+			return getTemplateBaseName();
 		return getBaseName(channels[0][index]);
 	}
 
