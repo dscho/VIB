@@ -1,7 +1,5 @@
 package vib.app.module;
 
-import amira.AmiraTable;
-
 import ij.ImagePlus;
 
 import java.io.File;
@@ -53,19 +51,8 @@ public class AverageBrain extends Module {
 
 	private FastMatrix[] getMatrices(State state) {
 		FastMatrix[] result = new FastMatrix[state.channels[0].length];
-		for (int i = 0; i < result.length; i++) {
-			AmiraTable table = state.getStatistics(i);
-			String matrix = table.get(state.getTransformLabel());
-			try {
-				if (matrix != null)
-					result[i] =
-						FastMatrix.parseMatrix(matrix);
-			} catch (Exception e) {
-				// will set to identity
-			}
-			if (result[i] == null)
-				result[i] = new FastMatrix(1.0);
-		}
+		for (int i = 0; i < result.length; i++)
+			result[i] = state.getTransformMatrix(i);
 		return result;
 	}
 }

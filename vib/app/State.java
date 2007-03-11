@@ -9,6 +9,8 @@ import ij.io.FileSaver;
 
 import java.io.File;
 
+import vib.FastMatrix;
+
 public class State {
         Options options;
 
@@ -107,6 +109,25 @@ public class State {
 			options.TRANSFORM_LABELS[options.transformationMethod];
 	}
 
+	/*
+	 * TODO:
+	 * it is fatal for dependency checking to have all transforms in the
+	 * same statistics file. Also, we really should get rid of the
+	 * AmiraTable mess: make the files csv files instead.
+	 */
+
+	public FastMatrix getTransformMatrix(int index) {
+		AmiraTable table = getStatistics(index);
+		String matrix = table.get(getTransformLabel());
+		try {
+			if (matrix != null)
+				return FastMatrix.parseMatrix(matrix);
+		} catch (Exception e) {
+			// will set to identity
+		}
+		return new FastMatrix(1.0);
+	}
+
 	public int getFileCount() {
 		return channels[0].length;
 	}
@@ -128,6 +149,10 @@ public class State {
 			}
 		}
 		return true;
+	}
+
+	public static boolean upToDate(String source, String target) {
+		return upToDate(new String[] { source }, target);
 	}
 
 	public boolean save(ImagePlus image, String path) {
