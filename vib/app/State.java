@@ -1,8 +1,5 @@
 package vib.app;
 
-import amira.AmiraMeshDecoder;
-import amira.AmiraTable;
-
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileSaver;
@@ -102,12 +99,12 @@ public class State {
 			+ getBaseName(index) + ".statisticss";
 	}
 
-	public AmiraTable getStatistics(int index) {
-		AmiraMeshDecoder decoder = new AmiraMeshDecoder();
-		if (decoder.open(getStatisticsPath(index)) &&
-				decoder.isTable())
-			return decoder.getTable();
-		return null;
+	public ImageMetaData getStatistics(int index) {
+		try {
+			return new ImageMetaData(getStatisticsPath(index));
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	public String getTransformLabel() {
@@ -123,15 +120,9 @@ public class State {
 	 */
 
 	public FastMatrix getTransformMatrix(int index) {
-		AmiraTable table = getStatistics(index);
-		String matrix = table.get(getTransformLabel());
-		try {
-			if (matrix != null)
-				return FastMatrix.parseMatrix(matrix);
-		} catch (Exception e) {
-			// will set to identity
-		}
-		return new FastMatrix(1.0);
+		ImageMetaData metaData = getStatistics(index);
+		FastMatrix matrix = metaData.getMatrix(getTransformLabel());
+		return matrix != null ? matrix : new FastMatrix(1.0);
 	}
 
 	public int getFileCount() {
