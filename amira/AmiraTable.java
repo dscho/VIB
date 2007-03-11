@@ -44,6 +44,14 @@ public class AmiraTable extends TextWindow {
 		return properties;
 	}
 
+	public String get(String key) {
+		return (String)properties.get(key);
+	}
+
+	public void put(String key, String value) {
+		properties.put(key, value);
+	}
+
 	public void show() {
 		if (!Interpreter.isBatchMode())
 			super.show();
