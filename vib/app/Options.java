@@ -13,181 +13,117 @@ import java.util.Properties;
 import ij.IJ;
 
 public class Options {
+	public final String CONFIG_FILE = "options.config";
 
-	public static String VIBgreyTransformation =
-											"VIBgreyTransformation";
-	public static String VIBlabelSurfaceTransformation =
-											"VIBlabelSurfaceTransformation";
-	public static String VIBcenterTransformation =
-											"VIBcenterTransformation";
-	public static String VIBlabelDiffusionTransformation =
-											"VIBlabelDiffusionTransformation";
-
-	private File workingDirectory;
-	private FileGroup filegroup;
-	private File template;
-	private int numChannels = 2;
-	private int refChannel = 2;
-	private int resamplingFactor = 1;
-	private String transformationMethod = VIBlabelDiffusionTransformation;
+	public final int GREY = 0;
+	public final int LABEL_SURFACE = 1;
+	public final int CENTER = 2;
+	public final int LABEL_DIFFUSION = 3;
+	public final String[] TRANSFORMS = {
+		"VIBgreyTransformation",
+		"VIBlabelSurfaceTransformation",
+		"VIBcenterTransformation",
+		"VIBlabelDiffusionTransformation"
+	};
+	public final String[] TRANSFORM_LABELS = {
+		"RegistrationTransformation",
+		"LabelSurfaceTransformation",
+		"SCenterTransformation",
+		"SLabelTransformation"
+	};
+	
+	String workingDirectory;
+	FileGroup fileGroup;
+	String templatePath;
+	int numChannels = 2;
+	int refChannel = 2;
+	int resamplingFactor = 1;
+	int transformationMethod = LABEL_DIFFUSION;
 
 	// Constructors
 	public Options() {
-		filegroup = new FileGroup("NewFilegroup");
+		fileGroup = new FileGroup("NewFilegroup");
 	}
 
 	public Options(String dirname) {
-		this();
+		workingDirectory = dirname;
 		File dir = new File(dirname);
-		if(!dir.exists()){
+		if(!dir.exists())
 			dir.mkdir();
+		else {
+			File optionsFile = new File(dirname, CONFIG_FILE);
+			if (optionsFile.exists())
+				loadFrom(optionsFile.getAbsolutePath());
 		}
-		workingDirectory = dir;
+		if (fileGroup == null)
+			fileGroup = new FileGroup("NewFilegroup");
 	}
 
 	public Options(File dir) {
-		this();
-		workingDirectory = dir;
+		this(dir.getAbsolutePath());
 	}
 
-	// Setter
-	public void setWorkingDirectory(File f) {
-		workingDirectory = f;
-	}
-
-	public void setFileGroup(FileGroup fg) {
-		filegroup = fg;
-	}
-
-	public void setTemplate(File f){
-		template = f;
-	}
-
-	public boolean setTemplate(String path) {
-		File file = new File(path);
-		if(!file.exists()){
-			return false;
-		}
-		template = file;
-		return true;
-	}
-
-
-	public void setNumChannels(int i) {
-		numChannels = i;
-	}
-
-	public void setRefChannel(int i) {
-		refChannel = i;
-	}
-
-	public boolean setTransformationMethod(String method) {
-		if(transformationValid(method)) {
-			transformationMethod = method;
-			return true;
-		}
+	public boolean isTransformationValid(String method) {
+		for (int i = 0; i < TRANSFORMS.length; i++)
+			if (TRANSFORMS[i].equals(method))
+				return true;
 		return false;
 	}
 
-	public void setResamplingFactor(int factor) {
-		resamplingFactor = factor;
-	}
-
-	// Getter
-	public File getWorkingDirectory() {
-		return workingDirectory;
-	}
-
-	public FileGroup getFileGroup() {
-		return filegroup;
-	}
-
-	public File getTemplate() {
-		return template;
-	}
-
-	public int getNumChannels() {
-		return numChannels;
-	}
-
-	public int getRefChannel() {
-		return refChannel;
-	}
-
-	public String getTransformationMethod() {
-		return transformationMethod;
-	}
-
-	public int getResamplingFactor() {
-		return resamplingFactor;
-	}
-
-	// Validity
-
-	public boolean transformationValid(String method) {
-		return (method.equals(VIBgreyTransformation) ||
-				method.equals(VIBlabelSurfaceTransformation) ||
-				method.equals(VIBcenterTransformation) ||
-				method.equals(VIBlabelDiffusionTransformation));
-
-	}
-
-	public boolean isValid(){
-		return !filegroup.isEmpty() &&
-			template != null && template.exists() &&
+	public boolean isValid() {
+		File dir = new File(workingDirectory);
+		return !fileGroup.isEmpty() &&
+			templatePath != null &&
+			new File(templatePath).exists() &&
 			numChannels > 0 &&
 			refChannel > 0 && refChannel <= numChannels &&
-			workingDirectory.exists() &&
-			workingDirectory.isDirectory() &&
-			transformationValid(transformationMethod);
+			dir.exists() && dir.isDirectory() &&
+			transformationMethod >= GREY &&
+			transformationMethod <= LABEL_DIFFUSION;
 	}
 
-	// Utility functions
 	public Options clone() {
-		Options clone = new Options(workingDirectory);
-		clone.template = template;
-		clone.numChannels = numChannels;
-		clone.refChannel = refChannel;
-		clone.filegroup = filegroup;
-		clone.transformationMethod = transformationMethod;
-		clone.resamplingFactor = resamplingFactor;
+		Options clone = new Options();
+		clone.copy(this);
 		return clone;
 	}
 
 	public void copy(Options options) {
 		workingDirectory = options.workingDirectory;
-		template = options.template;
+		templatePath = options.templatePath;
 		numChannels = options.numChannels;
 		refChannel = options.refChannel;
-		filegroup = options.filegroup;
+		fileGroup = options.fileGroup;
 		transformationMethod = options.transformationMethod;
 		resamplingFactor = options.resamplingFactor;
 	}
 
 	public void saveTo(String path) {
-		Properties properties = new Properties();
-		properties.setProperty("workingDirectory",
-				workingDirectory.getAbsolutePath());
-		properties.setProperty("template",
-				template.getAbsolutePath());
-		properties.setProperty("numChannels",
-				Integer.toString(numChannels));
-		properties.setProperty("refChannel",
-				Integer.toString(refChannel));
-		properties.setProperty("resamplingFactor",
-				Integer.toString(resamplingFactor));
-		properties.setProperty("transformationMethod",
-				transformationMethod);
-		properties.setProperty("filegroup", filegroup.toCSV());
+		Properties p = new Properties();
+		p.setProperty("workingDirectory", workingDirectory);
+		p.setProperty("template", templatePath);
+		p.setProperty("numChannels", "" + numChannels);
+		p.setProperty("refChannel", "" + refChannel);
+		p.setProperty("resamplingFactor", "" + resamplingFactor);
+		p.setProperty("transformationMethod",
+				TRANSFORMS[transformationMethod]);
+		p.setProperty("fileGroup", fileGroup.toCSV());
 
 		try {
 			OutputStream out = new FileOutputStream(path);
-			properties.store(out, "Created by the VIB application");
+			p.store(out, "Created by the VIB application");
 		} catch(FileNotFoundException e) {
 			IJ.showMessage("Can't find file " + path);
 		} catch(IOException e) {
 			IJ.showMessage("Can't write to file " + path);
 		}
+	}
+
+	static int getInt(Properties p, String key, int default_value) {
+		String value = p.getProperty(key);
+		if (value == null)
+			return default_value;
+		return Integer.parseInt(value);
 	}
 
 	public void loadFrom(String path) {
@@ -201,21 +137,17 @@ public class Options {
 			IJ.showMessage("Can't read from file " + path);
 			return;
 		}
-		workingDirectory =
-			new File(p.getProperty("workingDirectory", ""));
-		template =
-			new File(p.getProperty("template", ""));
-		numChannels =
-			Integer.parseInt(p.getProperty("numChannels", "2"));
-		refChannel =
-			Integer.parseInt(p.getProperty("refChannel", "2"));
-		transformationMethod =
-			p.getProperty("transformationMethod",
-					VIBlabelDiffusionTransformation);
-		resamplingFactor =
-			Integer.parseInt(p.getProperty("resamplingFactor",
-						"2"));
-		if(!filegroup.fromCSV(p.getProperty("filegroup", "")))
+		workingDirectory = p.getProperty("workingDirectory", "");
+		templatePath = p.getProperty("template", "");
+		numChannels = getInt(p, "numChannels", 2);
+		refChannel = getInt(p, "refChannel", 2);
+		String t = p.getProperty("transformationMethod");
+		transformationMethod = LABEL_DIFFUSION;
+		for (int i = 0; i < TRANSFORMS.length; i++)
+			if (TRANSFORMS[i].equals(t))
+				transformationMethod = i;
+		resamplingFactor = getInt(p, "resamplingFactor", 1);
+		if(!fileGroup.fromCSV(p.getProperty("fileGroup", "")))
 			IJ.showMessage("Not all files specified in the "
 					+ "file group exist.");
 		if(!isValid()){
@@ -227,17 +159,19 @@ public class Options {
 		}
 	}
 
-	// debug
+	public String toString() {
+		return "Options:\n" +
+		"workingDirectory = " + workingDirectory + "\n" +
+		"template = " + templatePath + "\n" +
+		"numChannels = " + numChannels + "\n" +
+		"refChannel = " + refChannel + "\n" +
+		"transformationMethod = " + transformationMethod + "\n" +
+		"resamplingFactor = " + resamplingFactor + "\n" +
+		"fileGroup: " + fileGroup;
+	}
+
 	public void debug() {
-		System.out.println("\nOptions:");
-		System.out.println("workingDirectory = " + workingDirectory);
-		System.out.println("template = " + template);
-		System.out.println("numChannels = " + numChannels);
-		System.out.println("refChannel = " + refChannel);
-		System.out.println("transformationMethod = " + transformationMethod);
-		System.out.println("resamplingFactor = " + resamplingFactor);
-		System.out.println("filegroup: ");
-		filegroup.debug();
+		System.out.print("\n" + this);
 	}
 
 	public static void main(String[] args){

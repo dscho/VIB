@@ -1,104 +1,27 @@
 package vib.app.module;
 
-import ij.IJ;
-
 import vib.app.gui.Console;
-import vib.app.Options;
-import vib.app.VIBImage;
-import vib.app.FileGroup;
+import vib.app.State;
 
-import java.util.List;
-import java.util.ArrayList;
+public class Module {
+	protected static Console console;
+	protected static String name = "EndModule";
 
-public abstract class Module {
-
-	/** requirements ok, and results do not exist */
-	public static final int RESULTS_UNAVAILABLE = 2;
-	/** requirements ok and results exist, but are out of date */
-	public static final int RESULTS_OUT_OF_DATE = 3;
-	/** requirements are ok and results both exist and are uptodate */
-	public static final int RESULTS_OK = 4;
-
-	protected Options options;
-	protected List<Class> dependingOn;
-	protected VIBImage image;
-	protected Console console = Console.instance();
-	protected boolean runDependingModulesWithAllImages;
-
-	public Module(VIBImage image, Options options, 
-							boolean runDependingModulesWithAllImg) {
-		this.image = image;
-		this.options = options;
-		this.dependingOn = new ArrayList<Class>();
-		this.runDependingModulesWithAllImages = runDependingModulesWithAllImg;
+	protected static void run(State state, int index) {
+		if (console == null)
+			console = Console.instance();
+		if (index != 0)
+			return;
+		AverageBrain.runOnAllImages(state);
 	}
 
-	public void run() {
-		runDependingModules();
-		String msg = "running " + getName();
-		if(image != null) 
-			msg += " with " + image.basename;
-		Console.instance().append(msg);
-		if(decideWhetherToRun()) {
-			runThisModule();
-		}
+	// at a later stage, these functions will schedule multi-threaded jobs
+	public static void runOnOneImage(State state, int index) {
+		run(state, index);
 	}
 
-	public abstract String getName();
-	
-	public abstract int checkResults();
-	
-	protected abstract void runThisModule();
-
-	protected void runDependingModules() {
-		if(runDependingModulesWithAllImages)
-			runDependingModulesWithAllImages();
-		else
-			runDependingModulesWithOneImage();
-	}
-
-	private boolean decideWhetherToRun() {
-		int dep = checkResults();
-		if(dep == RESULTS_OK) {
-			console.append("...results available...skipping");
-            return false;
-		}
-        else if(dep == RESULTS_OUT_OF_DATE) {
-            console.append("...results out of date,nevertheless...skipping");
-            return false;
-        }
-		return true;
-	}
-
-
-	private Module getModule(Class modClass, VIBImage img, Options o) {
-		Module module = null;
-		try {
-			module = (Module)modClass.getConstructors()[0].newInstance(
-		                 img, o);
-		} catch (Exception e) {
-			console.append("Can't load module " +  modClass.getName());
-			e.printStackTrace();
-			throw new RuntimeException();
-		}
-		return module;
-	}
-
-	private void runDependingModulesWithAllImages(){
-		FileGroup fg = options.getFileGroup();
-		for(int i = 0; i < fg.size(); i++) {
-			VIBImage image = new VIBImage(fg.get(i), options);
-			for(Class modClass : dependingOn) {
-				Module module = getModule(modClass, image, options);
-				module.run();
-			}
-		}
-	}
-
-	private void runDependingModulesWithOneImage(){
-		for(Class modClass : dependingOn) {
-			Module module = getModule(modClass, image, options);
-			module.run();
-		}
+	public static void runOnAllImages(State state) {
+		for (int i = 0; i < state.getFileCount(); i++)
+			runOnOneImage(state, i);
 	}
 }

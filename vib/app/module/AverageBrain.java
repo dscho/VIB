@@ -1,122 +1,91 @@
 package vib.app.module;
 
-import java.util.Hashtable;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.File;
-import ij.IJ;
-import ij.ImagePlus;
-import ij.text.TextPanel;
-import ij.util.Tools;
-import vib.AverageBrain_;
-import vib.InterpolatedImage;
-import vib.TransformedImage;
-import vib.app.VIBImage;
-import vib.app.Options;
 import amira.AmiraTable;
-import vib.Center_Transformation;
-import vib.DiffusionInterpol2_;
+
+import ij.ImagePlus;
+
+import java.io.File;
+
+import vib.app.State;
+import vib.AverageBrain_;
 import vib.FastMatrix;
-import vib.app.FileGroup;
-import distance.TwoValues;
+import vib.InterpolatedImage;
 
 public class AverageBrain extends Module {
+	protected static String name = "AverageBrain";
 
-	private VIBImage template;
-	
-	public AverageBrain(VIBImage imp, Options options) {
-		super(imp, options, true);
-		this.template = image.getTemplate();
-		dependingOn.add(LabelDiffusionTransformation.class);
+	public static void run(State state, int index) {
+		if (index != 0)
+			return;
+		TransformImages.runOnAllImages(state);
+
+		new AverageBrain().doit(state);
 	}
 
-	public String getName() {
-		return "Calculating average brain";
+	private void doit(State state) {
+		matrices = null;
+		scratch = null;
+		for (int i = 0; i < state.channels.length; i++) {
+			/* calculate AverageBrain */
+			String outputPath = state.getWarpedPath(i);
+			doit(state, state.channels[i], outputPath);
+		}
+		/* calculate MainProbs */
+		String outputPath = state.getWarpedLabelsPath();
+		doit(state, state.labels, outputPath);
 	}
 
-	public int checkResults() {
-		FileGroup fg = options.getFileGroup();
-		int numFiles = fg.size();
-		int numChannels = options.getNumChannels();
-		boolean uptodate = true;
+	private FastMatrix[] matrices;
+	private ImagePlus scratch;
 
-		// for each channels
-		for(int ch = 0; ch < numChannels; ch++) {
-			File averageCh = new File(image.getAverageChannelPath(ch+1));
-			if(!averageCh.exists())
-				return RESULTS_UNAVAILABLE;
-			long lm = averageCh.lastModified();
-			VIBImage imp = null;
-			File warped = null;
-			for(int i = 0; i < numFiles; i++) {
-				imp = new VIBImage(fg.get(i), options);	
-				warped = new File(imp.getWarpedPath(ch+1));
-				if(!warped.exists())
-					return RESULTS_UNAVAILABLE;
-				if(averageCh.lastModified() == 0L || 
-						averageCh.lastModified() < warped.lastModified()){
-					uptodate = false;
-				}
-			}
-		}
-
-		// for labels
-		File averageLabels = new File(image.averageLabelsPath);
-		if(!averageLabels.exists())
-			return RESULTS_UNAVAILABLE;
-		long lm = averageLabels.lastModified();
-		VIBImage imp = null;
-		File warped = null;
-		for(int i = 0; i < numFiles; i++) {
-			imp = new VIBImage(fg.get(i), options);	
-			warped = new File(imp.warpedLabelsPath);
-			if(!warped.exists())
-				return RESULTS_UNAVAILABLE;
-			if(averageLabels.lastModified() == 0L || 
-					averageLabels.lastModified() < warped.lastModified()){
-				uptodate = false;
-			}
-		}
-
-		if(!uptodate) 
-			return RESULTS_OUT_OF_DATE;
-
-		return RESULTS_OK;
+	public void doit(State state, String[] images, String outputPath) {
+		if (upToDate(images, outputPath))
+			return;
+		AverageBrain_ averageBrain = new AverageBrain_();
+		if (matrices == null)
+			matrices = getMatrices(state);
+		if (scratch == null)
+			// TODO: invalidate template?
+			scratch = state.getTemplate();
+		averageBrain.doit(scratch, images, matrices);
+		state.save(scratch, outputPath);
 	}
 
-	protected void runThisModule() {
-		FileGroup fg = options.getFileGroup();
-		int numFiles = fg.size();
-		int numChannels = options.getNumChannels();
-
-		String[] files = new String[numFiles];
-		FastMatrix[] matrices = new FastMatrix[numFiles];
-
-		// for each channels
-		for(int ch = 0; ch < numChannels; ch++) {
-			for(int i = 0; i < numFiles; i++) {
-				VIBImage image = new VIBImage(fg.get(i), options);
-				files[i] = image.getWarpedPath(ch+1);
-				matrices[i] = new FastMatrix(1.0);
+	private boolean upToDate(String[] images, String outputPath) {
+		File output = new File(outputPath);
+		if (!output.exists())
+			return false;
+		for (int i = 0; i < images.length; i++) {
+			File image = new File(images[i]);
+			if (!image.exists())
+				continue;
+			try {
+				if (image.lastModified() >
+						output.lastModified())
+					return false;
+			} catch (Exception e) {
+				// ignore unreadable file
 			}
-			AverageBrain_ ab = new AverageBrain_();
-			ImagePlus scratch = new InterpolatedImage(
-					template.getResampledReferenceChannel()).
-					cloneDimensionsOnly().getImage();
-			ab.doit(scratch, files, matrices);
-			image.saveAverageChannel(scratch, ch+1);
 		}
+		return true;
+	}
 
-		// for the labelfields
-		for(int i = 0; i < numFiles; i++) {
-			VIBImage image = new VIBImage(fg.get(i), options);
-			files[i] = image.warpedLabelsPath;
-			matrices[i] = new FastMatrix(1.0);
+	private FastMatrix[] getMatrices(State state) {
+		FastMatrix[] result = new FastMatrix[state.channels[0].length];
+		for (int i = 0; i < result.length; i++) {
+			AmiraTable table = state.getStatistics(i);
+			String matrix = table.get(state.getTransformLabel());
+			try {
+				if (matrix != null)
+					result[i] =
+						FastMatrix.parseMatrix(matrix);
+			} catch (Exception e) {
+				// will set to identity
+			}
+			if (result[i] == null)
+				result[i] = new FastMatrix(1.0);
 		}
-		AverageBrain_ ab = new AverageBrain_();
-		ImagePlus scratch = new InterpolatedImage(
-				template.getResampledReferenceChannel()).cloneDimensionsOnly().getImage();
-		ab.doit(scratch, files, matrices);
-		image.saveAverageLabels(scratch);
+		return result;
 	}
 }
+
