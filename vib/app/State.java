@@ -69,9 +69,10 @@ public class State {
 		return labelPath;
 	}
 
-	public String getLabelPath(int index) {
-		return labelPath + "/" + getBaseName(index) + ".labels";
-	}
+	/*
+	 * no getLabelPath(int index), as the label path can be reset
+	 * file by file by the Resample module.
+	 */
 
 	public String getWarpedPath(int channel) {
 		return warpedPath + "_" + channel + "/"
