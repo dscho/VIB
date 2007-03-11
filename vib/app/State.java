@@ -111,6 +111,25 @@ public class State {
 		return channels[0].length;
 	}
 
+	public static boolean upToDate(String[] sources, String target) {
+		File output = new File(target);
+		if (!output.exists())
+			return false;
+		for (int i = 0; i < sources.length; i++) {
+			File source = new File(sources[i]);
+			if (!source.exists())
+				continue;
+			try {
+				if (source.lastModified() >
+						output.lastModified())
+					return false;
+			} catch (Exception e) {
+				// ignore unreadable file
+			}
+		}
+		return true;
+	}
+
 	public boolean save(ImagePlus image, String path) {
 		FileSaver fs = new FileSaver(image);
 		return fs.saveAsTiffStack(path);

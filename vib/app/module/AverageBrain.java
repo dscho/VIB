@@ -39,7 +39,7 @@ public class AverageBrain extends Module {
 	private ImagePlus scratch;
 
 	public void doit(State state, String[] images, String outputPath) {
-		if (upToDate(images, outputPath))
+		if (state.upToDate(images, outputPath))
 			return;
 		AverageBrain_ averageBrain = new AverageBrain_();
 		if (matrices == null)
@@ -49,25 +49,6 @@ public class AverageBrain extends Module {
 			scratch = state.getTemplate();
 		averageBrain.doit(scratch, images, matrices);
 		state.save(scratch, outputPath);
-	}
-
-	private boolean upToDate(String[] images, String outputPath) {
-		File output = new File(outputPath);
-		if (!output.exists())
-			return false;
-		for (int i = 0; i < images.length; i++) {
-			File image = new File(images[i]);
-			if (!image.exists())
-				continue;
-			try {
-				if (image.lastModified() >
-						output.lastModified())
-					return false;
-			} catch (Exception e) {
-				// ignore unreadable file
-			}
-		}
-		return true;
 	}
 
 	private FastMatrix[] getMatrices(State state) {
