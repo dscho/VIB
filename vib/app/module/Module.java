@@ -13,17 +13,17 @@ public class Module {
 	// at a later stage, these functions will schedule multi-threaded jobs
 	public static void runOnOneImage(State state, int index) {
 		console.append(message + ": " + index + "/" +
-				state.getFileCount() + "\n");
+				state.getImageCount() + "\n");
 		run(state, index);
 	}
 
 	public static void runOnAllImages(State state) {
-		for (int i = 0; i < state.getFileCount(); i++)
+		for (int i = 0; i < state.getImageCount(); i++)
 			runOnOneImage(state, i);
 	}
 
 	public static void runOnAllImagesAndTemplate(State state) {
-		for (int i = -1; i < state.getFileCount(); i++)
+		for (int i = -1; i < state.getImageCount(); i++)
 			runOnOneImage(state, i);
 	}
 }

@@ -47,7 +47,7 @@ public class AverageBrain extends Module {
 	}
 
 	private FastMatrix[] getMatrices(State state) {
-		FastMatrix[] result = new FastMatrix[state.getFileCount()];
+		FastMatrix[] result = new FastMatrix[state.getImageCount()];
 		for (int i = 0; i < result.length; i++) {
 			result[i] = new FastMatrix();
 			result[i].copyFrom(state.getTransformMatrix(i));
@@ -56,7 +56,7 @@ public class AverageBrain extends Module {
 	}
 
 	private String[] getCompleteChannel(State state, int channel) {
-		String[] result = new String[state.getFileCount()];
+		String[] result = new String[state.getImageCount()];
 		for (int i = 0; i < result.length; i++)
 			result[i] = state.getWarpedPath(channel, i);
 		return result;

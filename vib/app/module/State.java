@@ -157,7 +157,7 @@ public class State {
 		return matrix != null ? matrix : new FloatMatrix(1.0f);
 	}
 
-	public int getFileCount() {
+	public int getImageCount() {
 		return channels[0].length;
 	}
 
