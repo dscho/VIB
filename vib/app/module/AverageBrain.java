@@ -24,14 +24,11 @@ public class AverageBrain extends Module {
 	private void doit(State state) {
 		matrices = null;
 		scratch = null;
-		for (int i = 0; i < state.channels.length; i++) {
+		for (int i = -1; i < state.options.numChannels; i++) {
 			/* calculate AverageBrain */
 			String outputPath = state.getWarpedPath(i);
-			doit(state, state.channels[i], outputPath);
+			doit(state, getCompleteChannel(state, i), outputPath);
 		}
-		/* calculate MainProbs */
-		String outputPath = state.getWarpedPath(-1);
-		doit(state, state.labels, outputPath);
 	}
 
 	private FastMatrix[] matrices;
@@ -45,15 +42,24 @@ public class AverageBrain extends Module {
 			matrices = getMatrices(state);
 		if (scratch == null)
 			// TODO: invalidate template?
-			scratch = state.getTemplate();
+			scratch = state.getTemplateLabels();
 		averageBrain.doit(scratch, images, matrices);
 		state.save(scratch, outputPath);
 	}
 
 	private FastMatrix[] getMatrices(State state) {
-		FastMatrix[] result = new FastMatrix[state.channels[0].length];
+		FastMatrix[] result = new FastMatrix[state.getFileCount()];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = new FastMatrix();
+			result[i].copyFrom(state.getTransformMatrix(i));
+		}
+		return result;
+	}
+
+	private String[] getCompleteChannel(State state, int channel) {
+		String[] result = new String[state.getFileCount()];
 		for (int i = 0; i < result.length; i++)
-			result[i] = state.getTransformMatrix(i);
+			result[i] = state.getWarpedPath(channel, i);
 		return result;
 	}
 }
