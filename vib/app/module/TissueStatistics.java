@@ -1,57 +1,35 @@
 package vib.app.module;
 
-import java.io.File;
-import ij.ImagePlus;
-import ij.IJ;
-import vib.app.VIBImage;
-import vib.app.Options;
-import vib.TissueStatistics_;
 import amira.AmiraTable;
+import amira.AmiraTableEncoder;
+
+import ij.ImagePlus;
+
+import vib.app.State;
+
+import vib.TissueStatistics_;
 
 public class TissueStatistics extends Module {
+	protected final String name = "TissueStatistics";
+	protected final String message = "Calculating tissue statistics";
 
-	public TissueStatistics(VIBImage imp, Options options) {
-		super(imp, options, false);
-		dependingOn.add(Resample.class);
-	}
+	public static void run(State state, int index) {
+		ResampleLabels.runOnOneImage(state, index);
 
-	public String getName() {
-		return "Calculating tissue statistics";
-	}
+		String statisticsPath = state.getStatisticsPath(index);
+		String labelsPath = state.getImagePath(-1, index);
+		if (state.upToDate(labelsPath, statisticsPath))
+			return;
 
-	public int checkResults() {
-		File labels_r = new File(image.resampledLabelsPath);
-		// check availability of results
-		boolean available = true;
-		boolean uptodate = true;
-		File statistic = new File(image.statisticsPath);
-		if(!statistic.exists())
-			available = false;
-		if(statistic.lastModified() == 0L || 
-				statistic.lastModified() < labels_r.lastModified())
-			uptodate = false;
-		// uptodate
-		if(uptodate) {
-			return RESULTS_OK;
-		}
-		// just available
-		else if(available) {
-			return RESULTS_OUT_OF_DATE;
-		}
-		// not available, but at least the requirements are fullfilled		
-		return RESULTS_UNAVAILABLE;
-	}
-	
-	public void runThisModule() {
-		console.append("...retrieve labels of " + image.name);
-		ImagePlus labelField = image.getResampledLabels();
-		console.append("...calculate statistics of " + image.name);
-		AmiraTable statistics = new TissueStatistics_().
-									calculateStatistics(labelField);
+		ImagePlus labelField = state.getImage(labelsPath);
+		TissueStatistics_ t = new TissueStatistics_();
+		AmiraTable statistics = t.calculateStatistics(labelField);
 		statistics.hide();
-		console.append("...save statistics of " + image.name);
-		if(!image.saveStatistics(statistics))
-			console.append("Could not save statistics for " + image.name);
 
+		// TODO: move away from AmiraTable
+		AmiraTableEncoder encoder = new AmiraTableEncoder(statistics);
+		if(!encoder.write(statisticsPath))
+			throw new RuntimeException("could not write "
+					+ statisticsPath);
 	}
 }
