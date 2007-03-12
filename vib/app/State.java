@@ -9,16 +9,17 @@ import java.io.File;
 import vib.FastMatrix;
 
 /*
- * Convention: index < 0 means template
+ * Convention: index < 0 means template, channel < 0 means labels
  */
 
 public class State {
-        Options options;
+        public Options options;
 
 	public State(Options options) {
 		this.options = options;
 
 		labelPath = options.workingDirectory + "/labels";
+		labelPath = options.workingDirectory + "/resampled";
 		warpedPath = options.workingDirectory + "/warped";
 		warpedLabelsPath = options.workingDirectory + "/warped-labels";
 		statisticsPath = options.workingDirectory + "/statistics";
@@ -43,6 +44,7 @@ public class State {
 	public String[] labels;
 
 	private String labelPath;
+	private String resampledPath;
 	private String warpedPath;
 	private String warpedLabelsPath;
 	private String statisticsPath;
@@ -72,6 +74,12 @@ public class State {
 
 	public String getLabelPath() {
 		return labelPath;
+	}
+
+	public String getResampledPath(int channel, int index) {
+		return resampledPath + "_" +
+			(channel < 0 ? "labels" : "" + (channel + 1)) + "/" +
+			getBaseName(index) + ".tif";
 	}
 
 	/*
@@ -160,6 +168,9 @@ public class State {
 	// caching the latest image
         public ImagePlus getImage(String path) {
                 if (!path.equals(currentImagePath)) {
+			// give the garbage collector a chance
+			currentImage = null;
+
 			currentImagePath = path;
 			currentImage = IJ.openImage(currentImagePath);
 		}
