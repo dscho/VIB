@@ -16,7 +16,7 @@ import vib.app.gui.FileGroupDialog;
 import vib.app.FileGroup;
 import vib.app.Options;
 import vib.app.module.EndModule;
-import vib.app.module.Module;
+import vib.app.module.State;
 
 public class VIB_Protocol implements PlugIn, ActionListener {
 
@@ -88,26 +88,26 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		f.add(console);
 		f.setSize(200,200);
 		f.setVisible(true);
-		Module m = null;
-		m = new EndModule(null, options);
-		m.run();
+		State state = new State(options);
+		EndModule.runOnAllImages(state);
 	}
 
 	public void initTextFields() {
-		setString(WD, options.getWorkingDirectory().getAbsolutePath());
-		setString(TEMPL, options.getTemplate().getAbsolutePath());
-		setNumber(NO_CHANNEL, options.getNumChannels());
-		setNumber(REF_CHANNEL, options.getRefChannel());
-		setNumber(RES_F, options.getResamplingFactor());
-		setChoice(TRANSF, options.getTransformationMethod());
+		setString(WD, options.workingDirectory);
+		setString(TEMPL, options.templatePath);
+		setNumber(NO_CHANNEL, options.numChannels);
+		setNumber(REF_CHANNEL, options.refChannel);
+		setNumber(RES_F, options.resamplingFactor);
+		int method = options.transformationMethod;
+		setChoice(TRANSF, Options.TRANSFORMS[method]);
 	}
 
 	public void initOptions() {
-		options.setWorkingDirectory(new File(getString(WD)));
-		options.setTemplate(new File(getString(TEMPL)));
-		options.setNumChannels(getNumber(NO_CHANNEL));
-		options.setRefChannel(getNumber(REF_CHANNEL));
-		options.setResamplingFactor(getNumber(RES_F));
+		options.workingDirectory = getString(WD);
+		options.templatePath = getString(TEMPL);
+		options.numChannels = getNumber(NO_CHANNEL);
+		options.refChannel = getNumber(REF_CHANNEL);
+		options.resamplingFactor = getNumber(RES_F);
 		options.setTransformationMethod(getChoice(TRANSF));
 	}
 
@@ -148,8 +148,8 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == fg) {
 			FileGroupDialog fgd = new FileGroupDialog(
-					IJ.getInstance(), options.getFileGroup());
-			fg.setLabel(options.getFileGroup().getName());
+					IJ.getInstance(), options.fileGroup);
+			fg.setLabel(options.fileGroup.name);
 		} else if(e.getSource() == load) {
 			OpenDialog op = new OpenDialog("Open config",null);
 			options.loadFrom(op.getDirectory() + op.getFileName());

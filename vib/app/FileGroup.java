@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 public class FileGroup extends ArrayList<File> {
-	private String name;
+	public String name;
 
 	public FileGroup(String name) {
 		this.name = name;

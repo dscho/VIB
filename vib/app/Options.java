@@ -63,6 +63,15 @@ public class Options {
 		this(dir.getAbsolutePath());
 	}
 
+	public void setTransformationMethod(String method) {
+		for (int i = 0; i < TRANSFORMS.length; i++)
+			if (TRANSFORMS[i].equals(method)) {
+				transformationMethod = i;
+				return;
+			}
+		throw new RuntimeException("Unknown method: " + method);
+	}
+
 	public boolean isTransformationValid(String method) {
 		for (int i = 0; i < TRANSFORMS.length; i++)
 			if (TRANSFORMS[i].equals(method))
