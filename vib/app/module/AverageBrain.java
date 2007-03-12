@@ -30,7 +30,7 @@ public class AverageBrain extends Module {
 			doit(state, state.channels[i], outputPath);
 		}
 		/* calculate MainProbs */
-		String outputPath = state.getWarpedLabelsPath();
+		String outputPath = state.getWarpedPath(-1);
 		doit(state, state.labels, outputPath);
 	}
 

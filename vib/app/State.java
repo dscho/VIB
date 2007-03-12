@@ -72,13 +72,16 @@ public class State {
 		return fileName;
 	}
 
+	public static String getChannelName(int channel) {
+		return channel < 0 ? "labels" : "" + (channel + 1);
+	}
+
 	public String getLabelPath() {
 		return labelPath;
 	}
 
 	public String getResampledPath(int channel, int index) {
-		return resampledPath + "_" +
-			(channel < 0 ? "labels" : "" + (channel + 1)) + "/" +
+		return resampledPath + "_" + getChannelName(channel) + "/" +
 			getBaseName(index) + ".tif";
 	}
 
@@ -88,14 +91,8 @@ public class State {
 	 */
 
 	public String getWarpedPath(int channel) {
-		return warpedPath + "_" + channel + "/"
+		return warpedPath + "_" + getChannelName(channel) + "/"
 			+ getTemplateBaseName() + ".warped";
-	}
-
-	public String getWarpedLabelsPath() {
-		return warpedLabelsPath + "/"
-			+ getTemplateBaseName() + ".warped";
-
 	}
 
 	public String getStatisticsPath() {
