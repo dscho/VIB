@@ -27,7 +27,6 @@ public class State {
 		int imageCount = options.fileGroup.size();
 
 		channels = new String[options.numChannels][imageCount];
-		labels = new String[imageCount];
 
 		for (int i = 0; i < imageCount; i++) {
 			File file = (File)options.fileGroup.get(i);
@@ -35,14 +34,10 @@ public class State {
 			for (int j = 0; j < options.numChannels; j++)
 				// TODO: how to determine 2nd channel's path?
 				channels[j][i] = file.getAbsolutePath();
-			labels[i] = getLabelPath() + "/" +
-				baseName + ".labels";
 		}
 	}
 
-	public String[][] channels;
-	public String[] labels;
-
+	private String[][] channels;
 	private String labelPath;
 	private String resampledPath;
 	private String warpedPath;
@@ -76,8 +71,15 @@ public class State {
 		return channel < 0 ? "labels" : "" + (channel + 1);
 	}
 
-	public String getLabelPath() {
-		return labelPath;
+	public String getImagePath(int channel, int index) {
+		if (channel < 0)
+			// labels
+			return labelPath + "/" +
+				getBaseName(index) + ".labels";
+		if (index < 0)
+			// template
+			return options.templatePath;
+		return channels[channel][index];
 	}
 
 	public String getResampledPath(int channel, int index) {
