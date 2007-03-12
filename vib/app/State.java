@@ -6,7 +6,7 @@ import ij.io.FileSaver;
 
 import java.io.File;
 
-import vib.FastMatrix;
+import vib.FloatMatrix;
 
 /*
  * Convention: index < 0 means template, channel < 0 means labels
@@ -58,7 +58,7 @@ public class State {
 	private String statisticsPath;
         private String currentImagePath;
         private ImagePlus currentImage;
-        private ImagePlus template;
+        private ImagePlus templateLabels;
 
 	public String getBaseName(int index) {
 		if (index < 0)
@@ -107,6 +107,11 @@ public class State {
 	 * file by file by the Resample module.
 	 */
 
+	public String getWarpedPath(int channel, int index) {
+		return warpedPath + "_" + getChannelName(channel) + "/"
+			+ getBaseName(index) + ".warped";
+	}
+
 	public String getWarpedPath(int channel) {
 		return warpedPath + "_" + getChannelName(channel) + "/"
 			+ getTemplateBaseName() + ".warped";
@@ -141,10 +146,10 @@ public class State {
 	 * AmiraTable mess: make the files csv files instead.
 	 */
 
-	public FastMatrix getTransformMatrix(int index) {
+	public FloatMatrix getTransformMatrix(int index) {
 		ImageMetaData metaData = getStatistics(index);
-		FastMatrix matrix = metaData.getMatrix(getTransformLabel());
-		return matrix != null ? matrix : new FastMatrix(1.0);
+		FloatMatrix matrix = metaData.getMatrix(getTransformLabel());
+		return matrix != null ? matrix : new FloatMatrix(1.0f);
 	}
 
 	public int getFileCount() {
@@ -193,10 +198,12 @@ public class State {
                 return currentImage;
         }
 
-        public ImagePlus getTemplate() {
-                if (template == null)
-                        template = IJ.openImage(options.templatePath);
-                return template;
+        public ImagePlus getTemplateLabels() {
+                if (templateLabels == null)
+			templateLabels =
+				IJ.openImage(getResampledPath(-1, -1));
+		// TODO: check if the dimensions are really borked
+                return templateLabels;
         }
 
 	private void mkdir(String path) {

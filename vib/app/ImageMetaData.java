@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Properties;
 
-import vib.FastMatrix;
+import vib.FloatMatrix;
 
 public class ImageMetaData {
 	public static class Material {
@@ -21,7 +21,7 @@ public class ImageMetaData {
 	}
 	public static class Transformation {
 		public String name;
-		FastMatrix matrix;
+		FloatMatrix matrix;
 	}
 
 	public Material[] materials;
@@ -31,14 +31,14 @@ public class ImageMetaData {
 		loadFrom(fileName);
 	}
 
-	public FastMatrix getMatrix(String name) {
+	public FloatMatrix getMatrix(String name) {
 		for (int i = 0; i < transformations.length; i++)
 			if (transformations[i].name.equals(name))
 				return transformations[i].matrix;
 		return null;
 	}
 
-	public void setMatrix(String name, FastMatrix matrix) {
+	public void setMatrix(String name, FloatMatrix matrix) {
 		int i;
 		for (i = 0; i < transformations.length; i++)
 			if (transformations[i].name.equals(name)) {
@@ -94,7 +94,7 @@ public class ImageMetaData {
 			Transformation t = new Transformation();
 			t.name = key;
 			String matrix = (String)props.get(key);
-			t.matrix = FastMatrix.parseMatrix(matrix);
+			t.matrix = FloatMatrix.parseMatrix(matrix);
 		}
 
 		transformations = new Transformation[transforms.size()];
