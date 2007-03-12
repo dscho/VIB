@@ -38,6 +38,31 @@ public class ImageMetaData {
 		return null;
 	}
 
+	public void setMatrix(String name, FastMatrix matrix) {
+		int i;
+		for (i = 0; i < transformations.length; i++)
+			if (transformations[i].name.equals(name)) {
+				transformations[i].matrix = matrix;
+				return;
+			}
+		Transformation[] newTransformations =
+			new Transformation[transformations.length + 1];
+		System.arraycopy(transformations, 0,
+				newTransformations, 0, transformations.length);
+		Transformation newTransformation = new Transformation();
+		newTransformation.name = name;
+		newTransformation.matrix = matrix;
+		newTransformations[transformations.length] = newTransformation;
+		transformations = newTransformations;
+	}
+
+	public Material getMaterial(String name) {
+		for (int i = 0; i < materials.length; i++)
+			if (materials[i].name.equals(name))
+				return materials[i];
+		return null;
+	}
+
 	public void loadFrom(String path) {
 		AmiraMeshDecoder decoder = new AmiraMeshDecoder();
 		AmiraTable table;
