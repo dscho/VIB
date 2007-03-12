@@ -26,12 +26,13 @@ public class State {
 				"/resampled";
 			mkdir(resampledPath);
 		}
-		warpedPath = options.workingDirectory + "/warped";
-		warpedLabelsPath = options.workingDirectory + "/warped_labels";
+		if (options.transformationMethod == Options.LABEL_DIFFUSION)
+			warpedPath = options.workingDirectory + "/warped";
 		statisticsPath = options.workingDirectory + "/statistics";
 		mkdir(statisticsPath);
 		for (int c = -1; c < options.numChannels; c++) {
-			mkdir(warpedPath + "_" + getChannelName(c));
+			if (warpedPath != null)
+				mkdir(warpedPath + "_" + getChannelName(c));
 			if (c >= 0 && options.numChannels > 1)
 				mkdir(imagesPath + "_" + getChannelName(c));
 		}
@@ -54,7 +55,6 @@ public class State {
 	private String labelPath;
 	private String resampledPath;
 	private String warpedPath;
-	private String warpedLabelsPath;
 	private String statisticsPath;
         private String currentImagePath;
         private ImagePlus currentImage;
@@ -108,6 +108,8 @@ public class State {
 	 */
 
 	public String getWarpedPath(int channel, int index) {
+		if (warpedPath == null)
+			return getResampledPath(channel, index);
 		return warpedPath + "_" + getChannelName(channel) + "/"
 			+ getBaseName(index) + ".warped";
 	}
