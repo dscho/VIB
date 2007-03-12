@@ -103,6 +103,7 @@ public class ImageMetaData {
 	}
 
 	public void saveTo(String path) {
+		// TODO!!!
 	}
 
 	private String[] split(String line) {
