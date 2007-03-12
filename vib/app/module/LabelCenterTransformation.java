@@ -1,59 +1,79 @@
 package vib.app.module;
 
-import amira.AmiraTable;
+import distance.TwoValues;
 
-import java.util.ArrayList;
-
-import math3d.Point3d;
+import ij.ImagePlus;
 
 import vib.app.ImageMetaData;
+import vib.app.Options;
 
+import vib.FastMatrix;
 import vib.FloatMatrix;
+import vib.RigidRegistration_;
+import vib.TransformedImage;
 
 public class LabelCenterTransformation extends Module {
-	public final String name = "LabelCenterTransformation";
+	public final static String name = "LabelCenterTransformation";
+	public final static String message =
+		"Registering the individual neuropils";
 
 	public static void run(State state, int index) {
-		// make sure that the template gets statistics, too
-		TissueStatistics.runOnOneImage(state, -1);
-		TissueStatistics.runOnOneImage(state, index);
+		CenterTransformation.runOnOneImage(state, index);
 
+		String labelPath = state.getResampledPath(-1, index);
 		String statisticsPath = state.getStatisticsPath(index);
-		String templStatisticsPath = state.getStatisticsPath(-1);
-		ImageMetaData stats = new ImageMetaData(statisticsPath);
-		if (state.upToDate(templStatisticsPath, statisticsPath) &&
-				stats.getMatrix(state.getTransformLabel())
-				!= null)
+		if (state.upToDate(labelPath, statisticsPath))
 			return;
-		ImageMetaData templStats =
-			new ImageMetaData(templStatisticsPath);
 
-		ArrayList templCenters = new ArrayList();
-		ArrayList centers = new ArrayList();
-		// skip i == 0 (it's Exterior)
-		for (int i = 1; i < templStats.materials.length; i++) {
-			ImageMetaData.Material m1 = templStats.materials[i];
-			String name = m1.name;
-			ImageMetaData.Material m2 = stats.getMaterial(name);
-			if (m2 == null)
+		ImageMetaData stats = state.getStatistics(index);
+		String centerLabel = state.getTemplateBaseName() +
+			Options.TRANSFORMS[Options.CENTER];
+		FloatMatrix matrix = stats.getMatrix(centerLabel);
+
+		ImagePlus labels = null, templLabels = null;
+
+		// rigid registration for each label
+		int count = stats.materials.length;
+		// index 0 is 'exterior'
+		for (int i = 1; i < count; i++) {
+			ImageMetaData.Material m = stats.materials[i];
+			// check if labelfield is empty:
+			if(m.count == 0)
 				continue;
-			Point3d center = new Point3d(m1.centerX,
-					m1.centerY, m1.centerZ);
-			templCenters.add(center);
-			center = new Point3d(m2.centerX,
-					m2.centerY, m2.centerZ);
-			centers.add(center);
+
+			String initialTransform = matrix.toStringForAmira();
+			int level = 4;
+			int stoplevel = 2;
+			double tolerance = 4.0;
+			String materialBBox = "";
+			boolean noOptimization = false;
+			int nInitialPositions = 1;
+			boolean showTransformed = false;
+			boolean showDifferenceImage = false;
+			boolean fastButInaccurate = false;
+			if (labels == null)
+				labels = state.getImage(labelPath);
+			if (templLabels == null)
+				templLabels = state.getTemplateLabels();
+			TransformedImage trans = new TransformedImage(
+					templLabels, labels);
+			// TODO: be more graceful about different orders
+			trans.measure = new TwoValues(i, i);
+			RigidRegistration_ rr = new RigidRegistration_();
+
+			console.append("...rigidRegistration");
+			FastMatrix matrix2 = rr.rigidRegistration(trans,
+					materialBBox, initialTransform,
+					i, i, noOptimization,
+					level, stoplevel, tolerance,
+					nInitialPositions, showTransformed, 
+					showDifferenceImage,
+					fastButInaccurate);
+			String forAmira = matrix2.toStringForAmira();
+			FloatMatrix floatMatrix =
+				FloatMatrix.parseMatrix(forAmira);
+			String label = state.getTransformLabel() + m.name;
+			stats.setMatrix(label, floatMatrix);
 		}
-		if (centers.size() == 0)
-			return;
-		Point3d[] c1 = new Point3d[centers.size()];
-		Point3d[] c2 = new Point3d[centers.size()];
-		for (int i = 0; i < c1.length; i++) {
-			c1[i] = (Point3d)templCenters.get(i);
-			c2[i] = (Point3d)centers.get(i);
-		}
-		FloatMatrix matrix = FloatMatrix.bestRigid(c1, c2);
-		stats.setMatrix(state.getTransformLabel(), matrix);
-		stats.saveTo(statisticsPath);
 	}
 }
