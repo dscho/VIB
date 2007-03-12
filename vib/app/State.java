@@ -18,11 +18,23 @@ public class State {
 	public State(Options options) {
 		this.options = options;
 
+		imagesPath = options.workingDirectory + "/images";
 		labelPath = options.workingDirectory + "/labels";
-		resampledPath = options.workingDirectory + "/resampled";
+		mkdir(labelPath);
+		if (options.resamplingFactor > 1) {
+			resampledPath = options.workingDirectory +
+				"/resampled";
+			mkdir(resampledPath);
+		}
 		warpedPath = options.workingDirectory + "/warped";
-		warpedLabelsPath = options.workingDirectory + "/warped-labels";
+		warpedLabelsPath = options.workingDirectory + "/warped_labels";
 		statisticsPath = options.workingDirectory + "/statistics";
+		mkdir(statisticsPath);
+		for (int c = -1; c < options.numChannels; c++) {
+			mkdir(warpedPath + "_" + getChannelName(c));
+			if (c >= 0 && options.numChannels > 1)
+				mkdir(imagesPath + "_" + getChannelName(c));
+		}
 
 		int imageCount = options.fileGroup.size();
 
@@ -38,6 +50,7 @@ public class State {
 	}
 
 	private String[][] channels;
+	private String imagesPath;
 	private String labelPath;
 	private String resampledPath;
 	private String warpedPath;
@@ -185,5 +198,9 @@ public class State {
                         template = IJ.openImage(options.templatePath);
                 return template;
         }
+
+	private void mkdir(String path) {
+		new File(path).mkdir();
+	}
 }
 
