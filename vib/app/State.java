@@ -19,7 +19,7 @@ public class State {
 		this.options = options;
 
 		labelPath = options.workingDirectory + "/labels";
-		labelPath = options.workingDirectory + "/resampled";
+		resamplePath = options.workingDirectory + "/resampled";
 		warpedPath = options.workingDirectory + "/warped";
 		warpedLabelsPath = options.workingDirectory + "/warped-labels";
 		statisticsPath = options.workingDirectory + "/statistics";
@@ -83,6 +83,8 @@ public class State {
 	}
 
 	public String getResampledPath(int channel, int index) {
+		if (options.resamplingFactor == 1)
+			return getImagePath(channel, index);
 		return resampledPath + "_" + getChannelName(channel) + "/" +
 			getBaseName(index) + ".tif";
 	}
