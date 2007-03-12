@@ -19,7 +19,7 @@ public class State {
 		this.options = options;
 
 		labelPath = options.workingDirectory + "/labels";
-		resamplePath = options.workingDirectory + "/resampled";
+		resampledPath = options.workingDirectory + "/resampled";
 		warpedPath = options.workingDirectory + "/warped";
 		warpedLabelsPath = options.workingDirectory + "/warped-labels";
 		statisticsPath = options.workingDirectory + "/statistics";
