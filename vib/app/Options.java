@@ -32,12 +32,12 @@ public class Options {
 		"SLabelTransformation"
 	};
 	
-	String workingDirectory;
-	FileGroup fileGroup;
-	String templatePath;
-	int numChannels = 2;
-	int refChannel = 2;
-	int resamplingFactor = 1;
+	public String workingDirectory;
+	public FileGroup fileGroup;
+	public String templatePath;
+	public int numChannels = 2;
+	public int refChannel = 2;
+	public int resamplingFactor = 1;
 	public int transformationMethod = LABEL_DIFFUSION;
 
 	// Constructors
