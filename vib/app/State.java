@@ -162,6 +162,8 @@ public class State {
 	}
 
 	public boolean save(ImagePlus image, String path) {
+		currentImagePath = path;
+		currentImage = image;
 		FileSaver fs = new FileSaver(image);
 		return fs.saveAsTiffStack(path);
 	}
