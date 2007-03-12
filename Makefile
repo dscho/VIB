@@ -31,6 +31,8 @@ Affine_FromMarkers.class: Affine_FromMarkers.java Name_Points.class PCA_Registra
 vib/FloatMatrix.java: vib/FastMatrix.java math3d/FloatMatrixN.class
 	sed -e "s/double/float/g" -e "s/FastMatrix/FloatMatrix/g" -e "s/JacobiDouble/JacobiFloat/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
 
+vib/FastMatrix.class: vib/FloatMatrix.class
+
 math3d/FloatMatrixN.java: math3d/FastMatrixN.java
 	sed -e "s/double/float/g" -e "s/FastMatrixN/FloatMatrixN/g" -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" < $< > $@
 

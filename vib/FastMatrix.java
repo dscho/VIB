@@ -14,7 +14,7 @@ import math3d.FastMatrixN;
 public class FastMatrix {
 	public double x, y, z;
 	
-	private double a00, a01, a02, a03,
+	double a00, a01, a02, a03,
 		a10, a11, a12, a13,
 		a20, a21, a22, a23;
 	
@@ -58,7 +58,24 @@ public class FastMatrix {
 		a22 = f.a22;
 		a23 = f.a23;
 	}
-	
+
+	public FastMatrix copyFrom(FloatMatrix f) {
+		x = y = z = 0;
+		a00 = f.a00;
+		a01 = f.a01;
+		a02 = f.a02;
+		a03 = f.a03;
+		a10 = f.a10;
+		a11 = f.a11;
+		a12 = f.a12;
+		a13 = f.a13;
+		a20 = f.a20;
+		a21 = f.a21;
+		a22 = f.a22;
+		a23 = f.a23;
+		return this;
+	}
+
 	public boolean isJustTranslation() {
 		
 		FastMatrix toTest = new FastMatrix(this);
