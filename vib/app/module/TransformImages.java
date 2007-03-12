@@ -10,7 +10,7 @@ public class TransformImages extends Module {
 		Module module = null;
 		switch (state.options.transformationMethod) {
 		case Options.CENTER:
-			module = new LabelCenterTransformation();
+			module = new CenterTransformation();
 			break;
 		case Options.LABEL_DIFFUSION:
 			module = new LabelDiffusionTransformation();
