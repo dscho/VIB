@@ -1,74 +1,52 @@
 package vib.app.module;
 
-import java.io.File;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-import vib.app.VIBImage;
 import vib.app.Options;
+import vib.app.State;
 
 import vib.segment.CustomStackWindow;
 
-import ij.IJ;
 import ij.ImagePlus;
-import ij.io.FileSaver;
 
 public class Label extends Module {
+	protected final String name = "Label";
+	protected final String message = "Labelling";
 
-	public Label(VIBImage imp, Options options) {
-		super(imp, options, false);
-		dependingOn.add(Load.class);
-	}
+	protected static void run(State state, int index) {
+		SplitChannels.runOnOneImage(state, index);
 
-	public String getName() {
-		return "Labelling";
-	}
+		int refChannel = state.options.refChannel - 1;
+		String imagePath = state.getImagePath(refChannel, index);
+		String labelPath = state.getImagePath(-1, index);
+		if (state.upToDate(imagePath, labelPath))
+			return;
 
-	public int checkResults() {
-		// check availability of results
-		File ref = new File(image.referencePath);
-		File labels = new File(image.labelsPath);
-		if(!labels.exists()) {
-			return RESULTS_UNAVAILABLE;
-		}
-		
-		// available, check uptodate
-		if(labels.lastModified() != 0L && 
-				labels.lastModified() > ref.lastModified()) {
-			return RESULTS_OK;
-		}
-		// available, but out of date
-		return RESULTS_OUT_OF_DATE;
-	}
+		ImagePlus image = state.getImage(imagePath);
 
-	protected void runThisModule() {
-		ActionListener a = new ActionListener(){
+		ActionListener a = new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(e.getActionCommand().equals("Ok")) {
-					synchronized(Label.this) {
-						Label.this.notifyAll();
+					synchronized (this) {
+						notifyAll();
 					}
 				}
 			}
 		};
+
 		
-		CustomStackWindow csw = 
-			new CustomStackWindow(image.getReferenceChannel());
+		CustomStackWindow csw = new CustomStackWindow(image);
 		csw.addActionListener(a);
-		synchronized(this) {
+		synchronized (a) {
 			try {
-				this.wait();
+				a.wait();
 			} catch(InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 		ImagePlus labels = csw.getLabels();
 		csw.cleanUp();
-		image.setLabels(labels);
-		console.append("...saving labels");
-		if(!image.saveLabels())
-			console.append("Could not write labels");
-		image.releaseReferenceChannel();
-		image.releaseLabels();
+		state.save(labels, labelPath);
 	}
 }
