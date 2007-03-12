@@ -15,17 +15,17 @@ import ij.IJ;
 public class Options {
 	public final String CONFIG_FILE = "options.config";
 
-	public final int GREY = 0;
-	public final int LABEL_SURFACE = 1;
-	public final int CENTER = 2;
-	public final int LABEL_DIFFUSION = 3;
-	public final String[] TRANSFORMS = {
+	public final static int GREY = 0;
+	public final static int LABEL_SURFACE = 1;
+	public final static int CENTER = 2;
+	public final static int LABEL_DIFFUSION = 3;
+	public final static String[] TRANSFORMS = {
 		"VIBgreyTransformation",
 		"VIBlabelSurfaceTransformation",
 		"VIBcenterTransformation",
 		"VIBlabelDiffusionTransformation"
 	};
-	public final String[] TRANSFORM_LABELS = {
+	public final static String[] TRANSFORM_LABELS = {
 		"RegistrationTransformation",
 		"LabelSurfaceTransformation",
 		"SCenterTransformation",
@@ -38,7 +38,7 @@ public class Options {
 	int numChannels = 2;
 	int refChannel = 2;
 	int resamplingFactor = 1;
-	int transformationMethod = LABEL_DIFFUSION;
+	public int transformationMethod = LABEL_DIFFUSION;
 
 	// Constructors
 	public Options() {
