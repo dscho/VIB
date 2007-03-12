@@ -2,8 +2,6 @@ package vib.app.module;
 
 import ij.ImagePlus;
 
-import vib.app.State;
-
 import vib.Resample_;
 
 public class ResampleLabels extends Module {

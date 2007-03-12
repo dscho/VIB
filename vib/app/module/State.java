@@ -1,10 +1,13 @@
-package vib.app;
+package vib.app.module;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileSaver;
 
 import java.io.File;
+
+import vib.app.ImageMetaData;
+import vib.app.Options;
 
 import vib.FloatMatrix;
 

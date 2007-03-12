@@ -6,10 +6,9 @@ import java.util.ArrayList;
 
 import math3d.Point3d;
 
-import vib.app.State;
 import vib.app.ImageMetaData;
 
-import vib.FastMatrix;
+import vib.FloatMatrix;
 
 public class LabelCenterTransformation extends Module {
 	public final String name = "LabelCenterTransformation";
@@ -53,7 +52,7 @@ public class LabelCenterTransformation extends Module {
 			c1[i] = (Point3d)templCenters.get(i);
 			c2[i] = (Point3d)centers.get(i);
 		}
-		FastMatrix matrix = FastMatrix.bestRigid(c1, c2);
+		FloatMatrix matrix = FloatMatrix.bestRigid(c1, c2);
 		stats.setMatrix(state.getTransformLabel(), matrix);
 		stats.saveTo(statisticsPath);
 	}

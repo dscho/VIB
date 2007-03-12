@@ -6,8 +6,6 @@ import java.io.File;
 
 import leica.Leica_SP_Reader;
 
-import vib.app.State;
-
 public class SplitChannels extends Module {
 	protected final String name = "SplitChannels";
 	protected final String message = "Splitting channels";

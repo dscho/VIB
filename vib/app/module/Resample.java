@@ -3,7 +3,6 @@ package vib.app.module;
 import ij.ImagePlus;
 
 import vib.app.Options;
-import vib.app.State;
 
 import vib.Resample_;
 

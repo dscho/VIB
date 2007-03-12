@@ -5,8 +5,6 @@ import amira.AmiraTableEncoder;
 
 import ij.ImagePlus;
 
-import vib.app.State;
-
 import vib.TissueStatistics_;
 
 public class TissueStatistics extends Module {

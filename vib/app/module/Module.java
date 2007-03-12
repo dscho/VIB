@@ -1,7 +1,6 @@
 package vib.app.module;
 
 import vib.app.gui.Console;
-import vib.app.State;
 
 public class Module {
 	protected static Console console;

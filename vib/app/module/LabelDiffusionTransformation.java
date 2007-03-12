@@ -4,7 +4,6 @@ import ij.ImagePlus;
 
 import vib.app.ImageMetaData;
 import vib.app.Options;
-import vib.app.State;
 
 import vib.DiffusionInterpol2_;
 import vib.FloatMatrix;

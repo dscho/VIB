@@ -4,7 +4,6 @@ import ij.ImagePlus;
 
 import java.io.File;
 
-import vib.app.State;
 import vib.AverageBrain_;
 import vib.FastMatrix;
 import vib.InterpolatedImage;

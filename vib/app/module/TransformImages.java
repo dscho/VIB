@@ -1,7 +1,6 @@
 package vib.app.module;
 
 import vib.app.Options;
-import vib.app.State;
 
 public class TransformImages extends Module {
 	protected final String name = "TransformImages";

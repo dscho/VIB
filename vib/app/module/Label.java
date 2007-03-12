@@ -4,7 +4,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
 import vib.app.Options;
-import vib.app.State;
 
 import vib.segment.CustomStackWindow;
 
