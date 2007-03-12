@@ -16,6 +16,7 @@ public class AverageBrain extends Module {
 		if (index != 0)
 			return;
 		TransformImages.runOnAllImages(state);
+		Resample.runOnAllImages(state);
 
 		new AverageBrain().doit(state);
 	}
