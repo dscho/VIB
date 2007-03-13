@@ -24,20 +24,22 @@ public class State {
 		imagesPath = options.workingDirectory + "/images";
 		labelPath = options.workingDirectory + "/labels";
 		mkdir(labelPath);
-		if (options.resamplingFactor > 1) {
+		if (options.resamplingFactor > 1)
 			resampledPath = options.workingDirectory +
 				"/resampled";
-			mkdir(resampledPath);
-		}
+		else
+			resampledPath = null;
 		if (options.transformationMethod == Options.LABEL_DIFFUSION)
 			warpedPath = options.workingDirectory + "/warped";
 		statisticsPath = options.workingDirectory + "/statistics";
 		mkdir(statisticsPath);
 		for (int c = -1; c < options.numChannels; c++) {
 			if (warpedPath != null)
-				mkdir(warpedPath + "_" + getChannelName(c));
+				mkdir(warpedPath + getChannelName(c));
 			if (c >= 0 && options.numChannels > 1)
-				mkdir(imagesPath + "_" + getChannelName(c));
+				mkdir(imagesPath + getChannelName(c));
+			if (c >= 0 && resampledPath != null)
+				mkdir(resampledPath + getChannelName(c));
 		}
 
 		int imageCount = options.fileGroup.size();
@@ -83,8 +85,9 @@ public class State {
 		return fileName;
 	}
 
-	public static String getChannelName(int channel) {
-		return channel < 0 ? "labels" : "" + (channel + 1);
+	public String getChannelName(int channel) {
+		return channel < 0 ? "labels" :
+			options.numChannels < 2 ? "" : "_" + (channel + 1);
 	}
 
 	public String getImagePath(int channel, int index) {
@@ -101,7 +104,7 @@ public class State {
 	public String getResampledPath(int channel, int index) {
 		if (options.resamplingFactor == 1)
 			return getImagePath(channel, index);
-		return resampledPath + "_" + getChannelName(channel) + "/" +
+		return resampledPath + getChannelName(channel) + "/" +
 			getBaseName(index) + ".tif";
 	}
 
@@ -113,12 +116,12 @@ public class State {
 	public String getWarpedPath(int channel, int index) {
 		if (warpedPath == null)
 			return getResampledPath(channel, index);
-		return warpedPath + "_" + getChannelName(channel) + "/"
+		return warpedPath + getChannelName(channel) + "/"
 			+ getBaseName(index) + ".warped";
 	}
 
 	public String getWarpedPath(int channel) {
-		return warpedPath + "_" + getChannelName(channel) + "/"
+		return warpedPath + getChannelName(channel) + "/"
 			+ getTemplateBaseName() + ".warped";
 	}
 
