@@ -71,6 +71,7 @@ public class ImageMetaData {
 			table = decoder.getTable();
 		else
 			return;
+		table.hide();
 		TextPanel panel = table.getTextPanel();
 		materials = new Material[panel.getLineCount()];
 		for (int i = 0; i < materials.length; i++) {
