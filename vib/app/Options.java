@@ -151,10 +151,11 @@ public class Options {
 		numChannels = getInt(p, "numChannels", 2);
 		refChannel = getInt(p, "refChannel", 2);
 		String t = p.getProperty("transformationMethod");
-		transformationMethod = LABEL_DIFFUSION;
-		for (int i = 0; i < TRANSFORMS.length; i++)
-			if (TRANSFORMS[i].equals(t))
-				transformationMethod = i;
+		try {
+			setTransformationMethod(t);
+		} catch (Exception e) {
+			transformationMethod = LABEL_DIFFUSION;
+		}
 		resamplingFactor = getInt(p, "resamplingFactor", 1);
 		if(!fileGroup.fromCSV(p.getProperty("fileGroup", "")))
 			IJ.showMessage("Not all files specified in the "
