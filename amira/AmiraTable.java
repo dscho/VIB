@@ -4,6 +4,7 @@ import ij.macro.Interpreter;
 import ij.text.TextPanel;
 import ij.text.TextWindow;
 import java.text.DecimalFormat;
+import java.util.Hashtable;
 import java.util.Properties;
 
 public class AmiraTable extends TextWindow {
@@ -44,12 +45,22 @@ public class AmiraTable extends TextWindow {
 		return properties;
 	}
 
+	public Hashtable getParameters() {
+		return (Hashtable)properties.get("Parameters");
+	}
+
 	public String get(String key) {
-		return (String)properties.get(key);
+		Hashtable p = getParameters();
+		if (p == null)
+			return null;
+		return (String)p.get(key);
 	}
 
 	public void put(String key, String value) {
-		properties.put(key, value);
+		Hashtable p = getParameters();
+		if (p == null)
+			return;
+		p.put(key, value);
 	}
 
 	public void show() {

@@ -10,7 +10,7 @@ import ij.text.TextPanel;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.Properties;
+import java.util.Hashtable;
 
 import vib.FloatMatrix;
 
@@ -86,7 +86,7 @@ public class ImageMetaData {
 			materials[i].centerZ = Double.parseDouble(values[6]);
 		}
 
-		Properties props = table.getProperties();
+		Hashtable props = table.getParameters();
 		ArrayList transforms = new ArrayList();
 		Enumeration keys = props.keys();
 		while (keys.hasMoreElements()) {
@@ -117,7 +117,7 @@ public class ImageMetaData {
 		}
 		AmiraTable table = new AmiraTable("Statistics for " + path,
 			AMIRA_HEADINGS, data, true);
-		Properties p = table.getProperties();
+		Hashtable p = table.getParameters();
 		for (int i = 0; i < transformations.length; i++) {
 			Transformation t = transformations[i];
 			p.put(t.name, t.matrix.toStringForAmira());
