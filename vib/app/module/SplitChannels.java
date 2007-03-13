@@ -17,6 +17,15 @@ public class SplitChannels extends Module {
 
 		File file = (File)state.options.fileGroup.get(index);
 		String path = file.getAbsolutePath();
+
+		boolean upToDate = true;
+		for (int i = 0; i < numChannels; i++)
+			if (!state.upToDate(path,
+						state.getImagePath(i, index)))
+				upToDate = false;
+		if (upToDate)
+			return;
+
 		Leica_SP_Reader reader = new Leica_SP_Reader();
 		reader.run(path);
 		if(reader.getNumberOfChannels() < numChannels) {
