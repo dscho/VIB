@@ -23,7 +23,7 @@ public class Leica_SP_Writer implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus image) {
 		this.image = image;
-		return DOES_8C | NO_CHANGES;
+		return DOES_8C | DOES_8G | NO_CHANGES;
 	}
 
 	public void run(ImageProcessor ip) {
@@ -43,9 +43,11 @@ public class Leica_SP_Writer implements PlugInFilter {
 		for (int i = 0; i < imageCount; i++) {
 			ImagePlus image2 = WindowManager.getImage(i + 1);
 			if (image2 == image) {
-				if (i > 0)
+				if (i > 0) {
 					images.add(images.get(0));
-				images.set(0, image2);
+					images.set(0, image2);
+				} else
+					images.add(image2);
 				continue;
 			}
 			ImageStack stack2 = image2.getStack();
@@ -106,6 +108,9 @@ public class Leica_SP_Writer implements PlugInFilter {
 		fi.description = "[GLOBAL]\n" +
 			"[FILTERSETTING1]\n" +
 			"NumOfVisualisations=" + channels + "\n" +
+			"VoxelSizeX=" + cal.pixelWidth + "\n" +
+			"VoxelSizeY=" + cal.pixelHeight + "\n" +
+			"VoxelSizeZ=" + cal.pixelDepth + "\n" +
 			(fi.description == null ? "" : fi.description);
                 Object info = image.getProperty("Info");
                 if (info!=null && (info instanceof String))
