@@ -38,7 +38,7 @@ public class State {
 				mkdir(warpedPath + getChannelName(c));
 			if (c >= 0 && options.numChannels > 1)
 				mkdir(imagesPath + getChannelName(c));
-			if (c >= 0 && resampledPath != null)
+			if (resampledPath != null)
 				mkdir(resampledPath + getChannelName(c));
 		}
 
@@ -86,7 +86,7 @@ public class State {
 	}
 
 	public String getChannelName(int channel) {
-		return channel < 0 ? "labels" :
+		return channel < 0 ? "_labels" :
 			options.numChannels < 2 ? "" : "_" + (channel + 1);
 	}
 
