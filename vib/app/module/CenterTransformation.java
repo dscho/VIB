@@ -12,8 +12,8 @@ import vib.app.Options;
 import vib.FloatMatrix;
 
 public class CenterTransformation extends Module {
-	protected String name = "CenterTransformation";
-	protected String message = "Calculating center transformation";
+	protected String getName() { return "CenterTransformation"; }
+	protected String getMessage() { return "Calculating center transformation"; }
 
 	protected void run(State state, int index) {
 		// make sure that the template gets statistics, too

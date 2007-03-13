@@ -8,8 +8,8 @@ import ij.ImagePlus;
 import vib.TissueStatistics_;
 
 public class TissueStatistics extends Module {
-	protected String name = "TissueStatistics";
-	protected String message = "Calculating tissue statistics";
+	protected String getName() { return "TissueStatistics"; }
+	protected String getMessage() { return "Calculating tissue statistics"; }
 
 	protected void run(State state, int index) {
 		new ResampleLabels().runOnOneImage(state, index);

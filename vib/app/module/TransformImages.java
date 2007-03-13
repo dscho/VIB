@@ -3,8 +3,8 @@ package vib.app.module;
 import vib.app.Options;
 
 public class TransformImages extends Module {
-	protected String name = "TransformImages";
-	protected String message = "Transforming images";
+	protected String getName() { return "TransformImages"; }
+	protected String getMessage() { return "Transforming images"; }
 
 	protected void run(State state, int index) {
 		Module module = null;
