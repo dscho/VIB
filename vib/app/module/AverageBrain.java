@@ -28,7 +28,7 @@ public class AverageBrain extends Module {
 		scratch = null;
 		for (int i = -1; i < state.options.numChannels; i++) {
 			/* calculate AverageBrain */
-			String outputPath = state.getWarpedPath(i);
+			String outputPath = state.getOutputPath(i);
 			doit(state, getCompleteChannel(state, i), outputPath);
 		}
 	}

@@ -31,6 +31,7 @@ public class State {
 			resampledPath = null;
 		if (options.transformationMethod == Options.LABEL_DIFFUSION)
 			warpedPath = options.workingDirectory + "/warped";
+		outputPath = options.workingDirectory + "/output";
 		statisticsPath = options.workingDirectory + "/statistics";
 		mkdir(statisticsPath);
 		for (int c = -1; c < options.numChannels; c++) {
@@ -40,6 +41,7 @@ public class State {
 				mkdir(imagesPath + getChannelName(c));
 			if (resampledPath != null)
 				mkdir(resampledPath + getChannelName(c));
+			mkdir(outputPath + getChannelName(c));
 		}
 
 		int imageCount = options.fileGroup.size();
@@ -60,6 +62,7 @@ public class State {
 	private String labelPath;
 	private String resampledPath;
 	private String warpedPath;
+	private String outputPath;
 	private String statisticsPath;
         private String currentImagePath;
         private ImagePlus currentImage;
@@ -123,9 +126,9 @@ public class State {
 			+ getBaseName(index) + ".warped";
 	}
 
-	public String getWarpedPath(int channel) {
-		return warpedPath + getChannelName(channel) + "/"
-			+ getTemplateBaseName() + ".warped";
+	public String getOutputPath(int channel) {
+		return outputPath + getChannelName(channel) + "/"
+			+ getTemplateBaseName() + ".tif";
 	}
 
 	public String getStatisticsPath() {
