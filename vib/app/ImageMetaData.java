@@ -76,12 +76,12 @@ public class ImageMetaData {
 		for (int i = 0; i < materials.length; i++) {
 			String[] values = split(panel.getLine(i));
 			materials[i] = new Material();
-			materials[i].name = values[0];
-			materials[i].count = Integer.parseInt(values[1]);
-			materials[i].volume = Double.parseDouble(values[2]);
-			materials[i].centerX = Double.parseDouble(values[3]);
-			materials[i].centerY = Double.parseDouble(values[4]);
-			materials[i].centerZ = Double.parseDouble(values[5]);
+			materials[i].name = values[1];
+			materials[i].count = Integer.parseInt(values[2]);
+			materials[i].volume = Double.parseDouble(values[3]);
+			materials[i].centerX = Double.parseDouble(values[4]);
+			materials[i].centerY = Double.parseDouble(values[5]);
+			materials[i].centerZ = Double.parseDouble(values[6]);
 		}
 
 		Properties props = table.getProperties();
@@ -113,8 +113,7 @@ public class ImageMetaData {
 			int lastTab = tab;
 			tab = line.indexOf('\t', tab + 1);
 			if (tab >= 0)
-				list.add(line.substring(lastTab + 1,
-						tab - lastTab - 1));
+				list.add(line.substring(lastTab + 1, tab));
 			else
 				list.add(line.substring(lastTab + 1));
 		} while (tab >= 0);
