@@ -23,6 +23,7 @@ public class Label extends Module {
 			return;
 
 		ImagePlus image = state.getImage(imagePath);
+		ImagePlus labels = state.getImage(labelPath);
 
 		ActionListener a = new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -36,6 +37,7 @@ public class Label extends Module {
 
 		
 		CustomStackWindow csw = new CustomStackWindow(image);
+		csw.setLabels(labels);
 		csw.addActionListener(a);
 		synchronized (a) {
 			try {
@@ -44,7 +46,7 @@ public class Label extends Module {
 				e.printStackTrace();
 			}
 		}
-		ImagePlus labels = csw.getLabels();
+		labels = csw.getLabels();
 		csw.cleanUp();
 		state.save(labels, labelPath);
 	}

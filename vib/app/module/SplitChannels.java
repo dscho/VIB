@@ -21,7 +21,8 @@ public class SplitChannels extends Module {
 		reader.run(path);
 		if(reader.getNumberOfChannels() < numChannels) {
 			console.append("File " + path + " does not contain " +
-					numChannels + "channels");
+					numChannels + " channels, but " +
+					reader.getNumberOfChannels());
 			throw new RuntimeException();
 		}
 		// save reference channel last, to avoid unnecessary loading

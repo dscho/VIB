@@ -84,6 +84,10 @@ public class CustomStackWindow extends StackWindow
 		return cc.getLabels();
 	}
 
+	public void setLabels(ImagePlus labels) {
+		sidebar.setLabelImage(labels);
+	}
+
 	public void addActionListener(ActionListener al) {
 		this.al = al;
 	}
