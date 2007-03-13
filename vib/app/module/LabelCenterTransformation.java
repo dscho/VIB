@@ -23,10 +23,12 @@ public class LabelCenterTransformation extends Module {
 
 		String labelPath = state.getResampledPath(-1, index);
 		String statisticsPath = state.getStatisticsPath(index);
-		if (state.upToDate(labelPath, statisticsPath))
-			return;
+		ImageMetaData stats = new ImageMetaData(statisticsPath);
+		boolean needsUpDate =
+			!state.upToDate(labelPath, statisticsPath);
+		String transformLabel = state.getTemplateBaseName() +
+			Options.TRANSFORMS[Options.LABEL_DIFFUSION];
 
-		ImageMetaData stats = state.getStatistics(index);
 		String centerLabel = state.getTemplateBaseName() +
 			Options.TRANSFORMS[Options.CENTER];
 		FloatMatrix matrix = stats.getMatrix(centerLabel);
@@ -39,7 +41,12 @@ public class LabelCenterTransformation extends Module {
 		for (int i = 1; i < count; i++) {
 			ImageMetaData.Material m = stats.materials[i];
 			// check if labelfield is empty:
-			if(m.count == 0)
+			if (m.count == 0)
+				continue;
+			String matTransformLabel =
+				transformLabel + m.name;
+			if (!needsUpDate && stats.getMatrix(matTransformLabel)
+					!= null)
 				continue;
 
 			String initialTransform = matrix.toStringForAmira();
@@ -73,8 +80,8 @@ public class LabelCenterTransformation extends Module {
 			String forAmira = matrix2.toStringForAmira();
 			FloatMatrix floatMatrix =
 				FloatMatrix.parseMatrix(forAmira);
-			String label = state.getTransformLabel() + m.name;
-			stats.setMatrix(label, floatMatrix);
+			stats.setMatrix(matTransformLabel, floatMatrix);
+			stats.saveTo(statisticsPath);
 		}
 	}
 }
