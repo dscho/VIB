@@ -1,5 +1,8 @@
 package vib;
 
+import amira.AmiraParameters;
+import amira.AmiraTable;
+
 import ij.util.Tools;
 import ij.gui.GenericDialog;
 import ij.text.TextPanel;
