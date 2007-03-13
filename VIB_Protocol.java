@@ -6,6 +6,7 @@ import java.io.File;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.Macro;
 import ij.gui.GenericDialog;
 import ij.plugin.PlugIn;
 import ij.io.OpenDialog;
@@ -35,7 +36,6 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	
 	public void run(String arg) {
 		options = new Options();
-		System.out.println(System.getProperty("user.dir"));
 
 		gd = new GenericDialog("VIB Protocol");
 		fgd = new FileGroupDialog(options.fileGroup);
@@ -74,6 +74,11 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		TextField templateField =
 			(TextField)gd.getStringFields().get(TEMPL);
 		templateField.setEditable(false);
+
+		String workingDirectory = Macro.getValue(Macro.getOptions(),
+			"cwd", null);
+		if (workingDirectory != null)
+			loadFrom(workingDirectory);
 
 		gd.showDialog();
 		if(gd.wasCanceled())
