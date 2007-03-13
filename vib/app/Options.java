@@ -13,7 +13,7 @@ import java.util.Properties;
 import ij.IJ;
 
 public class Options {
-	public final String CONFIG_FILE = "options.config";
+	public final static String CONFIG_FILE = "options.config";
 
 	public final static int GREY = 0;
 	public final static int LABEL_SURFACE = 1;
