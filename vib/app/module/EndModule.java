@@ -7,8 +7,6 @@ public class EndModule extends Module {
 	protected static final String message = "Running the VIB protocol";
 
 	protected static void run(State state, int index) {
-		if (console == null)
-			console = Console.instance();
 		if (index != 0)
 			return;
 		AverageBrain.runOnAllImages(state);

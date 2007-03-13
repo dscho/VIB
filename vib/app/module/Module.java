@@ -12,6 +12,8 @@ public class Module {
 
 	// at a later stage, these functions will schedule multi-threaded jobs
 	public static void runOnOneImage(State state, int index) {
+		if (console == null)
+			console = Console.instance();
 		console.append(message + ": " + index + "/" +
 				state.getImageCount() + "\n");
 		run(state, index);
