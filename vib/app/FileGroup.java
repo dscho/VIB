@@ -32,6 +32,10 @@ public class FileGroup extends ArrayList<File> {
 		return -1;
 	}
 
+	public boolean add(String name) {
+		return add(new File(name));
+	}
+
 	public void debug() {
 		System.out.println("" + this);
 	}
