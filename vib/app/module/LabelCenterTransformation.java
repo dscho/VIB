@@ -63,6 +63,12 @@ public class LabelCenterTransformation extends Module {
 				labels = state.getImage(labelPath);
 			if (templLabels == null)
 				templLabels = state.getTemplateLabels();
+
+			while (level > 0 &&
+					(templLabels.getWidth() >> level) < 32)
+				level--;
+			if (stoplevel > level)
+				stoplevel = level;
 			TransformedImage trans = new TransformedImage(
 					templLabels, labels);
 			// TODO: be more graceful about different orders
