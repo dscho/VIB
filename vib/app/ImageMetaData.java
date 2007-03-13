@@ -91,12 +91,13 @@ public class ImageMetaData {
 		Enumeration keys = props.keys();
 		while (keys.hasMoreElements()) {
 			String key = (String)keys.nextElement();
-			if (!key.endsWith("Transformation"))
+			if (key.indexOf("Transformation") < 0)
 				continue;
 			Transformation t = new Transformation();
 			t.name = key;
 			String matrix = (String)props.get(key);
 			t.matrix = FloatMatrix.parseMatrix(matrix);
+			transforms.add(t);
 		}
 
 		transformations = new Transformation[transforms.size()];
