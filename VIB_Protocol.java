@@ -43,6 +43,20 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		templateButton.addActionListener(this);
 		
 		gd.addPanel(fgd);
+
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = c.gridy = 1;
+		c.fill = GridBagConstraints.NONE;
+		c.weightx = c.weighty = 0.0;
+		load = new Button("Select working directory");
+		load.addActionListener(this);
+		// work around not being able to access gd.y
+		Panel panel = new Panel();
+		gd.addPanel(panel);
+		gd.remove(panel);
+		gd.add(load, c);
+
+
 		gd.addStringField("Working directory","", 25);
 		gd.addStringField("Template", "", 25);
 		gd.addNumericField("No of channels", 2, 0);
@@ -52,25 +66,22 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		final TextField wdtf = (TextField)gd.getStringFields().get(WD);
 		wdtf.addFocusListener(new FocusAdapter() {
 			public void focusLost(FocusEvent e) {
-				File f = new File(wdtf.getText() + 
-							File.separator + "options.config");
-				if(f.exists()) {
-					options.loadFrom(f.getAbsolutePath());
-					initTextFields();
-				}
+				loadFrom(wdtf.getText());
 			}
 		});
 
 		// make the template textfield ineditable
-		((TextField)gd.getStringFields().get(TEMPL)).setEditable(false);
+		TextField templateField =
+			(TextField)gd.getStringFields().get(TEMPL);
+		templateField.setEditable(false);
 
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
 
 		initOptions();
-		options.saveTo(options.workingDirectory
-					+ File.separator + "options.config");
+		options.saveTo(options.workingDirectory + File.separator
+				+ Options.CONFIG_FILE);
 
 		Console console = Console.instance();
 		final Frame f = new Frame();
@@ -84,6 +95,16 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		f.setVisible(true);
 		State state = new State(options);
 		EndModule.runOnAllImages(state);
+	}
+
+	public void loadFrom(String workingDirectory) {
+		setString(WD, workingDirectory);
+		File f = new File(workingDirectory + File.separator +
+				Options.CONFIG_FILE);
+		if(f.exists()) {
+			options.loadFrom(f.getAbsolutePath());
+			initTextFields();
+		}
 	}
 
 	public void initTextFields() {
@@ -100,7 +121,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 
 	public void initOptions() {
 		options.workingDirectory = getString(WD);
-		options.templatePath = template.getAbsolutePath();
+		options.templatePath = getString(TEMPL);
 		options.numChannels = getNumber(NO_CHANNEL);
 		options.refChannel = getNumber(REF_CHANNEL);
 		options.resamplingFactor = getNumber(RES_F);
@@ -148,6 +169,13 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 				template = selected;
 				setString(TEMPL, selected.getName());
 			}
+		} else if (e.getSource() == load) {
+			FileDialog dialog =
+				new FileDialog(gd, "Working Directory");
+			dialog.setVisible(true);
+			String dir = dialog.getDirectory();
+			if (dir != null)
+				loadFrom(dir);
 		}
 	}
 }
