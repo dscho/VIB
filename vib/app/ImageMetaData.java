@@ -4,6 +4,7 @@ package vib.app;
 
 import amira.AmiraTable;
 import amira.AmiraMeshDecoder;
+import amira.AmiraTableEncoder;
 
 import ij.text.TextPanel;
 
@@ -103,8 +104,26 @@ public class ImageMetaData {
 			transformations[i] = (Transformation)transforms.get(i);
 	}
 
-	public void saveTo(String path) {
-		// TODO!!!
+	private final static String AMIRA_HEADINGS = "Nr\tMaterial\tCount\t"
+		+ "Volume\tCenterX\tCenterY\tCenterZ";
+
+	public boolean saveTo(String path) {
+		String data = "";
+		for (int i = 0; i < materials.length; i++) {
+			Material m = materials[i];
+			data += "" + (i + 1) + "\t" + m.name + "\t" +
+				m.count + "\t" + m.volume + "\t" + m.centerX +
+				"\t" + m.centerY + "\t" + m.centerZ + "\n";
+		}
+		AmiraTable table = new AmiraTable("Statistics for " + path,
+			AMIRA_HEADINGS, data, true);
+		Properties p = table.getProperties();
+		for (int i = 0; i < transformations.length; i++) {
+			Transformation t = transformations[i];
+			p.put(t.name, t.matrix.toStringForAmira());
+		}
+		AmiraTableEncoder encoder = new AmiraTableEncoder(table);
+		return encoder.write(path);
 	}
 
 	private String[] split(String line) {
