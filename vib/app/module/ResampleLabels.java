@@ -12,6 +12,8 @@ public class ResampleLabels extends Module {
 		if (index < 0)
 			new Label().runOnAllImagesAndTemplate(state);
 
+		prereqsDone(state, index);
+
 		if (state.options.resamplingFactor == 1)
 			return;
 		String labelPath = state.getImagePath(-1, index);

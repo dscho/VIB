@@ -18,6 +18,8 @@ public class AverageBrain extends Module {
 		new TransformImages().runOnAllImages(state);
 		new Resample().runOnAllImages(state);
 
+		prereqsDone(state, index);
+
 		new AverageBrain().doit(state);
 	}
 

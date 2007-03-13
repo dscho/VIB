@@ -19,6 +19,8 @@ public class LabelCenterTransformation extends Module {
 	protected void run(State state, int index) {
 		new CenterTransformation().runOnOneImage(state, index);
 
+		prereqsDone(state, index);
+
 		String labelPath = state.getResampledPath(-1, index);
 		String statisticsPath = state.getStatisticsPath(index);
 		if (state.upToDate(labelPath, statisticsPath))

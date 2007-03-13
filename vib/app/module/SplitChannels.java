@@ -11,6 +11,8 @@ public class SplitChannels extends Module {
 	protected String getMessage() { return "Splitting channels"; }
 
 	protected void run(State state, int index) {
+		prereqsDone(state, index);
+
 		int numChannels = state.options.numChannels;
 		if (numChannels < 2 || index < 0)
 			return;

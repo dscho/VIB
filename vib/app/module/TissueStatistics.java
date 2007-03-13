@@ -14,6 +14,8 @@ public class TissueStatistics extends Module {
 	protected void run(State state, int index) {
 		new ResampleLabels().runOnOneImage(state, index);
 
+		prereqsDone(state, index);
+
 		String statisticsPath = state.getStatisticsPath(index);
 		String labelsPath = state.getImagePath(-1, index);
 		if (state.upToDate(labelsPath, statisticsPath))

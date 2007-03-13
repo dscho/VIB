@@ -9,6 +9,8 @@ public class EndModule extends Module {
 	protected void run(State state, int index) {
 		if (index != 0)
 			return;
+		prereqsDone(state, index);
+
 		new AverageBrain().runOnAllImages(state);
 	}
 }

@@ -14,8 +14,11 @@ public class Resample extends Module {
 		if (state.options.numChannels > 1)
 			new SplitChannels().runOnOneImage(state, index);
 
+		prereqsDone(state, index);
+
 		if (state.options.resamplingFactor == 1)
 			return;
+
 		for (int c = 0; c < state.options.numChannels; c++)
 			if (c != state.options.refChannel - 1)
 				run(state, c, index);

@@ -16,6 +16,8 @@ public class Label extends Module {
 	protected void run(State state, int index) {
 		new SplitChannels().runOnOneImage(state, index);
 
+		prereqsDone(state, index);
+
 		int refChannel = state.options.refChannel - 1;
 		String imagePath = state.getImagePath(refChannel, index);
 		String labelPath = state.getImagePath(-1, index);

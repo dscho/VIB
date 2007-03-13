@@ -20,6 +20,8 @@ public class CenterTransformation extends Module {
 		new TissueStatistics().runOnOneImage(state, -1);
 		new TissueStatistics().runOnOneImage(state, index);
 
+		prereqsDone(state, index);
+
 		String statisticsPath = state.getStatisticsPath(index);
 		String templStatisticsPath = state.getStatisticsPath(-1);
 		ImageMetaData stats = new ImageMetaData(statisticsPath);

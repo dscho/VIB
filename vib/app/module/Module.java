@@ -13,8 +13,6 @@ public abstract class Module {
 	public void runOnOneImage(State state, int index) {
 		if (console == null)
 			console = Console.instance();
-		console.append(getMessage() + ": " + index + "/" +
-				state.getImageCount() + "\n");
 		run(state, index);
 	}
 
@@ -26,5 +24,10 @@ public abstract class Module {
 	public void runOnAllImagesAndTemplate(State state) {
 		for (int i = -1; i < state.getImageCount(); i++)
 			runOnOneImage(state, i);
+	}
+
+	public void prereqsDone(State state, int index) {
+		console.append(getMessage() + ": " + (index + 1) + "/" +
+				state.getImageCount() + "\n");
 	}
 }
