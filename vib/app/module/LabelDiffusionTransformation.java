@@ -18,6 +18,7 @@ public class LabelDiffusionTransformation extends Module {
 	}
 
 	protected void run(State state, int index) {
+		new Resample().runOnOneImage(state, index);
 		new LabelCenterTransformation().runOnOneImage(state, index);
 
 		prereqsDone(state, index);
