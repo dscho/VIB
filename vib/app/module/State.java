@@ -98,7 +98,10 @@ public class State {
 		if (index < 0)
 			// template
 			return options.templatePath;
-		return channels[channel][index];
+		if (options.numChannels < 2)
+			return channels[channel][index];
+		return imagesPath + getChannelName(channel) + "/"
+			+ getBaseName(index) + ".tif";
 	}
 
 	public String getResampledPath(int channel, int index) {
@@ -197,6 +200,9 @@ public class State {
 	// caching the latest image
         public ImagePlus getImage(String path) {
                 if (!path.equals(currentImagePath)) {
+			File f = new File(path);
+			if (!f.exists())
+				return null;
 			// give the garbage collector a chance
 			currentImage = null;
 
