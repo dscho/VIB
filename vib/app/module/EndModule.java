@@ -12,5 +12,6 @@ public class EndModule extends Module {
 		prereqsDone(state, index);
 
 		new AverageBrain().runOnAllImages(state);
+		console.append("VIB protocol finished.");
 	}
 }
