@@ -24,3 +24,4 @@ VIB:
 	  (where you can remove files)
 	- VIB_Leica_Reader: fix negative voxelDepth (and revert all the other
 	  voodoo to work around that)
+	- fix handling of 1-channel template with 2-channel images
