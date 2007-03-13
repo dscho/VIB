@@ -12,14 +12,13 @@ import vib.app.Options;
 import vib.FloatMatrix;
 
 public class CenterTransformation extends Module {
-	public final static String name = "CenterTransformation";
-	public final static String message =
-		"Calculating center transformation";
+	protected String name = "CenterTransformation";
+	protected String message = "Calculating center transformation";
 
-	public static void run(State state, int index) {
+	protected void run(State state, int index) {
 		// make sure that the template gets statistics, too
-		TissueStatistics.runOnOneImage(state, -1);
-		TissueStatistics.runOnOneImage(state, index);
+		new TissueStatistics().runOnOneImage(state, -1);
+		new TissueStatistics().runOnOneImage(state, index);
 
 		String statisticsPath = state.getStatisticsPath(index);
 		String templStatisticsPath = state.getStatisticsPath(-1);

@@ -7,12 +7,12 @@ import vib.app.Options;
 import vib.Resample_;
 
 public class Resample extends Module {
-	protected final String name = "Resample";
-	protected final String message = "Resampling";
+	protected String name = "Resample";
+	protected String message = "Resampling";
 
-	public static void run(State state, int index) {
+	protected void run(State state, int index) {
 		if (state.options.numChannels > 1)
-			SplitChannels.runOnOneImage(state, index);
+			new SplitChannels().runOnOneImage(state, index);
 
 		if (state.options.resamplingFactor == 1)
 			return;
@@ -27,7 +27,7 @@ public class Resample extends Module {
 		run(state, state.options.refChannel - 1, index);
 	}
 
-	private static void run(State state, int channel, int index) {
+	private void run(State state, int channel, int index) {
 		String imagePath = state.getImagePath(channel, index);
 		String resampledPath = state.getResampledPath(channel, index);
 		if (state.upToDate(imagePath, resampledPath))

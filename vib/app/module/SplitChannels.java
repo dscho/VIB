@@ -7,10 +7,10 @@ import java.io.File;
 import leica.Leica_SP_Reader;
 
 public class SplitChannels extends Module {
-	protected final String name = "SplitChannels";
-	protected final String message = "Splitting channels";
+	protected String name = "SplitChannels";
+	protected String message = "Splitting channels";
 
-	public static void run(State state, int index) {
+	protected void run(State state, int index) {
 		int numChannels = state.options.numChannels;
 		if (numChannels < 2 || index < 0)
 			return;

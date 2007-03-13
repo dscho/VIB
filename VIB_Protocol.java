@@ -94,7 +94,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		f.setSize(200,200);
 		f.setVisible(true);
 		State state = new State(options);
-		EndModule.runOnAllImages(state);
+		new EndModule().runOnAllImages(state);
 	}
 
 	public void loadFrom(String workingDirectory) {

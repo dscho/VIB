@@ -12,12 +12,12 @@ import vib.RigidRegistration_;
 import vib.TransformedImage;
 
 public class LabelDiffusionTransformation extends Module {
-	protected final String name = "LabelDiffusionTransformation";
-	protected final String message =
+	protected String name = "LabelDiffusionTransformation";
+	protected String message =
 		"Calculating label diffusion transformation";
 
-	protected static void run(State state, int index) {
-		LabelCenterTransformation.runOnOneImage(state, index);
+	protected void run(State state, int index) {
+		new LabelCenterTransformation().runOnOneImage(state, index);
 
 		ImagePlus templateLabels = null;
 

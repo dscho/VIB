@@ -9,13 +9,14 @@ import vib.FastMatrix;
 import vib.InterpolatedImage;
 
 public class AverageBrain extends Module {
-	protected static String name = "AverageBrain";
+	protected String name = "AverageBrain";
+	protected String message = "Averaging brain";
 
-	public static void run(State state, int index) {
+	protected void run(State state, int index) {
 		if (index != 0)
 			return;
-		TransformImages.runOnAllImages(state);
-		Resample.runOnAllImages(state);
+		new TransformImages().runOnAllImages(state);
+		new Resample().runOnAllImages(state);
 
 		new AverageBrain().doit(state);
 	}

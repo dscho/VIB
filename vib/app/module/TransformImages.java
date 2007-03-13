@@ -3,10 +3,10 @@ package vib.app.module;
 import vib.app.Options;
 
 public class TransformImages extends Module {
-	protected final String name = "TransformImages";
-	protected final String message = "Transforming images";
+	protected String name = "TransformImages";
+	protected String message = "Transforming images";
 
-	public static void run(State state, int index) {
+	protected void run(State state, int index) {
 		Module module = null;
 		switch (state.options.transformationMethod) {
 		case Options.CENTER:

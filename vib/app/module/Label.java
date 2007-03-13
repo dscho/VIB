@@ -10,11 +10,11 @@ import vib.segment.CustomStackWindow;
 import ij.ImagePlus;
 
 public class Label extends Module {
-	protected final String name = "Label";
-	protected final String message = "Labelling";
+	protected String name = "Label";
+	protected String message = "Labelling";
 
-	protected static void run(State state, int index) {
-		SplitChannels.runOnOneImage(state, index);
+	protected void run(State state, int index) {
+		new SplitChannels().runOnOneImage(state, index);
 
 		int refChannel = state.options.refChannel - 1;
 		String imagePath = state.getImagePath(refChannel, index);
