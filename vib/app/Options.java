@@ -109,7 +109,6 @@ public class Options {
 
 	public void saveTo(String path) {
 		Properties p = new Properties();
-		p.setProperty("workingDirectory", workingDirectory);
 		p.setProperty("template", templatePath);
 		p.setProperty("numChannels", "" + numChannels);
 		p.setProperty("refChannel", "" + refChannel);
@@ -138,7 +137,10 @@ public class Options {
 	public void loadFrom(String path) {
 		Properties p = new Properties();
 		try {
-			p.load(new FileInputStream(path));
+			File file = new File(path);
+			p.load(new FileInputStream(file));
+			workingDirectory =
+				file.getParentFile().getAbsolutePath();
 		} catch (FileNotFoundException e) {
 			IJ.showMessage("Can't find file " + path);
 			return;
@@ -146,7 +148,6 @@ public class Options {
 			IJ.showMessage("Can't read from file " + path);
 			return;
 		}
-		workingDirectory = p.getProperty("workingDirectory", "");
 		templatePath = p.getProperty("template", "");
 		numChannels = getInt(p, "numChannels", 2);
 		refChannel = getInt(p, "refChannel", 2);
