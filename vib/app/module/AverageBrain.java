@@ -54,6 +54,10 @@ public class AverageBrain extends Module {
 		FastMatrix[] result = new FastMatrix[state.getImageCount()];
 		for (int i = 0; i < result.length; i++) {
 			result[i] = new FastMatrix();
+			/*
+			 * AverageBrain needs a FastMatrix, but
+			 * state.getTransformMatrix() returns a FloatMatrix...
+			 */
 			result[i].copyFrom(state.getTransformMatrix(i));
 		}
 		return result;
