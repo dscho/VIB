@@ -73,6 +73,7 @@ public class ImageMetaData {
 		else
 			return;
 		table.hide();
+		table.setVisible(false);
 		TextPanel panel = table.getTextPanel();
 		materials = new Material[panel.getLineCount()];
 		for (int i = 0; i < materials.length; i++) {
@@ -118,6 +119,8 @@ public class ImageMetaData {
 		}
 		AmiraTable table = new AmiraTable("Statistics for " + path,
 			AMIRA_HEADINGS, data, true);
+		table.hide();
+		table.setVisible(false);
 		Hashtable p = table.getParameters();
 		for (int i = 0; i < transformations.length; i++) {
 			Transformation t = transformations[i];

@@ -26,6 +26,5 @@ VIB:
 	  voodoo to work around that)
 	- fix handling of 1-channel template with 2-channel images
 	- Gaussian Blur before optimising
-	- hide statistics (teach AmiraMeshReader about batchmode)
 	- find out why label editor pops up
 	- make images gray scale before segeditor

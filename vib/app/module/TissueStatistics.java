@@ -25,6 +25,7 @@ public class TissueStatistics extends Module {
 		TissueStatistics_ t = new TissueStatistics_();
 		AmiraTable statistics = t.calculateStatistics(labelField);
 		statistics.hide();
+		statistics.setVisible(false);
 
 		// TODO: move away from AmiraTable
 		AmiraTableEncoder encoder = new AmiraTableEncoder(statistics);
