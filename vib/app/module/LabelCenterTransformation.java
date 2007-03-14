@@ -23,6 +23,7 @@ public class LabelCenterTransformation extends Module {
 
 		String labelPath = state.getResampledPath(-1, index);
 		String statisticsPath = state.getStatisticsPath(index);
+		ImageMetaData templStats = state.getStatistics(-1);
 		ImageMetaData stats = new ImageMetaData(statisticsPath);
 		boolean needsUpDate =
 			!state.upToDate(labelPath, statisticsPath);
@@ -41,6 +42,9 @@ public class LabelCenterTransformation extends Module {
 			ImageMetaData.Material m = stats.materials[i];
 			// check if labelfield is empty:
 			if (m.count == 0)
+				continue;
+			int iTempl = templStats.getMaterialIndex(m.name);
+			if (iTempl < 0)
 				continue;
 			String matTransformLabel =
 				transformLabel + m.name;
@@ -70,14 +74,13 @@ public class LabelCenterTransformation extends Module {
 				stoplevel = level;
 			TransformedImage trans = new TransformedImage(
 					templLabels, labels);
-			// TODO: be more graceful about different orders
-			trans.measure = new TwoValues(i, i);
+			trans.measure = new TwoValues(iTempl, i);
 			RigidRegistration_ rr = new RigidRegistration_();
 
 			console.append("...rigidRegistration");
 			FastMatrix matrix2 = rr.rigidRegistration(trans,
 					materialBBox, initialTransform,
-					i, i, noOptimization,
+					iTempl, i, noOptimization,
 					level, stoplevel, tolerance,
 					nInitialPositions, showTransformed, 
 					showDifferenceImage,

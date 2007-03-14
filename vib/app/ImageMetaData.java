@@ -64,6 +64,13 @@ public class ImageMetaData {
 		return null;
 	}
 
+	public int getMaterialIndex(String name) {
+		for (int i = 0; i < materials.length; i++)
+			if (materials[i].name.equals(name))
+				return i;
+		return -1;
+	}
+
 	public void loadFrom(String path) {
 		AmiraMeshDecoder decoder = new AmiraMeshDecoder();
 		AmiraTable table;
