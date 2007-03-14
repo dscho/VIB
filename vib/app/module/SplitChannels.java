@@ -42,10 +42,13 @@ public class SplitChannels extends Module {
 			if (i == refChannel)
 				continue;
 			ImagePlus img = reader.getImage(i);
-			state.save(img, state.getImagePath(i, index));
+			path = state.getImagePath(i, index);
+			state.save(img, path);
+			new File(path).setLastModified(file.lastModified());
 		}
-		state.save(reader.getImage(refChannel),
-				state.getImagePath(refChannel, index));
+		path = state.getImagePath(refChannel, index);
+		state.save(reader.getImage(refChannel), path);
+		new File(path).setLastModified(file.lastModified());
 	}
 }
 
