@@ -270,6 +270,31 @@ public class AverageBrain_ implements PlugInFilter {
 		}
 	}
 
+	private static byte physicsLUTHelper(double rad) {
+		double s = Math.sin(rad);
+		if (s < 0)
+			return 0;
+		return (byte)(int)Math.round(255 * s);
+	}
+
+	private static void setPhysicsLUT(ImagePlus ip) {
+		byte[] rLUT = new byte[256];
+		byte[] gLUT = new byte[256];
+		byte[] bLUT = new byte[256];
+		int max = 100;
+		for(int i = 0; i <= max; i++) {
+			double rad = i * Math.PI / (max / 2);
+			rLUT[i]=physicsLUTHelper(rad + Math.PI);
+			gLUT[i]=physicsLUTHelper(rad - Math.PI / 2);
+			bLUT[i]=physicsLUTHelper(rad);
+		}
+		ColorModel c = new IndexColorModel(8, 256, rLUT, gLUT, bLUT);
+                ip.getProcessor().setColorModel(c);
+                if (ip.getStackSize() > 1)
+                        ip.getStack().setColorModel(c);
+
+	}
+
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
 		return DOES_8G | DOES_8C;
