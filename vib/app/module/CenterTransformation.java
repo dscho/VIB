@@ -38,9 +38,11 @@ public class CenterTransformation extends Module {
 		// skip i == 0 (it's Exterior)
 		for (int i = 1; i < templStats.materials.length; i++) {
 			ImageMetaData.Material m1 = templStats.materials[i];
+			if (m1.count == 0)
+				continue;
 			String name = m1.name;
 			ImageMetaData.Material m2 = stats.getMaterial(name);
-			if (m2 == null)
+			if (m2 == null || m2.count == 0)
 				continue;
 			Point3d center = new Point3d(m1.centerX,
 					m1.centerY, m1.centerZ);
@@ -57,7 +59,7 @@ public class CenterTransformation extends Module {
 			c1[i] = (Point3d)templCenters.get(i);
 			c2[i] = (Point3d)centers.get(i);
 		}
-		FloatMatrix matrix = FloatMatrix.bestRigid(c1, c2);
+		FloatMatrix matrix = FloatMatrix.bestRigid(c2, c1);
 		stats.setMatrix(transformLabel, matrix);
 		stats.saveTo(statisticsPath);
 	}
