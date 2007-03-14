@@ -149,8 +149,11 @@ public class State {
 	}
 
 	public String getTransformLabel() {
-		return getTemplateBaseName() +
-			options.TRANSFORM_LABELS[options.transformationMethod];
+		return getTransformLabel(options.transformationMethod);
+	}
+
+	public String getTransformLabel(int method) {
+		return getTemplateBaseName() + options.TRANSFORM_LABELS[method];
 	}
 
 	/*

@@ -26,11 +26,10 @@ public class LabelCenterTransformation extends Module {
 		ImageMetaData stats = new ImageMetaData(statisticsPath);
 		boolean needsUpDate =
 			!state.upToDate(labelPath, statisticsPath);
-		String transformLabel = state.getTemplateBaseName() +
-			Options.TRANSFORMS[Options.LABEL_DIFFUSION];
+		String transformLabel =
+			state.getTransformLabel(Options.LABEL_DIFFUSION);
 
-		String centerLabel = state.getTemplateBaseName() +
-			Options.TRANSFORMS[Options.CENTER];
+		String centerLabel = state.getTransformLabel(Options.CENTER);
 		FloatMatrix matrix = stats.getMatrix(centerLabel);
 
 		ImagePlus labels = null, templLabels = null;
