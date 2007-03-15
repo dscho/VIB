@@ -2,6 +2,7 @@ package vib.app.module;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.image.IndexColorModel;
 
 import vib.app.Options;
 
@@ -25,6 +26,7 @@ public class Label extends Module {
 			return;
 
 		ImagePlus image = state.getImage(imagePath);
+		setGrayLUT(image);
 		ImagePlus labels = state.getImage(labelPath);
 
 		ActionListener a = new ActionListener() {
@@ -51,5 +53,17 @@ public class Label extends Module {
 		labels = csw.getLabels();
 		csw.cleanUp();
 		state.save(labels, labelPath);
+	}
+
+	private static void setGrayLUT(ImagePlus ip) {
+		byte[] channel = new byte[256];
+		for (int i = 0; i < 256; i++)
+			channel[i] = (byte)i;
+		IndexColorModel c = new IndexColorModel(8, 256,
+			channel, channel, channel);
+                ip.getProcessor().setColorModel(c);
+                if (ip.getStackSize() > 1)
+                        ip.getStack().setColorModel(c);
+
 	}
 }

@@ -26,4 +26,3 @@ VIB:
 	  voodoo to work around that)
 	- fix handling of 1-channel template with 2-channel images
 	- Gaussian Blur before optimising
-	- make images gray scale before segeditor
