@@ -70,13 +70,14 @@ Rigid_Registration.jar: SOURCES=vib/RigidRegistration_.java \
 	vib/InterpolatedImage.java vib/TransformedImage.java \
 	vib/FastMatrix.java vib/RegistrationOptimizer.java \
 	amira/AmiraParameters.java amira/AmiraTable.java vib/VIB.java \
-	vib/BatchLog_.java vib/Resample_.java \
+	vib/BatchLog_.java vib/Resample_.java vib/FloatMatrix.java \
 	distance/PixelPairs.java distance/Euclidean.java \
 	distance/TwoValues.java distance/MutualInformation.java \
 	distance/Thresholded.java \
 	pal/math/*.java \
 	math3d/Point3d.java math3d/Triangle.java math3d/Line.java \
-	math3d/Plane.java math3d/JacobiDouble.java math3d/FastMatrixN.java
+	math3d/Plane.java math3d/JacobiDouble.java math3d/FastMatrixN.java \
+	math3d/JacobiFloat.java math3d/FloatMatrixN.java
 
 Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
 	vib/DoubleArray.java vib/Extract_Surface.java \
