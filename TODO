@@ -17,11 +17,7 @@ segmentation editor: CustomStackWindow -> SegmentationEditorPanel
 
 VIB:
 	- make Image3DCanvas be able to display two isosurfaces
-	- don't pass VIBImages, but VIBStates (containing VIBImages and Options)
 	- eye candy: file list with processes already done (checkboxes)
-	- initial Dialog: make filegroup a text field (where you can
-	  drag&drop files into) and add two buttons "add" and "show files"
-	  (where you can remove files)
 	- VIB_Leica_Reader: fix negative voxelDepth (and revert all the other
 	  voodoo to work around that)
 	- fix handling of 1-channel template with 2-channel images
