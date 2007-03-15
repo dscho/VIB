@@ -48,8 +48,8 @@ public class LabelCenterTransformation extends Module {
 				continue;
 			String matTransformLabel =
 				transformLabel + m.name;
-			if (!needsUpDate && stats.getMatrix(matTransformLabel)
-					!= null)
+			if (!needsUpDate && stats.upToDate(labelPath,
+						matTransformLabel))
 				continue;
 
 			String initialTransform = matrix.toStringForAmira();

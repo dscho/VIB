@@ -8,6 +8,7 @@ import amira.AmiraTableEncoder;
 
 import ij.text.TextPanel;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -27,6 +28,7 @@ public class ImageMetaData {
 
 	public Material[] materials;
 	public Transformation[] transformations;
+	private String statisticsPath;
 
 	public ImageMetaData() {
 		materials = new Material[0];
@@ -97,6 +99,7 @@ public class ImageMetaData {
 	}
 
 	public void loadFrom(String path) {
+		statisticsPath = path;
 		AmiraMeshDecoder decoder = new AmiraMeshDecoder();
 		AmiraTable table;
 		if (decoder.open(path) &&
@@ -142,6 +145,7 @@ public class ImageMetaData {
 		+ "Volume\tCenterX\tCenterY\tCenterZ";
 
 	public boolean saveTo(String path) {
+		statisticsPath = path;
 		String data = "";
 		for (int i = 0; i < materials.length; i++) {
 			Material m = materials[i];
@@ -178,6 +182,19 @@ public class ImageMetaData {
 		for (int i = 0; i < result.length; i++)
 			result[i] = (String)list.get(i);
 		return result;
+	}
+
+	public boolean upToDate(String sourcePath, String transformLabel) {
+		File thisFile = new File(statisticsPath);
+		if (!thisFile.exists())
+			return false;
+		File sourceFile = new File(sourcePath);
+		if (sourceFile.exists() && thisFile.lastModified() <
+				sourceFile.lastModified())
+			return false;
+		if (getMatrix(transformLabel) == null)
+			return false;
+		return true;
 	}
 }
 

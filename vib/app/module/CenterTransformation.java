@@ -26,8 +26,7 @@ public class CenterTransformation extends Module {
 		String templStatisticsPath = state.getStatisticsPath(-1);
 		ImageMetaData stats = new ImageMetaData(statisticsPath);
 		String transformLabel = state.getTransformLabel(Options.CENTER);
-		if (state.upToDate(templStatisticsPath, statisticsPath) &&
-				stats.getMatrix(transformLabel) != null)
+		if (stats.upToDate(templStatisticsPath, transformLabel))
 			return;
 		ImageMetaData templStats =
 			new ImageMetaData(templStatisticsPath);
