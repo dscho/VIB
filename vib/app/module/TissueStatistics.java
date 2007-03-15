@@ -7,6 +7,8 @@ import ij.ImagePlus;
 
 import vib.TissueStatistics_;
 
+import vib.app.ImageMetaData;
+
 public class TissueStatistics extends Module {
 	protected String getName() { return "TissueStatistics"; }
 	protected String getMessage() { return "Calculating tissue statistics"; }
@@ -22,15 +24,15 @@ public class TissueStatistics extends Module {
 			return;
 
 		ImagePlus labelField = state.getImage(labelsPath);
-		TissueStatistics_ t = new TissueStatistics_();
-		AmiraTable statistics = t.calculateStatistics(labelField);
-		statistics.hide();
-		statistics.setVisible(false);
-
-		// TODO: move away from AmiraTable
-		AmiraTableEncoder encoder = new AmiraTableEncoder(statistics);
-		if(!encoder.write(statisticsPath))
-			throw new RuntimeException("could not write "
-					+ statisticsPath);
+		TissueStatistics_.Statistics stats =
+			TissueStatistics_.getStatistics(labelField);
+		ImageMetaData metaData = new ImageMetaData();
+		for (int i = 0; i < stats.materials.length; i++)
+			metaData.setMaterial(stats.materials[i],
+					(int)stats.count[i], stats.count[i] *
+					stats.voxelVolume(),
+					stats.centerX(i), stats.centerY(i),
+					stats.centerZ(i));
+		metaData.saveTo(statisticsPath);
 	}
 }

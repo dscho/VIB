@@ -28,6 +28,11 @@ public class ImageMetaData {
 	public Material[] materials;
 	public Transformation[] transformations;
 
+	public ImageMetaData() {
+		materials = new Material[0];
+		transformations = new Transformation[0];
+	}
+
 	public ImageMetaData(String fileName) {
 		loadFrom(fileName);
 	}
@@ -69,6 +74,26 @@ public class ImageMetaData {
 			if (materials[i].name.equals(name))
 				return i;
 		return -1;
+	}
+
+	public void setMaterial(String name, int count, double volume,
+			double centerX, double centerY, double centerZ) {
+		int i = getMaterialIndex(name);
+		if (i < 0) {
+			Material[] newMaterials =
+				new Material[materials.length + 1];
+			i = materials.length;
+			System.arraycopy(materials, 0, newMaterials, 0, i);
+			materials = newMaterials;
+			materials[i] = new Material();
+		}
+		Material m = materials[i];
+		m.name = name;
+		m.count = count;
+		m.volume = volume;
+		m.centerX = centerX;
+		m.centerY = centerY;
+		m.centerZ = centerZ;
 	}
 
 	public void loadFrom(String path) {

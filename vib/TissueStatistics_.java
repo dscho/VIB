@@ -27,20 +27,24 @@ public class TissueStatistics_ implements PlugInFilter {
 							"CenterX\tCenterY\tCenterZ\t" + 
 							"MinX\tMaxX\tMinY\tMaxY\tMinZ\tMaxZ";
 
-		InterpolatedImage ii = new InterpolatedImage(labelfield);
-		Statistics stat = new Statistics(ii);
+		Statistics stat = getStatistics(labelfield);
 
 		AmiraTable table = new AmiraTable(title, headings,
 				stat.getResult(), true);
 		return table;
 	}
 
-	private static class Statistics {
+	public static Statistics getStatistics(ImagePlus labelfield) {
+		InterpolatedImage ii = new InterpolatedImage(labelfield);
+		return new Statistics(ii);
+	}
+
+	public static class Statistics {
 		Calibration cal;
 		AmiraParameters parameters;
-		String[] materials;
-		long[] count, cX, cY, cZ;
-		int[] minX, maxX, minY, maxY, minZ, maxZ;
+		public String[] materials;
+		public long[] count, cX, cY, cZ;
+		public int[] minX, maxX, minY, maxY, minZ, maxZ;
 
 		public Statistics(InterpolatedImage ii) {
 			cal = ii.image.getCalibration();
@@ -87,21 +91,37 @@ public class TissueStatistics_ implements PlugInFilter {
 			}
 		}
 
-		double x(double i) {
+		public double x(double i) {
 			return cal.xOrigin + (i + 0.5) * cal.pixelWidth;
 		}
 
-		double y(double j) {
+		public double y(double j) {
 			return cal.yOrigin + (j + 0.5) * cal.pixelHeight;
 		}
 
-		double z(double k) {
+		public double z(double k) {
 			return cal.yOrigin + (k + 0.5) * cal.pixelDepth;
 		}
 
-		public String getResult() {
-			double voxelVolume = cal.pixelWidth * cal.pixelHeight
+		public double voxelVolume() {
+			return cal.pixelWidth * cal.pixelHeight
 				* cal.pixelDepth;
+		}
+
+		public double centerX(int index) {
+			return x(cX[index] / (double)count[index]);
+		}
+
+		public double centerY(int index) {
+			return y(cY[index] / (double)count[index]);
+		}
+
+		public double centerZ(int index) {
+			return z(cZ[index] / (double)count[index]);
+		}
+
+		public String getResult() {
+			double voxelVolume = voxelVolume();
 			String result = "";
 			for (int i = 0; i < materials.length; i++) {
 				result += (i + 1) + "\t";
@@ -113,9 +133,9 @@ public class TissueStatistics_ implements PlugInFilter {
 					continue;
 				}
 				result += (count[i] * voxelVolume) + "\t";
-				result += x(cX[i] / (double)count[i]) + "\t";
-				result += y(cY[i] / (double)count[i]) + "\t";
-				result += z(cZ[i] / (double)count[i]) + "\t";
+				result += centerX(i) + "\t";
+				result += centerY(i) + "\t";
+				result += centerZ(i) + "\t";
 				result += x(minX[i]) + "\t";
 				result += x(maxX[i]) + "\t";
 				result += y(minY[i]) + "\t";
