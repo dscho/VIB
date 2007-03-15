@@ -82,8 +82,6 @@ public class LabelDiffusionTransformation extends Module {
 			String transformName = state.getTransformLabel() +
 				name;
 			result[i] = stats.getMatrix(transformName);
-			if (result[i] == null)
-				result[i] = new FloatMatrix(1.0f);
 		}
 
 		return result;
