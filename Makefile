@@ -1,4 +1,4 @@
-JAVAS=$(wildcard *.java */*.java */*/*.java */*/*/*.java */*/*/*/*.java)
+JAVAS=$(shell find * -name \*.java | grep -v ^tempdir)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
 JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java voltex/*.java Volume_Renderer.java ij3d/*.java)
@@ -22,6 +22,9 @@ JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib
 JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 
 all: $(CLASSES)
+
+show:
+	echo $(JAVAS)
 
 %.class: %.java
 	javac -O $(JAVACOPTS) "$<"
@@ -49,7 +52,7 @@ Segmentation_Editor_compat.jar: SOURCES=amira/AmiraParameters.java \
 	vib/SegmentationViewerCanvas.java vib/segment/*.java
 
 %_compat.jar:
-	test ! -d tempdir
+	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
 	(cd tempdir && sh ../compile1.3.sh && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
