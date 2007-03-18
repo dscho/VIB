@@ -22,3 +22,7 @@ VIB:
 	  voodoo to work around that)
 	- fix handling of 1-channel template with 2-channel images
 	- Gaussian Blur before optimising
+	- get rid of Amira Tables
+	- separate "AmiraTable_Writer" out of "AmiraMeshWriter_".
+	- general code cleanup (DO_CHANGES...)
+	- fix names (like AmiraMesh_Writer instead of AmiraMeshWriter_)
