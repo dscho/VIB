@@ -26,3 +26,4 @@ VIB:
 	- separate "AmiraTable_Writer" out of "AmiraMeshWriter_".
 	- general code cleanup (DO_CHANGES...)
 	- fix names (like AmiraMesh_Writer instead of AmiraMeshWriter_)
+	- ImageMetaData.upToDate(): look at template, too
