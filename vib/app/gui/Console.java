@@ -16,7 +16,7 @@ public class Console extends Panel
 	
 	private Console() {
 		super();
-		messageTA = new TextArea("Welcome to the VIB protocoll\n");
+		messageTA = new TextArea("Welcome to the VIB protocol\n");
 		messageTA.append("========================================\n");
 		messageTA.setFont(new Font("Monospace", Font.BOLD, 12));
 		//messageTA.setForeground(Color.RED);
@@ -61,7 +61,7 @@ public class Console extends Panel
 	}
 
 	public void clear() {
-		messageTA.setText("Welcome to the VIB protocoll\n");
+		messageTA.setText("Welcome to the VIB protocol\n");
 		messageTA.append("========================================\n\n\n");
 	}
 
