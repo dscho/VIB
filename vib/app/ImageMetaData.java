@@ -166,7 +166,7 @@ public class ImageMetaData {
 		return encoder.write(path);
 	}
 
-	private String[] split(String line) {
+	private static String[] split(String line) {
 		ArrayList list = new ArrayList();
 		int tab = -1;
 		do {
