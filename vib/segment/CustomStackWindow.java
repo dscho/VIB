@@ -3,18 +3,22 @@ package vib.segment;
 import java.awt.*;
 import java.awt.event.*;
 
+import vib.IDT_Interpolate_Binary;
+
 import ij.IJ;
 import ij.measure.Calibration;
 import ij.gui.StackWindow;
 import ij.gui.Roi;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.process.ImageProcessor;
 
 public class CustomStackWindow extends StackWindow
 					 implements AdjustmentListener, 
 								KeyListener, 
 								ActionListener, 
-								MouseMotionListener {
+								MouseMotionListener,
+								MouseWheelListener {
 	
 	private Roi[] savedRois;
 	private int oldSlice;
@@ -143,6 +147,17 @@ public class CustomStackWindow extends StackWindow
 		cc.getImage().updateAndDraw();
 		cc.getLabels().updateAndDraw();
 	}
+
+	public void processInterpolateButton() {
+		updateRois();
+		new Thread(new Runnable() {
+			public void run() {
+				setCursor(Cursor.WAIT_CURSOR);
+				new IDT_Interpolate_Binary().run(cc.getImage(), savedRois);
+				setCursor(Cursor.DEFAULT_CURSOR);
+			}
+		}).start();
+	}
 	
 	public void assignSliceTo(int slice, Roi roi, int materialID){
 		ImagePlus grey = cc.getImage();
@@ -248,6 +263,8 @@ public class CustomStackWindow extends StackWindow
 			processPlusButton();
 		} else if (command.equals("minus")) {
 			processMinusButton();
+		} else if (command.equals("interpolate")) {
+			processInterpolateButton();
 		} else if (command.equals("Ok")) {
 			// call the action listener before destroying the window
 			if(al != null)
@@ -262,6 +279,10 @@ public class CustomStackWindow extends StackWindow
 	 */
 	public synchronized void adjustmentValueChanged(AdjustmentEvent e) {
 		super.adjustmentValueChanged(e);
+		updateRois();
+	}
+
+	public synchronized void updateRois() {
 		savedRois[oldSlice] = imp.getRoi();
 		oldSlice = sliceSelector.getValue();
 		if (savedRois[oldSlice] == null)
@@ -269,6 +290,11 @@ public class CustomStackWindow extends StackWindow
 		else
 			imp.setRoi(savedRois[oldSlice]);
 		repaint();
+	}
+
+	public void mouseWheelMoved(MouseWheelEvent e) {
+		super.mouseWheelMoved(e);
+		updateRois();
 	}
 	
 	/*
