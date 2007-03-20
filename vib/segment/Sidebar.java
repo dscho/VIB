@@ -49,7 +49,6 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 	private MaterialList materials;
 	private Vector defaultMaterials;
 	private boolean currentLabelsAreNew = false;
-	private InfoPanel pInfos;
 	
 	
 	public Sidebar(CustomCanvas cc, ActionListener al) {
@@ -76,9 +75,6 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 		addZoom();
 		addSelection();
 
-		pInfos = new InfoPanel(font);
-		constr.insets = new Insets(20, 5, 0, 5);
-		add(pInfos, constr);
 		this.itemStateChanged(null);
 	}
 
@@ -100,16 +96,6 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 
 	public void magnificationChanged(double d) {
 		updateLZoomLevel(d);
-	}
-
-	public void updateInfoPanel() {
-		pInfos.updateLabels();
-	}
-
-	public void updateInfoPanel(int x, int y, int z, 
-								double posX, double posY, double posZ,
-								int voxelValue, String material) {
-		pInfos.updateLabels(x, y, z, posX, posY, posZ, voxelValue, material);
 	}
 
 	public void setBackground(Color bg) {

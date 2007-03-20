@@ -204,7 +204,6 @@ public class CustomStackWindow extends StackWindow
 	}
 
 	public void mouseExited(MouseEvent e) {
-		sidebar.updateInfoPanel();
 	}
 
 	public void mouseMoved(MouseEvent e) {
@@ -234,11 +233,9 @@ public class CustomStackWindow extends StackWindow
 			materialName = sidebar.getMaterials()
 								.params.getMaterialName(materialID);
 			
-			sidebar.updateInfoPanel(x, y, z,
-					posX, posY, posZ,
-					voxelValue, materialName);
-		} else
-			sidebar.updateInfoPanel();
+			IJ.showStatus("x=" + posX + ", y=" + posY + ", z=" + posZ + 
+					", value=" + voxelValue + ", material=" + materialName);
+		}
 	}	
 	
 	/*
