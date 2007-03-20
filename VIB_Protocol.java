@@ -75,8 +75,9 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 			(TextField)gd.getStringFields().get(TEMPL);
 		templateField.setEditable(false);
 
-		String workingDirectory = Macro.getValue(Macro.getOptions(),
-			"cwd", null);
+		String optionsString = Macro.getOptions();
+		String workingDirectory = optionsString == null ? null :
+			Macro.getValue(optionsString, "cwd", null);
 		if (workingDirectory != null)
 			loadFrom(workingDirectory);
 
