@@ -20,7 +20,6 @@ VIB:
 	- eye candy: file list with processes already done (checkboxes)
 	- VIB_Leica_Reader: fix negative voxelDepth (and revert all the other
 	  voodoo to work around that)
-	- fix handling of 1-channel template with 2-channel images
 	- Gaussian Blur before optimising
 	- get rid of Amira Tables
 	- separate "AmiraTable_Writer" out of "AmiraMeshWriter_".

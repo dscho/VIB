@@ -14,10 +14,15 @@ public class SplitChannels extends Module {
 		prereqsDone(state, index);
 
 		int numChannels = state.options.numChannels;
-		if (numChannels < 2 || index < 0)
+		if (numChannels < 2)
 			return;
+		int refChannel = state.options.refChannel - 1;
 
-		File file = (File)state.options.fileGroup.get(index);
+		File file;
+		if (index < 0)
+			file = new File(state.options.templatePath);
+		else
+			file = (File)state.options.fileGroup.get(index);
 		String path = file.getAbsolutePath();
 
 		boolean upToDate = true;
@@ -31,13 +36,18 @@ public class SplitChannels extends Module {
 		Leica_SP_Reader reader = new Leica_SP_Reader();
 		reader.run(path);
 		if(reader.getNumberOfChannels() < numChannels) {
+			if (index < 0 && reader.getNumberOfChannels() == 1) {
+				// be graceful when the template has only one channel
+				path = state.getImagePath(refChannel, index);
+				state.save(reader.getImage(0), path);
+				return;
+			}
 			console.append("File " + path + " does not contain " +
 					numChannels + " channels, but " +
 					reader.getNumberOfChannels());
 			throw new RuntimeException();
 		}
 		// save reference channel last, to avoid unnecessary loading
-		int refChannel = state.options.refChannel - 1;
 		for(int i = 0; i < numChannels; i++) {
 			if (i == refChannel)
 				continue;

@@ -99,7 +99,7 @@ public class State {
 			// labels
 			return labelPath + "/" +
 				getBaseName(index) + ".labels";
-		if (index < 0)
+		if (index < 0 && options.numChannels == 1)
 			// template
 			return options.templatePath;
 		if (options.numChannels < 2)
