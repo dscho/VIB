@@ -173,7 +173,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 			File selected = fgd.getSelected();
 			if(selected != null) {
 				template = selected;
-				setString(TEMPL, selected.getName());
+				setString(TEMPL, selected.getAbsolutePath());
 			}
 		} else if (e.getSource() == load) {
 			FileDialog dialog =
