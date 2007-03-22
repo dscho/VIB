@@ -1,5 +1,7 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+package stacks;
+
 import ij.*;
 import ij.gui.ImageCanvas;
 import ij.plugin.PlugIn;
@@ -23,13 +25,7 @@ public class ThreePaneCrop_ implements PlugIn {
 			return;
 		}
 
-		try {
-			threePaneCrop = new ThreePaneCrop(
-				Class.forName("ThreePaneCropCanvas"),
-				currentImage );
-		} catch( ClassNotFoundException e ) {
-			IJ.error("Couldn't find the class ThreePaneCropCanvas");
-		}
+		threePaneCrop = new ThreePaneCrop( currentImage );
 		
 	}
 

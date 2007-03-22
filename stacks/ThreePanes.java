@@ -1,5 +1,7 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+package stacks;
+
 import ij.*;
 import ij.process.ByteProcessor;
 import ij.gui.*;
@@ -90,7 +92,7 @@ class ThreePanes {
 		xy_window = new StackWindow( xy, original_xy_canvas );
 	}
 	
-	public ThreePanes( Class canvasClass, ImagePlus imagePlus ) {
+	public ThreePanes( ImagePlus imagePlus ) {
 		
 		xy = imagePlus;
 		

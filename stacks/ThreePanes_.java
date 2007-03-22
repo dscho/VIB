@@ -1,5 +1,7 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+package stacks;
+
 import ij.*;
 import ij.gui.ImageCanvas;
 import ij.plugin.PlugIn;
@@ -18,13 +20,7 @@ public class ThreePanes_ implements PlugIn {
 			return;
 		}
 
-		try {
-			threePanes = new ThreePanes(
-				Class.forName("ThreePanesCanvas"),
-				currentImage );
-		} catch( ClassNotFoundException e ) {
-			IJ.error("Couldn't find the class ThreePanesCanvas");
-		}
+		threePanes = new ThreePanes( currentImage );
 	}
 
 }
