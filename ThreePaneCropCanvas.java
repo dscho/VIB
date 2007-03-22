@@ -83,7 +83,7 @@ public class ThreePaneCropCanvas extends ThreePanesCanvas {
 	
 	CropHandleRectangle nw, ne, sw, se;
 	
-	private ThreePaneCropCanvas( ImagePlus imagePlus, ThreePanes owner, int plane ) {
+	public ThreePaneCropCanvas( ImagePlus imagePlus, ThreePanes owner, int plane ) {
 		
 		super(imagePlus,owner,plane);
 		

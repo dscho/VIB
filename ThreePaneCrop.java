@@ -146,6 +146,10 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 }
 
 public class ThreePaneCrop extends ThreePanes {
+      
+	public ThreePanesCanvas createCanvas( ImagePlus imagePlus, int plane ) {
+		return new ThreePaneCropCanvas( imagePlus, this, plane );
+	}
 
 	public void performCrop() {
 
