@@ -22,18 +22,23 @@ public class State {
 	public State(Options options) {
 		this.options = options;
 
-		imagesPath = options.workingDirectory + "/images";
-		labelPath = options.workingDirectory + "/labels";
+		imagesPath = options.workingDirectory + File.separator +
+			"images";
+		labelPath = options.workingDirectory + File.separator +
+			"labels";
 		mkdir(labelPath);
 		if (options.resamplingFactor > 1)
 			resampledPath = options.workingDirectory +
-				"/resampled";
+				File.separator + "resampled";
 		else
 			resampledPath = null;
 		if (options.transformationMethod == Options.LABEL_DIFFUSION)
-			warpedPath = options.workingDirectory + "/warped";
-		outputPath = options.workingDirectory + "/output";
-		statisticsPath = options.workingDirectory + "/statistics";
+			warpedPath = options.workingDirectory +
+				File.separator + "warped";
+		outputPath = options.workingDirectory + File.separator +
+			"output";
+		statisticsPath = options.workingDirectory + File.separator +
+			"statistics";
 		mkdir(statisticsPath);
 		for (int c = -1; c < options.numChannels; c++) {
 			if (warpedPath != null)
@@ -97,22 +102,22 @@ public class State {
 	public String getImagePath(int channel, int index) {
 		if (channel < 0)
 			// labels
-			return labelPath + "/" +
+			return labelPath + File.separator +
 				getBaseName(index) + ".labels";
 		if (index < 0 && options.numChannels == 1)
 			// template
 			return options.templatePath;
 		if (options.numChannels < 2)
 			return channels[channel][index];
-		return imagesPath + getChannelName(channel) + "/"
+		return imagesPath + getChannelName(channel) + File.separator
 			+ getBaseName(index) + ".tif";
 	}
 
 	public String getResampledPath(int channel, int index) {
 		if (options.resamplingFactor == 1)
 			return getImagePath(channel, index);
-		return resampledPath + getChannelName(channel) + "/" +
-			getBaseName(index) + ".tif";
+		return resampledPath + getChannelName(channel) +
+			File.separator + getBaseName(index) + ".tif";
 	}
 
 	/*
@@ -123,12 +128,12 @@ public class State {
 	public String getWarpedPath(int channel, int index) {
 		if (warpedPath == null)
 			return getResampledPath(channel, index);
-		return warpedPath + getChannelName(channel) + "/"
+		return warpedPath + getChannelName(channel) + File.separator
 			+ getBaseName(index) + ".warped";
 	}
 
 	public String getOutputPath(int channel) {
-		return outputPath + getChannelName(channel) + "/"
+		return outputPath + getChannelName(channel) + File.separator
 			+ getTemplateBaseName() + ".tif";
 	}
 
@@ -137,7 +142,7 @@ public class State {
 	}
 
 	public String getStatisticsPath(int index) {
-		return statisticsPath + "/"
+		return statisticsPath + File.separator
 			+ getBaseName(index) + ".statisticss";
 	}
 

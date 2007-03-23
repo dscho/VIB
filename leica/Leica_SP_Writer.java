@@ -13,6 +13,7 @@ import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -74,7 +75,8 @@ public class Leica_SP_Writer implements PlugInFilter {
 				imageNames[0], ".tif");
 		if (sd.getFileName() == null)
 			return;
-		String path = sd.getDirectory() + "/" + sd.getFileName();
+		String path = sd.getDirectory() + File.separator
+			+ sd.getFileName();
 
 		// create fake stack
 		ImageStack stack = new ImageStack(w, h);
