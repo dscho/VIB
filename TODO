@@ -18,8 +18,8 @@ segmentation editor: CustomStackWindow -> SegmentationEditorPanel
 VIB:
 	- make Image3DCanvas be able to display two isosurfaces
 	- eye candy: file list with processes already done (checkboxes)
-	- VIB_Leica_Reader: fix negative voxelDepth (and revert all the other
-	  voodoo to work around that)
+	- leica.Leica_SP_Reader: fix negative voxelDepth
+	  (and revert all the other voodoo to work around that)
 	- Gaussian Blur before optimising
 	- get rid of Amira Tables
 	- separate "AmiraTable_Writer" out of "AmiraMeshWriter_".
