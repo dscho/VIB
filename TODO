@@ -27,3 +27,4 @@ VIB:
 	- fix names (like AmiraMesh_Writer instead of AmiraMeshWriter_)
 	- ImageMetaData.upToDate(): look at template, too
 	- fix Segmenation Editor to open the labels upon "OK" if outside VIB
+	- add rigid registration method (no labelling!)
