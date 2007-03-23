@@ -1,5 +1,7 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+package stacks;
+
 import ij.*;
 import ij.gui.ImageCanvas;
 import ij.plugin.PlugIn;
@@ -146,6 +148,10 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 }
 
 public class ThreePaneCrop extends ThreePanes {
+      
+	public ThreePanesCanvas createCanvas( ImagePlus imagePlus, int plane ) {
+		return new ThreePaneCropCanvas( imagePlus, this, plane );
+	}
 
 	public void performCrop() {
 
@@ -244,9 +250,9 @@ public class ThreePaneCrop extends ThreePanes {
 
 	CropDialog dialog;
 
-	public ThreePaneCrop( Class canvasClass, ImagePlus imagePlus ) {
+	public ThreePaneCrop( ImagePlus imagePlus ) {
 
-		super( canvasClass, imagePlus );
+		super( imagePlus );
 
 		overall_min_x = 0;
 		overall_min_y = 0;

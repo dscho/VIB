@@ -1,5 +1,7 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+package stacks;
+
 import ij.*;
 import ij.gui.*;
 
@@ -83,7 +85,7 @@ public class ThreePaneCropCanvas extends ThreePanesCanvas {
 	
 	CropHandleRectangle nw, ne, sw, se;
 	
-	private ThreePaneCropCanvas( ImagePlus imagePlus, ThreePanes owner, int plane ) {
+	public ThreePaneCropCanvas( ImagePlus imagePlus, ThreePanes owner, int plane ) {
 		
 		super(imagePlus,owner,plane);
 		

@@ -1,5 +1,7 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+package stacks;
+
 import ij.*;
 import ij.process.ByteProcessor;
 import ij.gui.*;
@@ -59,6 +61,10 @@ class ThreePanes {
 		}        
 		
 	}
+
+	public ThreePanesCanvas createCanvas( ImagePlus imagePlus, int plane ) {
+		return new ThreePanesCanvas( imagePlus, this, plane );
+	}
 	
 	public void mouseMovedTo( int off_screen_x, int off_screen_y, int in_plane ) {
 		
@@ -86,7 +92,7 @@ class ThreePanes {
 		xy_window = new StackWindow( xy, original_xy_canvas );
 	}
 	
-	public ThreePanes( Class canvasClass, ImagePlus imagePlus ) {
+	public ThreePanes( ImagePlus imagePlus ) {
 		
 		xy = imagePlus;
 		
@@ -178,50 +184,11 @@ class ThreePanes {
 		IJ.showProgress( 1.0 ); // Removes the progress indicator
 		
 		System.gc();
-		
-		/* This is a bit horrendous; it should be simpler to use
-		 * Java's generics for this, but even if you parameterize on a
-		 * class with, e.g.:
-		 * 
-		 *     ThreePanes< C extends ThreePanesCanvas >
-		 * 
-		 * ... you lose polymorphism; calls to methods of objects of
-		 * class C call the ThreePanesCanvas version, not the
-		 * subclass.  (sigh)
-		 */
-		
-		try {
-			
-			Class [] staticMethodTypes = new Class[3];
-			staticMethodTypes[0] = xy.getClass();
-			staticMethodTypes[1] = this.getClass();
-			staticMethodTypes[2] = Integer.TYPE;
-			Method staticMethod = canvasClass.getDeclaredMethod("newThreePanesCanvas",staticMethodTypes);
-			
-			xy_canvas = (ThreePanesCanvas)staticMethod.invoke( null, xy, this, XY_PLANE );
-			xz_canvas = (ThreePanesCanvas)staticMethod.invoke( null, xz, this, XZ_PLANE );
-			zy_canvas = (ThreePanesCanvas)staticMethod.invoke( null, zy, this, ZY_PLANE );
-			
-		} catch( NoSuchMethodException e ) {
-			StringWriter sw = new StringWriter();
-			e.printStackTrace(new PrintWriter(sw));
-			String stacktrace = sw.toString();
-			IJ.error("NoSuchMethodException while creating canvas objects.\n"+stacktrace);
-			return;
-		} catch( IllegalAccessException e ) {
-			StringWriter sw = new StringWriter();
-			e.printStackTrace(new PrintWriter(sw));
-			String stacktrace = sw.toString();
-			IJ.error("IllegalAccessException while creating canvas objects.\n"+stacktrace);
-			return;
-		} catch( InvocationTargetException e ) {
-			StringWriter sw = new StringWriter();
-			e.printStackTrace(new PrintWriter(sw));
-			String stacktrace = sw.toString();
-			IJ.error("InvocationTargetException while creating canvas objects.\n"+stacktrace);
-			return;
-		}
-		
+			       		
+		xy_canvas = createCanvas( xy, XY_PLANE );
+		xz_canvas = createCanvas( xz, XZ_PLANE );
+		zy_canvas = createCanvas( zy, ZY_PLANE );
+					
 		xy_window = new StackWindow( xy, xy_canvas );
 		xz_window = new StackWindow( xz, xz_canvas );
 		zy_window = new StackWindow( zy, zy_canvas );
