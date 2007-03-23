@@ -189,7 +189,8 @@ public class KD_Cartoon implements PlugInFilter {
 
 			for (int i = 0; i < n; i++) {
 				diff[i] = isColor ?
-					new ColorDifference(ip, ratio) :
+					(Difference)new ColorDifference(ip,
+						ratio) :
 					new GrayDifference(ip, ratio);
 				diff[i].init();
 			}
