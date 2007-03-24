@@ -44,8 +44,10 @@ public class AverageBrain extends Module {
 		if (matrices == null)
 			matrices = getMatrices(state);
 		if (scratch == null)
-			// TODO: invalidate template?
-			scratch = state.getTemplateLabels();
+			// try to reuse labels if they were already loaded
+			scratch = state.options.needsLabels() ?
+				state.getTemplateLabels() :
+				state.getTemplate();
 		averageBrain.doit(scratch, images, matrices);
 		state.save(scratch, outputPath);
 	}
