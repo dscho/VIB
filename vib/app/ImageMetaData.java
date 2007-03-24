@@ -36,6 +36,7 @@ public class ImageMetaData {
 	}
 
 	public ImageMetaData(String fileName) {
+		this();
 		loadFrom(fileName);
 	}
 
@@ -102,6 +103,8 @@ public class ImageMetaData {
 		statisticsPath = path;
 		AmiraMeshDecoder decoder = new AmiraMeshDecoder();
 		AmiraTable table;
+		if (!(new File(path).exists()))
+			return;
 		if (decoder.open(path) &&
 				decoder.isTable())
 			table = decoder.getTable();
