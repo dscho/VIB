@@ -73,6 +73,7 @@ public class State {
         private String currentImagePath;
         private ImagePlus currentImage;
         private ImagePlus templateLabels;
+        private ImagePlus templ;
 
 	public String getBaseName(int index) {
 		if (index < 0)
@@ -238,6 +239,16 @@ public class State {
 				IJ.openImage(getResampledPath(-1, -1));
 		// TODO: check if the dimensions are really borked
                 return templateLabels;
+        }
+
+        public ImagePlus getTemplate() {
+                if (templ == null) {
+			String path =
+				getResampledPath(options.refChannel - 1, -1);
+			templ = IJ.openImage(path);
+		}
+		// TODO: check if the dimensions are really borked
+                return templ;
         }
 
 	private void mkdir(String path) {
