@@ -37,6 +37,8 @@ public class Resample extends Module {
 			return;
 
 		ImagePlus image = state.getImage(imagePath);
+		if (image == null)
+			return;
 		ImagePlus resampled = Resample_.resample(image,
 				state.options.resamplingFactor);
 		state.save(resampled, resampledPath);
