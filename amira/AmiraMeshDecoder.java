@@ -311,7 +311,7 @@ public class AmiraMeshDecoder {
 			for (int i = 1; i < colName.length; i++)
 				headings += "\t" + colName[i];
 
-			String wholeData = data[0];
+			String wholeData = data.length > 0 ? data[0] : "";
 			for (int i = 1; i < numRows; i++)
 				wholeData += "\n" + data[i];
 
@@ -319,6 +319,7 @@ public class AmiraMeshDecoder {
 			parameters.setParameters(result.properties);
 			return result;
 		} catch(Exception e) {
+			e.printStackTrace();
 			throw new RuntimeException("internal: ", e);
 		}
 	}
