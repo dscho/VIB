@@ -9,6 +9,9 @@ public class TransformImages extends Module {
 	protected void run(State state, int index) {
 		Module module = null;
 		switch (state.options.transformationMethod) {
+		case Options.GREY:
+			module = new GreyTransformation();
+			break;
 		case Options.CENTER:
 			module = new CenterTransformation();
 			break;
