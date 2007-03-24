@@ -72,6 +72,14 @@ public class Options {
 		throw new RuntimeException("Unknown method: " + method);
 	}
 
+	public boolean needsLabels() {
+		return needsLabels(transformationMethod);
+	}
+
+	public static boolean needsLabels(int method) {
+		return method != GREY;
+	}
+
 	public boolean isTransformationValid(String method) {
 		for (int i = 0; i < TRANSFORMS.length; i++)
 			if (TRANSFORMS[i].equals(method))
