@@ -27,14 +27,6 @@ import isosurface.IsosurfacePanel;
 public class Isosurface_Viewer implements PlugInFilter {
 
 	private ImagePlus image;
-	private ImagePlus ret;
-	private int minX = Integer.MAX_VALUE;
-	private int maxX = Integer.MIN_VALUE;
-	private int w;
-	private int h;
-	private int d;
-	private IsosurfacePanel canvas;
-	private static Frame frame;
 
 	public void run(ImageProcessor ip) {
 		GenericDialog gd = new GenericDialog("Isosurface Viewer");
@@ -46,43 +38,12 @@ public class Isosurface_Viewer implements PlugInFilter {
 
 		int threshold = (int)gd.getNextNumber();
 		int resample = (int)gd.getNextNumber();
-		process(threshold, resample);
-		if(frame == null)
-			showViewer(threshold);
-		else 
-			updateViewer(threshold);
-	}
-
-	public void process(int threshold, int resample) { 
-		init();
-		if(resample != 1 )
-			resample(resample);
-	}
-
-	private void init() {
-		ret = new InterpolatedImage(image).cloneImage().getImage();
-		w = ret.getWidth();
-		h = ret.getHeight();
-		d = ret.getStackSize();
-	}
-	
-	public void resample(int fac) {
-		ImagePlus resampled = Resample_.resample(ret, fac, fac, fac);
-		w = resampled.getWidth();
-		h = resampled.getHeight();
-		d = resampled.getStackSize();
-		ret = resampled;
-	}
-
-	public void showViewer(int threshold) {
-		canvas = new IsosurfacePanel(ret, threshold);
-		canvas.canvas.setSize(new Dimension(512, 512));
+		if(resample != 1)
+			image = Resample_.resample(image, resample, resample, resample);
+		IsosurfacePanel isopanel = new IsosurfacePanel(image, threshold);
+		isopanel.canvas.setSize(new Dimension(512, 512));
 		ImageWindow3D win = new ImageWindow3D("Surface Viewer",
-				canvas.canvas, canvas.simpleU);
-	}
-
-	public void updateViewer(int threshold) {
-		canvas.updateShape(ret, threshold);
+				isopanel.canvas, isopanel.simpleU);
 	}
 
 	public int setup(String arg, ImagePlus img) {
