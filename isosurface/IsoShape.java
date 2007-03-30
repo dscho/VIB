@@ -95,6 +95,7 @@ public final class IsoShape extends Shape3D {
 		st.stripify(gi);
 		GeometryArray result = gi.getGeometryArray();
 		result.setCapability(TriangleArray.ALLOW_COLOR_WRITE);
+		result.setCapability(TriangleArray.ALLOW_INTERSECT);
 		
 		return result;
 	}
