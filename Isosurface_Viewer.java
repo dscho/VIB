@@ -39,26 +39,22 @@ public class Isosurface_Viewer implements PlugInFilter {
 	public void run(ImageProcessor ip) {
 		GenericDialog gd = new GenericDialog("Isosurface Viewer");
 		gd.addNumericField("Threshold", 50, 0);
-		gd.addCheckbox("Smooth", false);
 		gd.addNumericField("Resampling factor", 2, 0);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
 
 		int threshold = (int)gd.getNextNumber();
-		boolean smooth = gd.getNextBoolean();
 		int resample = (int)gd.getNextNumber();
-		process(threshold, smooth, resample);
+		process(threshold, resample);
 		if(frame == null)
 			showViewer(threshold);
 		else 
 			updateViewer(threshold);
 	}
 
-	public void process(int threshold, boolean smooth, int resample) { 
+	public void process(int threshold, int resample) { 
 		init();
-		if(smooth)
-			smooth();
 		if(resample != 1 )
 			resample(resample);
 	}
@@ -70,14 +66,6 @@ public class Isosurface_Viewer implements PlugInFilter {
 		d = ret.getStackSize();
 	}
 	
-	private void smooth() {
-		for(int z=0; z< d; z++)	{
-			ImageStack stack = ret.getStack();
-			ImageProcessor ip = stack.getProcessor(z+1);
-			ip.smooth();
-		}
-	}
-
 	public void resample(int fac) {
 		ImagePlus resampled = Resample_.resample(ret, fac, fac, fac);
 		w = resampled.getWidth();
