@@ -22,7 +22,7 @@ import java.util.Vector;
 import vib.Resample_;
 import vib.InterpolatedImage;
 
-import marchingcubes.MCPanel;
+import isosurface.IsosurfacePanel;
 
 public class Isosurface_Viewer implements PlugInFilter {
 
@@ -33,7 +33,7 @@ public class Isosurface_Viewer implements PlugInFilter {
 	private int w;
 	private int h;
 	private int d;
-	private MCPanel canvas;
+	private IsosurfacePanel canvas;
 	private static Frame frame;
 
 	public void run(ImageProcessor ip) {
@@ -94,7 +94,7 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 	}
 
 	public void showViewer(int threshold) {
-		canvas = new MCPanel(ret, threshold);
+		canvas = new IsosurfacePanel(ret, threshold);
 		canvas.canvas.setSize(new Dimension(512, 512));
 		ImageWindow3D win = new ImageWindow3D("Surface Viewer",
 				canvas.canvas, canvas.simpleU);

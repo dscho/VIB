@@ -1,4 +1,4 @@
-package marchingcubes;
+package isosurface;
 
 import ij.ImagePlus;
 import java.awt.Panel;
@@ -17,7 +17,7 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 import com.sun.j3d.utils.picking.*;
 
-public class MCPanel extends Panel {
+public class IsosurfacePanel extends Panel {
 
 	public SimpleUniverse simpleU;
 	public Canvas3D canvas;
@@ -42,7 +42,7 @@ public class MCPanel extends Panel {
 		objTransform.setCapability(TransformGroup.ALLOW_CHILDREN_EXTEND);
 		objRoot.addChild(objTransform);
 		
-		objTransform.addChild(new MCShape(image, seekValue));
+		objTransform.addChild(new IsoShape(image, seekValue));
 		
 		// Picking
 		BoundingSphere b = new BoundingSphere();
@@ -76,7 +76,7 @@ public class MCPanel extends Panel {
 
 	// Create a simple scene and attach it to the virtual universe
 
-	public MCPanel(ImagePlus image, int seekValue) {
+	public IsosurfacePanel(ImagePlus image, int seekValue) {
 		setLayout(new BorderLayout());
 	
 		GraphicsConfiguration config =
