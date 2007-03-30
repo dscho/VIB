@@ -33,6 +33,7 @@ public final class IsoShape extends Shape3D {
 	public IsoShape(ImagePlus image, int threshold, Color3f color) {
 		this(image, threshold);
 		this.color = color;
+		System.out.println("Color = " + color);
 	}
 
 	public void setImage(ImagePlus image, int threshold) {
