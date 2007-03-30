@@ -43,7 +43,8 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 			}
 			private void showPopup(MouseEvent e) {
 				if(e.isPopupTrigger()){
-					show(univ.getCanvas(), e.getX(),e.getY());
+					show(univ.getCanvas(), 
+							e.getX(),e.getY());
 				}
 			}
 		});
@@ -55,10 +56,16 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 		} 
 
 		if(e.getSource() == image) {
-			GenericDialog gd = new GenericDialog("Add image");
-			int img_count = WindowManager.getImageCount();
-			Vector imageV = new Vector();
-			String[] images;
+			addNewImage(univ, null);
+		}
+	}
+
+	public static void addNewImage(IsosurfaceUniverse univ,ImagePlus image){
+		GenericDialog gd = new GenericDialog("Add image");
+		int img_count = WindowManager.getImageCount();
+		Vector imageV = new Vector();
+		String[] images;
+		if(image == null) {
 			for(int i=1; i<=img_count; i++) {
 				int id = WindowManager.getNthImageID(i);
 				ImagePlus imp = WindowManager.getImage(id);
@@ -70,32 +77,31 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 				IJ.error("No images open");
 			images = (String[])imageV.toArray(new String[]{});
 			gd.addChoice("Image", images, images[0]);
-			gd.addChoice("Color", colorNames, colorNames[0]);
-			gd.addNumericField("Threshold", 50, 0);
-			gd.addNumericField("Resampling factor", 2, 0);
-
-			gd.showDialog();
-			if(gd.wasCanceled())
-				return;
-			
-			ImagePlus newImage = WindowManager.getImage(gd.getNextChoice());
-			Color3f color = getColor(gd.getNextChoice());
-			int threshold = (int)gd.getNextNumber();
-			int factor = (int)gd.getNextNumber();
-			newImage = Resample_.resample(newImage, factor, factor, factor);
-			univ.addImage(newImage, threshold, color);
 		}
-	}
+		gd.addChoice("Color", colorNames, colorNames[0]);
+		gd.addNumericField("Threshold", 50, 0);
+		gd.addNumericField("Resampling factor", 2, 0);
 
-	private Color3f getColor(String name) {
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+			
+		if(image == null)
+			image = WindowManager.getImage(gd.getNextChoice());
+		Color3f color = getColor(gd.getNextChoice());
+		int threshold = (int)gd.getNextNumber();
+		int factor = (int)gd.getNextNumber();
+		if(factor != 1)
+			image = Resample_.resample(image, factor);
+		univ.addImage(image, threshold, color);
+	}	
+
+	private static Color3f getColor(String name) {
 		for(int i = 0; i < colors.length; i++) {
 			if(colorNames[i].equals(name)){
-				System.out.println("col=" + name);
-				System.out.println("return " + colors[i]);
 				return colors[i];
 			}
 		}
-		System.out.println("return null");
 		return null;
 	}
 

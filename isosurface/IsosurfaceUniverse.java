@@ -31,7 +31,7 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		addBranchGraph(scene);
 	}
 
-	public IsosurfaceUniverse(ImagePlus image, int threshold, Color3f color) {
+	public IsosurfaceUniverse(ImagePlus image,int threshold,Color3f color) {
 		this();
 		addImage(image, threshold, color);
 	}
@@ -43,33 +43,33 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		// create initial transformation
 		Transform3D scale = new Transform3D();
 		float xRange = image.getWidth() * 
-								(float)image.getCalibration().pixelWidth;
+				(float)image.getCalibration().pixelWidth;
 		scale.setScale(1/xRange);
 
 		// create TransformGroup and set capabilities
-        TransformGroup objTransform = new TransformGroup(scale);
-        objTransform.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-        objTransform.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		objTransform.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
-		objTransform.setCapability(TransformGroup.ALLOW_CHILDREN_EXTEND);
-		obj.addChild(objTransform);
+		TransformGroup scaleGr = new TransformGroup(scale);
+		scaleGr.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		scaleGr.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		scaleGr.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
+		scaleGr.setCapability(TransformGroup.ALLOW_CHILDREN_EXTEND);
+		obj.addChild(scaleGr);
 		
-		objTransform.addChild(new IsoShape(image, threshold, color));
+		scaleGr.addChild(new IsoShape(image, threshold, color));
 		
 		// Picking
 		BoundingSphere b = new BoundingSphere();
 		b.setRadius(2000.0);
 
 		MouseRotate myMouseRotate = new MouseRotate();
-		myMouseRotate.setTransformGroup(objTransform);
+		myMouseRotate.setTransformGroup(scaleGr);
 		myMouseRotate.setSchedulingBounds(b);
 		obj.addChild(myMouseRotate);
 		MouseTranslate myMouseTranslate = new MouseTranslate();
-		myMouseTranslate.setTransformGroup(objTransform);
+		myMouseTranslate.setTransformGroup(scaleGr);
 		myMouseTranslate.setSchedulingBounds(b);
 		obj.addChild(myMouseTranslate);
 		MouseZoom myMouseZoom = new MouseZoom();
-		myMouseZoom.setTransformGroup(objTransform);
+		myMouseZoom.setTransformGroup(scaleGr);
 		myMouseZoom.setSchedulingBounds(b);
 		obj.addChild(myMouseZoom);
 

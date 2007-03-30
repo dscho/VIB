@@ -31,9 +31,9 @@ public final class IsoShape extends Shape3D {
 	}
 
 	public IsoShape(ImagePlus image, int threshold, Color3f color) {
-		this(image, threshold);
 		this.color = color;
-		System.out.println("Color = " + color);
+		this.setGeometry(createGeometry(image, threshold));
+		this.setAppearance(createAppearance());
 	}
 
 	public void setImage(ImagePlus image, int threshold) {
@@ -68,8 +68,8 @@ public final class IsoShape extends Shape3D {
 	
 	private Geometry createGeometry(ImagePlus image, int threshold) {
 
-		List<Point3f> tList = triangulator.getTriangles(image, threshold);
-		Point3f[] coords = (Point3f[])tList.toArray(new Point3f[]{});
+		List<Point3f> tri = triangulator.getTriangles(image,threshold);
+		Point3f[] coords = (Point3f[])tri.toArray(new Point3f[]{});
 			
 		int N = coords.length;
 		Color3f colors[] = new Color3f[N];
