@@ -106,12 +106,16 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 	}
 
 
-	private static String[] colorNames = new String[]{"Red", "Green", "Blue", 
-		"Magenta"};
+	private static String[] colorNames = new String[]{"White", "Red", 
+				"Green", "Blue", "Cyan", "Magenta", "Yellow"};
 
-	private static Color3f[] colors = {new Color3f(1.0f, 0, 0),
-								new Color3f(0, 1.0f, 0),
-								new Color3f(0, 0, 1.0f),
-								new Color3f(0, 1.0f, 1.0f)};
+	private static Color3f[] colors = {
+				new Color3f(1.0f, 1.0f, 1.0f),
+				new Color3f(1.0f, 0,    0),
+				new Color3f(0,    1.0f, 0),
+				new Color3f(0,    0,    1.0f),
+				new Color3f(0,    1.0f, 1.0f),
+				new Color3f(1.0f, 0,    1.0f),
+				new Color3f(1.0f, 1.0f, 0)};
 }
 
