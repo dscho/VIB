@@ -22,7 +22,10 @@ import java.util.Vector;
 import vib.Resample_;
 import vib.InterpolatedImage;
 
-import isosurface.IsosurfacePanel;
+import isosurface.IsosurfaceUniverse;
+import isosurface.IsosurfaceCanvasPopup;
+
+import javax.vecmath.Color3f;
 
 public class Isosurface_Viewer implements PlugInFilter {
 
@@ -40,10 +43,11 @@ public class Isosurface_Viewer implements PlugInFilter {
 		int resample = (int)gd.getNextNumber();
 		if(resample != 1)
 			image = Resample_.resample(image, resample, resample, resample);
-		IsosurfacePanel isopanel = new IsosurfacePanel(image, threshold);
-		isopanel.canvas.setSize(new Dimension(512, 512));
-		ImageWindow3D win = new ImageWindow3D("Surface Viewer",
-				isopanel.canvas, isopanel.simpleU);
+		IsosurfaceUniverse univ = new IsosurfaceUniverse(
+							image, threshold, new Color3f(0, 1.0f, 0));
+		univ.getCanvas().setSize(new Dimension(512, 512));
+		new IsosurfaceCanvasPopup(univ);
+		new ImageWindow3D("Surface Viewer", univ.getCanvas(), univ);
 	}
 
 	public int setup(String arg, ImagePlus img) {
