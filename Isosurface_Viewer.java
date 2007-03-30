@@ -40,34 +40,27 @@ public class Isosurface_Viewer implements PlugInFilter {
 		GenericDialog gd = new GenericDialog("Isosurface Viewer");
 		gd.addNumericField("Threshold", 50, 0);
 		gd.addCheckbox("Smooth", false);
-		gd.addNumericField("Resample x", 4, 0);
-		gd.addNumericField("Resample y", 4, 0);
-		gd.addNumericField("Resample z", 2, 0);
+		gd.addNumericField("Resampling factor", 2, 0);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
 
 		int threshold = (int)gd.getNextNumber();
 		boolean smooth = gd.getNextBoolean();
-		int resampleX = (int)gd.getNextNumber();
-		int resampleY = (int)gd.getNextNumber();
-		int resampleZ = (int)gd.getNextNumber();
-		process(threshold, smooth, resampleX, resampleY, resampleZ);
+		int resample = (int)gd.getNextNumber();
+		process(threshold, smooth, resample);
 		if(frame == null)
 			showViewer(threshold);
 		else 
 			updateViewer(threshold);
 	}
 
-	public void process(int threshold, boolean smooth,
-			int resampleX, int resampleY, int resampleZ) { 
-System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " + resampleX);
+	public void process(int threshold, boolean smooth, int resample) { 
 		init();
 		if(smooth)
 			smooth();
-		if(resampleX != 1 || resampleY != 1 || resampleZ != 1)
-			resample(resampleX, resampleY, resampleZ);
-
+		if(resample != 1 )
+			resample(resample);
 	}
 
 	private void init() {
@@ -85,8 +78,8 @@ System.err.println("smooth: " + smooth + ", threshold: " + threshold + ", x: " +
 		}
 	}
 
-	public void resample(int facX, int facY, int facZ) {
-		ImagePlus resampled = Resample_.resample(ret, facX, facY, facZ);
+	public void resample(int fac) {
+		ImagePlus resampled = Resample_.resample(ret, fac, fac, fac);
 		w = resampled.getWidth();
 		h = resampled.getHeight();
 		d = resampled.getStackSize();
