@@ -31,8 +31,10 @@ public class IsosurfacePanel extends Panel {
 		
 		// create initial transformation
 		Transform3D scale = new Transform3D();
-//		scale.setScale(1.0/xRange);
-		scale.setScale(1/8.0f);
+		float xRange = image.getWidth() * 
+								(float)image.getCalibration().pixelWidth;
+		System.out.println("XRange = " + xRange);
+		scale.setScale(1/xRange);
 
 		// create TransformGroup and set capabilities
         objTransform = new TransformGroup(scale);

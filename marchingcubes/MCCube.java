@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import javax.vecmath.Point3f;
 import ij.ImagePlus;
 import ij.IJ;
+import ij.measure.Calibration;
 
 public final class MCCube {
     // default size of the cubes
@@ -158,7 +159,7 @@ public final class MCCube {
 	}
 
 	public static final List<Point3f> getTriangles(ImagePlus image, int thresh){
-		List<Point3f> ret = new ArrayList<Point3f>();
+		List<Point3f> tri = new ArrayList<Point3f>();
 		w = image.getWidth();
 		h = image.getHeight();
 		d = image.getStackSize();
@@ -173,11 +174,22 @@ public final class MCCube {
 			for(int x = 0; x < w-SIZE; x+=SIZE){
 				for(int y = SIZE; y < h; y+=SIZE){
 					MCCube cube = new MCCube(x, y, z);
-					cube.getTriangles(ret);
+					cube.getTriangles(tri);
 				}
 			}
 			IJ.showProgress(z, d-2);
 		}
+
+		// convert pixel coordinates 
+		Calibration calib = image.getCalibration();
+		float pwidth = (float)calib.pixelWidth;
+		float pheight = (float)calib.pixelHeight;
+		float pdepth = (float)Math.abs(calib.pixelDepth);
+		List ret = new ArrayList(tri.size());
+		for(int i = 0; i < tri.size(); i++) {
+			Point3f p = (Point3f)tri.get(i);
+			ret.add(new Point3f(p.x*pwidth, p.y*pheight, p.z*pdepth));
+		}	
 		return ret;
 	}
 
