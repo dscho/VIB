@@ -33,7 +33,6 @@ public class IsosurfacePanel extends Panel {
 		Transform3D scale = new Transform3D();
 		float xRange = image.getWidth() * 
 								(float)image.getCalibration().pixelWidth;
-		System.out.println("XRange = " + xRange);
 		scale.setScale(1/xRange);
 
 		// create TransformGroup and set capabilities
@@ -116,12 +115,7 @@ public class IsosurfacePanel extends Panel {
 
 		// This will move the ViewPlatform back a bit so the
 		// objects in the scene can be viewed.
-		TransformGroup tg = simpleU.getViewingPlatform().
-								getViewPlatformTransform();
-		Transform3D transl = new Transform3D();
-		transl.setTranslation(new Vector3f(0, 0, 10.0f));
-		tg.setTransform(transl);
-//		simpleU.getViewingPlatform().setNominalViewingTransform();
+		simpleU.getViewingPlatform().setNominalViewingTransform();
 
 		
 		scene.compile();
