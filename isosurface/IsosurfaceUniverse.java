@@ -40,8 +40,9 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		root.addChild(scaleGr);
 
 		scene = new BranchGroup();
-		scene.setCapability(BranchGroup.ALLOW_DETACH);
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);
+		scene.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
+		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
 		scaleGr.addChild(scene);
 
 		// Picking
@@ -101,6 +102,7 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 
 		// create BranchGroup for this image
 		BranchGroup obj = new BranchGroup();
+		obj.setCapability(BranchGroup.ALLOW_DETACH);
 
 		// create transformation for pickeing
 		TransformGroup pickTr= new TransformGroup();
@@ -124,6 +126,14 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 
 		scene.addChild(obj);
 		contents.put(name, new Content(shape, obj));
+	}
+
+	public void removeImageAt(int x, int y) {
+		Content content = getContentAtCanvasPosition(x, y);
+		if(content == null)
+			return;
+		scene.removeChild(content.bg);
+		contents.remove(content.shape.name);
 	}
 
 	public void removeImage(String name) {

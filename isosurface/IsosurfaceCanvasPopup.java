@@ -19,6 +19,9 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 
 	private MenuItem image;
 	private MenuItem paint;
+	private MenuItem delete;
+
+	private Point p = null;
 
 	public IsosurfaceCanvasPopup(IsosurfaceUniverse universe) {
 		super();
@@ -27,6 +30,10 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 		image = new MenuItem("Add image");
 		image.addActionListener(this);
 		this.add(image);
+
+		delete = new MenuItem("Delete");
+		delete.addActionListener(this);
+		this.add(delete);
 		
 		paint = new MenuItem("Painting");
 		paint.addActionListener(this);
@@ -43,6 +50,7 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 			}
 			private void showPopup(MouseEvent e) {
 				if(e.isPopupTrigger()){
+					p = e.getPoint();
 					show(univ.getCanvas(), 
 							e.getX(),e.getY());
 				}
@@ -57,6 +65,13 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 
 		if(e.getSource() == image) {
 			addNewImage(univ, null);
+		}
+
+		if(e.getSource() == delete) {
+			if(p != null) {
+				univ.removeImageAt(p.x, p.y);
+				p = null;
+			}
 		}
 	}
 
