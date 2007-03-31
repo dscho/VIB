@@ -1,7 +1,11 @@
 package isosurface;
 
 import ij.ImagePlus;
+import ij.process.ImageProcessor;
+import ij.ImageStack;
 import ij.IJ;
+
+import ij3d.ImageWindow3D;
 
 import marchingcubes.MCTriangulator;
 
@@ -25,7 +29,8 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 import com.sun.j3d.utils.picking.*;
 
-public class IsosurfaceUniverse extends SimpleUniverse {
+public class IsosurfaceUniverse extends SimpleUniverse 
+				implements PickingCallback {
 
 	private BranchGroup scene;
 	private Hashtable contents = new Hashtable();;
@@ -52,8 +57,11 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		// Picking
 		BoundingSphere b = new BoundingSphere();
 		int mode = PickObject.USE_GEOMETRY;
-		scene.addChild(
-			new PickRotateBehavior(scene, getCanvas(), b, mode)); 
+		PickRotateBehavior rot = new PickRotateBehavior(scene, 
+							getCanvas(), b, mode); 
+		rot.setupCallback(this);
+		scene.addChild(rot);
+		
 		scene.addChild(
 			new PickTranslateBehavior(scene, getCanvas(), b, mode)); 
 		MouseZoom myMouseZoom = new MouseZoom();
@@ -205,5 +213,28 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 			this.shape = shape;
 			this.bg = bg;
 		}
+	}
+
+	private ImageStack stack;
+	public boolean recording = false;
+
+	public void transformChanged(int type, TransformGroup tg) {
+		if(!recording) return;
+
+		ImageWindow3D win = (ImageWindow3D)getCanvas().getParent();
+		ImageProcessor ip = win.getImagePlus().getProcessor();
+		int w = ip.getWidth(), h = ip.getHeight();
+		
+		if(stack == null) stack = new ImageStack(w, h);
+		stack.addSlice("", ip);
+	}
+
+	public ImagePlus stopRecording() {
+		recording = false;
+		if(stack == null)
+			return null;
+		ImagePlus imp = new ImagePlus("Movie", stack);
+		stack = null;
+		return imp;
 	}
 } 

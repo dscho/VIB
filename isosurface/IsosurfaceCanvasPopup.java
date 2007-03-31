@@ -20,6 +20,8 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 	private MenuItem image;
 	private MenuItem paint;
 	private MenuItem delete;
+	private MenuItem startRecord;
+	private MenuItem stopRecord;
 
 	private Point p = null;
 
@@ -38,6 +40,18 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 		paint = new MenuItem("Painting");
 		paint.addActionListener(this);
 		this.add(paint);
+
+		this.addSeparator();
+
+		startRecord = new MenuItem("Start recording");
+		startRecord.addActionListener(this);
+		this.add(startRecord);
+
+		stopRecord = new MenuItem("Stop recording");
+		stopRecord.addActionListener(this);
+		this.add(stopRecord);
+
+		this.addSeparator();
 
 		univ.getCanvas().add(this);
    		
@@ -72,6 +86,14 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 				univ.removeImageAt(p.x, p.y);
 				p = null;
 			}
+		}
+		
+		if(e.getSource() == startRecord) {
+			univ.recording = true;
+		}
+
+		if(e.getSource() == stopRecord) {
+			univ.stopRecording().show();
 		}
 	}
 
