@@ -121,6 +121,16 @@ public class IsosurfaceUniverse extends SimpleUniverse
 		addMesh(mesh, color, name);
 	}
 
+	public void addMesh(List mesh, Color3f color, String name, float scale){
+		// correct global scaling transformation
+		Transform3D scaletr = new Transform3D();
+		scaleGr.getTransform(scaletr);
+		scaletr.setScale(scale);
+		scaleGr.setTransform(scaletr);
+		// add the mesh
+		addMesh(mesh, color, name);
+	}
+
 	public void addMesh(List mesh, Color3f color, String name) {
 		// check if exists already
 		if(contents.contains(name)) {
@@ -180,28 +190,6 @@ public class IsosurfaceUniverse extends SimpleUniverse
 			return null;
 		String name = shape.name;
 		return (Content)contents.get(name);
-
-		//PickIntersection intersection = result.getIntersection(0);
-		//Point3d point = intersection.getPointCoordinates();
-		//return point; 
-		/*
-		int intersectionCount = result.numIntersections();
-		for(int j=0; j<intersectionCount; j++) {
-			PickIntersection intersection = result.getIntersection(j); 
-			Point3d point = intersection.getPointCoordinates(); 
-			GeometryArray geometryArr = intersection.getGeometryArray();
-			int vertexCount = geometryArr.getVertexCount();
-			Point3d closestVertexCoord = 
-				intersection.getClosestVertexCoordinates();
-			Point3d coord = new Point3d();
-			Color3f red = new Color3f(1.0f, 0.0f, 0.0f);
-			for(int i=0; i<vertexCount; i++){
-				geometryArr.getCoordinate(i, coord);
-				if(coord.equals(closestVertexCoord)){
-					geometryArr.setColor(i,red);
-				}
-			}
-		}*/
 	}
 		
 
