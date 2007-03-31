@@ -57,6 +57,14 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		myMouseZoom.setSchedulingBounds(b);
 		scene.addChild(myMouseZoom);
 
+		// Lightening
+		AmbientLight lightA = new AmbientLight();
+		lightA.setInfluencingBounds(b);
+		root.addChild(lightA);
+		DirectionalLight lightD1 = new DirectionalLight();
+		lightD1.setInfluencingBounds(b);
+		root.addChild(lightD1);
+
 		root.compile();
 		addBranchGraph(root);
 
@@ -114,16 +122,8 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		// create the IsoShape for this image and add it
 		IsoShape shape = new IsoShape(image, threshold, color, name);
 		pickTr.addChild(shape);
-		
-		// Lightening
-		BoundingSphere b = new BoundingSphere();
-		AmbientLight lightA = new AmbientLight();
-		lightA.setInfluencingBounds(b);
-		obj.addChild(lightA);
-		DirectionalLight lightD1 = new DirectionalLight();
-		lightD1.setInfluencingBounds(new BoundingSphere(b));
-		obj.addChild(lightD1);
 
+		obj.compile();
 		scene.addChild(obj);
 		contents.put(name, new Content(shape, obj));
 	}
