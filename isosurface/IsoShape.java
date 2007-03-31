@@ -11,44 +11,36 @@ import com.sun.j3d.utils.geometry.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import ij.ImagePlus;
-
 import java.util.List;
 import java.util.ArrayList;
-
-import marchingcubes.MCTriangulator;
 
 public final class IsoShape extends Shape3D {
 
 	Color3f color = new Color3f(0.0f, 1.0f, 0.0f);
-	ImagePlus image;
-	int threshold = 50;
+	List mesh = null;
 	String name;
 
-	private Triangulator triangulator = new MCTriangulator();
-	
 	public IsoShape() {
 	}
 	
-	public IsoShape(ImagePlus image, int threshold, String name){
-		this.image = image;
-		this.threshold = threshold;
+	public IsoShape(List mesh, String name){
+		this.mesh = mesh;
 		this.name = name;
 		this.update();
 	}
 
-	public IsoShape(ImagePlus image, int threshold, 
-					Color3f color, String name) {
-		this.image = image;
-		this.threshold = threshold;
+	public IsoShape(List mesh, Color3f color, String name) {
+		this.mesh = mesh;
 		this.color = color;
 		this.name = name;
 		this.update();
 	}
 
 	public void update() {
-		this.setGeometry(createGeometry());
-		this.setAppearance(createAppearance());
+		if(mesh != null) {
+			this.setGeometry(createGeometry());
+			this.setAppearance(createAppearance());
+		}
 	}
 
 	private static Appearance createAppearance () {
@@ -74,7 +66,7 @@ public final class IsoShape extends Shape3D {
 	
 	private Geometry createGeometry() {
 
-		List<Point3f> tri = triangulator.getTriangles(image,threshold);
+		List<Point3f> tri = mesh;
 		Point3f[] coords = (Point3f[])tri.toArray(new Point3f[]{});
 			
 		int N = coords.length;

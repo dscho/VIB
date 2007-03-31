@@ -3,12 +3,15 @@ package isosurface;
 import ij.ImagePlus;
 import ij.IJ;
 
+import marchingcubes.MCTriangulator;
+
 import java.awt.Panel;
 import java.awt.BorderLayout;
 import java.awt.Frame;
 import java.awt.event.*;
 import java.awt.GraphicsConfiguration;
 
+import java.util.List;
 import java.util.Hashtable;
 
 import com.sun.j3d.utils.behaviors.mouse.*;
@@ -27,6 +30,7 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 	private BranchGroup scene;
 	private Hashtable contents = new Hashtable();;
 	private TransformGroup scaleGr;
+	private Triangulator triangulator = new MCTriangulator();
 
 	public IsosurfaceUniverse() {
 		super(new Canvas3D(SimpleUniverse.getPreferredConfiguration()));
@@ -89,13 +93,11 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 	
 	public void addImage(ImagePlus image, int threshold, 
 						Color3f color, String name) {
-
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
-
 		// correct global scaling transformation
 		Transform3D scale= new Transform3D();
 		scaleGr.getTransform(scale);
@@ -107,7 +109,17 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 			scale.setScale(1/xRange);
 			scaleGr.setTransform(scale);
 		}
+		List mesh = triangulator.getTriangles(image, threshold);
+		addMesh(mesh, color, name);
+	}
 
+	public void addMesh(List mesh, Color3f color, String name) {
+		// check if exists already
+		if(contents.contains(name)) {
+			IJ.error("Name exists already");
+			return;
+		}
+	
 		// create BranchGroup for this image
 		BranchGroup obj = new BranchGroup();
 		obj.setCapability(BranchGroup.ALLOW_DETACH);
@@ -120,7 +132,7 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		obj.addChild(pickTr);
 
 		// create the IsoShape for this image and add it
-		IsoShape shape = new IsoShape(image, threshold, color, name);
+		IsoShape shape = new IsoShape(mesh, color, name);
 		pickTr.addChild(shape);
 
 		obj.compile();
