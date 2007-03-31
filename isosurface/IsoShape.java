@@ -20,29 +20,35 @@ import marchingcubes.MCTriangulator;
 
 public final class IsoShape extends Shape3D {
 
-	private Color3f color = new Color3f(0.0f, 1.0f, 0.0f);
+	Color3f color = new Color3f(0.0f, 1.0f, 0.0f);
+	ImagePlus image;
+	int threshold = 50;
+	String name;
+
 	private Triangulator triangulator = new MCTriangulator();
 	
 	public IsoShape() {
 	}
 	
-	public IsoShape(ImagePlus image, int threshold){
-		this.setImage(image, threshold);
+	public IsoShape(ImagePlus image, int threshold, String name){
+		this.image = image;
+		this.threshold = threshold;
+		this.name = name;
+		this.update();
 	}
 
-	public IsoShape(ImagePlus image, int threshold, Color3f color) {
+	public IsoShape(ImagePlus image, int threshold, 
+					Color3f color, String name) {
+		this.image = image;
+		this.threshold = threshold;
 		this.color = color;
-		this.setGeometry(createGeometry(image, threshold));
-		this.setAppearance(createAppearance());
+		this.name = name;
+		this.update();
 	}
 
-	public void setImage(ImagePlus image, int threshold) {
-		this.setGeometry(createGeometry(image, threshold));
+	public void update() {
+		this.setGeometry(createGeometry());
 		this.setAppearance(createAppearance());
-	}
-
-	public void setColor(Color3f color) {
-		this.color = color;
 	}
 
 	private static Appearance createAppearance () {
@@ -66,7 +72,7 @@ public final class IsoShape extends Shape3D {
 		return appearance;
 	}
 	
-	private Geometry createGeometry(ImagePlus image, int threshold) {
+	private Geometry createGeometry() {
 
 		List<Point3f> tri = triangulator.getTriangles(image,threshold);
 		Point3f[] coords = (Point3f[])tri.toArray(new Point3f[]{});

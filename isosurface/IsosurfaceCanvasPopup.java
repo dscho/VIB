@@ -78,6 +78,8 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 			images = (String[])imageV.toArray(new String[]{});
 			gd.addChoice("Image", images, images[0]);
 		}
+		String tmp = image != null ? image.getTitle() : "";
+		gd.addStringField("Name", tmp, 10);
 		gd.addChoice("Color", colorNames, colorNames[0]);
 		gd.addNumericField("Threshold", 50, 0);
 		gd.addNumericField("Resampling factor", 2, 0);
@@ -88,12 +90,13 @@ public class IsosurfaceCanvasPopup extends PopupMenu
 			
 		if(image == null)
 			image = WindowManager.getImage(gd.getNextChoice());
+		String name = gd.getNextString();
 		Color3f color = getColor(gd.getNextChoice());
 		int threshold = (int)gd.getNextNumber();
 		int factor = (int)gd.getNextNumber();
 		if(factor != 1)
 			image = Resample_.resample(image, factor);
-		univ.addImage(image, threshold, color);
+		univ.addImage(image, threshold, color, name);
 	}	
 
 	private static Color3f getColor(String name) {

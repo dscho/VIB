@@ -1,6 +1,7 @@
 package isosurface;
 
 import ij.ImagePlus;
+import ij.IJ;
 
 import java.awt.Panel;
 import java.awt.BorderLayout;
@@ -57,14 +58,34 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 
 		root.compile();
 		addBranchGraph(root);
+
+		// add mouse listeners
+		getCanvas().addMouseMotionListener(new MouseMotionAdapter() {
+			public void mouseMoved(MouseEvent e) {
+				Content c = getContentAtCanvasPosition(
+						e.getX(), e.getY());
+				if(c != null)
+					IJ.showStatus(c.shape.name);
+				else
+					IJ.showStatus("");
+			}
+		});
 	}
 
-	public IsosurfaceUniverse(ImagePlus image,int threshold,Color3f color) {
+	public IsosurfaceUniverse(ImagePlus image, int threshold, 
+						Color3f color, String name) {
 		this();
-		addImage(image, threshold, color);
+		addImage(image, threshold, color, name);
 	}
 	
-	public void addImage(ImagePlus image, int threshold, Color3f color) {
+	public void addImage(ImagePlus image, int threshold, 
+						Color3f color, String name) {
+
+		// check if exists already
+		if(contents.contains(name)) {
+			IJ.error("Name exists already");
+			return;
+		}
 
 		// correct global scaling transformation
 		Transform3D scale= new Transform3D();
@@ -89,7 +110,8 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		obj.addChild(pickTr);
 
 		// create the IsoShape for this image and add it
-		pickTr.addChild(new IsoShape(image, threshold, color));
+		IsoShape shape = new IsoShape(image, threshold, color, name);
+		pickTr.addChild(shape);
 		
 		// Lightening
 		BoundingSphere b = new BoundingSphere();
@@ -101,18 +123,64 @@ public class IsosurfaceUniverse extends SimpleUniverse {
 		obj.addChild(lightD1);
 
 		scene.addChild(obj);
-		contents.put(image.getTitle(), 
-				new Content(image, image.getTitle(), obj));
-	} 
+		contents.put(name, new Content(shape, obj));
+	}
+
+	public void removeImage(String name) {
+		Content content = (Content)contents.get(name);
+		if(content == null)
+			return;
+		BranchGroup bg = content.bg;
+		scene.removeChild(bg);
+		contents.remove(name);
+	}
+
+	private Content getContentAtCanvasPosition(int x, int y) {
+		PickCanvas pickCanvas = new PickCanvas(getCanvas(), scene); 
+		pickCanvas.setMode(PickTool.GEOMETRY);
+		pickCanvas.setTolerance(4.0f); 
+		pickCanvas.setShapeCylinderRay(new Point3d(0,0,0),
+				new Vector3d(0,0,1), 20.0); 
+		pickCanvas.setShapeLocation(x, y); 
+		PickResult result = pickCanvas.pickClosest(); 
+		if(result == null) 
+			return null;
+		IsoShape shape = (IsoShape)result.getNode(PickResult.SHAPE3D);
+		if(shape == null)
+			return null;
+		String name = shape.name;
+		return (Content)contents.get(name);
+
+		//PickIntersection intersection = result.getIntersection(0);
+		//Point3d point = intersection.getPointCoordinates();
+		//return point; 
+		/*
+		int intersectionCount = result.numIntersections();
+		for(int j=0; j<intersectionCount; j++) {
+			PickIntersection intersection = result.getIntersection(j); 
+			Point3d point = intersection.getPointCoordinates(); 
+			GeometryArray geometryArr = intersection.getGeometryArray();
+			int vertexCount = geometryArr.getVertexCount();
+			Point3d closestVertexCoord = 
+				intersection.getClosestVertexCoordinates();
+			Point3d coord = new Point3d();
+			Color3f red = new Color3f(1.0f, 0.0f, 0.0f);
+			for(int i=0; i<vertexCount; i++){
+				geometryArr.getCoordinate(i, coord);
+				if(coord.equals(closestVertexCoord)){
+					geometryArr.setColor(i,red);
+				}
+			}
+		}*/
+	}
+		
 
 	private static class Content {
-		private ImagePlus image;
-		private String name;
+		private IsoShape shape;
 		private BranchGroup bg;
 
-		public Content(ImagePlus image, String name, BranchGroup bg) {
-			this.image = image;
-			this.name = name;
+		public Content(IsoShape shape, BranchGroup bg) {
+			this.shape = shape;
 			this.bg = bg;
 		}
 	}
