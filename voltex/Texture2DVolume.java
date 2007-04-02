@@ -15,27 +15,27 @@ public class Texture2DVolume implements VolRendConstants {
 	protected static final int RELOAD_NONE = 0;
 	protected static final int RELOAD_VOLUME = 1;
 
-    protected Texture2D[] xTextures;	
-    protected Texture2D[] yTextures;	
-    protected Texture2D[] zTextures;	
+	protected Texture2D[] xTextures;	
+	protected Texture2D[] yTextures;	
+	protected Texture2D[] zTextures;	
 
-    protected TexCoordGeneration xTg = new TexCoordGeneration();
-    protected TexCoordGeneration yTg = new TexCoordGeneration();
-    protected TexCoordGeneration zTg = new TexCoordGeneration();
+	protected TexCoordGeneration xTg = new TexCoordGeneration();
+	protected TexCoordGeneration yTg = new TexCoordGeneration();
+	protected TexCoordGeneration zTg = new TexCoordGeneration();
 
-    private WritableRaster raster;
-    private int	volEditId = -1;
-    private boolean	volumeReloadNeeded = true;
+	private WritableRaster raster;
+	private int	volEditId = -1;
+	private boolean	volumeReloadNeeded = true;
 
 	protected Volume volume;
 
 	int[][] texColorMap;
 
-    public Texture2DVolume(Volume volume) {
+	public Texture2DVolume(Volume volume) {
 		this.volume = volume;
-    }
+	}
 
-    int update() {
+	int update() {
 		int newVolEditId = -1;
 		if ((newVolEditId = volume.update()) != volEditId) {
 			volEditId = newVolEditId;
@@ -47,16 +47,16 @@ public class Texture2DVolume implements VolRendConstants {
 		} else {
 			return RELOAD_NONE;
 		}
-    }
+	}
 
-    void volumeReload() {
+	void volumeReload() {
 		if (volume.hasData()) {
 			loadTexture();
 		}
 		volumeReloadNeeded = false;
-    }
+	}
 
-    void loadTexture() {
+	void loadTexture() {
 
 		IJ.showStatus("Loading Z axis texture maps");
 		loadAxis(Z_AXIS);
@@ -64,10 +64,10 @@ public class Texture2DVolume implements VolRendConstants {
 		loadAxis(Y_AXIS);
 		IJ.showStatus("Loading X axis texture maps");
 		loadAxis(X_AXIS);
-    }
+	}
 
-    private void loadAxis(int axis) {
-		int	rSize = 0;    // number of tex maps to create
+	private void loadAxis(int axis) {
+		int	rSize = 0;	// number of tex maps to create
 		int	sSize = 0; 	  // s,t = size of texture map to create
 		int tSize = 0; 
 		Texture2D[] textures = null;
@@ -79,8 +79,8 @@ public class Texture2DVolume implements VolRendConstants {
 			tSize = volume.yTexSize;
 			textures = zTextures = new Texture2D[rSize];
 			zTg = new TexCoordGeneration();
-			zTg.setPlaneS(new Vector4f(volume.xTexGenScale, 0.0f, 0.0f, 0.0f));
-			zTg.setPlaneT(new Vector4f(0.0f, volume.yTexGenScale, 0.0f, 0.0f));
+			zTg.setPlaneS(new Vector4f(volume.xTexGenScale, 0f, 0f, 0f));
+			zTg.setPlaneT(new Vector4f(0f, volume.yTexGenScale, 0f, 0f));
 			break;
 		  case Y_AXIS:
 			rSize = volume.yDim;
@@ -88,8 +88,8 @@ public class Texture2DVolume implements VolRendConstants {
 			tSize = volume.zTexSize;
 			textures = yTextures = new Texture2D[rSize];
 			yTg = new TexCoordGeneration();
-			yTg.setPlaneS(new Vector4f(volume.xTexGenScale, 0.0f, 0.0f, 0.0f));
-			yTg.setPlaneT(new Vector4f(0.0f, 0.0f, volume.zTexGenScale, 0.0f));
+			yTg.setPlaneS(new Vector4f(volume.xTexGenScale, 0f, 0f, 0f));
+			yTg.setPlaneT(new Vector4f(0f, 0f, volume.zTexGenScale, 0f));
 			break;
 		  case X_AXIS:
 			rSize = volume.xDim;
@@ -97,8 +97,8 @@ public class Texture2DVolume implements VolRendConstants {
 			tSize = volume.zTexSize;
 			textures = xTextures = new Texture2D[rSize];
 			xTg = new TexCoordGeneration();
-			xTg.setPlaneS(new Vector4f(0.0f, volume.yTexGenScale, 0.0f, 0.0f));
-			xTg.setPlaneT(new Vector4f(0.0f, 0.0f, volume.zTexGenScale, 0.0f));
+			xTg.setPlaneS(new Vector4f(0f, volume.yTexGenScale, 0f, 0f));
+			xTg.setPlaneT(new Vector4f(0f, 0f, volume.zTexGenScale, 0f));
 			break;
 		}
 
@@ -109,7 +109,7 @@ public class Texture2DVolume implements VolRendConstants {
 			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
 			int[] nBits = {8};
 			colorModel = new ComponentColorModel(cs, nBits, false, false, 
-							Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
+					Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
 		}
 
 		raster = colorModel.createCompatibleWritableRaster(sSize, tSize); 
@@ -129,9 +129,9 @@ public class Texture2DVolume implements VolRendConstants {
 
 		for (int i=0; i < rSize; i ++) { 
 			switch (axis) {
-			  case Z_AXIS: volume.loadZ(i, data); break;
-			  case Y_AXIS: volume.loadY(i, data); break;
-			  case X_AXIS: volume.loadX(i, data); break;
+				case Z_AXIS: volume.loadZ(i, data); break;
+				case Y_AXIS: volume.loadY(i, data); break;
+				case X_AXIS: volume.loadX(i, data); break;
 			}
 			IJ.showProgress(i, rSize);
 
@@ -139,9 +139,10 @@ public class Texture2DVolume implements VolRendConstants {
 			ImageComponent2D pArray;
 			boolean byRef = false;
 			boolean yUp = true;
-			tex = new Texture2D(Texture.BASE_LEVEL, textureMode, sSize, tSize);
+			tex = new Texture2D(Texture.BASE_LEVEL, 
+						textureMode, sSize, tSize);
 			pArray = new ImageComponent2D(
-							componentType, sSize, tSize, byRef, yUp);
+						componentType, sSize, tSize, byRef, yUp);
 			pArray.set(bImage);
 		
 			tex.setImage(0, pArray);
@@ -154,5 +155,5 @@ public class Texture2DVolume implements VolRendConstants {
 
 			textures[i] = tex;
 		} 
-    } 
+	} 
 }
