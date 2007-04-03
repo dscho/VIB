@@ -7,9 +7,11 @@ import java.util.Vector;
 import voltex.VoltexGroup;
 import isosurface.MeshGroup;
 import javax.vecmath.Color3f;
+import javax.media.j3d.View;
 
 public class Image3DCanvasPopup extends PopupMenu 
-						 implements ActionListener {
+						 implements ActionListener, 
+						 		ItemListener {
 
 	private Image3DUniverse univ;
 
@@ -19,6 +21,7 @@ public class Image3DCanvasPopup extends PopupMenu
 	private MenuItem delete;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
+	private CheckboxMenuItem perspective;
 
 	private Point p = null;
 
@@ -53,6 +56,10 @@ public class Image3DCanvasPopup extends PopupMenu
 		this.add(stopRecord);
 
 		this.addSeparator();
+
+		perspective = new CheckboxMenuItem("Perspective Projection", true);
+		perspective.addItemListener(this);
+		this.add(perspective);
 
 		univ.getCanvas().add(this);
    		
@@ -99,6 +106,16 @@ public class Image3DCanvasPopup extends PopupMenu
 
 		if(e.getSource() == stopRecord) {
 			univ.stopRecording().show();
+		}
+
+	}
+
+	public void itemStateChanged(ItemEvent e) {
+		if(e.getSource() == perspective) {
+			int policy = perspective.getState() 
+						? View.PERSPECTIVE_PROJECTION 
+						: View.PARALLEL_PROJECTION;
+			univ.getViewer().getView().setProjectionPolicy(policy);
 		}
 	}
 }
