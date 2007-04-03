@@ -12,8 +12,7 @@ public class Content extends BranchGroup {
 	
 	protected TransformGroup pickTr;
 
-	public Content(String name, Color3f color) {
-		super();
+	public Content() {
 		// create BranchGroup for this image
 		setCapability(BranchGroup.ALLOW_DETACH);
 		setCapability(BranchGroup.ENABLE_PICK_REPORTING);
@@ -28,8 +27,44 @@ public class Content extends BranchGroup {
 		addChild(pickTr);
 	}
 
+	public Content(String name, Color3f color) {
+		this();
+		this.name = name;
+		this.color = color;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setColor(Color3f color) {
+		this.color = color;
+	}
+
 	public void eyePtChanged(View view) {
 	}
+
+	protected static Color3f getColor(String name) {
+		for(int i = 0; i < colors.length; i++) {
+			if(colorNames[i].equals(name)){
+				return colors[i];
+			}
+		}
+		return null;
+	}
+
+
+	protected static String[] colorNames = new String[]{"White", "Red", 
+				"Green", "Blue", "Cyan", "Magenta", "Yellow"};
+
+	protected static Color3f[] colors = {
+				new Color3f(1.0f, 1.0f, 1.0f),
+				new Color3f(1.0f, 0,    0),
+				new Color3f(0,    1.0f, 0),
+				new Color3f(0,    0,    1.0f),
+				new Color3f(0,    1.0f, 1.0f),
+				new Color3f(1.0f, 0,    1.0f),
+				new Color3f(1.0f, 1.0f, 0)};
 }
 
 

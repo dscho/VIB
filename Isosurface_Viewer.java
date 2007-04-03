@@ -8,6 +8,7 @@ import java.awt.Dimension;
 
 import vis3d.Image3DUniverse;
 import vis3d.Image3DCanvasPopup;
+import isosurface.MeshGroup;
 
 public class Isosurface_Viewer implements PlugInFilter {
 
@@ -16,7 +17,7 @@ public class Isosurface_Viewer implements PlugInFilter {
 	public void run(ImageProcessor ip) {
 		Image3DUniverse univ = new Image3DUniverse();
 		univ.getCanvas().setSize(new Dimension(512, 512));
-		Image3DCanvasPopup.addNewImage(univ, image);
+		MeshGroup.addContent(univ, image);
 		new Image3DCanvasPopup(univ);
 		new ImageWindow3D("Surface Viewer", univ.getCanvas(), univ);
 	}
