@@ -6,6 +6,7 @@ import ij.ImageStack;
 import ij.IJ;
 
 import ij3d.ImageWindow3D;
+import ij3d.ImageCanvas3D;
 
 import isosurface.Triangulator;
 import isosurface.MeshGroup;
@@ -24,8 +25,7 @@ import java.util.List;
 import java.util.Hashtable;
 import java.util.Iterator;
 
-import com.sun.j3d.utils.behaviors.mouse.*;
-import com.sun.j3d.utils.behaviors.picking.*;
+import com.sun.j3d.utils.picking.behaviors.PickingCallback;
 import com.sun.j3d.utils.behaviors.keyboard.*;
 import com.sun.j3d.utils.applet.MainFrame; 
 import com.sun.j3d.utils.universe.*;
@@ -33,7 +33,9 @@ import com.sun.j3d.utils.geometry.ColorCube;
 import com.sun.j3d.utils.geometry.Sphere;
 import javax.media.j3d.*;
 import javax.vecmath.*;
-import com.sun.j3d.utils.picking.*;
+
+import com.sun.j3d.utils.picking.PickCanvas;
+import com.sun.j3d.utils.picking.PickResult;
 
 public class Image3DUniverse extends SimpleUniverse 
 				implements PickingCallback {
@@ -44,7 +46,7 @@ public class Image3DUniverse extends SimpleUniverse
 	private Triangulator triangulator = new MCTriangulator();
 
 	public Image3DUniverse() {
-		super(new Canvas3D(SimpleUniverse.getPreferredConfiguration()));
+		super(new ImageCanvas3D(getPreferredConfiguration(), 512, 512));
 		getViewingPlatform().setNominalViewingTransform();
 
 		BranchGroup root = new BranchGroup();
@@ -60,20 +62,9 @@ public class Image3DUniverse extends SimpleUniverse
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
 		scaleTG.addChild(scene);
 
-		// Picking
 		BoundingSphere b = new BoundingSphere();
-		int mode = PickObject.USE_GEOMETRY;
-		PickRotateBehavior rot = 
-				new PickRotateBehavior(scene, getCanvas(), b, mode); 
-		rot.setupCallback(this);
-		scene.addChild(rot);
-		
-		scene.addChild(
-			new PickTranslateBehavior(scene, getCanvas(), b, mode)); 
-		MouseZoom myMouseZoom = new MouseZoom();
-		myMouseZoom.setTransformGroup(scaleTG);
-		myMouseZoom.setSchedulingBounds(b);
-		scene.addChild(myMouseZoom);
+		b.setRadius(10.0);
+		new MouseNavigation(scene, getCanvas(), scaleTG, this);
 
 		// Lightening
 		AmbientLight lightA = new AmbientLight();
@@ -183,7 +174,7 @@ public class Image3DUniverse extends SimpleUniverse
 
 	private Content getContentAtCanvasPosition(int x, int y) {
 		PickCanvas pickCanvas = new PickCanvas(getCanvas(), scene); 
-		pickCanvas.setMode(PickTool.GEOMETRY);
+		pickCanvas.setMode(PickCanvas.GEOMETRY);
 		pickCanvas.setTolerance(4.0f); 
 		pickCanvas.setShapeLocation(x, y); 
 		PickResult result = null;
