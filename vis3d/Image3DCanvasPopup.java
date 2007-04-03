@@ -4,6 +4,7 @@ import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
 
+import voltex.VoltexGroup;
 import isosurface.MeshGroup;
 import javax.vecmath.Color3f;
 
@@ -13,6 +14,7 @@ public class Image3DCanvasPopup extends PopupMenu
 	private Image3DUniverse univ;
 
 	private MenuItem mesh;
+	private MenuItem voltex;
 	private MenuItem paint;
 	private MenuItem delete;
 	private MenuItem startRecord;
@@ -23,6 +25,10 @@ public class Image3DCanvasPopup extends PopupMenu
 	public Image3DCanvasPopup(Image3DUniverse universe) {
 		super();
 		this.univ = universe;
+
+		voltex = new MenuItem("Add volume");
+		voltex.addActionListener(this);
+		this.add(voltex);
 
 		mesh = new MenuItem("Add mesh");
 		mesh.addActionListener(this);
@@ -72,6 +78,10 @@ public class Image3DCanvasPopup extends PopupMenu
 			System.out.println("painting");
 		} 
 
+		if(e.getSource() == voltex) {
+			VoltexGroup.addContent(univ, null);
+		}
+		
 		if(e.getSource() == mesh) {
 			MeshGroup.addContent(univ, null);
 		}
