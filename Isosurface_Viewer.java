@@ -6,18 +6,18 @@ import ij.gui.GenericDialog;
 import ij3d.ImageWindow3D;
 import java.awt.Dimension;
 
-import isosurface.IsosurfaceUniverse;
-import isosurface.IsosurfaceCanvasPopup;
+import vis3d.Image3DUniverse;
+import vis3d.Image3DCanvasPopup;
 
 public class Isosurface_Viewer implements PlugInFilter {
 
 	private ImagePlus image;
 
 	public void run(ImageProcessor ip) {
-		IsosurfaceUniverse univ = new IsosurfaceUniverse();
+		Image3DUniverse univ = new Image3DUniverse();
 		univ.getCanvas().setSize(new Dimension(512, 512));
-		IsosurfaceCanvasPopup.addNewImage(univ, image);
-		new IsosurfaceCanvasPopup(univ);
+		Image3DCanvasPopup.addNewImage(univ, image);
+		new Image3DCanvasPopup(univ);
 		new ImageWindow3D("Surface Viewer", univ.getCanvas(), univ);
 	}
 

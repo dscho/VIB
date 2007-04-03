@@ -11,73 +11,42 @@ import ij.ImagePlus;
 
 public class Axis2DRenderer extends AxisRenderer {
 
-    private Texture2DVolume texVol;
+	private Texture2DVolume texVol;
 
-    public Axis2DRenderer(View view,ImagePlus img, Color3f color) {
-		super(view, img, color);
+	public Axis2DRenderer(ImagePlus img, Color3f color) {
+		super(img, color);
 		texVol = new Texture2DVolume(volume);
-    }
-
-    void update() {
-        int	texVolUpdate = texVol.update();
-		switch (texVolUpdate) {
-		  case Texture2DVolume.RELOAD_NONE:
-			fullReloadNeeded = false;
-			break;
-		  case Texture2DVolume.RELOAD_VOLUME:
-			fullReloadNeeded = true;
-			break;
-		}
-		if (fullReloadNeeded) {
-			fullReload();
-		}
-    }
-
-	public void reloadTextureColorTable() {
-		System.out.println("applyTextureColorTable");
-		if(!volume.is8C)
-			return;
-		int[][] cmap = new int[4][256];
-		IndexColorModel cmodel = volume.cmodel;
-		for(int i = 0; i < 256; i++) {
-			cmap[0][i] = cmodel.getRed(i);
-			cmap[1][i] = cmodel.getGreen(i);
-			cmap[2][i] = cmodel.getBlue(i);
-			cmap[3][i] = cmodel.getAlpha(i);
-		}
-
-		int num = axisSwitch.numChildren();
-		for(int i = 0; i < num; i++) {
-			((Shape3D)axisSwitch.getChild(i)).getAppearance().
-				getTextureAttributes().setTextureColorTable(cmap);
-		}
 	}
 
-    void fullReload() {
+	void update() {
+		texVol.update();
+		fullReload();
+	}
+
+	void fullReload() {
 		clearData();
 		if (volume.hasData()) {
 			loadQuads();
 		}
 		setWhichChild();
-		fullReloadNeeded = false;
-    }
+	}
 
 
-    void loadQuads() {
+	void loadQuads() {
 		loadAxis(Z_AXIS);
 		loadAxis(Y_AXIS);
 		loadAxis(X_AXIS);
-    }
+	}
 
-    private void loadAxis(int axis) {
-		int	rSize = 0;        // number of tex maps to create
+	private void loadAxis(int axis) {
+		int	rSize = 0;		// number of tex maps to create
 		OrderedGroup frontGroup = null;
 		OrderedGroup backGroup = null;
 		Texture2D[] textures = null;
 		TexCoordGeneration tg = null;
 
 		switch (axis) {
-		  case Z_AXIS:
+		case Z_AXIS:
 			frontGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
 			backGroup = 
@@ -87,7 +56,7 @@ public class Axis2DRenderer extends AxisRenderer {
 			tg = texVol.zTg;
 			setCoordsZ();
 			break;
-		  case Y_AXIS:
+		case Y_AXIS:
 			frontGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
 			backGroup = 
@@ -97,7 +66,7 @@ public class Axis2DRenderer extends AxisRenderer {
 			tg = texVol.yTg;
 			setCoordsY();
 			break;
-		  case X_AXIS:
+		case X_AXIS:
 			frontGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
 			backGroup = 
@@ -112,24 +81,18 @@ public class Axis2DRenderer extends AxisRenderer {
 		for (int i=0; i < rSize; i ++) { 
 
 			switch (axis) {
-			  case Z_AXIS: setCurCoordZ(i); break;
-			  case Y_AXIS: setCurCoordY(i); break;
-			  case X_AXIS: setCurCoordX(i); break;
+			case Z_AXIS: setCurCoordZ(i); break;
+			case Y_AXIS: setCurCoordY(i); break;
+			case X_AXIS: setCurCoordX(i); break;
 			}
 
 			Texture2D tex = textures[i];
 
-			Appearance a = new Appearance();
-			a.setMaterial(m);
-			a.setTransparencyAttributes(t);
-			a.setTexture(tex);
-			a.setTextureAttributes(texAttr);
-			a.setTexCoordGeneration(tg);
-			a.setPolygonAttributes(p);
-//			a.setColoringAttributes(colAttr);
 
 			QuadArray quadArray = new QuadArray(4, GeometryArray.COORDINATES );
 			quadArray.setCoordinates(0, quadCoords);
+
+			Appearance a = getAppearance(textures[i], tg);
 
 			Shape3D frontShape = new Shape3D(quadArray, a);
 
@@ -146,5 +109,29 @@ public class Axis2DRenderer extends AxisRenderer {
 			backGroup.insertChild(backShapeGroup, 0);
 
 		} 
-    } 
+	} 
+
+	private static Appearance getAppearance(Texture tex, 
+								TexCoordGeneration tg) {
+		Appearance a = new Appearance();
+		//texAttr.setTextureMode(TextureAttributes.MODULATE);
+		TextureAttributes texAttr = new TextureAttributes();
+		texAttr.setTextureMode(TextureAttributes.REPLACE);
+		TransparencyAttributes t = new TransparencyAttributes();
+		t.setTransparency(0.5f);
+		t.setTransparencyMode(TransparencyAttributes.BLENDED);
+		PolygonAttributes p = new PolygonAttributes();
+		p.setCullFace(PolygonAttributes.CULL_NONE);
+		Material m = new Material();
+		m.setLightingEnable(false);
+		
+		a.setMaterial(m);
+		a.setTransparencyAttributes(t);
+		a.setTexture(tex);
+		a.setTextureAttributes(texAttr);
+		a.setTexCoordGeneration(tg);
+		a.setPolygonAttributes(p);
+		//a.setColoringAttributes(colAttr);
+		return a;
+	}
 }

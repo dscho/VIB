@@ -99,12 +99,9 @@ public class VolRend implements MouseBehaviorCallback {
 
 	public void update() {
 		for(Renderer rend : renderer) {
-			int newVolEditId;
 			Volume volume = rend.volume;
-			if ((newVolEditId = volume.update()) != volEditId) {
-				updateCenter(volume.minCoord, volume.maxCoord);
-				newVolEditId = volEditId;
-			}
+			volume.update();
+			updateCenter(volume.minCoord, volume.maxCoord);
 			rend.update();
 		}
 	}
@@ -142,6 +139,9 @@ public class VolRend implements MouseBehaviorCallback {
 
 		// Create a TG at the origin
 		objectTG = new TransformGroup();
+		Transform3D scale = new Transform3D();
+		scale.setScale(1.0f/600);
+		objectTG.setTransform(scale);
 		objectTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		objectTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		objRoot.addChild(objectTG);

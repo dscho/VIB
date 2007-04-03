@@ -12,37 +12,34 @@ import com.sun.j3d.utils.behaviors.mouse.*;
 
 abstract public class Renderer {
 
-    private View view;
-    
 	ImagePlus image;
 	Volume volume;
 
-    public Renderer(View vw, ImagePlus image) {
-		this.view = vw;
+	public Renderer(ImagePlus image) {
 		this.image = image;
 		this.volume = new Volume(image);
-    }
+	}
 
-    /** 
-     * Retrieve the branchgroup of this renderer
+	/** 
+	 * Retrieve the branchgroup of this renderer
 	 */
 	abstract public BranchGroup getVolumeNode();
 
-    /**
-     * Called to make changes to the renderer state
-     */
-    abstract void update();
+	/**
+	 * Called to make changes to the renderer state
+	 */
+	abstract void update();
 
-    /**
-     * Called when the view position relative to the renderer changes
-     */
-    public void eyePtChanged() {}; 
+	/**
+	 * Called when the view position relative to the renderer changes
+	 */
+	public void eyePtChanged(View view) {}; 
 
 
-    /** 
-     * return the eye's position in <node>'s coordinate space
-     */
-    Point3d getViewPosInLocal(Node node) {
+	/** 
+	 * return the eye's position in <node>'s coordinate space
+	 */
+	Point3d getViewPosInLocal(View view, Node node) {
 
 		Point3d viewPosition = new Point3d();
 		Vector3d translate = new Vector3d();
@@ -68,5 +65,5 @@ abstract public class Renderer {
 		parentInv.transform(viewPosition);
 
 		return viewPosition;
-    }
+	}
 }

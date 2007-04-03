@@ -12,48 +12,24 @@ import java.text.NumberFormat;
 
 public class Texture2DVolume implements VolRendConstants {
 
-	protected static final int RELOAD_NONE = 0;
-	protected static final int RELOAD_VOLUME = 1;
+	TexCoordGeneration xTg = new TexCoordGeneration();
+	TexCoordGeneration yTg = new TexCoordGeneration();
+	TexCoordGeneration zTg = new TexCoordGeneration();
+	Texture2D[] xTextures;	
+	Texture2D[] yTextures;	
+	Texture2D[] zTextures;	
 
-	protected Texture2D[] xTextures;	
-	protected Texture2D[] yTextures;	
-	protected Texture2D[] zTextures;	
+	private Volume volume;
 
-	protected TexCoordGeneration xTg = new TexCoordGeneration();
-	protected TexCoordGeneration yTg = new TexCoordGeneration();
-	protected TexCoordGeneration zTg = new TexCoordGeneration();
-
-	private WritableRaster raster;
-	private int	volEditId = -1;
-	private boolean	volumeReloadNeeded = true;
-
-	protected Volume volume;
-
-	int[][] texColorMap;
 
 	public Texture2DVolume(Volume volume) {
 		this.volume = volume;
 	}
 
-	int update() {
-		int newVolEditId = -1;
-		if ((newVolEditId = volume.update()) != volEditId) {
-			volEditId = newVolEditId;
-			volumeReloadNeeded = true;
-		}
-		if (volumeReloadNeeded) {
-			volumeReload();
-			return RELOAD_VOLUME;
-		} else {
-			return RELOAD_NONE;
-		}
-	}
-
-	void volumeReload() {
-		if (volume.hasData()) {
+	void update() {
+		volume.update();
+		if(volume.hasData())
 			loadTexture();
-		}
-		volumeReloadNeeded = false;
 	}
 
 	void loadTexture() {
@@ -67,9 +43,9 @@ public class Texture2DVolume implements VolRendConstants {
 	}
 
 	private void loadAxis(int axis) {
-		int	rSize = 0;	// number of tex maps to create
-		int	sSize = 0; 	  // s,t = size of texture map to create
-		int tSize = 0; 
+		int rSize = 0;
+		int sSize = 0;
+		int tSize = 0;
 		Texture2D[] textures = null;
 
 		switch (axis) {
@@ -112,7 +88,8 @@ public class Texture2DVolume implements VolRendConstants {
 					Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
 		}
 
-		raster = colorModel.createCompatibleWritableRaster(sSize, tSize); 
+		WritableRaster raster = 
+			colorModel.createCompatibleWritableRaster(sSize, tSize); 
 		byte[] data = ((DataBufferByte)raster.getDataBuffer()).getData();
 
 		BufferedImage bImage = 
