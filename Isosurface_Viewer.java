@@ -27,6 +27,6 @@ public class Isosurface_Viewer implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus img) {
 		this.image = img;
-		return DOES_8G | NO_CHANGES;
+		return DOES_8C | DOES_8G;
 	}
 }
