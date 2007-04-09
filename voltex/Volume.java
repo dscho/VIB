@@ -24,7 +24,6 @@ public class Volume implements VolRendConstants {
 	float xSpace = 0, ySpace = 0, zSpace = 0;
 	int xTexSize, yTexSize, zTexSize;
 	float	xTexGenScale, yTexGenScale, zTexGenScale;
-	boolean is8C = true;
 	IndexColorModel cmodel = null;
 
 	Point3d minCoord = new Point3d();
@@ -55,10 +54,7 @@ public class Volume implements VolRendConstants {
 		if(type != ImagePlus.GRAY8 && type != ImagePlus.COLOR_256){
 			IJ.error("8 bit image required");
 		}
-		is8C = type == ImagePlus.COLOR_256;
-		if(is8C) {
-			adjustColorModel();
-		}
+		adjustColorModel();
 		for (int i = 0; i < 8; i++) {
 		   voiPts[i] = new Point3d();
 		}
