@@ -7,6 +7,10 @@ ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
 		FILTEROUT=
 	endif
+else
+	ifneq ($(wildcard /System/Library/Java/Extensions/j3dcore.jar),)
+		FILTEROUT=
+	endif
 endif
 CLASSES=$(patsubst %.java,%.class,$(filter-out $(FILTEROUT),$(JAVAS)))
 
