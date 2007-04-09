@@ -89,8 +89,10 @@ public class Axis2DRenderer extends AxisRenderer {
 			Texture2D tex = textures[i];
 
 
-			QuadArray quadArray = new QuadArray(4, GeometryArray.COORDINATES );
+			QuadArray quadArray = new QuadArray(4, 
+						GeometryArray.COORDINATES );
 			quadArray.setCoordinates(0, quadCoords);
+			quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
 
 			Appearance a = getAppearance(textures[i], tg);
 
