@@ -9,9 +9,8 @@ import isosurface.MeshGroup;
 import javax.vecmath.Color3f;
 import javax.media.j3d.View;
 
-public class Image3DCanvasPopup extends PopupMenu 
-						 implements ActionListener, 
-						 		ItemListener {
+public class Image3DMenubar extends MenuBar implements ActionListener, 
+					 		ItemListener {
 
 	private Image3DUniverse univ;
 
@@ -25,42 +24,47 @@ public class Image3DCanvasPopup extends PopupMenu
 
 	private Point p = null;
 
-	public Image3DCanvasPopup(Image3DUniverse universe) {
+	public Image3DMenubar(Image3DUniverse universe) {
 		super();
 		this.univ = universe;
 
+		Menu menu = new Menu("3D Viewer");
+		this.add(menu);
+
 		voltex = new MenuItem("Add volume");
 		voltex.addActionListener(this);
-		this.add(voltex);
+		menu.add(voltex);
 
 		mesh = new MenuItem("Add mesh");
 		mesh.addActionListener(this);
-		this.add(mesh);
+		menu.add(mesh);
 
 		delete = new MenuItem("Delete");
 		delete.addActionListener(this);
-		this.add(delete);
+		menu.add(delete);
 		
 		paint = new MenuItem("Painting");
 		paint.addActionListener(this);
-		this.add(paint);
+		menu.add(paint);
 
-		this.addSeparator();
+		menu.addSeparator();
 
 		startRecord = new MenuItem("Start recording");
 		startRecord.addActionListener(this);
-		this.add(startRecord);
+		menu.add(startRecord);
 
 		stopRecord = new MenuItem("Stop recording");
 		stopRecord.addActionListener(this);
-		this.add(stopRecord);
+		menu.add(stopRecord);
 
-		this.addSeparator();
+		menu.addSeparator();
 
-		perspective = new CheckboxMenuItem("Perspective Projection", true);
+		perspective = new CheckboxMenuItem(
+					"Perspective Projection", true);
 		perspective.addItemListener(this);
-		this.add(perspective);
+		menu.add(perspective);
 
+/*
 		univ.getCanvas().add(this);
    		
 		univ.getCanvas().addMouseListener(new MouseAdapter(){
@@ -77,7 +81,7 @@ public class Image3DCanvasPopup extends PopupMenu
 							e.getX(),e.getY());
 				}
 			}
-		});
+		});*/
 	}
 
 	public void actionPerformed(ActionEvent e) {

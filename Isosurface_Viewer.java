@@ -5,9 +5,11 @@ import ij.gui.GenericDialog;
 
 import ij3d.ImageWindow3D;
 import java.awt.Dimension;
+import java.awt.MenuBar;
+import java.awt.Menu;
 
 import vis3d.Image3DUniverse;
-import vis3d.Image3DCanvasPopup;
+import vis3d.Image3DMenubar;
 import isosurface.MeshGroup;
 
 public class Isosurface_Viewer implements PlugInFilter {
@@ -18,8 +20,9 @@ public class Isosurface_Viewer implements PlugInFilter {
 		Image3DUniverse univ = new Image3DUniverse();
 		univ.getCanvas().setSize(new Dimension(512, 512));
 		MeshGroup.addContent(univ, image);
-		new Image3DCanvasPopup(univ);
-		new ImageWindow3D("Surface Viewer", univ.getCanvas(), univ);
+		ImageWindow3D win = new ImageWindow3D(
+				"Surface Viewer", univ.getCanvas(), univ);
+		win.setMenuBar(new Image3DMenubar(univ));
 	}
 
 	public int setup(String arg, ImagePlus img) {
