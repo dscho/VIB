@@ -9,6 +9,7 @@ import ij.WindowManager;
 import ij.gui.ImageWindow;
 import ij.gui.MessageDialog;
 import ij.process.ColorProcessor;
+import ij.macro.Interpreter;
 
 import java.awt.AWTException;
 import java.awt.Dimension;
@@ -23,6 +24,8 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
+
+import java.awt.event.WindowEvent;
 
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.GraphicsConfigTemplate3D;
@@ -160,6 +163,19 @@ public class ImageWindow3D extends ImageWindow {
 
 		ColorProcessor cp = new ColorProcessor(bImage);
 		return new ImagePlus("3d", cp);
+	}
+
+	/**
+	 * Override windowActivated() in ij.gui.ImageWindow. 
+	 * The default implementation sets ImageJ's menubar to this 
+	 * ImageWindow, however, we have our own menubar here.
+	 */
+	public void windowActivated(WindowEvent e) {
+		ImageJ ij = IJ.getInstance();
+		boolean quitting = ij!=null && ij.quitting();
+		imp.setActivated(); // notify ImagePlus that image has been activated
+		if (!closed && !quitting && !Interpreter.isBatchMode())
+			WindowManager.setCurrentWindow(this);
 	}
 }
 
