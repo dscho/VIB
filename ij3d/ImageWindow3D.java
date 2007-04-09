@@ -27,8 +27,6 @@ import java.awt.image.Raster;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.GraphicsConfigTemplate3D;
 import javax.media.j3d.ImageComponent2D;
-import javax.media.j3d.RenderingError;
-import javax.media.j3d.RenderingErrorListener;
 import javax.media.j3d.Screen3D;
 
 public class ImageWindow3D extends ImageWindow {
@@ -53,8 +51,6 @@ public class ImageWindow3D extends ImageWindow {
 		imp = new ImagePlus();
 		this.universe = universe;
 		this.canvas3D = canvas3D;
-
-		universe.addRenderingErrorListener(new ErrorListener());
 
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
@@ -148,6 +144,8 @@ public class ImageWindow3D extends ImageWindow {
 			offScreenCanvas3D.waitForOffScreenRendering();
 			bImage = offScreenCanvas3D.getOffScreenBuffer()
 				.getImage();
+			// To release the reference of buffer inside Java 3D.
+			offScreenCanvas3D.setOffScreenBuffer(null);
 		} catch (Exception e) {
 			noOffScreen = true;
 			universe.getViewer().getView()
@@ -159,17 +157,9 @@ public class ImageWindow3D extends ImageWindow {
 			return getImagePlus();
 		}
 
-		// To release the reference of buffer inside Java 3D.
-		offScreenCanvas3D.setOffScreenBuffer(null);
 
 		ColorProcessor cp = new ColorProcessor(bImage);
 		return new ImagePlus("3d", cp);
-	}
-
-	private class ErrorListener implements RenderingErrorListener {
-		public void errorOccurred(RenderingError error) {
-			throw new RuntimeException(error.getDetailMessage());
-		}
 	}
 }
 
