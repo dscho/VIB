@@ -61,7 +61,7 @@ public class ImageCanvas3D extends Canvas3D {
 	private void addListeners() {
 		addMouseMotionListener(new MouseMotionAdapter() {
 			public void mouseDragged(MouseEvent e) {
-				render();
+				postRender();
 			}
 		});
 		addMouseListener(new MouseAdapter() {
