@@ -26,14 +26,8 @@ public class Texture2DVolume implements VolRendConstants {
 		this.volume = volume;
 	}
 
-	void update() {
-		volume.update();
-		if(volume.hasData())
-			loadTexture();
-	}
-
 	void loadTexture() {
-
+		volume.update();
 		IJ.showStatus("Loading Z axis texture maps");
 		loadAxis(Z_AXIS);
 		IJ.showStatus("Loading Y axis texture maps");

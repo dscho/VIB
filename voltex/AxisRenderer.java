@@ -16,7 +16,6 @@ abstract public class AxisRenderer extends Renderer
 	protected Switch axisSwitch;
 	private BranchGroup root;
 	protected int[][] axisIndex = new int[3][2];
-	private OrderedGroup[][] groups = new OrderedGroup[3][2];
 	protected double[] quadCoords;
 
 	private int	curAxis = Z_AXIS;

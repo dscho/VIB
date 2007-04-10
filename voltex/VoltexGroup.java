@@ -31,7 +31,7 @@ public class VoltexGroup extends Content {
 					(float)image.getCalibration().pixelWidth;
 
 		renderer = new Axis2DRenderer(image, color);
-		renderer.update();
+		renderer.fullReload();
 
 		Point3d maxCoord = renderer.volume.maxCoord;
 		Point3d minCoord = renderer.volume.minCoord;
@@ -86,17 +86,15 @@ public class VoltexGroup extends Content {
 		univ.addVoltex(grey, color, name);
 	}
 
-	public void update() {	
-		Volume volume = renderer.volume;
-		volume.update();
-		renderer.update();
-	}
-		
 	public void eyePtChanged(View view) {
 		renderer.eyePtChanged(view);
 	}
 
 	public void colorUpdated(Color3f color) {
+		if(color == null)
+			renderer.fullReload();
+		else
+			renderer.setColor(color);
 	}
 }
 

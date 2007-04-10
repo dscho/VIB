@@ -38,6 +38,8 @@ public abstract class Content extends BranchGroup {
 	}
 
 	public void setColor(Color3f color) {
+		if(color.equals(this.color))
+			return;
 		this.color = color;
 		colorUpdated(color);
 	}

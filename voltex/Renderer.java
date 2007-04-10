@@ -28,7 +28,12 @@ abstract public class Renderer {
 	/**
 	 * Called to make changes to the renderer state
 	 */
-	abstract void update();
+	abstract void fullReload();
+
+	/**
+	 * Called when the color of this node has been changed
+	 */
+	abstract void setColor(Color3f color);
 
 	/**
 	 * Called when the view position relative to the renderer changes
