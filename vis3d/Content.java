@@ -54,10 +54,13 @@ public class Content extends BranchGroup {
 	}
 
 
-	protected static String[] colorNames = new String[]{"White", "Red", 
-				"Green", "Blue", "Cyan", "Magenta", "Yellow"};
+	protected static String[] colorNames = new String[]{"None", "Black", 
+				"White", "Red", "Green", "Blue", "Cyan", 
+				"Magenta", "Yellow"};
 
 	protected static Color3f[] colors = {
+				null,
+				new Color3f(0,    0,    0),
 				new Color3f(1.0f, 1.0f, 1.0f),
 				new Color3f(1.0f, 0,    0),
 				new Color3f(0,    1.0f, 0),
