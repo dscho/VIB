@@ -41,6 +41,7 @@ public class Image3DUniverse extends SimpleUniverse
 				implements PickingCallback {
 
 	private BranchGroup scene;
+	private BranchGroup selected;
 	private Hashtable contents = new Hashtable();;
 	private TransformGroup scaleTG;
 	private Triangulator triangulator = new MCTriangulator();
@@ -86,6 +87,15 @@ public class Image3DUniverse extends SimpleUniverse
 					IJ.showStatus(c.name);
 				else
 					IJ.showStatus("");
+			}
+		});
+		getCanvas().addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent e) {
+				Content c = getContentAtCanvasPosition(
+						e.getX(), e.getY());
+				selected = c != null ? c : null;
+				String st = c != null ? c.name : "none";
+				IJ.showStatus("selected: " + st);
 			}
 		});
 	}
