@@ -62,6 +62,10 @@ public class MeshGroup extends Content {
 		int factor = (int)gd.getNextNumber();
 		if(factor != 1)
 			mesh = Resample_.resample(mesh, factor);
+		if(color == null) {
+			float val = threshold/256f;
+			color = new Color3f(val, val, val);
+		}
 		univ.addMesh(mesh, threshold, color, name);
 	}
 }
