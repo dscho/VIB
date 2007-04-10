@@ -13,19 +13,30 @@ import vis3d.Image3DUniverse;
 
 import vib.Resample_;
 
+import javax.media.j3d.View;
 import javax.vecmath.Color3f;
 
 public class MeshGroup extends Content {
 
+	IsoShape shape; 
+
 	public MeshGroup(String name, Color3f color, List mesh) {
 		super(name, color);
 		// create the IsoShape for this image and add it
-		IsoShape shape = new IsoShape(mesh, color, name);
+		shape = new IsoShape(mesh, color, name);
 		pickTr.addChild(shape);
 
 		compile();
 	}
 
+	public void eyePtChanged(View view) {
+		// do nothing
+	}
+
+	public void colorUpdated(Color3f color) {
+		shape.setColor(color);	
+	}
+	
 	public static void addContent(Image3DUniverse univ, ImagePlus mesh) {
 		GenericDialog gd = new GenericDialog("Add mesh");
 		int img_count = WindowManager.getImageCount();

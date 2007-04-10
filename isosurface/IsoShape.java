@@ -43,7 +43,17 @@ public final class IsoShape extends Shape3D {
 		}
 	}
 
-	private static Appearance createAppearance () {
+	public void setColor(Color3f color) {
+		this.color = color;
+		int N = ((GeometryArray)getGeometry()).getVertexCount();
+		Color3f colors[] = new Color3f[N];
+		for(int i=0; i<N; i++){
+			colors[i] = color;
+		}
+		((GeometryArray)getGeometry()).setColors(0, colors);
+	}
+
+	private Appearance createAppearance () {
 		Appearance appearance = new Appearance();
 		
 		PolygonAttributes polyAttrib = new PolygonAttributes();
@@ -54,6 +64,7 @@ public final class IsoShape extends Shape3D {
 
 		ColoringAttributes colorAttrib = new ColoringAttributes();
 		colorAttrib.setShadeModel(ColoringAttributes.SHADE_GOURAUD);
+		colorAttrib.setColor(color);
 		appearance.setColoringAttributes(colorAttrib);
 		
 		Material material = new Material();

@@ -89,12 +89,14 @@ public class VoltexGroup extends Content {
 	public void update() {	
 		Volume volume = renderer.volume;
 		volume.update();
-		//updateCenter(volume.minCoord, volume.maxCoord);
 		renderer.update();
 	}
 		
 	public void eyePtChanged(View view) {
 		renderer.eyePtChanged(view);
+	}
+
+	public void colorUpdated(Color3f color) {
 	}
 }
 

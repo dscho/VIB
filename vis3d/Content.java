@@ -5,7 +5,7 @@ import isosurface.IsoShape;
 import javax.media.j3d.*;
 import javax.vecmath.Color3f;
 
-public class Content extends BranchGroup {
+public abstract class Content extends BranchGroup {
 
 	String name;
 	Color3f color;
@@ -39,9 +39,7 @@ public class Content extends BranchGroup {
 
 	public void setColor(Color3f color) {
 		this.color = color;
-	}
-
-	public void eyePtChanged(View view) {
+		colorUpdated(color);
 	}
 
 	protected static Color3f getColor(String name) {
@@ -52,6 +50,9 @@ public class Content extends BranchGroup {
 		}
 		return null;
 	}
+
+	public abstract void eyePtChanged(View view);
+	public abstract void colorUpdated(Color3f color);
 
 
 	protected static String[] colorNames = new String[]{"None", "Black", 
