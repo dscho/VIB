@@ -21,6 +21,7 @@ public class Axis2DRenderer extends AxisRenderer {
 	}
 
 	void fullReload() {
+		volume.grayscale = color != null;
 		texVol.loadTexture();
 		clearData();
 		if (volume.hasData()) {
@@ -29,14 +30,14 @@ public class Axis2DRenderer extends AxisRenderer {
 		setWhichChild();
 	}
 
-	public void setColor_cp(Color3f color) {
-		this.color = color;
-		setColorOfAxis(Z_AXIS);
-		setColorOfAxis(Y_AXIS);
-		setColorOfAxis(X_AXIS);
-	}
-
 	public void setColor(Color3f color) {
+		if(color == null && this.color != null ||
+				color != null && this.color == null) {
+			this.color = color;
+			fullReload();
+			return;
+		}	
+			
 		Color3f[] colors = new Color3f[4];
 		for(int j = 0; j < 4; j++)
 			colors[j] = color;
@@ -49,52 +50,6 @@ public class Axis2DRenderer extends AxisRenderer {
 				GeometryArray geom = (GeometryArray)shape.getGeometry();
 				geom.setColors(0, colors);
 			}
-		}
-	}
-
-	private void setColorOfAxis(int axis) {
-		int	rSize = 0;
-		OrderedGroup frontGroup = null;
-		OrderedGroup backGroup = null;
-		switch (axis) {
-		case Z_AXIS:
-			frontGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
-			backGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
-			rSize = volume.zDim;
-			break;
-		case Y_AXIS:
-			frontGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
-			backGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
-			rSize = volume.yDim;
-			break;
-		case X_AXIS:
-			frontGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
-			backGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
-			rSize = volume.xDim;
-			break;
-		}
-
-		for (int i=0; i < rSize; i ++) { 
-			Color3f[] colors = new Color3f[4];
-			for(int j = 0; j < 4; j++)
-				colors[j] = color;
-
-			Shape3D frontShape = (Shape3D)((Group)frontGroup.
-								getChild(i)).getChild(0);
-			GeometryArray geom = (GeometryArray)frontShape.getGeometry();
-			geom.setColors(0, colors);
-			
-			Shape3D backShape = (Shape3D)((Group)backGroup.
-								getChild(i)).getChild(0);
-			geom = (GeometryArray)backShape.getGeometry();
-			geom.setColors(0, colors);
-
 		}
 	}
 

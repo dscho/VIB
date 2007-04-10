@@ -118,20 +118,21 @@ public class IsosurfaceUniverse extends SimpleUniverse
 			scaleGr.setTransform(scale);
 		}
 		List mesh = triangulator.getTriangles(image, threshold);
-		addMesh(mesh, color, name);
+		addMesh(mesh, color, name, threshold);
 	}
 
-	public void addMesh(List mesh, Color3f color, String name, float scale){
+	public void addMesh(List mesh, Color3f color, String name, int threshold, 
+										float scale){
 		// correct global scaling transformation
 		Transform3D scaletr = new Transform3D();
 		scaleGr.getTransform(scaletr);
 		scaletr.setScale(scale);
 		scaleGr.setTransform(scaletr);
 		// add the mesh
-		addMesh(mesh, color, name);
+		addMesh(mesh, color, name, threshold);
 	}
 
-	public void addMesh(List mesh, Color3f color, String name) {
+	public void addMesh(List mesh, Color3f color, String name,int threshold) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
@@ -150,7 +151,7 @@ public class IsosurfaceUniverse extends SimpleUniverse
 		obj.addChild(pickTr);
 
 		// create the IsoShape for this image and add it
-		IsoShape shape = new IsoShape(mesh, color, name);
+		IsoShape shape = new IsoShape(mesh, color, name, threshold);
 		pickTr.addChild(shape);
 
 		obj.compile();

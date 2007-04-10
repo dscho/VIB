@@ -19,20 +19,20 @@ public final class IsoShape extends Shape3D {
 	Color3f color = new Color3f(0.0f, 1.0f, 0.0f);
 	List mesh = null;
 	String name;
+	private int threshold;
 
-	public IsoShape() {
-	}
-	
-	public IsoShape(List mesh, String name){
+	public IsoShape(List mesh, String name, int threshold){
 		this.mesh = mesh;
 		this.name = name;
+		this.threshold = threshold;
 		this.update();
 	}
 
-	public IsoShape(List mesh, Color3f color, String name) {
+	public IsoShape(List mesh, Color3f color, String name, int threshold) {
 		this.mesh = mesh;
 		this.color = color;
 		this.name = name;
+		this.threshold = threshold;
 		this.update();
 	}
 
@@ -44,11 +44,12 @@ public final class IsoShape extends Shape3D {
 	}
 
 	public void setColor(Color3f color) {
-		this.color = color;
+		float val = threshold/256f;
+		this.color = color != null ? color : new Color3f(val, val, val);
 		int N = ((GeometryArray)getGeometry()).getVertexCount();
 		Color3f colors[] = new Color3f[N];
 		for(int i=0; i<N; i++){
-			colors[i] = color;
+			colors[i] = this.color;
 		}
 		((GeometryArray)getGeometry()).setColors(0, colors);
 	}

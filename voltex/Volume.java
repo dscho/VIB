@@ -36,28 +36,6 @@ public class Volume implements VolRendConstants {
 	public Volume(ImagePlus imp, boolean grayscale) {
 		this.imp = imp;
 		this.grayscale = grayscale;
-		ImageStack stack = imp.getStack();
-		Calibration c = imp.getCalibration();
-		xDim = stack.getWidth();
-		yDim = stack.getHeight();
-		zDim = stack.getSize();
-		fileData = new byte[zDim][yDim][xDim];
-
-		for (int z = 0; z < zDim; z++) {
-			byte[] slice = (byte[])stack.getPixels(z+1);
-			int offset = 0;
-			for(int y = 0; y < yDim; y++) {
-				byte[] datarow = fileData[z][y];
-				System.arraycopy(slice, offset, datarow, 0, xDim);
-				offset += xDim;
-			}
-		}
-		int type = imp.getType();
-		if(type != ImagePlus.GRAY8 && type != ImagePlus.COLOR_256){
-			IJ.error("8 bit image required");
-		}
-		if(!grayscale)
-			adaptColorModelFromImage();
 		for (int i = 0; i < 8; i++) {
 		   voiPts[i] = new Point3d();
 		}
@@ -135,6 +113,28 @@ public class Volume implements VolRendConstants {
 	}
 
 	public void update() {
+		ImageStack stack = imp.getStack();
+		Calibration c = imp.getCalibration();
+		xDim = stack.getWidth();
+		yDim = stack.getHeight();
+		zDim = stack.getSize();
+		fileData = new byte[zDim][yDim][xDim];
+
+		for (int z = 0; z < zDim; z++) {
+			byte[] slice = (byte[])stack.getPixels(z+1);
+			int offset = 0;
+			for(int y = 0; y < yDim; y++) {
+				byte[] datarow = fileData[z][y];
+				System.arraycopy(slice, offset, datarow, 0, xDim);
+				offset += xDim;
+			}
+		}
+		int type = imp.getType();
+		if(type != ImagePlus.GRAY8 && type != ImagePlus.COLOR_256){
+			IJ.error("8 bit image required");
+		}
+		if(!grayscale)
+			adaptColorModelFromImage();
 
 		// tex size is next power of two greater than max - min
 		// regarding pixels

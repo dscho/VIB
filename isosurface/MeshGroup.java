@@ -20,10 +20,10 @@ public class MeshGroup extends Content {
 
 	IsoShape shape; 
 
-	public MeshGroup(String name, Color3f color, List mesh) {
+	public MeshGroup(String name, Color3f color, List mesh, int threshold) {
 		super(name, color);
 		// create the IsoShape for this image and add it
-		shape = new IsoShape(mesh, color, name);
+		shape = new IsoShape(mesh, color, name, threshold);
 		pickTr.addChild(shape);
 
 		compile();
@@ -77,7 +77,7 @@ public class MeshGroup extends Content {
 			float val = threshold/256f;
 			color = new Color3f(val, val, val);
 		}
-		univ.addMesh(mesh, threshold, color, name);
+		univ.addMesh(mesh, color, name, threshold);
 	}
 }
 

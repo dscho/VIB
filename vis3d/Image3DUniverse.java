@@ -41,7 +41,7 @@ public class Image3DUniverse extends SimpleUniverse
 				implements PickingCallback {
 
 	private BranchGroup scene;
-	private BranchGroup selected;
+	private Content selected;
 	private Hashtable contents = new Hashtable();;
 	private TransformGroup scaleTG;
 	private Triangulator triangulator = new MCTriangulator();
@@ -93,7 +93,14 @@ public class Image3DUniverse extends SimpleUniverse
 			public void mouseClicked(MouseEvent e) {
 				Content c = getContentAtCanvasPosition(
 						e.getX(), e.getY());
-				selected = c != null ? c : null;
+				if(selected != null){
+					selected.setSelected(false);
+					selected = null;
+				}
+				if(c != null) {
+					c.setSelected(true);
+					selected = c;
+				}
 				String st = c != null ? c.name : "none";
 				IJ.showStatus("selected: " + st);
 			}
@@ -132,8 +139,8 @@ public class Image3DUniverse extends SimpleUniverse
 		}
 	}
 	
-	public void addMesh(ImagePlus image, int threshold, 
-						Color3f color, String name) {
+	public void addMesh(ImagePlus image, Color3f color, 
+							String name, int threshold) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
@@ -141,37 +148,30 @@ public class Image3DUniverse extends SimpleUniverse
 		}
 		ensureScale(image);
 		List mesh = triangulator.getTriangles(image, threshold);
-		addMesh(mesh, color, name);
+		addMesh(mesh, color, name, threshold);
 	}
 
-	public void addMesh(List mesh, Color3f color, String name, float scale){
+	public void addMesh(List mesh, Color3f color, 
+				String name, float scale, int threshold){
 		// correct global scaling transformation
 		Transform3D scaletr = new Transform3D();
 		scaleTG.getTransform(scaletr);
 		scaletr.setScale(scale);
 		scaleTG.setTransform(scaletr);
 		// add the mesh
-		addMesh(mesh, color, name);
+		addMesh(mesh, color, name, threshold);
 	}
 
-	public void addMesh(List mesh, Color3f color, String name) {
+	public void addMesh(List mesh, Color3f color, String name,int threshold) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 	
-		MeshGroup meshG = new MeshGroup(name, color, mesh);
+		MeshGroup meshG = new MeshGroup(name, color, mesh, threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
-	}
-
-	public void removeContentAt(int x, int y) {
-		Content content = getContentAtCanvasPosition(x, y);
-		if(content == null)
-			return;
-		scene.removeChild(content);
-		contents.remove(content.name);
 	}
 
 	public void removeContent (String name) {
@@ -180,6 +180,18 @@ public class Image3DUniverse extends SimpleUniverse
 			return;
 		scene.removeChild(content);
 		contents.remove(name);
+		if(selected == content)
+			selected = null;
+	}
+
+	public Content getSelected() {
+		return selected;
+	}
+
+	public void clearSelection() {
+		if(selected != null)
+			selected.setSelected(false);
+		selected = null;
 	}
 
 	private Content getContentAtCanvasPosition(int x, int y) {

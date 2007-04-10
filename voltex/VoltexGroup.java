@@ -91,10 +91,7 @@ public class VoltexGroup extends Content {
 	}
 
 	public void colorUpdated(Color3f color) {
-		if(color == null)
-			renderer.fullReload();
-		else
-			renderer.setColor(color);
+		renderer.setColor(color);
 	}
 }
 

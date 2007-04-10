@@ -1,5 +1,8 @@
 package vis3d;
 
+import ij.gui.GenericDialog;
+import ij.IJ;
+
 import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
@@ -16,13 +19,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	private MenuItem mesh;
 	private MenuItem voltex;
-	private MenuItem paint;
+	private MenuItem color;
 	private MenuItem delete;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
 	private CheckboxMenuItem perspective;
-
-	private Point p = null;
 
 	public Image3DMenubar(Image3DUniverse universe) {
 		super();
@@ -42,10 +43,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		delete = new MenuItem("Delete");
 		delete.addActionListener(this);
 		menu.add(delete);
-		
-		paint = new MenuItem("Painting");
-		paint.addActionListener(this);
-		menu.add(paint);
+
+		menu.addSeparator();
+
+		color = new MenuItem("Change color");
+		color.addActionListener(this);
+		menu.add(color);
 
 		menu.addSeparator();
 
@@ -85,8 +88,20 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	public void actionPerformed(ActionEvent e) {
-		if(e.getSource() == paint) {
-			System.out.println("painting");
+		if(e.getSource() == color) {
+			Content selected = univ.getSelected();
+			if(selected == null) {
+				IJ.error("Nothing selected");
+				return;
+			}	
+			GenericDialog gd = new GenericDialog("Change color");
+			gd.addChoice("Color", Content.colorNames, 
+						Content.getColorName(selected.color));
+			gd.showDialog();
+			if(gd.wasCanceled())
+				return;
+			selected.setColor(gd.getNextChoice());
+			univ.clearSelection();
 		} 
 
 		if(e.getSource() == voltex) {
@@ -98,9 +113,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == delete) {
-			if(p != null) {
-				univ.removeContentAt(p.x, p.y);
-				p = null;
+			Content c = univ.getSelected();
+			if(c != null) {
+				univ.removeContent(c.name);
 			}
 		}
 		
