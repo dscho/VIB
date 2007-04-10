@@ -22,7 +22,7 @@ abstract public class AxisRenderer extends Renderer
 	private int	curAxis = Z_AXIS;
 	private int	curDir = FRONT;
 
-	public AxisRenderer(ImagePlus image, Color3f color) {
+	public AxisRenderer(ImagePlus image) {
 		super(image);
 		axisIndex[X_AXIS][FRONT] = 0;
 		axisIndex[X_AXIS][BACK] = 1;

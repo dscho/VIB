@@ -21,7 +21,7 @@ import java.util.Enumeration;
 public class MouseNavigation {
 
 	public MouseNavigation(BranchGroup scene, Canvas3D canvas, 
-				TransformGroup scaleTG, PickingCallback callback) {
+			TransformGroup scaleTG, PickingCallback callback) {
 		// Picking
 		int mode = PickCanvas.GEOMETRY;
 		BoundingSphere b = new BoundingSphere();

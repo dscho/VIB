@@ -12,9 +12,11 @@ import ij.ImagePlus;
 public class Axis2DRenderer extends AxisRenderer {
 
 	private Texture2DVolume texVol;
+	private Color3f color;
 
 	public Axis2DRenderer(ImagePlus img, Color3f color) {
-		super(img, color);
+		super(img);
+		this.color = color;
 		texVol = new Texture2DVolume(volume);
 	}
 
@@ -90,8 +92,14 @@ public class Axis2DRenderer extends AxisRenderer {
 
 
 			QuadArray quadArray = new QuadArray(4, 
-						GeometryArray.COORDINATES );
+						GeometryArray.COORDINATES |
+						GeometryArray.COLOR_3);
+			Color3f[] colors = new Color3f[4];
+			for(int j = 0; j < 4; j++)
+				colors[j] = color;
 			quadArray.setCoordinates(0, quadCoords);
+			if(color != null) 
+				quadArray.setColors(0, colors);
 			quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
 
 			Appearance a = getAppearance(textures[i], tg);
@@ -114,11 +122,11 @@ public class Axis2DRenderer extends AxisRenderer {
 	} 
 
 	private static Appearance getAppearance(Texture tex, 
-								TexCoordGeneration tg) {
+						TexCoordGeneration tg) {
 		Appearance a = new Appearance();
-		//texAttr.setTextureMode(TextureAttributes.MODULATE);
 		TextureAttributes texAttr = new TextureAttributes();
-		texAttr.setTextureMode(TextureAttributes.REPLACE);
+		//texAttr.setTextureMode(TextureAttributes.REPLACE);
+		texAttr.setTextureMode(TextureAttributes.MODULATE);
 		TransparencyAttributes t = new TransparencyAttributes();
 		t.setTransparency(0.5f);
 		t.setTransparencyMode(TransparencyAttributes.BLENDED);
