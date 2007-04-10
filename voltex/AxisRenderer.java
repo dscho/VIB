@@ -22,8 +22,8 @@ abstract public class AxisRenderer extends Renderer
 	private int	curAxis = Z_AXIS;
 	private int	curDir = FRONT;
 
-	public AxisRenderer(ImagePlus image) {
-		super(image);
+	public AxisRenderer(ImagePlus image, boolean grayscale) {
+		super(image, grayscale);
 		axisIndex[X_AXIS][FRONT] = 0;
 		axisIndex[X_AXIS][BACK] = 1;
 		axisIndex[Y_AXIS][FRONT] = 2;

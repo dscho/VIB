@@ -15,9 +15,9 @@ abstract public class Renderer {
 	ImagePlus image;
 	Volume volume;
 
-	public Renderer(ImagePlus image) {
+	public Renderer(ImagePlus image, boolean grayscale) {
 		this.image = image;
-		this.volume = new Volume(image);
+		this.volume = new Volume(image, grayscale);
 	}
 
 	/** 

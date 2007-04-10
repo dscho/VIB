@@ -15,7 +15,7 @@ public class Axis2DRenderer extends AxisRenderer {
 	private Color3f color;
 
 	public Axis2DRenderer(ImagePlus img, Color3f color) {
-		super(img);
+		super(img, color != null);
 		this.color = color;
 		texVol = new Texture2DVolume(volume);
 	}
@@ -121,14 +121,16 @@ public class Axis2DRenderer extends AxisRenderer {
 		} 
 	} 
 
-	private static Appearance getAppearance(Texture tex, 
+	private Appearance getAppearance(Texture tex, 
 						TexCoordGeneration tg) {
 		Appearance a = new Appearance();
 		TextureAttributes texAttr = new TextureAttributes();
-		//texAttr.setTextureMode(TextureAttributes.REPLACE);
-		texAttr.setTextureMode(TextureAttributes.MODULATE);
+		if(color != null) 
+			texAttr.setTextureMode(TextureAttributes.MODULATE);
+		else
+			texAttr.setTextureMode(TextureAttributes.REPLACE);
 		TransparencyAttributes t = new TransparencyAttributes();
-		t.setTransparency(0.5f);
+		t.setTransparency(0.1f);
 		t.setTransparencyMode(TransparencyAttributes.BLENDED);
 		PolygonAttributes p = new PolygonAttributes();
 		p.setCullFace(PolygonAttributes.CULL_NONE);

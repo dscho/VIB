@@ -78,16 +78,28 @@ public class Texture2DVolume implements VolRendConstants {
 			break;
 		}
 
-		ColorModel colorModel = volume.cmodel;
-		WritableRaster raster = 
-			colorModel.createCompatibleWritableRaster(sSize, tSize);
+		int textureMode, componentType; 
+		ColorModel colorModel = null;
+		if (!volume.grayscale) {
+			colorModel = volume.cmodel;
+			textureMode = Texture.RGBA;
+			componentType = ImageComponent.FORMAT_RGBA;
+		} else {
+			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
+			int[] nBits = {8};
+			colorModel = new ComponentColorModel(cs, nBits, false, false, 
+					Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
+			textureMode = Texture.INTENSITY;
+			componentType = ImageComponent.FORMAT_CHANNEL8;
+		}
+
+		WritableRaster raster = colorModel.
+					createCompatibleWritableRaster(sSize, tSize); 
 		byte[] data = ((DataBufferByte)raster.getDataBuffer()).getData();
+
 		BufferedImage bImage = 
 			new BufferedImage(colorModel, raster, false, null); 
 
-		int textureMode, componentType; 
-		textureMode = Texture.RGBA;
-		componentType = ImageComponent.FORMAT_RGBA;
 
 		for (int i=0; i < rSize; i ++) { 
 			switch (axis) {

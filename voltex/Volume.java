@@ -31,9 +31,11 @@ public class Volume implements VolRendConstants {
 	Point3d[][] facePoints = new Point3d[6][];
 
 	Point3d volRefPt = new Point3d();
+	boolean grayscale = true;
 
-	public Volume(ImagePlus imp) {
+	public Volume(ImagePlus imp, boolean grayscale) {
 		this.imp = imp;
+		this.grayscale = grayscale;
 		ImageStack stack = imp.getStack();
 		Calibration c = imp.getCalibration();
 		xDim = stack.getWidth();
@@ -54,7 +56,8 @@ public class Volume implements VolRendConstants {
 		if(type != ImagePlus.GRAY8 && type != ImagePlus.COLOR_256){
 			IJ.error("8 bit image required");
 		}
-		adjustColorModel();
+		if(!grayscale)
+			adaptColorModelFromImage();
 		for (int i = 0; i < 8; i++) {
 		   voiPts[i] = new Point3d();
 		}
@@ -101,7 +104,7 @@ public class Volume implements VolRendConstants {
 		facePoints[MINUS_Z][3] =  voiPts[4];
 	}
 
-	public void adjustColorModel() {
+	public void adaptColorModelFromImage() {
 		byte[] r = new byte[256];
 		byte[] g = new byte[256];
 		byte[] b = new byte[256];
