@@ -5,6 +5,7 @@ import ij.gui.GenericDialog;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.plugin.filter.PlugInFilter;
+import ij.process.ColorProcessor;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import java.awt.Rectangle;
@@ -83,7 +84,10 @@ public class Moving_Least_Squares implements PlugInFilter {
 		boolean useForward = gd.getNextBoolean();
 
 		ImagePlus source = WindowManager.getImage(id);
-		Interpolator inter =
+		boolean isColor =
+			(source.getProcessor() instanceof ColorProcessor);
+		Interpolator inter = isColor ?
+			new ColorInterpolator(source.getProcessor()) :
 			new BilinearInterpolator(source.getProcessor());
 
 		PointRoi points2 = (PointRoi)source.getRoi();
@@ -105,7 +109,7 @@ public class Moving_Least_Squares implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
-		return DOES_8G | DOES_16 | DOES_32;
+		return DOES_RGB | DOES_8G | DOES_16 | DOES_32;
 	}
 
 	static abstract class Method {
@@ -202,6 +206,8 @@ public class Moving_Least_Squares implements PlugInFilter {
 				warpImage(inter, w, h, (short[])pixels);
 			else if (pixels instanceof float[])
 				warpImage(inter, w, h, (float[])pixels);
+			else if (pixels instanceof int[])
+				warpImage(inter, w, h, (int[])pixels);
 			else
 				IJ.error("Unknown pixel type");
 		}
@@ -213,6 +219,18 @@ public class Moving_Least_Squares implements PlugInFilter {
 					calculate(i, j);
 					pixels[i + w * j] =
 						//qCX;
+						inter.get(resultX, resultY);
+				}
+				IJ.showProgress(j + 1, h);
+			}
+		}
+
+		public void warpImage(Interpolator inter,
+				int w, int h, int[] pixels) {
+			for (int j = 0; j < h; j++) {
+				for (int i = 0; i < w; i++) {
+					calculate(i, j);
+					pixels[i + w * j] = (int)
 						inter.get(resultX, resultY);
 				}
 				IJ.showProgress(j + 1, h);
@@ -542,6 +560,18 @@ public class Moving_Least_Squares implements PlugInFilter {
 			float v11 = ip.getPixelValue(i + 1, j + 1);
 			return (1 - fx) * (1 - fy) * v00 + fx * (1 - fy) * v01
 				+ (1 - fx) * fy * v10 + fx * fy * v11;
+		}
+	}
+
+	static class ColorInterpolator extends Interpolator {
+		ColorProcessor cp;
+		public ColorInterpolator(ImageProcessor ip) {
+			super(ip);
+			cp = (ColorProcessor)ip;
+		}
+
+		public float get(float x, float y) {
+			return (float)cp.getInterpolatedRGBPixel(x, y);
 		}
 	}
 }
