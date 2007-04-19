@@ -12,16 +12,13 @@ import ij.ImagePlus;
 public class Axis2DRenderer extends AxisRenderer {
 
 	private Texture2DVolume texVol;
-	private Color3f color;
 
-	public Axis2DRenderer(ImagePlus img, Color3f color) {
-		super(img, color != null);
-		this.color = color;
-		texVol = new Texture2DVolume(volume);
+	public Axis2DRenderer(ImagePlus img, IndexColorModel cmodel) {
+		super(img);
+		texVol = new Texture2DVolume(volume, cmodel);
 	}
 
 	void fullReload() {
-		volume.grayscale = color != null;
 		texVol.loadTexture();
 		clearData();
 		if (volume.hasData()) {
@@ -30,6 +27,7 @@ public class Axis2DRenderer extends AxisRenderer {
 		setWhichChild();
 	}
 
+/*
 	public void setColor(Color3f color) {
 		if(color == null && this.color != null ||
 				color != null && this.color == null) {
@@ -51,7 +49,7 @@ public class Axis2DRenderer extends AxisRenderer {
 				geom.setColors(0, colors);
 			}
 		}
-	}
+	}*/
 
 	private void loadQuads() {
 		loadAxis(Z_AXIS);
@@ -111,16 +109,9 @@ public class Axis2DRenderer extends AxisRenderer {
 
 
 			QuadArray quadArray = new QuadArray(4, 
-						GeometryArray.COORDINATES |
-						GeometryArray.COLOR_3);
-			Color3f[] colors = new Color3f[4];
-			for(int j = 0; j < 4; j++)
-				colors[j] = color;
+						GeometryArray.COORDINATES);
 			quadArray.setCoordinates(0, quadCoords);
-			if(color != null) 
-				quadArray.setColors(0, colors);
 			quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
-			quadArray.setCapability(QuadArray.ALLOW_COLOR_WRITE);
 
 			Appearance a = getAppearance(textures[i], tg);
 
@@ -145,10 +136,7 @@ public class Axis2DRenderer extends AxisRenderer {
 						TexCoordGeneration tg) {
 		Appearance a = new Appearance();
 		TextureAttributes texAttr = new TextureAttributes();
-		if(color != null) 
-			texAttr.setTextureMode(TextureAttributes.MODULATE);
-		else
-			texAttr.setTextureMode(TextureAttributes.REPLACE);
+		texAttr.setTextureMode(TextureAttributes.REPLACE);
 		TransparencyAttributes t = new TransparencyAttributes();
 		t.setTransparency(0.1f);
 		t.setTransparencyMode(TransparencyAttributes.BLENDED);

@@ -9,6 +9,10 @@ public interface Triangulator {
 	 * Three subsequent points specify one triangle.
 	 * @param image the ImagePlus to be displayed
 	 * @param threshold the isovalue of the surface to be generated.
+	 * @param channels an array containing 3 booleans, indicating which
+	 *                 of red, green and blue to use for the Triangulation.
+	 * @param resamplingF resampling factor
 	 */
-	public List getTriangles(ImagePlus image, int threshold);
+	public List getTriangles(ImagePlus image, int threshold, 
+						boolean[] channels, int resamplingF);
 }

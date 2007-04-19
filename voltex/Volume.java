@@ -24,18 +24,15 @@ public class Volume implements VolRendConstants {
 	float xSpace = 0, ySpace = 0, zSpace = 0;
 	int xTexSize, yTexSize, zTexSize;
 	float	xTexGenScale, yTexGenScale, zTexGenScale;
-	IndexColorModel cmodel = null;
 
 	Point3d minCoord = new Point3d();
 	Point3d maxCoord = new Point3d();
 	Point3d[][] facePoints = new Point3d[6][];
 
 	Point3d volRefPt = new Point3d();
-	boolean grayscale = true;
 
-	public Volume(ImagePlus imp, boolean grayscale) {
+	public Volume(ImagePlus imp) {
 		this.imp = imp;
-		this.grayscale = grayscale;
 		for (int i = 0; i < 8; i++) {
 		   voiPts[i] = new Point3d();
 		}
@@ -82,6 +79,7 @@ public class Volume implements VolRendConstants {
 		facePoints[MINUS_Z][3] =  voiPts[4];
 	}
 
+/*
 	public void adaptColorModelFromImage() {
 		byte[] r = new byte[256];
 		byte[] g = new byte[256];
@@ -93,7 +91,7 @@ public class Volume implements VolRendConstants {
 		cmodel.getBlues(b);
 		adjustAlpha(r, g, b, a);
 		cmodel = new IndexColorModel(8, 256, r, g, b, a); 
-	}
+	}*/
 
 	float weightr = 1.0f;
 	float weightg = 1.0f;
@@ -133,8 +131,6 @@ public class Volume implements VolRendConstants {
 		if(type != ImagePlus.GRAY8 && type != ImagePlus.COLOR_256){
 			IJ.error("8 bit image required");
 		}
-		if(!grayscale)
-			adaptColorModelFromImage();
 
 		// tex size is next power of two greater than max - min
 		// regarding pixels

@@ -18,21 +18,22 @@ public final class IsoShape extends Shape3D {
 
 	Color3f color = new Color3f(0.0f, 1.0f, 0.0f);
 	List mesh = null;
-	String name;
 	private int threshold;
 
-	public IsoShape(List mesh, String name, int threshold){
+	public IsoShape(List mesh, int threshold){
 		this.mesh = mesh;
-		this.name = name;
 		this.threshold = threshold;
+		this.setCapability(ALLOW_GEOMETRY_WRITE);
+		this.setCapability(ALLOW_APPEARANCE_WRITE);
 		this.update();
 	}
 
-	public IsoShape(List mesh, Color3f color, String name, int threshold) {
+	public IsoShape(List mesh, Color3f color, int threshold) {
 		this.mesh = mesh;
 		this.color = color;
-		this.name = name;
 		this.threshold = threshold;
+		this.setCapability(ALLOW_GEOMETRY_WRITE);
+		this.setCapability(ALLOW_APPEARANCE_WRITE);
 		this.update();
 	}
 
@@ -95,7 +96,6 @@ public final class IsoShape extends Shape3D {
 		ta.setColors(0, colors);
 		// initialize the geometry info here
 		GeometryInfo gi = new GeometryInfo(ta);
-		
 		// generate normals
 		NormalGenerator ng = new
 		NormalGenerator();

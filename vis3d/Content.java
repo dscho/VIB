@@ -1,6 +1,11 @@
 package vis3d;
 
 import ij.ImagePlus;
+import ij.ImageStack;
+import ij.process.ByteProcessor;
+
+import java.awt.image.IndexColorModel;
+
 import isosurface.IsoShape;
 import javax.media.j3d.*;
 import javax.vecmath.Color3f;
@@ -8,8 +13,12 @@ import javax.vecmath.Color3f;
 public abstract class Content extends BranchGroup {
 
 	String name;
-	Color3f color;
+	String color;
+	ImagePlus image;
+	boolean[] channels = new boolean[]{true, true, true};
+	int resamplingF = 1;;
 	protected boolean selected;
+	protected boolean channelsChanged;
 	
 	protected TransformGroup pickTr;
 
@@ -28,10 +37,18 @@ public abstract class Content extends BranchGroup {
 		addChild(pickTr);
 	}
 
-	public Content(String name, Color3f color) {
+	public Content(String name, String color) {
 		this();
 		this.name = name;
 		this.color = color;
+	}
+
+	public Content(String name, String color, 
+			ImagePlus image, boolean[] channels, int resamplingF) {
+		this(name, color);
+		this.image = image;
+		this.channels = channels;
+		this.resamplingF = resamplingF;
 	}
 
 	public void setName(String name) {
@@ -42,47 +59,32 @@ public abstract class Content extends BranchGroup {
 		this.selected = selected;
 	}
 
-	public void setColor(String color) {
-		if(color.equals(getColorName(this.color)))
+	public void setColor(String color, boolean[] channels) {
+		channelsChanged = channels[0] != this.channels[0] || 
+							channels[1] != this.channels[1] || 
+							channels[2] != this.channels[2];
+		boolean colorChanged = !color.equals(this.color);
+		if(!colorChanged && !channelsChanged)
 			return;
-		this.color = getColor(color);
-		colorUpdated(this.color);
+		this.color = color;
+		this.channels = channels;
+		colorUpdated(color, channels);
 	}
 
-	protected static Color3f getColor(String name) {
-		for(int i = 0; i < colors.length; i++) {
-			if(colorNames[i].equals(name)){
-				return colors[i];
-			}
-		}
-		return null;
+	public ImagePlus getImage() {
+		return image;
+	}
+
+	public boolean[] getChannels() {
+		return channels;
+	}
+
+	public int getResamplingFactor() {
+		return resamplingF;
 	}
 
 	public abstract void eyePtChanged(View view);
-	public abstract void colorUpdated(Color3f color);
-
-
-	protected static String[] colorNames = new String[]{"None", "Black", 
-				"White", "Red", "Green", "Blue", "Cyan", 
-				"Magenta", "Yellow"};
-
-	protected static Color3f[] colors = {
-				null,
-				new Color3f(0,    0,    0),
-				new Color3f(1.0f, 1.0f, 1.0f),
-				new Color3f(1.0f, 0,    0),
-				new Color3f(0,    1.0f, 0),
-				new Color3f(0,    0,    1.0f),
-				new Color3f(0,    1.0f, 1.0f),
-				new Color3f(1.0f, 0,    1.0f),
-				new Color3f(1.0f, 1.0f, 0)};
-	protected static String getColorName(Color3f col) {
-		for(int i = 1; i < colors.length; i++) {
-			if(colors[i].equals(col))
-				return colorNames[i];
-		}
-		return "None";
-	}	
+	public abstract void colorUpdated(String color, boolean[] channels);
 }
 
 

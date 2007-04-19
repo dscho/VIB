@@ -20,10 +20,12 @@ public class Texture2DVolume implements VolRendConstants {
 	Texture2D[] zTextures;	
 
 	private Volume volume;
+	private IndexColorModel cmodel;
 
 
-	public Texture2DVolume(Volume volume) {
+	public Texture2DVolume(Volume volume, IndexColorModel cmodel) {
 		this.volume = volume;
+		this.cmodel = cmodel;
 	}
 
 	void loadTexture() {
@@ -73,26 +75,15 @@ public class Texture2DVolume implements VolRendConstants {
 		}
 
 		int textureMode, componentType; 
-		ColorModel colorModel = null;
-		if (!volume.grayscale) {
-			colorModel = volume.cmodel;
-			textureMode = Texture.RGBA;
-			componentType = ImageComponent.FORMAT_RGBA;
-		} else {
-			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
-			int[] nBits = {8};
-			colorModel = new ComponentColorModel(cs, nBits, false, false, 
-					Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
-			textureMode = Texture.INTENSITY;
-			componentType = ImageComponent.FORMAT_CHANNEL8;
-		}
+		textureMode = Texture.RGBA;
+		componentType = ImageComponent.FORMAT_RGBA;
 
-		WritableRaster raster = colorModel.
+		WritableRaster raster = cmodel.
 					createCompatibleWritableRaster(sSize, tSize); 
 		byte[] data = ((DataBufferByte)raster.getDataBuffer()).getData();
 
 		BufferedImage bImage = 
-			new BufferedImage(colorModel, raster, false, null); 
+			new BufferedImage(cmodel, raster, false, null); 
 
 
 		for (int i=0; i < rSize; i ++) { 

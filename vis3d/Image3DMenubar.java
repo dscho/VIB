@@ -3,6 +3,8 @@ package vis3d;
 import ij.gui.GenericDialog;
 import ij.IJ;
 
+import vis3d.ColorTable;
+
 import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
@@ -94,13 +96,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				IJ.error("Nothing selected");
 				return;
 			}	
-			GenericDialog gd = new GenericDialog("Change color");
-			gd.addChoice("Color", Content.colorNames, 
-						Content.getColorName(selected.color));
-			gd.showDialog();
-			if(gd.wasCanceled())
-				return;
-			selected.setColor(gd.getNextChoice());
+			changeColor(selected);
 			univ.clearSelection();
 		} 
 
@@ -136,6 +132,24 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						: View.PARALLEL_PROJECTION;
 			univ.getViewer().getView().setProjectionPolicy(policy);
 		}
+	}
+		
+	public void changeColor(Content selected) {
+		GenericDialog gd = new GenericDialog("Adjust color ...");
+		gd.addChoice("Color", ColorTable.colorNames, 
+							ColorTable.colorNames[0]);
+		gd.addMessage("Channels");
+		gd.addCheckboxGroup(1, 3, new String[] {"red", "green", "blue"}, 
+						new boolean[]{true, true, true});
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+			
+		String color = gd.getNextChoice();
+		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
+								gd.getNextBoolean(), 
+								gd.getNextBoolean()};
+		selected.setColor(color, channels);
 	}
 }
 

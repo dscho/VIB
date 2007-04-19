@@ -15,9 +15,9 @@ abstract public class Renderer {
 	ImagePlus image;
 	Volume volume;
 
-	public Renderer(ImagePlus image, boolean grayscale) {
+	public Renderer(ImagePlus image) {
 		this.image = image;
-		this.volume = new Volume(image, grayscale);
+		this.volume = new Volume(image);
 	}
 
 	/** 
@@ -29,11 +29,6 @@ abstract public class Renderer {
 	 * Called to make changes to the renderer state
 	 */
 	abstract void fullReload();
-
-	/**
-	 * Called when the color of this node has been changed
-	 */
-	abstract void setColor(Color3f color);
 
 	/**
 	 * Called when the view position relative to the renderer changes

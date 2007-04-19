@@ -107,20 +107,15 @@ public class Image3DUniverse extends SimpleUniverse
 		});
 	}
 
-	public Image3DUniverse(ImagePlus image, int threshold, 
-						Color3f color, String name) {
-		this();
-		addVoltex(image, color, name);
-		//addMesh(image, threshold, color, name);
-	}
-
-	public void addVoltex(ImagePlus image, Color3f color, String name) {
+	public void addVoltex(ImagePlus image, String color, 
+			String name, boolean[] channels, int resamplingF) {
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 		ensureScale(image);
-		VoltexGroup content = new VoltexGroup(name, color, image);
+		VoltexGroup content = new VoltexGroup(
+						name, color, image, channels, resamplingF);
 		scene.addChild(content);
 		contents.put(name, content);
 	}
@@ -139,37 +134,41 @@ public class Image3DUniverse extends SimpleUniverse
 		}
 	}
 	
-	public void addMesh(ImagePlus image, Color3f color, 
-							String name, int threshold) {
+	public void addMesh(ImagePlus image, String color, 
+		String name, int threshold, boolean[] channels, int resamplingF) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 		ensureScale(image);
-		List mesh = triangulator.getTriangles(image, threshold);
-		addMesh(mesh, color, name, threshold);
+		MeshGroup meshG = new MeshGroup(
+				name, color, image, channels, resamplingF, threshold);
+		scene.addChild(meshG);
+		contents.put(name, meshG);
 	}
 
-	public void addMesh(List mesh, Color3f color, 
-				String name, float scale, int threshold){
+	public void addMesh(List mesh, String color, 
+					String name, float scale, int threshold){
 		// correct global scaling transformation
 		Transform3D scaletr = new Transform3D();
 		scaleTG.getTransform(scaletr);
 		scaletr.setScale(scale);
 		scaleTG.setTransform(scaletr);
 		// add the mesh
-		addMesh(mesh, color, name, threshold);
+		addMesh(mesh, color, name, 1, threshold);
 	}
 
-	public void addMesh(List mesh, Color3f color, String name,int threshold) {
+	public void addMesh(List mesh, 
+				String color, String name, int threshold) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 	
-		MeshGroup meshG = new MeshGroup(name, color, mesh, threshold);
+		MeshGroup meshG = new MeshGroup(
+				name, color, mesh, threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
 	}
