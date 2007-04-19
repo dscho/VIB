@@ -1,4 +1,4 @@
-package vis3d;
+package ij3d;
 
 import com.sun.j3d.utils.behaviors.mouse.*;
 import com.sun.j3d.utils.picking.behaviors.PickingCallback;

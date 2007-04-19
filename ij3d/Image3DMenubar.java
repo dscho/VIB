@@ -1,9 +1,7 @@
-package vis3d;
+package ij3d;
 
 import ij.gui.GenericDialog;
 import ij.IJ;
-
-import vis3d.ColorTable;
 
 import java.awt.event.*;
 import java.awt.*;

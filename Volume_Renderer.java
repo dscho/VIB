@@ -8,8 +8,8 @@ import java.awt.Dimension;
 import java.awt.MenuBar;
 import java.awt.Menu;
 
-import vis3d.Image3DUniverse;
-import vis3d.Image3DMenubar;
+import ij3d.Image3DUniverse;
+import ij3d.Image3DMenubar;
 import voltex.VoltexGroup;
 
 public class Volume_Renderer implements PlugInFilter {

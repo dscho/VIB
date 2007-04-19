@@ -1,4 +1,4 @@
-package vis3d;
+package ij3d;
 
 import ij.ImagePlus;
 import ij.process.ImageProcessor;

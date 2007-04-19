@@ -5,7 +5,7 @@ import java.util.List;
 
 import vib.Resample_;
 
-import vis3d.ColorTable;
+import ij3d.ColorTable;
 
 import isosurface.Triangulator;
 

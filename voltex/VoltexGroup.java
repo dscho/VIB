@@ -18,9 +18,9 @@ import ij.IJ;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 
-import vis3d.Content;
-import vis3d.Image3DUniverse;
-import vis3d.ColorTable;
+import ij3d.Content;
+import ij3d.Image3DUniverse;
+import ij3d.ColorTable;
 
 import vib.Resample_;
 
