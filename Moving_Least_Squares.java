@@ -206,6 +206,8 @@ public class Moving_Least_Squares implements PlugInFilter {
 				warpImage(inter, w, h, (short[])pixels);
 			else if (pixels instanceof float[])
 				warpImage(inter, w, h, (float[])pixels);
+			else if (pixels instanceof int[])
+				warpImage(inter, w, h, (int[])pixels);
 			else
 				IJ.error("Unknown pixel type");
 		}
@@ -217,6 +219,18 @@ public class Moving_Least_Squares implements PlugInFilter {
 					calculate(i, j);
 					pixels[i + w * j] =
 						//qCX;
+						inter.get(resultX, resultY);
+				}
+				IJ.showProgress(j + 1, h);
+			}
+		}
+
+		public void warpImage(Interpolator inter,
+				int w, int h, int[] pixels) {
+			for (int j = 0; j < h; j++) {
+				for (int i = 0; i < w; i++) {
+					calculate(i, j);
+					pixels[i + w * j] = (int)
 						inter.get(resultX, resultY);
 				}
 				IJ.showProgress(j + 1, h);
