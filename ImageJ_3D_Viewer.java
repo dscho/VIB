@@ -10,15 +10,28 @@ import java.awt.Menu;
 
 import ij3d.Image3DUniverse;
 import ij3d.Image3DMenubar;
+import isosurface.MeshGroup;
 import voltex.VoltexGroup;
 
-public class Volume_Renderer implements PlugInFilter {
+public class ImageJ_3D_Viewer implements PlugInFilter {
 
 	private ImagePlus image;
 
 	public void run(ImageProcessor ip) {
+		GenericDialog gd = new GenericDialog("ImageJ 3D Viewer");
+		gd.addChoice("Surface or Volume: ", 
+					new String[]{"Surface", "Volume"},
+					"Volume");
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		
 		Image3DUniverse univ = new Image3DUniverse(512, 512);
-		VoltexGroup.addContent(univ, image);
+		String type = gd.getNextChoice();
+		if(type.equals("Surface"))
+			MeshGroup.addContent(univ, image);
+		else
+			VoltexGroup.addContent(univ, image);
 		univ.show();
 	}
 

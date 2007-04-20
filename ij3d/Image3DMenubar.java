@@ -47,7 +47,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		menu.addSeparator();
 
-		fill = new MenuItem("Fill");
+		fill = new MenuItem("Fill selection");
 		fill.addActionListener(this);
 		menu.add(fill);
 		
