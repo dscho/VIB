@@ -1,7 +1,7 @@
 JAVAS=$(shell find * -name \*.java | grep -v ^tempdir)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
-JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java voltex/*.java Volume_Renderer.java ij3d/*.java)
+JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java voltex/*.java ImageJ_3D_Viewer.java
 FILTEROUT=$(JAVA3DS)
 ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
@@ -65,7 +65,8 @@ Delaunay_Voronoi.jar: SOURCES=$(wildcard Delaunay_Voronoi.java delaunay/*.java)
 
 AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
 	amira/AmiraParameters.java amira/AmiraMeshEncoder.java \
-	amira/AmiraMeshDecoder.java amira/AmiraTableEncoder.java amira/AmiraTable.java
+	amira/AmiraMeshDecoder.java amira/AmiraTableEncoder.java \
+	amira/AmiraTable.java
 
 AmiraSurface_.jar: SOURCES=ShowAmiraSurface_.java amira/AmiraParameters.java \
 	amira/AmiraTable.java vib/Image3dCanvas.java
@@ -87,6 +88,11 @@ Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
 	vib/DoubleArray.java vib/Extract_Surface.java \
 	vib/InterpolatedImage.java vib/Image3dCanvas.java \
 	math3d/Point3d.java math3d/NormalEstimator.java
+
+ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
+	$(wildcard marchingcubes/*.java) $(wildcard isosurface/*.java) \
+	vib/Resample_.java vib/InterpolatedImage.java amira/AmiraParameters.java \
+	amira/AmiraTable.java math3d/Point3d.java
 
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar
@@ -115,7 +121,7 @@ clean-jars:
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
-	(cd tempdir && javac $(JAVACOPTS) $(JAVACOPTSCOMPAT) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
+	(cd tempdir && javac $(JAVACOPTS) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
 
 clean:
 	find -name \*.class -exec rm {} \;
