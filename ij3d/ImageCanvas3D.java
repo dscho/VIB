@@ -1,5 +1,6 @@
 package ij3d;
 
+import com.sun.j3d.utils.universe.SimpleUniverse;
 import javax.media.j3d.J3DGraphics2D;
 import javax.media.j3d.Canvas3D;
 
@@ -42,13 +43,11 @@ public class ImageCanvas3D extends Canvas3D {
 		}
 	}
 
-	public ImageCanvas3D(GraphicsConfiguration config, int width, int height) {
-		super(config);
+	public ImageCanvas3D(int width,int height) {
+		super(SimpleUniverse.getPreferredConfiguration());
 		setSize(width, height);
-	
 		BufferedImage image = new BufferedImage(width, height, 
-												BufferedImage.TYPE_BYTE_GRAY);
-		
+								BufferedImage.TYPE_BYTE_GRAY);
 		roiImagePlus = new RoiImagePlus("RoiImage", image); 
 		roiImageCanvas = new ImageCanvas(roiImagePlus);
 		roiImageCanvas.disablePopupMenu(true);
@@ -74,8 +73,10 @@ public class ImageCanvas3D extends Canvas3D {
 		});
 		addComponentListener(new ComponentAdapter() {
 			public void componentResized(ComponentEvent e) {
-				BufferedImage image = new BufferedImage(getWidth(), getHeight(),
-											BufferedImage.TYPE_BYTE_GRAY);
+				BufferedImage image = new BufferedImage(
+						getWidth(), 
+						getHeight(), 
+						BufferedImage.TYPE_BYTE_GRAY);
 				roiImagePlus.setImage(image);
 				render();
 			}

@@ -46,8 +46,8 @@ public class Image3DUniverse extends SimpleUniverse
 	private TransformGroup scaleTG;
 	private Triangulator triangulator = new MCTriangulator();
 
-	public Image3DUniverse() {
-		super(new ImageCanvas3D(getPreferredConfiguration(), 512, 512));
+	public Image3DUniverse(int width, int height) {
+		super(new ImageCanvas3D(width, height));
 		getViewingPlatform().setNominalViewingTransform();
 
 		BranchGroup root = new BranchGroup();
@@ -237,5 +237,10 @@ public class Image3DUniverse extends SimpleUniverse
 		ImagePlus imp = new ImagePlus("Movie", stack);
 		stack = null;
 		return imp;
+	}
+
+	public void show() {
+		ImageWindow3D win = new ImageWindow3D("ImageJ 3D Viewer", this);
+		win.setMenuBar(new Image3DMenubar(this));
 	}
 } 

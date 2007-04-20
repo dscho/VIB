@@ -17,12 +17,9 @@ public class Isosurface_Viewer implements PlugInFilter {
 	private ImagePlus image;
 
 	public void run(ImageProcessor ip) {
-		Image3DUniverse univ = new Image3DUniverse();
-		univ.getCanvas().setSize(new Dimension(512, 512));
+		Image3DUniverse univ = new Image3DUniverse(512, 512);
 		MeshGroup.addContent(univ, image);
-		ImageWindow3D win = new ImageWindow3D(
-				"Surface Viewer", univ.getCanvas(), univ);
-		win.setMenuBar(new Image3DMenubar(univ));
+		univ.show();
 	}
 
 	public int setup(String arg, ImagePlus img) {

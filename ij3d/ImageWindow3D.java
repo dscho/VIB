@@ -33,27 +33,27 @@ import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Screen3D;
 
 public class ImageWindow3D extends ImageWindow {
-	SimpleUniverse universe;
-	Canvas3D canvas3D;
+	Image3DUniverse universe;
+	ImageCanvas3D canvas3D;
 	private boolean noOffScreen = false;
 
-	public ImageWindow3D(String title, int width, int height) {
-		this(title, getCanvas3D(width, height));
-	}
+//	public ImageWindow3D(String title, int width, int height) {
+//		this(title, getCanvas3D(width, height));
+//	}
+//
+//	private ImageWindow3D(String title, Canvas3D canvas3D) {
+//		this(title, canvas3D, new Image3DUniverse(canvas3D));
+//	}
 
-	private ImageWindow3D(String title, Canvas3D canvas3D) {
-		this(title, canvas3D, new SimpleUniverse(canvas3D));
-	}
-
-	public ImageWindow3D(String title, Canvas3D canvas3D,
-			SimpleUniverse universe) {
+	public ImageWindow3D(String title, Image3DUniverse universe) {
 		super(title);
 		String j3dNoOffScreen = System.getProperty("j3d.noOffScreen");
 		if (j3dNoOffScreen != null && j3dNoOffScreen.equals("true"))
 			noOffScreen = true;
 		imp = new ImagePlus();
 		this.universe = universe;
-		this.canvas3D = canvas3D;
+		this.canvas3D = (ImageCanvas3D)universe.getCanvas();
+
 
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
@@ -71,10 +71,7 @@ public class ImageWindow3D extends ImageWindow {
 	}
 
 	private static Canvas3D getCanvas3D(int width, int height) {
-		Canvas3D c;
-		c = new Canvas3D( SimpleUniverse.getPreferredConfiguration());
-		c.setSize(new Dimension(width, height));
-		return c;
+		return new ImageCanvas3D(width, height);
 	}
 
 	/* prevent ImageWindow from painting */
@@ -131,7 +128,9 @@ public class ImageWindow3D extends ImageWindow {
 					w - left - right, h - top - bottom);
 			BufferedImage bImage = robot.createScreenCapture(r);
 			ColorProcessor cp = new ColorProcessor(bImage);
-			return new ImagePlus("3d", cp);
+			ImagePlus result = new ImagePlus("3d", cp);
+			result.setRoi(canvas3D.getRoi());
+			return result;
 		}
 		BufferedImage bImage = new BufferedImage(canvas3D.getWidth(),
 				canvas3D.getHeight(),
@@ -162,7 +161,9 @@ public class ImageWindow3D extends ImageWindow {
 
 
 		ColorProcessor cp = new ColorProcessor(bImage);
-		return new ImagePlus("3d", cp);
+		ImagePlus result = new ImagePlus("3d", cp);
+		result.setRoi(canvas3D.getRoi());
+		return result;
 	}
 
 	/**
