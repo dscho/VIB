@@ -59,7 +59,7 @@ Segmentation_Editor_compat.jar: SOURCES=amira/AmiraParameters.java \
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
-	(cd tempdir && sh ../compile1.3.sh && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
+	(cd tempdir && sh ../compile1.3.sh && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
 Delaunay_Voronoi.jar: SOURCES=$(wildcard Delaunay_Voronoi.java delaunay/*.java)
 
@@ -115,13 +115,13 @@ clean-jars:
 %-compat.jar: %.jar
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
-	(cd tempdir && jar xvf ../$< && find -name \*.class -exec rm {} \; && sh ../compile1.3.sh && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
+	(cd tempdir && jar xvf ../$< && find . -name \*.class -exec rm {} \; && sh ../compile1.3.sh && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
 %.jar:
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
-	(cd tempdir && javac $(JAVACOPTS) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
+	(cd tempdir && javac $(JAVACOPTS) $(SOURCES) && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
 clean:
 	find . -name \*.class -exec rm {} \;
