@@ -20,6 +20,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem mesh;
 	private MenuItem voltex;
 	private MenuItem color;
+	private MenuItem fill;
 	private MenuItem delete;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
@@ -46,6 +47,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		menu.addSeparator();
 
+		fill = new MenuItem("Fill");
+		fill.addActionListener(this);
+		menu.add(fill);
+		
 		color = new MenuItem("Change color");
 		color.addActionListener(this);
 		menu.add(color);
@@ -91,7 +96,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(e.getSource() == color) {
 			Content selected = univ.getSelected();
 			if(selected == null) {
-				IJ.error("Nothing selected");
+				IJ.error("Selection required");
 				return;
 			}	
 			changeColor(selected);
@@ -108,9 +113,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == delete) {
 			Content c = univ.getSelected();
-			if(c != null) {
-				univ.removeContent(c.name);
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
 			}
+			univ.removeContent(c.name);
 		}
 		
 		if(e.getSource() == startRecord) {
@@ -119,6 +126,22 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == stopRecord) {
 			univ.stopRecording().show();
+		}
+
+		if(e.getSource() == fill) {
+			final Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			if(c instanceof VoltexGroup) {
+				new Thread(new Runnable() {
+					public void run() {
+						((VoltexGroup)c).
+							fillRoiBlack(univ, (byte)0);
+					}
+				}).start();
+			}
 		}
 
 	}

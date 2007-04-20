@@ -1,13 +1,16 @@
 package voltex;
 
+import java.awt.Polygon;
 import java.awt.image.IndexColorModel;
 
 import java.util.List;
 import java.util.Vector;
 import javax.vecmath.Color3f;
 import javax.vecmath.Vector3d;
+import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
 import javax.media.j3d.View;
+import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.media.j3d.BranchGroup;
@@ -19,6 +22,7 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 
 import ij3d.Content;
+import ij3d.ImageCanvas3D;
 import ij3d.Image3DUniverse;
 import ij3d.ColorTable;
 
@@ -117,6 +121,60 @@ public class VoltexGroup extends Content {
 		renderer.fullReload();
 		tg.removeChild(0);
 		tg.addChild(renderer.getVolumeNode());
+	}
+
+	public void volumeToImagePlate(Transform3D toImagePlate) {
+		Transform3D toVWorld = new Transform3D();
+		renderer.getVolumeNode().getLocalToVworld(toVWorld);
+		toImagePlate.mul(toVWorld);
+	}
+
+	public Point2d volumePointInCanvas(Canvas3D canvas, Transform3D volToIP,
+							int x, int y, int z) {
+		
+		Volume volume = renderer.volume;
+		double px = x * volume.xSpace;
+		double py = y * volume.ySpace;
+		double pz = z * volume.zSpace;
+		Point3d locInImagePlate = new Point3d(px, py, pz);
+		
+		volToIP.transform(locInImagePlate);
+
+		Point2d onCanvas = new Point2d();
+		canvas.getPixelLocationFromImagePlate(locInImagePlate, onCanvas);
+
+		return onCanvas;
+	}
+
+	public void fillRoiBlack(Image3DUniverse universe, byte fillValue) {
+		ImageCanvas3D canvas = (ImageCanvas3D)universe.getCanvas();
+		Polygon p = canvas.getRoi().getPolygon();
+		
+		Transform3D volToIP = new Transform3D();
+		canvas.getImagePlateToVworld(volToIP);
+		volToIP.invert();
+		volumeToImagePlate(volToIP);
+
+		ImagePlus image = renderer.image;
+		int w = image.getWidth(), h = image.getHeight();
+		int d = image.getStackSize();
+		for(int z = 0; z < d; z++) {
+			byte[] data =(byte[])image.getStack().
+								getProcessor(z+1).getPixels();
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					int index = y * w + x;
+					Point2d onCanvas = 
+						volumePointInCanvas(canvas, volToIP,x,y,z);
+					if(p.contains(onCanvas.x, onCanvas.y)) {
+						data[index] = fillValue;
+					}
+				}
+			}
+			IJ.showStatus("Filling...");
+			IJ.showProgress(z, d);
+		}
+		renderer.fullReload();
 	}
 }
 
