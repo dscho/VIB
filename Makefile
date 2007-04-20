@@ -124,5 +124,5 @@ clean-jars:
 	(cd tempdir && javac $(JAVACOPTS) $(SOURCES) && jar cvf ../$@ $$(find -type f)) && rm -rf tempdir
 
 clean:
-	find -name \*.class -exec rm {} \;
+	find . -name \*.class -exec rm {} \;
 	rm -f $(JARS)
