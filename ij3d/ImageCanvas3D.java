@@ -24,6 +24,7 @@ import java.awt.Color;
 import java.util.List;
 import java.util.ArrayList;
 
+import ij.process.ByteProcessor;
 import ij.gui.Toolbar;
 import ij.gui.ImageCanvas;
 import ij.ImagePlus;
@@ -35,8 +36,9 @@ public class ImageCanvas3D extends Canvas3D {
 	private ImageCanvas roiImageCanvas;
 
 	private class RoiImagePlus extends ImagePlus {
-		public RoiImagePlus(String st, Image im) {
-			super(st, im);
+		public RoiImagePlus(String title, ByteProcessor ip) {
+			super();
+			setProcessor(title, ip);
 		}
 		public ImageCanvas getCanvas() {
 			return roiImageCanvas;
@@ -46,9 +48,8 @@ public class ImageCanvas3D extends Canvas3D {
 	public ImageCanvas3D(int width,int height) {
 		super(SimpleUniverse.getPreferredConfiguration());
 		setSize(width, height);
-		BufferedImage image = new BufferedImage(width, height, 
-								BufferedImage.TYPE_BYTE_GRAY);
-		roiImagePlus = new RoiImagePlus("RoiImage", image); 
+		ByteProcessor ip = new ByteProcessor(width, height);
+		roiImagePlus = new RoiImagePlus("RoiImage", ip); 
 		roiImageCanvas = new ImageCanvas(roiImagePlus);
 		roiImageCanvas.disablePopupMenu(true);
 		
@@ -73,11 +74,10 @@ public class ImageCanvas3D extends Canvas3D {
 		});
 		addComponentListener(new ComponentAdapter() {
 			public void componentResized(ComponentEvent e) {
-				BufferedImage image = new BufferedImage(
-						getWidth(), 
-						getHeight(), 
-						BufferedImage.TYPE_BYTE_GRAY);
-				roiImagePlus.setImage(image);
+				ByteProcessor ip = new ByteProcessor(
+								getWidth(), 
+								getHeight());
+				roiImagePlus.setProcessor("RoiImagePlus", ip);
 				render();
 			}
 		});
