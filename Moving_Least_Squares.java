@@ -84,11 +84,11 @@ public class Moving_Least_Squares implements PlugInFilter {
 		boolean useForward = gd.getNextBoolean();
 
 		ImagePlus source = WindowManager.getImage(id);
-		boolean isColor =
-			(source.getProcessor() instanceof ColorProcessor);
+		ImageProcessor p = source.getProcessor();
+		boolean isColor = (p instanceof ColorProcessor);
 		Interpolator inter = isColor ?
-			new ColorInterpolator(source.getProcessor()) :
-			new BilinearInterpolator(source.getProcessor());
+			(Interpolator)new ColorInterpolator(p) :
+			(Interpolator)new BilinearInterpolator(p);
 
 		PointRoi points2 = (PointRoi)source.getRoi();
 
