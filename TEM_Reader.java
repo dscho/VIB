@@ -94,7 +94,6 @@ public class TEM_Reader implements PlugInFilter {
 				x1[i] = (int)Math.round(x[i]);
 				y1[i] = (int)Math.round(y[i]);
 			}
-			System.err.println("count: " + count);
 			PointRoi roi = new PointRoi(x1, y1, count);
 			target.setRoi(roi);
 			target.updateAndDraw();
