@@ -1,7 +1,7 @@
 JAVAS=$(shell find * -name \*.java | grep -v ^tempdir)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
-JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java voltex/*.java ImageJ_3D_Viewer.java
+JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java voltex/*.java ImageJ_3D_Viewer.java)
 FILTEROUT=$(JAVA3DS)
 ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
