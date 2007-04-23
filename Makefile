@@ -94,6 +94,32 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	vib/Resample_.java vib/InterpolatedImage.java amira/AmiraParameters.java \
 	amira/AmiraTable.java math3d/Point3d.java ImageJ_3D_Viewer.java
 
+VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
+	$(wildcard vib/app/gui/*.java) \
+	$(wildcard vib/app/module/*.java) \
+	$(wildcard vib/segment/*.java) \
+	$(wildcard distance/*.java) \
+	$(wildcard leica/*.java) \
+	$(wildcard amira/*.java) \
+	$(wildcard math3d/*.java) \
+	$(wildcard pal/math/*.java) \
+	vib/DiffusionInterpol2_.java \
+	vib/Resample_.java \
+	vib/InterpolatedImage.java \
+	vib/TissueStatistics_.java \
+	vib/FloatMatrix.java \
+	vib/FastMatrix.java \
+	vib/TransformedImage.java \
+	vib/RigidRegistration_.java \
+	vib/RegistrationOptimizer.java \
+	vib/AverageBrain_.java \
+	vib/SegmentationViewerCanvas.java \
+	vib/VIB.java \
+	vib/BatchLog_.java \
+	vib/IDT_Interpolate_Binary.java \
+	VIB_Protocol.java
+	
+
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar
 
