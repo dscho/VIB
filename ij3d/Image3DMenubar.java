@@ -2,6 +2,7 @@ package ij3d;
 
 import ij.gui.GenericDialog;
 import ij.IJ;
+import ij.ImagePlus;
 
 import java.awt.event.*;
 import java.awt.*;
@@ -24,6 +25,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem delete;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
+	private MenuItem startAnimation;
+	private MenuItem stopAnimation;
 	private CheckboxMenuItem perspective;
 
 	public Image3DMenubar(Image3DUniverse universe) {
@@ -64,6 +67,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		stopRecord = new MenuItem("Stop recording");
 		stopRecord.addActionListener(this);
 		menu.add(stopRecord);
+
+		menu.addSeparator();
+
+		startAnimation = new MenuItem("Start animation");
+		startAnimation.addActionListener(this);
+		menu.add(startAnimation);
+
+		stopAnimation = new MenuItem("Stop animation");
+		stopAnimation.addActionListener(this);
+		menu.add(stopAnimation);
 
 		menu.addSeparator();
 
@@ -121,11 +134,20 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 		
 		if(e.getSource() == startRecord) {
-			univ.recording = true;
+			univ.startRecording();
 		}
 
 		if(e.getSource() == stopRecord) {
-			univ.stopRecording().show();
+			ImagePlus movie = univ.stopRecording();
+			if(movie != null) movie.show();
+		}
+
+		if(e.getSource() == startAnimation) {
+			univ.startAnimation();
+		}
+
+		if(e.getSource() == stopAnimation) {
+			univ.pauseAnimation();
 		}
 
 		if(e.getSource() == fill) {

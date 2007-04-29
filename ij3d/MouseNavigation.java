@@ -6,8 +6,11 @@ import com.sun.j3d.utils.picking.behaviors.PickRotateBehavior;
 import com.sun.j3d.utils.picking.behaviors.PickTranslateBehavior;
 import com.sun.j3d.utils.picking.PickCanvas;
 
+import javax.vecmath.Vector3f;
 import javax.vecmath.Point3d;
 
+import javax.media.j3d.Alpha;
+import javax.media.j3d.RotationInterpolator;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.TransformGroup;
@@ -38,7 +41,7 @@ public class MouseNavigation {
 		};
 		rot.setupCallback(callback);
 		scene.addChild(rot);
-		
+
 		scene.addChild(
 			new PickTranslateBehavior(scene, canvas, b, mode)); 
 		MouseZoom myMouseZoom = new MouseZoom();

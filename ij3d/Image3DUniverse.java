@@ -32,6 +32,8 @@ import com.sun.j3d.utils.universe.*;
 import com.sun.j3d.utils.geometry.ColorCube;
 import com.sun.j3d.utils.geometry.Sphere;
 import javax.media.j3d.*;
+import javax.media.j3d.Alpha;
+import javax.media.j3d.RotationInterpolator;
 import javax.vecmath.*;
 
 import com.sun.j3d.utils.picking.PickCanvas;
@@ -43,7 +45,9 @@ public class Image3DUniverse extends SimpleUniverse
 	private BranchGroup scene;
 	private Content selected;
 	private Hashtable contents = new Hashtable();;
+	private TransformGroup rotationsTG;
 	private TransformGroup scaleTG;
+	private Alpha animation;
 	private Triangulator triangulator = new MCTriangulator();
 
 	public Image3DUniverse(int width, int height) {
@@ -57,11 +61,16 @@ public class Image3DUniverse extends SimpleUniverse
 		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		root.addChild(scaleTG);
 
+		rotationsTG = new TransformGroup();
+		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		scaleTG.addChild(rotationsTG);
+
 		scene = new BranchGroup();
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
-		scaleTG.addChild(scene);
+		rotationsTG.addChild(scene);
 
 		BoundingSphere b = new BoundingSphere();
 		b.setRadius(10.0);
@@ -74,6 +83,18 @@ public class Image3DUniverse extends SimpleUniverse
 		DirectionalLight lightD1 = new DirectionalLight();
 		lightD1.setInfluencingBounds(b);
 		root.addChild(lightD1);
+
+		// Animation
+		animation = new Alpha(-1, 4000);
+		RotationInterpolator rotpol = 
+			new RotationInterpolator(animation, rotationsTG) {
+			public void processStimulus(java.util.Enumeration e) {
+				super.processStimulus(e);
+				transformChanged(0, null);
+			}
+		};
+		rotpol.setSchedulingBounds(b);
+		rotationsTG.addChild(rotpol);
 
 		root.compile();
 		addBranchGraph(root);
@@ -212,7 +233,11 @@ public class Image3DUniverse extends SimpleUniverse
 		
 
 	private ImageStack stack;
-	public boolean recording = false;
+	private boolean recording = false;
+	private boolean animated = true;
+	private float animationValue = 0;
+	private boolean doRecord = false;
+	private float oldValue = 0f;
 
 	public void transformChanged(int type, TransformGroup tg) {
 		Iterator it = contents.values().iterator();
@@ -220,14 +245,37 @@ public class Image3DUniverse extends SimpleUniverse
 			Content c = (Content)it.next();
 			c.eyePtChanged(getViewer().getView());
 		}
-		if(!recording) return;
-
+		if(recording && animated) {
+			boolean newLoop = animation.value() < oldValue;
+			oldValue = animation.value();
+			if(!doRecord && newLoop) {
+				doRecord = true;
+			} else if(doRecord && newLoop) {
+				doRecord = false;
+				oldValue = 0f;
+				ImagePlus mov = stopRecording();
+				if(mov != null) mov.show();
+			}
+		} else  {
+			doRecord = recording;
+		}
+		
+		// add actual image to recording stack
+		if(!doRecord) 
+			return;
 		ImageWindow3D win = (ImageWindow3D)getCanvas().getParent();
 		ImageProcessor ip = win.getImagePlus().getProcessor();
 		int w = ip.getWidth(), h = ip.getHeight();
-		
-		if(stack == null) stack = new ImageStack(w, h);
+		if(stack == null) 
+			stack = new ImageStack(w, h);
 		stack.addSlice("", ip);
+	}
+
+	public void startRecording() {
+		recording = true;
+		if(animated) {
+			animationValue = animation.value();
+		}
 	}
 
 	public ImagePlus stopRecording() {
@@ -237,6 +285,16 @@ public class Image3DUniverse extends SimpleUniverse
 		ImagePlus imp = new ImagePlus("Movie", stack);
 		stack = null;
 		return imp;
+	}
+
+	public void startAnimation() {
+		animation.resume();
+		animated = true;
+	}
+
+	public void pauseAnimation() {
+		animation.pause();
+		animated = false;
 	}
 
 	public void show() {
