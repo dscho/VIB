@@ -79,10 +79,15 @@ public class Image3DUniverse extends SimpleUniverse
 		// Lightening
 		AmbientLight lightA = new AmbientLight();
 		lightA.setInfluencingBounds(b);
+		lightA.setEnable(false);
 		root.addChild(lightA);
 		DirectionalLight lightD1 = new DirectionalLight();
 		lightD1.setInfluencingBounds(b);
 		root.addChild(lightD1);
+
+		SpotLight lightS = new SpotLight();
+		lightS.setInfluencingBounds(b);
+		root.addChild(lightS);
 
 		// Animation
 		animation = new Alpha(-1, 4000);
