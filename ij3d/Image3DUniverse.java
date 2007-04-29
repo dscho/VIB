@@ -86,6 +86,7 @@ public class Image3DUniverse extends SimpleUniverse
 
 		// Animation
 		animation = new Alpha(-1, 4000);
+		animation.pause();
 		RotationInterpolator rotpol = 
 			new RotationInterpolator(animation, rotationsTG) {
 			public void processStimulus(java.util.Enumeration e) {
@@ -234,7 +235,7 @@ public class Image3DUniverse extends SimpleUniverse
 
 	private ImageStack stack;
 	private boolean recording = false;
-	private boolean animated = true;
+	private boolean animated = false;
 	private float animationValue = 0;
 	private boolean doRecord = false;
 	private float oldValue = 0f;
