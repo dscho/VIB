@@ -49,6 +49,8 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		// Animation
 		animation = new Alpha(-1, 4000);
 		animation.pause();
+		animation.setStartTime(
+			java.util.Calendar.getInstance().getTimeInMillis());
 		RotationInterpolator rotpol = 
 			new RotationInterpolator(animation, rotationsTG) {
 			public void processStimulus(java.util.Enumeration e) {
