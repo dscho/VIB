@@ -160,7 +160,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener {
 			new MessageDialog(this, "Java3D error",
 				"Off-screen rendering not supported by this\n"
 				 + "setup. Falling back to screen capturing");
-			return getImagePlus();
+			return getNewImagePlus();
 		}
 
 
@@ -186,31 +186,25 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener {
 	/*
 	 * The UniverseListener interface
 	 */
-	public void transformationStarted() {
-		System.out.println("transformationStarted");
-	}
-	public void transformationUpdated() {
-		System.out.println("transformationUpdated");
-	}
+	public void transformationStarted() {}
+	public void transformationUpdated() {}
 	public void transformationFinished() {
-		System.out.println("transformationFinished");
 		updateImagePlus();
 	}
 
 	public void contentAdded(Content c){
-		System.out.println("contentAdded");
+		updateImagePlus();
 	}
 
 	public void contentRemoved(Content c){
-		System.out.println("contentRemoved");
+		updateImagePlus();
 	}
 
 	public void contentChanged(Content c){
-		System.out.println("contentChanged");
+		updateImagePlus();
 	}
 
 	public void canvasResized() {
-		System.out.println("canvasResized");
 		updateImagePlus();
 	}
 }
