@@ -102,6 +102,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				name, color, image, channels, resamplingF);
 		scene.addChild(content);
 		contents.put(name, content);
+		fireContentAdded(content);
 	}
 
 
@@ -130,6 +131,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			name, color, image, channels, resamplingF, threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
+		fireContentAdded(meshG);
 	}
 
 	public void addMesh(List mesh, String color, 
@@ -155,6 +157,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				name, color, mesh, threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
+		fireContentAdded(meshG);
 	}
 
 	public void removeContent (String name) {
@@ -165,6 +168,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		contents.remove(name);
 		if(selected == content)
 			selected = null;
+		fireContentRemoved(content);
 	}
 
 	public Content getSelected() {

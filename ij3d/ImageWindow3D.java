@@ -32,7 +32,7 @@ import javax.media.j3d.GraphicsConfigTemplate3D;
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Screen3D;
 
-public class ImageWindow3D extends ImageWindow {
+public class ImageWindow3D extends ImageWindow implements UniverseListener {
 	DefaultUniverse universe;
 	ImageCanvas3D canvas3D;
 	private boolean noOffScreen = false;
@@ -45,7 +45,6 @@ public class ImageWindow3D extends ImageWindow {
 		imp = new ImagePlus();
 		this.universe = universe;
 		this.canvas3D = (ImageCanvas3D)universe.getCanvas();
-
 
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
@@ -61,6 +60,7 @@ public class ImageWindow3D extends ImageWindow {
 		addWindowListener(this);
 		addWindowStateListener(this);
 		canvas3D.addKeyListener(ij);
+		universe.addUniverseListener(this);
 		show();
 	}
 
@@ -181,6 +181,37 @@ public class ImageWindow3D extends ImageWindow {
 		imp.setActivated(); // notify ImagePlus that image has been activated
 		if (!closed && !quitting && !Interpreter.isBatchMode())
 			WindowManager.setCurrentWindow(this);
+	}
+
+	/*
+	 * The UniverseListener interface
+	 */
+	public void transformationStarted() {
+		System.out.println("transformationStarted");
+	}
+	public void transformationUpdated() {
+		System.out.println("transformationUpdated");
+	}
+	public void transformationFinished() {
+		System.out.println("transformationFinished");
+		updateImagePlus();
+	}
+
+	public void contentAdded(Content c){
+		System.out.println("contentAdded");
+	}
+
+	public void contentRemoved(Content c){
+		System.out.println("contentRemoved");
+	}
+
+	public void contentChanged(Content c){
+		System.out.println("contentChanged");
+	}
+
+	public void canvasResized() {
+		System.out.println("canvasResized");
+		updateImagePlus();
 	}
 }
 

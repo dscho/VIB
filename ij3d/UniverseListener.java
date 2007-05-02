@@ -8,4 +8,5 @@ public interface UniverseListener {
 	public void contentAdded(Content c);
 	public void contentRemoved(Content c);
 	public void contentChanged(Content c);
+	public void canvasResized();
 }

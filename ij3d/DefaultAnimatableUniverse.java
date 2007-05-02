@@ -46,9 +46,6 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	public DefaultAnimatableUniverse(int width, int height) {
 		super(width, height);
 
-		BoundingSphere b = new BoundingSphere();
-		b.setRadius(10.0);
-
 		// Animation
 		animation = new Alpha(-1, 4000);
 		animation.pause();
@@ -56,11 +53,11 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			new RotationInterpolator(animation, rotationsTG) {
 			public void processStimulus(java.util.Enumeration e) {
 				super.processStimulus(e);
-				transformChanged(0, null);
-				fireTransformationUpdated();
+				if(animated)
+					transformChanged(0, null);
 			}
 		};
-		rotpol.setSchedulingBounds(b);
+		rotpol.setSchedulingBounds(bounds);
 		rotationsTG.addChild(rotpol);
 
 		root.compile();
@@ -95,6 +92,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		if(!doRecord) 
 			return;
 		ImageWindow3D win = (ImageWindow3D)getCanvas().getParent();
+		win.updateImagePlus();
 		ImageProcessor ip = win.getImagePlus().getProcessor();
 		int w = ip.getWidth(), h = ip.getHeight();
 		if(stack == null) 
@@ -121,10 +119,12 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	public void startAnimation() {
 		animation.resume();
 		animated = true;
+		fireTransformationStarted();
 	}
 
 	public void pauseAnimation() {
 		animation.pause();
 		animated = false;
+		fireTransformationFinished();
 	}
 } 

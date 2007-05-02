@@ -54,6 +54,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	protected ImageWindow3D win;
 
 	private List listeners = new ArrayList();
+	private boolean transformed = false;
 
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height));
@@ -105,6 +106,31 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		ZoomBehavior zoom = new ZoomBehavior();
 		scene.addChild(zoom);
 
+		getCanvas().addMouseListener(new MouseAdapter() {
+			public void mouseReleased(MouseEvent e) {
+				if(Toolbar.getToolId() == Toolbar.HAND) {
+					if(transformed) 
+						fireTransformationFinished();
+					transformed = false;
+				}
+			}
+		});
+		getCanvas().addMouseMotionListener(new MouseMotionAdapter() {
+			public void mouseDragged(MouseEvent e) {
+				if(Toolbar.getToolId() == Toolbar.HAND) {
+					if(!transformed)
+						fireTransformationStarted();
+					transformed = true;
+				}
+			}
+		});
+
+		getCanvas().addComponentListener(new ComponentAdapter() {
+			public void componentResized(ComponentEvent e) {
+				fireCanvasResized();
+			}
+		});
+
 	}
 
 	public void transformChanged(int type, TransformGroup tg) {
@@ -121,6 +147,13 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public void removeUniverseListener(UniverseListener l) {
 		listeners.remove(l);
+	}
+
+	protected void fireTransformationStarted() {
+		for(int i = 0; i < listeners.size(); i++) {
+			UniverseListener l = (UniverseListener)listeners.get(i);
+			l.transformationStarted();
+		}
 	}
 
 	protected void fireTransformationUpdated() {
@@ -155,6 +188,13 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.contentRemoved(c);;
+		}
+	}
+
+	protected void fireCanvasResized() {
+		for(int i = 0; i < listeners.size(); i++) {
+			UniverseListener l = (UniverseListener)listeners.get(i);
+			l.canvasResized();
 		}
 	}
 
@@ -193,6 +233,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		public ZoomBehavior() {
 			super(scaleTG);
 			setSchedulingBounds(bounds);
+		}
+
+		public void transformChanged(Transform3D transform) {
+			fireTransformationUpdated();
 		}
 	}
 } 
