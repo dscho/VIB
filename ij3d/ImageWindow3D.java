@@ -37,14 +37,6 @@ public class ImageWindow3D extends ImageWindow {
 	ImageCanvas3D canvas3D;
 	private boolean noOffScreen = false;
 
-//	public ImageWindow3D(String title, int width, int height) {
-//		this(title, getCanvas3D(width, height));
-//	}
-//
-//	private ImageWindow3D(String title, Canvas3D canvas3D) {
-//		this(title, canvas3D, new Image3DUniverse(canvas3D));
-//	}
-
 	public ImageWindow3D(String title, Image3DUniverse universe) {
 		super(title);
 		String j3dNoOffScreen = System.getProperty("j3d.noOffScreen");
@@ -65,7 +57,9 @@ public class ImageWindow3D extends ImageWindow {
 		if (ij != null)
 			addKeyListener(ij);
 		addFocusListener(this);
+		setFocusTraversalKeysEnabled(false);
 		addWindowListener(this);
+		addWindowStateListener(this);
 		canvas3D.addKeyListener(ij);
 		show();
 	}
@@ -108,8 +102,18 @@ public class ImageWindow3D extends ImageWindow {
 		return new ImagePlus("3D", cp);
 	}
 
-	private int top = 25, bottom = 4, left = 4, right = 4;
+	public void updateImagePlus() {
+		this.imp = getNewImagePlus();
+	}
+
 	public ImagePlus getImagePlus() {
+		if(imp == null)
+			updateImagePlus();
+		return imp;
+	}
+
+	private int top = 25, bottom = 4, left = 4, right = 4;
+	private ImagePlus getNewImagePlus() {
 		if (getWidth() <= 0 || getHeight() <= 0)
 			return makeDummyImagePlus();
 		if (noOffScreen) {
