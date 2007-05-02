@@ -33,11 +33,11 @@ import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Screen3D;
 
 public class ImageWindow3D extends ImageWindow {
-	Image3DUniverse universe;
+	DefaultUniverse universe;
 	ImageCanvas3D canvas3D;
 	private boolean noOffScreen = false;
 
-	public ImageWindow3D(String title, Image3DUniverse universe) {
+	public ImageWindow3D(String title, DefaultUniverse universe) {
 		super(title);
 		String j3dNoOffScreen = System.getProperty("j3d.noOffScreen");
 		if (j3dNoOffScreen != null && j3dNoOffScreen.equals("true"))
