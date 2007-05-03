@@ -43,7 +43,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Content selected;
 	private Hashtable contents = new Hashtable();;
-	private Triangulator triangulator = new MCTriangulator();
 
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
@@ -142,7 +141,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scaletr.setScale(scale);
 		scaleTG.setTransform(scaletr);
 		// add the mesh
-		addMesh(mesh, color, name, 1, threshold);
+		addMesh(mesh, color, name, threshold);
 	}
 
 	public void addMesh(List mesh, 
