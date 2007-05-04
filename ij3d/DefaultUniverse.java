@@ -43,8 +43,10 @@ import com.sun.j3d.utils.geometry.Sphere;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
+import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
+
 public abstract class DefaultUniverse extends SimpleUniverse implements 
-						PickingCallback {
+					MouseBehaviorCallback, PickingCallback {
 
 	protected BranchGroup root;
 	protected BranchGroup scene;
@@ -52,6 +54,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	protected TransformGroup scaleTG;
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
+	protected RotateBehavior globalRotate;
 
 	private List listeners = new ArrayList();
 	private boolean transformed = false;
@@ -59,6 +62,9 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height));
 		getViewingPlatform().setNominalViewingTransform();
+
+		bounds = new BoundingSphere();
+		bounds.setRadius(10.0);
 
 		root = new BranchGroup();
 		
@@ -78,8 +84,12 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
 		rotationsTG.addChild(scene);
 
-		bounds = new BoundingSphere();
-		bounds.setRadius(10.0);
+		// setup global mouse rotation
+		globalRotate = new RotateBehavior(null);
+		globalRotate.setTransformGroup(rotationsTG);
+		rotationsTG.addChild(globalRotate);
+		globalRotate.setSchedulingBounds(bounds);
+		globalRotate.setupCallback(this);
 
 		// Lightening
 		AmbientLight lightA = new AmbientLight();
@@ -93,11 +103,6 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		SpotLight lightS = new SpotLight();
 		lightS.setInfluencingBounds(bounds);
 		root.addChild(lightS);
-
-		// Mouse behaviors
-		RotateBehavior rotate = new RotateBehavior();
-		rotate.setupCallback(this);
-		scene.addChild(rotate);
 
 		TranslateBehavior translate = new TranslateBehavior();
 		translate.setupCallback(this);
@@ -135,6 +140,11 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public void transformChanged(int type, TransformGroup tg) {
 		fireTransformationUpdated();
+	}
+
+	public void transformChanged(int type, Transform3D xf) {
+		TransformGroup tg = null;
+		transformChanged(type, tg);
 	}
 
 	public void show() {
@@ -198,22 +208,6 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		}
 	}
 
-	private class RotateBehavior extends PickRotateBehavior {
-		int mode = PickCanvas.GEOMETRY;
-		
-		public RotateBehavior() {
-			super(scene, getCanvas(), bounds);
-			setMode(mode);
-		}
-
-		public void processStimulus(Enumeration criteria) {
-			if(Toolbar.getToolId() == Toolbar.HAND) {
-				super.processStimulus(criteria);
-			} else 
-				wakeupOn (wakeupCondition);
-		}
-	}
-		
 	private class TranslateBehavior extends PickTranslateBehavior {
 		int mode = PickCanvas.GEOMETRY;
 		public TranslateBehavior() {

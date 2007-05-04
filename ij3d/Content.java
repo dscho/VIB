@@ -9,6 +9,8 @@ import java.awt.image.IndexColorModel;
 import isosurface.IsoShape;
 import javax.media.j3d.*;
 import javax.vecmath.Color3f;
+import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
+import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 
 public abstract class Content extends BranchGroup {
 
@@ -21,6 +23,7 @@ public abstract class Content extends BranchGroup {
 	protected boolean channelsChanged;
 	
 	protected TransformGroup pickTr;
+	protected RotateBehavior localRotate;
 
 	public Content() {
 		// create BranchGroup for this image
@@ -33,8 +36,21 @@ public abstract class Content extends BranchGroup {
 		pickTr = new TransformGroup();
 		pickTr.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		pickTr.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		pickTr.setCapability(TransformGroup.ENABLE_PICK_REPORTING);
 		addChild(pickTr);
+
+		localRotate = new RotateBehavior(this);
+		localRotate.setEnable(false);
+		localRotate.setTransformGroup(pickTr);
+		pickTr.addChild(localRotate);
+		localRotate.setSchedulingBounds(new BoundingSphere());
+	}
+
+	public void setEnable(boolean b) {
+		localRotate.setEnable(b);
+	}
+
+	public void setCallback(MouseBehaviorCallback cb) {
+		localRotate.setupCallback(cb);
 	}
 
 	public Content(String name, Color3f color) {

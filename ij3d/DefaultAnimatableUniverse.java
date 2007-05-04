@@ -55,8 +55,10 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			new RotationInterpolator(animation, rotationsTG) {
 			public void processStimulus(java.util.Enumeration e) {
 				super.processStimulus(e);
-				if(animated)
-					transformChanged(0, null);
+				if(animated) {
+					TransformGroup tg = null;
+					transformChanged(0, tg);
+				}
 			}
 		};
 		rotpol.setSchedulingBounds(bounds);
