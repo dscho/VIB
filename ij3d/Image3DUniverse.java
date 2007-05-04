@@ -47,12 +47,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private Content selected;
 	private Hashtable contents = new Hashtable();;
 	private Image3DMenubar menubar;
+	private ImageCanvas3D canvas;
 
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
+		canvas = (ImageCanvas3D)getCanvas();
 
 		// add mouse listeners
-		getCanvas().addMouseMotionListener(new MouseMotionAdapter() {
+		canvas.addMouseMotionListener(new MouseMotionAdapter() {
 			public void mouseMoved(MouseEvent e) {
 				Content c = getContentAtCanvasPosition(
 						e.getX(), e.getY());
@@ -62,7 +64,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 					IJ.showStatus("");
 			}
 		});
-		getCanvas().addMouseListener(new MouseAdapter() {
+		canvas.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				Content c = getContentAtCanvasPosition(
 						e.getX(), e.getY());
@@ -76,6 +78,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				}
 				String st = c != null ? c.name : "none";
 				IJ.showStatus("selected: " + st);
+				canvas.setStatus("selected: " + st);
 			}
 		});
 	}
@@ -85,7 +88,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Iterator it = contents.values().iterator();
 		while(it.hasNext()) {
 			((Content)it.next()).eyePtChanged(
-				getCanvas().getView());		
+				canvas.getView());		
 		}
 	}
 
@@ -221,7 +224,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	private Content getContentAtCanvasPosition(int x, int y) {
-		PickCanvas pickCanvas = new PickCanvas(getCanvas(), scene); 
+		PickCanvas pickCanvas = new PickCanvas(canvas, scene); 
 		pickCanvas.setMode(PickCanvas.GEOMETRY);
 		pickCanvas.setTolerance(4.0f); 
 		pickCanvas.setShapeLocation(x, y); 

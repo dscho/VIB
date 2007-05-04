@@ -20,6 +20,7 @@ import java.awt.GraphicsConfiguration;
 import java.awt.Polygon;
 import java.awt.Point;
 import java.awt.Color;
+import java.awt.Font;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -96,11 +97,38 @@ public class ImageCanvas3D extends Canvas3D {
 		startRenderer();
 	}
 
-	public void postRender(){
+	private String status = "";
+	private Color color = Color.WHITE;
+
+	public void setStatus(String bla) {
+		status = bla;
+		color = Color.WHITE;
+		postRender();	
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					for(int i = 240; i > 0; i-=10) {
+						color = new Color(i, i, i);
+						postRender();
+						Thread.currentThread().
+								sleep(40);
+						status = "";
+					}
+				} catch(Exception e) {}
+			}
+		}).start();
+	}
+
+	public void postRender() {
 		J3DGraphics2D g3d = getGraphics2D();
 		Roi roi = roiImagePlus.getRoi();
 		if(roi != null) {
 			roi.draw(g3d);
+		}
+		if(!status.equals("")) {
+			g3d.setColor(color);
+			g3d.setFont(new Font("Helvetica", Font.PLAIN, 20));
+			g3d.drawString(status, 20, getHeight()-20);
 		}
 		g3d.flush(true);
 	}
