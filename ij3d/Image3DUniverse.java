@@ -43,6 +43,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Content selected;
 	private Hashtable contents = new Hashtable();;
+	private Image3DMenubar menubar;
 
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
@@ -86,8 +87,19 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void show() {
+		this.show(true);
+	}
+
+	public void show(boolean withMenuBar) {
 		super.show();
-		win.setMenuBar(new Image3DMenubar(this));
+		if(withMenuBar) {
+			menubar = new Image3DMenubar(this);
+			win.setMenuBar(menubar);
+		}
+	}
+
+	public Image3DMenubar getMenuBar() {
+		return menubar;
 	}
 
 	public void addVoltex(ImagePlus image, String color, 
