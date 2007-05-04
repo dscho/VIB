@@ -27,31 +27,30 @@ public class MeshGroup extends Content {
 	int threshold;
 	Triangulator triangulator = new MCTriangulator();
 
-	public MeshGroup(String name, String color, List mesh, int thresh) {
+	public MeshGroup(String name, Color3f color, List mesh, int thresh) {
 		super(name, color);
 		this.threshold = thresh;
-		Color3f col = ColorTable.getColor(color);
-		if(col == null) {
-			col = new Color3f(thresh/255f, thresh/255f, thresh/255f);
+		if(color == null) {
+			color= new Color3f(
+				thresh/255f, thresh/255f, thresh/255f);
 		}
-		shape = new IsoShape(mesh, col, thresh);
+		shape = new IsoShape(mesh, color, thresh);
 		pickTr.addChild(shape);
 		compile();
 	}
 
-	public MeshGroup(String name, String color, ImagePlus image, 
-				boolean[] channels, int resamplingF, int threshold) {
+	public MeshGroup(String name, Color3f color, ImagePlus image, 
+			boolean[] channels, int resamplingF, int threshold) {
 		super(name, color, image, channels, resamplingF);
 		this.threshold = threshold;
 		List mesh = triangulator.getTriangles(
-						image, threshold, channels, resamplingF);
-		Color3f col = ColorTable.getColor(color);
-		if(col == null) {
-			int value = 
-				image.getProcessor().getColorModel().getRGB(threshold);
-			col = new Color3f(new Color(value));
+				image, threshold, channels, resamplingF);
+		if(color == null) {
+			int value = image.getProcessor().
+					getColorModel().getRGB(threshold);
+			color = new Color3f(new Color(value));
 		}
-		shape = new IsoShape(mesh, col, threshold);
+		shape = new IsoShape(mesh, color, threshold);
 		pickTr.addChild(shape);
 		compile();
 	}
@@ -61,14 +60,11 @@ public class MeshGroup extends Content {
 		// do nothing
 	}
 
-	public void colorUpdated(String color, boolean[] channels) {
-		Color3f c = null;
-		if(color.equals("None")){
-			int val = getImage().
-					getProcessor().getColorModel().getRGB(threshold);
-			c = new Color3f(new Color(val));
-		} else {
-			c = ColorTable.getColor(color);
+	public void colorUpdated(Color3f color, boolean[] channels) {
+		if(color == null){
+			int val = getImage().getProcessor().
+					getColorModel().getRGB(threshold);
+			color = new Color3f(new Color(val));
 		}
 		boolean[] ch = getChannels();
 		if(channelsChanged) {
@@ -77,7 +73,7 @@ public class MeshGroup extends Content {
 			shape.mesh = mesh;
 			shape.update();
 		}
-		shape.setColor(c);	
+		shape.setColor(color);	
 	}
 	
 	public static void addContent(Image3DUniverse univ, ImagePlus mesh) {
@@ -101,12 +97,13 @@ public class MeshGroup extends Content {
 		String tmp = mesh != null ? mesh.getTitle() : "";
 		gd.addStringField("Name", tmp, 10);
 		gd.addChoice("Color", ColorTable.colorNames, 
-							ColorTable.colorNames[0]);
+						ColorTable.colorNames[0]);
 		gd.addNumericField("Threshold", 50, 0);
 		gd.addNumericField("Resampling factor", 2, 0);
 		gd.addMessage("Channels");
-		gd.addCheckboxGroup(1, 3, new String[] {"red", "green", "blue"}, 
-						new boolean[]{true, true, true});
+		gd.addCheckboxGroup(1, 3, 
+					new String[] {"red", "green", "blue"}, 
+					new boolean[]{true, true, true});
 
 		gd.showDialog();
 		if(gd.wasCanceled())
@@ -115,12 +112,12 @@ public class MeshGroup extends Content {
 		if(mesh == null)
 			mesh = WindowManager.getImage(gd.getNextChoice());
 		String name = gd.getNextString();
-		String color = gd.getNextChoice();
+		Color3f color = ColorTable.getColor(gd.getNextChoice());
 		int threshold = (int)gd.getNextNumber();
 		int factor = (int)gd.getNextNumber();
-		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
-								gd.getNextBoolean(), 
-								gd.getNextBoolean()};
+		boolean[] channels = new boolean[] {gd.getNextBoolean(), 
+						gd.getNextBoolean(), 
+						gd.getNextBoolean()};
 		univ.addMesh(mesh, color, name, threshold, channels, factor);
 	}
 }

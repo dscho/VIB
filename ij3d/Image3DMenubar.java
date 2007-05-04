@@ -84,25 +84,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					"Perspective Projection", true);
 		perspective.addItemListener(this);
 		menu.add(perspective);
-
-/*
-		univ.getCanvas().add(this);
-   		
-		univ.getCanvas().addMouseListener(new MouseAdapter(){
-			public void mousePressed(MouseEvent e){
-				showPopup(e);	
-			}
-			public void mouseReleased(MouseEvent e){
-				showPopup(e);	
-			}
-			private void showPopup(MouseEvent e) {
-				if(e.isPopupTrigger()){
-					p = e.getPoint();
-					show(univ.getCanvas(), 
-							e.getX(),e.getY());
-				}
-			}
-		});*/
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -180,18 +161,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void changeColor(Content selected) {
 		GenericDialog gd = new GenericDialog("Adjust color ...");
 		gd.addChoice("Color", ColorTable.colorNames, 
-							ColorTable.colorNames[0]);
+						ColorTable.colorNames[0]);
 		gd.addMessage("Channels");
-		gd.addCheckboxGroup(1, 3, new String[] {"red", "green", "blue"}, 
-						new boolean[]{true, true, true});
+		gd.addCheckboxGroup(1, 3, 
+				new String[] {"red", "green", "blue"}, 
+				new boolean[]{true, true, true});
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
 			
-		String color = gd.getNextChoice();
+		Color3f color = ColorTable.getColor(gd.getNextChoice());
 		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
-								gd.getNextBoolean(), 
-								gd.getNextBoolean()};
+						gd.getNextBoolean(), 
+						gd.getNextBoolean()};
 		selected.setColor(color, channels);
 	}
 }

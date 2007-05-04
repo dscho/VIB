@@ -33,18 +33,18 @@ public class VoltexGroup extends Content {
 	private Renderer renderer;
 	private TransformGroup tg;
 
-	public VoltexGroup(String name, String color, 
+	public VoltexGroup(String name, Color3f color, 
 			ImagePlus image, boolean[] channels, int resamplingF) {
-		super(name, color, image, channels, resamplingF);
 		
+		super(name, color, image, channels, resamplingF);
 		float scale = image.getWidth() * 
-					(float)image.getCalibration().pixelWidth;
+				(float)image.getCalibration().pixelWidth;
 
 		IndexColorModel cmodel = ColorTable.adjustColorModel(
-				(IndexColorModel)image.getProcessor().getColorModel(), 
-				color, channels);
+			(IndexColorModel)image.getProcessor().getColorModel(), 
+			color, channels);
 		ImagePlus imp = resamplingF == 1 ? image 
-						: Resample_.resample(image, resamplingF);
+				: Resample_.resample(image, resamplingF);
 		renderer = new Axis2DRenderer(image, cmodel);
 		renderer.fullReload();
 
@@ -86,12 +86,13 @@ public class VoltexGroup extends Content {
 		}
 		String tmp = grey != null ? grey.getTitle() : "";
 		gd.addStringField("Name", tmp, 10);
-		gd.addChoice("Color", 
-				ColorTable.colorNames, ColorTable.colorNames[0]);
+		gd.addChoice("Color", ColorTable.colorNames, 
+						ColorTable.colorNames[0]);
 		gd.addNumericField("Resampling factor", 2, 0);
 		gd.addMessage("Channels");
-		gd.addCheckboxGroup(1, 3, new String[] {"red", "green", "blue"}, 
-						new boolean[]{true, true, true});
+		gd.addCheckboxGroup(1, 3, 
+					new String[] {"red", "green", "blue"}, 
+					new boolean[]{true, true, true});
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
@@ -99,11 +100,11 @@ public class VoltexGroup extends Content {
 		if(grey == null)
 			grey = WindowManager.getImage(gd.getNextChoice());
 		String name = gd.getNextString();
-		String color = gd.getNextChoice();
+		Color3f color = ColorTable.getColor(gd.getNextChoice());
 		int factor = (int)gd.getNextNumber();
 		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
-								gd.getNextBoolean(), 
-								gd.getNextBoolean()};
+						gd.getNextBoolean(), 
+						gd.getNextBoolean()};
 		univ.addVoltex(grey, color, name, channels, factor);
 	}
 
@@ -111,12 +112,14 @@ public class VoltexGroup extends Content {
 		renderer.eyePtChanged(view);
 	}
 
-	public void colorUpdated(String color, boolean[] channels) {
-		IndexColorModel cmodel = ColorTable.adjustColorModel(
-			(IndexColorModel)getImage().getProcessor().getColorModel(), 
-			color, channels);
+	public void colorUpdated(Color3f color, boolean[] channels) {
+		IndexColorModel cmodel = 
+			ColorTable.adjustColorModel(
+				(IndexColorModel)getImage().
+					getProcessor().getColorModel(), 
+				color, channels);
 		ImagePlus imp = getResamplingFactor() == 1 ? getImage()
-				: Resample_.resample(getImage(), getResamplingFactor());
+			: Resample_.resample(getImage(), getResamplingFactor());
 		renderer = new Axis2DRenderer(getImage(), cmodel);
 		renderer.fullReload();
 		tg.removeChild(0);

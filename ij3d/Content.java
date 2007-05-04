@@ -13,7 +13,7 @@ import javax.vecmath.Color3f;
 public abstract class Content extends BranchGroup {
 
 	String name;
-	String color;
+	Color3f color;
 	ImagePlus image;
 	boolean[] channels = new boolean[]{true, true, true};
 	int resamplingF = 1;;
@@ -37,13 +37,13 @@ public abstract class Content extends BranchGroup {
 		addChild(pickTr);
 	}
 
-	public Content(String name, String color) {
+	public Content(String name, Color3f color) {
 		this();
 		this.name = name;
 		this.color = color;
 	}
 
-	public Content(String name, String color, 
+	public Content(String name, Color3f color, 
 			ImagePlus image, boolean[] channels, int resamplingF) {
 		this(name, color);
 		this.image = image;
@@ -59,11 +59,15 @@ public abstract class Content extends BranchGroup {
 		this.selected = selected;
 	}
 
-	public void setColor(String color, boolean[] channels) {
+	public void setColor(Color3f color, boolean[] channels) {
 		channelsChanged = channels[0] != this.channels[0] || 
-							channels[1] != this.channels[1] || 
-							channels[2] != this.channels[2];
-		boolean colorChanged = !color.equals(this.color);
+				channels[1] != this.channels[1] || 
+				channels[2] != this.channels[2];
+	
+		boolean colorChanged = !(this.color == null && color == null)
+			|| (this.color == null && color != null)
+			|| (color == null && this.color != null) 
+			|| !(this.color.equals(color));
 		if(!colorChanged && !channelsChanged)
 			return;
 		this.color = color;
@@ -84,7 +88,7 @@ public abstract class Content extends BranchGroup {
 	}
 
 	public abstract void eyePtChanged(View view);
-	public abstract void colorUpdated(String color, boolean[] channels);
+	public abstract void colorUpdated(Color3f color, boolean[] channels);
 }
 
 

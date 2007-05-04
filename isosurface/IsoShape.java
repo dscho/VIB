@@ -23,7 +23,9 @@ public final class IsoShape extends Shape3D {
 	public IsoShape(List mesh, int threshold){
 		this.mesh = mesh;
 		this.threshold = threshold;
+		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
+		this.setCapability(ALLOW_APPEARANCE_READ);
 		this.setCapability(ALLOW_APPEARANCE_WRITE);
 		this.update();
 	}
@@ -32,7 +34,9 @@ public final class IsoShape extends Shape3D {
 		this.mesh = mesh;
 		this.color = color;
 		this.threshold = threshold;
+		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
+		this.setCapability(ALLOW_APPEARANCE_READ);
 		this.setCapability(ALLOW_APPEARANCE_WRITE);
 		this.update();
 	}
@@ -105,6 +109,7 @@ public final class IsoShape extends Shape3D {
 		st.stripify(gi);
 		GeometryArray result = gi.getGeometryArray();
 		result.setCapability(TriangleArray.ALLOW_COLOR_WRITE);
+		result.setCapability(TriangleArray.ALLOW_COUNT_READ);
 		result.setCapability(TriangleArray.ALLOW_INTERSECT);
 		
 		return result;

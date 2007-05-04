@@ -64,7 +64,7 @@ public class ColorTable {
 	}
 
 	public static IndexColorModel adjustColorModel(
-				IndexColorModel cmodel, String color, boolean[] ch) {
+			IndexColorModel cmodel, Color3f color, boolean[] ch) {
 
 		byte[] r = new byte[256];
 		byte[] g = new byte[256];
@@ -78,24 +78,26 @@ public class ColorTable {
 			if(ch[i])
 				sum++;
 		for(int i = 0; i < 256; i++) {
-			if(color.equals("None")) {
+			if(color == null) {
 				r[i] = ch[0] ? r[i] : 0;
-	                  g[i] = ch[1] ? g[i] : 0;
-	                  b[i] = ch[2] ? b[i] : 0;
+	                  	g[i] = ch[1] ? g[i] : 0;
+	                  	b[i] = ch[2] ? b[i] : 0;
 				a[i] = (byte)((
 						((int)r[i]&0xff) + 
 						((int)b[i]&0xff) + 
 						((int)g[i]&0xff)) / sum);
 				a[i] = (byte)i;
 			} else {
+				Color col = color.get();
 				int intens = 0;
 				if(ch[0]) intens += ((int)r[i] & 0xff);
 				if(ch[1]) intens += ((int)g[i] & 0xff);
 				if(ch[2]) intens += ((int)b[i] & 0xff);
 				byte val = (byte)(intens/sum);
-				r[i] = isRedCh(color) ? val : 0;
-				g[i] = isGreenCh(color) ? val : 0;
-				b[i] = isBlueCh(color) ? val : 0;
+				float scale = (intens * 255f / sum);
+				r[i] = (byte)(col.getRed() * scale);
+				g[i] = (byte)(col.getGreen() * scale);
+				b[i] = (byte)(col.getBlue() * scale);
 				a[i] = val;
 			}
 		}
