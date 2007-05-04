@@ -16,6 +16,9 @@ import voltex.VoltexGroup;
 import marchingcubes.MCTriangulator;
 
 import java.awt.Panel;
+import java.awt.MenuBar;
+import java.awt.Menu;
+import java.awt.MenuItem;
 import java.awt.BorderLayout;
 import java.awt.Frame;
 import java.awt.event.*;
@@ -100,6 +103,31 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Image3DMenubar getMenuBar() {
 		return menubar;
+	}
+
+	public Menu getMenu() {
+		if(menubar != null)
+			return menubar.getMenu(0);
+		return null;
+	}
+
+	public void addMenuItem(String label, ActionListener al) {
+		Menu menu = getMenu();
+		if(menu != null) {
+			MenuItem item = new MenuItem(label);
+			item.addActionListener(al);
+			menu.add(item);
+		}
+	}
+
+	public void removeMenuItem(String label) {
+		Menu menu = getMenu();
+		if(menu != null) {
+			for(int i = 0; i < menu.getItemCount(); i++) {
+				if(label.equals(menu.getItem(i).getLabel()))
+					menu.remove(i);
+			}
+		}
 	}
 
 	public void addVoltex(ImagePlus image, String color, 
