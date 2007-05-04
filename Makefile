@@ -94,6 +94,8 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	vib/Resample_.java vib/InterpolatedImage.java amira/AmiraParameters.java \
 	amira/AmiraTable.java math3d/Point3d.java ImageJ_3D_Viewer.java
 
+Install_Java3D.jar: SOURCES=Install_Java3D.java
+
 VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard vib/app/gui/*.java) \
 	$(wildcard vib/app/module/*.java) \
