@@ -103,21 +103,29 @@ public class ImageCanvas3D extends Canvas3D {
 	public void setStatus(String bla) {
 		status = bla;
 		color = Color.WHITE;
-		postRender();	
+		postRender();
 		new Thread(new Runnable() {
 			public void run() {
 				try {
-					for(int i = 240; i > 0; i-=10) {
-						color = new Color(i, i, i);
-						postRender();
-						Thread.currentThread().
-								sleep(40);
-						status = "";
-					}
+					Thread.currentThread().sleep(2000);
+					color = Color.LIGHT_GRAY;
+					postRender();
+					Thread.currentThread().sleep(200);
+					color = Color.GRAY;
+					postRender();
+					Thread.currentThread().sleep(200);
+					color = Color.DARK_GRAY;
+					postRender();
+					Thread.currentThread().sleep(200);
+					color = Color.BLACK;
+					postRender();
+					status = "";
 				} catch(Exception e) {}
 			}
 		}).start();
 	}
+
+	Font font = new Font("Helvetica", Font.PLAIN, 20);
 
 	public void postRender() {
 		J3DGraphics2D g3d = getGraphics2D();
@@ -127,7 +135,7 @@ public class ImageCanvas3D extends Canvas3D {
 		}
 		if(!status.equals("")) {
 			g3d.setColor(color);
-			g3d.setFont(new Font("Helvetica", Font.PLAIN, 20));
+			g3d.setFont(font);
 			g3d.drawString(status, 20, getHeight()-20);
 		}
 		g3d.flush(true);
