@@ -110,13 +110,6 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		globalRotate.setupCallback(this);
 		root.addChild(globalRotate);
 
-		TranslateBehavior translate = new TranslateBehavior();
-		translate.setupCallback(this);
-		scene.addChild(translate);
-
-		ZoomBehavior zoom = new ZoomBehavior();
-		scene.addChild(zoom);
-
 		getCanvas().addMouseListener(new MouseAdapter() {
 			public void mouseReleased(MouseEvent e) {
 				if(Toolbar.getToolId() == Toolbar.HAND) {
@@ -211,32 +204,6 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.canvasResized();
-		}
-	}
-
-	private class TranslateBehavior extends PickTranslateBehavior {
-		int mode = PickCanvas.GEOMETRY;
-		public TranslateBehavior() {
-			super(scene, getCanvas(), bounds);
-			setMode(mode);
-		}
-
-		public void processStimulus(Enumeration criteria) {
-			if(Toolbar.getToolId() == Toolbar.HAND) {
-				super.processStimulus(criteria);
-			} else 
-				wakeupOn (wakeupCondition);
-		}
-	}
-
-	private class ZoomBehavior extends MouseZoom {
-		public ZoomBehavior() {
-			super(scaleTG);
-			setSchedulingBounds(bounds);
-		}
-
-		public void transformChanged(Transform3D transform) {
-			fireTransformationUpdated();
 		}
 	}
 } 

@@ -21,9 +21,15 @@ public class RotateBehavior extends Behavior {
 	private int x_last = 0, y_last = 0;
 	private MouseBehaviorCallback callback;
 
-	public static final int ROTATE_BUTTON = MouseEvent.BUTTON1;
-	public static final int TRANSLATE_BUTTON = MouseEvent.BUTTON2;
-	public static final int ZOOM_BUTTON = MouseEvent.BUTTON3;
+	//public static final int ROTATE_BUTTON = MouseEvent.BUTTON1;
+	//public static final int TRANSLATE_BUTTON = MouseEvent.BUTTON1;
+	//public static final int ZOOM_BUTTON = MouseEvent.BUTTON1;
+
+	public static final int ROTATE_MASK = MouseEvent.BUTTON1_DOWN_MASK;
+	public static final int TRANSLATE_MASK = MouseEvent.BUTTON1_DOWN_MASK |
+						InputEvent.SHIFT_DOWN_MASK;
+	public static final int ZOOM_MASK = MouseEvent.BUTTON1_DOWN_MASK |
+						InputEvent.ALT_DOWN_MASK;
 
 	private static final Vector3f ORIGIN = new Vector3f(0f, 0f, 0f);
 
@@ -80,7 +86,7 @@ public class RotateBehavior extends Behavior {
 
 	public void doProcess(MouseEvent e) {
 		int id = e.getID();
-		int button = e.getButton();
+		int mask = e.getModifiersEx();
 		Content c = univ.getSelected();
 		if(id == MouseEvent.MOUSE_PRESSED) {
 			x_last = e.getX();
@@ -100,10 +106,10 @@ public class RotateBehavior extends Behavior {
 			univ.getGlobalRotate().setTransform(globalRotation);
 			transformed = false;
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
-			switch(button) {
-				case ROTATE_BUTTON: rotate(c, e); break;
-				case TRANSLATE_BUTTON: translate(e); break;
-				case ZOOM_BUTTON: zoom(e); break;
+			switch(mask) {
+				case ROTATE_MASK: rotate(c, e); break;
+				case TRANSLATE_MASK: translate(c, e); break;
+				case ZOOM_MASK: zoom(e); break;
 			}
 		}
 	}
@@ -135,8 +141,25 @@ public class RotateBehavior extends Behavior {
 		y_last = y;
 	}
 
-	public void translate(MouseEvent e) {
-		System.out.println("translate");
+	public void translate(Content c, MouseEvent e) {
+		int x = e.getX(), y = e.getY();
+		int dx = x - x_last, dy = y - y_last;
+
+		transl.x = dx * 1f;
+		transl.y = -dy * 1f;
+		transl.z = 0;	
+		transformX.set(transl);
+		
+		TransformGroup tg = (c == null) ? 
+					univ.getGlobalRotate() : c.getTG();
+		tg.getTransform(currentXform);
+		currentXform.mul(transformX, currentXform);
+
+		tg.setTransform(currentXform);
+		transformChanged(MouseBehaviorCallback.TRANSLATE, currentXform);
+		
+		x_last = x;
+		y_last = y;
 	}
 
 	public void zoom(MouseEvent e) {
