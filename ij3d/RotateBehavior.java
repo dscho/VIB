@@ -109,7 +109,7 @@ public class RotateBehavior extends Behavior {
 			switch(mask) {
 				case ROTATE_MASK: rotate(c, e); break;
 				case TRANSLATE_MASK: translate(c, e); break;
-				case ZOOM_MASK: zoom(e); break;
+				case ZOOM_MASK: zoom(c, e); break;
 			}
 		}
 	}
@@ -162,8 +162,24 @@ public class RotateBehavior extends Behavior {
 		y_last = y;
 	}
 
-	public void zoom(MouseEvent e) {
-		System.out.println("zoom");
+	public void zoom(Content c, MouseEvent e) {
+		int y = e.getY();
+		int dy = y - y_last;
+
+		transl.x = 0f;
+		transl.y = 0f;
+		transl.z = 10f * dy;
+		transformX.set(transl);
+		
+		TransformGroup tg = univ.getGlobalRotate();
+		tg.getTransform(currentXform);
+		currentXform.mul(transformX, currentXform);
+
+		tg.setTransform(currentXform);
+		transformChanged(MouseBehaviorCallback.TRANSLATE, currentXform);
+		
+		x_last = e.getX();
+		y_last = y;
 	}
 }
 	
