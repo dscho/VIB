@@ -18,18 +18,14 @@ public class MouseBehavior extends Behavior {
 	private WakeupOnAWTEvent[] mouseEvents;
 	private WakeupCondition wakeupCriterion;
 
+	private int toolID;
 	private int x_last = 0, y_last = 0;
 	private MouseBehaviorCallback callback;
-
-	//public static final int ROTATE_BUTTON = MouseEvent.BUTTON1;
-	//public static final int TRANSLATE_BUTTON = MouseEvent.BUTTON1;
-	//public static final int ZOOM_BUTTON = MouseEvent.BUTTON1;
 
 	public static final int ROTATE_MASK = MouseEvent.BUTTON1_DOWN_MASK;
 	public static final int TRANSLATE_MASK = MouseEvent.BUTTON1_DOWN_MASK |
 						InputEvent.SHIFT_DOWN_MASK;
-	public static final int ZOOM_MASK = MouseEvent.BUTTON1_DOWN_MASK |
-						InputEvent.ALT_DOWN_MASK;
+	public static final int ZOOM_MASK = MouseEvent.BUTTON1_DOWN_MASK;
 
 	private static final Vector3f ORIGIN = new Vector3f(0f, 0f, 0f);
 
@@ -66,7 +62,8 @@ public class MouseBehavior extends Behavior {
 	}
 
 	public void processStimulus(Enumeration criteria) {
-		if(Toolbar.getToolId() != Toolbar.HAND) {
+		toolID = Toolbar.getToolId();
+		if(toolID != Toolbar.HAND && toolID != Toolbar.MAGNIFIER) {
 			wakeupOn (wakeupCriterion);
 			return;
 		}
@@ -106,10 +103,15 @@ public class MouseBehavior extends Behavior {
 			univ.getGlobalRotate().setTransform(globalRotation);
 			transformed = false;
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
-			switch(mask) {
-				case ROTATE_MASK: rotate(c, e); break;
-				case TRANSLATE_MASK: translate(c, e); break;
-				case ZOOM_MASK: zoom(c, e); break;
+			if(toolID == Toolbar.MAGNIFIER && mask == ZOOM_MASK)
+				zoom(c, e);
+			else if(toolID == Toolbar.HAND) {
+				switch(mask) {
+					case ROTATE_MASK: rotate(c, e); 
+					break;
+					case TRANSLATE_MASK: translate(c, e); 
+					break;
+				}
 			}
 		}
 	}
