@@ -54,7 +54,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	protected TransformGroup scaleTG;
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
-	protected MouseBehavior globalRotate;
+	protected MouseBehavior mouseBehavior;
 
 	private List listeners = new ArrayList();
 	private boolean transformed = false;
@@ -105,10 +105,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		root.addChild(lightS);
 
 		// setup global mouse rotation
-		globalRotate = new MouseBehavior(this);
-		globalRotate.setSchedulingBounds(bounds);
-		globalRotate.setupCallback(this);
-		root.addChild(globalRotate);
+		mouseBehavior = new MouseBehavior(this);
+		mouseBehavior.setSchedulingBounds(bounds);
+		mouseBehavior.setupCallback(this);
+		root.addChild(mouseBehavior);
 
 		getCanvas().addMouseListener(new MouseAdapter() {
 			public void mouseReleased(MouseEvent e) {

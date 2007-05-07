@@ -129,6 +129,9 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	public void pauseAnimation() {
 		animation.pause();
 		animated = false;
+		mouseBehavior.correctGlobalAndLocalTransformations();
+		TransformGroup tg = null;
+		transformChanged(0, tg);
 		fireTransformationFinished();
 	}
 } 

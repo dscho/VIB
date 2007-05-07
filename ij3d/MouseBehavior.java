@@ -91,16 +91,7 @@ public class MouseBehavior extends Behavior {
 		} else if(id == MouseEvent.MOUSE_RELEASED) {
 			if(c != null || !transformed)
 				return;
-			for(Iterator it = univ.contents(); it.hasNext();) {
-				univ.getGlobalRotate().
-					getTransform(globalRotation);
-				Content content = (Content)it.next();
-				content.getTG().getTransform(currentXform);
-				globalRotation.mul(currentXform);
-				content.getTG().setTransform(globalRotation);
-			}
-			globalRotation.setIdentity();
-			univ.getGlobalRotate().setTransform(globalRotation);
+			correctGlobalAndLocalTransformations();
 			transformed = false;
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
 			if(toolID == Toolbar.MAGNIFIER && mask == ZOOM_MASK)
@@ -116,6 +107,17 @@ public class MouseBehavior extends Behavior {
 		}
 	}
 
+	public void correctGlobalAndLocalTransformations() {
+		for(Iterator it = univ.contents(); it.hasNext();) {
+			univ.getGlobalRotate().getTransform(globalRotation);
+			Content content = (Content)it.next();
+			content.getTG().getTransform(currentXform);
+			globalRotation.mul(currentXform);
+			content.getTG().setTransform(globalRotation);
+		}
+		globalRotation.setIdentity();
+		univ.getGlobalRotate().setTransform(globalRotation);
+	}
 
 	public void rotate(Content c, MouseEvent e) {
 		int x = e.getX(), y = e.getY();
