@@ -59,6 +59,13 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	private List listeners = new ArrayList();
 	private boolean transformed = false;
 
+	public abstract Content getSelected();
+	public abstract Iterator contents();
+
+	public TransformGroup getGlobalRotate() {
+		return rotationsTG;
+	}
+
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height));
 		getViewingPlatform().setNominalViewingTransform();
@@ -84,13 +91,6 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
 		rotationsTG.addChild(scene);
 
-		// setup global mouse rotation
-		globalRotate = new RotateBehavior(null);
-		globalRotate.setTransformGroup(rotationsTG);
-		rotationsTG.addChild(globalRotate);
-		globalRotate.setSchedulingBounds(bounds);
-		globalRotate.setupCallback(this);
-
 		// Lightening
 		AmbientLight lightA = new AmbientLight();
 		lightA.setInfluencingBounds(bounds);
@@ -103,6 +103,12 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		SpotLight lightS = new SpotLight();
 		lightS.setInfluencingBounds(bounds);
 		root.addChild(lightS);
+
+		// setup global mouse rotation
+		globalRotate = new RotateBehavior(this);
+		globalRotate.setSchedulingBounds(bounds);
+		globalRotate.setupCallback(this);
+		root.addChild(globalRotate);
 
 		TranslateBehavior translate = new TranslateBehavior();
 		translate.setupCallback(this);

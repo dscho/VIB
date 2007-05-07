@@ -45,7 +45,7 @@ import com.sun.j3d.utils.picking.PickResult;
 public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Content selected;
-	private Hashtable contents = new Hashtable();;
+	private Hashtable contents = new Hashtable();
 	private Image3DMenubar menubar;
 	private ImageCanvas3D canvas;
 
@@ -73,12 +73,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		});
 	}
 
-	public void enableLocalRotations(boolean b) {
-		Iterator it = contents.values().iterator();
-		while(it.hasNext())
-			((Content)it.next()).setEnable(b);
-	}
-
 	public void select(Content c) {
 		if(selected != null) {
 			selected.setSelected(false);
@@ -88,12 +82,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			c.setSelected(true);
 			selected = c;
 		}
-
-		enableLocalRotations(false);
-		if(selected != null)
-			selected.setEnable(true);
-		globalRotate.setEnable(selected == null);
-
 		String st = c != null ? c.name : "none";
 		IJ.showStatus("selected: " + st);
 		canvas.setStatus("selected: " + st);
@@ -158,7 +146,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		ensureScale(image);
 		VoltexGroup content = new VoltexGroup(
 				name, color, image, channels, resamplingF);
-		content.setCallback(this);
 		scene.addChild(content);
 		contents.put(name, content);
 		fireContentAdded(content);
@@ -188,7 +175,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		ensureScale(image);
 		MeshGroup meshG = new MeshGroup(
 			name, color, image, channels, resamplingF, threshold);
-		meshG.setCallback(this);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
 		fireContentAdded(meshG);
@@ -215,7 +201,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	
 		MeshGroup meshG = new MeshGroup(
 				name, color, mesh, threshold);
-		meshG.setCallback(this);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
 		fireContentAdded(meshG);
@@ -230,6 +215,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		if(selected == content)
 			selected = null;
 		fireContentRemoved(content);
+	}
+
+	public Iterator contents() {
+		return contents.values().iterator();
 	}
 
 	public Content getSelected() {

@@ -37,20 +37,6 @@ public abstract class Content extends BranchGroup {
 		pickTr.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		pickTr.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		addChild(pickTr);
-
-		localRotate = new RotateBehavior(this);
-		localRotate.setEnable(false);
-		localRotate.setTransformGroup(pickTr);
-		pickTr.addChild(localRotate);
-		localRotate.setSchedulingBounds(new BoundingSphere());
-	}
-
-	public void setEnable(boolean b) {
-		localRotate.setEnable(b);
-	}
-
-	public void setCallback(MouseBehaviorCallback cb) {
-		localRotate.setupCallback(cb);
 	}
 
 	public Content(String name, Color3f color) {
@@ -101,6 +87,10 @@ public abstract class Content extends BranchGroup {
 
 	public int getResamplingFactor() {
 		return resamplingF;
+	}
+
+	public TransformGroup getTG() {
+		return pickTr;
 	}
 
 	public abstract void eyePtChanged(View view);
