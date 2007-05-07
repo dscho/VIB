@@ -11,7 +11,7 @@ import ij.gui.Toolbar;
 import java.util.Enumeration;
 import java.util.Iterator;
 
-public class RotateBehavior extends Behavior {
+public class MouseBehavior extends Behavior {
 
 	private DefaultUniverse univ;
 
@@ -42,7 +42,7 @@ public class RotateBehavior extends Behavior {
 	private boolean transformed = false;
 	
 
-	public RotateBehavior(DefaultUniverse univ) {
+	public MouseBehavior(DefaultUniverse univ) {
 		this.univ = univ;
 		mouseEvents = new WakeupOnAWTEvent[3];
 	}

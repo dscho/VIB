@@ -23,7 +23,6 @@ public abstract class Content extends BranchGroup {
 	protected boolean channelsChanged;
 	
 	protected TransformGroup pickTr;
-	protected RotateBehavior localRotate;
 
 	public Content() {
 		// create BranchGroup for this image
