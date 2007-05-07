@@ -23,6 +23,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem color;
 	private MenuItem fill;
 	private MenuItem delete;
+	private MenuItem resetView;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
 	private MenuItem startAnimation;
@@ -47,6 +48,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		delete = new MenuItem("Delete");
 		delete.addActionListener(this);
 		menu.add(delete);
+
+		menu.addSeparator();
+
+		resetView = new MenuItem("Reset view");
+		resetView.addActionListener(this);
+		menu.add(resetView);
 
 		menu.addSeparator();
 
@@ -112,6 +119,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				return;
 			}
 			univ.removeContent(c.name);
+		}
+	
+		if(e.getSource() == resetView) {
+			univ.resetView();
 		}
 		
 		if(e.getSource() == startRecord) {
