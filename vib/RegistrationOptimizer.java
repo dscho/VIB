@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public abstract class RegistrationOptimizer {
+
+	protected boolean verbose = false;
 	/*
 	 * The extended euler parameters (9 values):
 	 * First the rotations, then the translation (which is applied after
@@ -36,7 +38,7 @@ public abstract class RegistrationOptimizer {
 	 * matrix == null)
 	 */
 	public FastMatrix doRegister(double tol) {
-		VIB.println("tol: " + tol);
+		if(verbose) VIB.println("tol: " + tol);
 		//ConjugateGradientSearch CG = new ConjugateGradientSearch();
 		ConjugateDirectionSearch CG = new ConjugateDirectionSearch();
 		//DifferentialEvolution CG = new DifferentialEvolution(6);
@@ -67,7 +69,7 @@ public abstract class RegistrationOptimizer {
 			//CG.step = 1;
 			//CG.optimize(refinement, x, 0.001 / tol, 0.001 / tol);
 			//eulerParameters = refinement.adjustInitial(x);
-			VIB.println("eulerParameters: " + eulerParameters[0] + ", " + eulerParameters[1] + ", " + eulerParameters[2] + "; " + eulerParameters[3] + ", " + eulerParameters[4] + ", " + eulerParameters[5] + "; " + eulerParameters[6] + ", " + eulerParameters[7] + ", " + eulerParameters[8]);
+			if(verbose) VIB.println("eulerParameters: " + eulerParameters[0] + ", " + eulerParameters[1] + ", " + eulerParameters[2] + "; " + eulerParameters[3] + ", " + eulerParameters[4] + ", " + eulerParameters[5] + "; " + eulerParameters[6] + ", " + eulerParameters[7] + ", " + eulerParameters[8]);
 		} while(!false && refinement.maxAdjust > translateMax / 8);
 
 		return refinement.getMatrix(x);
@@ -126,12 +128,14 @@ public abstract class RegistrationOptimizer {
 		ArrayList refinements = new ArrayList();
 		double[][] x = new double[24][6];
 		for (int i = 0; i < 24; i++) {
-			VIB.showStatus("Trying orientation " + (i + 1) + " of 24...");
+			if(verbose) 
+			VIB.showStatus("Trying orientation " + 
+						(i + 1) + " of 24...");
 			Refinement refinement = new Refinement(p[i]);
 			CG.optimize(refinement, x[i], 5, 5);
 			refinements.add(refinement);
 
-			VIB.showProgress(i + 1, 24);
+			if(verbose) VIB.showProgress(i + 1, 24);
 		}
 
 		Collections.sort(refinements);
@@ -140,7 +144,8 @@ public abstract class RegistrationOptimizer {
 			Refinement refinement = (Refinement)refinements.get(i);
 			x[i] = refinement.best;
 			orderedEulerParams[i] = refinement.adjustInitial(x[i]);
-			VIB.println((i+1) + " eulerParameters (" + refinement.min + "): " + orderedEulerParams[i][0] + ", " + orderedEulerParams[i][1] + ", " + orderedEulerParams[i][2]+ "; " + orderedEulerParams[i][3] + ", " + orderedEulerParams[i][4]+ ", " + orderedEulerParams[i][5] + "; " + orderedEulerParams[i][6] + ", " + orderedEulerParams[i][7] + ", " + orderedEulerParams[i][8]);
+			if(verbose) 
+				VIB.println((i+1) + " eulerParameters (" + refinement.min + "): " + orderedEulerParams[i][0] + ", " + orderedEulerParams[i][1] + ", " + orderedEulerParams[i][2]+ "; " + orderedEulerParams[i][3] + ", " + orderedEulerParams[i][4]+ ", " + orderedEulerParams[i][5] + "; " + orderedEulerParams[i][6] + ", " + orderedEulerParams[i][7] + ", " + orderedEulerParams[i][8]);
 		}
 
 		cachedInitialGuesses = orderedEulerParams;
@@ -174,7 +179,9 @@ public abstract class RegistrationOptimizer {
 		double angleFactor;
 
 		public Refinement(double[] start) {
-			VIB.println("translateMax: " + translateMax + ", angleMax: " + angleMax);
+			if(verbose)
+				VIB.println("translateMax: " + 
+				translateMax + ", angleMax: " + angleMax);
 			min = Double.MAX_VALUE;
 			initial = start;
 			evaluate(new double[9]);
