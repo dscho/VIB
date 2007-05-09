@@ -13,8 +13,7 @@ public abstract class Module {
 
 	// at a later stage, these functions will schedule multi-threaded jobs
 	public void runOnOneImage(State state, int index) {
-		if (console == null)
-			console = Console.instance();
+		console = Console.instance();
 		run(state, index);
 	}
 

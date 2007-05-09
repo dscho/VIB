@@ -89,16 +89,6 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		options.saveTo(options.workingDirectory + File.separator
 				+ Options.CONFIG_FILE);
 
-		Console console = Console.instance();
-		final Frame f = new Frame();
-		f.addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				f.dispose();
-			}
-		});
-		f.add(console);
-		f.setSize(200,200);
-		f.setVisible(true);
 		State state = new State(options);
 		new EndModule().runOnAllImages(state);
 	}

@@ -77,7 +77,6 @@ public class LabelCenterTransformation extends Module {
 			trans.measure = new TwoValues(iTempl, i);
 			RigidRegistration_ rr = new RigidRegistration_();
 
-			console.append("...rigidRegistration");
 			FastMatrix matrix2 = rr.rigidRegistration(trans,
 					materialBBox, initialTransform,
 					iTempl, i, noOptimization,
