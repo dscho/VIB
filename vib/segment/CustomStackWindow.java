@@ -14,11 +14,11 @@ import ij.ImageStack;
 import ij.process.ImageProcessor;
 
 public class CustomStackWindow extends StackWindow
-					 implements AdjustmentListener, 
-								KeyListener, 
-								ActionListener, 
-								MouseMotionListener,
-								MouseWheelListener {
+				 implements AdjustmentListener, 
+						KeyListener, 
+						ActionListener, 
+						MouseMotionListener,
+						MouseWheelListener {
 	
 	private Roi[] savedRois;
 	private int oldSlice;
@@ -64,12 +64,13 @@ public class CustomStackWindow extends StackWindow
 		add(sliceAndImage, BorderLayout.EAST); 
 
 		Panel buttonPanel = new Panel(new FlowLayout());
-        ok = new Button("Ok");
-        ok.addActionListener(this);
-        buttonPanel.add(ok);
-        add(buttonPanel, BorderLayout.SOUTH);
+		ok = new Button("Ok");
+		ok.addActionListener(this);
+		buttonPanel.add(ok);
+		add(buttonPanel, BorderLayout.SOUTH);
 
 		pack();
+		cc.requestFocus();
 	}
 
 	public void cleanUp() {
@@ -126,6 +127,7 @@ public class CustomStackWindow extends StackWindow
 		cc.getLabels().setSlice(currentSlice);
 		cc.getImage().updateAndDraw();
 		cc.getLabels().updateAndDraw();
+		cc.requestFocus();
 	}
 	
 	public void processMinusButton(){
@@ -146,6 +148,7 @@ public class CustomStackWindow extends StackWindow
 		cc.getLabels().setSlice(currentSlice);
 		cc.getImage().updateAndDraw();
 		cc.getLabels().updateAndDraw();
+		cc.requestFocus();
 	}
 
 	public void processInterpolateButton() {
@@ -157,6 +160,7 @@ public class CustomStackWindow extends StackWindow
 				setCursor(Cursor.DEFAULT_CURSOR);
 			}
 		}).start();
+		cc.requestFocus();
 	}
 	
 	public void assignSliceTo(int slice, Roi roi, int materialID){
@@ -254,8 +258,10 @@ public class CustomStackWindow extends StackWindow
 		String command = e.getActionCommand();
 		if (command.equals("zoomin")) {
 			cc.zoomIn(cc.getWidth()/2, cc.getHeight()/2);
+			cc.requestFocus();
 		} else if (command.equals("zoomout")) {
 			cc.zoomOut(cc.getWidth()/2, cc.getHeight()/2);
+			cc.requestFocus();
 		} else if (command.equals("plus")) {
 			processPlusButton();
 		} else if (command.equals("minus")) {
