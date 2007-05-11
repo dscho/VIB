@@ -272,8 +272,9 @@ public class CustomStackWindow extends StackWindow
 			// call the action listener before destroying the window
 			if(al != null)
 				al.actionPerformed(e);
-			// new StackWindow(getImagePlus());
-			getImagePlus().close();
+			if(getImagePlus() != null) {
+				new StackWindow(getImagePlus());
+			}
 		}
 	}
 

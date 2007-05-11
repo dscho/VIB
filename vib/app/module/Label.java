@@ -51,6 +51,7 @@ public class Label extends Module {
 			}
 		}
 		labels = csw.getLabels();
+		image.close();
 		csw.cleanUp();
 		state.save(labels, labelPath);
 	}

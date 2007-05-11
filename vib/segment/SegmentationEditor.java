@@ -23,14 +23,38 @@ public class SegmentationEditor implements PlugIn {
 	private CustomStackWindow csw;
 	
 	public void run(String arg) {
-		ImagePlus imp = WindowManager.getCurrentImage();
+		ImagePlus image = WindowManager.getCurrentImage();
 		ImageProcessor ip;
-		if (imp==null) {
+		if (image==null) {
 			IJ.error("No image?");
 			return;
 		}
-		csw = new CustomStackWindow(imp);
+
+		ActionListener a = new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(e.getActionCommand().equals("Ok")) {
+					synchronized (this) {
+						notifyAll();
+					}
+				}
+			}
+		};
+
+		
+		csw = new CustomStackWindow(image);
 		csw.getLabels().show();
+		csw.addActionListener(a);
+		synchronized (a) {
+			try {
+				a.wait();
+			} catch(InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		System.out.println("arriving here");
+		ImagePlus labels = csw.getLabels();
+		System.out.println(image);
+		image.show();
 	}
 
 	public ImagePlus getLabels() {
