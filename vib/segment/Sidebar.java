@@ -69,7 +69,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 		add(addLabelImageChoice(), constr);
 		
 		addLabel("Materials:");
-		materials = new MaterialList();
+		materials = new MaterialList(cc);
 		add(materials, constr);
 
 		addZoom();
@@ -105,11 +105,9 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 
 	public void setLabelImage(ImagePlus image) {
 		if (image == null) {
-			image = InterpolatedImage
-						.cloneDimensionsOnly(cc.getImage(),ImagePlus.COLOR_256)
+			image = InterpolatedImage.cloneDimensionsOnly(
+					cc.getImage(),ImagePlus.COLOR_256)
 						.getImage();
-			// Do NOT show the labels
-			//image.show();
 			// TODO: get initial parameters
 		}
 		cc.setLabels(image);
@@ -126,6 +124,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 			Object image = labelImages.get(selected);
 			setLabelImage((ImagePlus)image);
 			currentLabelsAreNew = false;
+			cc.requestFocus();
 			return;
 		}
 		selected -= labelImages.size();
@@ -139,6 +138,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 		setLabelImage(labels);
 		this.materials.params = params;
 		currentLabelsAreNew = true;
+		cc.requestFocus();
 	}
 	
 	private ImageButton addImageButton(String path, ActionListener l) {

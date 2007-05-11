@@ -37,9 +37,10 @@ public class MaterialList extends ScrollPane implements ActionListener {
 	int lineHeight, lineWidth;
 	List list;
 
-	public MaterialList() {
+	public MaterialList(CustomCanvas cc) {
 		super();
 
+		this.cc = cc;
 		createPopup();
 		font = new Font("Monospaced", Font.PLAIN, 12);
 		lineHeight = font.getSize() + 1;
@@ -48,8 +49,8 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		add(list);
 	}
 
-	public MaterialList(ImagePlus ip) {
-		this();
+	public MaterialList(ImagePlus ip, CustomCanvas cc) {
+		this(cc);
 		initFrom(ip);
 	}
 
