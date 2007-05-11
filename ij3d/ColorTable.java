@@ -63,13 +63,34 @@ public class ColorTable {
 		return "None";
 	}
 
-	public static IndexColorModel adjustColorModel(
+	public static int getHistogramMax(ImagePlus imp) {
+		int d = imp.getStackSize();
+		int[] hist = new int[256];
+		for(int i = 0; i < d; i++) {
+			int[] h = imp.getStack().getProcessor(i+1).
+						getHistogram();
+			for(int j = 0; j < hist.length; j++) {
+				hist[j] += h[j];
+			}
+		}
+		int max = -1, maxIndex = -1;
+		for(int j = 0; j < hist.length; j++) {
+			if(hist[j] > max) {
+				max = hist[j];
+				maxIndex = j;
+			}
+		}
+		return maxIndex;
+	}
+
+	public static IndexColorModel adjustColorModel(ImagePlus imp,
 			IndexColorModel cmodel, Color3f color, boolean[] ch) {
 
-		byte[] r = new byte[256];
-		byte[] g = new byte[256];
-		byte[] b = new byte[256];
-		byte[] a = new byte[256];
+		int N = cmodel.getMapSize();
+		byte[] r = new byte[N];
+		byte[] g = new byte[N];
+		byte[] b = new byte[N];
+		byte[] a = new byte[N];
 		cmodel.getReds(r);
 		cmodel.getGreens(g);
 		cmodel.getBlues(b);
@@ -77,31 +98,40 @@ public class ColorTable {
 		for(int i = 0; i < 3; i++) 
 			if(ch[i])
 				sum++;
-		for(int i = 0; i < 256; i++) {
+		// index in cmodel which has most pixels:
+		// this is asumed to be the background value
+		int histoMax = getHistogramMax(imp);
+		int[] sumInt = new int[N];
+		int maxInt = 0;
+		for(int i = 0; i < N; i++) {
+			sumInt[i] = 0;
+			if(ch[0]) sumInt[i] += ((int)r[i] & 0xff);
+			if(ch[1]) sumInt[i] += ((int)g[i] & 0xff);
+			if(ch[2]) sumInt[i] += ((int)b[i] & 0xff);
+			maxInt = sumInt[i] > maxInt ? sumInt[i] : maxInt;
+		}
+
+		maxInt += 10; // to be really sure we are in the range
+		float scale = 255f / maxInt;
+		Color col = color != null ? color.get() : null;
+		for(int i = 0; i < N; i++) {
+			byte meanInt = (byte)(scale * sumInt[i]);
+			float colFac = (float)sumInt[i] / (float)maxInt;
 			if(color == null) {
 				r[i] = ch[0] ? r[i] : 0;
 	                  	g[i] = ch[1] ? g[i] : 0;
 	                  	b[i] = ch[2] ? b[i] : 0;
-				a[i] = (byte)((
-						((int)r[i]&0xff) + 
-						((int)b[i]&0xff) + 
-						((int)g[i]&0xff)) / sum);
-				a[i] = (byte)i;
+				a[i] = meanInt;
 			} else {
-				Color col = color.get();
-				int intens = 0;
-				if(ch[0]) intens += ((int)r[i] & 0xff);
-				if(ch[1]) intens += ((int)g[i] & 0xff);
-				if(ch[2]) intens += ((int)b[i] & 0xff);
-				byte val = (byte)(intens/sum);
-				float scale = (intens * 255f / sum);
-				r[i] = (byte)(col.getRed() * scale);
-				g[i] = (byte)(col.getGreen() * scale);
-				b[i] = (byte)(col.getBlue() * scale);
-				a[i] = val;
+				r[i] = (byte)(col.getRed() * colFac);
+				g[i] = (byte)(col.getGreen() * colFac);
+				b[i] = (byte)(col.getBlue() * colFac);
+				a[i] = meanInt;
 			}
 		}
-		IndexColorModel c = new IndexColorModel(8, 256, r, g, b, a);
+		a[histoMax] = (byte)0;
+		IndexColorModel c = 
+				new IndexColorModel(8, N, r, g, b, a);
 		return c;
 	}
 
@@ -111,10 +141,11 @@ public class ColorTable {
 		int d = imp.getStackSize();
 		int[] weight = new int[3];
 		IndexColorModel cmodel = 
-				(IndexColorModel)imp.getProcessor().getColorModel();
-		byte[] r = new byte[256];
-		byte[] g = new byte[256];
-		byte[] b = new byte[256];
+			(IndexColorModel)imp.getProcessor().getColorModel();
+		int N = cmodel.getMapSize();
+		byte[] r = new byte[N];
+		byte[] g = new byte[N];
+		byte[] b = new byte[N];
 		cmodel.getReds(r);
 		cmodel.getGreens(g);
 		cmodel.getBlues(b);
@@ -129,13 +160,13 @@ public class ColorTable {
 		ImageStack res = new ImageStack(w, h);
 		for(int z = 0; z < d; z++) {
 			byte[] bytes = 
-				(byte[])imp.getStack().getProcessor(z+1).getPixels();
+			(byte[])imp.getStack().getProcessor(z+1).getPixels();
 			byte[] newB = new byte[bytes.length];
 			for(int i = 0; i < w*h; i++) {
 				int index = bytes[i] & 0xff;
 				int value = (weight[0] * (int)(r[index]&0xff) + 
-						weight[1] * (int)(g[index]&0xff) + 
-						weight[2] * (int)(b[index]&0xff));
+					weight[1] * (int)(g[index]&0xff) + 
+					weight[2] * (int)(b[index]&0xff));
 				newB[i] = (byte)(value/sum); 
 					
 			}

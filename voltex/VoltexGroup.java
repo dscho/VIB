@@ -40,7 +40,7 @@ public class VoltexGroup extends Content {
 		float scale = image.getWidth() * 
 				(float)image.getCalibration().pixelWidth;
 
-		IndexColorModel cmodel = ColorTable.adjustColorModel(
+		IndexColorModel cmodel = ColorTable.adjustColorModel(image, 
 			(IndexColorModel)image.getProcessor().getColorModel(), 
 			color, channels);
 		ImagePlus imp = resamplingF == 1 ? image 
@@ -114,7 +114,7 @@ public class VoltexGroup extends Content {
 
 	public void colorUpdated(Color3f color, boolean[] channels) {
 		IndexColorModel cmodel = 
-			ColorTable.adjustColorModel(
+			ColorTable.adjustColorModel(getImage(),
 				(IndexColorModel)getImage().
 					getProcessor().getColorModel(), 
 				color, channels);
