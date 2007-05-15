@@ -25,6 +25,7 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
 
+import java.awt.event.WindowStateListener;
 import java.awt.event.WindowEvent;
 
 import javax.media.j3d.Canvas3D;
@@ -32,7 +33,8 @@ import javax.media.j3d.GraphicsConfigTemplate3D;
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Screen3D;
 
-public class ImageWindow3D extends ImageWindow implements UniverseListener {
+public class ImageWindow3D extends ImageWindow implements UniverseListener, 
+							WindowStateListener {
 	DefaultUniverse universe;
 	ImageCanvas3D canvas3D;
 	private boolean noOffScreen = false;
