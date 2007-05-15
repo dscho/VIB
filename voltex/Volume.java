@@ -79,37 +79,6 @@ public class Volume implements VolRendConstants {
 		facePoints[MINUS_Z][3] =  voiPts[4];
 	}
 
-/*
-	public void adaptColorModelFromImage() {
-		byte[] r = new byte[256];
-		byte[] g = new byte[256];
-		byte[] b = new byte[256];
-		byte[] a = new byte[256];
-		cmodel = (IndexColorModel)imp.getProcessor().getColorModel();
-		cmodel.getReds(r);
-		cmodel.getGreens(g);
-		cmodel.getBlues(b);
-		adjustAlpha(r, g, b, a);
-		cmodel = new IndexColorModel(8, 256, r, g, b, a); 
-	}*/
-
-	float weightr = 1.0f;
-	float weightg = 1.0f;
-	float weightb = 1.0f;
-
-	public void adjustAlpha(byte[]r, byte[]g, byte[]b, byte[]a) {
-		for(int i=0; i<256; i++) {
-			int red = (int)(r[i] & 0xff);
-			int green = (int)(g[i] & 0xff);
-			int blue = (int)(b[i] & 0xff);
-			
-			int meanInt = (int)Math.round(
-				(weightr * red + weightg * green + weightb * blue)/3.0);
-			
-			a[i] = (byte)(meanInt);
-		}
-	}
-
 	public void update() {
 		ImageStack stack = imp.getStack();
 		Calibration c = imp.getCalibration();
