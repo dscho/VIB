@@ -120,7 +120,7 @@ public class VoltexGroup extends Content {
 				color, channels);
 		ImagePlus imp = getResamplingFactor() == 1 ? getImage()
 			: Resample_.resample(getImage(), getResamplingFactor());
-		renderer = new Axis2DRenderer(getImage(), cmodel);
+		renderer = new Axis2DRenderer(imp, cmodel);
 		renderer.fullReload();
 		tg.removeChild(0);
 		tg.addChild(renderer.getVolumeNode());
