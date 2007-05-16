@@ -33,7 +33,9 @@ abstract public class Renderer {
 	/**
 	 * Called when the view position relative to the renderer changes
 	 */
-	public void eyePtChanged(View view) {}; 
+	abstract public void eyePtChanged(View view);
+
+	abstract public void setTransparency(float transparency);
 
 
 	/** 

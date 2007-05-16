@@ -19,10 +19,12 @@ public final class IsoShape extends Shape3D {
 	Color3f color = new Color3f(0.0f, 1.0f, 0.0f);
 	List mesh = null;
 	private int threshold;
+	private float transparency;
 
-	public IsoShape(List mesh, int threshold){
+	public IsoShape(List mesh, int threshold, float transparency){
 		this.mesh = mesh;
 		this.threshold = threshold;
+		this.transparency = transparency;
 		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
 		this.setCapability(ALLOW_APPEARANCE_READ);
@@ -30,10 +32,12 @@ public final class IsoShape extends Shape3D {
 		this.update();
 	}
 
-	public IsoShape(List mesh, Color3f color, int threshold) {
+	public IsoShape(List mesh, Color3f color, int threshold, 
+						float transparency) {
 		this.mesh = mesh;
 		this.color = color;
 		this.threshold = threshold;
+		this.transparency = transparency;
 		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
 		this.setCapability(ALLOW_APPEARANCE_READ);
@@ -59,19 +63,32 @@ public final class IsoShape extends Shape3D {
 		((GeometryArray)getGeometry()).setColors(0, colors);
 	}
 
+	public void setTransparency(float transparency) {
+		getAppearance().getTransparencyAttributes().
+			setTransparency(transparency);
+	}
+
 	private Appearance createAppearance () {
 		Appearance appearance = new Appearance();
 		
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		//polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_LINE);
-		polyAttrib.setCullFace(PolygonAttributes.CULL_NONE);
-		polyAttrib.setBackFaceNormalFlip(true);
+		polyAttrib.setCullFace(PolygonAttributes.CULL_BACK);
+		polyAttrib.setBackFaceNormalFlip(false);
 		appearance.setPolygonAttributes(polyAttrib);
 
 		ColoringAttributes colorAttrib = new ColoringAttributes();
 		colorAttrib.setShadeModel(ColoringAttributes.SHADE_GOURAUD);
 		colorAttrib.setColor(color);
 		appearance.setColoringAttributes(colorAttrib);
+
+		TransparencyAttributes tr = new TransparencyAttributes();
+		tr.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
+		tr.setTransparencyMode(TransparencyAttributes.FASTEST);
+		//tr.setSrcBlendFunction(TransparencyAttributes.BLEND_ONE);
+		//tr.setDstBlendFunction(TransparencyAttributes.BLEND_ONE);
+		tr.setTransparency(transparency);
+		appearance.setTransparencyAttributes(tr);
 		
 		Material material = new Material();
 		material.setAmbientColor(0.1f, 0.1f, 0.1f);

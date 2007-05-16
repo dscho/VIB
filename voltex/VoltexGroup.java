@@ -45,7 +45,7 @@ public class VoltexGroup extends Content {
 			color, channels);
 		ImagePlus imp = resamplingF == 1 ? image 
 				: Resample_.resample(image, resamplingF);
-		renderer = new Axis2DRenderer(image, cmodel);
+		renderer = new Axis2DRenderer(image, cmodel, getTransparency());
 		renderer.fullReload();
 
 		Point3d maxCoord = renderer.volume.maxCoord;
@@ -120,10 +120,14 @@ public class VoltexGroup extends Content {
 				color, channels);
 		ImagePlus imp = getResamplingFactor() == 1 ? getImage()
 			: Resample_.resample(getImage(), getResamplingFactor());
-		renderer = new Axis2DRenderer(imp, cmodel);
+		renderer = new Axis2DRenderer(imp, cmodel, getTransparency());
 		renderer.fullReload();
 		tg.removeChild(0);
 		tg.addChild(renderer.getVolumeNode());
+	}
+
+	public void transparencyUpdated(float transparency) {
+		renderer.setTransparency(transparency);
 	}
 
 	public void volumeToImagePlate(Transform3D toImagePlate) {

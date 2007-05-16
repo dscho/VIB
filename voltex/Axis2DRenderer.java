@@ -12,9 +12,11 @@ import ij.ImagePlus;
 public class Axis2DRenderer extends AxisRenderer {
 
 	private Texture2DVolume texVol;
+	private float transparency;
 
-	public Axis2DRenderer(ImagePlus img, IndexColorModel cmodel) {
+	public Axis2DRenderer(ImagePlus img, IndexColorModel cmodel, float tr) {
 		super(img);
+		this.transparency = tr;
 		texVol = new Texture2DVolume(volume, cmodel);
 	}
 
@@ -27,29 +29,20 @@ public class Axis2DRenderer extends AxisRenderer {
 		setWhichChild();
 	}
 
-/*
-	public void setColor(Color3f color) {
-		if(color == null && this.color != null ||
-				color != null && this.color == null) {
-			this.color = color;
-			fullReload();
-			return;
-		}	
-			
-		Color3f[] colors = new Color3f[4];
-		for(int j = 0; j < 4; j++)
-			colors[j] = color;
+	public void setTransparency(float transparency) {
+		this.transparency = transparency;
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {
 			Group g = (Group)axisSwitch.getChild(i);
 			int num = g.numChildren();
 			for(int y = 0; y < num; y++) {
 				Shape3D shape = (Shape3D)
-							((Group)g.getChild(y)).getChild(0);
-				GeometryArray geom = (GeometryArray)shape.getGeometry();
-				geom.setColors(0, colors);
+					((Group)g.getChild(y)).getChild(0);
+				shape.getAppearance().
+					getTransparencyAttributes().
+						setTransparency(transparency);
 			}
 		}
-	}*/
+	}
 
 	private void loadQuads() {
 		loadAxis(Z_AXIS);
@@ -132,16 +125,20 @@ public class Axis2DRenderer extends AxisRenderer {
 		} 
 	} 
 
-	private Appearance getAppearance(Texture tex, 
-						TexCoordGeneration tg) {
+	private Appearance getAppearance(Texture tex, TexCoordGeneration tg) {
 		Appearance a = new Appearance();
+
 		TextureAttributes texAttr = new TextureAttributes();
-		texAttr.setTextureMode(TextureAttributes.REPLACE);
+		texAttr.setTextureMode(TextureAttributes.MODULATE);
+
 		TransparencyAttributes t = new TransparencyAttributes();
-		t.setTransparency(0.1f);
+		t.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
 		t.setTransparencyMode(TransparencyAttributes.BLENDED);
+		t.setTransparency(transparency);
+
 		PolygonAttributes p = new PolygonAttributes();
 		p.setCullFace(PolygonAttributes.CULL_NONE);
+
 		Material m = new Material();
 		m.setLightingEnable(false);
 		

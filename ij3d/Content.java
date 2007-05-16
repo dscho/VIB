@@ -18,9 +18,10 @@ public abstract class Content extends BranchGroup {
 	Color3f color;
 	ImagePlus image;
 	boolean[] channels = new boolean[]{true, true, true};
+	float transparency = 0f;
 	int resamplingF = 1;;
 	protected boolean selected;
-	protected boolean channelsChanged;
+	protected boolean channelsChanged = false;
 	
 	protected TransformGroup pickTr;
 
@@ -74,6 +75,16 @@ public abstract class Content extends BranchGroup {
 		this.color = color;
 		this.channels = channels;
 		colorUpdated(color, channels);
+		channelsChanged = false;
+	}
+
+	public void setTransparency(float transparency) {
+		transparency = transparency < 0 ? 0 : transparency;
+		transparency = transparency > 1 ? 1 : transparency;
+		if(Math.abs(transparency - this.transparency) < 0.01)
+			return;
+		this.transparency = transparency;
+		transparencyUpdated(transparency);
 	}
 
 	public ImagePlus getImage() {
@@ -82,6 +93,10 @@ public abstract class Content extends BranchGroup {
 
 	public boolean[] getChannels() {
 		return channels;
+	}
+
+	public float getTransparency() {
+		return transparency;
 	}
 
 	public int getResamplingFactor() {
@@ -94,6 +109,7 @@ public abstract class Content extends BranchGroup {
 
 	public abstract void eyePtChanged(View view);
 	public abstract void colorUpdated(Color3f color, boolean[] channels);
+	public abstract void transparencyUpdated(float transparency);
 }
 
 

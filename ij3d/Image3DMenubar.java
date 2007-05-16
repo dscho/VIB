@@ -21,6 +21,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem mesh;
 	private MenuItem voltex;
 	private MenuItem color;
+	private MenuItem transparency;
 	private MenuItem fill;
 	private MenuItem delete;
 	private MenuItem resetView;
@@ -65,6 +66,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		color.addActionListener(this);
 		menu.add(color);
 
+		transparency = new MenuItem("Change transparency");
+		transparency.addActionListener(this);
+		menu.add(transparency);
+
 		menu.addSeparator();
 
 		startRecord = new MenuItem("Start recording");
@@ -103,6 +108,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			changeColor(selected);
 			univ.clearSelection();
 		} 
+
+		if(e.getSource() == transparency) {
+			Content selected = univ.getSelected();
+			if(selected == null) {
+				IJ.error("Selection required");
+				return;
+			}	
+			changeTransparency(selected);
+			univ.clearSelection();
+		}
 
 		if(e.getSource() == voltex) {
 			VoltexGroup.addContent(univ, null);
@@ -168,6 +183,25 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.getViewer().getView().setProjectionPolicy(policy);
 		}
 	}
+
+	public void changeTransparency(final Content selected) {
+		GenericDialog gd = new GenericDialog("Adjust transparency ...");
+		int oldTr = (int)(selected.getTransparency() * 100);
+		gd.addSlider("Transparency", 0, 100, oldTr);
+		((Scrollbar)gd.getSliders().get(0)).
+			addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				float newTr = (float)e.getValue() / 100f; 
+				selected.setTransparency(newTr);
+			}
+		});
+		gd.showDialog();
+		if(gd.wasCanceled()) {
+			float newTr = (float)oldTr / 100f;
+			selected.setTransparency(newTr);
+		}
+	}
+		
 		
 	public void changeColor(Content selected) {
 		GenericDialog gd = new GenericDialog("Adjust color ...");

@@ -34,7 +34,7 @@ public class MeshGroup extends Content {
 			color= new Color3f(
 				thresh/255f, thresh/255f, thresh/255f);
 		}
-		shape = new IsoShape(mesh, color, thresh);
+		shape = new IsoShape(mesh, color, thresh, getTransparency());
 		pickTr.addChild(shape);
 		compile();
 	}
@@ -50,7 +50,7 @@ public class MeshGroup extends Content {
 					getColorModel().getRGB(threshold);
 			color = new Color3f(new Color(value));
 		}
-		shape = new IsoShape(mesh, color, threshold);
+		shape = new IsoShape(mesh, color, threshold, getTransparency());
 		pickTr.addChild(shape);
 		compile();
 	}
@@ -74,6 +74,10 @@ public class MeshGroup extends Content {
 			shape.update();
 		}
 		shape.setColor(color);	
+	}
+
+	public void transparencyUpdated(float transparency) {
+		shape.setTransparency(transparency);
 	}
 	
 	public static void addContent(Image3DUniverse univ, ImagePlus mesh) {
