@@ -12,7 +12,8 @@ import isosurface.Triangulator;
 public class MCTriangulator implements Triangulator {
 
 	public List getTriangles(ImagePlus image, int threshold, 
-						boolean[] channels, int resamplingF) {
+					boolean[] channels, int resamplingF) {
+
 		image = ColorTable.adjustChannels(image, channels);
 		if(resamplingF != 1)
 			image = Resample_.resample(image, resamplingF);

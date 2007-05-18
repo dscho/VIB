@@ -48,8 +48,10 @@ public final class MCCube {
 	private int caseNumber() {
 		int caseNumber = 0;
 		for (int index = -1; 
-		++index < v.length; 
-		caseNumber += (intensity(v[index]) - threshold > 0)?1 << index:0);
+			++index < v.length; 
+			caseNumber += (intensity(v[index]) - threshold > 0) 
+					? 1 << index
+					: 0);
 		return caseNumber;
 	}
 	
