@@ -37,6 +37,10 @@ abstract public class Renderer {
 
 	abstract public void setTransparency(float transparency);
 
+	abstract public void setColorModel(IndexColorModel cmodel);
+
+	abstract public void setColor(Color3f color);
+
 
 	/** 
 	 * return the eye's position in <node>'s coordinate space

@@ -20,7 +20,7 @@ public class Texture2DVolume implements VolRendConstants {
 	Texture2D[] zTextures;	
 
 	private Volume volume;
-	private IndexColorModel cmodel;
+	IndexColorModel cmodel;
 
 
 	public Texture2DVolume(Volume volume, IndexColorModel cmodel) {

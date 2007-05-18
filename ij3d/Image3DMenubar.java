@@ -21,6 +21,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem mesh;
 	private MenuItem voltex;
 	private MenuItem color;
+	private MenuItem channels;
 	private MenuItem transparency;
 	private MenuItem fill;
 	private MenuItem delete;
@@ -62,6 +63,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		fill.addActionListener(this);
 		menu.add(fill);
 		
+		channels = new MenuItem("Change channels");
+		channels.addActionListener(this);
+		menu.add(channels);
+
 		color = new MenuItem("Change color");
 		color.addActionListener(this);
 		menu.add(color);
@@ -107,7 +112,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}	
 			changeColor(selected);
 			univ.clearSelection();
-		} 
+		}
+
+		if(e.getSource() == channels) {
+			Content selected = univ.getSelected();
+			if(selected == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			changeChannels(selected);
+			univ.clearSelection();
+		}
 
 		if(e.getSource() == transparency) {
 			Content selected = univ.getSelected();
@@ -201,25 +216,33 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			selected.setTransparency(newTr);
 		}
 	}
-		
-		
+
 	public void changeColor(Content selected) {
 		GenericDialog gd = new GenericDialog("Adjust color ...");
-		gd.addChoice("Color", ColorTable.colorNames, 
-						ColorTable.colorNames[0]);
-		gd.addMessage("Channels");
-		gd.addCheckboxGroup(1, 3, 
-				new String[] {"red", "green", "blue"}, 
-				new boolean[]{true, true, true});
+		String oldColor = ColorTable.getColorName(selected.color);
+		gd.addChoice("Color", ColorTable.colorNames, oldColor);
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
 			
 		Color3f color = ColorTable.getColor(gd.getNextChoice());
+		selected.setColor(color);
+	}
+
+	public void changeChannels(Content selected) {
+		GenericDialog gd = new GenericDialog("Adjust channels ...");
+		gd.addMessage("Channels");
+		gd.addCheckboxGroup(1, 3, 
+				new String[] {"red", "green", "blue"}, 
+				selected.getChannels());
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+			
 		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
-		selected.setColor(color, channels);
+		selected.setChannels(channels);
 	}
 }
 

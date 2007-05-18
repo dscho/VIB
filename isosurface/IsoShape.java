@@ -64,8 +64,14 @@ public final class IsoShape extends Shape3D {
 	}
 
 	public void setTransparency(float transparency) {
-		getAppearance().getTransparencyAttributes().
-			setTransparency(transparency);
+		TransparencyAttributes  ta = getAppearance().
+						getTransparencyAttributes();
+		if(transparency < .01f) {
+			ta.setTransparencyMode(TransparencyAttributes.NONE);
+		} else {
+			ta.setTransparencyMode(TransparencyAttributes.FASTEST);
+		}
+		ta.setTransparency(transparency);
 	}
 
 	private Appearance createAppearance () {
@@ -83,10 +89,11 @@ public final class IsoShape extends Shape3D {
 		appearance.setColoringAttributes(colorAttrib);
 
 		TransparencyAttributes tr = new TransparencyAttributes();
+		int mode = transparency == 0f ? TransparencyAttributes.NONE
+					: TransparencyAttributes.FASTEST;
 		tr.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
-		tr.setTransparencyMode(TransparencyAttributes.FASTEST);
-		//tr.setSrcBlendFunction(TransparencyAttributes.BLEND_ONE);
-		//tr.setDstBlendFunction(TransparencyAttributes.BLEND_ONE);
+		tr.setCapability(TransparencyAttributes.ALLOW_MODE_WRITE);
+		tr.setTransparencyMode(mode);
 		tr.setTransparency(transparency);
 		appearance.setTransparencyAttributes(tr);
 		
@@ -117,9 +124,9 @@ public final class IsoShape extends Shape3D {
 		ta.setColors(0, colors);
 		// initialize the geometry info here
 		GeometryInfo gi = new GeometryInfo(ta);
+		gi.recomputeIndices();
 		// generate normals
-		NormalGenerator ng = new
-		NormalGenerator();
+		NormalGenerator ng = new NormalGenerator();
 		ng.generateNormals(gi);
 		// stripify
 		Stripifier st = new Stripifier();

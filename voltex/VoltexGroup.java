@@ -40,12 +40,13 @@ public class VoltexGroup extends Content {
 		float scale = image.getWidth() * 
 				(float)image.getCalibration().pixelWidth;
 
-		IndexColorModel cmodel = ColorTable.adjustColorModel(image, 
-			(IndexColorModel)image.getProcessor().getColorModel(), 
-			color, channels);
+		IndexColorModel cmodel = color == null ? 
+			ColorTable.getIndexedColorModel(image, channels) :
+			ColorTable.getAverageGrayColorModel(image, channels);
 		ImagePlus imp = resamplingF == 1 ? image 
 				: Resample_.resample(image, resamplingF);
-		renderer = new Axis2DRenderer(image, cmodel, getTransparency());
+		renderer = new Axis2DRenderer(image, cmodel, 
+					color, getTransparency());
 		renderer.fullReload();
 
 		Point3d maxCoord = renderer.volume.maxCoord;
@@ -112,18 +113,29 @@ public class VoltexGroup extends Content {
 		renderer.eyePtChanged(view);
 	}
 
-	public void colorUpdated(Color3f color, boolean[] channels) {
-		IndexColorModel cmodel = 
-			ColorTable.adjustColorModel(getImage(),
-				(IndexColorModel)getImage().
-					getProcessor().getColorModel(), 
-				color, channels);
-		ImagePlus imp = getResamplingFactor() == 1 ? getImage()
-			: Resample_.resample(getImage(), getResamplingFactor());
-		renderer = new Axis2DRenderer(imp, cmodel, getTransparency());
-		renderer.fullReload();
-		tg.removeChild(0);
-		tg.addChild(renderer.getVolumeNode());
+	public void channelsUpdated(boolean[] channels) {
+		IndexColorModel cmodel = getColor() == null ?
+			ColorTable.getIndexedColorModel(
+				getImage(), channels) :
+			ColorTable.getAverageGrayColorModel(
+				getImage(), channels);
+		renderer.setColorModel(cmodel);
+	}
+
+	public void colorUpdated(Color3f oldColor, Color3f newColor) {
+		// color model only needs update if there is a switch
+		// between null and non-null color
+		if(oldColor == null && newColor != null || 
+			oldColor != null && newColor == null) {
+
+			IndexColorModel cmodel = newColor == null ?
+				ColorTable.getIndexedColorModel(
+					getImage(), getChannels()) :
+				ColorTable.getAverageGrayColorModel(
+					getImage(), getChannels());
+			renderer.setColorModel(cmodel);
+		}
+		renderer.setColor(newColor);
 	}
 
 	public void transparencyUpdated(float transparency) {

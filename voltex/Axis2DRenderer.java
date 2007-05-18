@@ -13,10 +13,13 @@ public class Axis2DRenderer extends AxisRenderer {
 
 	private Texture2DVolume texVol;
 	private float transparency;
+	private Color3f color;
 
-	public Axis2DRenderer(ImagePlus img, IndexColorModel cmodel, float tr) {
+	public Axis2DRenderer(ImagePlus img, IndexColorModel cmodel, 
+					Color3f color, float tr) {
 		super(img);
 		this.transparency = tr;
+		this.color = color;
 		texVol = new Texture2DVolume(volume, cmodel);
 	}
 
@@ -44,6 +47,27 @@ public class Axis2DRenderer extends AxisRenderer {
 		}
 	}
 
+	public void setColorModel(IndexColorModel cmodel) {
+		texVol.cmodel = cmodel;
+		fullReload();
+	}
+
+	public void setColor(Color3f color) {
+		this.color = color;
+		Color3f c = color != null ? color : new Color3f(1f, 1f, 1f);
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			Group g = (Group)axisSwitch.getChild(i);
+			int num = g.numChildren();
+			for(int y = 0; y < num; y++) {
+				Shape3D shape = (Shape3D)
+					((Group)g.getChild(y)).getChild(0);
+				shape.getAppearance().
+					getColoringAttributes().
+						setColor(c);
+			}
+		}
+	}
+
 	private void loadQuads() {
 		loadAxis(Z_AXIS);
 		loadAxis(Y_AXIS);
@@ -51,7 +75,7 @@ public class Axis2DRenderer extends AxisRenderer {
 	}
 
 	private void loadAxis(int axis) {
-		int	rSize = 0;		// number of tex maps to create
+		int rSize = 0;		// number of tex maps to create
 		OrderedGroup frontGroup = null;
 		OrderedGroup backGroup = null;
 		Texture2D[] textures = null;
@@ -121,7 +145,6 @@ public class Axis2DRenderer extends AxisRenderer {
 			backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
 			backShapeGroup.addChild(backShape);
 			backGroup.insertChild(backShapeGroup, 0);
-
 		} 
 	} 
 
@@ -129,7 +152,9 @@ public class Axis2DRenderer extends AxisRenderer {
 		Appearance a = new Appearance();
 
 		TextureAttributes texAttr = new TextureAttributes();
-		texAttr.setTextureMode(TextureAttributes.MODULATE);
+		texAttr.setTextureMode(TextureAttributes.COMBINE);
+		texAttr.setCombineRgbMode(TextureAttributes.COMBINE_MODULATE);
+		//texAttr.setCombineRgbMode(TextureAttributes.COMBINE_REPLACE);
 
 		TransparencyAttributes t = new TransparencyAttributes();
 		t.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
@@ -142,13 +167,22 @@ public class Axis2DRenderer extends AxisRenderer {
 		Material m = new Material();
 		m.setLightingEnable(false);
 		
+		ColoringAttributes c = new ColoringAttributes();
+		c.setCapability(ColoringAttributes.ALLOW_COLOR_WRITE);
+		c.setShadeModel(ColoringAttributes.FASTEST);
+		if(color == null) {
+			c.setColor(1f, 1f, 1f);
+		} else {
+			c.setColor(color);
+		}
+		
 		a.setMaterial(m);
 		a.setTransparencyAttributes(t);
 		a.setTexture(tex);
 		a.setTextureAttributes(texAttr);
 		a.setTexCoordGeneration(tg);
 		a.setPolygonAttributes(p);
-		//a.setColoringAttributes(colAttr);
+		a.setColoringAttributes(c);
 		return a;
 	}
 }

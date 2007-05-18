@@ -21,7 +21,6 @@ public abstract class Content extends BranchGroup {
 	float transparency = 0f;
 	int resamplingF = 1;;
 	protected boolean selected;
-	protected boolean channelsChanged = false;
 	
 	protected TransformGroup pickTr;
 
@@ -61,21 +60,27 @@ public abstract class Content extends BranchGroup {
 		this.selected = selected;
 	}
 
-	public void setColor(Color3f color, boolean[] channels) {
-		channelsChanged = channels[0] != this.channels[0] || 
+	public void setChannels(boolean[] channels) {
+		boolean channelsChanged = channels[0] != this.channels[0] || 
 				channels[1] != this.channels[1] || 
 				channels[2] != this.channels[2];
-	
+		if(!channelsChanged)
+			return;
+		this.channels = channels;
+		channelsUpdated(channels);
+	}
+		
+
+	public void setColor(Color3f color) {
 		boolean colorChanged = !(this.color == null && color == null)
 			|| (this.color == null && color != null)
 			|| (color == null && this.color != null) 
 			|| !(this.color.equals(color));
-		if(!colorChanged && !channelsChanged)
+		if(!colorChanged)
 			return;
+		Color3f oldColor = this.color;
 		this.color = color;
-		this.channels = channels;
-		colorUpdated(color, channels);
-		channelsChanged = false;
+		colorUpdated(oldColor, color);
 	}
 
 	public void setTransparency(float transparency) {
@@ -95,6 +100,10 @@ public abstract class Content extends BranchGroup {
 		return channels;
 	}
 
+	public Color3f getColor() {
+		return color;
+	}
+
 	public float getTransparency() {
 		return transparency;
 	}
@@ -108,7 +117,8 @@ public abstract class Content extends BranchGroup {
 	}
 
 	public abstract void eyePtChanged(View view);
-	public abstract void colorUpdated(Color3f color, boolean[] channels);
+	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
+	public abstract void channelsUpdated(boolean[] channels);
 	public abstract void transparencyUpdated(float transparency);
 }
 

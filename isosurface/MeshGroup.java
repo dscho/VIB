@@ -60,20 +60,20 @@ public class MeshGroup extends Content {
 		// do nothing
 	}
 
-	public void colorUpdated(Color3f color, boolean[] channels) {
-		if(color == null){
+	public void channelsUpdated(boolean [] channels) {
+		List mesh = triangulator.getTriangles(getImage(), 
+			threshold, channels, getResamplingFactor());
+		shape.mesh = mesh;
+		shape.update();
+	}
+
+	public void colorUpdated(Color3f oldColor, Color3f newColor) {
+		if(newColor == null){
 			int val = getImage().getProcessor().
 					getColorModel().getRGB(threshold);
-			color = new Color3f(new Color(val));
+			newColor = new Color3f(new Color(val));
 		}
-		boolean[] ch = getChannels();
-		if(channelsChanged) {
-			List mesh = triangulator.getTriangles(getImage(), 
-				threshold, channels, getResamplingFactor());
-			shape.mesh = mesh;
-			shape.update();
-		}
-		shape.setColor(color);	
+		shape.setColor(newColor);	
 	}
 
 	public void transparencyUpdated(float transparency) {
