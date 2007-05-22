@@ -41,6 +41,7 @@ public class ImageCanvas3D extends Canvas3D {
 			super();
 			setProcessor(title, ip);
 		}
+
 		public ImageCanvas getCanvas() {
 			return roiImageCanvas;
 		}
@@ -51,7 +52,13 @@ public class ImageCanvas3D extends Canvas3D {
 		setSize(width, height);
 		ByteProcessor ip = new ByteProcessor(width, height);
 		roiImagePlus = new RoiImagePlus("RoiImage", ip); 
-		roiImageCanvas = new ImageCanvas(roiImagePlus);
+		roiImageCanvas = new ImageCanvas(roiImagePlus) {
+			/* prevent ROI to enlarge/move on mouse click */
+			public void mousePressed(MouseEvent e) {
+				if(Toolbar.getToolId() != Toolbar.MAGNIFIER)
+					super.mousePressed(e);
+			}
+		};
 		roiImageCanvas.disablePopupMenu(true);
 		
 		addListeners();
@@ -59,21 +66,34 @@ public class ImageCanvas3D extends Canvas3D {
 		addMouseMotionListener(roiImageCanvas);
 	}
 
+	private boolean isSelectionTool() {
+		 int tool = Toolbar.getToolId();
+		 return tool == Toolbar.RECTANGLE || tool == Toolbar.OVAL 
+		 	|| tool == Toolbar.POLYGON || tool == Toolbar.FREEROI
+			|| tool == Toolbar.LINE || tool == Toolbar.POLYLINE
+			|| tool == Toolbar.FREELINE || tool == Toolbar.POINT
+			|| tool == Toolbar.WAND;
+	}
+
 	private void addListeners() {
 		addMouseMotionListener(new MouseMotionAdapter() {
 			public void mouseDragged(MouseEvent e) {
-				if(Toolbar.getToolId() != Toolbar.HAND)
+				if(isSelectionTool())
 					postRender();
 			}
 		});
 		addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
-				if(Toolbar.getToolId() != Toolbar.HAND)
+				if(isSelectionTool())
 					render();
 			}
 			public void mouseReleased(MouseEvent e) {
-				if(Toolbar.getToolId() != Toolbar.HAND)
+				if(isSelectionTool())
 					render();
+			}
+			public void mousePressed(MouseEvent e) {
+				if(!isSelectionTool())
+					roiImagePlus.killRoi();
 			}
 		});
 		addComponentListener(new ComponentAdapter() {

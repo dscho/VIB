@@ -66,6 +66,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		return rotationsTG;
 	}
 
+	public TransformGroup getGlobalScale() {
+		return scaleTG;
+	}
+
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height));
 		getViewingPlatform().setNominalViewingTransform();
@@ -134,6 +138,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 				fireCanvasResized();
 			}
 		});
+
+		fireTransformationUpdated();
 
 	}
 
