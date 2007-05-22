@@ -217,16 +217,55 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 	}
 
-	public void changeColor(Content selected) {
-		GenericDialog gd = new GenericDialog("Adjust color ...");
-		String oldColor = ColorTable.getColorName(selected.color);
-		gd.addChoice("Color", ColorTable.colorNames, oldColor);
+	public void changeColor(final Content selected) {
+		final GenericDialog gd = new GenericDialog("Adjust color ...");
+		Color3f oldC = selected.color;
+
+		gd.addCheckbox("Use default color", oldC == null);
+		gd.addSlider("Red",0,255,oldC == null ? 255 : oldC.x*255);
+		gd.addSlider("Green",0,255,oldC == null ? 0 : oldC.y*255);
+		gd.addSlider("Blue",0,255,oldC == null ? 0 : oldC.z*255);
+
+		final Scrollbar rSlider = (Scrollbar)gd.getSliders().get(0);
+		final Scrollbar gSlider = (Scrollbar)gd.getSliders().get(1);
+		final Scrollbar bSlider = (Scrollbar)gd.getSliders().get(2);
+		final Checkbox cBox = (Checkbox)gd.getCheckboxes().get(0);
+
+		rSlider.setEnabled(oldC != null);
+		gSlider.setEnabled(oldC != null);
+		bSlider.setEnabled(oldC != null);
+
+		cBox.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				gd.setCursor(new Cursor(Cursor.WAIT_CURSOR));
+				rSlider.setEnabled(!cBox.getState());
+				gSlider.setEnabled(!cBox.getState());
+				bSlider.setEnabled(!cBox.getState());
+				selected.setColor(cBox.getState() ? null :
+					new Color3f(rSlider.getValue() / 255f, 
+						gSlider.getValue() / 255f,
+						bSlider.getValue() / 255f));
+				gd.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+			}
+		});
+
+		AdjustmentListener listener = new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				selected.setColor(new Color3f(
+					rSlider.getValue() / 255f, 
+					gSlider.getValue() / 255f, 
+					bSlider.getValue() / 255f));
+			}
+		};
+		rSlider.addAdjustmentListener(listener);
+		gSlider.addAdjustmentListener(listener);
+		bSlider.addAdjustmentListener(listener);
+
 		gd.showDialog();
-		if(gd.wasCanceled())
+		if(!gd.wasCanceled())
 			return;
 			
-		Color3f color = ColorTable.getColor(gd.getNextChoice());
-		selected.setColor(color);
+		selected.setColor(oldC);
 	}
 
 	public void changeChannels(Content selected) {
