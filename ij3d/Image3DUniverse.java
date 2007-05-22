@@ -227,7 +227,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		for(Iterator it = contents(); it.hasNext();) {
 			Content c = (Content)it.next();
 			c.getTG().setTransform(t);
-			c.getTG().getTransform(t);
 		}
 		TransformGroup tg = null;
 		transformChanged(-1, tg);
