@@ -13,7 +13,9 @@ import ij.gui.StackWindow;
 import ij.gui.Toolbar;
 import ij.macro.Interpreter;
 import ij.measure.Calibration;
+import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
+import ij.plugin.filter.Analyzer;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
@@ -48,6 +50,11 @@ public class Delaunay_Voronoi implements PlugIn {
 				"Delaunay");
 		gd.addCheckbox("interactive", !Interpreter.isBatchMode());
 		gd.addCheckbox("showMeanDistance", false);
+		ResultsTable results = Analyzer.getResultsTable();
+		gd.addCheckbox("inferSelectionFromParticles",
+				imp.getRoi() == null && results != null
+				&& results.getColumnIndex("XM")
+				!= ResultsTable.COLUMN_NOT_FOUND);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -55,6 +62,26 @@ public class Delaunay_Voronoi implements PlugIn {
 		mode = gd.getNextChoiceIndex() + 1;
 		boolean interactive = gd.getNextBoolean();
 		showMeanDistance = gd.getNextBoolean();
+		boolean fromParticles = gd.getNextBoolean();
+
+		if (fromParticles) {
+			Calibration calib = imp.getCalibration();
+			int xCol = results.getColumnIndex("XM");
+			int yCol = results.getColumnIndex("YM");
+			float[] x = results.getColumn(xCol);
+			float[] y = results.getColumn(yCol);
+			int[] xInt = new int[x.length];
+			int[] yInt = new int[x.length];
+			for (int i = 0; i < x.length; i++) {
+				xInt[i] = (int)Math.round((x[i] /
+							calib.pixelWidth) -
+							calib.xOrigin);
+				yInt[i] = (int)Math.round((y[i] /
+							calib.pixelHeight) -
+							calib.yOrigin);
+			}
+			imp.setRoi(new PointRoi(xInt, yInt, x.length));
+		}
 
 		CustomCanvas cc = new CustomCanvas(imp);
 
