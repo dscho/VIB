@@ -12,7 +12,10 @@ import ij.gui.Roi;
 import ij.gui.StackWindow;
 import ij.gui.Toolbar;
 import ij.macro.Interpreter;
+import ij.measure.Calibration;
+import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
+import ij.plugin.filter.Analyzer;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
@@ -33,6 +36,8 @@ public class Delaunay_Voronoi implements PlugIn {
 	public final int VORONOI = 2;
 	int mode = DELAUNAY;
 
+	boolean showMeanDistance = false;
+
 	final boolean drawZoom = IJ.getVersion().compareTo("1.37n") >= 0;
 
 	public void run(String arg) {
@@ -44,12 +49,39 @@ public class Delaunay_Voronoi implements PlugIn {
 		gd.addChoice("mode", new String[] { "Delaunay", "Voronoi"},
 				"Delaunay");
 		gd.addCheckbox("interactive", !Interpreter.isBatchMode());
+		gd.addCheckbox("showMeanDistance", false);
+		ResultsTable results = Analyzer.getResultsTable();
+		gd.addCheckbox("inferSelectionFromParticles",
+				imp.getRoi() == null && results != null
+				&& results.getColumnIndex("XM")
+				!= ResultsTable.COLUMN_NOT_FOUND);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
 	
 		mode = gd.getNextChoiceIndex() + 1;
 		boolean interactive = gd.getNextBoolean();
+		showMeanDistance = gd.getNextBoolean();
+		boolean fromParticles = gd.getNextBoolean();
+
+		if (fromParticles) {
+			Calibration calib = imp.getCalibration();
+			int xCol = results.getColumnIndex("XM");
+			int yCol = results.getColumnIndex("YM");
+			float[] x = results.getColumn(xCol);
+			float[] y = results.getColumn(yCol);
+			int[] xInt = new int[x.length];
+			int[] yInt = new int[x.length];
+			for (int i = 0; i < x.length; i++) {
+				xInt[i] = (int)Math.round((x[i] /
+							calib.pixelWidth) -
+							calib.xOrigin);
+				yInt[i] = (int)Math.round((y[i] /
+							calib.pixelHeight) -
+							calib.yOrigin);
+			}
+			imp.setRoi(new PointRoi(xInt, yInt, x.length));
+		}
 
 		CustomCanvas cc = new CustomCanvas(imp);
 
@@ -197,6 +229,53 @@ public class Delaunay_Voronoi implements PlugIn {
 			for (int i = 0; i < n; i++)
 				delaunay.delaunayPlace(new Pnt(x[i] + rect.x,
 							y[i] + rect.y));
+
+			if (showMeanDistance && mode == DELAUNAY)
+				showMeanAndVariance();
+		}
+
+		double pixelWidth, pixelHeight;
+		double mean, variance;
+		int total;
+		
+		private void addToMean(Pnt a, Pnt b) {
+			if (Math.abs(a.coord(0)) >= inf ||
+					Math.abs(b.coord(0)) >= inf)
+				return;
+			double x = (b.coord(0) - a.coord(0)) * pixelWidth;
+			double y = (b.coord(1) - a.coord(1)) * pixelHeight;
+			double d2 = x * x + y * y;
+			mean += Math.sqrt(d2);
+			variance += d2;
+			total++;
+		}
+
+		public void showMeanAndVariance() {
+			Calibration calib = imp.getCalibration();
+			pixelWidth = calib.pixelWidth;
+			pixelHeight = calib.pixelHeight;
+
+			mean = variance = total = 0;
+
+			for (Iterator iter = delaunay.iterator();
+					iter.hasNext(); ) {
+				Simplex triangle = (Simplex)iter.next();
+				Iterator iter2 = triangle.iterator();
+				Pnt a = (Pnt)iter2.next();
+				Pnt b = (Pnt)iter2.next();
+				Pnt c = (Pnt)iter2.next();
+				addToMean(a, b);
+				addToMean(b, c);
+				addToMean(c, a);
+			}
+
+			if (total > 0) {
+				mean /= total;
+				variance /= total;
+				variance -= mean * mean;
+				IJ.write("mean distance: " + mean +
+						", variance: " + variance);
+			}
 		}
 	}
 }
