@@ -143,6 +143,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	}
 
+	public BranchGroup getScene() {
+		return scene;
+	}
+
 	public void transformChanged(int type, TransformGroup tg) {
 		fireTransformationUpdated();
 	}

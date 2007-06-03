@@ -28,7 +28,7 @@ public final class MCCube {
 	 */
 	public MCCube(int x, int y, int z){
 		this.v = new Point3f[8];
-		x -= w/2; y -= h/2; z -= d/2;
+		//x -= w/2; y -= h/2; z -= d/2;
 		v[0] = new Point3f(x,     y,     z);
 		v[1] = new Point3f(x+SIZE,y,     z);
 		v[2] = new Point3f(x+SIZE,y-SIZE,z);
@@ -148,7 +148,9 @@ public final class MCCube {
 	private static int threshold;
 
 	private static int intensity(Point3f p) {
-		int x = (int)p.x + w/2, y = (int)p.y + h/2, z = (int)p.z + d/2;
+		// int x = (int)p.x + 
+		//	w/2, y = (int)p.y + h/2, z = (int)p.z + d/2;
+		int x = (int)p.x, y = (int)p.y, z = (int)p.z;
 		return voxData[z][y * w + x] & 0xff;
 	}
 
