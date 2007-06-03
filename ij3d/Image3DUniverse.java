@@ -228,6 +228,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			Content c = (Content)it.next();
 			c.getTG().setTransform(t);
 		}
+		getViewingPlatform().setNominalViewingTransform();
 		TransformGroup tg = null;
 		transformChanged(-1, tg);
 		fireTransformationFinished();

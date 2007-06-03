@@ -168,14 +168,38 @@ public class MouseBehavior extends Behavior {
 
 	public void zoom(Content c, MouseEvent e) {
 		int y = e.getY();
+		double factor = 0.9f;
+		double dy = (double)(y - y_last);
+		dy = dy < 0 ? -1d : 1d;
+		dy *= factor;
+		if(dy != 0) {
+			transformX.setIdentity();
+			double scale = dy > 0 ? 1f/Math.abs(dy) : Math.abs(dy);
+
+			transformX.setScale(scale);
+			TransformGroup tg = univ.getGlobalScale();
+			tg.getTransform(currentXform);
+			currentXform.mul(transformX, currentXform);
+
+			tg.setTransform(currentXform);
+			transformChanged(
+				MouseBehaviorCallback.TRANSLATE, currentXform);
+		}	
+		x_last = e.getX();
+		y_last = y;
+	}
+
+	public void zoom_old(Content c, MouseEvent e) {
+		int y = e.getY();
 		int dy = y - y_last;
 
 		transl.x = 0f;
 		transl.y = 0f;
-		transl.z = 10f * dy;
+		transl.z = 0.5f * dy;
 		transformX.set(transl);
 		
-		TransformGroup tg = univ.getGlobalRotate();
+		//TransformGroup tg = univ.getGlobalRotate();
+		TransformGroup tg = univ.getViewingPlatform().getViewPlatformTransform();
 		tg.getTransform(currentXform);
 		currentXform.mul(transformX, currentXform);
 
