@@ -229,7 +229,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Content getContent(String name) {
 		if (null == name) return null;
-		return contents.get(name);
+		return (Content)contents.get(name);
 	}
 
 	public void resetView() {
