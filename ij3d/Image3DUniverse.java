@@ -227,6 +227,11 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return contents.values().iterator();
 	}
 
+	public Content getContent(String name) {
+		if (null == name) return null;
+		return contents.get(name);
+	}
+
 	public void resetView() {
 		fireTransformationStarted();
 		Transform3D t = new Transform3D();
