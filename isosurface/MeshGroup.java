@@ -10,6 +10,8 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 
+import ij.measure.Calibration;
+
 import ij3d.Content;
 import ij3d.Image3DUniverse;
 import ij3d.ColorTable;
@@ -19,6 +21,7 @@ import vib.Resample_;
 import marchingcubes.MCTriangulator;
 
 import javax.media.j3d.View;
+import javax.vecmath.Vector3f;
 import javax.vecmath.Color3f;
 
 public class MeshGroup extends Content {
@@ -122,7 +125,13 @@ public class MeshGroup extends Content {
 		boolean[] channels = new boolean[] {gd.getNextBoolean(), 
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
-		univ.addMesh(mesh, color, name, threshold, channels, factor);
+		Calibration c = mesh.getCalibration();
+		Vector3f translation = new Vector3f(
+			(float)(-mesh.getWidth() * c.pixelWidth/2f),
+			(float)(-mesh.getHeight() * c.pixelHeight/2f), 
+			(float)(-mesh.getStackSize() * c.pixelDepth/2f));
+		univ.addMesh(mesh, color, 
+			name, threshold, channels, factor, translation);
 	}
 }
 

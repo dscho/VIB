@@ -138,7 +138,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void addVoltex(ImagePlus image, Color3f color, 
-			String name, boolean[] channels, int resamplingF) {
+		String name, boolean[] channels, int resamplingF) {
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
@@ -166,7 +166,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 	
 	public void addMesh(ImagePlus image, Color3f color, String name, 
-			int threshold, boolean[] channels, int resamplingF) {
+		int threshold, boolean[] channels, int resamplingF, Vector3f t){
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
@@ -177,6 +177,16 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			name, color, image, channels, resamplingF, threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
+		Transform3D tr = new Transform3D();
+		meshG.getTG().getTransform(tr);
+		Transform3D scalexform = new Transform3D();
+		getGlobalScale().getTransform(scalexform);
+		double scale = scalexform.getScale();
+		//t.x /= scale; t.y /= scale; t.z /= scale;
+		tr.setTranslation(t);
+		meshG.getTG().setTransform(tr);
+		meshG.getTG().getTransform(scalexform);
+		System.out.println(scalexform);
 		fireContentAdded(meshG);
 	}
 
