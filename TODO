@@ -1,22 +1,16 @@
-- integrate with ImageJ's tool bar (rotate tool, reuse zoom and pan)
-- overlay objects (reuse the 3D window)
-- organize as 3 plugins (sharing a core): slice, surface and volume 
-  rendering
+- orthoslice
 - have a tool to iterate through slices when left/right clicking (or 
   scroll-wheeling) on a slice
 - have a way to open a list of objects, being able to reassign to a new 3D 
   window, or open another view of the same objects (e.g. a second slice, 
   or an isosurface)
 - make it scriptable (for movie generation, presentations)
-- scissors tool (remove volume by selecting in 2D, interpreting as 3D)
 - segmentation tool (as scissors, but works only on isosurfaces, i.e. 
   thresholded objects, and does not remove, but rather label it)
-- add listener interfaces (looking at, entering, 3D coordinate, etc.)
 
 segmentation editor: CustomStackWindow -> SegmentationEditorPanel
 
 VIB:
-	- make Image3DCanvas be able to display two isosurfaces
 	- eye candy: file list with processes already done (checkboxes)
 	- leica.Leica_SP_Reader: fix negative voxelDepth
 	  (and revert all the other voodoo to work around that)
@@ -26,5 +20,4 @@ VIB:
 	- general code cleanup (DO_CHANGES...)
 	- fix names (like AmiraMesh_Writer instead of AmiraMeshWriter_)
 	- ImageMetaData.upToDate(): look at template, too
-	- fix Segmenation Editor to open the labels upon "OK" if outside VIB
 	- add rigid registration method (no labelling!)
