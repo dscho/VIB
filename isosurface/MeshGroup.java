@@ -125,13 +125,15 @@ public class MeshGroup extends Content {
 		boolean[] channels = new boolean[] {gd.getNextBoolean(), 
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
-		Calibration c = mesh.getCalibration();
-		Vector3f translation = new Vector3f(
-			(float)(-mesh.getWidth() * c.pixelWidth/2f),
-			(float)(-mesh.getHeight() * c.pixelHeight/2f), 
-			(float)(-mesh.getStackSize() * c.pixelDepth/2f));
+		Vector3f tr = new Vector3f();
+		if(mesh != null) {
+			Calibration c = mesh.getCalibration();
+			tr.x = (float)(-mesh.getWidth() * c.pixelWidth/2f);
+			tr.y = (float)(-mesh.getHeight() * c.pixelHeight/2f); 
+			tr.z = (float)(-mesh.getStackSize() * c.pixelDepth/2f);
+		}
 		univ.addMesh(mesh, color, 
-			name, threshold, channels, factor, translation);
+			name, threshold, channels, factor, tr);
 	}
 }
 
