@@ -13,7 +13,7 @@
  * 
  *     user=mark;
  *     cookie-value=mark:88285a52fbc6345345cdc16ca60859e1;
- *     cgiRoot=http://localhost/confocal/;
+ *     cgi-root=http://localhost/confocal/;
  *     md5sum=37aef5074b9c5918e3351555b434d61a;
  *     date=2007-24-05
  * 
@@ -25,14 +25,13 @@
  *
  *       user <-- the username that's logged into the website
  *       cookie-value <-- the cookie value that corresponds to that user's session
- *       cgiRoot <-- a partial URL where the website scripts can be found
+ *       cgi-root <-- a partial URL where the website scripts can be found
  *       md5sum <-- the md5sum of the image referred to by url1
  * 
  * There are some convenience methods for talking to the API for
  * the archive in this class.
  */
 
-// FIXME: cookie-value and cgiRoot is inconsistent
 // FIXME: not actually threaded at the moment
 // FIXME: odd bug where sometimes the cookie isn't actually sent?
 
@@ -203,7 +202,8 @@ class APIRequestThread extends Thread {
 			System.out.println("Finished reading data from input (download) stream.");
 			
 		} catch( Exception e ) {
-			System.out.println( "Got an exception while uploading the file: " + e );			
+			IJ.error( "Got an exception while making the request to "+apiURL+": " + e );
+			System.err.println( "Got an exception while making the request to "+apiURL+": " + e );
 			e.printStackTrace();
 			result = new ArrayList< String [] >();
 			String [] error_array = { "error", "Got an exception while uploading the file: " + e };
@@ -227,17 +227,10 @@ public class ArchiveClient {
 
 	String cgiRoot;
 	
-	public ArchiveClient( Applet applet ) {
-		this.applet = applet;
-		extractArchiveParameters();
-		cgiRoot=getValue("cgiRoot");
-	}
-
 	public ArchiveClient( Applet applet, String arguments ) {
 		this.applet = applet;
-		extractArchiveParameters();
 		extractArchiveParameters(arguments);
-		cgiRoot=getValue("cgiRoot");
+		cgiRoot=getValue("cgi-root");
 	}
 
 	static byte [] justGetFile( String string_url ) {
@@ -368,12 +361,6 @@ public class ArchiveClient {
 				parameterHash.put(key,value);
 			}
 		}		
-	}
-
-	private void extractArchiveParameters( ) {		
-		String arg=applet.getParameter("pluginParameters");
-		if( arg != null )
-			extractArchiveParameters(arg);
 	}
 
 	public String getValue(String key) {
