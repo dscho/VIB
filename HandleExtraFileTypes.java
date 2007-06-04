@@ -176,7 +176,7 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 		//  Zeiss Confocal LSM 510 image file (.lsm) handler
 		//  http://rsb.info.nih.gov/ij/plugins/lsm-reader.html
 		if (name.endsWith(".lsm")) {
-			IJ.runPlugIn("LSM_Reader", path);
+			IJ.runPlugIn("zeiss.LSM_Reader", path);
 			width = IMAGE_OPENED;
 			return null;
 		}
