@@ -35,10 +35,10 @@ public class VoltexGroup extends Content {
 	private Renderer renderer;
 	private TransformGroup tg;
 
-	public VoltexGroup(String name, Color3f color, 
-			ImagePlus image, boolean[] channels, int resamplingF) {
+	public VoltexGroup(String name, Color3f color, ImagePlus image, 
+		boolean[] channels, int resamplingF, Transform3D initial) {
 		
-		super(name, color, image, channels, resamplingF);
+		super(name, color, image, channels, resamplingF, initial);
 		float scale = image.getWidth() * 
 				(float)image.getCalibration().pixelWidth;
 
@@ -51,7 +51,7 @@ public class VoltexGroup extends Content {
 					color, getTransparency());
 		renderer.fullReload();
 
-		pickTr.addChild(renderer.getVolumeNode());
+		initialTG.addChild(renderer.getVolumeNode());
 
 		compile();
 	}

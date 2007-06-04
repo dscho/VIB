@@ -111,9 +111,9 @@ public class MouseBehavior extends Behavior {
 		for(Iterator it = univ.contents(); it.hasNext();) {
 			univ.getGlobalRotate().getTransform(globalRotation);
 			Content content = (Content)it.next();
-			content.getTG().getTransform(currentXform);
+			content.getPickTG().getTransform(currentXform);
 			globalRotation.mul(currentXform);
-			content.getTG().setTransform(globalRotation);
+			content.getPickTG().setTransform(globalRotation);
 		}
 		globalRotation.setIdentity();
 		univ.getGlobalRotate().setTransform(globalRotation);
@@ -128,7 +128,7 @@ public class MouseBehavior extends Behavior {
 		transformY.rotY(y_angle);
 
 		TransformGroup tg = (c == null) ? 
-					univ.getGlobalRotate() : c.getTG();
+					univ.getGlobalRotate() : c.getPickTG();
 		tg.getTransform(currentXform);
 		tg.getTransform(oldXform);
 
@@ -155,7 +155,7 @@ public class MouseBehavior extends Behavior {
 		transformX.set(transl);
 		
 		TransformGroup tg = (c == null) ? 
-					univ.getGlobalRotate() : c.getTG();
+					univ.getGlobalRotate() : c.getPickTG();
 		tg.getTransform(currentXform);
 		currentXform.mul(transformX, currentXform);
 

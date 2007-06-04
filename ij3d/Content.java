@@ -19,10 +19,12 @@ public abstract class Content extends BranchGroup {
 	ImagePlus image;
 	boolean[] channels = new boolean[]{true, true, true};
 	float transparency = 0f;
-	int resamplingF = 1;;
+	int resamplingF = 1;
+	Transform3D initialTransform;
 	protected boolean selected;
 	
-	protected TransformGroup pickTr;
+	protected TransformGroup initialTG;
+	protected TransformGroup pickTG;
 
 	public Content() {
 		// create BranchGroup for this image
@@ -32,21 +34,25 @@ public abstract class Content extends BranchGroup {
 		this.name = name;
 
 		// create transformation for pickeing
-		pickTr = new TransformGroup();
-		pickTr.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		pickTr.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		addChild(pickTr);
+		pickTG = new TransformGroup();
+		pickTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		pickTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		addChild(pickTG);
 	}
 
-	public Content(String name, Color3f color) {
+	public Content(String name, Color3f color, Transform3D initial) {
 		this();
 		this.name = name;
 		this.color = color;
+		this.initialTransform = initial;
+		initialTG = new TransformGroup(initial);
+		pickTG.addChild(initialTG);
 	}
 
-	public Content(String name, Color3f color, 
-			ImagePlus image, boolean[] channels, int resamplingF) {
-		this(name, color);
+	public Content(String name, Color3f color, ImagePlus image, boolean[] 
+		channels, int resamplingF, Transform3D initialTransform) {
+		
+		this(name, color, initialTransform);
 		this.image = image;
 		this.channels = channels;
 		this.resamplingF = resamplingF;
@@ -92,6 +98,10 @@ public abstract class Content extends BranchGroup {
 		transparencyUpdated(transparency);
 	}
 
+	public void resetView() {
+		pickTG.setTransform(new Transform3D());
+	}
+
 	public ImagePlus getImage() {
 		return image;
 	}
@@ -112,8 +122,16 @@ public abstract class Content extends BranchGroup {
 		return resamplingF;
 	}
 
-	public TransformGroup getTG() {
-		return pickTr;
+	public TransformGroup getPickTG() {
+		return pickTG;
+	}
+
+	public TransformGroup getInitialTG() {
+		return initialTG;
+	}
+
+	public Transform3D getInitialTransform() {
+		return initialTransform;
 	}
 
 	public abstract void eyePtChanged(View view);

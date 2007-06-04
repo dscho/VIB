@@ -144,14 +144,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			return;
 		}
 		ensureScale(image);
+		Transform3D tr = new Transform3D();
+		tr.setTranslation(t);
 		VoltexGroup content = new VoltexGroup(
-				name, color, image, channels, resamplingF);
+			name, color, image, channels, resamplingF, tr);
 		scene.addChild(content);
 		contents.put(name, content);
-		Transform3D tr = new Transform3D();
-		content.getTG().getTransform(tr);
-		tr.setTranslation(t);
-		content.getTG().setTransform(tr);
 		fireContentAdded(content);
 	}
 
@@ -177,14 +175,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			return;
 		}
 		ensureScale(image);
+		Transform3D tr = new Transform3D();
+		tr.setTranslation(t);
 		MeshGroup meshG = new MeshGroup(
-			name, color, image, channels, resamplingF, threshold);
+			name, color, image, channels,resamplingF,threshold,tr);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
-		Transform3D tr = new Transform3D();
-		meshG.getTG().getTransform(tr);
-		tr.setTranslation(t);
-		meshG.getTG().setTransform(tr);
 		fireContentAdded(meshG);
 	}
 
@@ -207,14 +203,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			return;
 		}
 	
+		Transform3D tr = new Transform3D();
+		tr.setTranslation(t);
 		MeshGroup meshG = new MeshGroup(
-				name, color, mesh, threshold);
+				name, color, mesh, threshold, tr);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
-		Transform3D tr = new Transform3D();
-		meshG.getTG().getTransform(tr);
-		tr.setTranslation(t);
-		meshG.getTG().setTransform(tr);
 		fireContentAdded(meshG);
 	}
 
@@ -238,7 +232,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Transform3D t = new Transform3D();
 		for(Iterator it = contents(); it.hasNext();) {
 			Content c = (Content)it.next();
-			c.getTG().setTransform(t);
+			c.resetView();
 		}
 		getViewingPlatform().setNominalViewingTransform();
 		TransformGroup tg = null;
