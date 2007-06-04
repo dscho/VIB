@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.ListIterator;
 
+import vib.NamedPoint;
+
 class PointsDialog extends Dialog implements ActionListener {
 	
 	Label[] coordinateLabels;
@@ -70,7 +72,7 @@ class PointsDialog extends Dialog implements ActionListener {
 			c.gridx = 0;
 			c.gridy = counter;
 			c.anchor = GridBagConstraints.LINE_END;			
-			markButtons[counter] = new Button(p.name);
+			markButtons[counter] = new Button(p.getName());
 			markButtons[counter].addActionListener(this);
 			pointsPanel.add(markButtons[counter],c);
 			c.anchor = GridBagConstraints.LINE_START;
@@ -166,121 +168,6 @@ class PointsDialog extends Dialog implements ActionListener {
 	}
 }
 
-class NamedPoint {
-
-	public double x,y,z;
-	String name;
-	boolean set;
-
-	public NamedPoint(String name,
-			  double x,
-			  double y,
-			  double z) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.name = name;
-		this.set = true;
-	}
-
-	public NamedPoint(String name) {
-		this.name = name;
-		this.set = false;
-	}
-
-	static ArrayList<NamedPoint> pointsForImage( ImagePlus imp ) {
-		
-		FileInfo info = imp.getOriginalFileInfo();
-		if( info == null ) {
-			return null;
-		}
-		String fileName = info.fileName;
-		String url = info.url;
-		String directory = info.directory;
-
-		String defaultFilename = directory+fileName+".points";
-
-		try {
-			ArrayList<NamedPoint> newNamedPoints = new ArrayList<NamedPoint>();
-			Pattern p_data =
-				Pattern.compile("^\"(.*)\": *"+
-						"\\[ *([eE0-9\\.\\-]+) *, *"+
-						"([eE0-9\\.\\-]+) *, *"+
-						"([eE0-9\\.\\-]+) *\\] *$");
-			Pattern p_empty = Pattern.compile("^ *$");
-			BufferedReader f = new BufferedReader(
-				new FileReader(defaultFilename));
-			String line;
-			while ((line=f.readLine())!=null) {
-
-				Matcher m_data = p_data.matcher(line);
-				Matcher m_empty = p_empty.matcher(line);
-
-				if (m_data.matches()) {
-					newNamedPoints.add(
-						new NamedPoint(m_data.group(1),
-							       Double.parseDouble(m_data.group(2)),
-							       Double.parseDouble(m_data.group(3)),
-							       Double.parseDouble(m_data.group(4)))
-						);
-				} else if (m_empty.matches()) {
-					// Ignore empty lines...
-				} else {
-					IJ.error("There was a points file ("+
-						 defaultFilename+") but this line was malformed:\n"+
-						 line);
-					break;
-				}
-			}
-			
-			return newNamedPoints;
-			
-		} catch( IOException e ) {
-			return null;
-		}
-
-	}
-
-	public static ArrayList<String> pointsInBoth(ArrayList<NamedPoint> points0,
-						     ArrayList<NamedPoint> points1) {
-
-		ArrayList<String> common = new ArrayList<String>();
-		Iterator i0;
-		for(i0=points0.listIterator();i0.hasNext();) {
-			String pointName = ((NamedPoint)i0.next()).name;
-			for(Iterator i1=points1.listIterator();i1.hasNext();) {
-				if (pointName.equals(((NamedPoint)i1.next()).name)) {
-					common.add(new String(pointName));
-					break;
-				}
-			}
-		}
-		return common;
-	}
-					       
-	public static String escape(String s) {
-		String result = s.replaceAll("\\\\","\\\\\\\\");
-		result = result.replaceAll("\\\"","\\\\\"");
-		return result;
-	}
-
-	public static String unescape(String s) {
-		// FIXME: actually write the unescaping code...
-		return s;
-	}
-
-	public String toYAML() {
-		String line = "\""+
-			escape(name)+
-			"\": [ "+
-			x+", "+
-			y+", "+
-			z+" ]";
-		return line;
-	}
-
-}
-
 public class Name_Points implements PlugIn {
 
 	// FIXME: really we want different sets of points for
@@ -327,7 +214,7 @@ public class Name_Points implements PlugIn {
 			ListIterator j;
 			for(j=points.listIterator();j.hasNext();) {
 				NamedPoint p = (NamedPoint)j.next();
-				if (current.name.equals(p.name)) {
+				if (current.getName().equals(p.getName())) {
 					p.x = current.x;
 					p.y = current.y;
 					p.z = current.z;
