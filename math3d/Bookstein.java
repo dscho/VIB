@@ -1,17 +1,20 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 /*
  * This implements the Bookstein transform in 3d
  */
+
 package math3d;
 
 public class Bookstein {
-	Point3d[] points;
-	Bookstein1d bx, by, bz;
-
+	protected Point3d[] points;
+	protected Bookstein1d bx, by, bz;
+	
 	public Bookstein(Point3d[] orig, Point3d[] trans) {
 		if (orig.length != trans.length)
 			throw new RuntimeException("orig has " + orig.length
-				+ " points, but trans has " + trans.length
-				+ "???");
+						   + " points, but trans has " + trans.length
+						   + "???");
 		points = orig;
 		int N = orig.length + 4;
 		double[][] matrix = new double[N][N];
@@ -25,7 +28,7 @@ public class Bookstein {
 			for (int j = i + 1; j < N; j++)
 				matrix[j][i] = matrix[i][j];
 		}
-	
+
 		FastMatrixN.invert(matrix);
 
 		bx = new Bookstein1d();
@@ -55,7 +58,7 @@ public class Bookstein {
 			bz.az += trans[j].z * matrix[orig.length + 3][j];
 		}
 	}
-
+	
 	public double x, y, z;
 	public void apply(Point3d p) {
 		x = bx.evalInit(p);
@@ -68,23 +71,23 @@ public class Bookstein {
 			z += bz.w[i] * u;
 		}
 	}
-
+	
 	public class Bookstein1d {
 		double a1, ax, ay, az;
-		double[] w;
-
-		double evalInit(Point3d p) {
+		public double[] w;
+		
+		public double evalInit(Point3d p) {
 			return a1 + ax * p.x + ay * p.y + az * p.z;
 		}
-
-		double eval(Point3d p) {
+		
+		public double eval(Point3d p) {
 			double res = evalInit(p);
 			for (int i = 0; i < points.length; i++)
 				res += w[i] * U(p.distanceTo(points[i]));
 			return res;
 		}
 	}
-
+	
 	public static double U(double r) {
 		if (r <= 0) return 0;
 		return r * r * Math.log(r);
