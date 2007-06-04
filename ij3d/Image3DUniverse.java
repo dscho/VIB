@@ -189,18 +189,18 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void addMesh(List mesh, Color3f color, 
-				String name, float scale, int threshold){
+			String name, float scale, int threshold, Vector3f t){
 		// correct global scaling transformation
 		Transform3D scaletr = new Transform3D();
 		scaleTG.getTransform(scaletr);
 		scaletr.setScale(scale);
 		scaleTG.setTransform(scaletr);
 		// add the mesh
-		addMesh(mesh, color, name, threshold);
+		addMesh(mesh, color, name, threshold, t);
 	}
 
 	public void addMesh(List mesh, 
-				Color3f color, String name, int threshold) {
+			Color3f color, String name, int threshold, Vector3f t) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
@@ -211,6 +211,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				name, color, mesh, threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
+		Transform3D tr = new Transform3D();
+		meshG.getTG().getTransform(tr);
+		tr.setTranslation(t);
+		meshG.getTG().setTransform(tr);
 		fireContentAdded(meshG);
 	}
 
