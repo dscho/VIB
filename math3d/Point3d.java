@@ -20,6 +20,21 @@ public class Point3d {
 		this.z = z;
 	}
 
+    public double /*dtype*/ [] toArray() {
+        double /*dtype*/ [] result={x,y,z};
+        return result;
+    }
+
+    public float[] toArrayFloat() {
+        float[] result={(float)x,(float)y,(float)z};
+        return result;
+    }	
+
+    public double[] toArrayDouble() {
+        double[] result={(double)x,(double)y,(double)z};
+        return result;
+    }	
+
 	public Point3d minus(Point3d other) {
 		return new Point3d(x - other.x,
 				y - other.y,
