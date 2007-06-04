@@ -30,7 +30,8 @@ public class MeshGroup extends Content {
 	IsoShape shape; 
 	int threshold;
 	Triangulator triangulator = new MCTriangulator();
-
+//	Triangulator triangulator = new discMC.DiscMCTriangulator();
+	
 	public MeshGroup(String name, Color3f color, 
 			List mesh, int thresh, Transform3D initial) {
 		super(name, color, initial);
