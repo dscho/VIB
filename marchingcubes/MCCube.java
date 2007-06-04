@@ -128,9 +128,25 @@ public final class MCCube {
 		this.e[11] = this.computeEdge(v[2], v[6]);
 	}
 	
+	/**
+	 * indicates if a number corresponds to an ambigous case
+	 * @param n number of the case to test
+	 * @return true if the case if ambigous
+	 */
+	public static boolean isAmbigous(int n) {
+		boolean result = false;
+	        for (int index = 0; index < MCCube.ambigous.length; index++) {
+			result |= MCCube.ambigous[index] == n;
+		}
+		return result;
+	}
+	
 	private void getTriangles(List<Point3f> list){
 		int cn = this.caseNumber();
-		int offset = cn*15;
+		boolean directTable = !(isAmbigous(cn));
+
+		// address in the table
+		int offset = directTable ? cn*15 : (255-cn)*15;
 		for(int index = 0; index < 5; index++){
 			// if there's a triangle
 			if (faces[offset] != -1) {
@@ -191,6 +207,69 @@ public final class MCCube {
 		}	
 		return ret;
 	}
+
+	protected static int ambigous[] = {
+		250,
+		245,
+		237,
+		231,
+		222,
+		219,
+		189,
+		183,
+		175,
+		126,
+		123,
+		95,
+		234,
+		233,
+		227,
+		214,
+		213,
+		211,
+		203,
+		199,
+		188,
+		186,
+		182,
+		174,
+		171,
+		158,
+		151,
+		124,
+		121,
+		117,
+		109,
+		107,
+		93,
+		87,
+		62,
+		61,
+		229,
+		218,
+		181,
+		173,
+		167,
+		122,
+		94,
+		91,
+		150,
+		170,
+		195,
+		135,
+		149,
+		154,
+		163,
+		166,
+		169,
+		172,
+		180,
+		197,
+		202,
+		210,
+		225,
+		165
+	};        
 
 	// triangles to be drawn in each case
 	private static int faces[] =

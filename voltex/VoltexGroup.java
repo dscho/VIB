@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Vector;
 import javax.vecmath.Color3f;
 import javax.vecmath.Vector3d;
+import javax.vecmath.Vector3f;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
 import javax.media.j3d.View;
@@ -20,6 +21,7 @@ import ij.ImagePlus;
 import ij.IJ;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
+import ij.measure.Calibration;
 
 import ij3d.Content;
 import ij3d.ImageCanvas3D;
@@ -33,10 +35,10 @@ public class VoltexGroup extends Content {
 	private Renderer renderer;
 	private TransformGroup tg;
 
-	public VoltexGroup(String name, Color3f color, 
-			ImagePlus image, boolean[] channels, int resamplingF) {
+	public VoltexGroup(String name, Color3f color, ImagePlus image, 
+		boolean[] channels, int resamplingF, Transform3D initial) {
 		
-		super(name, color, image, channels, resamplingF);
+		super(name, color, image, channels, resamplingF, initial);
 		float scale = image.getWidth() * 
 				(float)image.getCalibration().pixelWidth;
 
@@ -49,20 +51,7 @@ public class VoltexGroup extends Content {
 					color, getTransparency());
 		renderer.fullReload();
 
-		Point3d maxCoord = renderer.volume.maxCoord;
-		Point3d minCoord = renderer.volume.minCoord;
-		
-		Transform3D translate = new Transform3D();
-		translate.setTranslation(new Vector3d(
-					-(maxCoord.x-minCoord.x)/2, 
-					-(maxCoord.y-minCoord.y)/2, 
-					-(maxCoord.z-minCoord.z)/2));
-		tg = new TransformGroup(translate);
-		tg.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);
-		tg.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
-		
-		pickTr.addChild(tg);
-		tg.addChild(renderer.getVolumeNode());
+		initialTG.addChild(renderer.getVolumeNode());
 
 		compile();
 	}
@@ -106,7 +95,15 @@ public class VoltexGroup extends Content {
 		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
-		univ.addVoltex(grey, color, name, channels, factor);
+		Vector3f tr = new Vector3f();
+		if(grey != null) {
+			Calibration c = grey.getCalibration();
+			tr.x = (float)(-grey.getWidth() * c.pixelWidth/2);
+			tr.y = (float)(-grey.getHeight() * c.pixelHeight/2);
+			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
+		}
+		
+		univ.addVoltex(grey, color, name, channels, factor, tr);
 	}
 
 	public void eyePtChanged(View view) {

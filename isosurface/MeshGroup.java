@@ -10,6 +10,8 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 
+import ij.measure.Calibration;
+
 import ij3d.Content;
 import ij3d.Image3DUniverse;
 import ij3d.ColorTable;
@@ -19,6 +21,8 @@ import vib.Resample_;
 import marchingcubes.MCTriangulator;
 
 import javax.media.j3d.View;
+import javax.media.j3d.Transform3D;
+import javax.vecmath.Vector3f;
 import javax.vecmath.Color3f;
 
 public class MeshGroup extends Content {
@@ -26,22 +30,25 @@ public class MeshGroup extends Content {
 	IsoShape shape; 
 	int threshold;
 	Triangulator triangulator = new MCTriangulator();
-
-	public MeshGroup(String name, Color3f color, List mesh, int thresh) {
-		super(name, color);
+//	Triangulator triangulator = new discMC.DiscMCTriangulator();
+	
+	public MeshGroup(String name, Color3f color, 
+			List mesh, int thresh, Transform3D initial) {
+		super(name, color, initial);
 		this.threshold = thresh;
 		if(color == null) {
 			color= new Color3f(
 				thresh/255f, thresh/255f, thresh/255f);
 		}
 		shape = new IsoShape(mesh, color, thresh, getTransparency());
-		pickTr.addChild(shape);
+		initialTG.addChild(shape);
 		compile();
 	}
 
-	public MeshGroup(String name, Color3f color, ImagePlus image, 
-			boolean[] channels, int resamplingF, int threshold) {
-		super(name, color, image, channels, resamplingF);
+	public MeshGroup(String name, Color3f color, ImagePlus image, boolean[] 
+		channels, int resamplingF, int threshold, Transform3D initial) {
+
+		super(name, color, image, channels, resamplingF, initial);
 		this.threshold = threshold;
 		List mesh = triangulator.getTriangles(
 				image, threshold, channels, resamplingF);
@@ -51,7 +58,7 @@ public class MeshGroup extends Content {
 			color = new Color3f(new Color(value));
 		}
 		shape = new IsoShape(mesh, color, threshold, getTransparency());
-		pickTr.addChild(shape);
+		initialTG.addChild(shape);
 		compile();
 	}
 		
@@ -79,7 +86,7 @@ public class MeshGroup extends Content {
 	public void transparencyUpdated(float transparency) {
 		shape.setTransparency(transparency);
 	}
-	
+
 	public static void addContent(Image3DUniverse univ, ImagePlus mesh) {
 		GenericDialog gd = new GenericDialog("Add mesh");
 		int img_count = WindowManager.getImageCount();
@@ -122,7 +129,15 @@ public class MeshGroup extends Content {
 		boolean[] channels = new boolean[] {gd.getNextBoolean(), 
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
-		univ.addMesh(mesh, color, name, threshold, channels, factor);
+		Vector3f tr = new Vector3f();
+		if(mesh != null) {
+			Calibration c = mesh.getCalibration();
+			tr.x = (float)(-mesh.getWidth() * c.pixelWidth/2f);
+			tr.y = (float)(-mesh.getHeight() * c.pixelHeight/2f); 
+			tr.z = (float)(-mesh.getStackSize() * c.pixelDepth/2f);
+		}
+		univ.addMesh(mesh, color, 
+			name, threshold, channels, factor, tr);
 	}
 }
 

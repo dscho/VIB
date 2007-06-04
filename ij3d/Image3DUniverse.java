@@ -138,14 +138,16 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void addVoltex(ImagePlus image, Color3f color, 
-			String name, boolean[] channels, int resamplingF) {
+		String name, boolean[] channels, int resamplingF, Vector3f t) {
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 		ensureScale(image);
+		Transform3D tr = new Transform3D();
+		tr.setTranslation(t);
 		VoltexGroup content = new VoltexGroup(
-				name, color, image, channels, resamplingF);
+			name, color, image, channels, resamplingF, tr);
 		scene.addChild(content);
 		contents.put(name, content);
 		fireContentAdded(content);
@@ -166,41 +168,45 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 	
 	public void addMesh(ImagePlus image, Color3f color, String name, 
-			int threshold, boolean[] channels, int resamplingF) {
+		int threshold, boolean[] channels, int resamplingF, Vector3f t){
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 		ensureScale(image);
+		Transform3D tr = new Transform3D();
+		tr.setTranslation(t);
 		MeshGroup meshG = new MeshGroup(
-			name, color, image, channels, resamplingF, threshold);
+			name, color, image, channels,resamplingF,threshold,tr);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
 		fireContentAdded(meshG);
 	}
 
 	public void addMesh(List mesh, Color3f color, 
-				String name, float scale, int threshold){
+			String name, float scale, int threshold, Vector3f t){
 		// correct global scaling transformation
 		Transform3D scaletr = new Transform3D();
 		scaleTG.getTransform(scaletr);
 		scaletr.setScale(scale);
 		scaleTG.setTransform(scaletr);
 		// add the mesh
-		addMesh(mesh, color, name, threshold);
+		addMesh(mesh, color, name, threshold, t);
 	}
 
 	public void addMesh(List mesh, 
-				Color3f color, String name, int threshold) {
+			Color3f color, String name, int threshold, Vector3f t) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 	
+		Transform3D tr = new Transform3D();
+		tr.setTranslation(t);
 		MeshGroup meshG = new MeshGroup(
-				name, color, mesh, threshold);
+				name, color, mesh, threshold, tr);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
 		fireContentAdded(meshG);
@@ -221,13 +227,19 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return contents.values().iterator();
 	}
 
+	public Content getContent(String name) {
+		if (null == name) return null;
+		return (Content)contents.get(name);
+	}
+
 	public void resetView() {
 		fireTransformationStarted();
 		Transform3D t = new Transform3D();
 		for(Iterator it = contents(); it.hasNext();) {
 			Content c = (Content)it.next();
-			c.getTG().setTransform(t);
+			c.resetView();
 		}
+		getViewingPlatform().setNominalViewingTransform();
 		TransformGroup tg = null;
 		transformChanged(-1, tg);
 		fireTransformationFinished();
