@@ -12,9 +12,10 @@ import math3d.JacobiFloat;
 import math3d.FloatMatrixN;
 
 public class FloatMatrix {
+
 	public float x, y, z;
-	
-	float a00, a01, a02, a03,
+
+	protected float a00, a01, a02, a03,
 		a10, a11, a12, a13,
 		a20, a21, a22, a23;
 	

@@ -12,9 +12,10 @@ import math3d.JacobiDouble;
 import math3d.FastMatrixN;
 
 public class FastMatrix {
+
 	public double x, y, z;
-	
-	double a00, a01, a02, a03,
+
+	protected double a00, a01, a02, a03,
 		a10, a11, a12, a13,
 		a20, a21, a22, a23;
 	
