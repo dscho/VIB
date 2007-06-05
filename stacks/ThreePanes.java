@@ -10,7 +10,7 @@ import java.lang.reflect.*;
 
 import java.io.*;
 
-class ThreePanes {
+public class ThreePanes {
 	
  	public static final int XY_PLANE = 0;
 	public static final int XZ_PLANE = 1;
@@ -92,8 +92,12 @@ class ThreePanes {
 		xy_window = new StackWindow( xy, original_xy_canvas );
 	}
 	
-	public ThreePanes( ImagePlus imagePlus ) {
-		
+	public ThreePanes( ) {
+
+	}
+
+	public void initialize( ImagePlus imagePlus ) {
+
 		xy = imagePlus;
 		
 		int type = xy.getType();
