@@ -1,6 +1,6 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
-package vib;
+package landmarks;
 
 import ij.*;
 import ij.process.*;
@@ -98,7 +98,7 @@ public class NamedPoint {
                 return result;
         }
 	
-	static byte [] pointsDataAsBytes( ArrayList<NamedPoint> points ) {
+	public static byte [] pointsDataAsBytes( ArrayList<NamedPoint> points ) {
 		
 		int total_bytes = 0;
 		

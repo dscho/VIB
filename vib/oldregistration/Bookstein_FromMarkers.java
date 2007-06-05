@@ -24,7 +24,7 @@ import vib.FastMatrix;
 import vib.transforms.OrderedTransformations;
 import vib.transforms.FastMatrixTransform;
 import vib.transforms.BooksteinTransform;
-import vib.NamedPoint;
+import landmarks.NamedPoint;
 
 public class Bookstein_FromMarkers extends RegistrationAlgorithm implements PlugIn {
 

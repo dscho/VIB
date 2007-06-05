@@ -226,6 +226,10 @@ public class ArchiveClient {
 	Hashtable<String,String> parameterHash;
 
 	String cgiRoot;
+
+	public ArchiveClient( Applet applet ) {
+		this(applet,Macro.getOptions());
+	}
 	
 	public ArchiveClient( Applet applet, String arguments ) {
 		this.applet = applet;

@@ -7,7 +7,7 @@ import ij.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import vib.NamedPoint;
+import landmarks.NamedPoint;
 
 public class BoundsInclusive {
 	
