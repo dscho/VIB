@@ -190,6 +190,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 			labelImages.add(image);
 		}
 		URL materials = getClass().getResource("materials");
+		System.out.println(materials);
 		File folder = materials != null ?
 			new File(materials.getPath()) : null;
 		if (folder != null && folder.isDirectory()) {
