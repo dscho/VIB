@@ -160,6 +160,15 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		win = new ImageWindow3D("ImageJ 3D Viewer", this);
 	}
 
+	public void close() {
+		if(win != null) {
+			win.close();
+			if(ij.plugin.frame.Recorder.record)
+				ij.plugin.frame.Recorder.record(
+					"call", "ImageJ_3D_Viewer.close");
+		}
+	}
+
 	public void addUniverseListener(UniverseListener l) {
 		listeners.add(l);
 	}

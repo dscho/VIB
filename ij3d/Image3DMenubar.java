@@ -30,7 +30,20 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem stopRecord;
 	private MenuItem startAnimation;
 	private MenuItem stopAnimation;
+	private MenuItem close;
 	private CheckboxMenuItem perspective;
+
+	public static final String START_ANIMATE = "startAnimate";
+	public static final String STOP_ANIMATE = "stopAnimate";
+	public static final String START_RECORD = "startRecord";
+	public static final String STOP_RECORD = "stopRecord";
+	public static final String RESET_VIEW = "resetView";
+
+	public static final String SET_COLOR = "setColor"; 
+	public static final String SET_TRANSPARENCY = "setTransparency";
+	public static final String SET_CHANNELS = "setChannels";
+	public static final String FILL_SELECTION = "fillSelection";
+	public static final String DELETE = "delete";
 
 	public Image3DMenubar(Image3DUniverse universe) {
 		super();
@@ -101,6 +114,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					"Perspective Projection", true);
 		perspective.addItemListener(this);
 		menu.add(perspective);
+
+		menu.addSeparator();
+
+		close = new MenuItem("Close");
+		close.addActionListener(this);
+		menu.add(close);
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -143,6 +162,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == delete) {
+			record(DELETE);
 			Content c = univ.getSelected();
 			if(c == null) {
 				IJ.error("Selection required");
@@ -152,23 +172,28 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 	
 		if(e.getSource() == resetView) {
+			record(RESET_VIEW);
 			univ.resetView();
 		}
 		
 		if(e.getSource() == startRecord) {
+			record(START_RECORD);
 			univ.startRecording();
 		}
 
 		if(e.getSource() == stopRecord) {
+			record(STOP_RECORD);
 			ImagePlus movie = univ.stopRecording();
 			if(movie != null) movie.show();
 		}
 
 		if(e.getSource() == startAnimation) {
+			record(START_ANIMATE);
 			univ.startAnimation();
 		}
 
 		if(e.getSource() == stopAnimation) {
+			record(STOP_ANIMATE);
 			univ.pauseAnimation();
 		}
 
@@ -182,12 +207,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				new Thread(new Runnable() {
 					public void run() {
 						((VoltexGroup)c).
-							fillRoiBlack(univ, (byte)0);
+						fillRoiBlack(univ, (byte)0);
 					}
 				}).start();
+				record(FILL_SELECTION);
 			}
 		}
 
+		if(e.getSource() == close) {
+			univ.close();
+		}
 	}
 
 	public void itemStateChanged(ItemEvent e) {
@@ -214,7 +243,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(gd.wasCanceled()) {
 			float newTr = (float)oldTr / 100f;
 			selected.setTransparency(newTr);
+			return;
 		}
+		
+		record(SET_TRANSPARENCY,Float.toString(
+			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
 	}
 
 	public void changeColor(final Content selected) {
@@ -262,10 +295,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		bSlider.addAdjustmentListener(listener);
 
 		gd.showDialog();
-		if(!gd.wasCanceled())
+		if(gd.wasCanceled()) {
+			selected.setColor(oldC);
 			return;
-			
-		selected.setColor(oldC);
+		}
+		
+		record(SET_COLOR, Integer.toString(rSlider.getValue()), 
+				Integer.toString(gSlider.getValue()),
+				Integer.toString(bSlider.getValue()));
 	}
 
 	public void changeChannels(Content selected) {
@@ -282,6 +319,40 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
 		selected.setChannels(channels);
+		record(SET_CHANNELS, Boolean.toString(channels[0]),
+			Boolean.toString(channels[1]),
+			Boolean.toString(channels[2]));
+	}
+
+	public void record(String command) {
+		command = "ImageJ_3D_Viewer." + command;
+		if(ij.plugin.frame.Recorder.record) {
+			ij.plugin.frame.Recorder.record("call", command);
+		}
+	}
+	
+	public void record(String command, String a1) {
+		command = "ImageJ_3D_Viewer." + command;
+		if(ij.plugin.frame.Recorder.record) {
+			ij.plugin.frame.Recorder.record("call", command, a1);
+		}
+	}
+
+	public void record(String command, String a1, String a2) {
+		command = "ImageJ_3D_Viewer." + command;
+		if(ij.plugin.frame.Recorder.record) {
+			ij.plugin.frame.Recorder.record("call",command,a1,a2);
+		}
+	}
+
+	public void record(String command, String a1, String a2, String a3) {
+		command = "call(\"ImageJ_3D_Viewer." + command + "\", " + 
+				"\"" + a1 + "\"," + 
+				"\"" + a2 + "\"," + 
+				"\"" + a3 + "\")"; 
+		if(ij.plugin.frame.Recorder.record) {
+			ij.plugin.frame.Recorder.recordString(command);
+		}
 	}
 }
 
