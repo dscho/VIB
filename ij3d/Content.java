@@ -102,6 +102,10 @@ public abstract class Content extends BranchGroup {
 		pickTG.setTransform(new Transform3D());
 	}
 
+	public String getName() {
+		return name;
+	}
+
 	public ImagePlus getImage() {
 		return image;
 	}
