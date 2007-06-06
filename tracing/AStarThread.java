@@ -2,56 +2,101 @@
 
 package tracing;
 
-public class AStarThread extends Thread( ) {
+import java.util.*;
 
-    byte [] slices_data;
+public class AStarThread extends Thread {
+	
+	byte [][] slices_data;
+	
+	int start_x;
+	int start_y;
+	int start_z;
+	int goal_x;
+	int goal_y;
+	int goal_z;
 
-    int start_x;
-    int start_y;
-    int start_z;
-    int goal_x;
-    int goal_y;
-    int goal_z;
-    boolean reciprocal;
-    boolean preprocess;
-    int timeoutSeconds;
-    long reportEveryMilliseconds;
-    long lastReportMilliseconds;
+	NeuriteTracer_ plugin;
 
-    /* If you specify 0 for timeoutSeconds then there is no timeout. */
+	double x_spacing;
+	double y_spacing;
+	double z_spacing;
 
-    public AStarThread( byte [] slices_data, 
-                        int start_x,
-                        int start_y,
-                        int start_z,
-                        int goal_x,
-                        int goal_y,
-                        int goal_z,
-                        boolean reciprocal,
-                        boolean preprocess,                        
-                        int timeoutSeconds,
-                        long reportEveryMilliseconds,
-                        AStarProgressCallback progress ) {
+	int width;
+	int height;
+	int depth;
 
-        this.slices_data = slices_data;
+	boolean reciprocal;
+	boolean preprocess;
 
-        this.start_x = start_x;
-        this.start_y = start_y;
-        this.start_z = start_z;
-        this.goal_x = goal_x;
-        this.goal_y = goal_y;
-        this.goal_z = goal_z;
-        this.reciprocal = reciprocal;
-        this.preprocess = preprocess;
-        this.timeoutSeconds = timeoutSeconds;
-        this.reportMilliseconds = reportMilliseconds;
+	int timeoutSeconds;
+	long reportEveryMilliseconds;
+	long lastReportMilliseconds;
 
-    }
+	AStarProgressCallback progress;
 
-    void run( ) {
+	Connection result;
+
+	
+	/* If you specify 0 for timeoutSeconds then there is no timeout. */
+	
+	public AStarThread( byte [][] slices_data, 
+			    int start_x,
+			    int start_y,
+			    int start_z,
+			    int goal_x,
+			    int goal_y,
+			    int goal_z,
+			    NeuriteTracer_ plugin,
+			    boolean reciprocal,
+			    boolean preprocess,                        
+			    int timeoutSeconds,
+			    long reportEveryMilliseconds,
+			    AStarProgressCallback progress ) {
+		
+		this.slices_data = slices_data;
+		
+		this.start_x = start_x;
+		this.start_y = start_y;
+		this.start_z = start_z;
+		this.goal_x = goal_x;
+		this.goal_y = goal_y;
+		this.goal_z = goal_z;
+
+		this.plugin = plugin;
+
+		// Just get these from the plugin:
+
+		this.x_spacing = plugin.x_spacing;
+		this.y_spacing = plugin.y_spacing;
+		this.z_spacing = plugin.z_spacing;
+		this.width = plugin.width;
+		this.height = plugin.height;
+		this.depth = plugin.depth;
+
+		this.reciprocal = reciprocal;
+		this.preprocess = preprocess;
+		this.timeoutSeconds = timeoutSeconds;
+		this.reportEveryMilliseconds = reportEveryMilliseconds;
+		
+		this.progress = progress;
+
+		this.result = null;
+	}
+	
+	public Connection getResult( ) {
+		return result;
+	}
+
+	boolean stopRequested;
+
+	public void requestStop( ) {
+		stopRequested = true;
+	}
+
+	public void run( ) {
 		
 		long started_at = lastReportMilliseconds = System.currentTimeMillis();
-
+		
 		int loops = 0;
 		
 		System.out.println( "Starting AStar..." );
@@ -92,42 +137,49 @@ public class AStarThread extends Thread( ) {
 		
 		while( (open_from_start.size() > 0) && (open_from_goal.size() > 0) ) {
 			
+			if( stopRequested ) {
+				progress.finished(false);
+				return;
+			}
+
 			if( 0 == (loops % 5000) ) {
 				
-                long currentMilliseconds = System.currentTimeMillis();
-
+				long currentMilliseconds = System.currentTimeMillis();
+				
 				if( (timeoutSeconds > 0) && ((currentMilliseconds - started_at) > (1000 * timeoutSeconds)) )
 					break;
+				
+				if( (reportEveryMilliseconds > 0) && ((currentMilliseconds - lastReportMilliseconds) > reportEveryMilliseconds ) ) {
+					
+					// Then report the open list...
+					System.err.println("open_from_start.size() is "+open_from_start.size()+", "+
+							   "open_from_goal.size() is "+open_from_goal.size());
+					short [] open = new short[ (open_from_start.size() + open_from_goal.size()) * 3 ];
+					int i = 0;
+					for( Iterator<AStarNode> j = open_from_start.iterator();
+					     j.hasNext();
+					     i ++ ) {
+						AStarNode current = j.next();
+						open[i*3] = (short)current.x;
+						open[i*3+1] = (short)current.y;
+						open[i*3+2] = (short)current.z;
+					}
+					for( Iterator<AStarNode> j = open_from_goal.iterator();
+					     j.hasNext();
+					     i ++ ) {
+						AStarNode current = j.next();
+						open[i*3] = (short)current.x;
+						open[i*3+1] = (short)current.y;
+						open[i*3+2] = (short)current.z;
+					}
+					
+					progress.currentOpenBoundary(open);
+					
+					System.out.println("Reporting the currentOpen boundary took: "+
+							   ((System.currentTimeMillis() - currentMilliseconds) / 1000.0));
+				}
 
-                if( (reportMilliseconds > 0) && ((currentMilliseconds - lastReportMilliseconds) > reportEveryMilliseconds ) ) {
-                    
-                    // Then report the open list...
-                    
-                    short [] open = new short[ open_from_start.size() + open_from_goal.size() ];
-                    int i = 0;
-                    for( Iterator<AStarNode> i = open_from_start.iterator();
-                         i.hasNext();
-                         i ++ ) {
-                        AStarNode current = i.next();
-                        open[i*3] = (short)current.x;
-                        open[i*3+1] = (short)current.y;
-                        open[i*3+2] = (short)current.z;
-                    }
-                    for( Iterator<AStarNode> i = open_from_goal.iterator();
-                         i.hasNext();
-                         i ++ ) {
-                        AStarNode current = i.next();
-                        open[i*3] = (short)current.x;
-                        open[i*3+1] = (short)current.y;
-                        open[i*3+2] = (short)current.z;
-                    }
-                    
-                    progress.currentOpenBoundary(open);
-
-
-
-                }
-
+				
 			}
 			
 			boolean verbose = (0 == (loops++ % 10000));
@@ -156,14 +208,18 @@ public class AStarThread extends Thread( ) {
 			
 			if( (p != null) && (p.x == goal_x) && (p.y == goal_y) && (p.z == goal_z) ) {
 				System.out.println( "Found the goal! (from start to end)" );
-				return p.asConnection();
+				result = p.asConnection();
+				progress.finished(true);
+				return;
 			}
 			
 			// Has the route from the goal found the start?
 			
 			if( (q != null) && (q.x == start_x) && (q.y == start_y) && (q.z == start_z) ) {
 				System.out.println( "Found the goal! (from end to start)" );
-				return p.asConnectionReversed();
+				result = p.asConnectionReversed();
+				progress.finished(true);
+				return;
 			}
 			
 			// Has the route from the start found the route from the goal?
@@ -180,11 +236,14 @@ public class AStarThread extends Thread( ) {
 					System.out.println( "Found the goal! (searches met...)" );
 					AStarNode a = p.getPredecessor();
 					if( a == null ) {
-						return foundInRouteFromGoal.asConnectionReversed();
+						result = foundInRouteFromGoal.asConnectionReversed();
+						progress.finished(true);
+						return;
 					} else {
-						Connection result = a.asConnection();
+						result = a.asConnection();
 						result.add( foundInRouteFromGoal.asConnectionReversed() );
-						return result;
+						progress.finished(true);
+						return;
 					}
 				}
 				
@@ -206,8 +265,10 @@ public class AStarThread extends Thread( ) {
 				
 			}
 			
+			/*
 			if( loops > 100000 )
 				break;
+			*/
 			
 			/*
 			if( (loops % 20000) == 0 ) {
@@ -466,9 +527,26 @@ public class AStarThread extends Thread( ) {
 		
 		System.out.println( "FAILED to find a route.  Shouldn't happen..." );
 		
-		return ((AStarNode)(open_from_start.poll())).asConnection();
-
+		result = ((AStarNode)(open_from_start.poll())).asConnection();
+		progress.finished(false);
+		return;
+		
 	}
 
-
+	double reciprocal_fudge = 0.5;
+	
+	float estimateCostToGoal( int current_x, int current_y, int current_z,
+				  int goal_x, int goal_y, int goal_z,
+				  double minimum_cost_per_unit_distance ) {
+		
+		double xdiff = (goal_x - current_x) * x_spacing;
+		double ydiff = (goal_y - current_y) * y_spacing;
+		double zdiff = (goal_z - current_z) * z_spacing;
+		
+		double distance = Math.sqrt( xdiff * xdiff + ydiff * ydiff + zdiff * zdiff );
+		
+		return (float) ( minimum_cost_per_unit_distance * distance );
+		
+	}
+	
 }

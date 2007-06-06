@@ -6,6 +6,8 @@ import java.awt.*;
 
 import ij.gui.*;
 
+import stacks.ThreePanes;
+
 public class Connection {
 	
 	Connection( ) {
@@ -129,7 +131,7 @@ public class Connection {
 		
 		switch( plane ) {
 			
-		case TracerCanvas.XY_PLANE:
+		case ThreePanes.XY_PLANE:
 		{
 			if( either_side == 0 ) {
 				for( int i = 0; i < points; ++i )
@@ -143,14 +145,14 @@ public class Connection {
 		}
 		break;
 		
-		case TracerCanvas.XZ_PLANE:
+		case ThreePanes.XZ_PLANE:
 		{
 			for( int i = 0; i < points; ++i )
 				g.drawLine( canvas.screenX(x_positions[i]), canvas.screenY(z_positions[i]), canvas.screenX(x_positions[i]), canvas.screenY(z_positions[i]) );
 		}
 		break;
 		
-		case TracerCanvas.YZ_PLANE:
+		case ThreePanes.ZY_PLANE:
 		{
 			for( int i = 0; i < points; ++i )
 				g.drawLine( canvas.screenX(z_positions[i]), canvas.screenY(y_positions[i]), canvas.screenX(z_positions[i]), canvas.screenY(y_positions[i]) );
@@ -184,7 +186,7 @@ public class Connection {
         }
         break;
 
-        case TracerCanvas.YZ_PLANE:
+        case TracerCanvas.ZY_PLANE:
         {
             g.drawPolyline( z_positions, y_positions, points );
         }

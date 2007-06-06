@@ -90,20 +90,68 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		return new TracerCanvas( imagePlus, this, plane );
 	}
 
+	/* Now a couple of callback methods, which get information
+	   about the progress of the search. */
+
+	public void finished( boolean success ) {
+
+		// FIXME: complete this
+
+		// notify the UI too...
+
+		if( success ) {
+			Connection result = currentSearchThread.getResult();
+			if( result == null )
+				IJ.error("Bug! Succeeded, but null result.");
+			else
+				setTemporaryPath( result );
+		}
+		synchronized(nonsense) {
+			currentOpenBoundaryPoints = null;
+		}
+
+		currentSearchThread = null;
+
+		repaintAllPanes();
+
+	}
+
+	short[] currentOpenBoundaryPoints;
+	String nonsense = "unused"; // FIXME, just for synchronization...
+
+	public void currentOpenBoundary( short[] points ) {
+
+		// FIXME: complete this
+
+		synchronized(nonsense) {
+			this.currentOpenBoundaryPoints = points;
+		}
+		
+		repaintAllPanes();
+		
+	}
+
+	/* Now in ThreePanes... */
+	/*
 	public void setSlicesAllPanes( int new_x, int new_y, int new_z ) {
 
 		zy.setSlice( new_x + 1 );
 		xz.setSlice( new_y + 1 );
 		xy.setSlice( new_z + 1 );
 	}
+	*/
 
+	/* Now in ThreePanes... */
+	/*
 	public void repaintAllPanes( ) {
 
 		xy_canvas.repaint();
 		xz_canvas.repaint();
 		zy_canvas.repaint();
 	}
+	*/
 
+/*
 	public PointInImage findPointInStack( int x_in_pane, int y_in_pane, int plane ) {
 
 		int new_x, new_y, new_z;
@@ -114,7 +162,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		
 		switch( plane ) {
 			
-		case TracerCanvas.XY_PLANE:
+		case ThreePanes.XY_PLANE:
 		{
 			new_x = x_in_pane;
 			new_y = y_in_pane;
@@ -122,7 +170,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		}
 		break;
 		
-		case TracerCanvas.XZ_PLANE:
+		case ThreePanes.XZ_PLANE:
 		{
 			new_x = x_in_pane;
 			new_y = xz.getCurrentSlice( ) - 1;
@@ -130,7 +178,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		}
 		break;
 		
-		case TracerCanvas.YZ_PLANE:
+		case ThreePanes.ZY_PLANE:
 		{
 			new_x = zy.getCurrentSlice( ) - 1;
 			new_y = y_in_pane;
@@ -142,6 +190,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 		return new PointInImage( new_x, new_y, new_z );
 	}
+*/
 
 	boolean setupLog = false;
 	boolean setupEv = false;
@@ -152,7 +201,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 	
 	public FileInfo file_info;
 	
-	private int width, height, depth;
+	protected int width, height, depth;
 	
 	private Connection currentPath;
 	
@@ -182,9 +231,9 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 	
 	public void setCrosshair( int new_x, int new_y, int new_z ) {
 
-		xy_tracer_canvas.setDestinationCrosshair( new_x, new_y, new_z );
-		xz_tracer_canvas.setDestinationCrosshair( new_x, new_y, new_z );
-		zy_tracer_canvas.setDestinationCrosshair( new_x, new_y, new_z );
+		xy_tracer_canvas.setCrosshairs( new_x, new_y, new_z, true );
+		xz_tracer_canvas.setCrosshairs( new_x, new_y, new_z, true );
+		zy_tracer_canvas.setCrosshairs( new_x, new_y, new_z, true );
 		
 	}
 
@@ -577,9 +626,11 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 	
 	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane ) {
 
-		PointInImage p = findPointInStack( x_in_pane, y_in_pane, in_plane );
+		int [] p = new int[3];
 
-		setSlicesAllPanes( p.x, p.y, p.z );
+		findPointInStack( x_in_pane, y_in_pane, in_plane, p );
+
+		setSlicesAllPanes( p[0], p[1], p[2] );
 		
 		if( (xy_canvas != null) &&
 		    (xz_canvas != null) &&
@@ -594,7 +645,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 				
 			}
 		
-			setCrosshair( p.x, p.y, p.z );
+			setCrosshair( p[0], p[1], p[2] );
 
 			repaintAllPanes( );
 		}
@@ -603,7 +654,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 			double [] transformedPoint = new double[3];
 			
-			transformation.apply(p.x,p.y,p.z,transformedPoint);
+			transformation.apply(p[0],p[1],p[2],transformedPoint);
 			
 			int target_x = (int)transformedPoint[0];
 			int target_y = (int)transformedPoint[1];
@@ -632,9 +683,9 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 		}
 
-		last_x = p.x;
-		last_y = p.y;
-		last_z = p.z;
+		last_x = p[0];
+		last_y = p[1];
+		last_z = p[2];
 		
 	}
 	
@@ -719,6 +770,8 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		ip.show( );
 	}
 
+	AStarThread currentSearchThread;
+
 	synchronized public void testPathTo( int x_in_pane, int y_in_pane, int plane ) {
 
 		if( ! lastStartPointSet ) {
@@ -732,22 +785,41 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 			return;
 		}
 
-		PointInImage p = findPointInStack( x_in_pane, y_in_pane, plane );
+		int [] p = new int[3];
+		findPointInStack( x_in_pane, y_in_pane, plane, p );
 		
 		/* Now moved to AStarThread
 
 		Connection tmpPath = bestAStarBetween( last_start_point_x,
 						       last_start_point_y,
 						       last_start_point_z,
-						       p.x,
-						       p.y,
-						       p.z,
+						       p[0],
+						       p[1],
+						       p[2],
 						       false,
 						       setupTimeoutValue );
 		
 		*/
 
-		setTemporaryPath( tmpPath );
+		// FIXME: setTemporaryPath( tmpPath );
+
+		
+
+		currentSearchThread = new AStarThread( slices_data, 
+						       last_start_point_x,
+						       last_start_point_y,
+						       last_start_point_z,
+						       p[0],
+						       p[1],
+						       p[2],
+						       this,
+						       true, // reciprocal
+						       false, // preprocess
+						       0, // timeoutSeconds
+						       1000, // reportEveryMilliseconds 
+						       this );
+
+		currentSearchThread.start();
 
 		repaintAllPanes();
 
@@ -815,13 +887,14 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 			setAllPaths( new ArrayList< SegmentedConnection >( ) );
 		}
 
-		PointInImage p = findPointInStack( x_in_pane, y_in_pane, plane );
+		int [] p = new int[3];
+		findPointInStack( x_in_pane, y_in_pane, plane, p );
 
 		setPathUnfinished( true );
 		lastStartPointSet = true;
-		last_start_point_x = p.x;
-		last_start_point_y = p.y;
-		last_start_point_z = p.z;
+		last_start_point_x = p[0];
+		last_start_point_y = p[1];
+		last_start_point_z = p[2];
 		SegmentedConnection s = new SegmentedConnection();
 		s.startsAtJoin( join );
 		allPaths.add( s );
@@ -866,7 +939,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		}
 		break;
 		
-		case TracerCanvas.YZ_PLANE:
+		case TracerCanvas.ZY_PLANE:
 		{
 			new_x = last_x;
 			new_y = y_in_pane;
@@ -904,22 +977,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		
 	}
 */	
-	double reciprocal_fudge = 0.5;
-	
-	float estimateCostToGoal( int current_x, int current_y, int current_z,
-				  int goal_x, int goal_y, int goal_z,
-				  double minimum_cost_per_unit_distance ) {
-		
-		double xdiff = (goal_x - current_x) * x_spacing;
-		double ydiff = (goal_y - current_y) * y_spacing;
-		double zdiff = (goal_z - current_z) * z_spacing;
-		
-		double distance = Math.sqrt( xdiff * xdiff + ydiff * ydiff + zdiff * zdiff );
-		
-		return (float) ( minimum_cost_per_unit_distance * distance );
-		
-	}
-	
+
 	String getStackTrace( ) {
 		StringWriter sw = new StringWriter();
 		new Exception("Dummy Exception for Stack Trace").printStackTrace(new PrintWriter(sw));
@@ -1608,7 +1666,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 				int[] wList = WindowManager.getIDList();
 				if (wList==null) {
-					IJ.error("Name_Points: no images have been loaded");
+					IJ.error("Neurite Tracer: no images have been loaded");
 					return;
 				}
 				
@@ -1714,7 +1772,7 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 			ImagePlus currentImage = WindowManager.getCurrentImage();
 
 			if( currentImage == null ) {
-				IJ.error( "There's no current image to crop." );
+				IJ.error( "There's no current image to trace." );
 				return;
 			}
 

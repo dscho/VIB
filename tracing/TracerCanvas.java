@@ -12,6 +12,7 @@ import java.awt.event.*;
 import java.util.*;
 
 import stacks.ThreePanesCanvas;
+import stacks.ThreePanes;
 
 class Arrow {
 	
@@ -127,7 +128,6 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 
 		}
 
-
 		e.consume();
 	}
 	
@@ -144,20 +144,6 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	
 	public void mouseMoved( MouseEvent e ) {
 		
-        /*
-
-        destinationCrosshair = true;
-
-        destX = e.getX();
-        destY = e.getY();
-        destZ = imp.getCurrentSlice() - 1;
-
-        // calculatePath( );
-
-        repaint( );
-
-        */
-		
 		last_x_in_pane = offScreenX(e.getX());
 		last_y_in_pane = offScreenY(e.getY());
 		
@@ -168,19 +154,6 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	int last_x_in_pane;
 	int last_y_in_pane;
 
-	private boolean destinationCrosshair = false;
-	
-	private int destX;
-	private int destY;
-	private int destZ;
-	
-	public void setDestinationCrosshair( int x, int y, int z )  {
-		destinationCrosshair = true;
-		destX = x;
-		destY = y;
-		destZ = z;
-	}
-	
 	public void mouseClicked( MouseEvent e ) {
 		
 		// IJ.showStatus( "click at " + System.currentTimeMillis() + ": " + e );
@@ -273,6 +246,8 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	*/
 	
 	protected void drawOverlay(Graphics g) {
+
+		super.drawOverlay(g);
 		
 		for( int i = maxArrows - 1; i >= 0; --i ) {
 			// for( int i = 0; i < maxArrows; ++i ) {
@@ -283,33 +258,22 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			
 			g.setColor(a.c);
 			
-			if( plane == XY_PLANE ) {
+			if( plane == ThreePanes.XY_PLANE ) {
 				g.drawLine( (int)( a.start_x ),
 					    (int)( a.start_y ),
 					    (int)( a.start_x + a.length * a.vx ),
 					    (int)( a.start_y + a.length * a.vy ) );
-			} else if( plane == XZ_PLANE ) {
+			} else if( plane == ThreePanes.XZ_PLANE ) {
 				g.drawLine( (int)( a.start_x ),
 					    (int)( a.start_z ),
 					    (int)( a.start_x + a.length * a.vx ),
 					    (int)( a.start_z + a.length * a.vz ) );
-			} else if( plane == YZ_PLANE ) {
+			} else if( plane == ThreePanes.ZY_PLANE ) {
 				g.drawLine( (int)( a.start_z ),
 					    (int)( a.start_y ),
 					    (int)( a.start_z + a.length * a.vz ),
 					    (int)( a.start_y + a.length * a.vy ) );
 			}
-		}
-		
-		if( destinationCrosshair ) {
-			if( plane == XY_PLANE ) {
-				drawCrossHairs( g, Color.red, screenX(destX), screenY(destY) );
-			} else if( plane == XZ_PLANE ) {
-				drawCrossHairs( g, Color.red, screenX(destX), screenY(destZ) );
-			} else if( plane == YZ_PLANE ) {
-				drawCrossHairs( g, Color.red, screenX(destZ), screenY(destY) );
-			}
-			
 		}
 		
 		/*
@@ -322,8 +286,40 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 
 		int current_z = -1;
 
-		if( plane == XY_PLANE ) {
+		if( plane == ThreePanes.XY_PLANE ) {
 			current_z = imp.getCurrentSlice() - 1;
+		}
+
+		synchronized(tracerPlugin.nonsense) {
+
+			// System.out.println("Considering nonsense for plane: "+plane);
+
+			short [] boundaryPoints = tracerPlugin.currentOpenBoundaryPoints;
+			int currentSlice = imp.getCurrentSlice() - 1;
+			g.setColor( Color.CYAN );
+			if( boundaryPoints != null ) {
+
+				int points = boundaryPoints.length / 3;
+				
+				for( int i = 0; i < points; ++i ) {
+					if( currentSlice == boundaryPoints[ 3*i + (2 - plane) ] ) {
+
+						int x = boundaryPoints[ 3*i ];
+						int y = boundaryPoints[ 3*i + 1 ];
+						int z = boundaryPoints[ 3*i + 2 ];
+						// Then draw that point.
+						if( plane == ThreePanes.XY_PLANE ) {
+							g.fillRect( screenX(x), screenY(y), 1, 1 );
+						} else if( plane == ThreePanes.XZ_PLANE ) {
+							g.fillRect( screenX(x), screenY(z), 1, 1 );
+						} else if( plane == ThreePanes.ZY_PLANE ) {
+							g.fillRect( screenX(z), screenY(y), 1, 1 );
+						}
+						
+					}
+				}
+			}
+
 		}
 
 		if( completed != null ) {
@@ -347,7 +343,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 						if( connection == null ) {
 							System.out.println("BUG: connection is null");
 						}
-						if( plane == XY_PLANE ) {
+						if( plane == ThreePanes.XY_PLANE ) {
 							if( just_near_slices )
 								connection.drawConnectionAsPoints( this, g, color, plane, current_z, 2 );
 							else
@@ -400,17 +396,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	public void setConnection( Connection c )  {
 		orangePath = c;
 	}
-	
-	public static final int XY_PLANE = 0;
-	public static final int XZ_PLANE = 1;
-	public static final int YZ_PLANE = 2;
-	
-	private int plane;
-	
-	public void setPlane( int plane ) {
-		this.plane = plane;
-	}
-	
+			
 	static public void drawCrossHairs( Graphics g, Color c, int x, int y ) {
 		g.setColor( c );
 		int hairLength = 8;

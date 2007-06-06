@@ -12,10 +12,10 @@ import java.io.*;
 
 public class ThreePanes {
 	
- 	public static final int XY_PLANE = 0;
-	public static final int XZ_PLANE = 1;
-	public static final int ZY_PLANE = 2;
-	
+	public static final int XY_PLANE = 0; // constant z
+	public static final int XZ_PLANE = 1; // constant y
+	public static final int ZY_PLANE = 2; // constant x	
+
 	protected ImagePlus xy;
 	protected ImagePlus xz;
 	protected ImagePlus zy;
@@ -86,6 +86,13 @@ public class ThreePanes {
 		zy.setSlice( new_x + 1 );
 	}
 	
+	public void repaintAllPanes( ) {
+
+		xy_canvas.repaint();
+		xz_canvas.repaint();
+		zy_canvas.repaint();
+	}
+
 	public void closeAndReset( ) {
 		zy.close();
 		xz.close();

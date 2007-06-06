@@ -10,8 +10,8 @@ import java.awt.event.*;
 
 public class ThreePanesCanvas extends ImageCanvas {
 	
-	ThreePanes owner;
-	int plane;
+	protected ThreePanes owner;
+	protected int plane;
 	
 	protected ThreePanesCanvas( ImagePlus imagePlus, ThreePanes owner, int plane ) {
 		super(imagePlus);
