@@ -9,6 +9,7 @@ import ij.IJ;
 import ij.measure.Calibration;
 import ij.gui.StackWindow;
 import ij.gui.Roi;
+import ij.gui.ImageLayout;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
@@ -47,27 +48,48 @@ public class CustomStackWindow extends StackWindow
 		cc.addKeyListener(this);
 		cc.addMouseMotionListener(this);
 		
-		setLayout(new BorderLayout());
+		GridBagLayout gridbag = new GridBagLayout();
+		GridBagConstraints c = new GridBagConstraints();
+		setLayout(gridbag);
+
 		setBackground(Color.LIGHT_GRAY);
 		remove(sliceSelector);
 		remove(cc);
 		sidebar = new Sidebar(cc, this);
-		add(sidebar, BorderLayout.WEST);
+		c.anchor = GridBagConstraints.NORTHWEST;
+		c.gridx = c.gridy = 0;
+		c.weightx = 0; c.weighty = 0.5;
+		c.gridheight = 2;
+		gridbag.setConstraints(sidebar, c);
+		add(sidebar, c);
 
-		Container sliceAndImage = new Container();
-		sliceAndImage.setSize(cc.getSize());
-		sliceAndImage.setLayout(new BorderLayout());
-		sliceAndImage.add(sliceSelector, BorderLayout.NORTH);
-		sliceAndImage.add(new Label(" "));
-		sliceAndImage.add(cc, BorderLayout.CENTER);
+		c.gridx = 1; c.gridy = 1;
+		c.weightx = 1; c.weighty = 0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		gridbag.setConstraints(sliceSelector, c);
+		add(sliceSelector, c);
 
-		add(sliceAndImage, BorderLayout.EAST); 
+		Container slideAndImage = new Container();
+		slideAndImage.setLayout(new ImageLayout(cc));
+		slideAndImage.add(cc);
+		
+		c.gridx = 1; c.gridy = 1;
+		c.weightx = 1; c.weighty = 1;
+		c.gridheight = 1;
+		c.fill = GridBagConstraints.BOTH;
+		c.anchor = GridBagConstraints.CENTER;
+		gridbag.setConstraints(slideAndImage, c);
+		add(slideAndImage, c); 
 
 		Panel buttonPanel = new Panel(new FlowLayout());
 		ok = new Button("Ok");
 		ok.addActionListener(this);
 		buttonPanel.add(ok);
-		add(buttonPanel, BorderLayout.SOUTH);
+		c.gridx = 0; c.gridy = 2;
+		c.weightx = 0.5; c.weighty = 0;
+		c.gridwidth = 2;
+		gridbag.setConstraints(buttonPanel, c);
+		add(buttonPanel, c);
 
 		pack();
 		cc.requestFocus();
@@ -247,7 +269,7 @@ public class CustomStackWindow extends StackWindow
 	 * close to the ImageCanvas
 	 */
 	public void paint(Graphics g) {
-		super.paint(g);
+		//super.paint(g);
 		drawInfo(g);
 	}
 	

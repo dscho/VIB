@@ -85,6 +85,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		String st = c != null ? c.name : "none";
 		IJ.showStatus("selected: " + st);
 		canvas.setStatus("selected: " + st);
+
+		if(c != null && ij.plugin.frame.Recorder.record)
+			ij.plugin.frame.Recorder.record(
+				"call", "ImageJ_3D_Viewer.select", c.name);
 	}
 
 	public void transformChanged(int type, TransformGroup tg) {
@@ -212,7 +216,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		fireContentAdded(meshG);
 	}
 
-	public void removeContent (String name) {
+	public void removeContent(String name) {
 		Content content = (Content)contents.get(name);
 		if(content == null)
 			return;

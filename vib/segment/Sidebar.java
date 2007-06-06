@@ -189,20 +189,27 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 			labelImagesChoice.add(image.getTitle());
 			labelImages.add(image);
 		}
-		URL materials = getClass().getResource("materials");
-		File folder = materials != null ?
-			new File(materials.getPath()) : null;
-		if (folder != null && folder.isDirectory()) {
-			String[] files = folder.list();
-			for (int i = 0; i < files.length; i++) {
-				String path = materials.getPath() + File.separator + files[i];
-				String contents = readFile(path);
-				if (contents != null) {
-					defaultMaterials.add(contents);
-					labelImagesChoice.add(files[i]);
-				}
-			}
-		}
+//		URL materials = getClass().getResource("materials/");
+//		File folder = materials != null ?
+//			new File(materials.getPath()).getParentFile() : null;
+//		if (folder != null && folder.isDirectory()) {
+//			String[] files = folder.list();
+//			for (int i = 0; i < files.length; i++) {
+//				String path = materials.getPath() + File.separator + files[i];
+//				String contents = readFile(path);
+//				if (contents != null) {
+//					defaultMaterials.add(contents);
+//					labelImagesChoice.add(files[i]);
+//				}
+//			}
+//		}
+
+		// For the moment, just load the CompactStandard
+		URL materials = getClass().getResource(
+					"materials/CompactStandard");
+		String contents = readURL(materials);
+		defaultMaterials.add(contents);
+		labelImagesChoice.add("CompactStandard");
 		
 		labelImagesChoice.add("<new>");
 		defaultMaterials.add("Parameters {\n"
@@ -255,13 +262,15 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 		constr.fill = GridBagConstraints.BOTH;
 	}
 
-	private String readFile(String path) {
+	private String readURL(URL url) {
+		StringBuffer buffer = new StringBuffer();
 		try {
-			File file = new File(path);
-			byte[] contents = new byte[(int)file.length()];
-			FileInputStream input = new FileInputStream(file);
-			input.read(contents);
-			return new String(contents);
+			java.io.InputStream input = url.openStream();
+			int c;
+			while((c = input.read()) != -1) {
+				buffer.append((char)c);
+			}
+			return new String(buffer);
 		} catch(Exception e) {
 			return null;
 		}

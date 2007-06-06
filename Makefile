@@ -55,7 +55,8 @@ Segmentation_Editor_compat.jar: SOURCES=amira/AmiraParameters.java \
 	amira/AmiraTable.java vib/InterpolatedImage.java math3d/Point3d.java \
 	vib/SegmentationViewerCanvas.java vib/segment/*.java \
 	vib/IDT_Interpolate_Binary.java math3d/FastMatrixN.java \
-	Segmentation_Editor.java vib/segment/icons/*.png
+	Segmentation_Editor.java vib/segment/icons/*.png \
+	vib/segment/materials/*
 
 %_compat.jar:
 	test ! -d tempdir || rm -rf tempdir
