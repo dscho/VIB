@@ -1,0 +1,83 @@
+
+-- New interface:
+
+One of a number of states:
+
+WAITING_TO_START_PATH
+
+  1. Status: "Click somewhere to start a new path"
+       (button: Cancel Search (disabled))
+       (button: Complete Path (disabled))
+       (button: Junk Path (disabled))
+
+ ... after clicking go to PARTIAL_PATH
+
+PARTIAL_PATH (special case first point)
+
+  2. Status: "Now select a point further along that structure"
+              (button: Cancel Search (disabled))
+              (button: Complete Path (disabled if first point))
+              (button: Junk Path)
+
+... on selecting go to: SEARCHING
+
+... on "junk path", remove the complete path and go to WAITING_TO_START_PATH
+... on "complete path", add the complete path to the list and go to WAITING_TO_START_PATH
+
+SEARCHING
+
+  3. Status: "Searching for goal..."
+             (button: Cancel Search)
+             (button: Complete Path (disabled))
+             (button: Junk Path (disabled))
+     
+... on cancel, move to state: PARTIAL_PATH
+... on successful completion, move to state QUERY_KEEP
+
+QUERY_KEEP
+
+  4. Status: "Keep that path segment?"
+           (buttons: Yes, No)
+           (button: Complete Path (disabled))
+           (button: Junk Path (disabled))
+
+on Yes, add the segment and go to PARTIAL_PATH
+on No, don't add the segment and go to PARTIAL_PATH
+
+Dialog Design:
+--------------
+
+Status: <message here>
+
+Panel for contextual buttons:
+   Yes, No, Cancel Search
+
+Complete Path | Cancel Path
+
+------------------------------------------
+
+View paths: |  "Projected through all slices"
+            |  "Parts in nearby slices"
+
+Preprocess  (checkbox - disabled in SEARCHING)
+
+------------------------------------------
+
+Path List:  (selecting one of these highlights it in the image)
+
+ 1: exterior - pb - fb - exterior
+ 2: 
+ 3: 
+ 4: 
+
+-----------------
+|  Delete Path  |  (Fill Out)
+-----------------
+
+------------------------------------------
+
+------------------------------------
+|    Save Traces  |   Load Traces  |
+------------------------------------
+|   Upload Traces |  Fetch Traces  |
+------------------------------------
