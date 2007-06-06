@@ -1612,7 +1612,6 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 	
 	byte [][] slices_data;
 	
-	NeuriteTracerSetupDialog dialog;
 	NeuriteTracerResultsDialog resultsDialog;
 
 	boolean cancelled = false;
@@ -1851,11 +1850,8 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 				}
 			}
 
-			dialog = new NeuriteTracerSetupDialog( "Tracing Options", this );
-			
-			if( cancelled )
-				return;
-			
+			/*
+
 			if( setupTrace ) {
 				
 				String title = "Help For Neurite Tracer\n";
@@ -1873,12 +1869,16 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 					"with MipJ) press 'V'.";
 				
 				helpTextWindow = new TextWindow( title, message, 450, 300 );
-
-				resultsDialog = new NeuriteTracerResultsDialog( "Tracing for: " + xy.getShortTitle(),
-										this,
-										applet != null );
 			}
 			
+			*/
+
+
+			setupTrace = true; // can be changed with the "just log points" or "show eigenvalues"
+			resultsDialog = new NeuriteTracerResultsDialog( "Tracing for: " + xy.getShortTitle(),
+									this,
+									applet != null );
+
 			width = xy.getWidth();
 			height = xy.getHeight();
 			depth = xy.getStackSize();

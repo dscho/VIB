@@ -61,6 +61,8 @@ View paths: |  "Projected through all slices"
 
 Preprocess  (checkbox - disabled in SEARCHING)
 
+Just Log Points (checkbox - disables everything else)
+
 ------------------------------------------
 
 Path List:  (selecting one of these highlights it in the image)
@@ -70,9 +72,9 @@ Path List:  (selecting one of these highlights it in the image)
  3: 
  4: 
 
------------------
-|  Delete Path  |  (Fill Out)
------------------
+ -----------------
+ |  Delete Path  |  (Fill Out)  (Move Through)
+ -----------------
 
 ------------------------------------------
 
