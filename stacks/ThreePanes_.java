@@ -20,7 +20,9 @@ public class ThreePanes_ implements PlugIn {
 			return;
 		}
 
-		threePanes = new ThreePanes( currentImage );
+		threePanes = new ThreePanes( );
+
+		threePanes.initialize( currentImage );
 	}
 
 }

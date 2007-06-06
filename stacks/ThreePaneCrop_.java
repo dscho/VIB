@@ -25,7 +25,9 @@ public class ThreePaneCrop_ implements PlugIn {
 			return;
 		}
 
-		threePaneCrop = new ThreePaneCrop( currentImage );
+		threePaneCrop = new ThreePaneCrop( );
+
+		threePaneCrop.initialize( currentImage );
 		
 	}
 

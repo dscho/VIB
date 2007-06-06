@@ -250,9 +250,13 @@ public class ThreePaneCrop extends ThreePanes {
 
 	CropDialog dialog;
 
-	public ThreePaneCrop( ImagePlus imagePlus ) {
+	public ThreePaneCrop( ) {
 
-		super( imagePlus );
+	}
+
+	public void initialize( ImagePlus imagePlus ) {
+
+		super.initialize( imagePlus );
 
 		overall_min_x = 0;
 		overall_min_y = 0;
