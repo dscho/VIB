@@ -92,10 +92,15 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		rotationsTG.getTransform(rotate);
 		double angle = 0;
 		final double pi2 = Math.PI*2;
+		getCanvas().getView().stopView();
 		while(angle < pi2) {
 			rotate.rotY(angle);
 			rotationsTG.setTransform(rotate);
 			transformChanged(-1, rotationsTG);
+			getCanvas().getView().renderOnce();
+			try {
+				Thread.currentThread().sleep(100);
+			} catch (Exception e) {e.printStackTrace();}
 			win.updateImagePlus();
 			ImageProcessor ip = win.getImagePlus().getProcessor();
 			int w = ip.getWidth(), h = ip.getHeight();
@@ -104,6 +109,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			stack.addSlice("", ip);
 			angle += 0.04;
 		}
+		getCanvas().getView().startView();
 		stopRecording().show();
 	}
 
