@@ -81,7 +81,7 @@ public class OrthoGroup extends Content {
 		gd.addStringField("Name", tmp, 10);
 		gd.addChoice("Color", ColorTable.colorNames, 
 						ColorTable.colorNames[0]);
-		gd.addNumericField("Resampling factor", 2, 0);
+		gd.addNumericField("Resampling factor", 1, 0);
 		gd.addMessage("Channels");
 		gd.addCheckboxGroup(1, 3, 
 					new String[] {"red", "green", "blue"}, 
