@@ -255,6 +255,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				selected.setTransparency(newTr);
 			}
 		});
+		gd.setModal(false);
 		gd.showDialog();
 		if(gd.wasCanceled()) {
 			float newTr = (float)oldTr / 100f;
@@ -294,6 +295,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		ySlider.addAdjustmentListener(listener);
 		zSlider.addAdjustmentListener(listener);
 
+		gd.setModal(false);
 		gd.showDialog();
 		if(gd.wasCanceled()) {
 			os.setSlices(oldvalues[0], oldvalues[1], oldvalues[2]);
@@ -345,6 +347,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gSlider.addAdjustmentListener(listener);
 		bSlider.addAdjustmentListener(listener);
 
+		gd.setModal(false);
 		gd.showDialog();
 		if(gd.wasCanceled()) {
 			selected.setColor(oldC);
