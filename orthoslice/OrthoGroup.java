@@ -35,6 +35,7 @@ public class OrthoGroup extends Content {
 
 	private Renderer renderer;
 	private TransformGroup tg;
+	private int[] slices;
 
 	public OrthoGroup(String name, Color3f color, ImagePlus image, 
 		boolean[] channels, int resamplingF, Transform3D initial) {
@@ -48,10 +49,12 @@ public class OrthoGroup extends Content {
 			ColorTable.getOpaqueAverageGrayColorModel(image, channels);
 		ImagePlus imp = resamplingF == 1 ? image 
 				: Resample_.resample(image, resamplingF);
-//		renderer = new Axis2DRenderer(image, cmodel, 
-//					color, getTransparency());
 		renderer = new Orthoslice(image, cmodel, 
 				color, getTransparency());
+		slices = new int[] {imp.getWidth()/2, imp.getHeight()/2,
+					imp.getStackSize()/2};
+		((Orthoslice)renderer).setSlices(imp.getWidth()/2, 
+				imp.getHeight()/2, imp.getStackSize()/2);
 		renderer.fullReload();
 
 		initialTG.addChild(renderer.getVolumeNode());
@@ -109,6 +112,10 @@ public class OrthoGroup extends Content {
 		univ.addOrthoslice(grey, color, name, channels, factor, tr);
 	}
 
+	public int[] getSlices() {
+		return slices;
+	}
+
 	public void eyePtChanged(View view) {
 		renderer.eyePtChanged(view);
 	}
@@ -140,6 +147,10 @@ public class OrthoGroup extends Content {
 
 	public void transparencyUpdated(float transparency) {
 		renderer.setTransparency(transparency);
+	}
+
+	public void setSlices(int x, int y, int z) {
+		((Orthoslice)renderer).setSlices(x, y, z);
 	}
 }
 

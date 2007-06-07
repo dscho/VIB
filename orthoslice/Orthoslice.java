@@ -39,6 +39,10 @@ public class Orthoslice extends AxisRenderer {
 		axisSwitch.setWhichChild(Switch.CHILD_ALL);
 	}
 
+	public void setSlices(int x, int y, int z) {
+
+	}
+
 	public void setTransparency(float transparency) {
 		this.transparency = transparency;
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {

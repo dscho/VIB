@@ -8,6 +8,7 @@ import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
 
+import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
 import isosurface.MeshGroup;
 import javax.vecmath.Color3f;
@@ -24,6 +25,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem channels;
 	private MenuItem transparency;
 	private MenuItem fill;
+	private MenuItem slices;
 	private MenuItem delete;
 	private MenuItem resetView;
 	private MenuItem startRecord;
@@ -72,6 +74,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		menu.addSeparator();
 
+		slices = new MenuItem("Adjust slices");
+		slices.addActionListener(this);
+		menu.add(slices);
+		
 		fill = new MenuItem("Fill selection");
 		fill.addActionListener(this);
 		menu.add(fill);
@@ -197,6 +203,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.pauseAnimation();
 		}
 
+		if(e.getSource() == slices) {
+			Content c = univ.getSelected();
+			if(c == null || !(c instanceof OrthoGroup)) {
+				IJ.error("Orthoslices must be selected");
+				return;
+			}
+			adjustSlices(c);
+			univ.clearSelection();
+		}
+
 		if(e.getSource() == fill) {
 			final Content c = univ.getSelected();
 			if(c == null) {
@@ -248,6 +264,41 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 		record(SET_TRANSPARENCY,Float.toString(
 			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
+	}
+
+	public void adjustSlices(final Content selected) {
+		final GenericDialog gd = new GenericDialog("Adjust slices...");
+		final OrthoGroup os = (OrthoGroup)selected;
+		int[] oldvalues = os.getSlices();
+		ImagePlus imp = selected.image;
+		int w = imp.getWidth(), h = imp.getHeight();
+		int d = imp.getStackSize();		
+
+		gd.addSlider("x", 0, w, oldvalues[0]);
+		gd.addSlider("y", 0, h, oldvalues[1]);
+		gd.addSlider("z", 0, d, oldvalues[2]);
+
+		final Scrollbar xSlider = (Scrollbar)gd.getSliders().get(0);
+		final Scrollbar ySlider = (Scrollbar)gd.getSliders().get(1);
+		final Scrollbar zSlider = (Scrollbar)gd.getSliders().get(2);
+
+		AdjustmentListener listener = new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				os.setSlices(
+					xSlider.getValue(), 
+					ySlider.getValue(), 
+					zSlider.getValue());
+			}
+		};
+		xSlider.addAdjustmentListener(listener);
+		ySlider.addAdjustmentListener(listener);
+		zSlider.addAdjustmentListener(listener);
+
+		gd.showDialog();
+		if(gd.wasCanceled()) {
+			os.setSlices(oldvalues[0], oldvalues[1], oldvalues[2]);
+			return;
+		}
 	}
 
 	public void changeColor(final Content selected) {
