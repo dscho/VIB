@@ -44,8 +44,8 @@ public class OrthoGroup extends Content {
 				(float)image.getCalibration().pixelWidth;
 
 		IndexColorModel cmodel = color == null ? 
-			ColorTable.getIndexedColorModel(image, channels) :
-			ColorTable.getAverageGrayColorModel(image, channels);
+			ColorTable.getOpaqueIndexedColorModel(image, channels) :
+			ColorTable.getOpaqueAverageGrayColorModel(image, channels);
 		ImagePlus imp = resamplingF == 1 ? image 
 				: Resample_.resample(image, resamplingF);
 //		renderer = new Axis2DRenderer(image, cmodel, 
@@ -106,7 +106,7 @@ public class OrthoGroup extends Content {
 			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
 		}
 		
-		univ.addVoltex(grey, color, name, channels, factor, tr);
+		univ.addOrthoslice(grey, color, name, channels, factor, tr);
 	}
 
 	public void eyePtChanged(View view) {
@@ -115,9 +115,9 @@ public class OrthoGroup extends Content {
 
 	public void channelsUpdated(boolean[] channels) {
 		IndexColorModel cmodel = getColor() == null ?
-			ColorTable.getIndexedColorModel(
+			ColorTable.getOpaqueIndexedColorModel(
 				getImage(), channels) :
-			ColorTable.getAverageGrayColorModel(
+			ColorTable.getOpaqueAverageGrayColorModel(
 				getImage(), channels);
 		renderer.setColorModel(cmodel);
 	}
@@ -129,9 +129,9 @@ public class OrthoGroup extends Content {
 			oldColor != null && newColor == null) {
 
 			IndexColorModel cmodel = newColor == null ?
-				ColorTable.getIndexedColorModel(
+				ColorTable.getOpaqueIndexedColorModel(
 					getImage(), getChannels()) :
-				ColorTable.getAverageGrayColorModel(
+				ColorTable.getOpaqueAverageGrayColorModel(
 					getImage(), getChannels());
 			renderer.setColorModel(cmodel);
 		}

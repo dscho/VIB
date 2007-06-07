@@ -13,30 +13,20 @@ import isosurface.MeshGroup;
 
 import voltex.VoltexGroup;
 
-import marchingcubes.MCTriangulator;
+import orthoslice.OrthoGroup;
 
-import java.awt.Panel;
 import java.awt.MenuBar;
 import java.awt.Menu;
 import java.awt.MenuItem;
-import java.awt.BorderLayout;
-import java.awt.Frame;
 import java.awt.event.*;
-import java.awt.GraphicsConfiguration;
 
 import java.util.List;
 import java.util.Hashtable;
 import java.util.Iterator;
 
-import com.sun.j3d.utils.picking.behaviors.PickingCallback;
 import com.sun.j3d.utils.behaviors.keyboard.*;
-import com.sun.j3d.utils.applet.MainFrame; 
 import com.sun.j3d.utils.universe.*;
-import com.sun.j3d.utils.geometry.ColorCube;
-import com.sun.j3d.utils.geometry.Sphere;
 import javax.media.j3d.*;
-import javax.media.j3d.Alpha;
-import javax.media.j3d.RotationInterpolator;
 import javax.vecmath.*;
 
 import com.sun.j3d.utils.picking.PickCanvas;
@@ -151,6 +141,22 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Transform3D tr = new Transform3D();
 		tr.setTranslation(t);
 		VoltexGroup content = new VoltexGroup(
+			name, color, image, channels, resamplingF, tr);
+		scene.addChild(content);
+		contents.put(name, content);
+		fireContentAdded(content);
+	}
+
+	public void addOrthoslice(ImagePlus image, Color3f color, 
+		String name, boolean[] channels, int resamplingF, Vector3f t) {
+		if(contents.contains(name)) {
+			IJ.error("Name exists already");
+			return;
+		}
+		ensureScale(image);
+		Transform3D tr = new Transform3D();
+		tr.setTranslation(t);
+		OrthoGroup content = new OrthoGroup(
 			name, color, image, channels, resamplingF, tr);
 		scene.addChild(content);
 		contents.put(name, content);
