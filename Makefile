@@ -1,7 +1,7 @@
 JAVAS=$(shell find * -name \*.java | grep -v ^tempdir)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
-JAVA3DS=$(wildcard Viewer_3D.java marchingcubes/*.java voltex/*.java ImageJ_3D_Viewer.java)
+JAVA3DS=$(wildcard marchingcubes/*.java voltex/*.java ij3d/*.java isosurface/*.java orthoslice/*.java ImageJ_3D_Viewer.java)
 FILTEROUT=$(JAVA3DS)
 ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
@@ -94,8 +94,10 @@ Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
 
 ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard marchingcubes/*.java) $(wildcard isosurface/*.java) \
-	vib/Resample_.java vib/InterpolatedImage.java amira/AmiraParameters.java \
-	amira/AmiraTable.java math3d/Point3d.java ImageJ_3D_Viewer.java
+	$(wildcard orthoslice/*.java) \
+	vib/Resample_.java vib/InterpolatedImage.java \
+	amira/AmiraParameters.java amira/AmiraTable.java \
+	math3d/Point3d.java ImageJ_3D_Viewer.java
 
 Install_Java3D.jar: SOURCES=Install_Java3D.java
 
