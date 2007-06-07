@@ -91,9 +91,12 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	public void record360() {
 		rotationsTG.getTransform(rotate);
 		double angle = 0;
-		final double pi2 = Math.PI*2;
+		double deg5 = Math.toRadians(5);
+		double pi2 = Math.PI*2;
+		int circles = (int)Math.round(pi2/deg5);
 		getCanvas().getView().stopView();
-		while(angle < pi2) {
+		for(int i = 0; i < circles; i++) {
+			angle = i * deg5;
 			rotate.rotY(angle);
 			rotationsTG.setTransform(rotate);
 			transformChanged(-1, rotationsTG);
