@@ -111,7 +111,7 @@ public class ImageCanvas3D extends Canvas3D {
 		return roiImagePlus.getRoi();
 	}
 
-	private void render() {
+	public void render() {
 		stopRenderer();
 		swap();
 		startRenderer();

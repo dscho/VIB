@@ -12,15 +12,15 @@ import java.text.NumberFormat;
 
 public class Texture2DVolume implements VolRendConstants {
 
-	TexCoordGeneration xTg = new TexCoordGeneration();
-	TexCoordGeneration yTg = new TexCoordGeneration();
-	TexCoordGeneration zTg = new TexCoordGeneration();
-	Texture2D[] xTextures;	
-	Texture2D[] yTextures;	
-	Texture2D[] zTextures;	
+	public TexCoordGeneration xTg = new TexCoordGeneration();
+	public TexCoordGeneration yTg = new TexCoordGeneration();
+	public TexCoordGeneration zTg = new TexCoordGeneration();
+	public Texture2D[] xTextures;	
+	public Texture2D[] yTextures;	
+	public Texture2D[] zTextures;	
 
 	private Volume volume;
-	IndexColorModel cmodel;
+	private IndexColorModel cmodel;
 
 
 	public Texture2DVolume(Volume volume, IndexColorModel cmodel) {
@@ -28,7 +28,11 @@ public class Texture2DVolume implements VolRendConstants {
 		this.cmodel = cmodel;
 	}
 
-	void loadTexture() {
+	public void setColorModel(IndexColorModel cmodel) {
+		this.cmodel = cmodel;
+	}
+
+	public void loadTexture() {
 		volume.update();
 		IJ.showStatus("Loading Z axis texture maps");
 		loadAxis(Z_AXIS);

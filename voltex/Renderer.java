@@ -12,8 +12,8 @@ import com.sun.j3d.utils.behaviors.mouse.*;
 
 abstract public class Renderer {
 
-	ImagePlus image;
-	Volume volume;
+	protected ImagePlus image;
+	protected Volume volume;
 
 	public Renderer(ImagePlus image) {
 		this.image = image;
@@ -28,7 +28,7 @@ abstract public class Renderer {
 	/**
 	 * Called to make changes to the renderer state
 	 */
-	abstract void fullReload();
+	abstract public void fullReload();
 
 	/**
 	 * Called when the view position relative to the renderer changes

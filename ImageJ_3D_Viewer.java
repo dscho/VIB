@@ -13,6 +13,7 @@ import ij3d.Image3DUniverse;
 import ij3d.Image3DMenubar;
 import isosurface.MeshGroup;
 import voltex.VoltexGroup;
+import orthoslice.OrthoGroup;
 
 public class ImageJ_3D_Viewer implements PlugInFilter {
 
@@ -23,8 +24,8 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 	public void run(ImageProcessor ip) {
 		GenericDialog gd = new GenericDialog("ImageJ 3D Viewer");
 		gd.addChoice("Surface or Volume: ", 
-					new String[]{"Surface", "Volume"},
-					"Volume");
+			new String[]{"Surface", "Volume", "Orthoslice"},
+			"Volume");
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
@@ -33,8 +34,11 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 		String type = gd.getNextChoice();
 		if(type.equals("Surface"))
 			MeshGroup.addContent(univ, image);
-		else
+		else if(type.equals("Volume"))
 			VoltexGroup.addContent(univ, image);
+		else if(type.equals("Orthoslice"))
+			OrthoGroup.addContent(univ, image);
+
 		univ.show();
 	}
 

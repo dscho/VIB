@@ -69,50 +69,71 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	}
 
 	private ImageStack stack;
-	private boolean recording = false;
+	private boolean freeRecording = false;
+	private boolean animatedRecording = false;
 	private boolean animated = false;
-	private float animationValue = 0;
-	private boolean doRecord = false;
-	private float oldValue = 0f;
 
 	public void transformChanged(int type, TransformGroup tg) {
 		super.transformChanged(type, tg);
-		if(recording && animated) {
-			boolean newLoop = animation.value() < oldValue;
-			oldValue = animation.value();
-			if(!doRecord && newLoop) {
-				doRecord = true;
-			} else if(doRecord && newLoop) {
-				doRecord = false;
-				oldValue = 0f;
-				ImagePlus mov = stopRecording();
-				if(mov != null) mov.show();
-			}
-		} else  {
-			doRecord = recording;
-		}
-		
-		// add actual image to recording stack
-		if(!doRecord) 
+		if(animatedRecording) {
 			return;
-		ImageWindow3D win = (ImageWindow3D)getCanvas().getParent();
-		win.updateImagePlus();
-		ImageProcessor ip = win.getImagePlus().getProcessor();
-		int w = ip.getWidth(), h = ip.getHeight();
-		if(stack == null) 
-			stack = new ImageStack(w, h);
-		stack.addSlice("", ip);
+		} else if(freeRecording) {
+			win.updateImagePlus();
+			ImageProcessor ip = win.getImagePlus().getProcessor();
+			int w = ip.getWidth(), h = ip.getHeight();
+			if(stack == null) 
+				stack = new ImageStack(w, h);
+			stack.addSlice("", ip);
+		}
+	}
+
+	private Transform3D rotate = new Transform3D();
+	public void record360() {
+		rotationsTG.getTransform(rotate);
+		double angle = 0;
+		double deg5 = Math.toRadians(5);
+		double pi2 = Math.PI*2;
+		int circles = (int)Math.round(pi2/deg5);
+		getCanvas().getView().stopView();
+		for(int i = 0; i < circles; i++) {
+			angle = i * deg5;
+			rotate.rotY(angle);
+			rotationsTG.setTransform(rotate);
+			transformChanged(-1, rotationsTG);
+			getCanvas().getView().renderOnce();
+			try {
+				Thread.currentThread().sleep(100);
+			} catch (Exception e) {e.printStackTrace();}
+			win.updateImagePlus();
+			ImageProcessor ip = win.getImagePlus().getProcessor();
+			int w = ip.getWidth(), h = ip.getHeight();
+			if(stack == null) 
+				stack = new ImageStack(w, h);
+			stack.addSlice("", ip);
+			angle += 0.04;
+		}
+		getCanvas().getView().startView();
+		stopRecording().show();
 	}
 
 	public void startRecording() {
-		recording = true;
+		ImageProcessor ip = win.getImagePlus().getProcessor();
+		stack = new ImageStack(ip.getWidth(), ip.getHeight());
 		if(animated) {
-			animationValue = animation.value();
+			pauseAnimation();
+			freeRecording = false;
+			animatedRecording = true;
+			record360();
+			startAnimation();
+		} else {
+			animatedRecording = false;
+			freeRecording = true;
 		}
 	}
 
 	public ImagePlus stopRecording() {
-		recording = false;
+		animatedRecording = false;
+		freeRecording = false;
 		if(stack == null)
 			return null;
 		ImagePlus imp = new ImagePlus("Movie", stack);
@@ -123,12 +144,20 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	public void startAnimation() {
 		animation.resume();
 		animated = true;
+		if(freeRecording) {
+			freeRecording = false;
+			animatedRecording = true;
+		}
 		fireTransformationStarted();
 	}
 
 	public void pauseAnimation() {
 		animation.pause();
 		animated = false;
+		if(animatedRecording) {
+			animatedRecording = false;
+			freeRecording = true;
+		}
 		mouseBehavior.correctGlobalAndLocalTransformations();
 		TransformGroup tg = null;
 		transformChanged(0, tg);
