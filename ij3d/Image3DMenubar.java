@@ -245,8 +245,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	public void changeTransparency(final Content selected) {
-		GenericDialog gd = new GenericDialog("Adjust transparency ...");
-		int oldTr = (int)(selected.getTransparency() * 100);
+		final GenericDialog gd = 
+				new GenericDialog("Adjust transparency ...");
+		final int oldTr = (int)(selected.getTransparency() * 100);
 		gd.addSlider("Transparency", 0, 100, oldTr);
 		((Scrollbar)gd.getSliders().get(0)).
 			addAdjustmentListener(new AdjustmentListener() {
@@ -256,12 +257,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}
 		});
 		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					float newTr = (float)oldTr / 100f;
+					selected.setTransparency(newTr);
+					return;
+				}
+			}
+		});
 		gd.showDialog();
-		if(gd.wasCanceled()) {
-			float newTr = (float)oldTr / 100f;
-			selected.setTransparency(newTr);
-			return;
-		}
 		
 		record(SET_TRANSPARENCY,Float.toString(
 			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
@@ -270,7 +275,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void adjustSlices(final Content selected) {
 		final GenericDialog gd = new GenericDialog("Adjust slices...");
 		final OrthoGroup os = (OrthoGroup)selected;
-		int[] oldvalues = os.getSlices();
+		final int[] oldvalues = os.getSlices();
 		ImagePlus imp = selected.image;
 		int w = imp.getWidth(), h = imp.getHeight();
 		int d = imp.getStackSize();		
@@ -296,16 +301,23 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		zSlider.addAdjustmentListener(listener);
 
 		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					os.setSlices(
+						oldvalues[0], 
+						oldvalues[1], 
+						oldvalues[2]);
+					return;
+				}
+			}
+		});
 		gd.showDialog();
-		if(gd.wasCanceled()) {
-			os.setSlices(oldvalues[0], oldvalues[1], oldvalues[2]);
-			return;
-		}
 	}
 
 	public void changeColor(final Content selected) {
 		final GenericDialog gd = new GenericDialog("Adjust color ...");
-		Color3f oldC = selected.color;
+		final Color3f oldC = selected.color;
 
 		gd.addCheckbox("Use default color", oldC == null);
 		gd.addSlider("Red",0,255,oldC == null ? 255 : oldC.x*255);
@@ -348,11 +360,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		bSlider.addAdjustmentListener(listener);
 
 		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					selected.setColor(oldC);
+					return;
+				}
+			}
+		});
 		gd.showDialog();
-		if(gd.wasCanceled()) {
-			selected.setColor(oldC);
-			return;
-		}
 		
 		record(SET_COLOR, Integer.toString(rSlider.getValue()), 
 				Integer.toString(gSlider.getValue()),
