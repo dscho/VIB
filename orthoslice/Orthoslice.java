@@ -18,9 +18,14 @@ public class Orthoslice extends AxisRenderer {
 	private float transparency;
 	private Color3f color;
 
+	private int x, y, z;
+
 	public Orthoslice(ImagePlus img, IndexColorModel cmodel, 
 					Color3f color, float tr) {
 		super(img);
+		this.x = img.getWidth()/2;
+		this.y = img.getHeight()/2;
+		this.z = img.getStackSize()/2;
 		this.transparency = tr;
 		this.color = color;
 		texVol = new Texture2DVolume(volume, cmodel);
@@ -40,7 +45,9 @@ public class Orthoslice extends AxisRenderer {
 	}
 
 	public void setSlices(int x, int y, int z) {
-
+		this.x = x; this.y = y; this.z = z;
+		clearData();
+		loadQuads();
 	}
 
 	public void setTransparency(float transparency) {
@@ -98,7 +105,7 @@ public class Orthoslice extends AxisRenderer {
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
 			backGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
-			r = volume.zDim / 2;
+			r = z;
 			textures = texVol.zTextures;
 			tg = texVol.zTg;
 			setCoordsZ();
@@ -108,7 +115,7 @@ public class Orthoslice extends AxisRenderer {
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
 			backGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
-			r = volume.yDim / 2;
+			r = y;
 			textures = texVol.yTextures;
 			tg = texVol.yTg;
 			setCoordsY();
@@ -118,7 +125,7 @@ public class Orthoslice extends AxisRenderer {
 			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
 			backGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
-			r = volume.xDim / 2;
+			r = x;
 			textures = texVol.xTextures;
 			tg = texVol.xTg;
 			setCoordsX();

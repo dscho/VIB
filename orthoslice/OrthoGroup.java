@@ -53,8 +53,6 @@ public class OrthoGroup extends Content {
 				color, getTransparency());
 		slices = new int[] {imp.getWidth()/2, imp.getHeight()/2,
 					imp.getStackSize()/2};
-		((Orthoslice)renderer).setSlices(imp.getWidth()/2, 
-				imp.getHeight()/2, imp.getStackSize()/2);
 		renderer.fullReload();
 
 		initialTG.addChild(renderer.getVolumeNode());

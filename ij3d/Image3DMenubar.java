@@ -274,9 +274,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		int w = imp.getWidth(), h = imp.getHeight();
 		int d = imp.getStackSize();		
 
-		gd.addSlider("x", 0, w, oldvalues[0]);
-		gd.addSlider("y", 0, h, oldvalues[1]);
-		gd.addSlider("z", 0, d, oldvalues[2]);
+		gd.addSlider("x", 0, w-1, oldvalues[0]);
+		gd.addSlider("y", 0, h-1, oldvalues[1]);
+		gd.addSlider("z", 0, d-1, oldvalues[2]);
 
 		final Scrollbar xSlider = (Scrollbar)gd.getSliders().get(0);
 		final Scrollbar ySlider = (Scrollbar)gd.getSliders().get(1);
