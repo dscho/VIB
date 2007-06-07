@@ -25,6 +25,11 @@ public class ThreePaneCrop_ implements PlugIn {
 			return;
 		}
 
+		if( currentImage.getType() != ImagePlus.GRAY8 ) {
+			IJ.error("This plugin only works on 8 bit images at the moment.");
+			return;
+		}
+
 		threePaneCrop = new ThreePaneCrop( );
 
 		threePaneCrop.initialize( currentImage );
