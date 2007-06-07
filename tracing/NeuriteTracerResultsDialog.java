@@ -11,8 +11,19 @@ import java.io.*;
 
 class NeuriteTracerResultsDialog
 	extends Dialog
-	implements ActionListener, WindowListener {
-	
+	implements ActionListener, WindowListener, ItemListener {
+
+	// These are the states that the UI can be in:
+
+	static final int WAITING_TO_START_PATH = 0;
+	static final int PARTIAL_PATH          = 1;
+	static final int SEARCHING             = 2;
+	static final int QUERY_KEEP            = 3;
+	static final int LOGGING_POINTS        = 4;
+	static final int DISPLAY_EVS           = 5;
+
+	private int currentState;
+
 	NeuriteTracer_ plugin;
 
 	Panel statusPanel;
@@ -30,6 +41,7 @@ class NeuriteTracerResultsDialog
 
 	Checkbox preprocess;
 	Checkbox justLog;
+	Checkbox showEVs;
 
 	List pathList;
 
@@ -39,6 +51,96 @@ class NeuriteTracerResultsDialog
 	Button loadButton;   
 	Button uploadButton;
 	Button fetchButton;
+
+	Button quitButton;
+
+	// ------------------------------------------------------------------------
+
+	public void changeState( int newState ) {
+
+		switch( newState ) {
+
+		case WAITING_TO_START_PATH:
+			statusText.setText("Click somewhere to start a new path...");
+			/*
+			statusPanel.remove(cancelSearch);
+			statusPanel.remove(keepSegment);
+			statusPanel.remove(junkSegment);
+			*/
+			cancelSearch.setVisible(false);
+			keepSegment.setVisible(false);
+			junkSegment.setVisible(false);
+
+			completePath.setEnabled(false);
+			cancelPath.setEnabled(false);
+			break;
+
+		case PARTIAL_PATH:
+			statusText.setText("Now select a point further along that structure...");
+			/*
+			statusPanel.remove(cancelSearch);
+			statusPanel.remove(keepSegment);
+			statusPanel.remove(junkSegment);
+			*/
+
+			cancelSearch.setVisible(false);
+			keepSegment.setVisible(false);
+			junkSegment.setVisible(false);
+
+			if( plugin.justFirstPoint() )
+				completePath.setEnabled(false);
+			else
+				completePath.setEnabled(true);
+			cancelPath.setEnabled(true);
+			break;
+
+		case SEARCHING:
+			statusText.setText("Searching for goal point...");
+			/*
+			statusPanel.remove(cancelSearch);
+			statusPanel.remove(keepSegment);
+			statusPanel.remove(junkSegment);
+			statusPanel.add(cancelSearch,BorderLayout.SOUTH);
+			*/
+
+			cancelSearch.setVisible(true);
+			keepSegment.setVisible(false);
+			junkSegment.setVisible(false);
+
+			completePath.setEnabled(false);
+			cancelPath.setEnabled(false);
+			break;
+
+		case QUERY_KEEP:
+			statusText.setText("Keep this new path segment?");
+			/*
+			statusPanel.remove(cancelSearch);
+			statusPanel.remove(keepSegment);
+			statusPanel.remove(junkSegment);
+			statusPanel.add(keepSegment,BorderLayout.SOUTH);
+			statusPanel.add(junkSegment,BorderLayout.SOUTH);
+			*/
+
+			cancelSearch.setVisible(false);
+			keepSegment.setVisible(true);
+			junkSegment.setVisible(true);
+
+			completePath.setEnabled(false);
+			cancelPath.setEnabled(false);
+			break;
+
+		default:
+			IJ.error("BUG: trying to change to an unknown state");
+			return;
+
+		}
+
+		pack();
+		currentState = newState;
+
+	}
+
+	// ------------------------------------------------------------------------
 	
 	public void windowClosing( WindowEvent e ) {
 		plugin.cancelled = true;
@@ -78,6 +180,26 @@ class NeuriteTracerResultsDialog
 		statusText = new TextArea("Initial status text...",3,20,TextArea.SCROLLBARS_NONE);
 		statusPanel.add(statusText,BorderLayout.CENTER);
 
+		keepSegment = new Button("Yes");
+		junkSegment = new Button("No");
+		cancelSearch = new Button("Abandon Search");
+		
+		keepSegment.addActionListener( this );
+		junkSegment.addActionListener( this );
+		cancelSearch.addActionListener( this );
+
+		Panel statusChoicesPanel = new Panel();
+		statusChoicesPanel.setLayout( new GridBagLayout() );
+		GridBagConstraints cs = new GridBagConstraints();
+		cs.gridx = 0; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
+		statusChoicesPanel.add(keepSegment,cs);
+		cs.gridx = 1; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
+		statusChoicesPanel.add(junkSegment,cs);
+		cs.gridx = 2; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
+		statusChoicesPanel.add(cancelSearch,cs);
+
+		statusPanel.add(statusChoicesPanel,BorderLayout.SOUTH);
+
 		c.gridx = 0;
 		c.gridy = 0;
 		add(statusPanel,c);
@@ -85,6 +207,8 @@ class NeuriteTracerResultsDialog
 		pathActionPanel = new Panel();
 		completePath = new Button("Complete Path");
 		cancelPath = new Button("Cancel Path");
+		completePath.addActionListener( this );
+		cancelPath.addActionListener( this );
 		pathActionPanel.add(completePath);
 		pathActionPanel.add(cancelPath);
 
@@ -100,9 +224,11 @@ class NeuriteTracerResultsDialog
 		viewPathChoice = new Choice();
 		viewPathChoice.addItem(projectionChoice);
 		viewPathChoice.addItem(partsNearbyChoice);
+		viewPathChoice.addItemListener( this );
 
 		preprocess = new Checkbox("Hessian-based analysis");
 		justLog = new Checkbox("Just log points");
+		showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
 
 		co.gridx = 0;
 		co.gridy = 0;
@@ -128,6 +254,7 @@ class NeuriteTracerResultsDialog
 		pathList = new List();
 		pathListPanel.add(pathList,BorderLayout.CENTER);
 		deletePath = new Button("Delete Path");
+		deletePath.addActionListener( this );
 		pathListPanel.add(deletePath,BorderLayout.SOUTH);
 
 		c.gridx = 0;
@@ -166,30 +293,13 @@ class NeuriteTracerResultsDialog
 		c.gridy = 4;
 		add(traceFileOptionsPanel,c);
 
-		/*
-			
-		ScrollPane scrollPane=new ScrollPane();
-		Panel pathsPanel=new Panel();
-		pathsPanel.setLayout( new GridBagLayout() );
-			
+		quitButton = new Button("Quit Tracer");
 		c.gridx = 0;
-		c.gridy = 0;
-		pathsPanel.add(new Label("Test"),c);
-		c.gridx = 0;
-		c.gridy = 1;
-		pathsPanel.add(new Label("Testing Again"),c);
-			
-		scrollPane.add(pathsPanel);
-		
-		add(scrollPane, BorderLayout.CENTER );
-			
-		Panel saveAndLoadPanel=new Panel();
-		saveAndLoadPanel.setLayout( new FlowLayout() );
-		saveAndLoadPanel.add( saveButton );
-		saveAndLoadPanel.add( loadButton );
-		add( saveAndLoadPanel, BorderLayout.SOUTH );
+		c.gridy = 5;
+		c.anchor = GridBagConstraints.CENTER;
+		add(quitButton,c);
 
-		*/
+		changeState( WAITING_TO_START_PATH );
 		
 		pack();
 		setVisible( true );
@@ -254,6 +364,50 @@ class NeuriteTracerResultsDialog
 			
 			plugin.loadTracings();
 			
+		} else if( source == cancelSearch ) {
+			
+			statusText.setText("Cancelling...");
+			plugin.cancelSearch();
+
+		} else if( source == keepSegment ) {
+			
+		       plugin.confirmTemporary( );
+
+		} else if( source == junkSegment ) {
+
+			plugin.cancelTemporary( );
+
+		} else if( source == completePath ) {
+
+			plugin.finishedPath( );
+
+		} else if( source == cancelPath ) {
+
+			plugin.cancelPath( );
+			
+		} else if( source == quitButton ) {
+			
+			statusText.setText("Quitting...");
+			plugin.cancelSearch();
+			dispose();			
+
+		} 
+	}
+
+	public void itemStateChanged( ItemEvent e ) {
+
+		Object source = e.getSource();
+		
+		if( source == viewPathChoice ) {
+
+			System.out.println("e.getItem() is of class "+e.getItem().getClass());
+
+			if( ((String)e.getItem()).equals( projectionChoice )) {
+				plugin.justDisplayNearSlices(false);
+			} else if( ((String)e.getItem()).equals( partsNearbyChoice )) {
+				plugin.justDisplayNearSlices(true);
+			}
+
 		}
 	}
 	

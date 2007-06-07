@@ -8,7 +8,7 @@ WAITING_TO_START_PATH
   1. Status: "Click somewhere to start a new path"
        (button: Cancel Search (disabled))
        (button: Complete Path (disabled))
-       (button: Junk Path (disabled))
+       (button: Cancel Path (disabled))
 
  ... after clicking go to PARTIAL_PATH
 
@@ -17,11 +17,11 @@ PARTIAL_PATH (special case first point)
   2. Status: "Now select a point further along that structure"
               (button: Cancel Search (disabled))
               (button: Complete Path (disabled if first point))
-              (button: Junk Path)
+              (button: Cancel Path)
 
 ... on selecting go to: SEARCHING
 
-... on "junk path", remove the complete path and go to WAITING_TO_START_PATH
+... on "cancel path", remove the complete path and go to WAITING_TO_START_PATH
 ... on "complete path", add the complete path to the list and go to WAITING_TO_START_PATH
 
 SEARCHING
@@ -29,7 +29,7 @@ SEARCHING
   3. Status: "Searching for goal..."
              (button: Cancel Search)
              (button: Complete Path (disabled))
-             (button: Junk Path (disabled))
+             (button: Cancel Path (disabled))
      
 ... on cancel, move to state: PARTIAL_PATH
 ... on successful completion, move to state QUERY_KEEP
@@ -39,7 +39,7 @@ QUERY_KEEP
   4. Status: "Keep that path segment?"
            (buttons: Yes, No)
            (button: Complete Path (disabled))
-           (button: Junk Path (disabled))
+           (button: Cancel Path (disabled))
 
 on Yes, add the segment and go to PARTIAL_PATH
 on No, don't add the segment and go to PARTIAL_PATH

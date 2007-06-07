@@ -60,7 +60,15 @@ class EigenResultsDouble {
 	
 }
 
+/* Note On Confusing Terminology: traces and paths are the same
+   thing; they're made up of connections.  Traces, paths and
+   connections are all non-branching sequences of adjacent points in
+   the image. */
+
 public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressCallback {
+
+	/* We may keep a tranformation which maps to a template with
+	   label_data: */
 	
 	OrderedTransformations transformation;
 	byte[][] label_data;
@@ -83,11 +91,18 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 	}
 	
 	public NeuriteTracer_( ) {
-		
+		// Everything's set up in the run method...
 	}
 	
+	/* This override the method in ThreePanes... */
+
 	public TracerCanvas createCanvas( ImagePlus imagePlus, int plane ) {
 		return new TracerCanvas( imagePlus, this, plane );
+	}
+
+	public void cancelSearch( ) {
+		if( currentSearchThread != null )
+			currentSearchThread.requestStop();
 	}
 
 	/* Now a couple of callback methods, which get information
@@ -95,20 +110,23 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 	public void finished( boolean success ) {
 
-		// FIXME: complete this
-
-		// notify the UI too...
-
 		if( success ) {
 			Connection result = currentSearchThread.getResult();
 			if( result == null )
 				IJ.error("Bug! Succeeded, but null result.");
 			else
-				setTemporaryPath( result );
+				setTemporaryConnection( result );
 		}
 		synchronized(nonsense) {
 			currentOpenBoundaryPoints = null;
 		}
+		
+		// Indicate in the dialog that we've finished...
+
+		if( success )
+			resultsDialog.changeState(NeuriteTracerResultsDialog.QUERY_KEEP);
+		else
+			resultsDialog.changeState(NeuriteTracerResultsDialog.PARTIAL_PATH);
 
 		currentSearchThread = null;
 
@@ -131,79 +149,29 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		
 	}
 
-	/* Now in ThreePanes... */
-	/*
-	public void setSlicesAllPanes( int new_x, int new_y, int new_z ) {
-
-		zy.setSlice( new_x + 1 );
-		xz.setSlice( new_y + 1 );
-		xy.setSlice( new_z + 1 );
-	}
-	*/
-
-	/* Now in ThreePanes... */
-	/*
-	public void repaintAllPanes( ) {
-
-		xy_canvas.repaint();
-		xz_canvas.repaint();
-		zy_canvas.repaint();
-	}
-	*/
-
-/*
-	public PointInImage findPointInStack( int x_in_pane, int y_in_pane, int plane ) {
-
-		int new_x, new_y, new_z;
-		
-		new_x = -1;
-		new_y = -1;
-		new_z = -1;        
-		
-		switch( plane ) {
-			
-		case ThreePanes.XY_PLANE:
-		{
-			new_x = x_in_pane;
-			new_y = y_in_pane;
-			new_z = xy.getCurrentSlice( ) - 1;
-		}
-		break;
-		
-		case ThreePanes.XZ_PLANE:
-		{
-			new_x = x_in_pane;
-			new_y = xz.getCurrentSlice( ) - 1;
-			new_z = y_in_pane;
-		}
-		break;
-		
-		case ThreePanes.ZY_PLANE:
-		{
-			new_x = zy.getCurrentSlice( ) - 1;
-			new_y = y_in_pane;
-			new_z = x_in_pane;
-		}
-		break;
-		
-		}
-
-		return new PointInImage( new_x, new_y, new_z );
-	}
-*/
+	/* These member variables control what we're actually doing -
+	   whether that's tracing, logging points or displaying values
+	   of the Hessian at particular points. */
 
 	boolean setupLog = false;
 	boolean setupEv = false;
 	boolean setupTrace = false;
 	boolean setupPreprocess = false;
+
+	/* If we're timing out the searches (probably not any longer...) */
+
 	boolean setupTimeout = false;
 	float   setupTimeoutValue = 0.0f;
 	
+	/* For the original file info - needed for loading the
+	   corresponding labels file. */
+
 	public FileInfo file_info;
 	
 	protected int width, height, depth;
 	
-	private Connection currentPath;
+	/* (FIXME: check this is right) The connection that we've just found... */
+	private Connection currentConnection;
 	
 	int last_x, last_y, last_z;
 	
@@ -219,6 +187,16 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 			IJ.error( "Writing to log file '" + logFilename + "' failed" );
 		}
 		
+	}
+
+	public void justDisplayNearSlices( boolean value ) {
+
+		xy_tracer_canvas.just_near_slices = value;
+		xz_tracer_canvas.just_near_slices = value;
+		zy_tracer_canvas.just_near_slices = value;
+
+		repaintAllPanes();
+
 	}
 	
 	public void setArrow( int i, Arrow a ) {
@@ -632,16 +610,16 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 		setSlicesAllPanes( p[0], p[1], p[2] );
 		
-		if( (xy_canvas != null) &&
-		    (xz_canvas != null) &&
-		    (zy_canvas != null) ) {
+		if( (xy_tracer_canvas != null) &&
+		    (xz_tracer_canvas != null) &&
+		    (zy_tracer_canvas != null) ) {
 			
 			
-			if( currentPath != null ) {
+			if( currentConnection != null ) {
 				
-				xy_tracer_canvas.setConnection( currentPath );
-				xz_tracer_canvas.setConnection( currentPath );
-				zy_tracer_canvas.setConnection( currentPath );
+				xy_tracer_canvas.setConnection( currentConnection );
+				xz_tracer_canvas.setConnection( currentConnection );
+				zy_tracer_canvas.setConnection( currentConnection );
 				
 			}
 		
@@ -696,7 +674,30 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 	int last_start_point_z;
 
 	ArrayList< SegmentedConnection > allPaths;
-	Connection temporaryPath = null;
+
+	/* If we've finished searching for a path, but the user hasn't
+	 * confirmed that they want to keep it yet, temporaryConnection is
+	 * non-null and holds the Connection we just searched out. */
+
+	Connection temporaryConnection = null;
+
+	// When we set temporaryConnection, we also want to update the display
+
+	public void setTemporaryConnection( Connection connection ) {
+
+		xy_tracer_canvas.setTemporaryConnection( connection );
+		zy_tracer_canvas.setTemporaryConnection( connection );
+		xz_tracer_canvas.setTemporaryConnection( connection );
+
+		temporaryConnection = connection;
+	}
+
+	/* pathUnfinished indicates that we have started to create a
+	   path, but not yet finished it (in the sense of moving on
+	   the a new disconnected starting.  FIXME: this may be
+	   redundant..
+         */
+
 	boolean pathUnfinished = false;
 
 	public void setPathUnfinished( boolean unfinished ) {
@@ -705,15 +706,6 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		xy_tracer_canvas.setPathUnfinished( unfinished );
 		zy_tracer_canvas.setPathUnfinished( unfinished );
 		xz_tracer_canvas.setPathUnfinished( unfinished );
-	}
-
-	public void setTemporaryPath( Connection path ) {
-
-		xy_tracer_canvas.setTemporaryPath( path );
-		zy_tracer_canvas.setTemporaryPath( path );
-		xz_tracer_canvas.setTemporaryPath( path );
-
-		temporaryPath = path;
 	}
 
 	public void setAllPaths( ArrayList< SegmentedConnection > allPaths ) {
@@ -726,6 +718,10 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 		this.allPaths = allPaths;
 	}
+
+	/* Create a new 8 bit ImagePlus of the same dimensions as this
+	   image, but with values set to either 255 (if there's a point
+	   on a path there) or 0 */
 
 	synchronized public void makePathVolume( ) {
 
@@ -770,7 +766,11 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		ip.show( );
 	}
 
+	/* If non-null, holds a reference to the currently searching thread */
+
 	AStarThread currentSearchThread;
+
+	/* Start a search thread looking for the goal in the arguments... */
 
 	synchronized public void testPathTo( int x_in_pane, int y_in_pane, int plane ) {
 
@@ -780,30 +780,13 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 			return;
 		}
 
-		if( temporaryPath != null ) {
+		if( temporaryConnection != null ) {
 			IJ.showStatus( "There's already a temporary path; use 'N' to cancel it or 'Y' to keep it." );
 			return;
 		}
 
 		int [] p = new int[3];
 		findPointInStack( x_in_pane, y_in_pane, plane, p );
-		
-		/* Now moved to AStarThread
-
-		Connection tmpPath = bestAStarBetween( last_start_point_x,
-						       last_start_point_y,
-						       last_start_point_z,
-						       p[0],
-						       p[1],
-						       p[2],
-						       false,
-						       setupTimeoutValue );
-		
-		*/
-
-		// FIXME: setTemporaryPath( tmpPath );
-
-		
 
 		currentSearchThread = new AStarThread( slices_data, 
 						       last_start_point_x,
@@ -825,24 +808,26 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 	}
 
-	synchronized public void confirmPath( ) {
+	synchronized public void confirmTemporary( ) {
 
 		int pathsSoFar = allPaths.size();
 		System.out.println("confirming path; have "+pathsSoFar+" already");
 		SegmentedConnection currentPath = (SegmentedConnection)allPaths.get(pathsSoFar-1);
-		currentPath.addConnection( temporaryPath );
-		PointInImage last = temporaryPath.lastPoint();
+		currentPath.addConnection( temporaryConnection );
+		PointInImage last = temporaryConnection.lastPoint();
 		last_start_point_x = last.x;
 		last_start_point_y = last.y;
 		last_start_point_z = last.z;
-		setTemporaryPath( null );
+		setTemporaryConnection( null );
 
 		System.out.println("confirming path; have "+allPaths.size()+" afterwards");
 		
+		resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
+			
 		repaintAllPanes();
 	}
 
-	synchronized public void cancelPath( ) {
+	synchronized public void cancelTemporary( ) {
 		
 		if( ! lastStartPointSet ) {
 			IJ.error( "No initial start point has been set yet.  Do that with a mouse click." +
@@ -850,22 +835,30 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 			return;
 		}
 
-		if( temporaryPath == null ) {
+		if( temporaryConnection == null ) {
 			IJ.error( "There's not temporary path to cancel!" );
 			return;
 		}
 
 		// Remove that last temporary path...
-		setTemporaryPath( null );
+		setTemporaryConnection( null );
+
+		resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 
 		repaintAllPanes( );
+	}
+
+	synchronized public void cancelPath( ) {
+
+		IJ.error( "BUG: not implemented yet" );
+
 	}
 
 	synchronized public void finishedPath( ) {
 
 		// Is there an unconfirmed path?  If so, warn people about it...
 		
-		if( temporaryPath != null ) {
+		if( temporaryConnection != null ) {
 			IJ.error( "There's an unconfirmed path, need to confirm or cancel it before finishing the path." );
 			return;
 		}
@@ -873,7 +866,32 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 		lastStartPointSet = false;
 		setPathUnfinished( false );
 
+		resultsDialog.changeState( NeuriteTracerResultsDialog.WAITING_TO_START_PATH );
+
 		repaintAllPanes( );
+	}
+
+	synchronized public void clickForTrace( int x_in_pane, int y_in_pane, int plane, boolean join ) {
+		
+		// FIXME: in some of the states this doesn't make sense; check for them...
+
+		if( currentSearchThread != null )
+			return;
+
+		if( temporaryConnection != null )
+			return;
+
+		if( pathUnfinished ) {
+			/* Then this is a succeeding point, and we
+			   should start a search. */
+			testPathTo( x_in_pane, y_in_pane, plane );
+			resultsDialog.changeState( NeuriteTracerResultsDialog.SEARCHING );
+		} else {
+			/* This is an initial point. */
+			startPath( x_in_pane, y_in_pane, plane, join );
+			resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
+		}
+
 	}
 
 	synchronized public void startPath( int x_in_pane, int y_in_pane, int plane, boolean join ) {
@@ -901,82 +919,20 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 
 	}	
 
+	/* Return true if we have just started a new path, but have
+	   not yet added any connections to it, otherwise return
+	   false. */
 
-	// -----------------------------------------------------------------
-
-/*
-	boolean startPointSet = false;
-	
-	int start_x;
-	int start_y;
-	int start_z;
-
-	public void addPoint( int x_in_pane, int y_in_pane, int plane ) {
-				
-		int new_x, new_y, new_z;
+	public boolean justFirstPoint() {
 		
-		new_x = -1;
-		new_y = -1;
-		new_z = -1;        
-		
-		int currentSlice = xy.getCurrentSlice( ) - 1;
-		
-		switch( plane ) {
-			
-		case TracerCanvas.XY_PLANE:
-		{
-			new_x = x_in_pane;
-			new_y = y_in_pane;
-			new_z = currentSlice;
-		}
-		break;
-		
-		case TracerCanvas.XZ_PLANE:
-		{
-			new_x = x_in_pane;
-			new_y = last_y;
-			new_z = currentSlice;
-		}
-		break;
-		
-		case TracerCanvas.ZY_PLANE:
-		{
-			new_x = last_x;
-			new_y = y_in_pane;
-			new_z = x_in_pane;
-		}
-		break;
-		
+		if( pathUnfinished ) {
+			SegmentedConnection currentPath = (SegmentedConnection)allPaths.get(allPaths.size()-1);
+			if( currentPath.size() == 0 )
+				return true;
 		}
 		
-		if( startPointSet ) {
-			currentPath = bestAStarBetween( start_x, start_y, start_z,
-							new_x,
-							new_y,
-							new_z,
-							false,
-							setupTimeoutValue );
-		} else {
-			start_x = new_x;
-			start_y = new_y;
-			start_z = new_z;
-			startPointSet = true;
-		}
-		
-
-//        if( currentPath == null ) {
-//            currentPath = new Connection( );
-//        } else {
-//            currentPath.addPoint( new_x, new_y, new_z );
-//        }
-
-		
-		xy_canvas.repaint();
-		zy_canvas.repaint();
-		xz_canvas.repaint();        
-		
+		return false;
 	}
-*/	
 
 	String getStackTrace( ) {
 		StringWriter sw = new StringWriter();
@@ -1781,7 +1737,16 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 				IJ.error( "There must be at least two sample points in each dimension" );
 				return;
 			}
+
+			if( currentImage.getType() != ImagePlus.GRAY8 ) {
+				IJ.error("This plugin only works on 8 bit images at the moment.");
+				return;
+			}
 			
+			// Turn it grey, since I find that helpful...
+
+			IJ.runMacro("run(\"Grays\");");
+
 			initialize(currentImage);
 
 			xy_tracer_canvas = (TracerCanvas)xy_canvas;
@@ -1872,7 +1837,6 @@ public class NeuriteTracer_ extends ThreePanes implements PlugIn, AStarProgressC
 			}
 			
 			*/
-
 
 			setupTrace = true; // can be changed with the "just log points" or "show eigenvalues"
 			resultsDialog = new NeuriteTracerResultsDialog( "Tracing for: " + xy.getShortTitle(),

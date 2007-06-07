@@ -80,8 +80,8 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		this.lastPathUnfinished = unfinished;
 	}
 
-	public void setTemporaryPath( Connection path ) {
-		this.unconfirmedSegment = path;
+	public void setTemporaryConnection( Connection connection ) {
+		this.unconfirmedSegment = connection;
 	}
 	
 	public void setCompleted( ArrayList< SegmentedConnection > completed ) {
@@ -105,12 +105,12 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		} else if( keyChar == 'y' || keyChar == 'Y' ) {
 
 			System.out.println( "Yes, running confirmPath" );
-			tracerPlugin.confirmPath( );
+			tracerPlugin.confirmTemporary( );
 
 		} else if( keyChar == 'n' || keyChar == 'N' ) {
 
 			System.out.println( "Yes, running cancelPath+" );
-			tracerPlugin.cancelPath( );
+			tracerPlugin.cancelTemporary( );
 
 		} else if( keyChar == 'f' || keyChar == 'F' ) {
 
@@ -200,7 +200,9 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			
 			boolean join = e.isShiftDown();
 
-			tracerPlugin.startPath( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
+
+			tracerPlugin.clickForTrace( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
+			// tracerPlugin.startPath( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
 			
 		} else {
 			

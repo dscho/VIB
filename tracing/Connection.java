@@ -8,6 +8,9 @@ import ij.gui.*;
 
 import stacks.ThreePanes;
 
+/* This class represents a list of points, and has methods for drawing
+ * them onto ThreePanes-style image canvases. */
+
 public class Connection {
 	
 	Connection( ) {
@@ -135,11 +138,11 @@ public class Connection {
 		{
 			if( either_side == 0 ) {
 				for( int i = 0; i < points; ++i )
-					g.drawLine( canvas.screenX(x_positions[i]), canvas.screenY(y_positions[i]), canvas.screenX(x_positions[i]), canvas.screenY(y_positions[i]) );
+					g.fillRect( canvas.screenX(x_positions[i]), canvas.screenY(y_positions[i]), 1, 1 );
 			} else {
 				for( int i = 0; i < points; ++i )
 					if( Math.abs(z_positions[i] - z) <= either_side ) {
-						g.drawLine( canvas.screenX(x_positions[i]), canvas.screenY(y_positions[i]), canvas.screenX(x_positions[i]), canvas.screenY(y_positions[i]) );
+						g.fillRect( canvas.screenX(x_positions[i]), canvas.screenY(y_positions[i]), 1, 1 ); 
 					}
 			}
 		}
@@ -148,53 +151,19 @@ public class Connection {
 		case ThreePanes.XZ_PLANE:
 		{
 			for( int i = 0; i < points; ++i )
-				g.drawLine( canvas.screenX(x_positions[i]), canvas.screenY(z_positions[i]), canvas.screenX(x_positions[i]), canvas.screenY(z_positions[i]) );
+				g.fillRect( canvas.screenX(x_positions[i]), canvas.screenY(z_positions[i]), 1, 1 );
 		}
 		break;
 		
 		case ThreePanes.ZY_PLANE:
 		{
 			for( int i = 0; i < points; ++i )
-				g.drawLine( canvas.screenX(z_positions[i]), canvas.screenY(y_positions[i]), canvas.screenX(z_positions[i]), canvas.screenY(y_positions[i]) );
+				g.fillRect( canvas.screenX(z_positions[i]), canvas.screenY(y_positions[i]), 1, 1 );
 		}
 		break;
 		
 		}
 		
 	}
-
-    /*
-    public void drawConnection( ImageCanvas canvas, Graphics g, java.awt.Color c, int plane, int z, int either_side ) {
-        // FIXME: not implemented
-    }
-
-    public void drawConnection( ImageCanvas canvas, Graphics g, java.awt.Color c, int plane ) {
-        
-        g.setColor( c );
-
-        switch( plane ) {
-
-        case TracerCanvas.XY_PLANE:
-        {       
-            g.drawPolyline( x_positions, y_positions, points );
-        }
-        break;
-
-        case TracerCanvas.XZ_PLANE:
-        {
-            g.drawPolyline( x_positions, z_positions, points );
-        }
-        break;
-
-        case TracerCanvas.ZY_PLANE:
-        {
-            g.drawPolyline( z_positions, y_positions, points );
-        }
-        break;
-
-        }
-
-    }
-    */
 
 }
