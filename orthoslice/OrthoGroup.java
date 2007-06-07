@@ -49,7 +49,7 @@ public class OrthoGroup extends Content {
 			ColorTable.getOpaqueAverageGrayColorModel(image, channels);
 		ImagePlus imp = resamplingF == 1 ? image 
 				: Resample_.resample(image, resamplingF);
-		renderer = new Orthoslice(image, cmodel, 
+		renderer = new Orthoslice(imp, cmodel, 
 				color, getTransparency());
 		slices = new int[] {imp.getWidth()/2, imp.getHeight()/2,
 					imp.getStackSize()/2};
