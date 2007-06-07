@@ -18,7 +18,6 @@ public class Volume implements VolRendConstants {
 	private ImagePlus imp;
 	private boolean	tFlip = false;
 	private byte[][][] fileData;
-	private Point3d[]	voiPts = new Point3d[8];
 
 	public int xDim = 0, yDim = 0, zDim = 0;
 	public float xSpace = 0, ySpace = 0, zSpace = 0;
@@ -27,56 +26,10 @@ public class Volume implements VolRendConstants {
 
 	Point3d minCoord = new Point3d();
 	Point3d maxCoord = new Point3d();
-	Point3d[][] facePoints = new Point3d[6][];
-
 	Point3d volRefPt = new Point3d();
 
 	public Volume(ImagePlus imp) {
 		this.imp = imp;
-		for (int i = 0; i < 8; i++) {
-		   voiPts[i] = new Point3d();
-		}
-		for (int i = 0; i < 6; i++) {
-			facePoints[i] = new Point3d[4];
-		}
-		
-		// the rectangle at PLUS_X is the right side
-		// of the VOI:
-		//	____________	 PLUS_X:
-		//   /3		  /|7	  ______
-		//  /___________/ |	  |6	 |7
-		//  |2		 6| |4	 |______|
-		//  |___________|/		5	  4
-		//  1		   5
-		facePoints[PLUS_X][0] =  voiPts[5];
-		facePoints[PLUS_X][1] =  voiPts[4];
-		facePoints[PLUS_X][2] =  voiPts[7];
-		facePoints[PLUS_X][3] =  voiPts[6];
-
-		facePoints[PLUS_Y][0] =  voiPts[2];
-		facePoints[PLUS_Y][1] =  voiPts[3];
-		facePoints[PLUS_Y][2] =  voiPts[7];
-		facePoints[PLUS_Y][3] =  voiPts[6];
-
-		facePoints[PLUS_Z][0] =  voiPts[1];
-		facePoints[PLUS_Z][1] =  voiPts[2];
-		facePoints[PLUS_Z][2] =  voiPts[6];
-		facePoints[PLUS_Z][3] =  voiPts[5];
-
-		facePoints[MINUS_X][0] =  voiPts[0];
-		facePoints[MINUS_X][1] =  voiPts[1];
-		facePoints[MINUS_X][2] =  voiPts[2];
-		facePoints[MINUS_X][3] =  voiPts[3];
-
-		facePoints[MINUS_Y][0] =  voiPts[0];
-		facePoints[MINUS_Y][1] =  voiPts[4];
-		facePoints[MINUS_Y][2] =  voiPts[5];
-		facePoints[MINUS_Y][3] =  voiPts[1];
-
-		facePoints[MINUS_Z][0] =  voiPts[0];
-		facePoints[MINUS_Z][1] =  voiPts[3];
-		facePoints[MINUS_Z][2] =  voiPts[7];
-		facePoints[MINUS_Z][3] =  voiPts[4];
 	}
 
 	public void update() {
@@ -132,14 +85,6 @@ public class Volume implements VolRendConstants {
 		maxCoord.x = (xDim - 0.5f) * xSpace;
 		maxCoord.y = (yDim - 0.5f) * ySpace;
 		maxCoord.z = (zDim - 0.5f) * zSpace;
-
-		// setup the VOI box points
-		voiPts[0].x = voiPts[1].x = voiPts[2].x = voiPts[3].x = minCoord.x;
-		voiPts[4].x = voiPts[5].x = voiPts[6].x = voiPts[7].x = maxCoord.x;
-		voiPts[0].y = voiPts[1].y = voiPts[4].y = voiPts[5].y = minCoord.y;
-		voiPts[2].y = voiPts[3].y = voiPts[6].y = voiPts[7].y = maxCoord.y;
-		voiPts[0].z = voiPts[3].z = voiPts[4].z = voiPts[7].z = minCoord.z;
-		voiPts[1].z = voiPts[2].z = voiPts[5].z = voiPts[6].z = maxCoord.z;
 
 
 		// TODO: how to set here, but not clobber value from restore()?
