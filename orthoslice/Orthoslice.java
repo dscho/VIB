@@ -1,4 +1,4 @@
-package voltex;
+package orthoslice;
 
 import java.awt.*;
 import java.awt.image.*;
@@ -9,13 +9,16 @@ import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import ij.ImagePlus;
 
-public class Axis2DRenderer extends AxisRenderer {
+import voltex.AxisRenderer;
+import voltex.Texture2DVolume;
+
+public class Orthoslice extends AxisRenderer {
 
 	private Texture2DVolume texVol;
 	private float transparency;
 	private Color3f color;
 
-	public Axis2DRenderer(ImagePlus img, IndexColorModel cmodel, 
+	public Orthoslice(ImagePlus img, IndexColorModel cmodel, 
 					Color3f color, float tr) {
 		super(img);
 		this.transparency = tr;
@@ -30,6 +33,10 @@ public class Axis2DRenderer extends AxisRenderer {
 			loadQuads();
 		}
 		setWhichChild();
+	}
+
+	public void setWhichChild() {
+		axisSwitch.setWhichChild(Switch.CHILD_ALL);
 	}
 
 	public void setTransparency(float transparency) {
@@ -75,7 +82,7 @@ public class Axis2DRenderer extends AxisRenderer {
 	}
 
 	private void loadAxis(int axis) {
-		int rSize = 0;		// number of tex maps to create
+		int r = 0;		// number of tex maps to create
 		OrderedGroup frontGroup = null;
 		OrderedGroup backGroup = null;
 		Texture2D[] textures = null;
@@ -87,7 +94,7 @@ public class Axis2DRenderer extends AxisRenderer {
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
 			backGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
-			rSize = volume.zDim;
+			r = volume.zDim / 2;
 			textures = texVol.zTextures;
 			tg = texVol.zTg;
 			setCoordsZ();
@@ -97,7 +104,7 @@ public class Axis2DRenderer extends AxisRenderer {
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
 			backGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
-			rSize = volume.yDim;
+			r = volume.yDim / 2;
 			textures = texVol.yTextures;
 			tg = texVol.yTg;
 			setCoordsY();
@@ -107,45 +114,43 @@ public class Axis2DRenderer extends AxisRenderer {
 			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
 			backGroup = 
 			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
-			rSize = volume.xDim;
+			r = volume.xDim / 2;
 			textures = texVol.xTextures;
 			tg = texVol.xTg;
 			setCoordsX();
 			break;
 		}
 
-		for (int i=0; i < rSize; i ++) { 
 
-			switch (axis) {
-			case Z_AXIS: setCurCoordZ(i); break;
-			case Y_AXIS: setCurCoordY(i); break;
-			case X_AXIS: setCurCoordX(i); break;
-			}
+		switch (axis) {
+			case Z_AXIS: setCurCoordZ(r); break;
+			case Y_AXIS: setCurCoordY(r); break;
+			case X_AXIS: setCurCoordX(r); break;
+		}
 
-			Texture2D tex = textures[i];
+		Texture2D tex = textures[r];
 
 
-			QuadArray quadArray = new QuadArray(4, 
-						GeometryArray.COORDINATES);
-			quadArray.setCoordinates(0, quadCoords);
-			quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
+		QuadArray quadArray = new QuadArray(4, 
+					GeometryArray.COORDINATES);
+		quadArray.setCoordinates(0, quadCoords);
+		quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
 
-			Appearance a = getAppearance(textures[i], tg);
+		Appearance a = getAppearance(textures[r], tg);
 
-			Shape3D frontShape = new Shape3D(quadArray, a);
+		Shape3D frontShape = new Shape3D(quadArray, a);
 
-			BranchGroup frontShapeGroup = new BranchGroup();
-			frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-			frontShapeGroup.addChild(frontShape);
-			frontGroup.addChild(frontShapeGroup);
+		BranchGroup frontShapeGroup = new BranchGroup();
+		frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+		frontShapeGroup.addChild(frontShape);
+		frontGroup.addChild(frontShapeGroup);
 
-			Shape3D backShape = new Shape3D(quadArray, a);
+		Shape3D backShape = new Shape3D(quadArray, a);
 
-			BranchGroup backShapeGroup = new BranchGroup();
-			backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-			backShapeGroup.addChild(backShape);
-			backGroup.insertChild(backShapeGroup, 0);
-		} 
+		BranchGroup backShapeGroup = new BranchGroup();
+		backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+		backShapeGroup.addChild(backShape);
+		backGroup.insertChild(backShapeGroup, 0);
 	} 
 
 	private Appearance getAppearance(Texture tex, TexCoordGeneration tg) {

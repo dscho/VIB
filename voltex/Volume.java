@@ -20,10 +20,10 @@ public class Volume implements VolRendConstants {
 	private byte[][][] fileData;
 	private Point3d[]	voiPts = new Point3d[8];
 
-	int xDim = 0, yDim = 0, zDim = 0;
-	float xSpace = 0, ySpace = 0, zSpace = 0;
-	int xTexSize, yTexSize, zTexSize;
-	float	xTexGenScale, yTexGenScale, zTexGenScale;
+	public int xDim = 0, yDim = 0, zDim = 0;
+	public float xSpace = 0, ySpace = 0, zSpace = 0;
+	public int xTexSize, yTexSize, zTexSize;
+	public float xTexGenScale, yTexGenScale, zTexGenScale;
 
 	Point3d minCoord = new Point3d();
 	Point3d maxCoord = new Point3d();
