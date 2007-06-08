@@ -2,6 +2,7 @@ import ij.process.ImageProcessor;
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import ij.gui.GenericDialog;
+import ij.IJ;
 
 import ij3d.ImageWindow3D;
 import ij3d.Content;
@@ -30,16 +31,36 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 		if(gd.wasCanceled())
 			return;
 		
-		univ = new Image3DUniverse(512, 512);
-		String type = gd.getNextChoice();
-		if(type.equals("Surface"))
-			MeshGroup.addContent(univ, image);
-		else if(type.equals("Volume"))
-			VoltexGroup.addContent(univ, image);
-		else if(type.equals("Orthoslice"))
-			OrthoGroup.addContent(univ, image);
+		try {
+			univ = new Image3DUniverse(512, 512);
+			String type = gd.getNextChoice();
+			if(type.equals("Surface"))
+				MeshGroup.addContent(univ, image);
+			else if(type.equals("Volume"))
+				VoltexGroup.addContent(univ, image);
+			else if(type.equals("Orthoslice"))
+				OrthoGroup.addContent(univ, image);
 
-		univ.show();
+			univ.show();
+		} catch(Exception e) {
+			StringBuffer buf = new StringBuffer();
+			StackTraceElement[] st = e.getStackTrace();
+			buf.append("An unexpected exception occurred. \n" + 
+				"Please mail me the following lines if you \n"+
+				"need help.\n" + 
+				"bene.schmid@gmail.com\n   \n");
+			buf.append(e.getClass().getName()  + ":" + 
+						e.getMessage() + "\n");
+			for(int i = 0; i < st.length; i++) {
+				buf.append(
+					"    at " + st[i].getClassName() + 
+					"." + st[i].getMethodName() + 
+					"(" + st[i].getFileName() + 
+					":" + st[i].getLineNumber() + 
+					")\n");
+			}
+			new ij.text.TextWindow("Error", buf.toString(), 500, 400);
+		}
 	}
 
 	public static void startAnimate() {
