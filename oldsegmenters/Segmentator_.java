@@ -1,3 +1,4 @@
+package oldsegmenters;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -26,6 +27,8 @@ import adt.Connectivity2D;
 import adt.Points;
 
 import amira.AmiraParameters;
+import amira.AmiraMeshEncoder;
+import amira.AmiraTableEncoder;
 import vib.SegmentationViewerCanvas;
 
 import gui.GuiBuilder;
@@ -33,6 +36,8 @@ import ij.*;
 import ij.gui.*;
 import ij.plugin.PlugIn;
 import ij.plugin.MacroInstaller;
+import ij.text.TextWindow;
+import ij.io.SaveDialog;
 
 /*
  * Created on 29-May-2006
@@ -80,7 +85,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
 		Controllor controllor = new Controllor();
 
 		MacroInstaller installer = new ij.plugin.MacroInstaller();
-		installer.install(LabelBrush_.MACRO_CMD + "\n" + ROIBrush_.MACRO_CMD);
+		installer.install(LabelBrush_.MACRO_CMD);
 
 		ImagePlus.addImageListener(controllor);
 
@@ -223,7 +228,36 @@ public class Segmentator_ extends JFrame implements PlugIn {
 	private class Controllor implements ActionListener, ImageListener, WindowFocusListener, SliceListener, RoiListener, ListSelectionListener, ChangeListener {
 
 		ImagePlus currentImage;
+        
+        
+        /* This is pointless duplication from AmiraMeshWriter_, but
+         * simpler for the moment than moving that into a package. */
 
+        public void writeImage(Object frame) {
+            SaveDialog od = new SaveDialog("AmiraFile", null, ".am");
+            String dir=od.getDirectory();
+            String name=od.getFileName();
+            if(name==null)
+                return;
+            
+            if (frame instanceof TextWindow) {
+                TextWindow t = (TextWindow)frame;
+                AmiraTableEncoder e = new AmiraTableEncoder(t);
+                if (!e.write(dir + name))
+                    IJ.error("Could not write to " + dir + name);
+                return;
+            }
+            
+            AmiraMeshEncoder e=new AmiraMeshEncoder(dir+name);
+            
+            if(!e.open()) {
+                IJ.error("Could not write "+dir+name);
+                return;
+            }
+            
+            if(!e.write((ImagePlus)frame))
+                IJ.error("Error writing "+dir+name);
+        }
 
 		public void actionPerformed(ActionEvent e) {
 			//IJ.showMessage(e.getActionCommand());
@@ -250,7 +284,7 @@ public class Segmentator_ extends JFrame implements PlugIn {
 					IJ.showMessage("file was not a labels file");
 				}
 			} else if (e.getActionCommand().equals(SAVE_LABELS)) {
-				AmiraMeshWriter_.writeImage(new SegmentatorModel(currentImage).getLabelImagePlus());
+                writeImage(new SegmentatorModel(currentImage).getLabelImagePlus());
 			} else if (e.getActionCommand().equals(LOAD_MATERIALS)) {
 				IJ.runPlugIn("AmiraMeshReader_", "");
 				if (AmiraParameters.isAmiraLabelfield(IJ.getImage())) {

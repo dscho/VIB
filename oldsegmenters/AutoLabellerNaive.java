@@ -1,3 +1,4 @@
+package oldsegmenters;
 
 import adt.PixelStats;
 import adt.ByteProbability;

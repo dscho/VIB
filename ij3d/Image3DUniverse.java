@@ -76,6 +76,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		IJ.showStatus("selected: " + st);
 		canvas.setStatus("selected: " + st);
 
+		fireContentSelected(c);
+
 		if(c != null && ij.plugin.frame.Recorder.record)
 			ij.plugin.frame.Recorder.record(
 				"call", "ImageJ_3D_Viewer.select", c.name);
@@ -104,31 +106,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Image3DMenubar getMenuBar() {
 		return menubar;
-	}
-
-	public Menu getMenu() {
-		if(menubar != null)
-			return menubar.getMenu(0);
-		return null;
-	}
-
-	public void addMenuItem(String label, ActionListener al) {
-		Menu menu = getMenu();
-		if(menu != null) {
-			MenuItem item = new MenuItem(label);
-			item.addActionListener(al);
-			menu.add(item);
-		}
-	}
-
-	public void removeMenuItem(String label) {
-		Menu menu = getMenu();
-		if(menu != null) {
-			for(int i = 0; i < menu.getItemCount(); i++) {
-				if(label.equals(menu.getItem(i).getLabel()))
-					menu.remove(i);
-			}
-		}
 	}
 
 	public void addVoltex(ImagePlus image, Color3f color, 
@@ -229,7 +206,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scene.removeChild(content);
 		contents.remove(name);
 		if(selected == content)
-			selected = null;
+			clearSelection();
 		fireContentRemoved(content);
 	}
 
@@ -263,6 +240,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		if(selected != null)
 			selected.setSelected(false);
 		selected = null;
+		fireContentSelected(null);
 	}
 
 	private Content getContentAtCanvasPosition(int x, int y) {

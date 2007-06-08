@@ -15,12 +15,14 @@ import javax.vecmath.Color3f;
 import javax.media.j3d.View;
 
 public class Image3DMenubar extends MenuBar implements ActionListener, 
-					 		ItemListener {
+					 		ItemListener,
+							UniverseListener {
 
 	private Image3DUniverse univ;
 
 	private MenuItem mesh;
 	private MenuItem voltex;
+	private MenuItem ortho;
 	private MenuItem color;
 	private MenuItem channels;
 	private MenuItem transparency;
@@ -35,6 +37,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem close;
 	private CheckboxMenuItem perspective;
 
+	private Menu selectedMenu;
+	private Menu viewMenu;
+	private Menu contentsMenu;
+
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
 	public static final String START_RECORD = "startRecord";
@@ -47,85 +53,112 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String FILL_SELECTION = "fillSelection";
 	public static final String DELETE = "delete";
 
-	public Image3DMenubar(Image3DUniverse universe) {
+	public Image3DMenubar(Image3DUniverse univ) {
 		super();
-		this.univ = universe;
+		this.univ = univ;
 
-		Menu menu = new Menu("3D Viewer");
-		this.add(menu);
+		univ.addUniverseListener(this);
 
-		voltex = new MenuItem("Add volume");
-		voltex.addActionListener(this);
-		menu.add(voltex);
+		viewMenu = createViewMenu();
+		this.add(viewMenu);
+		contentsMenu = createContentsMenu();
+		this.add(contentsMenu);
+		selectedMenu = createSelectedMenu();
+	}
 
-		mesh = new MenuItem("Add mesh");
-		mesh.addActionListener(this);
-		menu.add(mesh);
-
-		delete = new MenuItem("Delete");
-		delete.addActionListener(this);
-		menu.add(delete);
-
-		menu.addSeparator();
+	public Menu createViewMenu() {
+		// Viewer
+		Menu view = new Menu("View");
 
 		resetView = new MenuItem("Reset view");
 		resetView.addActionListener(this);
-		menu.add(resetView);
+		view.add(resetView);
 
-		menu.addSeparator();
+		perspective = new CheckboxMenuItem(
+					"Perspective Projection", false);
+		perspective.addItemListener(this);
+		view.add(perspective);
 
-		slices = new MenuItem("Adjust slices");
-		slices.addActionListener(this);
-		menu.add(slices);
-		
-		fill = new MenuItem("Fill selection");
-		fill.addActionListener(this);
-		menu.add(fill);
-		
-		channels = new MenuItem("Change channels");
-		channels.addActionListener(this);
-		menu.add(channels);
-
-		color = new MenuItem("Change color");
-		color.addActionListener(this);
-		menu.add(color);
-
-		transparency = new MenuItem("Change transparency");
-		transparency.addActionListener(this);
-		menu.add(transparency);
-
-		menu.addSeparator();
+		view.addSeparator();
 
 		startRecord = new MenuItem("Start recording");
 		startRecord.addActionListener(this);
-		menu.add(startRecord);
+		view.add(startRecord);
 
 		stopRecord = new MenuItem("Stop recording");
 		stopRecord.addActionListener(this);
-		menu.add(stopRecord);
+		view.add(stopRecord);
 
-		menu.addSeparator();
+		view.addSeparator();
 
 		startAnimation = new MenuItem("Start animation");
 		startAnimation.addActionListener(this);
-		menu.add(startAnimation);
+		view.add(startAnimation);
 
 		stopAnimation = new MenuItem("Stop animation");
 		stopAnimation.addActionListener(this);
-		menu.add(stopAnimation);
+		view.add(stopAnimation);
 
-		menu.addSeparator();
-
-		perspective = new CheckboxMenuItem(
-					"Perspective Projection", true);
-		perspective.addItemListener(this);
-		menu.add(perspective);
-
-		menu.addSeparator();
+		view.addSeparator();
 
 		close = new MenuItem("Close");
 		close.addActionListener(this);
-		menu.add(close);
+		view.add(close);
+
+		return view;
+	}
+
+	public Menu createContentsMenu() {
+		// Universe
+		Menu universe = new Menu("Contents");
+		voltex = new MenuItem("Add volume");
+		voltex.addActionListener(this);
+		universe.add(voltex);
+
+		mesh = new MenuItem("Add mesh");
+		mesh.addActionListener(this);
+		universe.add(mesh);
+
+		ortho = new MenuItem("Add Orthoslice");
+		ortho.addActionListener(this);
+		universe.add(ortho);
+
+		universe.addSeparator();
+
+		delete = new MenuItem("Delete");
+		delete.addActionListener(this);
+		universe.add(delete);
+
+		return universe;
+	}
+
+	public Menu createSelectedMenu() {
+		// Contents
+		Menu content = new Menu("Content");
+		
+		slices = new MenuItem("Adjust slices");
+		slices.addActionListener(this);
+		content.add(slices);
+		
+		fill = new MenuItem("Fill selection");
+		fill.addActionListener(this);
+		content.add(fill);
+
+		content.addSeparator();
+		
+		channels = new MenuItem("Change channels");
+		channels.addActionListener(this);
+		content.add(channels);
+
+		color = new MenuItem("Change color");
+		color.addActionListener(this);
+		content.add(color);
+
+		transparency = new MenuItem("Change transparency");
+		transparency.addActionListener(this);
+		content.add(transparency);
+
+		return content;
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -165,6 +198,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 		if(e.getSource() == mesh) {
 			MeshGroup.addContent(univ, null);
+		}
+
+		if(e.getSource() == ortho) {
+			OrthoGroup.addContent(univ, null);
 		}
 
 		if(e.getSource() == delete) {
@@ -224,9 +261,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					public void run() {
 						((VoltexGroup)c).
 						fillRoiBlack(univ, (byte)0);
+						univ.fireContentChanged(c);
+						record(FILL_SELECTION);
 					}
 				}).start();
-				record(FILL_SELECTION);
 			}
 		}
 
@@ -245,23 +283,30 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	public void changeTransparency(final Content selected) {
-		GenericDialog gd = new GenericDialog("Adjust transparency ...");
-		int oldTr = (int)(selected.getTransparency() * 100);
+		final GenericDialog gd = 
+				new GenericDialog("Adjust transparency ...");
+		final int oldTr = (int)(selected.getTransparency() * 100);
 		gd.addSlider("Transparency", 0, 100, oldTr);
 		((Scrollbar)gd.getSliders().get(0)).
 			addAdjustmentListener(new AdjustmentListener() {
 			public void adjustmentValueChanged(AdjustmentEvent e) {
 				float newTr = (float)e.getValue() / 100f; 
 				selected.setTransparency(newTr);
+				univ.fireContentChanged(selected);
 			}
 		});
 		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					float newTr = (float)oldTr / 100f;
+					selected.setTransparency(newTr);
+					univ.fireContentChanged(selected);
+					return;
+				}
+			}
+		});
 		gd.showDialog();
-		if(gd.wasCanceled()) {
-			float newTr = (float)oldTr / 100f;
-			selected.setTransparency(newTr);
-			return;
-		}
 		
 		record(SET_TRANSPARENCY,Float.toString(
 			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
@@ -270,10 +315,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void adjustSlices(final Content selected) {
 		final GenericDialog gd = new GenericDialog("Adjust slices...");
 		final OrthoGroup os = (OrthoGroup)selected;
-		int[] oldvalues = os.getSlices();
+		final int[] oldvalues = os.getSlices();
 		ImagePlus imp = selected.image;
-		int w = imp.getWidth(), h = imp.getHeight();
-		int d = imp.getStackSize();		
+		int w = imp.getWidth() / selected.getResamplingFactor();
+		int h = imp.getHeight() / selected.getResamplingFactor();
+		int d = imp.getStackSize() / selected.getResamplingFactor();
 
 		gd.addSlider("x", 0, w-1, oldvalues[0]);
 		gd.addSlider("y", 0, h-1, oldvalues[1]);
@@ -289,6 +335,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					xSlider.getValue(), 
 					ySlider.getValue(), 
 					zSlider.getValue());
+				univ.fireContentChanged(selected);
 			}
 		};
 		xSlider.addAdjustmentListener(listener);
@@ -296,16 +343,24 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		zSlider.addAdjustmentListener(listener);
 
 		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					os.setSlices(
+						oldvalues[0], 
+						oldvalues[1], 
+						oldvalues[2]);
+					univ.fireContentChanged(selected);
+					return;
+				}
+			}
+		});
 		gd.showDialog();
-		if(gd.wasCanceled()) {
-			os.setSlices(oldvalues[0], oldvalues[1], oldvalues[2]);
-			return;
-		}
 	}
 
 	public void changeColor(final Content selected) {
 		final GenericDialog gd = new GenericDialog("Adjust color ...");
-		Color3f oldC = selected.color;
+		final Color3f oldC = selected.color;
 
 		gd.addCheckbox("Use default color", oldC == null);
 		gd.addSlider("Red",0,255,oldC == null ? 255 : oldC.x*255);
@@ -332,6 +387,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						gSlider.getValue() / 255f,
 						bSlider.getValue() / 255f));
 				gd.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+				univ.fireContentChanged(selected);
 			}
 		});
 
@@ -341,6 +397,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					rSlider.getValue() / 255f, 
 					gSlider.getValue() / 255f, 
 					bSlider.getValue() / 255f));
+				univ.fireContentChanged(selected);
 			}
 		};
 		rSlider.addAdjustmentListener(listener);
@@ -348,11 +405,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		bSlider.addAdjustmentListener(listener);
 
 		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					selected.setColor(oldC);
+					univ.fireContentChanged(selected);
+					return;
+				}
+			}
+		});
 		gd.showDialog();
-		if(gd.wasCanceled()) {
-			selected.setColor(oldC);
-			return;
-		}
 		
 		record(SET_COLOR, Integer.toString(rSlider.getValue()), 
 				Integer.toString(gSlider.getValue()),
@@ -373,6 +435,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
 		selected.setChannels(channels);
+		univ.fireContentChanged(selected);
 		record(SET_CHANNELS, Boolean.toString(channels[0]),
 			Boolean.toString(channels[1]),
 			Boolean.toString(channels[2]));
@@ -407,6 +470,38 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.recordString(command);
 		}
+	}
+
+	// Universe Listener interface
+	public void transformationStarted() {}
+	public void transformationFinished() {}
+	public void contentAdded(Content c) {}
+	public void contentRemoved(Content c) {}
+	public void canvasResized() {}
+	public void transformationUpdated() {}
+	public void contentChanged(Content c) {}
+
+	public void contentSelected(Content c) {
+		delete.setEnabled(c != null);
+		if(c == null) {
+			remove(selectedMenu);
+			return;
+		}	
+		selectedMenu.setLabel(c.getName());
+		if(!containsSelectedMenu())
+			add(selectedMenu);
+		
+		slices.setEnabled(c instanceof OrthoGroup);
+		fill.setEnabled(c instanceof VoltexGroup);
+	}
+
+	private boolean containsSelectedMenu() {
+		for(int i = 0; i < getMenuCount(); i++) {
+			if(getMenu(i) == selectedMenu) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

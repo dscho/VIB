@@ -66,9 +66,11 @@ public final class IsoShape extends Shape3D {
 	public void setTransparency(float transparency) {
 		TransparencyAttributes  ta = getAppearance().
 						getTransparencyAttributes();
-		if(transparency < .01f) {
+		if(transparency <= .01f) {
+			this.transparency = 0.0f;
 			ta.setTransparencyMode(TransparencyAttributes.NONE);
 		} else {
+			this.transparency = transparency;
 			ta.setTransparencyMode(TransparencyAttributes.FASTEST);
 		}
 		ta.setTransparency(transparency);
