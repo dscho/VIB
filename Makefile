@@ -178,6 +178,13 @@ clean-jars:
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
 	(cd tempdir && javac $(JAVACOPTS) $(SOURCES) && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
+# Unpack the jar, remove the source files and jar it up again :)
+
+%.jar-without-source: %.jar
+	test ! -d tempdir || rm -rf tempdir
+	mkdir tempdir
+	(cd tempdir && jar xvf ../$< && find . -name '*.java' -exec rm {} \; && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
+
 clean:
 	find . -name \*.class -exec rm {} \;
 	rm -f $(JARS)
