@@ -1,5 +1,7 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+package oldsegmenters;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -119,7 +121,7 @@ public class Segmenter_ extends JFrame implements PlugIn {
 		Controllor controllor = new Controllor();
 		
 		MacroInstaller installer = new ij.plugin.MacroInstaller();
-		installer.install(LabelBrush_.MACRO_CMD + "\n" + ROIBrush_.MACRO_CMD);
+		installer.install(LabelBrush_.MACRO_CMD);
 		
 		ImagePlus.addImageListener(controllor);
 		
