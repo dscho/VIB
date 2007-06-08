@@ -37,7 +37,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem close;
 	private CheckboxMenuItem perspective;
 
-	private Menu contentMenu;
+	private Menu selectedMenu;
+	private Menu viewMenu;
+	private Menu contentsMenu;
 
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
@@ -57,11 +59,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		univ.addUniverseListener(this);
 
-		Menu view = createViewMenu();
-		this.add(view);
-		Menu universe = createUniverseMenu();
-		this.add(universe);
-		contentMenu = createContentMenu();
+		viewMenu = createViewMenu();
+		this.add(viewMenu);
+		contentsMenu = createContentsMenu();
+		this.add(contentsMenu);
+		selectedMenu = createSelectedMenu();
 	}
 
 	public Menu createViewMenu() {
@@ -106,7 +108,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return view;
 	}
 
-	public Menu createUniverseMenu() {
+	public Menu createContentsMenu() {
 		// Universe
 		Menu universe = new Menu("Contents");
 		voltex = new MenuItem("Add volume");
@@ -130,7 +132,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return universe;
 	}
 
-	public Menu createContentMenu() {
+	public Menu createSelectedMenu() {
 		// Contents
 		Menu content = new Menu("Content");
 		
@@ -482,20 +484,20 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void contentSelected(Content c) {
 		delete.setEnabled(c != null);
 		if(c == null) {
-			remove(contentMenu);
+			remove(selectedMenu);
 			return;
 		}	
-		contentMenu.setLabel(c.getName());
-		if(!containsContentMenu())
-			add(contentMenu);
+		selectedMenu.setLabel(c.getName());
+		if(!containsSelectedMenu())
+			add(selectedMenu);
 		
 		slices.setEnabled(c instanceof OrthoGroup);
 		fill.setEnabled(c instanceof VoltexGroup);
 	}
 
-	private boolean containsContentMenu() {
+	private boolean containsSelectedMenu() {
 		for(int i = 0; i < getMenuCount(); i++) {
-			if(getMenu(i) == contentMenu) {
+			if(getMenu(i) == selectedMenu) {
 				return true;
 			}
 		}
