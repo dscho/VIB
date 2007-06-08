@@ -231,7 +231,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scene.removeChild(content);
 		contents.remove(name);
 		if(selected == content)
-			selected = null;
+			clearSelection();
 		fireContentRemoved(content);
 	}
 
