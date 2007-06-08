@@ -1,3 +1,4 @@
+package oldsegmenters;
 
 import ij.IJ;
 import ij.process.ImageProcessor;
