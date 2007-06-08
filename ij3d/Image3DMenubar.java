@@ -57,40 +57,58 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		univ.addUniverseListener(this);
 
-		Menu viewer = createViewerMenu();
-		this.add(viewer);
+		Menu view = createViewMenu();
+		this.add(view);
 		Menu universe = createUniverseMenu();
 		this.add(universe);
-		Menu animation = createAnimationMenu();
-		this.add(animation);
 		contentMenu = createContentMenu();
 	}
 
-	public Menu createViewerMenu() {
+	public Menu createViewMenu() {
 		// Viewer
-		Menu viewer = new Menu("3D Viewer");
+		Menu view = new Menu("View");
 
 		resetView = new MenuItem("Reset view");
 		resetView.addActionListener(this);
-		viewer.add(resetView);
+		view.add(resetView);
 
 		perspective = new CheckboxMenuItem(
 					"Perspective Projection", true);
 		perspective.addItemListener(this);
-		viewer.add(perspective);
+		view.add(perspective);
 
-		viewer.addSeparator();
+		view.addSeparator();
+
+		startRecord = new MenuItem("Start recording");
+		startRecord.addActionListener(this);
+		view.add(startRecord);
+
+		stopRecord = new MenuItem("Stop recording");
+		stopRecord.addActionListener(this);
+		view.add(stopRecord);
+
+		view.addSeparator();
+
+		startAnimation = new MenuItem("Start animation");
+		startAnimation.addActionListener(this);
+		view.add(startAnimation);
+
+		stopAnimation = new MenuItem("Stop animation");
+		stopAnimation.addActionListener(this);
+		view.add(stopAnimation);
+
+		view.addSeparator();
 
 		close = new MenuItem("Close");
 		close.addActionListener(this);
-		viewer.add(close);
+		view.add(close);
 
-		return viewer;
+		return view;
 	}
 
 	public Menu createUniverseMenu() {
 		// Universe
-		Menu universe = new Menu("Universe");
+		Menu universe = new Menu("Contents");
 		voltex = new MenuItem("Add volume");
 		voltex.addActionListener(this);
 		universe.add(voltex);
@@ -123,6 +141,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		fill = new MenuItem("Fill selection");
 		fill.addActionListener(this);
 		content.add(fill);
+
+		content.addSeparator();
 		
 		channels = new MenuItem("Change channels");
 		channels.addActionListener(this);
@@ -137,31 +157,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		content.add(transparency);
 
 		return content;
-	}
-
-	public Menu createAnimationMenu() {
-		// Animation & recording
-		Menu animation = new Menu("Animation & Recording");
-
-		startRecord = new MenuItem("Start recording");
-		startRecord.addActionListener(this);
-		animation.add(startRecord);
-
-		stopRecord = new MenuItem("Stop recording");
-		stopRecord.addActionListener(this);
-		animation.add(stopRecord);
-
-		animation.addSeparator();
-
-		startAnimation = new MenuItem("Start animation");
-		startAnimation.addActionListener(this);
-		animation.add(startAnimation);
-
-		stopAnimation = new MenuItem("Stop animation");
-		stopAnimation.addActionListener(this);
-		animation.add(stopAnimation);
-
-		return animation;
 	}
 
 	public void actionPerformed(ActionEvent e) {
