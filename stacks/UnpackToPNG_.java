@@ -8,6 +8,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.Macro;
 import ij.LookUpTable;
+import ij.plugin.PlugIn;
 
 import java.io.File;
 import java.awt.Graphics2D;
@@ -16,24 +17,40 @@ import java.awt.image.IndexColorModel;
 import java.text.DecimalFormat;
 import javax.imageio.ImageIO;
 
-public class UnpackToPNG_ {
+public class UnpackToPNG_ implements PlugIn {
 
 	public UnpackToPNG_( ) {
 		
 	}
 	
-	public void run( String ignoredArguments ) {
+	public void run( String pluginArguments ) {
 
 		System.out.println("in macro!");
 		
+		String realArguments = null;
+
 		String macroArguments = Macro.getOptions();
 		
+		if( (macroArguments == null) || (macroArguments.equals("")) ) {
+
+			if( (pluginArguments == null) || (pluginArguments.equals("")) ) {
+				IJ.error("No parameters supplied either as macro options or a plugin argument.");
+				return;
+			} else {
+				realArguments = pluginArguments;
+			}
+
+		} else { 
+			realArguments = macroArguments;
+		}
+		
+
 		String filename = Macro.getValue(
 			macroArguments,
 			"inputFilename",
 			"");
 		
-		if( ! filename.equals("") ) {
+		if( filename.equals("") ) {
 			IJ.error("No macro parameter inputFilename supplied");
 			return;
 		}
@@ -43,17 +60,24 @@ public class UnpackToPNG_ {
 			"destinationDirectory",
 			"");
 		
-		if( ! destinationDirectory.equals("") ) {
+		if( destinationDirectory.equals("") ) {
 			IJ.error("No macro parameter destinationDirectory supplied");
 			return;
 		}	
+
+		System.out.println("Got input filename: '"+filename+"'");
+		System.out.println("Got destination directory: '"+destinationDirectory+"'");
 		
 		ImagePlus [] imps = BatchOpener.openFromFile(
 			filename );
+
+		System.out.println("Got "+imps.length+" channels");
 		
 		for( int i = 0; i < imps.length; ++i ) {
 			
 			ImagePlus imp = imps[0];
+
+			System.out.println("ImagePlus "+i+" is: "+imp);
 			
 			int stackDepth = imp.getStackSize();
 			

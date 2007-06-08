@@ -379,4 +379,45 @@ public class ArchiveClient {
 		return parameterHash.keys();
 	}
 
+			
+	public void closeChannelsWithTag( String tag ) {
+
+		// We close any channel that's marked nc82
+
+		Hashtable<String,String> parameters = new Hashtable<String,String>();
+		parameters.put("method","channel-tags");
+		parameters.put("md5sum",getValue("md5sum"));
+			
+		ArrayList< String [] > tsv_results = synchronousRequest(parameters,null);
+		int tags = Integer.parseInt(((String [])tsv_results.get(0))[1]); // FIXME error checking
+		int matching_channel = -1;
+		for( int i = 0; i < tags; ++i ) {
+			String [] row = (String [])tsv_results.get(i);
+			if( tag.equalsIgnoreCase(row[1]) ) {
+				matching_channel = Integer.parseInt(row[0]);
+				break;
+			}
+		}
+		if( matching_channel >= 0 ) {
+			
+			String lookFor = "Ch"+(matching_channel+1);
+			
+			int[] wList = WindowManager.getIDList();
+			if (wList==null) {
+				IJ.error("Neurite Tracer: no images have been loaded");
+				return;
+			}
+			
+			for (int i=0; i<wList.length; i++) {
+				ImagePlus imp = WindowManager.getImage(wList[i]);
+				String title = imp!=null?imp.getTitle():"";
+				int indexOfChannel = title.indexOf(lookFor);
+				if( indexOfChannel >= 0 ) {
+					imp.close();
+					break;
+				}
+			}
+
+		}
+	}
 }

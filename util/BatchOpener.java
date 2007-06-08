@@ -28,7 +28,8 @@ public class BatchOpener {
             is.read(buf, 0, 132);
             is.close();
         } catch (IOException e) {
-            // Couldn't open the file for reading                                                                               return null;
+            // Couldn't open the file for reading
+            return null;
         }
 
         File file=new File(path);

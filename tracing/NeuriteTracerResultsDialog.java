@@ -8,6 +8,7 @@ import ij.io.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.util.Arrays;
 
 class NeuriteTracerResultsDialog
 	extends Dialog
@@ -24,7 +25,7 @@ class NeuriteTracerResultsDialog
 
 	private int currentState;
 
-	NeuriteTracer_ plugin;
+	SimpleNeuriteTracer_ plugin;
 
 	Panel statusPanel;
 	TextArea statusText;
@@ -46,6 +47,7 @@ class NeuriteTracerResultsDialog
 	List pathList;
 
 	Button deletePath;
+	Button createROI;
 
 	Button saveButton;
 	Button loadButton;   
@@ -160,7 +162,7 @@ class NeuriteTracerResultsDialog
 	boolean launchedByArchive;
 	
 	public NeuriteTracerResultsDialog( String title,
-					   NeuriteTracer_ plugin,
+					   SimpleNeuriteTracer_ plugin,
 					   boolean launchedByArchive ) {
 		
 		super( IJ.getInstance(), title, false );
@@ -252,10 +254,20 @@ class NeuriteTracerResultsDialog
 		Panel pathListPanel = new Panel();
 		pathListPanel.setLayout(new BorderLayout());
 		pathList = new List();
+		pathList.setMultipleMode(true);
 		pathListPanel.add(pathList,BorderLayout.CENTER);
+
+		Panel buttonsForListPanel = new Panel();
+		buttonsForListPanel.setLayout(new GridBagLayout());
+		GridBagConstraints cl = new GridBagConstraints();
 		deletePath = new Button("Delete Path");
 		deletePath.addActionListener( this );
-		pathListPanel.add(deletePath,BorderLayout.SOUTH);
+		buttonsForListPanel.add(deletePath,cl);
+		cl.gridx = 1;
+		createROI = new Button("Create ROI");
+		createROI.addActionListener( this );
+		buttonsForListPanel.add(createROI,cl);
+		pathListPanel.add(buttonsForListPanel,BorderLayout.SOUTH);
 
 		c.gridx = 0;
 		c.gridy = 3;
@@ -385,13 +397,26 @@ class NeuriteTracerResultsDialog
 
 			plugin.cancelPath( );
 			
+		} else if( source == deletePath ) {
+			
+			System.out.println("deletePath called");
+			int [] selectedIndices = pathList.getSelectedIndexes();
+			
+			Arrays.sort(selectedIndices);
+
+			for( int i = selectedIndices.length - 1; i >= 0; --i ) {
+				System.out.println("removing path index: "+i);
+				plugin.removePath(selectedIndices[i]);
+				pathList.remove(i);
+			}
+
 		} else if( source == quitButton ) {
 			
 			statusText.setText("Quitting...");
 			plugin.cancelSearch();
-			dispose();			
+			dispose();
 
-		} 
+		}
 	}
 
 	public void itemStateChanged( ItemEvent e ) {
@@ -414,4 +439,29 @@ class NeuriteTracerResultsDialog
         public void paint(Graphics g) {
                 super.paint(g);
         }
+
+	public void addPathToList( String nameForList ) {
+	
+		synchronized(pathList) {
+			pathList.add(nameForList);
+		}
+
+	}
+
+	public void deletePathFromList( int index ) {
+
+		synchronized(pathList) {
+			if( (index >= pathList.getItemCount()) ||
+			    (index < 0) ) {
+				IJ.error("BUG: trying to delete index "+index+" in list of length "+pathList.getItemCount() );
+			}
+
+			plugin.removePath(index);
+
+			pathList.remove(index);
+		}
+
+	}
+
+
 }

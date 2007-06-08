@@ -2,8 +2,6 @@
 
 package tracing;
 
-import tracing.NeuriteTracer_;
-
 import ij.*;
 import ij.gui.*;
 
@@ -14,35 +12,7 @@ import java.util.*;
 import stacks.ThreePanesCanvas;
 import stacks.ThreePanes;
 
-class Arrow {
-	
-	public Arrow( Color c,
-		      double start_x, double start_y, double start_z,
-		      double vx, double vy, double vz,
-		      int length ) {
-		
-		this.c = c;
-		this.start_x = start_x;
-		this.start_y = start_y;
-		this.start_z = start_z;
-		this.vx = vx;
-		this.vy = vy;
-		this.vz = vz;
-		this.length = length;
-	}
-	
-	public Color c;
-	
-	public double start_x;
-	public double start_y;
-	public double start_z;
-	
-	public double vx;
-	public double vy;
-	public double vz;
-	
-	public int length;
-}
+import util.Arrow;
 
 class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	
@@ -62,12 +32,12 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			arrows[i] = null;
 	}
 	
-	private NeuriteTracer_ tracerPlugin;
+	private SimpleNeuriteTracer_ tracerPlugin;
 	
-	TracerCanvas( ImagePlus imp, NeuriteTracer_ plugin, int plane ) {
+	TracerCanvas( ImagePlus imp, SimpleNeuriteTracer_ plugin, int plane ) {
 		super(imp,plugin,plane);
 		tracerPlugin = plugin;
-		// NeuriteTracer_.toastKeyListeners( IJ.getInstance(), "TracerCanvas constructor" );
+		// SimpleNeuriteTracer_.toastKeyListeners( IJ.getInstance(), "TracerCanvas constructor" );
 		// addKeyListener( this );
 		// System.out.println("Added keylistener");
 	}
@@ -168,7 +138,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			
 			tracerPlugin.setPositionAllPanes( x, y, z );
 			
-			EigenResultsDouble er = tracerPlugin.analyzeAtPoint( x, y, z, 2, false );
+			EigenResultsDouble er = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, false );
 			
 			tracerPlugin.logPosition( x, y, z, er.sortedValues[0], er.sortedValues[1], er.sortedValues[2] );
 			
@@ -178,8 +148,8 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			int y = offScreenX(e.getY());
 			int z = imp.getCurrentSlice() - 1;
 			
-			EigenResultsDouble er_2_around = tracerPlugin.analyzeAtPoint( x, y, z, 2, false );
-			EigenResultsDouble er_1_around = tracerPlugin.analyzeAtPoint( x, y, z, 1, false );
+			EigenResultsDouble er_2_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, false );
+			EigenResultsDouble er_1_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 1, false );
 			
 			Arrow arrow_1_around = new Arrow( Color.ORANGE, x, y, z,
 							  er_1_around.sortedVectors[0][0],
@@ -332,7 +302,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 				for( int i = 0; i < paths; ++i ) {
 					// System.out.println("Drawing path: "+i);
 					Color color = Color.MAGENTA;
-					if( i == (paths - 1) ) {
+					if( (i == (paths - 1)) && lastPathUnfinished ) {
 						color = Color.RED;
 					}
 					SegmentedConnection s = (SegmentedConnection)completed.get(i);

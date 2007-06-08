@@ -530,7 +530,7 @@ public class AnalyzeTracings_ implements PlugIn {
 	static public Connectivity buildGraph( String imageFileName ) {
 
 		String tracesFileName = imageFileName + ".traces";
-		ArrayList< SegmentedConnection > allPaths = NeuriteTracer_.loadTracingsFromFile(tracesFileName);
+		ArrayList< SegmentedConnection > allPaths = SimpleNeuriteTracer_.loadTracingsFromFile(tracesFileName);
 
 		return buildGraph( imageFileName, allPaths );
 	}

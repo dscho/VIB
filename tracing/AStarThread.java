@@ -15,7 +15,7 @@ public class AStarThread extends Thread {
 	int goal_y;
 	int goal_z;
 
-	NeuriteTracer_ plugin;
+	SimpleNeuriteTracer_ plugin;
 
 	double x_spacing;
 	double y_spacing;
@@ -46,7 +46,7 @@ public class AStarThread extends Thread {
 			    int goal_x,
 			    int goal_y,
 			    int goal_z,
-			    NeuriteTracer_ plugin,
+			    SimpleNeuriteTracer_ plugin,
 			    boolean reciprocal,
 			    boolean preprocess,                        
 			    int timeoutSeconds,

@@ -85,7 +85,7 @@ public class CreateTracingVolume_ implements PlugIn {
 
 		// ------------------------------------------------------------------------
 
-		ArrayList< SegmentedConnection > allPaths = NeuriteTracer_.loadTracingsFromFile(tracesFileName);
+		ArrayList< SegmentedConnection > allPaths = SimpleNeuriteTracer_.loadTracingsFromFile(tracesFileName);
 
                 Bookstein_FromMarkers matcher=new Bookstein_FromMarkers();
                 matcher.loadImages(standardBrainFC,realImageFC);
