@@ -219,6 +219,13 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		}
 	}
 
+	public void fireContentSelected(Content c) {
+		for(int i = 0; i < listeners.size(); i++) {
+			UniverseListener l = (UniverseListener)listeners.get(i);
+			l.contentSelected(c);
+		}
+	}
+
 	public void fireCanvasResized() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);

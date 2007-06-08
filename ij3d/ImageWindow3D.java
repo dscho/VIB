@@ -191,6 +191,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	 */
 	public void transformationStarted() {}
 	public void transformationUpdated() {}
+	public void contentSelected(Content c) {}
 	public void transformationFinished() {
 		updateImagePlus();
 	}

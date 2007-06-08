@@ -72,6 +72,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			public void contentAdded(Content c) {}
 			public void contentRemoved(Content c) {}
 			public void canvasResized() {}
+			public void contentSelected(Content c) {}
 
 			public void transformationUpdated() {
 				somethingChanged();

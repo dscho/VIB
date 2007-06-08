@@ -76,6 +76,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		IJ.showStatus("selected: " + st);
 		canvas.setStatus("selected: " + st);
 
+		fireContentSelected(c);
+
 		if(c != null && ij.plugin.frame.Recorder.record)
 			ij.plugin.frame.Recorder.record(
 				"call", "ImageJ_3D_Viewer.select", c.name);
@@ -263,6 +265,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		if(selected != null)
 			selected.setSelected(false);
 		selected = null;
+		fireContentSelected(null);
 	}
 
 	private Content getContentAtCanvasPosition(int x, int y) {

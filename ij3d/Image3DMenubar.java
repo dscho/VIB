@@ -15,12 +15,14 @@ import javax.vecmath.Color3f;
 import javax.media.j3d.View;
 
 public class Image3DMenubar extends MenuBar implements ActionListener, 
-					 		ItemListener {
+					 		ItemListener,
+							UniverseListener {
 
 	private Image3DUniverse univ;
 
 	private MenuItem mesh;
 	private MenuItem voltex;
+	private MenuItem ortho;
 	private MenuItem color;
 	private MenuItem channels;
 	private MenuItem transparency;
@@ -35,6 +37,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem close;
 	private CheckboxMenuItem perspective;
 
+	private Menu contentMenu;
+
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
 	public static final String START_RECORD = "startRecord";
@@ -47,85 +51,117 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String FILL_SELECTION = "fillSelection";
 	public static final String DELETE = "delete";
 
-	public Image3DMenubar(Image3DUniverse universe) {
+	public Image3DMenubar(Image3DUniverse univ) {
 		super();
-		this.univ = universe;
+		this.univ = univ;
 
-		Menu menu = new Menu("3D Viewer");
-		this.add(menu);
+		univ.addUniverseListener(this);
 
-		voltex = new MenuItem("Add volume");
-		voltex.addActionListener(this);
-		menu.add(voltex);
+		Menu viewer = createViewerMenu();
+		this.add(viewer);
+		Menu universe = createUniverseMenu();
+		this.add(universe);
+		Menu animation = createAnimationMenu();
+		this.add(animation);
+		contentMenu = createContentMenu();
+	}
 
-		mesh = new MenuItem("Add mesh");
-		mesh.addActionListener(this);
-		menu.add(mesh);
-
-		delete = new MenuItem("Delete");
-		delete.addActionListener(this);
-		menu.add(delete);
-
-		menu.addSeparator();
+	public Menu createViewerMenu() {
+		// Viewer
+		Menu viewer = new Menu("3D Viewer");
 
 		resetView = new MenuItem("Reset view");
 		resetView.addActionListener(this);
-		menu.add(resetView);
-
-		menu.addSeparator();
-
-		slices = new MenuItem("Adjust slices");
-		slices.addActionListener(this);
-		menu.add(slices);
-		
-		fill = new MenuItem("Fill selection");
-		fill.addActionListener(this);
-		menu.add(fill);
-		
-		channels = new MenuItem("Change channels");
-		channels.addActionListener(this);
-		menu.add(channels);
-
-		color = new MenuItem("Change color");
-		color.addActionListener(this);
-		menu.add(color);
-
-		transparency = new MenuItem("Change transparency");
-		transparency.addActionListener(this);
-		menu.add(transparency);
-
-		menu.addSeparator();
-
-		startRecord = new MenuItem("Start recording");
-		startRecord.addActionListener(this);
-		menu.add(startRecord);
-
-		stopRecord = new MenuItem("Stop recording");
-		stopRecord.addActionListener(this);
-		menu.add(stopRecord);
-
-		menu.addSeparator();
-
-		startAnimation = new MenuItem("Start animation");
-		startAnimation.addActionListener(this);
-		menu.add(startAnimation);
-
-		stopAnimation = new MenuItem("Stop animation");
-		stopAnimation.addActionListener(this);
-		menu.add(stopAnimation);
-
-		menu.addSeparator();
+		viewer.add(resetView);
 
 		perspective = new CheckboxMenuItem(
 					"Perspective Projection", true);
 		perspective.addItemListener(this);
-		menu.add(perspective);
+		viewer.add(perspective);
 
-		menu.addSeparator();
+		viewer.addSeparator();
 
 		close = new MenuItem("Close");
 		close.addActionListener(this);
-		menu.add(close);
+		viewer.add(close);
+
+		return viewer;
+	}
+
+	public Menu createUniverseMenu() {
+		// Universe
+		Menu universe = new Menu("Universe");
+		voltex = new MenuItem("Add volume");
+		voltex.addActionListener(this);
+		universe.add(voltex);
+
+		mesh = new MenuItem("Add mesh");
+		mesh.addActionListener(this);
+		universe.add(mesh);
+
+		ortho = new MenuItem("Add Orthoslice");
+		ortho.addActionListener(this);
+		universe.add(ortho);
+
+		universe.addSeparator();
+
+		delete = new MenuItem("Delete");
+		delete.addActionListener(this);
+		universe.add(delete);
+
+		return universe;
+	}
+
+	public Menu createContentMenu() {
+		// Contents
+		Menu content = new Menu("Content");
+		
+		slices = new MenuItem("Adjust slices");
+		slices.addActionListener(this);
+		content.add(slices);
+		
+		fill = new MenuItem("Fill selection");
+		fill.addActionListener(this);
+		content.add(fill);
+		
+		channels = new MenuItem("Change channels");
+		channels.addActionListener(this);
+		content.add(channels);
+
+		color = new MenuItem("Change color");
+		color.addActionListener(this);
+		content.add(color);
+
+		transparency = new MenuItem("Change transparency");
+		transparency.addActionListener(this);
+		content.add(transparency);
+
+		return content;
+	}
+
+	public Menu createAnimationMenu() {
+		// Animation & recording
+		Menu animation = new Menu("Animation & Recording");
+
+		startRecord = new MenuItem("Start recording");
+		startRecord.addActionListener(this);
+		animation.add(startRecord);
+
+		stopRecord = new MenuItem("Stop recording");
+		stopRecord.addActionListener(this);
+		animation.add(stopRecord);
+
+		animation.addSeparator();
+
+		startAnimation = new MenuItem("Start animation");
+		startAnimation.addActionListener(this);
+		animation.add(startAnimation);
+
+		stopAnimation = new MenuItem("Stop animation");
+		stopAnimation.addActionListener(this);
+		animation.add(stopAnimation);
+
+		return animation;
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -165,6 +201,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 		if(e.getSource() == mesh) {
 			MeshGroup.addContent(univ, null);
+		}
+
+		if(e.getSource() == ortho) {
+			OrthoGroup.addContent(univ, null);
 		}
 
 		if(e.getSource() == delete) {
@@ -433,6 +473,38 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.recordString(command);
 		}
+	}
+
+	// Universe Listener interface
+	public void transformationStarted() {}
+	public void transformationFinished() {}
+	public void contentAdded(Content c) {}
+	public void contentRemoved(Content c) {}
+	public void canvasResized() {}
+	public void transformationUpdated() {}
+	public void contentChanged(Content c) {}
+
+	public void contentSelected(Content c) {
+		delete.setEnabled(c != null);
+		if(c == null) {
+			remove(contentMenu);
+			return;
+		}	
+		contentMenu.setLabel(c.getName());
+		if(!containsContentMenu())
+			add(contentMenu);
+		
+		slices.setEnabled(c instanceof OrthoGroup);
+		fill.setEnabled(c instanceof VoltexGroup);
+	}
+
+	private boolean containsContentMenu() {
+		for(int i = 0; i < getMenuCount(); i++) {
+			if(getMenu(i) == contentMenu) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
