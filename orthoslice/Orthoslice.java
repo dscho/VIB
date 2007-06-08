@@ -45,9 +45,16 @@ public class Orthoslice extends AxisRenderer {
 	}
 
 	public void setSlices(int x, int y, int z) {
-		this.x = x; this.y = y; this.z = z;
-		clearData();
-		loadQuads();
+		if(this.x != x) {
+			this.x = x;
+			setXSlice(x);
+		} else if(this.y != y) {
+			this.y = y;
+			setYSlice(y);
+		} else if(this.z != z) {
+			this.z = z;
+			setZSlice(z);
+		}
 	}
 
 	public void setTransparency(float transparency) {
@@ -92,60 +99,115 @@ public class Orthoslice extends AxisRenderer {
 		loadAxis(X_AXIS);
 	}
 
+	private void setYSlice(int y) {
+		Group g = (Group)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
+		int num = g.numChildren();
+		if(num > 1) 
+			System.out.println("more than one child");
+		Shape3D shape = (Shape3D)
+			((Group)g.getChild(num-1)).getChild(0);
+
+		int r = y;
+		TexCoordGeneration tg = texVol.yTg;
+		setCoordsY();
+		setCurCoordY(r);
+		Texture2D tex = texVol.yTextures[r];
+		
+		((QuadArray)shape.getGeometry()).setCoordinates(
+				0, quadCoords);
+
+		shape.getAppearance().setTexture(tex);
+		shape.getAppearance().setTexCoordGeneration(tg);
+	}
+
+	private void setZSlice(int z) {
+		Group g = (Group)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
+		int num = g.numChildren();
+		if(num > 1) 
+			System.out.println("more than one child");
+		Shape3D shape = (Shape3D)
+			((Group)g.getChild(num-1)).getChild(0);
+
+		int r = z;
+		TexCoordGeneration tg = texVol.zTg;
+		setCoordsZ();
+		setCurCoordZ(r);
+		Texture2D tex = texVol.zTextures[r];
+		
+		((QuadArray)shape.getGeometry()).setCoordinates(
+				0, quadCoords);
+
+		shape.getAppearance().setTexture(tex);
+		shape.getAppearance().setTexCoordGeneration(tg);
+	}
+
+	private void setXSlice(int x) {
+		Group g = (Group)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
+		int num = g.numChildren();
+		if(num > 1) 
+			System.out.println("more than one child");
+		Shape3D shape = (Shape3D)
+			((Group)g.getChild(num-1)).getChild(0);
+
+		int r = x;
+		TexCoordGeneration tg = texVol.xTg;
+		setCoordsX();
+		setCurCoordX(r);
+		Texture2D tex = texVol.xTextures[r];
+		
+		((QuadArray)shape.getGeometry()).setCoordinates(
+				0, quadCoords);
+
+		shape.getAppearance().setTexture(tex);
+		shape.getAppearance().setTexCoordGeneration(tg);
+	}
+
 	private void loadAxis(int axis) {
 		int r = 0;		// number of tex maps to create
 		OrderedGroup frontGroup = null;
-		OrderedGroup backGroup = null;
 		Texture2D[] textures = null;
 		TexCoordGeneration tg = null;
 
 		switch (axis) {
 		case Z_AXIS:
 			frontGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
-			backGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
+			(OrderedGroup)axisSwitch.
+					getChild(axisIndex[Z_AXIS][FRONT]);
 			r = z;
 			textures = texVol.zTextures;
 			tg = texVol.zTg;
 			setCoordsZ();
+			setCurCoordZ(r);
 			break;
 		case Y_AXIS:
 			frontGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
-			backGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
+			(OrderedGroup)axisSwitch.
+					getChild(axisIndex[Y_AXIS][FRONT]);
 			r = y;
 			textures = texVol.yTextures;
 			tg = texVol.yTg;
 			setCoordsY();
+			setCurCoordY(r);
 			break;
 		case X_AXIS:
 			frontGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
-			backGroup = 
-			(OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
+			(OrderedGroup)axisSwitch.
+					getChild(axisIndex[X_AXIS][FRONT]);
 			r = x;
 			textures = texVol.xTextures;
 			tg = texVol.xTg;
 			setCoordsX();
+			setCurCoordX(r);
 			break;
 		}
 
-
-		switch (axis) {
-			case Z_AXIS: setCurCoordZ(r); break;
-			case Y_AXIS: setCurCoordY(r); break;
-			case X_AXIS: setCurCoordX(r); break;
-		}
-
 		Texture2D tex = textures[r];
-
 
 		QuadArray quadArray = new QuadArray(4, 
 					GeometryArray.COORDINATES);
 		quadArray.setCoordinates(0, quadCoords);
 		quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
+		quadArray.setCapability(QuadArray.ALLOW_COORDINATE_WRITE);
 
 		Appearance a = getAppearance(textures[r], tg);
 
@@ -155,17 +217,12 @@ public class Orthoslice extends AxisRenderer {
 		frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
 		frontShapeGroup.addChild(frontShape);
 		frontGroup.addChild(frontShapeGroup);
-
-		Shape3D backShape = new Shape3D(quadArray, a);
-
-		BranchGroup backShapeGroup = new BranchGroup();
-		backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-		backShapeGroup.addChild(backShape);
-		backGroup.insertChild(backShapeGroup, 0);
 	} 
 
 	private Appearance getAppearance(Texture tex, TexCoordGeneration tg) {
 		Appearance a = new Appearance();
+		a.setCapability(Appearance.ALLOW_TEXGEN_WRITE);
+		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
 
 		TextureAttributes texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);
@@ -194,8 +251,8 @@ public class Orthoslice extends AxisRenderer {
 		
 		a.setMaterial(m);
 		a.setTransparencyAttributes(t);
-		a.setTexture(tex);
 		a.setTextureAttributes(texAttr);
+		a.setTexture(tex);
 		a.setTexCoordGeneration(tg);
 		a.setPolygonAttributes(p);
 		a.setColoringAttributes(c);
