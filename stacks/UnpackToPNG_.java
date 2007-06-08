@@ -6,6 +6,8 @@ import util.BatchOpener;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
+import ij.process.ImageProcessor;
 import ij.Macro;
 import ij.LookUpTable;
 import ij.plugin.PlugIn;
@@ -14,6 +16,7 @@ import java.io.File;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
+import java.awt.Image;
 import java.text.DecimalFormat;
 import javax.imageio.ImageIO;
 
@@ -25,12 +28,10 @@ public class UnpackToPNG_ implements PlugIn {
 	
 	public void run( String pluginArguments ) {
 
-		System.out.println("in macro!");
-		
 		String realArguments = null;
 
 		String macroArguments = Macro.getOptions();
-		
+				
 		if( (macroArguments == null) || (macroArguments.equals("")) ) {
 
 			if( (pluginArguments == null) || (pluginArguments.equals("")) ) {
@@ -44,24 +45,25 @@ public class UnpackToPNG_ implements PlugIn {
 			realArguments = macroArguments;
 		}
 		
+		System.out.println("in macro, with realArguments: "+realArguments);
 
 		String filename = Macro.getValue(
-			macroArguments,
-			"inputFilename",
+			realArguments,
+			"filename",
 			"");
 		
 		if( filename.equals("") ) {
-			IJ.error("No macro parameter inputFilename supplied");
+			IJ.error("No macro parameter filename supplied");
 			return;
 		}
 		
 		String destinationDirectory = Macro.getValue(
 			macroArguments,
-			"destinationDirectory",
+			"directory",
 			"");
 		
 		if( destinationDirectory.equals("") ) {
-			IJ.error("No macro parameter destinationDirectory supplied");
+			IJ.error("No macro parameter directory supplied");
 			return;
 		}	
 
@@ -84,18 +86,17 @@ public class UnpackToPNG_ implements PlugIn {
 			for( int z = 0; z < stackDepth; ++z ) {
 
 				DecimalFormat f2 = new DecimalFormat("00");
-				DecimalFormat f5 = new DecimalFormat("00");
+				DecimalFormat f5 = new DecimalFormat("00000");
 				
 				String outputFileName = f2.format(i) + "-" +
-					f5.format("00000")+".png";
+					f5.format(z)+".png";
 				
 				outputFileName = destinationDirectory +
-					File.pathSeparator + outputFileName;
+					File.separator + outputFileName;
 				
-				imp.setSlice(z+1);
-
 				try {
-					writeImage( imp, outputFileName, -1 );
+					System.out.println("Writing image to: "+outputFileName);
+					writeImage( imp, z, outputFileName, -1 );
 				} catch( Exception e ) {
 					System.err.println("Caught an exception: "+e);
 				}
@@ -106,36 +107,47 @@ public class UnpackToPNG_ implements PlugIn {
 		
 	}
 
-	void writeImage(ImagePlus imp, String path, int transparentColorIndex ) throws Exception {
+	/* This is basically an enhanced version of the method in PNG_Writer. */
+
+	void writeImage(ImagePlus imp, int slice, String path, int transparentColorIndex ) throws Exception {
 		int width = imp.getWidth();
 		int height = imp.getHeight();
 		BufferedImage bi = null;
-		if( imp.getType() == ImagePlus.GRAY8 ) {
-			bi = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+		if( (imp.getType() == ImagePlus.GRAY8) || (imp.getType() == ImagePlus.COLOR_256)  ) {
+			LookUpTable lut = imp.createLut();
+			IndexColorModel cm = null;
+			if( (lut != null) && (lut.getMapSize() > 0) ) {
+				System.out.println("Writing COLOR_256 PNG.");
+				int size = lut.getMapSize();
+				byte [] reds = lut.getReds();
+				byte [] greens = lut.getGreens();
+				byte [] blues = lut.getBlues();
+				IndexColorModel cm;
+				if( transparentColorIndex < 0 )
+					cm = new IndexColorModel(8,size,reds,greens,blues);
+				else
+					cm = new IndexColorModel(8,size,reds,greens,blues,transparentColorIndex);
+				bi = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_INDEXED, cm);
+			} else {
+				if( (lut == null) && (imp.getType() == ImagePlus.COLOR_256) ) {
+					IJ.error("createLut() returned null for a COLOR_256 image");
+					return;
+				} 
+				System.out.println("Writing TYPE_BYTE_GRAY PNG.");
+				bi = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+			}
 		} else if( imp.getType() == ImagePlus.COLOR_256 ) {
 			LookUpTable lut = imp.createLut();
-			if( lut == null ) {
-				IJ.error("createLut() returned null for a COLOR_256 image");
-				return;
-			} 
-			int size = lut.getMapSize();
-			byte [] reds = lut.getReds();
-			byte [] greens = lut.getGreens();
-			byte [] blues = lut.getBlues();
-			IndexColorModel cm;
-			if( transparentColorIndex < 0 )
-				cm = new IndexColorModel(8,size,reds,greens,blues);
-			else
-				cm = new IndexColorModel(8,size,reds,greens,blues,transparentColorIndex);
-			bi = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_INDEXED, cm);
 		} else {
+			System.out.println("Writing a full RGB color PNG.");
 			bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		}
 		Graphics2D g = (Graphics2D)bi.getGraphics();
-		g.drawImage(imp.getImage(), 0, 0, null);
+		ImageStack stack = imp.getStack();
+		ImageProcessor imageProcessor = stack.getProcessor(slice+1);
+		Image imageToDraw = imageProcessor.createImage();
+		g.drawImage(imageToDraw, 0, 0, null);
 		File f = new File(path);
 		ImageIO.write(bi, "png", f);
-		
 	}
-	
 }
