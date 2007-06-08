@@ -224,9 +224,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					public void run() {
 						((VoltexGroup)c).
 						fillRoiBlack(univ, (byte)0);
+						univ.fireContentChanged(c);
+						record(FILL_SELECTION);
 					}
 				}).start();
-				record(FILL_SELECTION);
 			}
 		}
 
@@ -254,6 +255,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			public void adjustmentValueChanged(AdjustmentEvent e) {
 				float newTr = (float)e.getValue() / 100f; 
 				selected.setTransparency(newTr);
+				univ.fireContentChanged(selected);
 			}
 		});
 		gd.setModal(false);
@@ -262,6 +264,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				if(gd.wasCanceled()) {
 					float newTr = (float)oldTr / 100f;
 					selected.setTransparency(newTr);
+					univ.fireContentChanged(selected);
 					return;
 				}
 			}
@@ -277,8 +280,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		final OrthoGroup os = (OrthoGroup)selected;
 		final int[] oldvalues = os.getSlices();
 		ImagePlus imp = selected.image;
-		int w = imp.getWidth(), h = imp.getHeight();
-		int d = imp.getStackSize();		
+		int w = imp.getWidth() / selected.getResamplingFactor();
+		int h = imp.getHeight() / selected.getResamplingFactor();
+		int d = imp.getStackSize() / selected.getResamplingFactor();
 
 		gd.addSlider("x", 0, w-1, oldvalues[0]);
 		gd.addSlider("y", 0, h-1, oldvalues[1]);
@@ -294,6 +298,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					xSlider.getValue(), 
 					ySlider.getValue(), 
 					zSlider.getValue());
+				univ.fireContentChanged(selected);
 			}
 		};
 		xSlider.addAdjustmentListener(listener);
@@ -308,6 +313,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						oldvalues[0], 
 						oldvalues[1], 
 						oldvalues[2]);
+					univ.fireContentChanged(selected);
 					return;
 				}
 			}
@@ -344,6 +350,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						gSlider.getValue() / 255f,
 						bSlider.getValue() / 255f));
 				gd.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+				univ.fireContentChanged(selected);
 			}
 		});
 
@@ -353,6 +360,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					rSlider.getValue() / 255f, 
 					gSlider.getValue() / 255f, 
 					bSlider.getValue() / 255f));
+				univ.fireContentChanged(selected);
 			}
 		};
 		rSlider.addAdjustmentListener(listener);
@@ -364,6 +372,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
 					selected.setColor(oldC);
+					univ.fireContentChanged(selected);
 					return;
 				}
 			}
@@ -389,6 +398,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
 		selected.setChannels(channels);
+		univ.fireContentChanged(selected);
 		record(SET_CHANNELS, Boolean.toString(channels[0]),
 			Boolean.toString(channels[1]),
 			Boolean.toString(channels[2]));

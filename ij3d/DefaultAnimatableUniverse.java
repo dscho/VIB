@@ -66,6 +66,21 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 		root.compile();
 		addBranchGraph(root);
+		addUniverseListener(new UniverseListener() {
+			public void transformationStarted() {}
+			public void transformationFinished() {}
+			public void contentAdded(Content c) {}
+			public void contentRemoved(Content c) {}
+			public void canvasResized() {}
+
+			public void transformationUpdated() {
+				somethingChanged();
+			}
+
+			public void contentChanged(Content c) {
+				somethingChanged();
+			}
+		});
 	}
 
 	private ImageStack stack;
@@ -73,8 +88,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	private boolean animatedRecording = false;
 	private boolean animated = false;
 
-	public void transformChanged(int type, TransformGroup tg) {
-		super.transformChanged(type, tg);
+	public void somethingChanged() {
 		if(animatedRecording) {
 			return;
 		} else if(freeRecording) {

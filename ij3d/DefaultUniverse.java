@@ -177,49 +177,49 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		listeners.remove(l);
 	}
 
-	protected void fireTransformationStarted() {
+	public void fireTransformationStarted() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.transformationStarted();
 		}
 	}
 
-	protected void fireTransformationUpdated() {
+	public void fireTransformationUpdated() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.transformationUpdated();
 		}
 	}
 
-	protected void fireTransformationFinished() {
+	public void fireTransformationFinished() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.transformationFinished();
 		}
 	}
 
-	protected void fireContentAdded(Content c) {
+	public void fireContentAdded(Content c) {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.contentAdded(c);
 		}
 	}
 
-	protected void fireContentChanged(Content c) {
+	public void fireContentChanged(Content c) {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.contentChanged(c);
 		}
 	}
 
-	protected void fireContentRemoved(Content c) {
+	public void fireContentRemoved(Content c) {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.contentRemoved(c);;
 		}
 	}
 
-	protected void fireCanvasResized() {
+	public void fireCanvasResized() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
 			l.canvasResized();
