@@ -73,7 +73,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		view.add(resetView);
 
 		perspective = new CheckboxMenuItem(
-					"Perspective Projection", true);
+					"Perspective Projection", false);
 		perspective.addItemListener(this);
 		view.add(perspective);
 

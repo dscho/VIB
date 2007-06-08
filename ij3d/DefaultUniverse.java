@@ -73,6 +73,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height));
 		getViewingPlatform().setNominalViewingTransform();
+		getViewer().getView().setProjectionPolicy(
+					View.PARALLEL_PROJECTION);
 
 		bounds = new BoundingSphere();
 		bounds.setRadius(10.0);
