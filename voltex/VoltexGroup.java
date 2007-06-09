@@ -9,6 +9,7 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Vector3d;
 import javax.vecmath.Vector3f;
 import javax.vecmath.Point2d;
+import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
 import javax.media.j3d.View;
 import javax.media.j3d.Canvas3D;
@@ -54,6 +55,17 @@ public class VoltexGroup extends Content {
 		initialTG.addChild(renderer.getVolumeNode());
 
 		compile();
+	}
+		
+	public void calculateMinMaxCenterPoint() {
+		ImagePlus imp = getImage();
+		Calibration c = imp.getCalibration();
+		minPoint = new Point3f();
+		maxPoint = new Point3f((float)(imp.getWidth()*c.pixelWidth),
+				(float)(imp.getHeight()*c.pixelHeight),
+				(float)(imp.getStackSize()*c.pixelDepth));
+		centerPoint = new Point3f(maxPoint.x/2, maxPoint.y/2, 
+				maxPoint.z/2);
 	}
 		
 	public static void addContent(Image3DUniverse univ, ImagePlus grey) {

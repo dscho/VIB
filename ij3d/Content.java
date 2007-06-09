@@ -12,6 +12,8 @@ import javax.vecmath.Color3f;
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
 import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 
+import javax.vecmath.Point3f;
+
 public abstract class Content extends BranchGroup {
 
 	String name;
@@ -22,6 +24,7 @@ public abstract class Content extends BranchGroup {
 	int resamplingF = 1;
 	Transform3D initialTransform;
 	protected boolean selected;
+	protected Point3f centerPoint, minPoint, maxPoint;
 	
 	protected TransformGroup initialTG;
 	protected TransformGroup pickTG;
@@ -143,6 +146,7 @@ public abstract class Content extends BranchGroup {
 	}
 
 	public abstract void eyePtChanged(View view);
+	public abstract void calculateMinMaxCenterPoint();
 	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
 	public abstract void channelsUpdated(boolean[] channels);
 	public abstract void transparencyUpdated(float transparency);

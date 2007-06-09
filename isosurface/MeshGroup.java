@@ -23,6 +23,7 @@ import marchingcubes.MCTriangulator;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Vector3f;
+import javax.vecmath.Point3f;
 import javax.vecmath.Color3f;
 
 public class MeshGroup extends Content {
@@ -72,6 +73,15 @@ public class MeshGroup extends Content {
 			threshold, channels, getResamplingFactor());
 		shape.mesh = mesh;
 		shape.update();
+	}
+
+	public void calculateMinMaxCenterPoint() {
+		minPoint = new Point3f(); maxPoint = new Point3f();
+		centerPoint = new Point3f();
+		if(shape != null) {
+			shape.calculateMinMaxCenterPoint(minPoint, maxPoint,
+				centerPoint);
+		}
 	}
 
 	public void colorUpdated(Color3f oldColor, Color3f newColor) {
