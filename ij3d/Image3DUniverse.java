@@ -39,6 +39,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private Image3DMenubar menubar;
 	private ImageCanvas3D canvas;
 
+	private Point3f globalMin = new Point3f();
+	private Point3f globalMax = new Point3f();
+	private Point3f globalCenter = new Point3f();
+
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
@@ -108,6 +112,25 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return menubar;
 	}
 
+	public void recalculateGlobalMinMax(Content c) {
+		Point3f cmin = c.minPoint;
+		Point3f cmax = c.maxPoint;
+		if(cmin.x < globalMin.x) globalMin.x = cmin.x;
+		if(cmin.y < globalMin.y) globalMin.y = cmin.y;
+		if(cmin.z < globalMin.z) globalMin.z = cmin.z;
+		if(cmax.x > globalMax.x) globalMax.x = cmax.x;
+		if(cmax.y > globalMax.y) globalMax.y = cmax.y;
+		if(cmax.z > globalMax.z) globalMax.z = cmax.z;
+		globalCenter.x = (globalMax.x - globalMin.x)/2;
+		globalCenter.y = (globalMax.y - globalMin.y)/2;
+		globalCenter.z = (globalMax.z - globalMin.z)/2;
+
+		Transform3D transform = new Transform3D();
+		transform.setTranslation(new Vector3f(
+			-globalCenter.x, -globalCenter.y, -globalCenter.z));
+		translationTG.setTransform(transform);
+	}
+
 	public void addVoltex(ImagePlus image, Color3f color, 
 		String name, boolean[] channels, int resamplingF) {
 		if(contents.contains(name)) {
@@ -119,6 +142,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			name, color, image, channels, resamplingF);
 		scene.addChild(content);
 		contents.put(name, content);
+		recalculateGlobalMinMax(content);
 		fireContentAdded(content);
 	}
 
@@ -133,6 +157,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			name, color, image, channels, resamplingF);
 		scene.addChild(content);
 		contents.put(name, content);
+		recalculateGlobalMinMax(content);
 		fireContentAdded(content);
 	}
 
@@ -162,6 +187,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			name, color, image, channels,resamplingF,threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
+		recalculateGlobalMinMax(meshG);
 		fireContentAdded(meshG);
 	}
 
@@ -187,6 +213,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		MeshGroup meshG = new MeshGroup(name, color, mesh, threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
+		recalculateGlobalMinMax(meshG);
 		fireContentAdded(meshG);
 	}
 

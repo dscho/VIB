@@ -54,6 +54,7 @@ public abstract class Content extends BranchGroup {
 		this.image = image;
 		this.channels = channels;
 		this.resamplingF = resamplingF;
+		calculateMinMaxCenterPoint();
 	}
 
 	public void setName(String name) {
