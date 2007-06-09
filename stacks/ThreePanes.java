@@ -112,7 +112,7 @@ public class ThreePanes {
 			IJ.error("This doesn't currently work on 8 bit stacks.");
 			return;
 		}
-		
+
 		original_xy_canvas = imagePlus.getWindow().getCanvas();		
 		
 		int width = xy.getWidth();
@@ -136,6 +136,9 @@ public class ThreePanes {
 			slices_data[z] = (byte []) xy_stack.getPixels( z + 1 );
 		}
 		
+		IJ.showStatus("Generating XZ planes...");
+		IJ.showProgress(0);
+		
 		// Create the ZY slices:
 		
 		for( int x_in_original = 0; x_in_original < width; ++x_in_original ) {
@@ -155,10 +158,14 @@ public class ThreePanes {
 			
 			ByteProcessor bp = new ByteProcessor( zy_width, zy_height );
 			bp.setPixels( sliceBytes );
-			zy_stack.addSlice( null, bp );
-			
-			IJ.showProgress( x_in_original / (2.0 * width) );
+			zy_stack.addSlice( null, bp );			
+			IJ.showProgress( x_in_original / (double)width );
 		}
+		
+		IJ.showProgress( 1.0 );
+
+		IJ.showStatus("Generating ZY planes...");
+		IJ.showProgress(0);
 		
 		zy = new ImagePlus( "ZY planes of " + xy.getShortTitle(), zy_stack );        
 		
@@ -186,8 +193,8 @@ public class ThreePanes {
 			ByteProcessor bp = new ByteProcessor( xz_width, xz_height );
 			bp.setPixels( sliceBytes );
 			xz_stack.addSlice( null, bp );
-			
-			IJ.showProgress( 0.5 + (y_in_original / (double)height) );
+
+			IJ.showProgress( y_in_original / (double)width );			
 		}
 		
 		xz = new ImagePlus( "XZ planes of " + xy.getShortTitle(), xz_stack );
