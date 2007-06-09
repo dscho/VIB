@@ -1,5 +1,3 @@
-open("/Users/bene/Bilder/3d-example-stack.tif");
-
 print("\\Clear");
 print("Run 3D Viewer");
 run("ImageJ 3D Viewer", "surface=Volume name=name color=None resampling=2 red green blue");

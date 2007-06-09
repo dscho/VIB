@@ -1,3 +1,4 @@
+package oldsegmenters;
 
 import adt.Sparse3DByteArray;
 import adt.Byte3DArray;
@@ -8,10 +9,16 @@ import java.util.HashMap;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 import java.util.LinkedHashMap;
+import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import ij.text.TextWindow;
+import ij.io.FileInfo;
+import ij.ImagePlus;
+
+import amira.AmiraMeshDecoder;
 
 /**
  * User: Tom Larkworthy
@@ -220,23 +227,37 @@ public abstract class AutoLabeller {
 		}
 
 		if (tokenizer.hasMoreTokens()) {
-			String file = tokenizer.nextToken();
+			String filename = tokenizer.nextToken();
 
-			AmiraMeshReader_ reader = new AmiraMeshReader_();
-			reader.run(file);
+            ImagePlus imagePlus = new ImagePlus();
+
+            AmiraMeshDecoder d=new AmiraMeshDecoder();
+            if(d.open(filename)) {
+                if (d.isTable()) {
+                    TextWindow table = d.getTable();
+                } else {
+                    FileInfo fi=new FileInfo();
+                    File file = new File(filename);
+                    fi.fileName=file.getName();
+                    fi.directory=file.getParent();
+                    imagePlus.setFileInfo(fi);
+                    imagePlus.setStack(filename,d.getStack());
+                    d.parameters.setParameters(imagePlus);
+                }
+            }
 
 			Byte3DArray pd;
 
 			if (ret.id != 0) {
 				pd = new Sparse3DByteArray();
 			} else {
-				pd = new Unsparse3DByteArray(reader.getWidth(), reader.getHeight(), reader.getStackSize());
+				pd = new Unsparse3DByteArray(imagePlus.getWidth(), imagePlus.getHeight(), imagePlus.getStackSize());
 			}
 
-			int width = reader.getWidth();
+			int width = imagePlus.getWidth();
 
-			for (int z = 1; z <= reader.getStackSize(); z++) {
-				byte[] pixels = (byte[]) reader.getStack().getProcessor(z).getPixels();
+			for (int z = 1; z <= imagePlus.getStackSize(); z++) {
+				byte[] pixels = (byte[]) imagePlus.getStack().getProcessor(z).getPixels();
 				for (int i = 0; i < pixels.length; i++) {
 					byte pixel = pixels[i];
 					if (pixel != 0)
@@ -255,7 +276,8 @@ public abstract class AutoLabeller {
 				zMin = Math.min(pd.getzMin(), zMin);
 				zMax = Math.max(pd.getzMax(), zMax);
 			}
-			reader.close();
+
+            imagePlus.close();
 		}
 
 		return ret;

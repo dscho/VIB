@@ -1,3 +1,4 @@
+package oldsegmenters;
 
 import ij.plugin.PlugIn;
 import ij.plugin.filter.PlugInFilter;

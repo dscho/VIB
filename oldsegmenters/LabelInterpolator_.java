@@ -1,3 +1,4 @@
+package oldsegmenters;
 
 import ij.ImagePlus;
 import ij.IJ;
