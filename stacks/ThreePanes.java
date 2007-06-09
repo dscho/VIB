@@ -6,8 +6,6 @@ import ij.*;
 import ij.process.ByteProcessor;
 import ij.gui.*;
 
-import java.lang.reflect.*;
-
 import java.io.*;
 
 public class ThreePanes {
