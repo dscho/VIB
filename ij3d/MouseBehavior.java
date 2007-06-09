@@ -119,6 +119,8 @@ public class MouseBehavior extends Behavior {
 //		univ.getGlobalRotate().setTransform(globalRotation);
 	}
 
+	Transform3D translate = new Transform3D();
+	Transform3D invtranslate = new Transform3D();
 	public void rotate(Content c, MouseEvent e) {
 		int x = e.getX(), y = e.getY();
 		int dx = x - x_last, dy = y - y_last;
@@ -132,11 +134,24 @@ public class MouseBehavior extends Behavior {
 		tg.getTransform(currentXform);
 		tg.getTransform(oldXform);
 
-		currentXform.setTranslation(ORIGIN);
+		if(c != null) {
+			transl.x = -c.centerPoint.x;
+			transl.y = -c.centerPoint.y;
+			transl.z = -c.centerPoint.z;
+			translate.set(transl);
+			currentXform.mul(translate, currentXform);
+		}
+		
 		currentXform.mul(transformX, currentXform);
 		currentXform.mul(transformY, currentXform);
-		oldXform.get(transl);
-		currentXform.setTranslation(transl);
+
+		if(c != null) {
+			transl.x = c.centerPoint.x;
+			transl.y = c.centerPoint.y;
+			transl.z = c.centerPoint.z;
+			translate.set(transl);
+			currentXform.mul(translate, currentXform);
+		}
 
 		tg.setTransform(currentXform);
 		transformChanged(MouseBehaviorCallback.ROTATE, currentXform);
