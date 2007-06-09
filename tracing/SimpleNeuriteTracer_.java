@@ -107,7 +107,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		synchronized(nonsense) {
 			this.currentOpenBoundaryPoints = points;
-			resultsDialog.updateSearchingStatistics(points.length);
+			resultsDialog.updateSearchingStatistics(points.length/3);
 		}
 		
 		repaintAllPanes();
@@ -584,13 +584,14 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	}
 	
-	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane ) {
+	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, MouseEvent e ) {
 
 		int [] p = new int[3];
 
 		findPointInStack( x_in_pane, y_in_pane, in_plane, p );
 
-		setSlicesAllPanes( p[0], p[1], p[2] );
+		if( (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0 )
+			setSlicesAllPanes( p[0], p[1], p[2] );
 		
 		if( (xy_tracer_canvas != null) &&
 		    (xz_tracer_canvas != null) &&
@@ -659,7 +660,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	public void setAllPaths( ArrayList< SegmentedConnection > allPaths ) {
 
-		System.out.println("Setting completed in each canvas to: " +allPaths );
+		// System.out.println("Setting completed in each canvas to: " +allPaths );
 
 		xy_tracer_canvas.setCompleted( allPaths );
 		zy_tracer_canvas.setCompleted( allPaths );
@@ -760,7 +761,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 	synchronized public void confirmTemporary( ) {
 
 		int pathsSoFar = allPaths.size();
-		System.out.println("confirming path; have "+pathsSoFar+" already");
+		// System.out.println("confirming path; have "+pathsSoFar+" already");
 		SegmentedConnection currentPath = (SegmentedConnection)allPaths.get(pathsSoFar-1);
 		currentPath.addConnection( temporaryConnection );
 		PointInImage last = temporaryConnection.lastPoint();
@@ -785,7 +786,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		}
 
 		if( temporaryConnection == null ) {
-			IJ.error( "There's not temporary path to cancel!" );
+			IJ.error( "There's no temporary path to cancel!" );
 			return;
 		}
 
@@ -1197,23 +1198,13 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 	boolean cancelled = false;
 	
 	TextWindow helpTextWindow;
-	
-	static public void toastKeyListeners( Component c, String nameForDebugging ) {
-		KeyListener [] listeners = c.getKeyListeners();
-		for( int i = 0; i < listeners.length; ++i ) {
-			KeyListener l = listeners[i];
-			System.out.println( "Removing KeyListener (" + (Object)l + ") from " +
-					    nameForDebugging + "(" + (Object)c + ")" );
-			c.removeKeyListener( l );
-		}
-	}
-	
+
 	HessianAnalyzer hessianAnalyzer;
 	ArchiveClient archiveClient;
 
 	public void run( String ignoredArguments ) {
 		
-		System.err.println("Macro options are: "+Macro.getOptions());
+		// System.err.println("Macro options are: "+Macro.getOptions());
 
 		// System.err.println("client running with arguments: "+arguments);
 
@@ -1227,7 +1218,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		try {
 
-			toastKeyListeners( IJ.getInstance(), "IJ.getInstance()" );			
+			// toastKeyListeners( IJ.getInstance(), "IJ.getInstance()" );			
 
 			ImagePlus currentImage = WindowManager.getCurrentImage();
 
@@ -1258,7 +1249,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			xz_tracer_canvas = (TracerCanvas)xz_canvas;
 			zy_tracer_canvas = (TracerCanvas)zy_canvas;
 
-			toastKeyListeners( IJ.getInstance(), "IJ.getInstance()" );
+			// toastKeyListeners( IJ.getInstance(), "IJ.getInstance()" );
 
 			setupTrace = true; // can be changed with the "just log points" or "show eigenvalues"
 			resultsDialog = new NeuriteTracerResultsDialog( "Tracing for: " + xy.getShortTitle(),
@@ -1275,7 +1266,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			y_spacing = calibration.pixelHeight;
 			z_spacing = calibration.pixelDepth;
 			
-			System.out.println( "calibration was: " + x_spacing + ", " + y_spacing + ", " + z_spacing );
+			// System.out.println( "calibration was: " + x_spacing + ", " + y_spacing + ", " + z_spacing );
 			
 			if( (x_spacing == 0.0) ||
 			    (y_spacing == 0.0) ||
@@ -1309,20 +1300,20 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			
 
 
-			toastKeyListeners( xy_tracer_canvas, "xy_tracer_canvas" );
-			toastKeyListeners( xy_window, "xy_window" );
+			// toastKeyListeners( xy_tracer_canvas, "xy_tracer_canvas" );
+			// toastKeyListeners( xy_window, "xy_window" );
 			
 			xy_tracer_canvas.addKeyListener( xy_tracer_canvas );
 			xy_window.addKeyListener( xy_tracer_canvas );
 
-			toastKeyListeners( xz_tracer_canvas, "xz_tracer_canvas" );
-			toastKeyListeners( xz_window, "xz_window" );
+			// toastKeyListeners( xz_tracer_canvas, "xz_tracer_canvas" );
+			// toastKeyListeners( xz_window, "xz_window" );
 
 			xz_tracer_canvas.addKeyListener( xz_tracer_canvas );
 			xz_window.addKeyListener( xz_tracer_canvas );
 
-			toastKeyListeners( zy_tracer_canvas, "zy_tracer_canvas" );
-			toastKeyListeners( zy_window, "zy_window" );
+			// toastKeyListeners( zy_tracer_canvas, "zy_tracer_canvas" );
+			// toastKeyListeners( zy_window, "zy_window" );
 
 			zy_tracer_canvas.addKeyListener( zy_tracer_canvas );
 			zy_window.addKeyListener( zy_tracer_canvas );

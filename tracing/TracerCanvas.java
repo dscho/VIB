@@ -63,33 +63,35 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		int keyCode = e.getKeyCode();
 		char keyChar = e.getKeyChar();
 		int flags = e.getModifiers();
+		/*
 		System.out.println("keyCode=" + keyCode + " (" + KeyEvent.getKeyText(keyCode)
 				   + ") keyChar=\"" + keyChar + "\" (" + (int)keyChar + ") "
 				   + KeyEvent.getKeyModifiersText(flags));
+		*/
 
 		if( keyChar == 't' || keyChar == 'T' ) {
 
-			System.out.println( "Yes, running testPathTo" );
+			// System.out.println( "Yes, running testPathTo" );
 			tracerPlugin.testPathTo( last_x_in_pane, last_y_in_pane, plane );
 
 		} else if( keyChar == 'y' || keyChar == 'Y' ) {
 
-			System.out.println( "Yes, running confirmPath" );
+			// System.out.println( "Yes, running confirmPath" );
 			tracerPlugin.confirmTemporary( );
 
 		} else if( keyChar == 'n' || keyChar == 'N' ) {
 
-			System.out.println( "Yes, running cancelPath+" );
+			// System.out.println( "Yes, running cancelPath+" );
 			tracerPlugin.cancelTemporary( );
 
 		} else if( keyChar == 'f' || keyChar == 'F' ) {
 
-			System.out.println( "Finalizing that path" );
+			// System.out.println( "Finalizing that path" );
 			tracerPlugin.finishedPath( );
 
 		} else if( keyChar == 'v' || keyChar == 'V' ) {
 
-			System.out.println( "View paths as a stack" );
+			// System.out.println( "View paths as a stack" );
 			tracerPlugin.makePathVolume( );
 
 		} else if( keyChar == '5' ) {
@@ -117,7 +119,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		last_x_in_pane = offScreenX(e.getX());
 		last_y_in_pane = offScreenY(e.getY());
 		
-		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane );
+		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, e );
 		
 	}
 	
@@ -281,11 +283,23 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 						int z = boundaryPoints[ 3*i + 2 ];
 						// Then draw that point.
 						if( plane == ThreePanes.XY_PLANE ) {
-							g.fillRect( screenX(x), screenY(y), 1, 1 );
+							int sx = screenX(x);
+							int sx_pixel_size = screenX(x+1) - sx;
+							int sy = screenY(y);
+							int sy_pixel_size = screenY(y+1) - sy;
+							g.fillRect( screenX(x), screenY(y), sx_pixel_size, sy_pixel_size );
 						} else if( plane == ThreePanes.XZ_PLANE ) {
-							g.fillRect( screenX(x), screenY(z), 1, 1 );
+							int sx = screenX(x);
+							int sx_pixel_size = screenX(x+1) - sx;
+							int sy = screenY(z);
+							int sy_pixel_size = screenY(z+1) - sy;
+							g.fillRect( screenX(x), screenY(z), sx_pixel_size, sy_pixel_size );
 						} else if( plane == ThreePanes.ZY_PLANE ) {
-							g.fillRect( screenX(z), screenY(y), 1, 1 );
+							int sx = screenX(z);
+							int sx_pixel_size = screenX(z+1) - sx;
+							int sy = screenY(y);
+							int sy_pixel_size = screenY(y+1) - sy;
+							g.fillRect( screenX(z), screenY(y), sx_pixel_size, sy_pixel_size );
 						}
 						
 					}

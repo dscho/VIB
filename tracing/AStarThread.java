@@ -99,7 +99,7 @@ public class AStarThread extends Thread {
 		
 		int loops = 0;
 		
-		System.out.println( "Starting AStar..." );
+		// System.out.println( "Starting AStar..." );
 		
 		PriorityQueue closed_from_start = new PriorityQueue();
 		PriorityQueue open_from_start = new PriorityQueue();
@@ -175,8 +175,8 @@ public class AStarThread extends Thread {
 					
 					progress.currentOpenBoundary(open);
 					
-					System.out.println("Reporting the currentOpen boundary took: "+
-							   ((System.currentTimeMillis() - currentMilliseconds) / 1000.0));
+					/* System.out.println("Reporting the currentOpen boundary took: "+
+					   ((System.currentTimeMillis() - currentMilliseconds) / 1000.0)); */
 				}
 
 				
@@ -207,7 +207,7 @@ public class AStarThread extends Thread {
 			// Has the route from the start found the goal?
 			
 			if( (p != null) && (p.x == goal_x) && (p.y == goal_y) && (p.z == goal_z) ) {
-				System.out.println( "Found the goal! (from start to end)" );
+				// System.out.println( "Found the goal! (from start to end)" );
 				result = p.asConnection();
 				progress.finished(true);
 				return;

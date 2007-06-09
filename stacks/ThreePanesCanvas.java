@@ -10,16 +10,16 @@ import java.awt.event.*;
 
 public class ThreePanesCanvas extends ImageCanvas {
 	
-	protected ThreePanes owner;
+	protected PaneOwner owner;
 	protected int plane;
 	
-	protected ThreePanesCanvas( ImagePlus imagePlus, ThreePanes owner, int plane ) {
+	protected ThreePanesCanvas( ImagePlus imagePlus, PaneOwner owner, int plane ) {
 		super(imagePlus);
 		this.owner = owner;
 		this.plane = plane;
 	}
 	
-	static public Object newThreePanesCanvas( ImagePlus imagePlus, ThreePanes owner, int plane ) {
+	static public Object newThreePanesCanvas( ImagePlus imagePlus, PaneOwner owner, int plane ) {
 		return new ThreePanesCanvas( imagePlus, owner, plane );
 	}
 	
@@ -28,11 +28,23 @@ public class ThreePanesCanvas extends ImageCanvas {
 		if( draw_crosshairs ) {
 			
 			if( plane == ThreePanes.XY_PLANE ) {
-				drawCrosshairs( g, Color.red, screenX(current_x), screenY(current_y) );
+				int x = screenX(current_x);
+				int y = screenX(current_y);
+				int x_pixel_width = screenX(current_x+1) - x;
+				int y_pixel_width = screenY(current_y+1) - y;
+				drawCrosshairs( g, Color.red, x + (x_pixel_width / 2), y + (y_pixel_width / 2) );
 			} else if( plane == ThreePanes.XZ_PLANE ) {
-				drawCrosshairs( g, Color.red, screenX(current_x), screenY(current_z) );
+				int x = screenX(current_x);
+				int y = screenX(current_z);
+				int x_pixel_width = screenX(current_x+1) - screenX(current_x);
+				int y_pixel_width = screenY(current_z+1) - screenY(current_z);
+				drawCrosshairs( g, Color.red, screenX(current_x) + (x_pixel_width / 2), screenY(current_z) + (y_pixel_width / 2) );
 			} else if( plane == ThreePanes.ZY_PLANE ) {
-				drawCrosshairs( g, Color.red, screenX(current_z), screenY(current_y) );
+				int x = screenX(current_z);
+				int y = screenY(current_y);
+				int x_pixel_width = screenX(current_z+1) - screenX(current_z);
+				int y_pixel_width = screenY(current_y+1) - screenY(current_y);
+				drawCrosshairs( g, Color.red, screenX(current_z) + (x_pixel_width / 2), screenY(current_y) + (y_pixel_width / 2)  );
 			}
 			
 		}

@@ -137,12 +137,21 @@ public class Connection {
 		case ThreePanes.XY_PLANE:
 		{
 			if( either_side == 0 ) {
-				for( int i = 0; i < points; ++i )
-					g.fillRect( canvas.screenX(x_positions[i]), canvas.screenY(y_positions[i]), 1, 1 );
+				for( int i = 0; i < points; ++i ) {
+					int x = canvas.screenX(x_positions[i]);
+					int x_pixel_size = canvas.screenX(x_positions[i]+1) - x;
+					int y = canvas.screenY(y_positions[i]);
+					int y_pixel_size = canvas.screenY(y_positions[i]+1) - y;
+					g.fillRect( x, y, x_pixel_size, y_pixel_size );
+				}
 			} else {
 				for( int i = 0; i < points; ++i )
 					if( Math.abs(z_positions[i] - z) <= either_side ) {
-						g.fillRect( canvas.screenX(x_positions[i]), canvas.screenY(y_positions[i]), 1, 1 ); 
+						int x = canvas.screenX(x_positions[i]);
+						int x_pixel_size = canvas.screenX(x_positions[i]+1) - x;
+						int y = canvas.screenY(y_positions[i]);
+						int y_pixel_size = canvas.screenY(y_positions[i]+1) - y;
+						g.fillRect( x, y, x_pixel_size, y_pixel_size );
 					}
 			}
 		}
@@ -150,15 +159,26 @@ public class Connection {
 		
 		case ThreePanes.XZ_PLANE:
 		{
-			for( int i = 0; i < points; ++i )
-				g.fillRect( canvas.screenX(x_positions[i]), canvas.screenY(z_positions[i]), 1, 1 );
+			for( int i = 0; i < points; ++i ) {
+					int x = canvas.screenX(x_positions[i]);
+					int x_pixel_size = canvas.screenX(x_positions[i]+1) - x;
+					int y = canvas.screenY(z_positions[i]);
+					int y_pixel_size = canvas.screenY(z_positions[i]+1) - y;
+					g.fillRect(  x, y, x_pixel_size, y_pixel_size );
+			}
 		}
 		break;
 		
 		case ThreePanes.ZY_PLANE:
 		{
-			for( int i = 0; i < points; ++i )
-				g.fillRect( canvas.screenX(z_positions[i]), canvas.screenY(y_positions[i]), 1, 1 );
+			for( int i = 0; i < points; ++i ) {
+				
+				int x = canvas.screenX(z_positions[i]);
+				int x_pixel_size = canvas.screenX(z_positions[i]+1) - x;
+				int y = canvas.screenY(y_positions[i]);
+				int y_pixel_size = canvas.screenY(y_positions[i]+1) - y;
+				g.fillRect(  x, y, x_pixel_size, y_pixel_size );
+			}
 		}
 		break;
 		

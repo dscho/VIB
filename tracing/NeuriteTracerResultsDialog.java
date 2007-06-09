@@ -149,6 +149,7 @@ class NeuriteTracerResultsDialog
 	public void windowClosing( WindowEvent e ) {
 		plugin.cancelled = true;
 		dispose();
+		plugin.closeAndReset();
 	}
 	
 	public void windowActivated( WindowEvent e ) { }
@@ -174,6 +175,8 @@ class NeuriteTracerResultsDialog
 		super( IJ.getInstance(), title, false );
 		this.plugin = plugin;
 		this.launchedByArchive = launchedByArchive;
+
+		addWindowListener(this);
 
 		setLayout(new GridBagLayout());
 
@@ -312,6 +315,7 @@ class NeuriteTracerResultsDialog
 		add(traceFileOptionsPanel,c);
 
 		quitButton = new Button("Quit Tracer");
+		quitButton.addActionListener(this);
 		c.gridx = 0;
 		c.gridy = 5;
 		c.anchor = GridBagConstraints.CENTER;
@@ -421,6 +425,7 @@ class NeuriteTracerResultsDialog
 			statusText.setText("Quitting...");
 			plugin.cancelSearch();
 			dispose();
+			plugin.closeAndReset();
 
 		}
 	}

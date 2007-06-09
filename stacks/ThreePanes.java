@@ -8,7 +8,7 @@ import ij.gui.*;
 
 import java.io.*;
 
-public class ThreePanes {
+public class ThreePanes implements PaneOwner {
 	
 	public static final int XY_PLANE = 0; // constant z
 	public static final int XZ_PLANE = 1; // constant y
@@ -208,5 +208,7 @@ public class ThreePanes {
 		xy_window = new StackWindow( xy, xy_canvas );
 		xz_window = new StackWindow( xz, xz_canvas );
 		zy_window = new StackWindow( zy, zy_canvas );
+
 	}
+
 }
