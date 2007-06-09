@@ -182,7 +182,7 @@ public class AStarThread extends Thread {
 				
 			}
 			
-			boolean verbose = (0 == (loops++ % 10000));
+			boolean verbose = false;
 			
 			AStarNode p = null;
 			AStarNode q = null;
@@ -264,21 +264,7 @@ public class AStarThread extends Thread {
 						    closed_from_goal_hash.size() + ")" );
 				
 			}
-			
-			/*
-			if( loops > 100000 )
-				break;
-			*/
-			
-			/*
-			if( (loops % 20000) == 0 ) {
-				
-				snapshot( open_from_start, closed_from_start, open_from_goal, closed_from_goal,
-					  "after " + loops + " fetches" );
-				
-			}
-			*/
-			
+
 			if( p != null ) {
 				
 				// add_node( closed_from_start, closed_from_start_hash, p );
@@ -518,6 +504,8 @@ public class AStarThread extends Thread {
 				
 			}
 			
+			++ loops;
+
 		}
 		
 		// If we get to here then we haven't found a route to the
