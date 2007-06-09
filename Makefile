@@ -105,13 +105,13 @@ ThreePaneCrop_.jar: SOURCES=$(wildcard stacks/Three*.java)
 
 SimpleNeuriteTracer_.jar: SOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
+	stacks/PaneOwner.java \
 	tracing/AStarNode.java \
 	tracing/AStarProgressCallback.java \
 	tracing/AStarThread.java \
 	tracing/Connection.java \
 	tracing/SimpleNeuriteTracer_.java \
 	tracing/NeuriteTracerResultsDialog.java \
-	tracing/NeuriteTracerSetupDialog.java \
 	tracing/PointInImage.java \
 	tracing/SegmentedConnection.java \
 	tracing/TracerCanvas.java \
