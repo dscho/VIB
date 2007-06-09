@@ -47,10 +47,7 @@ public class HessianAnalyzer {
 			    int either_side,
 			    double sx,     // sigma_x
 			    double sy,     // sigma_y
-			    double sz,     // sigma_z
-			    double x_spacing,
-			    double y_spacing,
-			    double z_spacing ) {
+			    double sz ) {  // sigma_z
 		
 		int diameter = either_side * 2 + 1;
 		int points = diameter * diameter * diameter;
@@ -191,10 +188,7 @@ public class HessianAnalyzer {
 					      either_side,
 					      x_spacing / 2,
 					      y_spacing / 2,
-					      z_spacing / 2,
-					      x_spacing,
-					      y_spacing,
-					      z_spacing );
+					      z_spacing / 2 );
 		
 		JacobiFloat jc = new JacobiFloat( hessian );
 		
