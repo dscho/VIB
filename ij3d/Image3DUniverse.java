@@ -240,13 +240,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public void resetView() {
 		fireTransformationStarted();
 		Transform3D t = new Transform3D();
-		for(Iterator it = contents(); it.hasNext();) {
-			Content c = (Content)it.next();
-			c.resetView();
-		}
+		//for(Iterator it = contents(); it.hasNext();) {
+			//Content c = (Content)it.next();
+			//c.resetView();
+		//}
 		getViewingPlatform().setNominalViewingTransform();
 		TransformGroup tg = null;
 		transformChanged(-1, tg);
+		rotationsTG.setTransform(t);
 		fireTransformationFinished();
 	}
 
