@@ -23,6 +23,8 @@ class NeuriteTracerResultsDialog
 	static final int LOGGING_POINTS        = 4;
 	static final int DISPLAY_EVS           = 5;
 
+	static final String SEARCHING_STRING = "Searching for path between points...";
+
 	private int currentState;
 
 	SimpleNeuriteTracer_ plugin;
@@ -97,7 +99,7 @@ class NeuriteTracerResultsDialog
 			break;
 
 		case SEARCHING:
-			statusText.setText("Searching for goal point...");
+			statusText.setText("Searching for path between points...");
 			/*
 			statusPanel.remove(cancelSearch);
 			statusPanel.remove(keepSegment);
@@ -159,6 +161,10 @@ class NeuriteTracerResultsDialog
 	public void windowIconified( WindowEvent e ) { }
 	public void windowDeiconified( WindowEvent e ) { }    
 	
+	public void updateSearchingStatistics( int pointsInOpenBoundary ) {
+		statusText.setText( SEARCHING_STRING + " ("+pointsInOpenBoundary+" boundary points.)" );
+	}
+
 	boolean launchedByArchive;
 	
 	public NeuriteTracerResultsDialog( String title,

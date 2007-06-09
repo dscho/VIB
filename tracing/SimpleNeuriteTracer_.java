@@ -107,6 +107,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		synchronized(nonsense) {
 			this.currentOpenBoundaryPoints = points;
+			resultsDialog.updateSearchingStatistics(points.length);
 		}
 		
 		repaintAllPanes();
