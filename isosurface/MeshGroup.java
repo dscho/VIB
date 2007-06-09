@@ -33,23 +33,22 @@ public class MeshGroup extends Content {
 	Triangulator triangulator = new MCTriangulator();
 //	Triangulator triangulator = new discMC.DiscMCTriangulator();
 	
-	public MeshGroup(String name, Color3f color, 
-			List mesh, int thresh, Transform3D initial) {
-		super(name, color, initial);
+	public MeshGroup(String name, Color3f color, List mesh, int thresh) {
+		super(name, color);
 		this.threshold = thresh;
 		if(color == null) {
 			color= new Color3f(
 				thresh/255f, thresh/255f, thresh/255f);
 		}
 		shape = new IsoShape(mesh, color, thresh, getTransparency());
-		initialTG.addChild(shape);
+		pickTG.addChild(shape);
 		compile();
 	}
 
 	public MeshGroup(String name, Color3f color, ImagePlus image, boolean[] 
-		channels, int resamplingF, int threshold, Transform3D initial) {
+		channels, int resamplingF, int threshold) {
 
-		super(name, color, image, channels, resamplingF, initial);
+		super(name, color, image, channels, resamplingF);
 		this.threshold = threshold;
 		List mesh = triangulator.getTriangles(
 				image, threshold, channels, resamplingF);
@@ -59,7 +58,7 @@ public class MeshGroup extends Content {
 			color = new Color3f(new Color(value));
 		}
 		shape = new IsoShape(mesh, color, threshold, getTransparency());
-		initialTG.addChild(shape);
+		pickTG.addChild(shape);
 		compile();
 	}
 		
@@ -147,7 +146,7 @@ public class MeshGroup extends Content {
 			tr.z = (float)(-mesh.getStackSize() * c.pixelDepth/2f);
 		}
 		univ.addMesh(mesh, color, 
-			name, threshold, channels, factor, tr);
+			name, threshold, channels, factor);
 	}
 }
 

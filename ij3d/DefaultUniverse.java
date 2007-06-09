@@ -50,6 +50,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	protected BranchGroup root;
 	protected BranchGroup scene;
+	protected TransformGroup translationTG;
 	protected TransformGroup rotationsTG;
 	protected TransformGroup scaleTG;
 	protected BoundingSphere bounds;
@@ -68,6 +69,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public TransformGroup getGlobalScale() {
 		return scaleTG;
+	}
+
+	public TransformGroup getGlobalTranslation() {
+		return translationTG;
 	}
 
 	public DefaultUniverse(int width, int height) {
@@ -91,11 +96,18 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		scaleTG.addChild(rotationsTG);
 
+		translationTG = new TransformGroup();
+		translationTG.setCapability(
+				TransformGroup.ALLOW_TRANSFORM_READ);
+		translationTG.setCapability(
+				TransformGroup.ALLOW_TRANSFORM_WRITE);
+		rotationsTG.addChild(translationTG);
+
 		scene = new BranchGroup();
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
-		rotationsTG.addChild(scene);
+		translationTG.addChild(scene);
 
 		// Lightening
 		AmbientLight lightA = new AmbientLight();

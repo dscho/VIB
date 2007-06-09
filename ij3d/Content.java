@@ -22,11 +22,9 @@ public abstract class Content extends BranchGroup {
 	boolean[] channels = new boolean[]{true, true, true};
 	float transparency = 0f;
 	int resamplingF = 1;
-	Transform3D initialTransform;
 	protected boolean selected;
 	protected Point3f centerPoint, minPoint, maxPoint;
 	
-	protected TransformGroup initialTG;
 	protected TransformGroup pickTG;
 
 	public Content() {
@@ -43,19 +41,16 @@ public abstract class Content extends BranchGroup {
 		addChild(pickTG);
 	}
 
-	public Content(String name, Color3f color, Transform3D initial) {
+	public Content(String name, Color3f color) {
 		this();
 		this.name = name;
 		this.color = color;
-		this.initialTransform = initial;
-		initialTG = new TransformGroup(initial);
-		pickTG.addChild(initialTG);
 	}
 
 	public Content(String name, Color3f color, ImagePlus image, boolean[] 
-		channels, int resamplingF, Transform3D initialTransform) {
+		channels, int resamplingF) {
 		
-		this(name, color, initialTransform);
+		this(name, color);
 		this.image = image;
 		this.channels = channels;
 		this.resamplingF = resamplingF;
@@ -135,14 +130,6 @@ public abstract class Content extends BranchGroup {
 
 	public TransformGroup getPickTG() {
 		return pickTG;
-	}
-
-	public TransformGroup getInitialTG() {
-		return initialTG;
-	}
-
-	public Transform3D getInitialTransform() {
-		return initialTransform;
 	}
 
 	public abstract void eyePtChanged(View view);

@@ -37,9 +37,9 @@ public class VoltexGroup extends Content {
 	private TransformGroup tg;
 
 	public VoltexGroup(String name, Color3f color, ImagePlus image, 
-		boolean[] channels, int resamplingF, Transform3D initial) {
+		boolean[] channels, int resamplingF) {
 		
-		super(name, color, image, channels, resamplingF, initial);
+		super(name, color, image, channels, resamplingF);
 		float scale = image.getWidth() * 
 				(float)image.getCalibration().pixelWidth;
 
@@ -52,7 +52,7 @@ public class VoltexGroup extends Content {
 					color, getTransparency());
 		renderer.fullReload();
 
-		initialTG.addChild(renderer.getVolumeNode());
+		pickTG.addChild(renderer.getVolumeNode());
 
 		compile();
 	}
@@ -115,7 +115,7 @@ public class VoltexGroup extends Content {
 			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
 		}
 		
-		univ.addVoltex(grey, color, name, channels, factor, tr);
+		univ.addVoltex(grey, color, name, channels, factor);
 	}
 
 	public void eyePtChanged(View view) {

@@ -39,9 +39,9 @@ public class OrthoGroup extends Content {
 	private int[] slices;
 
 	public OrthoGroup(String name, Color3f color, ImagePlus image, 
-		boolean[] channels, int resamplingF, Transform3D initial) {
+		boolean[] channels, int resamplingF) {
 		
-		super(name, color, image, channels, resamplingF, initial);
+		super(name, color, image, channels, resamplingF);
 		float scale = image.getWidth() * 
 				(float)image.getCalibration().pixelWidth;
 
@@ -56,7 +56,7 @@ public class OrthoGroup extends Content {
 					imp.getStackSize()/2};
 		renderer.fullReload();
 
-		initialTG.addChild(renderer.getVolumeNode());
+		pickTG.addChild(renderer.getVolumeNode());
 
 		compile();
 	}
@@ -111,15 +111,8 @@ public class OrthoGroup extends Content {
 		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
-		Vector3f tr = new Vector3f();
-		if(grey != null) {
-			Calibration c = grey.getCalibration();
-			tr.x = (float)(-grey.getWidth() * c.pixelWidth/2);
-			tr.y = (float)(-grey.getHeight() * c.pixelHeight/2);
-			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
-		}
 		
-		univ.addOrthoslice(grey, color, name, channels, factor, tr);
+		univ.addOrthoslice(grey, color, name, channels, factor);
 	}
 
 	public int[] getSlices() {

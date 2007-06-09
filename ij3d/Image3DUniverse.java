@@ -109,32 +109,28 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void addVoltex(ImagePlus image, Color3f color, 
-		String name, boolean[] channels, int resamplingF, Vector3f t) {
+		String name, boolean[] channels, int resamplingF) {
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 		ensureScale(image);
-		Transform3D tr = new Transform3D();
-		tr.setTranslation(t);
 		VoltexGroup content = new VoltexGroup(
-			name, color, image, channels, resamplingF, tr);
+			name, color, image, channels, resamplingF);
 		scene.addChild(content);
 		contents.put(name, content);
 		fireContentAdded(content);
 	}
 
 	public void addOrthoslice(ImagePlus image, Color3f color, 
-		String name, boolean[] channels, int resamplingF, Vector3f t) {
+		String name, boolean[] channels, int resamplingF) {
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 		ensureScale(image);
-		Transform3D tr = new Transform3D();
-		tr.setTranslation(t);
 		OrthoGroup content = new OrthoGroup(
-			name, color, image, channels, resamplingF, tr);
+			name, color, image, channels, resamplingF);
 		scene.addChild(content);
 		contents.put(name, content);
 		fireContentAdded(content);
@@ -155,45 +151,40 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 	
 	public void addMesh(ImagePlus image, Color3f color, String name, 
-		int threshold, boolean[] channels, int resamplingF, Vector3f t){
+		int threshold, boolean[] channels, int resamplingF){
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 		ensureScale(image);
-		Transform3D tr = new Transform3D();
-		tr.setTranslation(t);
 		MeshGroup meshG = new MeshGroup(
-			name, color, image, channels,resamplingF,threshold,tr);
+			name, color, image, channels,resamplingF,threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
 		fireContentAdded(meshG);
 	}
 
 	public void addMesh(List mesh, Color3f color, 
-			String name, float scale, int threshold, Vector3f t){
+			String name, float scale, int threshold){
 		// correct global scaling transformation
 		Transform3D scaletr = new Transform3D();
 		scaleTG.getTransform(scaletr);
 		scaletr.setScale(scale);
 		scaleTG.setTransform(scaletr);
 		// add the mesh
-		addMesh(mesh, color, name, threshold, t);
+		addMesh(mesh, color, name, threshold);
 	}
 
 	public void addMesh(List mesh, 
-			Color3f color, String name, int threshold, Vector3f t) {
+			Color3f color, String name, int threshold) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
 			return;
 		}
 	
-		Transform3D tr = new Transform3D();
-		tr.setTranslation(t);
-		MeshGroup meshG = new MeshGroup(
-				name, color, mesh, threshold, tr);
+		MeshGroup meshG = new MeshGroup(name, color, mesh, threshold);
 		scene.addChild(meshG);
 		contents.put(name, meshG);
 		fireContentAdded(meshG);
