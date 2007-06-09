@@ -66,6 +66,10 @@ public abstract class Content extends BranchGroup {
 		this.selected = selected;
 	}
 
+	public void setTransform(Transform3D transform) {
+		pickTG.setTransform(transform);
+	}
+
 	public void setChannels(boolean[] channels) {
 		boolean channelsChanged = channels[0] != this.channels[0] || 
 				channels[1] != this.channels[1] || 
