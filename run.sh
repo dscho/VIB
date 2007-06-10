@@ -15,6 +15,10 @@ MEM=256m
 case $HOSTNAME in
 wbgn129)
 	MEM=1500m
+	;;
+racer)
+	EXTRADEFS="$EXTRADEFS -Dj3d.noOffScreen=true"
+	;;
 esac
 
 java -Xmx$MEM -Dplugins.dir="$curdir" $EXTRADEFS \
