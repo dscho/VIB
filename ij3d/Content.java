@@ -72,6 +72,17 @@ public abstract class Content extends BranchGroup {
 		this.selected = selected;
 	}
 
+	public void applyTransform(Transform3D transform) {
+		Transform3D t1 = new Transform3D();
+		localTranslate.getTransform(t1);
+		Transform3D t2 = new Transform3D();
+		localRotate.getTransform(t2);
+		t1.mul(t2);
+
+		transform.mul(t1);
+		setTransform(transform);
+	}
+
 	public void setTransform(Transform3D transform) {
 		Transform3D t = new Transform3D();
 		Matrix3f m = new Matrix3f();

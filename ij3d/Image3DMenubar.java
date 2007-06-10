@@ -179,9 +179,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		applyTransform.addActionListener(this);
 		content.add(applyTransform);
 
-		applyTransform = new MenuItem("Save Transform");
-		applyTransform.addActionListener(this);
-		content.add(applyTransform);
+		saveTransform = new MenuItem("Save Transform");
+		saveTransform.addActionListener(this);
+		content.add(saveTransform);
 
 		return content;
 	}
@@ -323,6 +323,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == applyTransform) {
+			if(univ.getSelected() == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			univ.fireTransformationStarted();
+			float[] t = readTransform(univ.getSelected());
+			if(t != null) {
+				univ.getSelected().applyTransform(
+					new Transform3D(t));
+				univ.fireTransformationFinished();
+			}
 		}
 
 		if(e.getSource() == saveTransform) {
