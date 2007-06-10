@@ -50,7 +50,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	protected BranchGroup root;
 	protected BranchGroup scene;
-	protected TransformGroup translationTG;
+	protected TransformGroup centerTG;
+	protected TransformGroup translateTG;
 	protected TransformGroup rotationsTG;
 	protected TransformGroup scaleTG;
 	protected BoundingSphere bounds;
@@ -71,8 +72,12 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		return scaleTG;
 	}
 
-	public TransformGroup getGlobalTranslation() {
-		return translationTG;
+	public TransformGroup getGlobalTranslate() {
+		return translateTG;
+	}
+
+	public TransformGroup getCenterTG() {
+		return centerTG;
 	}
 
 	public DefaultUniverse(int width, int height) {
@@ -91,23 +96,26 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		root.addChild(scaleTG);
 
+		translateTG = new TransformGroup();
+		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		scaleTG.addChild(translateTG);
+
 		rotationsTG = new TransformGroup();
 		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		scaleTG.addChild(rotationsTG);
+		translateTG.addChild(rotationsTG);
 
-		translationTG = new TransformGroup();
-		translationTG.setCapability(
-				TransformGroup.ALLOW_TRANSFORM_READ);
-		translationTG.setCapability(
-				TransformGroup.ALLOW_TRANSFORM_WRITE);
-		rotationsTG.addChild(translationTG);
+		centerTG = new TransformGroup();
+		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		rotationsTG.addChild(centerTG);
 
 		scene = new BranchGroup();
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
-		translationTG.addChild(scene);
+		centerTG.addChild(scene);
 
 		// Lightening
 		AmbientLight lightA = new AmbientLight();

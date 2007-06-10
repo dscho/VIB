@@ -128,7 +128,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Transform3D transform = new Transform3D();
 		transform.setTranslation(new Vector3f(
 			-globalCenter.x, -globalCenter.y, -globalCenter.z));
-		translationTG.setTransform(transform);
+		centerTG.setTransform(transform);
 	}
 
 	public void addVoltex(ImagePlus image, Color3f color, 

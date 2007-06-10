@@ -134,23 +134,39 @@ public class MouseBehavior extends Behavior {
 		tg.getTransform(currentXform);
 		tg.getTransform(oldXform);
 
+		Transform3D globalRotate = new Transform3D();
+		Transform3D globalTranslate = new Transform3D();
+		Transform3D globalCenter = new Transform3D();
+		univ.getGlobalRotate().getTransform(globalRotate);
+		univ.getGlobalTranslate().getTransform(globalTranslate);
+		univ.getCenterTG().getTransform(globalCenter);
+
+		Transform3D globalRotInverse = new Transform3D();
+		globalRotInverse.invert(globalRotate);
+		Transform3D globalTransInverse = new Transform3D();
+		globalTransInverse.invert(globalTranslate);
+		Transform3D centerInverse = new Transform3D();
+		centerInverse.invert(globalCenter);
 		if(c != null) {
-			transl.x = -c.centerPoint.x;
-			transl.y = -c.centerPoint.y;
-			transl.z = -c.centerPoint.z;
-			translate.set(transl);
-			currentXform.mul(translate, currentXform);
+//			transl.x = -c.centerPoint.x;
+//			transl.y = -c.centerPoint.y;
+//			transl.z = -c.centerPoint.z;
+//			translate.set(transl);
+			currentXform.mul(globalCenter, currentXform);
+			currentXform.mul(globalRotate, currentXform);
 		}
 		
 		currentXform.mul(transformX, currentXform);
 		currentXform.mul(transformY, currentXform);
 
 		if(c != null) {
-			transl.x = c.centerPoint.x;
-			transl.y = c.centerPoint.y;
-			transl.z = c.centerPoint.z;
-			translate.set(transl);
-			currentXform.mul(translate, currentXform);
+			currentXform.mul(globalRotInverse, currentXform);
+			currentXform.mul(centerInverse, currentXform);
+//			transl.x = c.centerPoint.x;
+//			transl.y = c.centerPoint.y;
+//			transl.z = c.centerPoint.z;
+//			translate.set(transl);
+//			currentXform.mul(translate, currentXform);
 		}
 
 		tg.setTransform(currentXform);
@@ -170,7 +186,7 @@ public class MouseBehavior extends Behavior {
 		transformX.set(transl);
 		
 		TransformGroup tg = (c == null) ? 
-					univ.getGlobalRotate() : c.getPickTG();
+				univ.getGlobalTranslate() : c.getPickTG();
 		tg.getTransform(currentXform);
 		currentXform.mul(transformX, currentXform);
 
