@@ -140,8 +140,10 @@ public class Connection {
 				for( int i = 0; i < points; ++i ) {
 					int x = canvas.screenX(x_positions[i]);
 					int x_pixel_size = canvas.screenX(x_positions[i]+1) - x;
+					if( x_pixel_size < 1 ) x_pixel_size = 1;
 					int y = canvas.screenY(y_positions[i]);
 					int y_pixel_size = canvas.screenY(y_positions[i]+1) - y;
+					if( y_pixel_size < 1 ) y_pixel_size = 1;	
 					g.fillRect( x, y, x_pixel_size, y_pixel_size );
 				}
 			} else {
@@ -149,8 +151,10 @@ public class Connection {
 					if( Math.abs(z_positions[i] - z) <= either_side ) {
 						int x = canvas.screenX(x_positions[i]);
 						int x_pixel_size = canvas.screenX(x_positions[i]+1) - x;
+						if( x_pixel_size < 1 ) x_pixel_size = 1;
 						int y = canvas.screenY(y_positions[i]);
 						int y_pixel_size = canvas.screenY(y_positions[i]+1) - y;
+						if( y_pixel_size < 1 ) y_pixel_size = 1;
 						g.fillRect( x, y, x_pixel_size, y_pixel_size );
 					}
 			}
@@ -162,8 +166,10 @@ public class Connection {
 			for( int i = 0; i < points; ++i ) {
 					int x = canvas.screenX(x_positions[i]);
 					int x_pixel_size = canvas.screenX(x_positions[i]+1) - x;
+					if( x_pixel_size < 1 ) x_pixel_size = 1;
 					int y = canvas.screenY(z_positions[i]);
 					int y_pixel_size = canvas.screenY(z_positions[i]+1) - y;
+					if( y_pixel_size < 1 ) y_pixel_size = 1;
 					g.fillRect(  x, y, x_pixel_size, y_pixel_size );
 			}
 		}
@@ -175,8 +181,10 @@ public class Connection {
 				
 				int x = canvas.screenX(z_positions[i]);
 				int x_pixel_size = canvas.screenX(z_positions[i]+1) - x;
+				if( x_pixel_size < 1 ) x_pixel_size = 1;
 				int y = canvas.screenY(y_positions[i]);
 				int y_pixel_size = canvas.screenY(y_positions[i]+1) - y;
+				if( y_pixel_size < 1 ) y_pixel_size = 1;
 				g.fillRect(  x, y, x_pixel_size, y_pixel_size );
 			}
 		}

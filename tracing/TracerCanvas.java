@@ -291,20 +291,26 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 						if( plane == ThreePanes.XY_PLANE ) {
 							int sx = screenX(x);
 							int sx_pixel_size = screenX(x+1) - sx;
+							if( sx_pixel_size < 1 ) sx_pixel_size = 1;
 							int sy = screenY(y);
 							int sy_pixel_size = screenY(y+1) - sy;
+							if( sy_pixel_size < 1 ) sy_pixel_size = 1;
 							g.fillRect( screenX(x), screenY(y), sx_pixel_size, sy_pixel_size );
 						} else if( plane == ThreePanes.XZ_PLANE ) {
 							int sx = screenX(x);
 							int sx_pixel_size = screenX(x+1) - sx;
+							if( sx_pixel_size < 1 ) sx_pixel_size = 1;
 							int sy = screenY(z);
 							int sy_pixel_size = screenY(z+1) - sy;
+							if( sy_pixel_size < 1 ) sy_pixel_size = 1;
 							g.fillRect( screenX(x), screenY(z), sx_pixel_size, sy_pixel_size );
 						} else if( plane == ThreePanes.ZY_PLANE ) {
 							int sx = screenX(z);
 							int sx_pixel_size = screenX(z+1) - sx;
+							if( sx_pixel_size < 1 ) sx_pixel_size = 1;
 							int sy = screenY(y);
 							int sy_pixel_size = screenY(y+1) - sy;
+							if( sy_pixel_size < 1 ) sy_pixel_size = 1;
 							g.fillRect( screenX(z), screenY(y), sx_pixel_size, sy_pixel_size );
 						}
 						
@@ -388,7 +394,8 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	public void setConnection( Connection c )  {
 		orangePath = c;
 	}
-			
+	
+	/*
 	static public void drawCrossHairs( Graphics g, Color c, int x, int y ) {
 		g.setColor( c );
 		int hairLength = 8;
@@ -397,5 +404,6 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		g.drawLine( x + 1, y, x + (hairLength - 1), y );
 		g.drawLine( x - 1, y, x - (hairLength - 1), y );
 	}
+	*/
 	
 }

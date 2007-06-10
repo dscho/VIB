@@ -643,7 +643,6 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		    (xz_tracer_canvas != null) &&
 		    (zy_tracer_canvas != null) ) {
 			
-			
 			if( currentConnection != null ) {
 				
 				xy_tracer_canvas.setConnection( currentConnection );

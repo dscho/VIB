@@ -29,22 +29,22 @@ public class ThreePanesCanvas extends ImageCanvas {
 			
 			if( plane == ThreePanes.XY_PLANE ) {
 				int x = screenX(current_x);
-				int y = screenX(current_y);
+				int y = screenY(current_y);
 				int x_pixel_width = screenX(current_x+1) - x;
 				int y_pixel_width = screenY(current_y+1) - y;
 				drawCrosshairs( g, Color.red, x + (x_pixel_width / 2), y + (y_pixel_width / 2) );
 			} else if( plane == ThreePanes.XZ_PLANE ) {
 				int x = screenX(current_x);
-				int y = screenX(current_z);
+				int y = screenY(current_z);
 				int x_pixel_width = screenX(current_x+1) - screenX(current_x);
 				int y_pixel_width = screenY(current_z+1) - screenY(current_z);
-				drawCrosshairs( g, Color.red, screenX(current_x) + (x_pixel_width / 2), screenY(current_z) + (y_pixel_width / 2) );
+				drawCrosshairs( g, Color.red, x + (x_pixel_width / 2), y + (y_pixel_width / 2) );
 			} else if( plane == ThreePanes.ZY_PLANE ) {
 				int x = screenX(current_z);
 				int y = screenY(current_y);
 				int x_pixel_width = screenX(current_z+1) - screenX(current_z);
 				int y_pixel_width = screenY(current_y+1) - screenY(current_y);
-				drawCrosshairs( g, Color.red, screenX(current_z) + (x_pixel_width / 2), screenY(current_y) + (y_pixel_width / 2)  );
+				drawCrosshairs( g, Color.red, x + (x_pixel_width / 2), y + (y_pixel_width / 2)  );
 			}
 			
 		}
