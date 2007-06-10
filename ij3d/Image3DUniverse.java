@@ -131,6 +131,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		centerTG.setTransform(transform);
 	}
 
+	public Point3f getGlobalCenterPoint() {
+		return globalCenter;
+	}
+
 	public void addVoltex(ImagePlus image, Color3f color, 
 		String name, boolean[] channels, int resamplingF) {
 		if(contents.contains(name)) {
@@ -240,14 +244,11 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public void resetView() {
 		fireTransformationStarted();
 		Transform3D t = new Transform3D();
-		//for(Iterator it = contents(); it.hasNext();) {
-			//Content c = (Content)it.next();
-			//c.resetView();
-		//}
 		getViewingPlatform().setNominalViewingTransform();
+		rotationsTG.setTransform(t);
+		translateTG.setTransform(t);
 		TransformGroup tg = null;
 		transformChanged(-1, tg);
-		rotationsTG.setTransform(t);
 		fireTransformationFinished();
 	}
 

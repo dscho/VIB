@@ -96,20 +96,20 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		root.addChild(scaleTG);
 
-		translateTG = new TransformGroup();
-		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		scaleTG.addChild(translateTG);
-
 		rotationsTG = new TransformGroup();
 		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		translateTG.addChild(rotationsTG);
+		scaleTG.addChild(rotationsTG);
+
+		translateTG = new TransformGroup();
+		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		rotationsTG.addChild(translateTG);
 
 		centerTG = new TransformGroup();
 		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		rotationsTG.addChild(centerTG);
+		translateTG.addChild(centerTG);
 
 		scene = new BranchGroup();
 		scene.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);

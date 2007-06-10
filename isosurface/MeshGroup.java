@@ -41,7 +41,7 @@ public class MeshGroup extends Content {
 				thresh/255f, thresh/255f, thresh/255f);
 		}
 		shape = new IsoShape(mesh, color, thresh, getTransparency());
-		pickTG.addChild(shape);
+		getLocalRotate().addChild(shape);
 		compile();
 	}
 
@@ -58,7 +58,7 @@ public class MeshGroup extends Content {
 			color = new Color3f(new Color(value));
 		}
 		shape = new IsoShape(mesh, color, threshold, getTransparency());
-		pickTG.addChild(shape);
+		getLocalRotate().addChild(shape);
 		compile();
 	}
 		

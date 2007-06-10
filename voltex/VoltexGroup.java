@@ -52,7 +52,7 @@ public class VoltexGroup extends Content {
 					color, getTransparency());
 		renderer.fullReload();
 
-		pickTG.addChild(renderer.getVolumeNode());
+		getLocalRotate().addChild(renderer.getVolumeNode());
 
 		compile();
 	}

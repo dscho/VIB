@@ -37,6 +37,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem stopAnimation;
 	private MenuItem close;
 	private MenuItem setTransform;
+	private MenuItem resetTransform;
 	private MenuItem applyTransform;
 	private MenuItem saveTransform;
 	private CheckboxMenuItem perspective;
@@ -170,6 +171,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		setTransform.addActionListener(this);
 		content.add(setTransform);
 
+		resetTransform = new MenuItem("Reset Transform");
+		resetTransform.addActionListener(this);
+		content.add(resetTransform);
+
 		applyTransform = new MenuItem("Apply Transform");
 		applyTransform.addActionListener(this);
 		content.add(applyTransform);
@@ -292,15 +297,29 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.close();
 		}
 
-		if(e.getSource() == setTransform) {
+		if(e.getSource() == resetTransform) {
 			if(univ.getSelected() == null) {
 				IJ.error("Selection required");
 				return;
 			}
 			univ.fireTransformationStarted();
 			univ.getSelected().setTransform(
-				new Transform3D(readTransform(univ.getSelected())));
+					new Transform3D());
 			univ.fireTransformationFinished();
+		}
+
+		if(e.getSource() == setTransform) {
+			if(univ.getSelected() == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			univ.fireTransformationStarted();
+			float[] t = readTransform(univ.getSelected());
+			if(t != null) {
+				univ.getSelected().setTransform(
+					new Transform3D(t));
+				univ.fireTransformationFinished();
+			}
 		}
 
 		if(e.getSource() == applyTransform) {
@@ -544,12 +563,23 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private float[] readTransform(Content selected) {
 		GenericDialog gd = new GenericDialog(
 					"Read transformation", null);
-		gd.addStringField("Transformation", "", 25);
-		System.out.println(ij.WindowManager.getCurrentWindow().getCanvas());
+		Transform3D t1 = new Transform3D();
+		selected.getLocalTranslate().getTransform(t1);
+		Transform3D t2 = new Transform3D();
+		selected.getLocalRotate().getTransform(t2);
+		t1.mul(t2);
+		float[] matrix = new float[16];
+		t1.get(matrix);
+		String transform = "";
+		for(int i = 0; i < matrix.length; i++) {
+			transform += matrix[i] + " ";
+		}
+		gd.addStringField("Transformation", transform, 25);
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return null;
-		String transform = gd.getNextString();
+
+		transform = gd.getNextString();
 		String[] s = ij.util.Tools.split(transform);
 		float[] m = new float[s.length];
 		for(int i = 0; i < s.length; i++) {

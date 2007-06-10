@@ -56,7 +56,7 @@ public class OrthoGroup extends Content {
 					imp.getStackSize()/2};
 		renderer.fullReload();
 
-		pickTG.addChild(renderer.getVolumeNode());
+		getLocalRotate().addChild(renderer.getVolumeNode());
 
 		compile();
 	}

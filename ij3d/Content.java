@@ -12,6 +12,8 @@ import javax.vecmath.Color3f;
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
 import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 
+import javax.vecmath.Vector3f;
+import javax.vecmath.Matrix3f;
 import javax.vecmath.Point3f;
 
 public abstract class Content extends BranchGroup {
@@ -25,7 +27,8 @@ public abstract class Content extends BranchGroup {
 	protected boolean selected;
 	protected Point3f centerPoint, minPoint, maxPoint;
 	
-	protected TransformGroup pickTG;
+	protected TransformGroup localRotate;
+	protected TransformGroup localTranslate;
 
 	public Content() {
 		// create BranchGroup for this image
@@ -35,10 +38,14 @@ public abstract class Content extends BranchGroup {
 		this.name = name;
 
 		// create transformation for pickeing
-		pickTG = new TransformGroup();
-		pickTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		pickTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		addChild(pickTG);
+		localTranslate = new TransformGroup();
+		localTranslate.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		localTranslate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		addChild(localTranslate);
+		localRotate = new TransformGroup();
+		localRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		localRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		localTranslate.addChild(localRotate);
 	}
 
 	public Content(String name, Color3f color) {
@@ -66,7 +73,15 @@ public abstract class Content extends BranchGroup {
 	}
 
 	public void setTransform(Transform3D transform) {
-		pickTG.setTransform(transform);
+		Transform3D t = new Transform3D();
+		Matrix3f m = new Matrix3f();
+		transform.getRotationScale(m);
+		t.setRotationScale(m);
+		localRotate.setTransform(t);
+		Vector3f v = new Vector3f();
+		transform.get(v);
+		t.set(v);
+		localTranslate.setTransform(t);
 	}
 
 	public void setChannels(boolean[] channels) {
@@ -101,10 +116,6 @@ public abstract class Content extends BranchGroup {
 		transparencyUpdated(transparency);
 	}
 
-	public void resetView() {
-		pickTG.setTransform(new Transform3D());
-	}
-
 	public String getName() {
 		return name;
 	}
@@ -129,8 +140,12 @@ public abstract class Content extends BranchGroup {
 		return resamplingF;
 	}
 
-	public TransformGroup getPickTG() {
-		return pickTG;
+	public TransformGroup getLocalRotate() {
+		return localRotate;
+	}
+
+	public TransformGroup getLocalTranslate() {
+		return localTranslate;
 	}
 
 	public abstract void eyePtChanged(View view);
