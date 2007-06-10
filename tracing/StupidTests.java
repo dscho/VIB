@@ -134,7 +134,13 @@ public class StupidTests {
 					if( z < either_side || z >= (depth - either_side) )
 						continue;
 					
-					EigenResultsDouble er = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, either_side, false );
+					EigenResultsDouble er;
+					try {
+						er = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, either_side, 1.0f, false );
+					} catch( Exception exception ) {
+						IJ.error("Caught an exception while calculating the Hessian: "+exception);
+						return;
+					}
 					
 					int v = (int) ( 255.0 - Math.abs(er.sortedValues[0]) );
 					if( v < 0 )
@@ -231,7 +237,13 @@ public class StupidTests {
 					if( z < either_side || z >= (depth - either_side) )
 						continue;
 					
-					EigenResultsDouble er = hessianAnalyzer.analyzeAtPoint( x, y, z, either_side, false );
+					EigenResultsDouble er;
+					try {
+						er = hessianAnalyzer.analyzeAtPoint( x, y, z, either_side, 1.0f, false );
+					}  catch( Exception exception ) {
+						IJ.error("Caught an exception while calculating the Hessian: "+exception);
+						return;
+					}
 					
 					int v = (int) ( 255.0 - Math.abs(er.sortedValues[0]) );
 					if( v < 0 )

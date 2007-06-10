@@ -146,8 +146,14 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			int z = imp.getCurrentSlice() - 1;
 			
 			tracerPlugin.setPositionAllPanes( x, y, z );
-			
-			EigenResultsDouble er = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, false );
+
+			EigenResultsDouble er;
+			try {
+				er = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, 1.0f, false );
+			} catch( Exception exception ) {
+				IJ.error("Caught an exception while calculating the Hessian: "+exception);
+				return;
+			}
 			
 			tracerPlugin.logPosition( x, y, z, er.sortedValues[0], er.sortedValues[1], er.sortedValues[2] );
 			
@@ -156,10 +162,18 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			int x = offScreenX(e.getX());
 			int y = offScreenX(e.getY());
 			int z = imp.getCurrentSlice() - 1;
-			
-			EigenResultsDouble er_2_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, false );
-			EigenResultsDouble er_1_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 1, false );
-			
+
+			EigenResultsDouble er_2_around;
+			EigenResultsDouble er_1_around;
+
+			try {
+				er_2_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, 1.0f /* 0.5f */, false );
+				er_1_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 1, 1.0f /* 0.5f */, false );
+			} catch( Exception exception ) {
+				IJ.error("Caught an exception while calculating the Hessian: "+exception);
+				return;
+			}			
+
 			Arrow arrow_1_around = new Arrow( Color.ORANGE, x, y, z,
 							  er_1_around.sortedVectors[0][0],
 							  er_1_around.sortedVectors[0][1],

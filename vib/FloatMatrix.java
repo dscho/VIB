@@ -1033,7 +1033,7 @@ public class FloatMatrix {
 			System.err.println(m.toString());
 			System.err.println("--- " + params[0] + " " + params[1] + " " + params[2] + " " + params[3] + " " + params[4] + " " + params[5]);
 			System.err.println(rotateEulerAt(params[0], params[1], params[2], params[3], params[4], params[5]).toString());
-			System.out.println("$data setFloatMatrix "
+			System.out.println("$data setTransform "
 					   + m.toStringForAmira());
 			m.apply(cx, cy, cz);
 			//System.err.println(m.resultToString());

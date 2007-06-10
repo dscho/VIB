@@ -149,16 +149,23 @@ public class HessianAnalyzer {
 		
 	}
 	
-	public EigenResultsDouble analyzeAtPoint( int x, int y, int z, int either_side, boolean interactive ) {
+	public EigenResultsDouble analyzeAtPoint( int x, int y, int z, int either_side, float spread_factor, boolean interactive )
+		throws Exception {
+
+		/* It's unlikely that the image we're looking at will
+		   be as small as either_side, but just in case: */
+
+		if( either_side >= width )
+			throw new Exception("Image too small for that value of either_side (width: "+
+					    width+", either_side: "+either_side);
+		if( either_side >= height )
+			throw new Exception("Image too small for that value of either_side (width: "+
+					    height+", either_side: "+either_side);
+		if( either_side >= depth )
+			throw new Exception("Image too small for that value of either_side (width: "+
+					    depth+", either_side: "+either_side);
 		
 		int i;
-		
-		if( x < either_side || x >= (width - either_side) )
-			return null;
-		if( y < either_side || y >= (height - either_side) )
-			return null;
-		if( z < either_side || z >= (depth - either_side) )
-			return null;
 		
 		int diameter = either_side * 2 + 1;
 		int points = diameter * diameter * diameter;
@@ -167,9 +174,16 @@ public class HessianAnalyzer {
 		
 		byte [][] relevant_pixels = new byte[diameter][];
 		
-		for( i = 0; i < diameter; ++i ) {        
-			relevant_pixels[i] = slices_data[ z + (i - either_side) ];
-			// relevant_pixels[i] = (byte []) original_stack.getPixels( z + (i-1) );
+		for( i = 0; i < diameter; ++i ) {
+
+			int z_to_fix_up = z + (i - either_side);
+
+			if( z_to_fix_up < 0 )
+				z_to_fix_up = - z_to_fix_up;
+			if( z_to_fix_up >= depth )
+				z_to_fix_up = (2 * depth - 2) - z_to_fix_up;
+
+			relevant_pixels[i] = slices_data[ z_to_fix_up ];
 		}
 		
 		for( i = 0; i < points; ++i ) {
@@ -180,15 +194,28 @@ public class HessianAnalyzer {
 			
 			byte [] pixels;
 			
-			values_around_point[i] = (int)( relevant_pixels[z_grid + either_side][ (y + y_grid) * width + (x + x_grid) ] & 0xFF );
+			int y_to_fix_up = y + y_grid;
+			int x_to_fix_up = x + x_grid;
+
+			if( x_to_fix_up < 0 )
+				x_to_fix_up = - x_to_fix_up;
+			if( x_to_fix_up >= width )
+				x_to_fix_up = (2 * width - 2) - x_to_fix_up;
+
+			if( y_to_fix_up < 0 )
+				y_to_fix_up = - y_to_fix_up;
+			if( y_to_fix_up >= width )
+				y_to_fix_up = (2 * height - 2) - y_to_fix_up;
+
+			values_around_point[i] = (int)( relevant_pixels[z_grid + either_side][ y_to_fix_up * width + x_to_fix_up ] & 0xFF );
 			
 		}
 		
 		float [][] hessian = hessian( values_around_point,
 					      either_side,
-					      x_spacing / 2,
-					      y_spacing / 2,
-					      z_spacing / 2 );
+					      x_spacing * spread_factor,
+					      y_spacing * spread_factor,
+					      z_spacing * spread_factor );
 		
 		JacobiFloat jc = new JacobiFloat( hessian );
 		
