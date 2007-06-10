@@ -63,12 +63,13 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		int keyCode = e.getKeyCode();
 		char keyChar = e.getKeyChar();
 		int flags = e.getModifiers();
+
 		/*
 		System.out.println("keyCode=" + keyCode + " (" + KeyEvent.getKeyText(keyCode)
 				   + ") keyChar=\"" + keyChar + "\" (" + (int)keyChar + ") "
 				   + KeyEvent.getKeyModifiersText(flags));
 		*/
-
+				   
 		if( keyChar == 't' || keyChar == 'T' ) {
 
 			// System.out.println( "Yes, running testPathTo" );
@@ -98,6 +99,10 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 
 			just_near_slices = ! just_near_slices;
 
+		} else if( keyCode == KeyEvent.VK_SHIFT ) {
+			
+			tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, true );
+ 
 		}
 
 		e.consume();
@@ -119,7 +124,9 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		last_x_in_pane = offScreenX(e.getX());
 		last_y_in_pane = offScreenY(e.getY());
 		
-		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, e );
+		boolean shift_key_down = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
+
+		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_key_down );
 		
 	}
 	
@@ -171,7 +178,6 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		} else if( tracerPlugin.setupTrace ) {
 			
 			boolean join = e.isShiftDown();
-
 
 			tracerPlugin.clickForTrace( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
 			// tracerPlugin.startPath( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );

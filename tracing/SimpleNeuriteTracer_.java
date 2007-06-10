@@ -43,6 +43,12 @@ import util.ArrowDisplayer;
 public class SimpleNeuriteTracer_ extends ThreePanes
 	implements PlugIn, AStarProgressCallback, ArrowDisplayer {
 
+	boolean unsavedPaths = false;
+
+	public boolean pathsUnsaved() {
+		return unsavedPaths;
+	}
+
 	/* Just for convenience, keep casted references to the
 	   superclass's TracerCanvas objects */
 
@@ -241,6 +247,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		// IJ.error( "got fileContents: " +fileContents);
 
 		if( fileContents != null ) {
+
 			ArrayList< SegmentedConnection > all_paths = loadFromString(fileContents);
 			// IJ.error("got new all_paths: " + all_paths);
 			if( all_paths != null )
@@ -488,13 +495,18 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		// Need to included data too....
 		
-		byte [] fileAsBytes = tracesAsBytes( allPaths );
+		byte [] fileAsBytes;
+
+		synchronized(this) {
+			fileAsBytes = tracesAsBytes( allPaths );
+		}
 
 		ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, fileAsBytes );
 
 		String [] first_line = (String [])tsv_results.get(0);
 		if( first_line[0].equals("success") ) {
 			IJ.error("Annotations uploaded successfully!");
+			unsavedPaths = false;
 		} else if( first_line[0].equals("error") ) {
 			IJ.error("There was an error while uploading the annotation file: "+first_line[1]);
 		} else {
@@ -502,32 +514,66 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		}
 		
 	}
-
-	public void loadTracings( ) {
+	
+	synchronized public void loadTracings( ) {
 			
-		if( file_info == null ) {
-			IJ.error("No original file info for this image, so can't load corresponding traces file.");
-			return;
+		String fileName;
+		String directory;
+
+		if( file_info != null ) {
+
+			fileName = file_info.fileName;
+			directory = file_info.directory;
+			
+			File possibleLoadFile = new File(directory,fileName+".traces");
+			
+			String path = possibleLoadFile.getPath();
+			
+			if(possibleLoadFile.exists()) {
+						
+				YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(),
+									     "Confirm",
+									     "Load the default traces file? ("+path+")" );
+				
+				if( d.yesPressed() ) {
+					
+					ArrayList< SegmentedConnection > all_paths = loadTracingsFromFile(path);
+					if( all_paths != null )
+						setAllPaths( all_paths );
+					
+					unsavedPaths = false;
+					
+					return;
+					
+				} else if( d.cancelPressed() ) {
+
+					return;
+					
+				}
+			}
 		}
 
-		String fileName = file_info.fileName;
-		String directory = file_info.directory;
+		//  Presumably "No" was pressed...
 
-		File possibleLoadFile = new File(directory,fileName+".traces");
-	
-		String path = possibleLoadFile.getPath();
+		OpenDialog od;
+		
+		od = new OpenDialog("Select traces file...",
+				    null,
+				    null );
+		
+		fileName = od.getFileName();
+		directory = od.getDirectory();
 
-		if(possibleLoadFile.exists()) {
-						
-			ArrayList< SegmentedConnection > all_paths = loadTracingsFromFile(path);
+		if( fileName != null ) {				
+
+			ArrayList< SegmentedConnection > all_paths = loadTracingsFromFile(directory+File.separator+fileName);
 			if( all_paths != null )
 				setAllPaths( all_paths );
-
-		} else {
-			IJ.error("The corresponding traces file (" + path + ") doesn't exist.");
+			
+			unsavedPaths = false;
+			
 			return;
 		}
-
 
 	}
 
@@ -584,13 +630,13 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	}
 	
-	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, MouseEvent e ) {
+	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, boolean shift_key_down ) {
 
 		int [] p = new int[3];
 
 		findPointInStack( x_in_pane, y_in_pane, in_plane, p );
 
-		if( (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0 )
+		if( shift_key_down )
 			setSlicesAllPanes( p[0], p[1], p[2] );
 		
 		if( (xy_tracer_canvas != null) &&
@@ -658,7 +704,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		xz_tracer_canvas.setPathUnfinished( unfinished );
 	}
 
-	public void setAllPaths( ArrayList< SegmentedConnection > allPaths ) {
+	synchronized public void setAllPaths( ArrayList< SegmentedConnection > allPaths ) {
 
 		// System.out.println("Setting completed in each canvas to: " +allPaths );
 
@@ -667,6 +713,16 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		xz_tracer_canvas.setCompleted( allPaths );
 
 		this.allPaths = allPaths;
+
+		int paths = allPaths.size();
+		// System.out.println("Paths to draw: "+paths);
+		for( int i = 0; i < paths; ++i ) {
+						
+			SegmentedConnection s = (SegmentedConnection)allPaths.get(i);
+			resultsDialog.addPathToList("Path with index: " +(i+1));
+		}
+
+		repaintAllPanes();
 	}
 
 	/* Create a new 8 bit ImagePlus of the same dimensions as this
@@ -770,7 +826,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		last_start_point_z = last.z;
 		setTemporaryConnection( null );
 
-		System.out.println("confirming path; have "+allPaths.size()+" afterwards");
+		// System.out.println("confirming path; have "+allPaths.size()+" afterwards");
 		
 		resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 			
@@ -842,7 +898,9 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		}
 
-			// ... and change the state of the UI
+		unsavedPaths = true;
+
+		// ... and change the state of the UI
 		resultsDialog.changeState( NeuriteTracerResultsDialog.WAITING_TO_START_PATH );
 
 		repaintAllPanes( );
@@ -917,268 +975,6 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		return sw.toString();
 	}
 	
-	boolean assertions = true;
-	
-	void add_node( PriorityQueue queue, Hashtable hash, AStarNode a ) {
-		
-		// We should never add a node if it's already in one of these:
-		if( assertions ) {
-			
-			if( null != found_in( queue, hash, a ) ) {
-				System.out.println( "E: trying to add a node ("+a+") that's already in queue.");
-				System.out.println( getStackTrace() );
-			}
-			
-			float f_to_remove = a.f;
-			
-			int x_to_remove = a.x;
-			int y_to_remove = a.y;
-			int z_to_remove = a.z;
-			
-			Iterator<AStarNode> oi = queue.iterator();
-			while( oi.hasNext() ) {
-				AStarNode i = oi.next();
-				if( (x_to_remove == i.x) &&
-				    (y_to_remove == i.y) &&
-				    (z_to_remove == i.z) ) {
-					System.out.println("E: trying to add a node ("+a+") that's already in queue by position ("+i+")");
-					System.out.println("E: (when number in queue was: "+queue.size()+")");
-				}
-                /*
-                if( f_to_remove == i.f ) {
-                    System.out.println("E: trying to add a node ("+a+") that's already in the queue by priority ("+i+")");
-                    System.out.println("E: (when number in queue was: "+queue.size()+")");
-                }
-                */
-			}
-			
-		}
-		int in_queue_before_adding = queue.size();
-		// FIXME: does this have a return value?
-		queue.add( a );
-		int in_queue_after_adding = queue.size();
-		if( (in_queue_after_adding - in_queue_before_adding) != 1 ) {
-			System.out.println( "E: while adding ("+a+") to queue:");
-			System.out.println( "E: there should be one more element in the queue after adding" );
-			System.out.println( "E: in fact, "+in_queue_before_adding+" -> "+in_queue_after_adding );
-			System.out.println( getStackTrace() );            
-		}
-		int in_hash_before_adding = hash.size();
-		hash.put( a, a );
-		int in_hash_after_adding = hash.size();
-		if( (in_hash_after_adding - in_hash_before_adding) != 1 ) {
-			System.out.println( "E: while adding ("+a+") to hash:");
-			System.out.println( "E: there should be one more element in the hash after adding" );
-			System.out.println( "E: in fact, "+in_hash_before_adding+" -> "+in_hash_after_adding );
-			System.out.println( getStackTrace() );            
-		}
-	}
-	
-	void remove( PriorityQueue queue, Hashtable hash, AStarNode a ) {
-		
-        /*
-        if( assertions ) {
-        
-            float f_to_remove = a.f;
-
-            int x_to_remove = a.x;
-            int y_to_remove = a.y;
-            int z_to_remove = a.z;
-
-            boolean in_queue_iteration_right_position = false;
-
-            Iterator<AStarNode> oi = queue.iterator();
-            while( oi.hasNext() ) {
-                AStarNode i = oi.next();
-                if( (x_to_remove == i.x) &&
-                    (y_to_remove == i.y) &&
-                    (z_to_remove == i.z) ) {
-
-                    if( in_queue_iteration_right_position ) {
-                        System.out.println("E: found node at right point more than once.");
-                        System.out.println("E: the extra one was: "+i);
-                        System.out.println( getStackTrace() );
-                    } else {
-                        in_queue_iteration_right_position = true;
-                        foundInQueue = i;
-                    }
-                }
-                if( f_to_remove == i.f ) {
-                    
-
-                }
-            }
-            
-        }
-        */
-
-		int in_queue_before = queue.size();
-		boolean removed = queue.remove( a ); 
-		int in_queue_after = queue.size();
-		
-		if( (in_queue_before - in_queue_after) != 1 ) {
-			System.out.println( "E: size mismatch removing: " + a );
-			System.out.println( "E: " + in_queue_before + " -> " +in_queue_after );
-			System.out.println( getStackTrace() );
-		}
-		
-		if( ! removed ) {
-			System.out.println( "E: didn't succeed in removing the node from the queue" );
-			System.out.println( "E: tried to remove: " + a );
-		}
-		
-		remove_from_hash( hash, a );
-		
-	}
-	
-	void remove_from_hash( Hashtable hash, AStarNode a ) {
-		
-		if( assertions ) {
-			// Check that that node was actually in there...
-			AStarNode in_hash = (AStarNode)hash.get( a );
-			if( in_hash == null ) { 
-				System.out.println( "E: trying to remove from the hash something that isn't there" );
-				System.out.println( "E: node to remove was: "+a );
-				System.out.println( getStackTrace() );
-			} else {
-				if( in_hash != a ) {
-					System.out.println( "E: while removing from hash, reference of found object mismatched" );
-					System.out.println( "E:   node to remove was: "+a );
-					System.out.println( "E:   node in there was: "+a );
-					System.out.println( getStackTrace() );
-				}
-			}            
-		}
-		
-		int in_hash_before_removing = hash.size();
-		hash.remove( a );
-		int in_hash_after_removing = hash.size();        
-		if( (in_hash_before_removing - in_hash_after_removing) != 1 ) {
-			System.out.println( "E: while removing ("+a+") from the hash:");
-			System.out.println( "E: there should be one fewer element in the hash after removing" );
-			System.out.println( "E: in fact, "+in_hash_before_removing+" -> "+in_hash_after_removing );
-			System.out.println( getStackTrace() );                        
-		}
-		
-	}
-	
-	AStarNode get_highest_priority( PriorityQueue queue, Hashtable hash ) {
-		
-		int before_removing_with_poll = queue.size();
-		AStarNode fromQueue = (AStarNode)queue.poll();
-		int after_removing_with_poll = queue.size();
-		if( (before_removing_with_poll - after_removing_with_poll) != 1 ) {
-			System.out.println( "E: while removing with poll ("+fromQueue+") from the queue");
-			System.out.println( "E: there should be one fewer element in the queue after removing" );
-			System.out.println( "E: in fact, "+before_removing_with_poll+" -> "+after_removing_with_poll );
-			System.out.println( getStackTrace() );
-		}        
-		remove_from_hash( hash, fromQueue );
-		
-		return fromQueue;
-		
-	}
-	
-	AStarNode found_in( PriorityQueue queue, Hashtable hash, AStarNode a ) {
-		boolean in_hash;
-		boolean in_queue;
-		boolean in_queue_iteration;
-		AStarNode foundInHash = (AStarNode)hash.get( a );
-		AStarNode foundInQueue = null;
-		in_hash = (foundInHash != null);
-		in_queue = queue.contains( a );
-		in_queue_iteration = false;
-		Iterator<AStarNode> oi = queue.iterator();
-		while( oi.hasNext() ) {
-			AStarNode i = oi.next();
-			if( (a.x == i.x) && (a.y == i.y) && (a.z == i.z) ) {
-				if( in_queue_iteration ) {
-					System.out.println("E: found node at right point more than once.");
-					System.out.println("E: the extra one was: "+i);
-					System.out.println( getStackTrace() );
-				} else {
-					in_queue_iteration = true;
-					foundInQueue = i;
-				}
-			}
-		}
-		if( (! in_hash) && (! in_queue) && (! in_queue_iteration) ) {
-			// Then that's fine:
-			return null;
-		} else if( in_hash && in_queue && in_queue_iteration ) {
-			// That's also fine.
-			if( foundInHash != foundInQueue ) {
-				// i.e. we've two, but their references are different:
-				System.out.println("E: found the node in both the hash and the queue,");
-				System.out.println("E: but their references were not equal");
-				System.out.println("E: in hash: "+foundInHash);
-				System.out.println("E: in queue: "+foundInQueue);
-				System.out.println( getStackTrace() );
-			}
-			return foundInHash;
-		} else {
-			System.out.println( "E: something was inconsistent: " );
-			System.out.println( "E:    in_hash "+in_hash);
-			System.out.println( "E:    in_queue_iteration "+in_queue_iteration);
-			System.out.println( "E:    in_queue "+in_queue);
-			System.out.println( "E:    foundInHash "+foundInHash);
-			System.out.println( "E:    foundInQueue "+foundInQueue);
-			System.out.println( "E: (when number in queue was: "+queue.size()+")");
-			System.out.println( getStackTrace() );
-		}
-		
-		return foundInHash;
-	}
-	
-	
-	void snapshot( PriorityQueue open_from_start, PriorityQueue closed_from_start,
-		       PriorityQueue open_from_goal, PriorityQueue closed_from_goal,
-		       String title ) {
-		
-		byte [][] snapshot_data = new byte[depth][];
-		
-		for( int i = 0; i < depth; ++i )
-			snapshot_data[i] = new byte[width*height];
-		
-		Iterator<AStarNode> ai;        
-		
-		ai = closed_from_start.iterator();
-		while( ai.hasNext() ) {
-			AStarNode i = ai.next();
-			snapshot_data[i.z][i.y*width+i.x] = (byte)127;
-		}
-		
-		ai = open_from_start.iterator();
-		while( ai.hasNext() ) {
-			AStarNode i = ai.next();
-			snapshot_data[i.z][i.y*width+i.x] = (byte)255;
-		}
-		
-                
-		ai = closed_from_goal.iterator();
-		while( ai.hasNext() ) {
-			AStarNode i = ai.next();
-			snapshot_data[i.z][i.y*width+i.x] = (byte)192;
-		}
-		
-		ai = open_from_goal.iterator();
-		while( ai.hasNext() ) {
-			AStarNode i = ai.next();
-			snapshot_data[i.z][i.y*width+i.x] = (byte)64;
-		}
-		
-		ImageStack newStack = new ImageStack( width, height );
-		
-		for( int i = 0; i < depth; ++i ) {
-			ByteProcessor thisSlice = new ByteProcessor( width, height );
-			thisSlice.setPixels( snapshot_data[i] );
-			newStack.addSlice( null, thisSlice );
-		}
-		
-		ImagePlus ip = new ImagePlus( title, newStack );
-		ip.show( );
-	}
-
 	double x_spacing;
 	double y_spacing;
 	double z_spacing;
@@ -1238,7 +1034,9 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 				IJ.error("This plugin only works on 8 bit images at the moment.");
 				return;
 			}
-			
+
+			file_info = currentImage.getOriginalFileInfo();
+
 			// Turn it grey, since I find that helpful...
 
 			IJ.runMacro("run(\"Grays\");");

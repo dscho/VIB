@@ -4,6 +4,7 @@ package tracing;
 
 import ij.*;
 import ij.io.*;
+import ij.gui.YesNoCancelDialog;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -59,6 +60,25 @@ class NeuriteTracerResultsDialog
 	Button quitButton;
 
 	// ------------------------------------------------------------------------
+
+	public void exitRequested() {
+
+		// FIXME: check that everything is saved...
+
+		if( plugin.pathsUnsaved() ) {
+						
+			YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(), "Really quit?",
+								     "There are unsaved paths. Do you really want to quit?" );
+
+			if( ! d.yesPressed() )
+				return;
+
+		}
+
+		plugin.cancelSearch();
+		dispose();
+		plugin.closeAndReset();
+	}
 
 	public void changeState( int newState ) {
 
@@ -147,9 +167,7 @@ class NeuriteTracerResultsDialog
 	// ------------------------------------------------------------------------
 	
 	public void windowClosing( WindowEvent e ) {
-		plugin.cancelled = true;
-		dispose();
-		plugin.closeAndReset();
+		exitRequested();
 	}
 	
 	public void windowActivated( WindowEvent e ) { }
@@ -342,9 +360,10 @@ class NeuriteTracerResultsDialog
 			
 			if( info == null ) {
 				
-				IJ.error( "BUG: implement me (no original file info available)" );
-				return;
-				
+				sd = new SaveDialog("Save traces as...",
+						    "image.traces",
+						    ".traces");
+
 			} else {
 				
 				String fileName = info.fileName;
@@ -362,17 +381,17 @@ class NeuriteTracerResultsDialog
 			
 			String savePath;
 			if(sd.getFileName()==null) {
-				System.out.println("no savePath found");
+				// System.out.println("no savePath found");
 				return;
 			} else {
 				savePath = sd.getDirectory()+sd.getFileName();
-				System.out.println("found savePath: "+savePath);
+				// System.out.println("found savePath: "+savePath);
 			}
 			
 			File file = new File(savePath);
 			if ((file!=null)&&file.exists()) {
 				if (!IJ.showMessageWithCancel(
-					    "Save label annotation file...", "The file "+
+					    "Save traces file...", "The file "+
 					    savePath+" already exists.\n"+
 					    "Do you want to replace it?"))
 					return;
@@ -384,8 +403,16 @@ class NeuriteTracerResultsDialog
 			
 		} else if( source == loadButton ) {
 			
-			plugin.loadTracings();
+			if( plugin.pathsUnsaved() ) {						
+				YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(), "Warning",
+									     "There are unsaved paths. Do you really want to load new traces?" );
+				
+				if( ! d.yesPressed() )
+					return;
+			}
 			
+			plugin.loadTracings();			
+
 		} else if( source == cancelSearch ) {
 			
 			statusText.setText("Cancelling...");
@@ -422,10 +449,7 @@ class NeuriteTracerResultsDialog
 
 		} else if( source == quitButton ) {
 			
-			statusText.setText("Quitting...");
-			plugin.cancelSearch();
-			dispose();
-			plugin.closeAndReset();
+			exitRequested();
 
 		}
 	}

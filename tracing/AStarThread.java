@@ -152,8 +152,10 @@ public class AStarThread extends Thread {
 				if( (reportEveryMilliseconds > 0) && ((currentMilliseconds - lastReportMilliseconds) > reportEveryMilliseconds ) ) {
 					
 					// Then report the open list...
-					System.err.println("open_from_start.size() is "+open_from_start.size()+", "+
-							   "open_from_goal.size() is "+open_from_goal.size());
+
+					/* System.err.println("open_from_start.size() is "+open_from_start.size()+", "+
+					   "open_from_goal.size() is "+open_from_goal.size()); */
+
 					short [] open = new short[ (open_from_start.size() + open_from_goal.size()) * 3 ];
 					int i = 0;
 					for( Iterator<AStarNode> j = open_from_start.iterator();
@@ -216,7 +218,7 @@ public class AStarThread extends Thread {
 			// Has the route from the goal found the start?
 			
 			if( (q != null) && (q.x == start_x) && (q.y == start_y) && (q.z == start_z) ) {
-				System.out.println( "Found the goal! (from end to start)" );
+				// System.out.println( "Found the goal! (from end to start)" );
 				result = p.asConnectionReversed();
 				progress.finished(true);
 				return;
@@ -233,7 +235,7 @@ public class AStarThread extends Thread {
 						System.out.println( "found next open node in closed_from_goal_hash" );
 				}
 				if( foundInRouteFromGoal != null ) {
-					System.out.println( "Found the goal! (searches met...)" );
+					// System.out.println( "Found the goal! (searches met...)" );
 					AStarNode a = p.getPredecessor();
 					if( a == null ) {
 						result = foundInRouteFromGoal.asConnectionReversed();
