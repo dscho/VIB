@@ -9,6 +9,7 @@ import ij.WindowManager;
 import ij.gui.ImageWindow;
 import ij.gui.ImageCanvas;
 import ij.gui.MessageDialog;
+import ij.gui.Toolbar;
 import ij.process.ColorProcessor;
 import ij.macro.Interpreter;
 
@@ -26,6 +27,8 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowStateListener;
 import java.awt.event.WindowEvent;
 
@@ -35,7 +38,8 @@ import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Screen3D;
 
 public class ImageWindow3D extends ImageWindow implements UniverseListener, 
-							WindowStateListener {
+							WindowStateListener,
+							KeyListener {
 	DefaultUniverse universe;
 	ImageCanvas3D canvas3D;
 	private boolean noOffScreen = false;
@@ -63,6 +67,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		addWindowListener(this);
 		addWindowStateListener(this);
 		canvas3D.addKeyListener(ij);
+		canvas3D.addKeyListener(this);
 		universe.addUniverseListener(this);
 		updateImagePlus();
 		show();
@@ -216,5 +221,21 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	public void canvasResized() {
 		updateImagePlus();
 	}
+
+	private int lastToolID = Toolbar.HAND;
+
+	public void keyPressed(KeyEvent e) {
+		if (e.getKeyCode() == e.VK_ESCAPE) {
+			if (Toolbar.getToolId() == Toolbar.HAND)
+				Toolbar.getInstance().setTool(lastToolID);
+			else {
+				lastToolID = Toolbar.getToolId();
+				Toolbar.getInstance().setTool(Toolbar.HAND);
+			}
+		}
+	}
+
+	public void keyTyped(KeyEvent e) {}
+	public void keyReleased(KeyEvent e) {}
 }
 
