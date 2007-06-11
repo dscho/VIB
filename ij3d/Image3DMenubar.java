@@ -13,6 +13,7 @@ import voltex.VoltexGroup;
 import isosurface.MeshGroup;
 import javax.vecmath.Color3f;
 import javax.media.j3d.View;
+import javax.media.j3d.Transform3D;
 
 public class Image3DMenubar extends MenuBar implements ActionListener, 
 					 		ItemListener,
@@ -35,6 +36,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem startAnimation;
 	private MenuItem stopAnimation;
 	private MenuItem close;
+	private MenuItem setTransform;
+	private MenuItem applyTransform;
+	private MenuItem saveTransform;
 	private CheckboxMenuItem perspective;
 
 	private Menu selectedMenu;
@@ -129,6 +133,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		delete.addActionListener(this);
 		universe.add(delete);
 
+
 		return universe;
 	}
 
@@ -157,6 +162,21 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		transparency = new MenuItem("Change transparency");
 		transparency.addActionListener(this);
 		content.add(transparency);
+
+
+		content.addSeparator();
+
+		setTransform = new MenuItem("Set Transform");
+		setTransform.addActionListener(this);
+		content.add(setTransform);
+
+		applyTransform = new MenuItem("Apply Transform");
+		applyTransform.addActionListener(this);
+		content.add(applyTransform);
+
+		applyTransform = new MenuItem("Save Transform");
+		applyTransform.addActionListener(this);
+		content.add(applyTransform);
 
 		return content;
 	}
@@ -270,6 +290,23 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == close) {
 			univ.close();
+		}
+
+		if(e.getSource() == setTransform) {
+			if(univ.getSelected() == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			univ.fireTransformationStarted();
+			univ.getSelected().setTransform(
+				new Transform3D(readTransform(univ.getSelected())));
+			univ.fireTransformationFinished();
+		}
+
+		if(e.getSource() == applyTransform) {
+		}
+
+		if(e.getSource() == saveTransform) {
 		}
 	}
 
@@ -502,6 +539,23 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}
 		}
 		return false;
+	}
+
+	private float[] readTransform(Content selected) {
+		GenericDialog gd = new GenericDialog(
+					"Read transformation", null);
+		gd.addStringField("Transformation", "", 25);
+		System.out.println(ij.WindowManager.getCurrentWindow().getCanvas());
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return null;
+		String transform = gd.getNextString();
+		String[] s = ij.util.Tools.split(transform);
+		float[] m = new float[s.length];
+		for(int i = 0; i < s.length; i++) {
+			m[i] = Float.parseFloat(s[i]);
+		}
+		return m;
 	}
 }
 

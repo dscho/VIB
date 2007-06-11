@@ -7,6 +7,7 @@ import ij.ImageJ;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.ImageWindow;
+import ij.gui.ImageCanvas;
 import ij.gui.MessageDialog;
 import ij.process.ColorProcessor;
 import ij.macro.Interpreter;
@@ -65,6 +66,10 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		universe.addUniverseListener(this);
 		updateImagePlus();
 		show();
+	}
+
+	public ImageCanvas getCanvas() {
+		return new ImageCanvas(getImagePlus());
 	}
 
 	private static Canvas3D getCanvas3D(int width, int height) {

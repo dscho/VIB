@@ -9,6 +9,7 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Vector3d;
 import javax.vecmath.Vector3f;
 import javax.vecmath.Point2d;
+import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
 import javax.media.j3d.View;
 import javax.media.j3d.Canvas3D;
@@ -36,9 +37,9 @@ public class VoltexGroup extends Content {
 	private TransformGroup tg;
 
 	public VoltexGroup(String name, Color3f color, ImagePlus image, 
-		boolean[] channels, int resamplingF, Transform3D initial) {
+		boolean[] channels, int resamplingF) {
 		
-		super(name, color, image, channels, resamplingF, initial);
+		super(name, color, image, channels, resamplingF);
 		float scale = image.getWidth() * 
 				(float)image.getCalibration().pixelWidth;
 
@@ -51,9 +52,20 @@ public class VoltexGroup extends Content {
 					color, getTransparency());
 		renderer.fullReload();
 
-		initialTG.addChild(renderer.getVolumeNode());
+		pickTG.addChild(renderer.getVolumeNode());
 
 		compile();
+	}
+		
+	public void calculateMinMaxCenterPoint() {
+		ImagePlus imp = getImage();
+		Calibration c = imp.getCalibration();
+		minPoint = new Point3f();
+		maxPoint = new Point3f((float)(imp.getWidth()*c.pixelWidth),
+				(float)(imp.getHeight()*c.pixelHeight),
+				(float)(imp.getStackSize()*c.pixelDepth));
+		centerPoint = new Point3f(maxPoint.x/2, maxPoint.y/2, 
+				maxPoint.z/2);
 	}
 		
 	public static void addContent(Image3DUniverse univ, ImagePlus grey) {
@@ -103,7 +115,7 @@ public class VoltexGroup extends Content {
 			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
 		}
 		
-		univ.addVoltex(grey, color, name, channels, factor, tr);
+		univ.addVoltex(grey, color, name, channels, factor);
 	}
 
 	public void eyePtChanged(View view) {

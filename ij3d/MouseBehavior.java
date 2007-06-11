@@ -108,15 +108,15 @@ public class MouseBehavior extends Behavior {
 	}
 
 	public void correctGlobalAndLocalTransformations() {
-		for(Iterator it = univ.contents(); it.hasNext();) {
-			univ.getGlobalRotate().getTransform(globalRotation);
-			Content content = (Content)it.next();
-			content.getPickTG().getTransform(currentXform);
-			globalRotation.mul(currentXform);
-			content.getPickTG().setTransform(globalRotation);
-		}
-		globalRotation.setIdentity();
-		univ.getGlobalRotate().setTransform(globalRotation);
+//		for(Iterator it = univ.contents(); it.hasNext();) {
+//			univ.getGlobalRotate().getTransform(globalRotation);
+//			Content content = (Content)it.next();
+//			content.getPickTG().getTransform(currentXform);
+//			globalRotation.mul(currentXform);
+//			content.getPickTG().setTransform(globalRotation);
+//		}
+//		globalRotation.setIdentity();
+//		univ.getGlobalRotate().setTransform(globalRotation);
 	}
 
 	public void rotate(Content c, MouseEvent e) {
