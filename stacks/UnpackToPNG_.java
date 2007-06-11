@@ -7,11 +7,18 @@ import util.BatchOpener;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.WindowManager;
 import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
+import ij.gui.ImageWindow;
 import ij.Macro;
 import ij.LookUpTable;
 import ij.plugin.PlugIn;
+import ij.plugin.Thresholder;
+import ij.plugin.filter.ThresholdToSelection;
+import ij.gui.Roi;
+import ij.gui.ShapeRoi;
+import ij.gui.PolygonRoi;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,11 +27,15 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.awt.Image;
+import java.awt.Polygon;
+import java.awt.Shape;
+import java.awt.geom.PathIterator;
 import java.text.DecimalFormat;
 import javax.imageio.ImageIO;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.ArrayList;
 
 import amira.AmiraParameters;
 
@@ -82,6 +93,9 @@ public class UnpackToPNG_ implements PlugIn {
 		}
 
 		if( AmiraParameters.isAmiraLabelfield(imps[0]) ) {
+			
+			System.out.println("Looks like an Amira label file...");
+
 			try {
 				unpackAmiraLabelFieldToPNGs(imps[0],destinationDirectory);
 			} catch( IOException e ) {
@@ -90,10 +104,9 @@ public class UnpackToPNG_ implements PlugIn {
 			return;
 		}
 
-		for( int i = 0; i < imps.length; ++i ) {
+		System.out.println("Decided it doesn't look a label file, but has "+imps.length+" channels.");
 
-			if( i == 0 )
-				continue;
+		for( int i = 0; i < imps.length; ++i ) {
 
 			ImagePlus imp = imps[i];
 
@@ -122,6 +135,119 @@ public class UnpackToPNG_ implements PlugIn {
 		
 	}
 
+	ArrayList<Polygon> getPolygonsNonBackground( ByteProcessor bp ) {
+
+		ArrayList<Polygon> polygons = new ArrayList<Polygon>();
+		
+		Roi roi = getRoiNonBackground( bp );
+
+		if( roi == null )
+			return polygons;
+
+		Roi [] rois = null;
+
+		if( roi.getType() == Roi.COMPOSITE ) {
+			ShapeRoi shapeRoi = (ShapeRoi)roi;
+			rois = shapeRoi.getRois();			
+		} else if( roi.getType() == Roi.TRACED_ROI ) {			
+			PolygonRoi polygonRoi = (PolygonRoi)roi;
+			rois = new Roi[1];
+			rois[0] = polygonRoi;
+		} else {
+			System.out.println("Unhandled Roi type: "+roi.getType()+", "+roi.getTypeAsString());
+		}
+
+		for( int i = 0; i < rois.length; ++i ) {		
+
+			Polygon p = rois[i].getPolygon();
+			polygons.add(p);
+		}
+
+		return polygons;
+	}
+
+	Roi getRoiNonBackground( ByteProcessor bp ) {
+		
+		bp.setThreshold(1,255,ImageProcessor.NO_LUT_UPDATE);
+		// bp.threshold(0);
+		
+		ImageStack tempStack = new ImageStack(bp.getWidth(),bp.getHeight());
+		tempStack.addSlice(null,bp);
+		ImagePlus imp = new ImagePlus("example stack",tempStack);
+		
+		ThresholdToSelection tts = new ThresholdToSelection();
+		tts.setup( "", imp );
+		tts.run(bp);
+				
+		// imp.show();
+				
+		return imp.getRoi();
+
+	}
+	
+	public static String polygonToAreaCoords( Polygon polygon ) {
+		
+		String result = "";
+
+		double first_x = -1, first_y = -1;
+
+		double[] coordinates = new double[6];
+
+		boolean empty = true;
+		boolean first_points_set = false;
+
+		/* The path starts with a SEG_MOVETO, then lots of
+		   SEG_LINETOs and finally a SEG_CLOSE */
+
+		for( PathIterator pi = polygon.getPathIterator(null);
+		     ! pi.isDone();
+		     pi.next() ) {
+		     
+			empty = false;
+
+			int type = pi.currentSegment(coordinates);
+
+			/*
+			System.out.println( "Type: "+type+" and: [ " +
+					    coordinates[0] + ", " +
+					    coordinates[1] + ", " +
+					    coordinates[2] + ", " +
+					    coordinates[3] + ", " +
+					    coordinates[4] + ", " +
+					    coordinates[5] + "]" );
+			*/
+			
+			if( type == PathIterator.SEG_MOVETO ) {
+				first_x = coordinates[0];
+				first_y = coordinates[1];
+				first_points_set = true;
+				result += (int)coordinates[0] + ", " + (int)coordinates[1] + ", ";
+			} else if( type == PathIterator.SEG_LINETO ) {
+				result += (int)coordinates[0] + ", " + (int)coordinates[1] + ", ";
+			} else if( type == PathIterator.SEG_CLOSE ) {
+				break;
+			} else {
+				IJ.error("Unhandled PathIterator type: "+type );
+				return "";
+			}
+		}
+		
+		if( empty )
+			return "";
+		
+		if( (first_x == coordinates[0]) && (first_y == coordinates[1]) ) {
+			// We're done, remove the trailing ", ":		       
+			if( result.endsWith(", ") ) {
+				result = result.substring(0,result.length()-2);
+			}
+		} else {
+			// Add the first point again:
+			result += (int)first_x + ", " + (int)first_y;
+		}
+
+		return result;
+	}	
+
 	void unpackAmiraLabelFieldToPNGs(ImagePlus labelFileImp,
 					 String destinationDirectory) throws IOException {
 
@@ -144,11 +270,11 @@ public class UnpackToPNG_ implements PlugIn {
 
 		// Write a material index:
 
-		String jsonIndexFileName = destinationDirectory + File.separator + "material-index.json";
+		String jsIndexFileName = destinationDirectory + File.separator + "material-index.js";
 
-		PrintStream ps = new PrintStream(jsonIndexFileName);
+		PrintStream ps = new PrintStream(jsIndexFileName);
 
-		ps.println("[");
+		ps.println("materials = [");
 
 		byte [] reds =   new byte[materialCount];
 		byte [] greens = new byte[materialCount];
@@ -169,15 +295,17 @@ public class UnpackToPNG_ implements PlugIn {
 				ps.println("");
 		}
 
-		ps.println("]");
+		ps.println("];");
 		ps.close();
 
 		// Write the dimensions too...
 
-		String dimensionsFileName = destinationDirectory + File.separator + "dimensions.json";
+		String dimensionsFileName = destinationDirectory + File.separator + "dimensions.js";
 
 		ps = new PrintStream(dimensionsFileName);
-		ps.println("[ "+width+", "+height+", "+stackDepth+" ]");
+		ps.println("stack_width = "+width+";");
+		ps.println("stack_height = "+height+";");
+		ps.println("stack_depth = "+stackDepth+";");
 		ps.close();
 
 		long [] pixelCountsForMaterial = new long[materialCount];
@@ -188,7 +316,7 @@ public class UnpackToPNG_ implements PlugIn {
 		IndexColorModel cm = new IndexColorModel(8,materialCount,reds,greens,blues,0 /* the transparent color */ );
 			
 		for( int z = 0; z < stackDepth; ++z ) {
-
+			
 			DecimalFormat f2 = new DecimalFormat("00");
 			DecimalFormat f5 = new DecimalFormat("00000");
 			
@@ -202,14 +330,14 @@ public class UnpackToPNG_ implements PlugIn {
 			ImageProcessor imageProcessor = stack.getProcessor(z+1);
 			
 			byte [] pixels = (byte [])imageProcessor.getPixelsCopy();
-
+			
 			/* Actually we don't really need to create
 			   this Hashset, but never mind... */
-
+			
 			HashSet materialsInThisSlice = new HashSet();
 
 			for(int i = 0; i<pixels.length; ++i ) {
-
+				
 				int intValue = pixels[i]&0xFF;
 				Integer value = new Integer(intValue);
 				materialsInThisSlice.add(value);
@@ -235,7 +363,9 @@ public class UnpackToPNG_ implements PlugIn {
 				g.drawImage(imageToDraw, 0, 0, null);
 				File f = new File(outputFileName);
 				ImageIO.write(bi, "png", f);
+
 			}
+
 
 			byte [] emptySliceData = new byte[pixels.length];
 			for( int i = 0; i < pixels.length; ++i )
@@ -244,13 +374,18 @@ public class UnpackToPNG_ implements PlugIn {
 			ByteProcessor emptyBP = new ByteProcessor( width, height );
 			emptyBP.setColorModel(cm);
 			emptyBP.setPixels( emptySliceData );
-			
+
+			String imageMapFileName = destinationDirectory + File.separator + "map-" + f5.format(z) + ".html";
+			ps = new PrintStream( imageMapFileName );
+
 			for(int material=1; material<materialCount; ++material ) {
 				
+				String regionName = ap.getMaterialName(material);
+
 				DecimalFormat dfm = new DecimalFormat("000");
 				String outputFileName=outputFileNameStem+"-"+
 					dfm.format(material)+"-"+
-					ap.getMaterialName(material)+".png";
+					regionName+".png";
 
 				BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_INDEXED, cm);
 				Graphics2D g = (Graphics2D)bi.getGraphics();				
@@ -259,11 +394,14 @@ public class UnpackToPNG_ implements PlugIn {
 
 					byte [] sliceData = new byte[pixels.length];
 					for( int i = 0; i < pixels.length; ++i ) {
-						if( (pixels[i]&0xFF) == material )
+						if( (pixels[i]&0xFF) == material ) {
 							sliceData[i] = (byte)material;
-						else
+						} else
 							sliceData[i] = 0;
 					}
+
+					byte [] sliceDataCopy = new byte[sliceData.length];
+					System.arraycopy(sliceData,0,sliceDataCopy,0,sliceData.length);
 
 					ByteProcessor singleMaterialBP = new ByteProcessor(width,height);
 					singleMaterialBP.setColorModel(cm);
@@ -273,6 +411,23 @@ public class UnpackToPNG_ implements PlugIn {
 					File f = new File(outputFileName);
 					ImageIO.write(bi, "png", f);
 
+					/* Also generate the polygons that surround each neuropil: */
+					
+					ArrayList<Polygon> polygons = getPolygonsNonBackground( singleMaterialBP );
+						
+					for( Iterator iterator = polygons.iterator();
+					     iterator.hasNext(); ) {
+						
+						Polygon p = (Polygon)iterator.next();
+						
+						ps.println( "<area shape=\"poly\" coords=\""+
+							    polygonToAreaCoords(p) + "\" href=\"#" +
+							    regionName + "-" +
+							    f5.format(z) + "\" onclick=\"selectedArea("+
+							    z+",'" + regionName + "')\"/>" );
+						
+					}
+					
 				} else {
 					
 					Image imageToDraw = emptyBP.createImage();
@@ -281,14 +436,17 @@ public class UnpackToPNG_ implements PlugIn {
 					ImageIO.write(bi, "png", f);					
 				}
 			}
+			
+			ps.close();
+
 		}
 		
 
-		String centresFileName = destinationDirectory + File.separator + "centres.json";
+		String centresFileName = destinationDirectory + File.separator + "centres.js";
 
 		ps = new PrintStream(centresFileName);
 
-		ps.println( "[" );
+		ps.println( "centres_of_gravity = [" );
 
 		for( int i = 0; i < materialCount; ++i ) {
 
@@ -306,7 +464,7 @@ public class UnpackToPNG_ implements PlugIn {
 				ps.println("");
 		}
 
-		ps.println( "]" );
+		ps.println( "];" );
 		ps.close();
 
 
