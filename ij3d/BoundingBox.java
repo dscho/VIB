@@ -17,8 +17,8 @@ public class BoundingBox extends Shape3D {
 	
 	public BoundingBox(Point3f min, Point3f max, Color3f color) {
 		
-		min.x -= 5; min.y -= 5; min.z -= 5;
-		max.x += 5; max.y += 5; max.z += 5;
+		min.x -= 0; min.y -= 0; min.z -= 0;
+		max.x += 0; max.y += 0; max.z += 0;
 		Point3f[] p = new Point3f[8];
 		p[0] = new Point3f(min.x, min.y, max.z);
 		p[1] = new Point3f(max.x, min.y, max.z);

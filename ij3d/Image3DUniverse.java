@@ -78,7 +78,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 		String st = c != null ? c.name : "none";
 		IJ.showStatus("selected: " + st);
-		canvas.setStatus("selected: " + st);
+//		canvas.setStatus("selected: " + st);
 
 		fireContentSelected(c);
 
