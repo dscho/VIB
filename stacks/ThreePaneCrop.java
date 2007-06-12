@@ -274,12 +274,6 @@ public class ThreePaneCrop extends ThreePanes {
 		
 	}
 
-	public void repaintAll( ) {
-		xy_canvas.repaint();
-		xz_canvas.repaint();
-		zy_canvas.repaint();
-	}
-
 	public void handleDraggedTo( int off_screen_x, int off_screen_y, int dragging, int in_plane ) {
 
 		/* There may be one of 12 handles dragged (each corner
@@ -399,7 +393,7 @@ public class ThreePaneCrop extends ThreePanes {
 
 		}
 		
-		repaintAll();
+		repaintAllPanes();
 
 	}
 
