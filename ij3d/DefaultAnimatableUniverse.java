@@ -173,7 +173,6 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			animatedRecording = false;
 			freeRecording = true;
 		}
-		mouseBehavior.correctGlobalAndLocalTransformations();
 		TransformGroup tg = null;
 		transformChanged(0, tg);
 		fireTransformationFinished();

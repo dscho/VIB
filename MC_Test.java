@@ -73,7 +73,7 @@ public class MC_Test implements PlugIn {
 		
 		createCase(caseNo);
 		univ.addMesh(image, RED, "Case" + caseNo, threshold, 
-			new boolean[]{true, false, false}, 1, new Vector3f(-1f, -1f, -1f));
+			new boolean[]{true, false, false}, 1 );
 		for(int z = 0; z < data.length; z++) {
 			for(int y = 0; y < 2; y++) {
 				for(int x = 0; x < 2; x++) {
