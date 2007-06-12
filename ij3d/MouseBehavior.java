@@ -27,16 +27,10 @@ public class MouseBehavior extends Behavior {
 						InputEvent.SHIFT_DOWN_MASK;
 	public static final int ZOOM_MASK = MouseEvent.BUTTON1_DOWN_MASK;
 
-	private static final Vector3f ORIGIN = new Vector3f(0f, 0f, 0f);
-
-	private Transform3D globalRotation = new Transform3D();
-	private Transform3D oldXform = new Transform3D();
 	private Transform3D currentXform = new Transform3D();
 	private Transform3D transformX = new Transform3D(); 
 	private Transform3D transformY = new Transform3D();
 	private Vector3f transl = new Vector3f();
-	private boolean transformed = false;
-	
 
 	public MouseBehavior(DefaultUniverse univ) {
 		this.univ = univ;
@@ -56,7 +50,6 @@ public class MouseBehavior extends Behavior {
 	}
 
 	private void transformChanged(int type, Transform3D t) {
-		transformed = true;
 		if(callback != null)
 			callback.transformChanged(type, t);
 	}
@@ -88,11 +81,6 @@ public class MouseBehavior extends Behavior {
 		if(id == MouseEvent.MOUSE_PRESSED) {
 			x_last = e.getX();
 			y_last = e.getY();
-		} else if(id == MouseEvent.MOUSE_RELEASED) {
-			if(c != null || !transformed)
-				return;
-			correctGlobalAndLocalTransformations();
-			transformed = false;
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
 			if(toolID == Toolbar.MAGNIFIER && mask == ZOOM_MASK)
 				zoom(c, e);
@@ -107,17 +95,11 @@ public class MouseBehavior extends Behavior {
 		}
 	}
 
-	public void correctGlobalAndLocalTransformations() {
-		for(Iterator it = univ.contents(); it.hasNext();) {
-			univ.getGlobalRotate().getTransform(globalRotation);
-			Content content = (Content)it.next();
-			content.getPickTG().getTransform(currentXform);
-			globalRotation.mul(currentXform);
-			content.getPickTG().setTransform(globalRotation);
-		}
-		globalRotation.setIdentity();
-		univ.getGlobalRotate().setTransform(globalRotation);
-	}
+	Transform3D translate = new Transform3D();
+	Transform3D globalRotate = new Transform3D();
+	Transform3D globalTranslate = new Transform3D();
+	Transform3D globalRotInverse = new Transform3D();
+	Transform3D globalTransInverse = new Transform3D();
 
 	public void rotate(Content c, MouseEvent e) {
 		int x = e.getX(), y = e.getY();
@@ -128,15 +110,38 @@ public class MouseBehavior extends Behavior {
 		transformY.rotY(y_angle);
 
 		TransformGroup tg = (c == null) ? 
-					univ.getGlobalRotate() : c.getPickTG();
+				univ.getGlobalRotate() : c.getLocalRotate();
+		Point3f center = (c==null) ?  
+				((Image3DUniverse)univ).getGlobalCenterPoint() :
+				c.centerPoint;
 		tg.getTransform(currentXform);
-		tg.getTransform(oldXform);
 
-		currentXform.setTranslation(ORIGIN);
+		univ.getGlobalRotate().getTransform(globalRotate);
+		univ.getGlobalTranslate().getTransform(globalTranslate);
+
+		globalRotInverse.invert(globalRotate);
+		globalTransInverse.invert(globalTranslate);
+		
+		if(c != null) {
+			transl.x = -center.x;
+			transl.y = -center.y;
+			transl.z = -center.z;
+			translate.set(transl);
+			currentXform.mul(translate, currentXform);
+			currentXform.mul(globalRotate, currentXform);
+		}
+		
 		currentXform.mul(transformX, currentXform);
 		currentXform.mul(transformY, currentXform);
-		oldXform.get(transl);
-		currentXform.setTranslation(transl);
+
+		if(c != null) {
+			currentXform.mul(globalRotInverse, currentXform);
+			transl.x = -transl.x;
+			transl.y = -transl.y;
+			transl.z = -transl.z;
+			translate.set(transl);
+			currentXform.mul(translate, currentXform);
+		}
 
 		tg.setTransform(currentXform);
 		transformChanged(MouseBehaviorCallback.ROTATE, currentXform);
@@ -155,9 +160,16 @@ public class MouseBehavior extends Behavior {
 		transformX.set(transl);
 		
 		TransformGroup tg = (c == null) ? 
-					univ.getGlobalRotate() : c.getPickTG();
+			univ.getGlobalTranslate() : c.getLocalTranslate();
+
 		tg.getTransform(currentXform);
+
+		univ.getGlobalRotate().getTransform(globalRotate);
+		globalRotInverse.invert(globalRotate);
+		
+		currentXform.mul(globalRotate, currentXform);
 		currentXform.mul(transformX, currentXform);
+		currentXform.mul(globalRotInverse, currentXform);
 
 		tg.setTransform(currentXform);
 		transformChanged(MouseBehaviorCallback.TRANSLATE, currentXform);

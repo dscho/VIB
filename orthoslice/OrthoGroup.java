@@ -9,6 +9,7 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Vector3d;
 import javax.vecmath.Vector3f;
 import javax.vecmath.Point2d;
+import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
 import javax.media.j3d.View;
 import javax.media.j3d.Canvas3D;
@@ -38,9 +39,9 @@ public class OrthoGroup extends Content {
 	private int[] slices;
 
 	public OrthoGroup(String name, Color3f color, ImagePlus image, 
-		boolean[] channels, int resamplingF, Transform3D initial) {
+		boolean[] channels, int resamplingF) {
 		
-		super(name, color, image, channels, resamplingF, initial);
+		super(name, color, image, channels, resamplingF);
 		float scale = image.getWidth() * 
 				(float)image.getCalibration().pixelWidth;
 
@@ -55,9 +56,20 @@ public class OrthoGroup extends Content {
 					imp.getStackSize()/2};
 		renderer.fullReload();
 
-		initialTG.addChild(renderer.getVolumeNode());
+		getLocalRotate().addChild(renderer.getVolumeNode());
 
 		compile();
+	}
+
+	public void calculateMinMaxCenterPoint() {
+		ImagePlus imp = getImage();
+		Calibration c = imp.getCalibration();
+		minPoint = new Point3f();
+		maxPoint = new Point3f((float)(imp.getWidth()*c.pixelWidth),
+				(float)(imp.getHeight()*c.pixelHeight),
+				(float)(imp.getStackSize()*c.pixelDepth));
+		centerPoint = new Point3f(maxPoint.x/2, maxPoint.y/2, 
+				maxPoint.z/2);
 	}
 		
 	public static void addContent(Image3DUniverse univ, ImagePlus grey) {
@@ -99,15 +111,8 @@ public class OrthoGroup extends Content {
 		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
-		Vector3f tr = new Vector3f();
-		if(grey != null) {
-			Calibration c = grey.getCalibration();
-			tr.x = (float)(-grey.getWidth() * c.pixelWidth/2);
-			tr.y = (float)(-grey.getHeight() * c.pixelHeight/2);
-			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
-		}
 		
-		univ.addOrthoslice(grey, color, name, channels, factor, tr);
+		univ.addOrthoslice(grey, color, name, channels, factor);
 	}
 
 	public int[] getSlices() {
