@@ -24,6 +24,9 @@ public abstract class Content extends BranchGroup {
 	boolean[] channels = new boolean[]{true, true, true};
 	float transparency = 0f;
 	int resamplingF = 1;
+
+	private Switch bbSwitch;
+	
 	protected boolean selected;
 	protected Point3f centerPoint, minPoint, maxPoint;
 	
@@ -32,10 +35,9 @@ public abstract class Content extends BranchGroup {
 
 	public Content() {
 		// create BranchGroup for this image
+		this.name = name;
 		setCapability(BranchGroup.ALLOW_DETACH);
 		setCapability(BranchGroup.ENABLE_PICK_REPORTING);
-
-		this.name = name;
 
 		// create transformation for pickeing
 		localTranslate = new TransformGroup();
@@ -46,6 +48,11 @@ public abstract class Content extends BranchGroup {
 		localRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		localRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		localTranslate.addChild(localRotate);
+
+		bbSwitch = new Switch();
+		bbSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
+		bbSwitch.setCapability(Switch.ALLOW_SWITCH_WRITE);
+		localRotate.addChild(bbSwitch);
 	}
 
 	public Content(String name, Color3f color) {
@@ -63,6 +70,19 @@ public abstract class Content extends BranchGroup {
 		this.resamplingF = resamplingF;
 		calculateMinMaxCenterPoint();
 	}
+	
+	public void createBoundingBox() {
+		while(bbSwitch.numChildren() > 0)
+			bbSwitch.removeChild(0);
+			
+		BoundingBox b = new BoundingBox(minPoint, maxPoint);
+		bbSwitch.addChild(b);
+	}
+
+	public void showBoundingBox(boolean b) {
+		int show = b ? Switch.CHILD_ALL : Switch.CHILD_NONE;
+		bbSwitch.setWhichChild(show);
+	}
 
 	public void setName(String name) {
 		this.name = name;
@@ -70,6 +90,7 @@ public abstract class Content extends BranchGroup {
 
 	public void setSelected(boolean selected) {
 		this.selected = selected;
+		showBoundingBox(selected);
 	}
 
 	public void applyTransform(Transform3D transform) {
