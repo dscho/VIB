@@ -1204,7 +1204,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 					   true, // reciprocal
 					   false, // preprocess
 					   0.03f, // Initial threshold to display
-					   500, // reportEveryMilliseconds
+					   5000, // reportEveryMilliseconds
 					   this ); // callback
 
 
@@ -1221,8 +1221,6 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		}
 		
 		repaintAllPanes();
-		
-		
 
 	}
 
@@ -1248,6 +1246,8 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			new_slice_data[z] = new byte[width * height];
 		}
 
+		boolean realData = true;
+
 		synchronized(nonsense) {
 			int n = currentSubthresholdFillerPoints.length / 3;
 			for( int i = 0; i < n; ++i ) {
@@ -1256,7 +1256,15 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 				int y = currentSubthresholdFillerPoints[3*i+1];
 				int z = currentSubthresholdFillerPoints[3*i+2];
 
-				new_slice_data[z][y*width+x] = (byte)255;
+				if( realData ) {
+
+					
+					new_slice_data[z][y*width+x] = slices_data[z][y*width+x];
+					
+				} else {
+
+					new_slice_data[z][y*width+x] = (byte)255;
+				}
 			}
 		}
 
@@ -1270,7 +1278,15 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		ImagePlus imp=new ImagePlus("filled neuron",stack);
 
+		imp.setCalibration(xy.getCalibration());
+
 		imp.show();
+
+		/*
+		ImageJ_3D_Viewer viewer = new ImageJ_3D_Viewer();		
+		viewer.setup("",imp);
+		viewer.run(imp.getProcessor());
+		*/
 
 	}
 }

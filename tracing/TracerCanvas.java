@@ -255,6 +255,8 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 				e.printStackTrace();
 			}
 			*/
+			
+			long beforeLoop = System.currentTimeMillis();
 
 			int n = points.length / 3;
 			
@@ -294,6 +296,11 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 					}
 				}
 			}
+
+			if( verbose && (ThreePanes.XY_PLANE == plane) )
+				System.out.println( "Drawing points in the XY plane took: " +
+						    ((float)(System.currentTimeMillis()-beforeLoop)/1000.0f) );
+
 		}
 	}
 
@@ -348,7 +355,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		synchronized(tracerPlugin.nonsense) {
 			// Plot the filler progress:
 			if( (tracerPlugin.currentSubthresholdFillerPoints != null) && (tracerPlugin.currentSubthresholdFillerPoints.length > 0) ) {
-				drawPointsInArray( tracerPlugin.currentSubthresholdFillerPoints, g, /* Color.GREEN */  new Color(0,255,0,84), dumpDrawnPoints );
+				drawPointsInArray( tracerPlugin.currentSubthresholdFillerPoints, g, Color.GREEN /* new Color(0,255,0,84) */, true );
 				dumpDrawnPoints = false;
 			}
 		}

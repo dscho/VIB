@@ -92,10 +92,10 @@ public class FillerThread extends Thread {
 			asShorts[i*3+1] = (short)current.y;
 			asShorts[i*3+2] = (short)current.z;
 		}
+
+		System.out.println("Time to extract sub-threshold points: "+((System.currentTimeMillis()-started_update_at)/1000.0));
 		
 		progress.pointsWithinThreshold( asShorts );
-
-		System.out.println("Time for display update: "+((System.currentTimeMillis()-started_update_at)/1000.0));
 	}
 
 	PriorityQueue open_from_start = new PriorityQueue();
@@ -198,8 +198,8 @@ public class FillerThread extends Thread {
 				}
 			}
 			
-			// boolean verbose = false;
-			boolean verbose = (0 == (loops % 5000) );
+			boolean verbose = false;
+			// boolean verbose = (0 == (loops % 5000) );
 			
 			FillerNode p = null;
 			
