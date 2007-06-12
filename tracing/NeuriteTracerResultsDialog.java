@@ -23,6 +23,7 @@ class NeuriteTracerResultsDialog
 	static final int QUERY_KEEP            = 3;
 	static final int LOGGING_POINTS        = 4;
 	static final int DISPLAY_EVS           = 5;
+	static final int FILLING_PATHS         = 6;
 
 	static final String SEARCHING_STRING = "Searching for path between points...";
 
@@ -49,8 +50,20 @@ class NeuriteTracerResultsDialog
 
 	List pathList;
 
-	Button deletePath;
-	Button createROI;
+	Button deletePaths;
+	Button fillPaths;
+
+	Label fillStatus;
+
+	float maxThresholdValue = 0;
+	
+	TextField thresholdField;
+	Label maxThreshold;
+	Button setThreshold;
+	Button setMaxThreshold;
+	Button stopExploring;
+
+	Button view3D;
 
 	Button saveButton;
 	Button loadButton;   
@@ -76,6 +89,7 @@ class NeuriteTracerResultsDialog
 		}
 
 		plugin.cancelSearch();
+		plugin.cancelFilling();
 		dispose();
 		plugin.closeAndReset();
 	}
@@ -203,139 +217,223 @@ class NeuriteTracerResultsDialog
 		c.anchor = GridBagConstraints.LINE_START;
 		c.insets = new Insets( 8, 8, 8, 8 );
 
-		statusPanel = new Panel();
-		statusPanel.setLayout(new BorderLayout());
-		statusPanel.add(new Label("Instructions:"), BorderLayout.NORTH);
-		statusText = new TextArea("Initial status text...",3,20,TextArea.SCROLLBARS_NONE);
-		statusPanel.add(statusText,BorderLayout.CENTER);
+		{ /* Add the status panel */
 
-		keepSegment = new Button("Yes");
-		junkSegment = new Button("No");
-		cancelSearch = new Button("Abandon Search");
+			statusPanel = new Panel();
+			statusPanel.setLayout(new BorderLayout());
+			statusPanel.add(new Label("Instructions:"), BorderLayout.NORTH);
+			statusText = new TextArea("Initial status text...",3,20,TextArea.SCROLLBARS_NONE);
+			statusPanel.add(statusText,BorderLayout.CENTER);
+			
+			keepSegment = new Button("Yes");
+			junkSegment = new Button("No");
+			cancelSearch = new Button("Abandon Search");
+			
+			keepSegment.addActionListener( this );
+			junkSegment.addActionListener( this );
+			cancelSearch.addActionListener( this );
+			
+			Panel statusChoicesPanel = new Panel();
+			statusChoicesPanel.setLayout( new GridBagLayout() );
+			GridBagConstraints cs = new GridBagConstraints();
+			cs.gridx = 0; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
+			statusChoicesPanel.add(keepSegment,cs);
+			cs.gridx = 1; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
+			statusChoicesPanel.add(junkSegment,cs);
+			cs.gridx = 2; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
+			statusChoicesPanel.add(cancelSearch,cs);
+			
+			statusPanel.add(statusChoicesPanel,BorderLayout.SOUTH);
+			
+			c.gridx = 0;
+			c.gridy = 0;
+			add(statusPanel,c);
+		}
+
+		{ /* Add the panel of actions to take on half-constructed paths */
+
+			pathActionPanel = new Panel();
+			completePath = new Button("Complete Path");
+			cancelPath = new Button("Cancel Path");
+			completePath.addActionListener( this );
+			cancelPath.addActionListener( this );
+			pathActionPanel.add(completePath);
+			pathActionPanel.add(cancelPath);
+			
+			c.gridx = 0;
+			c.gridy = 1;
+			add(pathActionPanel,c);
+		}
+
+		{ /* Add the panel with other options - preprocessing and the view of paths */
 		
-		keepSegment.addActionListener( this );
-		junkSegment.addActionListener( this );
-		cancelSearch.addActionListener( this );
+			Panel otherOptionsPanel = new Panel();
+			
+			otherOptionsPanel.setLayout(new GridBagLayout());
+			GridBagConstraints co = new GridBagConstraints();
+			co.anchor = GridBagConstraints.LINE_START;
+			viewPathChoice = new Choice();
+			viewPathChoice.addItem(projectionChoice);
+			viewPathChoice.addItem(partsNearbyChoice);
+			viewPathChoice.addItemListener( this );
+			
+			preprocess = new Checkbox("Hessian-based analysis");
+			justLog = new Checkbox("Just log points");
+			showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
+			
+			co.gridx = 0;
+			co.gridy = 0;
+			otherOptionsPanel.add(new Label("View paths: "),co);
+			co.gridx = 1;
+			co.gridy = 0;
+			otherOptionsPanel.add(viewPathChoice,co);
+			co.gridx = 0;
+			co.gridy = 1;
+			co.gridwidth = 2;
+			otherOptionsPanel.add(preprocess,co);
+			co.gridx = 0;
+			co.gridy = 2;
+			co.gridwidth = 2;
+			otherOptionsPanel.add(justLog,co);
+			
+			c.gridx = 0;
+			c.gridy = 2;
+			add(otherOptionsPanel,c);
+		}
 
-		Panel statusChoicesPanel = new Panel();
-		statusChoicesPanel.setLayout( new GridBagLayout() );
-		GridBagConstraints cs = new GridBagConstraints();
-		cs.gridx = 0; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
-		statusChoicesPanel.add(keepSegment,cs);
-		cs.gridx = 1; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
-		statusChoicesPanel.add(junkSegment,cs);
-		cs.gridx = 2; cs.gridy = 0; cs.anchor = GridBagConstraints.LINE_START;
-		statusChoicesPanel.add(cancelSearch,cs);
+		{ /* Add the panel with the path list. */
 
-		statusPanel.add(statusChoicesPanel,BorderLayout.SOUTH);
+			Panel pathListPanel = new Panel();
+			pathListPanel.setLayout(new BorderLayout());
+			pathList = new List();
+			pathList.setMultipleMode(true);
+			pathList.addItemListener(this);
+			pathListPanel.add(pathList,BorderLayout.CENTER);
 
-		c.gridx = 0;
-		c.gridy = 0;
-		add(statusPanel,c);
+			{ /* The sub-panel with buttons for the path list... */
 
-		pathActionPanel = new Panel();
-		completePath = new Button("Complete Path");
-		cancelPath = new Button("Cancel Path");
-		completePath.addActionListener( this );
-		cancelPath.addActionListener( this );
-		pathActionPanel.add(completePath);
-		pathActionPanel.add(cancelPath);
+				Panel buttonsForListPanel = new Panel();
+				buttonsForListPanel.setLayout(new GridBagLayout());
+				GridBagConstraints cl = new GridBagConstraints();
+				deletePaths = new Button("Delete Path(s)");
+				deletePaths.addActionListener( this );
+				buttonsForListPanel.add(deletePaths,cl);
+				cl.gridx = 1;
+				fillPaths = new Button("Fill Out Path(s)");
+				fillPaths.addActionListener( this );
+				buttonsForListPanel.add(fillPaths,cl);
+				pathListPanel.add(buttonsForListPanel,BorderLayout.SOUTH);				
+			}
 
-		c.gridx = 0;
-		c.gridy = 1;
-		add(pathActionPanel,c);
-		
-		Panel otherOptionsPanel = new Panel();
-	       
-		otherOptionsPanel.setLayout(new GridBagLayout());
-		GridBagConstraints co = new GridBagConstraints();
-		co.anchor = GridBagConstraints.LINE_START;
-		viewPathChoice = new Choice();
-		viewPathChoice.addItem(projectionChoice);
-		viewPathChoice.addItem(partsNearbyChoice);
-		viewPathChoice.addItemListener( this );
+			c.gridx = 0;
+			c.gridy = 3;
+			add(pathListPanel,c);
+		}
 
-		preprocess = new Checkbox("Hessian-based analysis");
-		justLog = new Checkbox("Just log points");
-		showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
+		{ /* The panel with options for filling out neurons... */
 
-		co.gridx = 0;
-		co.gridy = 0;
-		otherOptionsPanel.add(new Label("View paths: "),co);
-		co.gridx = 1;
-		co.gridy = 0;
-		otherOptionsPanel.add(viewPathChoice,co);
-		co.gridx = 0;
-		co.gridy = 1;
-		co.gridwidth = 2;
-		otherOptionsPanel.add(preprocess,co);
-		co.gridx = 0;
-		co.gridy = 2;
-		co.gridwidth = 2;
-		otherOptionsPanel.add(justLog,co);
+			Panel fillingOptionsPanel = new Panel();
 
-		c.gridx = 0;
-		c.gridy = 2;
-		add(otherOptionsPanel,c);
+			fillingOptionsPanel.setLayout(new GridBagLayout());
+			
+			GridBagConstraints cf = new GridBagConstraints();
+			
+			cf.gridx = 0;
+			cf.gridy = 0;
+			cf.gridwidth = 4;
+			cf.weightx = 1;
+			cf.anchor = GridBagConstraints.LINE_START;
+			fillStatus = new Label("Not filling                             ",Label.LEFT); // FIXME: why doesn't it fill the row?
+			fillingOptionsPanel.add(fillStatus,cf);
+			
+			thresholdField = new TextField("",5);
+			thresholdField.addActionListener(this);
+			cf.gridx = 0;
+			cf.gridy = 1;
+			cf.weightx = 0;
+			cf.gridwidth = 1;
+			fillingOptionsPanel.add(thresholdField,cf);
 
-		Panel pathListPanel = new Panel();
-		pathListPanel.setLayout(new BorderLayout());
-		pathList = new List();
-		pathList.setMultipleMode(true);
-		pathListPanel.add(pathList,BorderLayout.CENTER);
+			maxThreshold = new Label("(0)      ");
+			cf.gridx = 1;
+			cf.gridy = 1;
+			fillingOptionsPanel.add(maxThreshold,cf);
 
-		Panel buttonsForListPanel = new Panel();
-		buttonsForListPanel.setLayout(new GridBagLayout());
-		GridBagConstraints cl = new GridBagConstraints();
-		deletePath = new Button("Delete Path");
-		deletePath.addActionListener( this );
-		buttonsForListPanel.add(deletePath,cl);
-		cl.gridx = 1;
-		createROI = new Button("Create ROI");
-		createROI.addActionListener( this );
-		buttonsForListPanel.add(createROI,cl);
-		pathListPanel.add(buttonsForListPanel,BorderLayout.SOUTH);
+			setThreshold = new Button("Set");
+			setThreshold.addActionListener(this);
+			cf.gridx = 2;
+			cf.gridy = 1;
+			fillingOptionsPanel.add(setThreshold,cf);
 
-		c.gridx = 0;
-		c.gridy = 3;
-		add(pathListPanel,c);
+			setMaxThreshold = new Button("Set Max");
+			setMaxThreshold.addActionListener(this);
+			cf.gridx = 3;
+			cf.gridy = 1;
+			fillingOptionsPanel.add(setMaxThreshold,cf);
+			
+			view3D = new Button("View with 3D Viewer");
+			view3D.addActionListener(this);
+			cf.gridx = 0;
+			cf.gridy = 2;
+			cf.gridwidth = 4;
+			cf.anchor = GridBagConstraints.LINE_START;
+			fillingOptionsPanel.add(view3D,cf);
 
-		Panel traceFileOptionsPanel = new Panel();
+			stopExploring = new Button("Stop Exploring");
+			stopExploring.addActionListener(this);
+			cf.gridx = 0;
+			cf.gridy = 3;
+			cf.gridwidth = 4;
+			cf.anchor = GridBagConstraints.LINE_START;
+			fillingOptionsPanel.add(stopExploring,cf);
+			
+			c.gridx = 0;
+			c.gridy = 4;			
+			add(fillingOptionsPanel,c);
+		}
 
-		traceFileOptionsPanel.setLayout(new GridBagLayout());
+		{ /* The panel with options for saving, loading, network storage, etc. */
 
-		GridBagConstraints ct = new GridBagConstraints();
+			Panel traceFileOptionsPanel = new Panel();
+			
+			traceFileOptionsPanel.setLayout(new GridBagLayout());
+			
+			GridBagConstraints ct = new GridBagConstraints();
+			
+			uploadButton = new Button("Upload Traces");
+			uploadButton.addActionListener( this );
+			fetchButton = new Button("Fetch Traces");
+			fetchButton.addActionListener( this );
+			ct.gridx = 0;
+			ct.gridy = 0;
+			traceFileOptionsPanel.add( uploadButton, ct );
+			ct.gridx = 1;
+			ct.gridy = 0;
+			traceFileOptionsPanel.add( fetchButton, ct );
+			
+			saveButton = new Button("Save");
+			saveButton.addActionListener( this );
+			loadButton = new Button("Load");
+			loadButton.addActionListener( this );
+			ct.gridx = 0;
+			ct.gridy = 1;
+			traceFileOptionsPanel.add( saveButton, ct );
+			ct.gridx = 1;
+			ct.gridy = 1;
+			traceFileOptionsPanel.add( loadButton, ct );
+			
+			c.gridx = 0;
+			c.gridy = 5;
+			add(traceFileOptionsPanel,c);
 
-		uploadButton = new Button("Upload Traces");
-		uploadButton.addActionListener( this );
-		fetchButton = new Button("Fetch Traces");
-		fetchButton.addActionListener( this );
-		ct.gridx = 0;
-		ct.gridy = 0;
-		traceFileOptionsPanel.add( uploadButton, ct );
-		ct.gridx = 1;
-		ct.gridy = 0;
-		traceFileOptionsPanel.add( fetchButton, ct );
+		}
 
-		saveButton = new Button("Save");
-		saveButton.addActionListener( this );
-		loadButton = new Button("Load");
-		loadButton.addActionListener( this );
-		ct.gridx = 0;
-		ct.gridy = 1;
-		traceFileOptionsPanel.add( saveButton, ct );
-		ct.gridx = 1;
-		ct.gridy = 1;
-		traceFileOptionsPanel.add( loadButton, ct );
-
-		c.gridx = 0;
-		c.gridy = 4;
-		add(traceFileOptionsPanel,c);
+		/* Just add the quit button at the bottom... */
 
 		quitButton = new Button("Quit Tracer");
 		quitButton.addActionListener(this);
 		c.gridx = 0;
-		c.gridy = 5;
+		c.gridy = 6;
 		c.anchor = GridBagConstraints.CENTER;
 		add(quitButton,c);
 
@@ -343,6 +441,15 @@ class NeuriteTracerResultsDialog
 		
 		pack();
 		setVisible( true );
+
+	}
+
+	public void showMouseThreshold( float t ) {
+		if( t < 0 ) {
+			fillStatus.setText( "Not reached by search yet" );
+		} else {
+			fillStatus.setText( "Distance from path is: " + t );
+		}
 	}
 	
 	public void actionPerformed( ActionEvent e ) {
@@ -434,9 +541,9 @@ class NeuriteTracerResultsDialog
 
 			plugin.cancelPath( );
 			
-		} else if( source == deletePath ) {
+		} else if( source == deletePaths ) {
 			
-			System.out.println("deletePath called");
+			// System.out.println("deletePaths called");
 			int [] selectedIndices = pathList.getSelectedIndexes();
 			
 			Arrays.sort(selectedIndices);
@@ -447,11 +554,32 @@ class NeuriteTracerResultsDialog
 				pathList.remove(i);
 			}
 
+		}  else if( source == fillPaths ) {
+			
+			plugin.startFillingPaths();
+
 		} else if( source == quitButton ) {
 			
 			exitRequested();
 
+		} else if( source == setMaxThreshold ) {
+
+			plugin.setFillThreshold( maxThresholdValue );
+
+		} else if( source == stopExploring ) {
+
+			plugin.cancelFilling();
+			
+		} else if( source == view3D ) {
+
+			plugin.viewFillIn3D();
+			
 		}
+
+	}
+
+	public void thresholdChanged( float f ) {
+		thresholdField.setText(""+f);
 	}
 
 	public void itemStateChanged( ItemEvent e ) {
@@ -468,6 +596,13 @@ class NeuriteTracerResultsDialog
 				plugin.justDisplayNearSlices(true);
 			}
 
+
+		} else if( source == pathList ) {
+
+			// Show in green the selected ones....
+			int [] selectedIndices = pathList.getSelectedIndexes();			
+			plugin.showPaths(selectedIndices);
+
 		}
 	}
 	
@@ -483,20 +618,9 @@ class NeuriteTracerResultsDialog
 
 	}
 
-	public void deletePathFromList( int index ) {
-
-		synchronized(pathList) {
-			if( (index >= pathList.getItemCount()) ||
-			    (index < 0) ) {
-				IJ.error("BUG: trying to delete index "+index+" in list of length "+pathList.getItemCount() );
-			}
-
-			plugin.removePath(index);
-
-			pathList.remove(index);
-		}
-
+	public void setMaxDistanceExplored( float f ) {
+		maxThreshold.setText("("+f+")");
+		maxThresholdValue = f;
 	}
-
 
 }

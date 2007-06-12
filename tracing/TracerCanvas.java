@@ -114,9 +114,45 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	
 	public void keyTyped(KeyEvent e) {}
 	
+
+	/* Keep another Graphics for double-buffering... */
+
+	private int backBufferWidth;
+	private int backBufferHeight;
+
+	private Graphics backBufferGraphics;
+	private Image backBufferImage;
+
+	private void resetBackBuffer() {
+
+		if(backBufferGraphics!=null){
+			backBufferGraphics.dispose();
+			backBufferGraphics=null;
+		}
+
+		if(backBufferImage!=null){
+			backBufferImage.flush();
+			backBufferImage=null;
+		}
+		
+		backBufferWidth=getSize().width;
+		backBufferHeight=getSize().height;
+
+		backBufferImage=createImage(backBufferWidth,backBufferHeight);
+	        backBufferGraphics=backBufferImage.getGraphics();
+	}
+
 	public void paint(Graphics g) {
-		super.paint(g);
-		drawOverlay(g);
+		
+		if(backBufferWidth!=getSize().width ||
+		   backBufferHeight!=getSize().height ||
+		   backBufferImage==null ||
+		   backBufferGraphics==null)
+			resetBackBuffer();
+		
+		super.paint(backBufferGraphics);
+		drawOverlay(backBufferGraphics);
+		g.drawImage(backBufferImage,0,0,this);
 	}
 	
 	public void mouseMoved( MouseEvent e ) {
@@ -203,46 +239,66 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		}
 	}
 
-/*
-	boolean arrow_set = false;
-	
-	public void setArrow( int start_x, int start_y, int start_z,
-			      int v_x, int v_y, int v_z ) {
+	boolean dumpDrawnPoints = true;
+
+	protected void drawPointsInArray( short [] points, Graphics g, Color c, boolean verbose ) {
+
+		int currentSlice = imp.getCurrentSlice() - 1;
+		g.setColor( c );
 		
-		this.start_x = start_x;
-		this.start_y = start_y;
-		this.start_z = start_z;
-		
-		this.length = Math.sqrt( v_x * v_x + v_y * v_y + v_z * v_z );
-                
-		this.v_x = v_x / length;
-		this.v_y = v_y / length;
-		this.v_z = v_z / length;
-		
-		arrow_set = true;
+		if( points != null ) {
+
+			/*
+			if( plane == ThreePanes.XY_PLANE ) {
+				System.out.println("drawPointsInArray drawing stuff in XY");
+				Exception e = new Exception();
+				e.printStackTrace();
+			}
+			*/
+
+			int n = points.length / 3;
+			
+			for( int i = 0; i < n; ++i ) {
+				if( currentSlice == points[ 3*i + (2 - plane) ] ) {
+
+					// Then draw that point.
+					
+					int x = points[ 3*i ];
+					int y = points[ 3*i + 1 ];
+					int z = points[ 3*i + 2 ];
+
+					if( plane == ThreePanes.XY_PLANE ) {
+						int sx = screenX(x);
+						int sx_pixel_size = screenX(x+1) - sx;
+						if( sx_pixel_size < 1 ) sx_pixel_size = 1;
+						int sy = screenY(y);
+						int sy_pixel_size = screenY(y+1) - sy;
+						if( sy_pixel_size < 1 ) sy_pixel_size = 1;
+						g.fillRect( screenX(x), screenY(y), sx_pixel_size, sy_pixel_size );
+					} else if( plane == ThreePanes.XZ_PLANE ) {
+						int sx = screenX(x);
+						int sx_pixel_size = screenX(x+1) - sx;
+						if( sx_pixel_size < 1 ) sx_pixel_size = 1;
+						int sy = screenY(z);
+						int sy_pixel_size = screenY(z+1) - sy;
+						if( sy_pixel_size < 1 ) sy_pixel_size = 1;
+						g.fillRect( screenX(x), screenY(z), sx_pixel_size, sy_pixel_size );
+					} else if( plane == ThreePanes.ZY_PLANE ) {
+						int sx = screenX(z);
+						int sx_pixel_size = screenX(z+1) - sx;
+						if( sx_pixel_size < 1 ) sx_pixel_size = 1;
+						int sy = screenY(y);
+						int sy_pixel_size = screenY(y+1) - sy;
+						if( sy_pixel_size < 1 ) sy_pixel_size = 1;
+						g.fillRect( screenX(z), screenY(y), sx_pixel_size, sy_pixel_size );
+					}
+				}
+			}
+		}
 	}
-	
-	public void unsetArrow(  ) {
-		arrow_set = false;
-	}
-*/
-	
-	/*
-	double start_x;
-	double start_y;
-	double start_z;
-	
-	double v_x;
-	double v_y;
-	double v_z;
-	
-	double length;
-	*/
-	
+
 	protected void drawOverlay(Graphics g) {
 
-		super.drawOverlay(g);
-		
 		for( int i = maxArrows - 1; i >= 0; --i ) {
 			// for( int i = 0; i < maxArrows; ++i ) {
 			
@@ -285,53 +341,16 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		}
 
 		synchronized(tracerPlugin.nonsense) {
+			// Plot the tracing progress:
+			drawPointsInArray( tracerPlugin.currentOpenBoundaryPoints, g, Color.CYAN, false );
+		}
 
-			// System.out.println("Considering nonsense for plane: "+plane);
-
-			short [] boundaryPoints = tracerPlugin.currentOpenBoundaryPoints;
-			int currentSlice = imp.getCurrentSlice() - 1;
-			g.setColor( Color.CYAN );
-			if( boundaryPoints != null ) {
-
-				int points = boundaryPoints.length / 3;
-				
-				for( int i = 0; i < points; ++i ) {
-					if( currentSlice == boundaryPoints[ 3*i + (2 - plane) ] ) {
-
-						int x = boundaryPoints[ 3*i ];
-						int y = boundaryPoints[ 3*i + 1 ];
-						int z = boundaryPoints[ 3*i + 2 ];
-						// Then draw that point.
-						if( plane == ThreePanes.XY_PLANE ) {
-							int sx = screenX(x);
-							int sx_pixel_size = screenX(x+1) - sx;
-							if( sx_pixel_size < 1 ) sx_pixel_size = 1;
-							int sy = screenY(y);
-							int sy_pixel_size = screenY(y+1) - sy;
-							if( sy_pixel_size < 1 ) sy_pixel_size = 1;
-							g.fillRect( screenX(x), screenY(y), sx_pixel_size, sy_pixel_size );
-						} else if( plane == ThreePanes.XZ_PLANE ) {
-							int sx = screenX(x);
-							int sx_pixel_size = screenX(x+1) - sx;
-							if( sx_pixel_size < 1 ) sx_pixel_size = 1;
-							int sy = screenY(z);
-							int sy_pixel_size = screenY(z+1) - sy;
-							if( sy_pixel_size < 1 ) sy_pixel_size = 1;
-							g.fillRect( screenX(x), screenY(z), sx_pixel_size, sy_pixel_size );
-						} else if( plane == ThreePanes.ZY_PLANE ) {
-							int sx = screenX(z);
-							int sx_pixel_size = screenX(z+1) - sx;
-							if( sx_pixel_size < 1 ) sx_pixel_size = 1;
-							int sy = screenY(y);
-							int sy_pixel_size = screenY(y+1) - sy;
-							if( sy_pixel_size < 1 ) sy_pixel_size = 1;
-							g.fillRect( screenX(z), screenY(y), sx_pixel_size, sy_pixel_size );
-						}
-						
-					}
-				}
+		synchronized(tracerPlugin.nonsense) {
+			// Plot the filler progress:
+			if( (tracerPlugin.currentSubthresholdFillerPoints != null) && (tracerPlugin.currentSubthresholdFillerPoints.length > 0) ) {
+				drawPointsInArray( tracerPlugin.currentSubthresholdFillerPoints, g, /* Color.GREEN */  new Color(0,255,0,84), dumpDrawnPoints );
+				dumpDrawnPoints = false;
 			}
-
 		}
 
 		if( completed != null ) {
@@ -344,6 +363,9 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 					Color color = Color.MAGENTA;
 					if( (i == (paths - 1)) && lastPathUnfinished ) {
 						color = Color.RED;
+					}
+					if( tracerPlugin.pathSelected(i) ) {
+						color = Color.GREEN;
 					}
 					SegmentedConnection s = (SegmentedConnection)completed.get(i);
 					int segments_in_path = s.connections.size();
@@ -373,7 +395,9 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 				unconfirmedSegment.drawConnectionAsPoints( this, g, Color.BLUE, plane );
 			}
 		}
-		
+
+		super.drawOverlay(g);
+				
 	}
 	
 	private double cost( int from_x,

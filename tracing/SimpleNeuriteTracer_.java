@@ -41,7 +41,7 @@ import util.ArrowDisplayer;
    the image. */
 
 public class SimpleNeuriteTracer_ extends ThreePanes
-	implements PlugIn, AStarProgressCallback, ArrowDisplayer {
+	implements PlugIn, AStarProgressCallback, ArrowDisplayer, FillerProgressCallback {
 
 	boolean unsavedPaths = false;
 
@@ -75,6 +75,11 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			currentSearchThread.requestStop();
 	}
 
+	public void cancelFilling( ) {
+		if( filler != null )
+			filler.requestStop();
+	}
+
 	/* Now a couple of callback methods, which get information
 	   about the progress of the search. */
 
@@ -104,6 +109,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	}
 
+	short[] currentSubthresholdFillerPoints;
 	short[] currentOpenBoundaryPoints;
 	String nonsense = "unused"; // FIXME, just for synchronization...
 
@@ -636,8 +642,12 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		findPointInStack( x_in_pane, y_in_pane, in_plane, p );
 
+		int x = p[0];
+		int y = p[1];
+		int z = p[2];
+
 		if( shift_key_down )
-			setSlicesAllPanes( p[0], p[1], p[2] );
+			setSlicesAllPanes( x, y, z );
 		
 		if( (xy_tracer_canvas != null) &&
 		    (xz_tracer_canvas != null) &&
@@ -651,14 +661,19 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 				
 			}
 		
-			setCrosshair( p[0], p[1], p[2] );
+			setCrosshair( x, y, z );
 
-			repaintAllPanes( );
+			repaintAllPanes( ); // Or the crosshair isn't updated....
 		}
 
-		last_x = p[0];
-		last_y = p[1];
-		last_z = p[2];
+		if( filler != null ) {
+			float distance = filler.getDistanceAtPoint(x,y,z);
+			resultsDialog.showMouseThreshold(distance);
+		}
+
+		last_x = x;
+		last_y = y;
+		last_z = z;
 		
 	}
 	
@@ -722,6 +737,27 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		}
 
 		repaintAllPanes();
+	}
+
+	int [] selectedPaths = null;
+
+	public synchronized void showPaths(int [] selectedIndices) {
+
+		int length = selectedIndices.length;
+		selectedPaths = new int[length];
+		System.arraycopy(selectedIndices,0,selectedPaths,0,length);
+
+		repaintAllPanes();
+	}
+
+	synchronized boolean pathSelected( int index ) {
+		if( selectedPaths != null ) {
+			for( int i = 0; i < selectedPaths.length; ++i ) {
+				if( selectedPaths[i] == index )
+					return true;
+			}
+		}
+		return false;
 	}
 
 	/* Create a new 8 bit ImagePlus of the same dimensions as this
@@ -915,6 +951,11 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		if( temporaryConnection != null )
 			return;
 
+		if( filler != null ) {
+			setFillThresholdFrom( x_in_pane, y_in_pane, plane );
+			return;
+		}
+
 		if( pathUnfinished ) {
 			/* Then this is a succeeding point, and we
 			   should start a search. */
@@ -926,6 +967,36 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 		}
 
+	}
+
+	public void setFillThresholdFrom( int x_in_pane, int y_in_pane, int plane ) {
+
+		int [] p = new int[3];
+
+		findPointInStack( x_in_pane, y_in_pane, plane, p );
+
+		int x = p[0];
+		int y = p[1];
+		int z = p[2];
+
+		float distance = filler.getDistanceAtPoint(x,y,z);		
+		
+		setFillThreshold( distance );
+	}
+
+	public void setFillThreshold( float distance ) {
+
+		if( distance > 0 ) {
+
+			System.out.println("Setting new threshold of: "+distance);
+		
+			resultsDialog.thresholdChanged(distance);
+			
+			filler.setThreshold(distance);
+			filler.displayUpdate();
+
+		}
+		
 	}
 
 	synchronized public void startPath( int x_in_pane, int y_in_pane, int plane, boolean join ) {
@@ -1122,4 +1193,84 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			
 		}
 	}	
+
+	FillerThread filler = null;
+
+	synchronized public void startFillingPaths( ) {
+		
+		// FIXME: check if one is running already, etc.
+
+		filler = new FillerThread( this,
+					   true, // reciprocal
+					   false, // preprocess
+					   0.03f, // Initial threshold to display
+					   500, // reportEveryMilliseconds
+					   this ); // callback
+
+
+		filler.start();
+
+		resultsDialog.changeState(NeuriteTracerResultsDialog.FILLING_PATHS);
+		
+	}
+
+	public void pointsWithinThreshold( short [] points ) {
+		
+		synchronized(nonsense) {
+			this.currentSubthresholdFillerPoints = points;
+		}
+		
+		repaintAllPanes();
+		
+		
+
+	}
+
+	synchronized public void stopped() {
+
+		synchronized(nonsense) {
+			this.currentSubthresholdFillerPoints = null;
+		}
+		
+		repaintAllPanes();
+	}
+
+	public void maximumDistanceCompletelyExplored( float f ) {
+
+		resultsDialog.setMaxDistanceExplored(f);
+
+	}
+
+	public void viewFillIn3D() {
+		
+		byte [][] new_slice_data = new byte[depth][];
+		for( int z = 0; z < depth; ++z ) {
+			new_slice_data[z] = new byte[width * height];
+		}
+
+		synchronized(nonsense) {
+			int n = currentSubthresholdFillerPoints.length / 3;
+			for( int i = 0; i < n; ++i ) {
+
+				int x = currentSubthresholdFillerPoints[3*i];
+				int y = currentSubthresholdFillerPoints[3*i+1];
+				int z = currentSubthresholdFillerPoints[3*i+2];
+
+				new_slice_data[z][y*width+x] = (byte)255;
+			}
+		}
+
+		ImageStack stack = new ImageStack(width,height);
+
+		for( int z = 0; z < depth; ++z ) {
+			ByteProcessor bp = new ByteProcessor(width,height);
+			bp.setPixels( new_slice_data[z] );
+			stack.addSlice(null,bp);
+		}
+
+		ImagePlus imp=new ImagePlus("filled neuron",stack);
+
+		imp.show();
+
+	}
 }
