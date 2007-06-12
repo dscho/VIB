@@ -115,6 +115,9 @@ SimpleNeuriteTracer_.jar: SOURCES=stacks/ThreePanes.java \
 	tracing/PointInImage.java \
 	tracing/SegmentedConnection.java \
 	tracing/TracerCanvas.java \
+	tracing/FillerThread.java \
+	tracing/FillerProgressCallback.java \
+	tracing/FillerNode.java \
 	client/ArchiveClient.java \
 	util/Arrow.java \
 	util/ArrowDisplayer.java \

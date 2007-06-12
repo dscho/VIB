@@ -1,4 +1,8 @@
 
+
+
+------------------------------------------------------------------------
+
 -- New interface:
 
 One of a number of states:
@@ -43,6 +47,23 @@ QUERY_KEEP
 
 on Yes, add the segment and go to PARTIAL_PATH
 on No, don't add the segment and go to PARTIAL_PATH
+
+TRACING
+
+  5. Stratus: Filling out from neuron...
+
+           Mousing over a pixel will show the threshold there.
+           Clicking will set the threshold to that value.
+           
+
+           Also should have a box with 
+           
+           
+
+
+
+
+
 
 Dialog Design:
 --------------
