@@ -12,6 +12,10 @@ import javax.vecmath.Color3f;
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
 import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 
+import javax.vecmath.Vector3f;
+import javax.vecmath.Matrix3f;
+import javax.vecmath.Point3f;
+
 public abstract class Content extends BranchGroup {
 
 	String name;
@@ -20,11 +24,11 @@ public abstract class Content extends BranchGroup {
 	boolean[] channels = new boolean[]{true, true, true};
 	float transparency = 0f;
 	int resamplingF = 1;
-	Transform3D initialTransform;
 	protected boolean selected;
+	protected Point3f centerPoint, minPoint, maxPoint;
 	
-	protected TransformGroup initialTG;
-	protected TransformGroup pickTG;
+	protected TransformGroup localRotate;
+	protected TransformGroup localTranslate;
 
 	public Content() {
 		// create BranchGroup for this image
@@ -34,28 +38,30 @@ public abstract class Content extends BranchGroup {
 		this.name = name;
 
 		// create transformation for pickeing
-		pickTG = new TransformGroup();
-		pickTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		pickTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		addChild(pickTG);
+		localTranslate = new TransformGroup();
+		localTranslate.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		localTranslate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		addChild(localTranslate);
+		localRotate = new TransformGroup();
+		localRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
+		localRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		localTranslate.addChild(localRotate);
 	}
 
-	public Content(String name, Color3f color, Transform3D initial) {
+	public Content(String name, Color3f color) {
 		this();
 		this.name = name;
 		this.color = color;
-		this.initialTransform = initial;
-		initialTG = new TransformGroup(initial);
-		pickTG.addChild(initialTG);
 	}
 
 	public Content(String name, Color3f color, ImagePlus image, boolean[] 
-		channels, int resamplingF, Transform3D initialTransform) {
+		channels, int resamplingF) {
 		
-		this(name, color, initialTransform);
+		this(name, color);
 		this.image = image;
 		this.channels = channels;
 		this.resamplingF = resamplingF;
+		calculateMinMaxCenterPoint();
 	}
 
 	public void setName(String name) {
@@ -64,6 +70,29 @@ public abstract class Content extends BranchGroup {
 
 	public void setSelected(boolean selected) {
 		this.selected = selected;
+	}
+
+	public void applyTransform(Transform3D transform) {
+		Transform3D t1 = new Transform3D();
+		localTranslate.getTransform(t1);
+		Transform3D t2 = new Transform3D();
+		localRotate.getTransform(t2);
+		t1.mul(t2);
+
+		transform.mul(t1);
+		setTransform(transform);
+	}
+
+	public void setTransform(Transform3D transform) {
+		Transform3D t = new Transform3D();
+		Matrix3f m = new Matrix3f();
+		transform.getRotationScale(m);
+		t.setRotationScale(m);
+		localRotate.setTransform(t);
+		Vector3f v = new Vector3f();
+		transform.get(v);
+		t.set(v);
+		localTranslate.setTransform(t);
 	}
 
 	public void setChannels(boolean[] channels) {
@@ -98,10 +127,6 @@ public abstract class Content extends BranchGroup {
 		transparencyUpdated(transparency);
 	}
 
-	public void resetView() {
-		pickTG.setTransform(new Transform3D());
-	}
-
 	public String getName() {
 		return name;
 	}
@@ -126,19 +151,16 @@ public abstract class Content extends BranchGroup {
 		return resamplingF;
 	}
 
-	public TransformGroup getPickTG() {
-		return pickTG;
+	public TransformGroup getLocalRotate() {
+		return localRotate;
 	}
 
-	public TransformGroup getInitialTG() {
-		return initialTG;
-	}
-
-	public Transform3D getInitialTransform() {
-		return initialTransform;
+	public TransformGroup getLocalTranslate() {
+		return localTranslate;
 	}
 
 	public abstract void eyePtChanged(View view);
+	public abstract void calculateMinMaxCenterPoint();
 	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
 	public abstract void channelsUpdated(boolean[] channels);
 	public abstract void transparencyUpdated(float transparency);

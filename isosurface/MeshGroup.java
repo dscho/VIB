@@ -23,6 +23,7 @@ import marchingcubes.MCTriangulator;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Vector3f;
+import javax.vecmath.Point3f;
 import javax.vecmath.Color3f;
 
 public class MeshGroup extends Content {
@@ -32,23 +33,23 @@ public class MeshGroup extends Content {
 	Triangulator triangulator = new MCTriangulator();
 //	Triangulator triangulator = new discMC.DiscMCTriangulator();
 	
-	public MeshGroup(String name, Color3f color, 
-			List mesh, int thresh, Transform3D initial) {
-		super(name, color, initial);
+	public MeshGroup(String name, Color3f color, List mesh, int thresh) {
+		super(name, color);
 		this.threshold = thresh;
 		if(color == null) {
 			color= new Color3f(
 				thresh/255f, thresh/255f, thresh/255f);
 		}
 		shape = new IsoShape(mesh, color, thresh, getTransparency());
-		initialTG.addChild(shape);
+		calculateMinMaxCenterPoint();
+		getLocalRotate().addChild(shape);
 		compile();
 	}
 
 	public MeshGroup(String name, Color3f color, ImagePlus image, boolean[] 
-		channels, int resamplingF, int threshold, Transform3D initial) {
+		channels, int resamplingF, int threshold) {
 
-		super(name, color, image, channels, resamplingF, initial);
+		super(name, color, image, channels, resamplingF);
 		this.threshold = threshold;
 		List mesh = triangulator.getTriangles(
 				image, threshold, channels, resamplingF);
@@ -58,7 +59,8 @@ public class MeshGroup extends Content {
 			color = new Color3f(new Color(value));
 		}
 		shape = new IsoShape(mesh, color, threshold, getTransparency());
-		initialTG.addChild(shape);
+		calculateMinMaxCenterPoint();
+		getLocalRotate().addChild(shape);
 		compile();
 	}
 		
@@ -72,6 +74,15 @@ public class MeshGroup extends Content {
 			threshold, channels, getResamplingFactor());
 		shape.mesh = mesh;
 		shape.update();
+	}
+
+	public void calculateMinMaxCenterPoint() {
+		minPoint = new Point3f(); maxPoint = new Point3f();
+		centerPoint = new Point3f();
+		if(shape != null) {
+			shape.calculateMinMaxCenterPoint(minPoint, maxPoint,
+				centerPoint);
+		}
 	}
 
 	public void colorUpdated(Color3f oldColor, Color3f newColor) {
@@ -137,7 +148,7 @@ public class MeshGroup extends Content {
 			tr.z = (float)(-mesh.getStackSize() * c.pixelDepth/2f);
 		}
 		univ.addMesh(mesh, color, 
-			name, threshold, channels, factor, tr);
+			name, threshold, channels, factor);
 	}
 }
 
