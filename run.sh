@@ -19,6 +19,9 @@ wbgn129)
 racer)
 	EXTRADEFS="$EXTRADEFS -Dj3d.noOffScreen=true"
 	;;
+rudi)
+	MEM=1000m
+	;;
 esac
 
 java -Xmx$MEM -Dplugins.dir="$curdir" $EXTRADEFS \
