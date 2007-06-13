@@ -127,7 +127,9 @@ public class Axis2DRenderer extends AxisRenderer {
 
 			QuadArray quadArray = new QuadArray(4, 
 						GeometryArray.COORDINATES);
+
 			quadArray.setCoordinates(0, quadCoords);
+
 			quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
 
 			Appearance a = getAppearance(textures[i], tg);
@@ -175,6 +177,11 @@ public class Axis2DRenderer extends AxisRenderer {
 		} else {
 			c.setColor(color);
 		}
+
+		// Avoid rendering of voxels having an alpha value of zero
+		RenderingAttributes ra = new RenderingAttributes();
+		ra.setAlphaTestValue(0.1f);
+		ra.setAlphaTestFunction(RenderingAttributes.GREATER);
 		
 		a.setMaterial(m);
 		a.setTransparencyAttributes(t);
@@ -183,6 +190,7 @@ public class Axis2DRenderer extends AxisRenderer {
 		a.setTexCoordGeneration(tg);
 		a.setPolygonAttributes(p);
 		a.setColoringAttributes(c);
+		a.setRenderingAttributes(ra);
 		return a;
 	}
 }
