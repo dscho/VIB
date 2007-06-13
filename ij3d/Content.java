@@ -6,6 +6,8 @@ import ij.process.ByteProcessor;
 
 import java.awt.image.IndexColorModel;
 
+import java.util.BitSet;
+
 import isosurface.IsoShape;
 import javax.media.j3d.*;
 import javax.vecmath.Color3f;
@@ -26,12 +28,16 @@ public abstract class Content extends BranchGroup {
 	int resamplingF = 1;
 
 	private Switch bbSwitch;
+	private BitSet whichChild = new BitSet(2);
 	
 	protected boolean selected;
 	protected Point3f centerPoint, minPoint, maxPoint;
 	
 	protected TransformGroup localRotate;
 	protected TransformGroup localTranslate;
+
+	public static final int BB = 0;
+	public static final int CS = 1;
 
 	public Content() {
 		// create BranchGroup for this image
@@ -50,6 +56,7 @@ public abstract class Content extends BranchGroup {
 		localTranslate.addChild(localRotate);
 
 		bbSwitch = new Switch();
+		bbSwitch.setWhichChild(Switch.CHILD_MASK);
 		bbSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
 		bbSwitch.setCapability(Switch.ALLOW_SWITCH_WRITE);
 		localRotate.addChild(bbSwitch);
@@ -77,17 +84,24 @@ public abstract class Content extends BranchGroup {
 			
 		BoundingBox b = new BoundingBox(minPoint, maxPoint);
 		bbSwitch.addChild(b);
+		CoordinateSystem cs = new CoordinateSystem(100f, new Color3f(0, 1, 0));
+		bbSwitch.addChild(cs);
+		// initially show the bounding box, but not the coordinate system
+		whichChild.set(BB, false);
+		whichChild.set(CS, true);
+		bbSwitch.setChildMask(whichChild);
 	}
 
 	public void showBoundingBox(boolean b) {
-		int show = b ? Switch.CHILD_ALL : Switch.CHILD_NONE;
-		bbSwitch.setWhichChild(show);
+		whichChild.set(BB, b);
+		bbSwitch.setChildMask(whichChild);
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void showCoordinateSystem(boolean b) {
+		whichChild.set(CS, b);
+		bbSwitch.setChildMask(whichChild);
 	}
-
+	
 	public void setSelected(boolean selected) {
 		this.selected = selected;
 		showBoundingBox(selected);

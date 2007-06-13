@@ -41,6 +41,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem applyTransform;
 	private MenuItem saveTransform;
 	private CheckboxMenuItem perspective;
+	private CheckboxMenuItem coordinateSystem;
 
 	private Menu selectedMenu;
 	private Menu viewMenu;
@@ -164,6 +165,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		transparency.addActionListener(this);
 		content.add(transparency);
 
+		coordinateSystem = new CheckboxMenuItem(
+					"Show coordinate system", true);
+		coordinateSystem.addItemListener(this);
+		content.add(coordinateSystem);
 
 		content.addSeparator();
 
@@ -346,6 +351,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						? View.PERSPECTIVE_PROJECTION 
 						: View.PARALLEL_PROJECTION;
 			univ.getViewer().getView().setProjectionPolicy(policy);
+		}
+
+		if(e.getSource() == coordinateSystem) {
+			if(univ.getSelected() == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			univ.getSelected().showCoordinateSystem(
+				coordinateSystem.getState());
 		}
 	}
 

@@ -76,6 +76,7 @@ public class BoundingBox extends Shape3D {
 		Appearance a = new Appearance();
 		PolygonAttributes pa = new PolygonAttributes();
 		pa.setPolygonMode(PolygonAttributes.POLYGON_LINE);
+		pa.setCullFace(PolygonAttributes.CULL_NONE);
 		a.setPolygonAttributes(pa);
 
 		ColoringAttributes ca = new ColoringAttributes();
