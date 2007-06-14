@@ -7,7 +7,6 @@ import ij.gui.ShapeRoi;
 import ij.process.ImageProcessor;
 import ij.plugin.filter.PlugInFilter;
 
-import java.awt.Point;
 import java.awt.geom.GeneralPath;
 
 import java.util.ArrayList;
@@ -68,7 +67,8 @@ public class Visual_Grep implements PlugInFilter {
 				scaledInitial = new ArrayList();
 				for (int i = 0; i < initial.size(); i++) {
 					Point p = (Point)initial.get(i);
-					Point p2 = new Point(p.x / 2, p.y / 2);
+					Point p2 = new Point(p.x / 2, p.y / 2,
+						p.diff);
 					scaledInitial.add(p2);
 				}
 			}
@@ -108,14 +108,32 @@ public class Visual_Grep implements PlugInFilter {
 			int x1, int y1, int x2, int y2,
 			int tolerance, boolean showProgress) {
 		for (int y = y1; y < y2; y++) {
-			for (int x = x1; x < x2; x++)
-				if (distance(pixels, x, y, row, needle,
-							needleW, needleH)
-						< tolerance)
-					points.add(new Point(x, y));
+			for (int x = x1; x < x2; x++) {
+				float d = distance(pixels, x, y, row, needle,
+						needleW, needleH);
+				if (d < tolerance)
+					addPoint(points, needleW, needleH,
+							new Point(x, y, d));
+			}
 			if (showProgress)
 				IJ.showProgress(y - y1 + 1, y2 - y1);
 		}
+	}
+
+	void addPoint(ArrayList points, int needleW, int needleH, Point p) {
+		/*
+		 * If there is an overlapping, worse
+		 * match, replace it.
+		 */
+		for (int i = 0; i < points.size(); i++) {
+			Point p2 = (Point)points.get(i);
+			if (p2.overlaps(p, needleW, needleH)) {
+				if (p2.diff > p.diff)
+					p2.replaceWith(p);
+				return;
+			}
+		}
+		points.add(p);
 	}
 
 	float distance(int[] haystack, int x, int y, int row,
@@ -155,5 +173,26 @@ public class Visual_Grep implements PlugInFilter {
 		}
 
 		return new ShapeRoi(gp);
+	}
+
+	private class Point {
+		int x, y;
+		float diff;
+		Point(int x, int y, float diff) {
+			this.x = x;
+			this.y = y;
+			this.diff = diff;
+		}
+
+		boolean overlaps(Point other, int w, int h) {
+			return x + w > other.x && other.x + w > x &&
+				y + h > other.y && other.y + h > y;
+		}
+
+		void replaceWith(Point other) {
+			x = other.x;
+			y = other.y;
+			diff = other.diff;
+		}
 	}
 }
