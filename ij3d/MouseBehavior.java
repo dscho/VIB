@@ -34,13 +34,14 @@ public class MouseBehavior extends Behavior {
 
 	public MouseBehavior(DefaultUniverse univ) {
 		this.univ = univ;
-		mouseEvents = new WakeupOnAWTEvent[3];
+		mouseEvents = new WakeupOnAWTEvent[4];
 	}
 
 	public void initialize() {
 		mouseEvents[0]= new WakeupOnAWTEvent(MouseEvent.MOUSE_DRAGGED);
 		mouseEvents[1]= new WakeupOnAWTEvent(MouseEvent.MOUSE_PRESSED);
 		mouseEvents[2]= new WakeupOnAWTEvent(MouseEvent.MOUSE_RELEASED);
+		mouseEvents[3]= new WakeupOnAWTEvent(MouseEvent.MOUSE_WHEEL);
 		wakeupCriterion = new WakeupOr(mouseEvents);
 		this.wakeupOn(wakeupCriterion);
 	}
@@ -92,6 +93,9 @@ public class MouseBehavior extends Behavior {
 					break;
 				}
 			}
+		} 
+		if(id == MouseEvent.MOUSE_WHEEL) {
+			wheel_zoom(c, e);
 		}
 	}
 
@@ -177,6 +181,32 @@ public class MouseBehavior extends Behavior {
 		x_last = x;
 		y_last = y;
 	}
+
+	public void wheel_zoom(Content c, MouseEvent e) {
+		MouseWheelEvent we = (MouseWheelEvent)e;
+		int units = 0;
+		if(we.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL)
+			units = we.getUnitsToScroll();
+		double factor = 0.9;
+		if(units != 0) {
+			
+			transformX.setIdentity();
+
+			double scale = units > 0 ? 1f/Math.abs(factor) 
+						: Math.abs(factor);
+
+			transformX.setScale(scale);
+			TransformGroup tg = univ.getGlobalScale();
+			tg.getTransform(currentXform);
+			currentXform.mul(transformX, currentXform);
+
+			tg.setTransform(currentXform);
+			transformChanged(
+				MouseBehaviorCallback.TRANSLATE, currentXform);
+		}	
+
+	}
+
 
 	public void zoom(Content c, MouseEvent e) {
 		int y = e.getY();
