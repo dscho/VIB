@@ -83,8 +83,10 @@ public class ThreePanesCanvas extends ImageCanvas {
 		
 		int off_screen_x = offScreenX(e.getX());
 		int off_screen_y = offScreenY(e.getY());
+
+		boolean shift_key_down = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
 		
-		owner.mouseMovedTo( off_screen_x, off_screen_y, plane );
+		owner.mouseMovedTo( off_screen_x, off_screen_y, plane, shift_key_down );
 		
 	}
 	

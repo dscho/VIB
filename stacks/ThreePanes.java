@@ -64,7 +64,7 @@ public class ThreePanes implements PaneOwner {
 		return new ThreePanesCanvas( imagePlus, this, plane );
 	}
 	
-	public void mouseMovedTo( int off_screen_x, int off_screen_y, int in_plane ) {
+	public void mouseMovedTo( int off_screen_x, int off_screen_y, int in_plane, boolean shift_down ) {
 		
 		int point[] = new int[3];
 		
@@ -74,7 +74,8 @@ public class ThreePanes implements PaneOwner {
 		xz_canvas.setCrosshairs( point[0], point[1], point[2], true /* in_plane != XZ_PLANE */ );
 		zy_canvas.setCrosshairs( point[0], point[1], point[2], true /* in_plane != ZY_PLANE */ );
 		
-		setSlicesAllPanes( point[0], point[1], point[2] );
+		if( shift_down )
+			setSlicesAllPanes( point[0], point[1], point[2] );
 	}
 	
 	public void setSlicesAllPanes( int new_x, int new_y, int new_z ) {

@@ -4,6 +4,6 @@ package stacks;
 
 public interface PaneOwner {
 
-    public void mouseMovedTo( int x, int y, int plane );
+    public void mouseMovedTo( int x, int y, int plane, boolean shift_down );
 
 }

@@ -16,6 +16,8 @@ import java.awt.event.*;
 class CropDialog extends Dialog implements ActionListener, WindowListener {
 
 	Button setFromFields;
+	Button setFromThreshold;
+	TextField threshold;
 	
 	Button cropButton;
 	Button cancelButton;
@@ -102,11 +104,27 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		c.gridx = 4; parametersPanel.add( new Label( " (" + (owner.overall_max_z + 1) + ")"), c );
 
 		Panel fieldsOptionsPanel = new Panel();
-		fieldsOptionsPanel.setLayout( new FlowLayout() );
-		
+
+		fieldsOptionsPanel.setLayout( new GridBagLayout() );
+		GridBagConstraints cf = new GridBagConstraints();		
+
 		setFromFields = new Button("Set from fields above");
 		setFromFields.addActionListener( this );
-		fieldsOptionsPanel.add( setFromFields );
+		cf.gridx = 0;
+		cf.gridy = 0;
+		cf.gridwidth = 2;
+		fieldsOptionsPanel.add( setFromFields, cf );
+		setFromThreshold = new Button( "Set crop above value: " );
+		setFromThreshold.addActionListener( this );
+		threshold = new TextField("50");
+		cf.gridx = 0;
+		cf.gridy = 1;
+		cf.gridwidth = 1;
+		fieldsOptionsPanel.add( setFromThreshold, cf );
+		cf.gridx = 1;
+		cf.gridy = 1;
+		cf.gridwidth = 1;
+		fieldsOptionsPanel.add( threshold, cf );
 
 		Panel buttonPanel = new Panel();
 		buttonPanel.setLayout( new FlowLayout() );
@@ -127,6 +145,9 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		co.gridx = 0;						  
 		co.gridy = 2;
 		add( buttonPanel, co );
+		co.gridx = 0;						  
+		co.gridy = 3;
+		add( new Label("(Move mouse with shift to update panes.)"), co );
 
 		pack();
 		setVisible( true );
@@ -143,6 +164,8 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 			dispose();
 		} else if( source == setFromFields ) {
 			setFromFields();
+		} else if( source == setFromThreshold ) {
+			setFromThreshold();
 		}
 	}
 
@@ -163,6 +186,27 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		z_min_field.setText( Integer.toString(min_z+1) );
 		z_max_field.setText( Integer.toString(max_z+1) );
 
+	}
+
+	public void setFromThreshold() {
+		
+		int t;
+
+		try {
+
+			/* Parse all the fields as string - throws
+			 * NumberFormatException if there's a
+			 * malformed field. */
+
+			String threshold_s = threshold.getText( );
+			t = Integer.parseInt( threshold_s );
+
+		} catch( NumberFormatException e ) {
+			IJ.error( "The threshold must be an integer." );
+			return;
+		}
+
+		owner.setCropAbove(t);
 	}
 
 	public void setFromFields( ) {
@@ -285,6 +329,68 @@ public class ThreePaneCrop extends ThreePanes {
       
 	public ThreePanesCanvas createCanvas( ImagePlus imagePlus, int plane ) {
 		return new ThreePaneCropCanvas( imagePlus, this, plane );
+	}
+
+	public void setCropAbove( int above ) {
+
+
+		int min_x_above = Integer.MAX_VALUE;
+		int max_x_above = Integer.MIN_VALUE;
+
+		int min_y_above = Integer.MAX_VALUE;
+		int max_y_above = Integer.MIN_VALUE;
+
+		int min_z_above = Integer.MAX_VALUE;
+		int max_z_above = Integer.MIN_VALUE;
+
+		ImageStack stack = xy.getStack();
+
+		int width = xy.getWidth();
+		int height = xy.getHeight();
+		int depth = xy.getStackSize();
+
+		for( int z = 0; z < depth; z ++ ) {
+
+			byte [] slice_bytes = (byte [])stack.getPixels(z+1);
+			
+			for( int x = 0; x < width; ++x )
+				for( int y = 0; y < height; ++y ) {
+
+					int value = slice_bytes[y*width+x]&0xFF;
+
+					if( value > above ) {
+						
+						if( x < min_x_above ) min_x_above = x;
+						if( y < min_y_above ) min_y_above = y;
+						if( z < min_z_above ) min_z_above = z;
+
+						if( x > max_x_above ) max_x_above = x;
+						if( y > max_y_above ) max_y_above = y;
+						if( z > max_z_above ) max_z_above = z;
+
+					}
+
+				}
+
+
+			IJ.showProgress( z / (float)depth );
+		}
+		
+		IJ.showProgress( 1 );
+		
+		if( min_x_above == Integer.MAX_VALUE ) {
+			IJ.error("There were no voxels with value greater than "+above );
+			return;
+		} else {
+			
+			setCropCuboid( min_x_above, max_x_above,
+				       min_y_above, max_y_above,
+				       min_z_above, max_z_above );
+		
+		}
+
+		repaintAllPanes();
+		
 	}
 
 	public void performCrop() {
