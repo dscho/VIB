@@ -1,4 +1,11 @@
 
+For fitting centres:
+
+  - assume that we're trying to place a circle
+  - intensity is the maximum in that slice
+  - two parameters to optimize: position from centre
+
+
 
 
 ------------------------------------------------------------------------

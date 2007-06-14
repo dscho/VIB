@@ -11,7 +11,7 @@ import stacks.ThreePanes;
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
 
-public class Connection {
+public class Connection implements Cloneable {
 	
 	Connection( ) {
 		points = 0;
@@ -40,6 +40,19 @@ public class Connection {
 		return points;
 	}
 	
+	public Connection clone() {
+
+		Connection result = new Connection( points );
+
+		System.arraycopy( x_positions, 0, result.x_positions, 0, points );
+		System.arraycopy( y_positions, 0, result.y_positions, 0, points );
+		System.arraycopy( z_positions, 0, result.z_positions, 0, points );
+		result.points = points;
+
+		return result;
+
+	}	
+
 	PointInImage lastPoint( ) {
 		if( points < 1 )
 			return null;

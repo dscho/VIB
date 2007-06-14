@@ -18,7 +18,15 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	
 	private int maxArrows = 4;
 	private Arrow[] arrows = new Arrow[maxArrows];
+
+	boolean fillTransparent = false;
+
+	Color transparentGreen = new Color( 0, 128, 0, 128 );
 	
+	public void setFillTransparent( boolean transparent ) {
+		this.fillTransparent = transparent;
+	}
+
 	public void setArrow( int i, Arrow a ) {
 		arrows[i] = a;
 	}
@@ -355,7 +363,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		synchronized(tracerPlugin.nonsense) {
 			// Plot the filler progress:
 			if( (tracerPlugin.currentSubthresholdFillerPoints != null) && (tracerPlugin.currentSubthresholdFillerPoints.length > 0) ) {
-				drawPointsInArray( tracerPlugin.currentSubthresholdFillerPoints, g, Color.GREEN /* new Color(0,255,0,84) */, true );
+				drawPointsInArray( tracerPlugin.currentSubthresholdFillerPoints, g, fillTransparent ? transparentGreen : Color.GREEN, true );
 				dumpDrawnPoints = false;
 			}
 		}

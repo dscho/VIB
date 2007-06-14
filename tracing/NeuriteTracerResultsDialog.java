@@ -52,6 +52,7 @@ class NeuriteTracerResultsDialog
 
 	Button deletePaths;
 	Button fillPaths;
+	Button fitCircles;
 
 	Label fillStatus;
 
@@ -64,6 +65,8 @@ class NeuriteTracerResultsDialog
 	Button stopExploring;
 
 	Button view3D;
+	Checkbox maskNotReal;
+	Checkbox transparent;
 
 	Button saveButton;
 	Button loadButton;   
@@ -318,10 +321,17 @@ class NeuriteTracerResultsDialog
 				deletePaths = new Button("Delete Path(s)");
 				deletePaths.addActionListener( this );
 				buttonsForListPanel.add(deletePaths,cl);
+
 				cl.gridx = 1;
 				fillPaths = new Button("Fill Out Path(s)");
 				fillPaths.addActionListener( this );
 				buttonsForListPanel.add(fillPaths,cl);
+
+				cl.gridx = 0;
+				cl.gridy = 1;
+				fitCircles = new Button("Fit Centres and Circles");
+				fitCircles.addActionListener( this );
+				buttonsForListPanel.add(fitCircles,cl);
 				pathListPanel.add(buttonsForListPanel,BorderLayout.SOUTH);				
 			}
 
@@ -379,10 +389,26 @@ class NeuriteTracerResultsDialog
 			cf.anchor = GridBagConstraints.LINE_START;
 			fillingOptionsPanel.add(view3D,cf);
 
+			maskNotReal = new Checkbox("Create as Mask");
+			maskNotReal.addItemListener(this);
+			cf.gridx = 0;
+			cf.gridy = 3;
+			cf.gridwidth = 4;
+			cf.anchor = GridBagConstraints.LINE_START;
+			fillingOptionsPanel.add(maskNotReal,cf);
+
+			transparent = new Checkbox("Transparent");
+			transparent.addItemListener(this);
+			cf.gridx = 0;
+			cf.gridy = 4;
+			cf.gridwidth = 4;
+			cf.anchor = GridBagConstraints.LINE_START;
+			fillingOptionsPanel.add(transparent,cf);
+
 			stopExploring = new Button("Stop Exploring");
 			stopExploring.addActionListener(this);
 			cf.gridx = 0;
-			cf.gridy = 3;
+			cf.gridy = 5;
 			cf.gridwidth = 4;
 			cf.anchor = GridBagConstraints.LINE_START;
 			fillingOptionsPanel.add(stopExploring,cf);
@@ -450,6 +476,10 @@ class NeuriteTracerResultsDialog
 		} else {
 			fillStatus.setText( "Distance from path is: " + t );
 		}
+	}
+
+	public boolean createMask() {
+		return maskNotReal.getState();
 	}
 	
 	public void actionPerformed( ActionEvent e ) {
@@ -574,6 +604,16 @@ class NeuriteTracerResultsDialog
 
 			plugin.viewFillIn3D();
 			
+		} else if( source == fitCircles ) {
+
+			int [] indices = pathList.getSelectedIndexes();
+			if( indices.length != 1 ) {
+				IJ.error("You must have exactly one path selected in order to show the normal panes for it.");
+				return;
+			}
+
+			plugin.fitCircles(indices[0],true,40);
+
 		}
 
 	}
@@ -602,6 +642,11 @@ class NeuriteTracerResultsDialog
 			// Show in green the selected ones....
 			int [] selectedIndices = pathList.getSelectedIndexes();			
 			plugin.showPaths(selectedIndices);
+
+		} else if( source == transparent ) {
+
+			plugin.setFillTransparent( transparent.getState() );
+
 
 		}
 	}
