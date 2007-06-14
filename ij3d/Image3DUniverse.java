@@ -23,6 +23,7 @@ import java.awt.event.*;
 import java.util.List;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Collection;
 
 import com.sun.j3d.utils.behaviors.keyboard.*;
 import com.sun.j3d.utils.universe.*;
@@ -234,6 +235,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Iterator contents() {
 		return contents.values().iterator();
+	}
+
+	public Collection getContents() {
+		return contents.values();
 	}
 
 	public Content getContent(String name) {

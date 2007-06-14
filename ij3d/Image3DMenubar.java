@@ -11,6 +11,8 @@ import java.util.Vector;
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
 import isosurface.MeshGroup;
+import isosurface.MeshExporter;
+
 import javax.vecmath.Color3f;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
@@ -40,12 +42,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem resetTransform;
 	private MenuItem applyTransform;
 	private MenuItem saveTransform;
+	private MenuItem exportObj;
+	private MenuItem exportDXF;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
 
 	private Menu selectedMenu;
 	private Menu viewMenu;
 	private Menu contentsMenu;
+	private Menu fileMenu;
 
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
@@ -65,11 +70,28 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		univ.addUniverseListener(this);
 
+		fileMenu = createFileMenu();
+		this.add(fileMenu);
+
 		viewMenu = createViewMenu();
 		this.add(viewMenu);
 		contentsMenu = createContentsMenu();
 		this.add(contentsMenu);
 		selectedMenu = createSelectedMenu();
+	}
+
+	public Menu createFileMenu() {
+		Menu file = new Menu("File");
+
+		exportObj = new MenuItem("Export as WaveFront");
+		exportObj.addActionListener(this);
+		file.add(exportObj);
+
+		exportDXF = new MenuItem("Export as DXF");
+		exportDXF.addActionListener(this);
+		file.add(exportDXF);
+
+		return file;
 	}
 
 	public Menu createViewMenu() {
@@ -342,6 +364,13 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == saveTransform) {
+		}
+
+		if (e.getSource() == exportDXF) {
+			MeshExporter.saveAsDXF(univ.getContents());
+		}
+		if (e.getSource() == exportObj) {
+			MeshExporter.saveAsWaveFront(univ.getContents());
 		}
 	}
 
