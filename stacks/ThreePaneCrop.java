@@ -138,7 +138,6 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		
 		if( source == cropButton ) {
 			owner.performCrop();
-			dispose();
 		} else if( source == cancelButton ) {
 			owner.cancel();
 			dispose();
