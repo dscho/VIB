@@ -1065,7 +1065,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 	
 	TextWindow helpTextWindow;
 
-	HessianAnalyzer hessianAnalyzer;
+	// HessianAnalyzer hessianAnalyzer;
 	ArchiveClient archiveClient;
 
 	public void run( String ignoredArguments ) {
@@ -1154,6 +1154,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 				}
 			}
 
+			/*
 			hessianAnalyzer = new HessianAnalyzer( slices_data,
 							       width,
 							       height,
@@ -1162,11 +1163,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 							       y_spacing,
 							       z_spacing );
 
-			/* We may want the analyzeAtPoint method to
-			 * draw back into the plugin, so set this... */
-			
-			
-
+			*/
 
 			// toastKeyListeners( xy_tracer_canvas, "xy_tracer_canvas" );
 			// toastKeyListeners( xy_window, "xy_window" );

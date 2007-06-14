@@ -191,6 +191,8 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			
 			tracerPlugin.setPositionAllPanes( x, y, z );
 
+			/* FIXME: put this back
+
 			EigenResultsDouble er;
 			try {
 				er = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, 1.0f, false );
@@ -200,9 +202,13 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			}
 			
 			tracerPlugin.logPosition( x, y, z, er.sortedValues[0], er.sortedValues[1], er.sortedValues[2] );
+
+			*/
 			
 		} else if( tracerPlugin.setupEv ) {
 			
+			/* FIXME: put this back
+
 			int x = offScreenX(e.getX());
 			int y = offScreenX(e.getY());
 			int z = imp.getCurrentSlice() - 1;
@@ -211,8 +217,8 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			EigenResultsDouble er_1_around;
 
 			try {
-				er_2_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, 1.0f /* 0.5f */, false );
-				er_1_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 1, 1.0f /* 0.5f */, false );
+				er_2_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, 1.0f, false );
+				er_1_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 1, 1.0f, false );
 			} catch( Exception exception ) {
 				IJ.error("Caught an exception while calculating the Hessian: "+exception);
 				return;
@@ -232,7 +238,9 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			
 			tracerPlugin.setArrow( 0, arrow_2_around );
 			tracerPlugin.setArrow( 1, arrow_1_around );
-			
+
+			*/
+
 		} else if( tracerPlugin.setupTrace ) {
 			
 			boolean join = e.isShiftDown();
