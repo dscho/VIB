@@ -52,6 +52,18 @@ public final class IsoShape extends Shape3D {
 		}
 	}
 
+	public List getMesh() {
+		return mesh;
+	}
+
+	public Color3f getColor() {
+		return color;
+	}
+
+	public float getTransparency() {
+		return transparency;
+	}
+
 	public void calculateMinMaxCenterPoint(Point3f min, 
 				Point3f max, Point3f center) {
 		if(mesh == null) return;

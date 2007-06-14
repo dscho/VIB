@@ -16,6 +16,8 @@ import isosurface.MeshGroup;
 import voltex.VoltexGroup;
 import orthoslice.OrthoGroup;
 
+import javax.media.j3d.Transform3D;
+
 public class ImageJ_3D_Viewer implements PlugInFilter {
 
 	private ImagePlus image;
@@ -63,6 +65,11 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 		}
 	}
 
+	// View menu
+	public static void resetView() {
+		if(univ != null) univ.resetView();
+	}
+
 	public static void startAnimate() {
 		if(univ != null) univ.startAnimation();
 	}
@@ -88,6 +95,67 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 			(Content)univ.getContent(name));
 	}
 
+	// Contents menu
+	public static void addVolume(String image, String color, String name,
+			String r, String g, String b, String resamplingF) {
+
+		/*
+		ImagePlus grey = WindowManager.getImage(image);
+		Color3f color = ColorTable.getColor(color);
+
+		int factor = (int)gd.getNextNumber();
+		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
+						gd.getNextBoolean(), 
+						gd.getNextBoolean()};
+		Vector3f tr = new Vector3f();
+		if(grey != null) {
+			Calibration c = grey.getCalibration();
+			tr.x = (float)(-grey.getWidth() * c.pixelWidth/2);
+			tr.y = (float)(-grey.getHeight() * c.pixelHeight/2);
+			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
+		}
+		
+		univ.addVoltex(grey, color, name, channels, factor);
+		*/
+	}
+
+	public static void delete() {
+		if(univ != null && univ.getSelected() != null) {
+			univ.removeContent(univ.getSelected().getName());
+		}
+	}
+
+
+	// Individual content's menu
+	public static void adjustSlices(String x, String y, String z) {
+		if(univ != null && univ.getSelected() != null && 
+			univ.getSelected() instanceof OrthoGroup) {
+
+			OrthoGroup vg = (OrthoGroup)univ.getSelected();
+			vg.setSlices(Integer.parseInt(x),
+					Integer.parseInt(y),
+					Integer.parseInt(z));
+		}
+	}
+
+	public static void fillSelection() {
+		if(univ != null && univ.getSelected() != null && 
+			univ.getSelected() instanceof VoltexGroup) {
+
+			VoltexGroup vg = (VoltexGroup)univ.getSelected();
+			vg.fillRoiBlack(univ, (byte)0);
+		}
+	}
+
+	public static void setChannels(String red, String green, String blue) {
+		boolean r = Boolean.valueOf(red).booleanValue();
+		boolean g = Boolean.valueOf(green).booleanValue();
+		boolean b = Boolean.valueOf(blue).booleanValue();
+		if(univ != null && univ.getSelected() != null) {
+			univ.getSelected().setChannels(new boolean[]{r, g, b});
+		}
+	}
+
 	public static void setColor(String red, String green, String blue) {
 		float r = Integer.parseInt(red) / 256f;
 		float g = Integer.parseInt(green) / 256f;
@@ -105,35 +173,31 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 		}
 	}
 
-	public static void setChannels(String red, String green, String blue) {
-		boolean r = Boolean.valueOf(red).booleanValue();
-		boolean g = Boolean.valueOf(green).booleanValue();
-		boolean b = Boolean.valueOf(blue).booleanValue();
+	public static void applyTransform(String transform) {
 		if(univ != null && univ.getSelected() != null) {
-			univ.getSelected().setChannels(new boolean[]{r, g, b});
+			String[] s = ij.util.Tools.split(transform);
+			float[] m = new float[s.length];
+			for(int i = 0; i < s.length; i++) {
+				m[i] = Float.parseFloat(s[i]);
+			}
+			univ.getSelected().applyTransform(new Transform3D(m));
 		}
 	}
 
-	public static void resetView() {
-		if(univ != null) univ.resetView();
-	}
-
-	public static void fillSelection() {
-		if(univ != null && univ.getSelected() != null && 
-			univ.getSelected() instanceof VoltexGroup) {
-
-			VoltexGroup vg = (VoltexGroup)univ.getSelected();
-			vg.fillRoiBlack(univ, (byte)0);
-		}
-	}
-
-	public static void delete() {
-		try{
+	public static void resetTransform(String transform) {
 		if(univ != null && univ.getSelected() != null) {
-			univ.removeContent(univ.getSelected().getName());
+			univ.getSelected().setTransform(new Transform3D());
 		}
-		} catch(Exception e) {
-			e.printStackTrace();
+	}
+
+	public static void setTransform(String transform) {
+		if(univ != null && univ.getSelected() != null) {
+			String[] s = ij.util.Tools.split(transform);
+			float[] m = new float[s.length];
+			for(int i = 0; i < s.length; i++) {
+				m[i] = Float.parseFloat(s[i]);
+			}
+			univ.getSelected().setTransform(new Transform3D(m));
 		}
 	}
 
