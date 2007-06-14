@@ -10,6 +10,9 @@ import ij.process.ByteProcessor;
 import java.awt.*;
 import java.awt.event.*;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
 /* A small dialog for confirming the region to crop and reporting
  * numerically what the current crop boundaries are. */
 
@@ -43,6 +46,9 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 	TextField x_max_field;
 	TextField y_max_field;
 	TextField z_max_field;
+	
+	ArrayList<ImagePlus> otherImages = new ArrayList<ImagePlus>();
+	ArrayList<Checkbox> otherImagesCheckboxes = new ArrayList<Checkbox>();
 
 	public CropDialog( String title, ThreePaneCrop owner ) {
 
@@ -113,6 +119,7 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		cf.gridx = 0;
 		cf.gridy = 0;
 		cf.gridwidth = 2;
+		co.anchor = GridBagConstraints.LINE_START;
 		fieldsOptionsPanel.add( setFromFields, cf );
 		setFromThreshold = new Button( "Set crop above value: " );
 		setFromThreshold.addActionListener( this );
@@ -120,11 +127,47 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		cf.gridx = 0;
 		cf.gridy = 1;
 		cf.gridwidth = 1;
+		co.anchor = GridBagConstraints.LINE_START;
 		fieldsOptionsPanel.add( setFromThreshold, cf );
 		cf.gridx = 1;
 		cf.gridy = 1;
 		cf.gridwidth = 1;
 		fieldsOptionsPanel.add( threshold, cf );
+
+		Panel otherImagesPanel = new Panel();
+		otherImagesPanel.setLayout( new GridBagLayout() );
+		GridBagConstraints cw = new GridBagConstraints();
+		
+		int[] wList = WindowManager.getIDList();
+		if (wList!=null) {
+
+			cw.gridx = 0;
+			cw.gridy = 0;
+			cw.anchor = GridBagConstraints.LINE_START;
+
+			otherImagesPanel.add(new Label("Also crop these images:"));
+			++ cw.gridy;
+
+			for (int i=0; i<wList.length; i++) {
+
+				ImagePlus imp = WindowManager.getImage(wList[i]);
+
+				if( (imp.getWidth() == (owner.overall_max_x + 1)) &&
+				    (imp.getHeight() == (owner.overall_max_y + 1)) &&
+				    (imp.getStackSize() == (owner.overall_max_z + 1)) ) {
+
+					if( imp == owner.xy )
+						continue;
+
+					otherImages.add(imp);
+					Checkbox checkbox = new Checkbox( imp.getTitle() );
+					otherImagesPanel.add(checkbox,cw);
+					++ cw.gridy;
+					otherImagesCheckboxes.add( checkbox );
+				}
+			}
+			
+		}
 
 		Panel buttonPanel = new Panel();
 		buttonPanel.setLayout( new FlowLayout() );
@@ -141,13 +184,20 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		add( parametersPanel, co );
 		co.gridx = 0;						  
 		co.gridy = 1;
+		co.anchor = GridBagConstraints.LINE_START;
 		add( fieldsOptionsPanel, co );
 		co.gridx = 0;						  
 		co.gridy = 2;
-		add( buttonPanel, co );
+		add( otherImagesPanel, co );
 		co.gridx = 0;						  
 		co.gridy = 3;
+		co.anchor = GridBagConstraints.CENTER;
+		add( buttonPanel, co );
+		co.gridx = 0;						  
+		co.gridy = 4;
 		add( new Label("(Move mouse with shift to update panes.)"), co );
+
+		
 
 		pack();
 		setVisible( true );
@@ -158,7 +208,14 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		Object source = e.getSource();
 		
 		if( source == cropButton ) {
-			owner.performCrop();
+			ArrayList<ImagePlus> toCrop = new ArrayList<ImagePlus>();
+			toCrop.add(owner.xy);		
+			for( int i = 0; i < otherImagesCheckboxes.size(); ++ i ) {
+				Checkbox c = (Checkbox)otherImagesCheckboxes.get(i);
+				if( c.getState() )
+					toCrop.add((ImagePlus)otherImages.get(i));
+			}
+			owner.performMultipleCrops(toCrop);
 		} else if( source == cancelButton ) {
 			owner.cancel();
 			dispose();
@@ -393,27 +450,46 @@ public class ThreePaneCrop extends ThreePanes {
 		
 	}
 
-	public void performCrop() {
-
-		int original_width = xy.getWidth();
-
-		int new_width = (max_x_offscreen - min_x_offscreen) + 1;
-		int new_height = (max_y_offscreen - min_y_offscreen) + 1;
+	public void performMultipleCrops( ArrayList<ImagePlus> images ) {
 		
-		int first_slice = min_z_offscreen + 1;
-		int last_slice = max_z_offscreen + 1;
+		for( Iterator i = images.iterator();
+		     i.hasNext();
+			) {
 
-		ImageStack xy_stack=xy.getStack();
+			ImagePlus imp = (ImagePlus)i.next();
+
+			performCrop( imp,
+				     min_x_offscreen, max_x_offscreen,
+				     min_y_offscreen, max_y_offscreen,
+				     min_z_offscreen, max_z_offscreen );
+			
+		}
+	}
+
+	static public void performCrop( ImagePlus imp,
+					int min_x, int max_x,
+					int min_y, int max_y,
+					int min_z, int max_z ) {
+
+		int original_width = imp.getWidth();
+
+		int new_width = (max_x - min_x) + 1;
+		int new_height = (max_y - min_y) + 1;
+		
+		int first_slice = min_z + 1;
+		int last_slice = max_z + 1;
+
+		ImageStack stack=imp.getStack();
 		ImageStack new_stack=new ImageStack( new_width, new_height );
 
 		for( int slice = first_slice; slice <= last_slice; slice ++ ) {
 
-			byte [] slice_bytes = (byte [])xy_stack.getPixels(slice);
+			byte [] slice_bytes = (byte [])stack.getPixels(slice);
 
 			byte [] new_slice = new byte[new_width * new_height];
-			for( int y = min_y_offscreen; y <= max_y_offscreen; ++y ) {
-				System.arraycopy( slice_bytes, y * original_width + min_x_offscreen,
-						  new_slice, (y - min_y_offscreen) * new_width,
+			for( int y = min_y; y <= max_y; ++y ) {
+				System.arraycopy( slice_bytes, y * original_width + min_x,
+						  new_slice, (y - min_y) * new_width,
 						  new_width );
 			}
 			
@@ -428,12 +504,15 @@ public class ThreePaneCrop extends ThreePanes {
 
 		IJ.showProgress( 1 );
 			       
-		ImagePlus imagePlus = new ImagePlus( "cropped "+xy.getShortTitle(), new_stack );
+		ImagePlus imagePlus = new ImagePlus( "cropped "+imp.getTitle(), new_stack );
 
-		imagePlus.setCalibration(xy.getCalibration());
-		if( xy.getProperty("Info") != null)
-			imagePlus.setProperty("Info",xy.getProperty("Info"));
-		xy.setFileInfo(xy.getOriginalFileInfo());
+		/* FIXME: should probably adjust the origin according
+		 * to the crop rather than just copying the Calibration */
+
+		imagePlus.setCalibration(imp.getCalibration());
+		if( imp.getProperty("Info") != null)
+			imagePlus.setProperty("Info",imp.getProperty("Info"));
+		imagePlus.setFileInfo(imp.getOriginalFileInfo());
 
 		imagePlus.show();
 	}
