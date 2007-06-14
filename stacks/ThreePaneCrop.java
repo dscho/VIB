@@ -14,6 +14,8 @@ import java.awt.event.*;
  * numerically what the current crop boundaries are. */
 
 class CropDialog extends Dialog implements ActionListener, WindowListener {
+
+	Button setFromFields;
 	
 	Button cropButton;
 	Button cancelButton;
@@ -51,18 +53,21 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		y_max_field = new TextField( "", 4 );
 		z_max_field = new TextField( "", 4 );
 
+		/*
 		x_min_field.setEnabled(false);
 		y_min_field.setEnabled(false);
 		z_min_field.setEnabled(false);
 		x_max_field.setEnabled(false);
 		y_max_field.setEnabled(false);
-		z_max_field.setEnabled(false);		
+		z_max_field.setEnabled(false);
+		*/
 
 		addWindowListener( this );
 
 		this.owner = owner;
 
-		setLayout( new BorderLayout() );
+		setLayout( new GridBagLayout() );
+		GridBagConstraints co = new GridBagConstraints();
 		
 		Panel parametersPanel = new Panel();
 
@@ -90,11 +95,18 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		c.gridx = 4; parametersPanel.add( new Label( " (" + owner.overall_max_y + ")"), c );
 
 		c.gridy = 3;
-		c.gridx = 0; parametersPanel.add( new Label( "x from " ), c );
+		c.gridx = 0; parametersPanel.add( new Label( "z from " ), c );
 		c.gridx = 1; parametersPanel.add( z_min_field, c );
-		c.gridx = 2; parametersPanel.add( new Label( " (" + owner.overall_min_z + ")  to "), c );
+		c.gridx = 2; parametersPanel.add( new Label( " (" + (owner.overall_min_z + 1) + ")  to "), c );
 		c.gridx = 3; parametersPanel.add( z_max_field, c );
-		c.gridx = 4; parametersPanel.add( new Label( " (" + owner.overall_max_z + ")"), c );
+		c.gridx = 4; parametersPanel.add( new Label( " (" + (owner.overall_max_z + 1) + ")"), c );
+
+		Panel fieldsOptionsPanel = new Panel();
+		fieldsOptionsPanel.setLayout( new FlowLayout() );
+		
+		setFromFields = new Button("Set from fields above");
+		setFromFields.addActionListener( this );
+		fieldsOptionsPanel.add( setFromFields );
 
 		Panel buttonPanel = new Panel();
 		buttonPanel.setLayout( new FlowLayout() );
@@ -107,8 +119,14 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		buttonPanel.add( cropButton );
 		buttonPanel.add( cancelButton );
 
-		add( parametersPanel, BorderLayout.CENTER );
-		add( buttonPanel, BorderLayout.SOUTH );
+		co.gridx = 0;						  
+		add( parametersPanel, co );
+		co.gridx = 0;						  
+		co.gridy = 1;
+		add( fieldsOptionsPanel, co );
+		co.gridx = 0;						  
+		co.gridy = 2;
+		add( buttonPanel, co );
 
 		pack();
 		setVisible( true );
@@ -124,6 +142,8 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		} else if( source == cancelButton ) {
 			owner.cancel();
 			dispose();
+		} else if( source == setFromFields ) {
+			setFromFields();
 		}
 	}
 
@@ -141,10 +161,125 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 		y_min_field.setText( Integer.toString(min_y) );
 		y_max_field.setText( Integer.toString(max_y) );
 
-		z_min_field.setText( Integer.toString(min_z) );
-		z_max_field.setText( Integer.toString(max_z) );
+		z_min_field.setText( Integer.toString(min_z+1) );
+		z_max_field.setText( Integer.toString(max_z+1) );
 
 	}
+
+	public void setFromFields( ) {
+
+		int new_x_min, new_x_max, new_y_min, new_y_max, new_z_min, new_z_max;
+
+		try {
+
+			/* Parse all the fields as string - throws
+			 * NumberFormatException if there's a
+			 * malformed field. */
+
+			String x_min_string = x_min_field.getText( );
+			new_x_min = Integer.parseInt( x_min_string );
+
+			String x_max_string = x_max_field.getText( );
+			new_x_max = Integer.parseInt( x_max_string );
+
+			String y_min_string = y_min_field.getText( );
+			new_y_min = Integer.parseInt( y_min_string );
+
+			String y_max_string = y_max_field.getText( );
+			new_y_max = Integer.parseInt( y_max_string );
+
+			String z_min_string = z_min_field.getText( );
+			new_z_min = Integer.parseInt( z_min_string );
+
+			String z_max_string = z_max_field.getText( );
+			new_z_max = Integer.parseInt( z_max_string );
+
+		} catch( NumberFormatException e ) {
+			IJ.error( "The fields must all be integers." );
+			return;
+		}
+
+		/* The interface should obey the ImageJ convention
+		 * that slices are indexed from 1, but we don't
+		 * internally */
+
+		-- new_z_min;
+		-- new_z_max; 
+
+		/* Just check that the maximum is >= the minimum. */
+		
+		if( new_x_max < new_x_min ) {
+			IJ.error( "The maximum x must be >= the minimum x." );
+			return;
+		}
+		
+		if( new_y_max < new_y_min ) {
+			IJ.error( "The maximum y must be >= the minimum y." );
+			return;
+		}
+		
+		if( new_z_max < new_z_min ) {
+			IJ.error( "The maximum z must be >= the minimum z." );
+			return;
+		}
+		
+		/* Now check that each new value is between
+		 * the minimum and maxium (inclusive) */
+		
+		if( new_x_min < owner.overall_min_x || new_x_min > owner.overall_max_x ) {
+			IJ.error( "The minimum x must be between "+
+				  owner.overall_min_x+" and "+
+				  owner.overall_max_x+" inclusive." );
+			return;
+		}
+		
+		if( new_x_max < owner.overall_min_x || new_x_max > owner.overall_max_x ) {
+			IJ.error( "The maximum x must be between "+
+				  owner.overall_min_x+" and "+
+				  owner.overall_max_x+" inclusive." );
+			return;
+		}
+
+		
+		if( new_y_min < owner.overall_min_y || new_y_min > owner.overall_max_y ) {
+			IJ.error( "The minimum y must be between "+
+				  owner.overall_min_y+" and "+
+				  owner.overall_max_y+" inclusive." );
+			return;
+		}
+		
+		if( new_y_max < owner.overall_min_y || new_y_max > owner.overall_max_y ) {
+			IJ.error( "The maximum y must be between "+
+				  owner.overall_min_y+" and "+
+				  owner.overall_max_y+" inclusive." );
+			return;
+		}
+
+		
+		if( new_z_min < owner.overall_min_z || new_z_min > owner.overall_max_z ) {
+			IJ.error( "The minimum z must be between "+
+				  owner.overall_min_z+" and "+
+				  owner.overall_max_z+" inclusive." );
+			return;
+		}
+		
+		if( new_z_max < owner.overall_min_z || new_z_max > owner.overall_max_z ) {
+			IJ.error( "The maximum z must be between "+
+				  owner.overall_min_z+" and "+
+				  owner.overall_max_z+" inclusive." );
+			return;
+		}
+		
+		// If we get to here then the new values look OK, so
+		// update the crop boundaries in the canvases...
+		
+		owner.setCropCuboid( new_x_min, new_x_max,
+				     new_y_min, new_y_max,
+				     new_z_min, new_z_max );
+		
+		owner.repaintAllPanes();
+	}
+
 }
 
 public class ThreePaneCrop extends ThreePanes {
@@ -206,9 +341,9 @@ public class ThreePaneCrop extends ThreePanes {
 	int max_y_offscreen, min_y_offscreen;
 	int max_z_offscreen, min_z_offscreen;
 
-	int overall_min_x, overall_max_x;
-	int overall_min_y, overall_max_y;
-	int overall_min_z, overall_max_z;
+	protected int overall_min_x, overall_max_x;
+	protected int overall_min_y, overall_max_y;
+	protected int overall_min_z, overall_max_z;
 	
 	public void setCropCuboid( int min_x, int max_x,
 				   int min_y, int max_y,
@@ -277,7 +412,8 @@ public class ThreePaneCrop extends ThreePanes {
 	public void handleDraggedTo( int off_screen_x, int off_screen_y, int dragging, int in_plane ) {
 
 		/* There may be one of 12 handles dragged (each corner
-		   of the new cube). */
+		   of the new cube).  FIXME: all the nearly repeated
+		   code here is ugly: simplify that... */
 
 		int point[] = new int[3];
 		
