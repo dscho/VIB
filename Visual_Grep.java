@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 public class Visual_Grep implements PlugInFilter {
 	ImagePlus imp;
+	float minDistance;
 
 	public int setup(String arg, ImagePlus imp) {
 		this.imp = imp;
@@ -33,7 +34,7 @@ public class Visual_Grep implements PlugInFilter {
 
 		GenericDialog gd = new GenericDialog("Visual Grep");
 		gd.addChoice("needle", idList, idList[0]);
-		gd.addNumericField("tolerance", 3000, 0);
+		gd.addNumericField("tolerance", 5000, 0);
 		gd.addNumericField("pyramidLevel", level, 0);
 		gd.showDialog();
 		if (gd.wasCanceled())
@@ -44,8 +45,14 @@ public class Visual_Grep implements PlugInFilter {
 		int tolerance = (int)gd.getNextNumber();
 		level = (int)gd.getNextNumber();
 
+		minDistance = Float.MAX_VALUE;
 		ArrayList points = getPoints(ip, needle.getProcessor(),
 				tolerance, level, level, null);
+		if (points.size() == 0) {
+			IJ.error("No region found! Minimal tolerance needed: "
+				+ minDistance);
+			return;
+		}
 		Roi roi = getRoi(points,
 				needle.getWidth(), needle.getHeight());
 		imp.setRoi(roi);
@@ -150,7 +157,10 @@ public class Visual_Grep implements PlugInFilter {
 				int b = (v1 & 0xff) - (v2 & 0xff);
 				diff += r * r + g * g + b * b;
 			}
-		return diff / (float)(needleW * needleH);
+		float result = diff / (float)(needleW * needleH);
+		if (minDistance > result)
+			minDistance = result;
+		return result;
 	}
 
 	Roi getRoi(ArrayList points, int w, int h) {
