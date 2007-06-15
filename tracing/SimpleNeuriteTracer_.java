@@ -583,7 +583,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	}
 
-	public void writeTracesToFile( String filename ) {
+	synchronized public void writeTracesToFile( String filename ) {
 		
                 try {
 
@@ -693,7 +693,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	// When we set temporaryConnection, we also want to update the display
 
-	public void setTemporaryConnection( Connection connection ) {
+	synchronized public void setTemporaryConnection( Connection connection ) {
 
 		xy_tracer_canvas.setTemporaryConnection( connection );
 		zy_tracer_canvas.setTemporaryConnection( connection );

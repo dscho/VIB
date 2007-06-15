@@ -120,8 +120,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 
 	public void keyReleased(KeyEvent e) {}
 	
-	public void keyTyped(KeyEvent e) {}
-	
+	public void keyTyped(KeyEvent e) {}	
 
 	/* Keep another Graphics for double-buffering... */
 
