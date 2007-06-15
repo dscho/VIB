@@ -276,13 +276,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		PickResult result = null;
 		try {
 			result = pickCanvas.pickClosest();
-		} catch(NullPointerException e) {}
-		if(result == null) 
+			if(result == null) 
+				return null;
+			Content content = (Content)result.
+					getNode(PickResult.BRANCH_GROUP);
+			if(content== null)
+				return null;
+			return content;
+		} catch(Exception e) {
 			return null;
-		Content content = 
-			(Content)result.getNode(PickResult.BRANCH_GROUP);
-		if(content== null)
-			return null;
-		return content;
+		}
 	}
 } 
