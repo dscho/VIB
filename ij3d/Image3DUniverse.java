@@ -23,6 +23,7 @@ import java.awt.event.*;
 import java.util.List;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Collection;
 
 import com.sun.j3d.utils.behaviors.keyboard.*;
 import com.sun.j3d.utils.universe.*;
@@ -78,7 +79,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 		String st = c != null ? c.name : "none";
 		IJ.showStatus("selected: " + st);
-		canvas.setStatus("selected: " + st);
+//		canvas.setStatus("selected: " + st);
 
 		fireContentSelected(c);
 
@@ -236,6 +237,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return contents.values().iterator();
 	}
 
+	public Collection getContents() {
+		return contents.values();
+	}
+
 	public Content getContent(String name) {
 		if (null == name) return null;
 		return (Content)contents.get(name);
@@ -271,13 +276,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		PickResult result = null;
 		try {
 			result = pickCanvas.pickClosest();
-		} catch(NullPointerException e) {}
-		if(result == null) 
+			if(result == null) 
+				return null;
+			Content content = (Content)result.
+					getNode(PickResult.BRANCH_GROUP);
+			if(content== null)
+				return null;
+			return content;
+		} catch(Exception e) {
 			return null;
-		Content content = 
-			(Content)result.getNode(PickResult.BRANCH_GROUP);
-		if(content== null)
-			return null;
-		return content;
+		}
 	}
 } 

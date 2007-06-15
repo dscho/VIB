@@ -70,6 +70,8 @@ public class OrthoGroup extends Content {
 				(float)(imp.getStackSize()*c.pixelDepth));
 		centerPoint = new Point3f(maxPoint.x/2, maxPoint.y/2, 
 				maxPoint.z/2);
+		createBoundingBox();
+		showBoundingBox(false);
 	}
 		
 	public static void addContent(Image3DUniverse univ, ImagePlus grey) {

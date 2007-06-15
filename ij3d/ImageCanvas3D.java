@@ -120,30 +120,30 @@ public class ImageCanvas3D extends Canvas3D {
 	private String status = "";
 	private Color color = Color.WHITE;
 
-	public void setStatus(String bla) {
-		status = bla;
-		color = Color.WHITE;
-		postRender();
-		new Thread(new Runnable() {
-			public void run() {
-				try {
-					Thread.currentThread().sleep(2000);
-					color = Color.LIGHT_GRAY;
-					postRender();
-					Thread.currentThread().sleep(200);
-					color = Color.GRAY;
-					postRender();
-					Thread.currentThread().sleep(200);
-					color = Color.DARK_GRAY;
-					postRender();
-					Thread.currentThread().sleep(200);
-					color = Color.BLACK;
-					postRender();
-					status = "";
-				} catch(Exception e) {}
-			}
-		}).start();
-	}
+//	public void setStatus(String bla) {
+//		status = bla;
+//		color = Color.WHITE;
+//		postRender();
+//		new Thread(new Runnable() {
+//			public void run() {
+//				try {
+//					Thread.currentThread().sleep(2000);
+//					color = Color.LIGHT_GRAY;
+//					postRender();
+//					Thread.currentThread().sleep(200);
+//					color = Color.GRAY;
+//					postRender();
+//					Thread.currentThread().sleep(200);
+//					color = Color.DARK_GRAY;
+//					postRender();
+//					Thread.currentThread().sleep(200);
+//					color = Color.BLACK;
+//					postRender();
+//					status = "";
+//				} catch(Exception e) {}
+//			}
+//		}).start();
+//	}
 
 	Font font = new Font("Helvetica", Font.PLAIN, 20);
 

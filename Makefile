@@ -160,6 +160,7 @@ $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 JARS=Delaunay_Voronoi.jar AmiraMesh_.jar Extract_Surface.jar \
 	Rigid_Registration.jar \
 	Segmentation_Editor_compat.jar VIB_compat.jar \
+	ImageJ_3D_Viewer.jar \
 	$(SIMPLE_JARS)
 
 show-jars:
