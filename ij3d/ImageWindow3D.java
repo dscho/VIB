@@ -38,7 +38,6 @@ import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Screen3D;
 
 public class ImageWindow3D extends ImageWindow implements UniverseListener, 
-							WindowStateListener,
 							KeyListener {
 	DefaultUniverse universe;
 	ImageCanvas3D canvas3D;
