@@ -4,6 +4,7 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
+import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import ij.plugin.filter.PlugInFilter;
 
@@ -93,7 +94,8 @@ public class Visual_Grep implements PlugInFilter {
 						needleW, needleH);
 			IJ.showProgress(j + 1, h);
 		}
-		new ImagePlus("distance", new ij.process.FloatProcessor(w, h, pixels, null)).show();
+		FloatProcessor fp = new FloatProcessor(w, h, pixels, null);
+		new ImagePlus("distance", fp).show();
 	}
 
 	ArrayList getPoints(ImageProcessor haystack, ImageProcessor needle,
