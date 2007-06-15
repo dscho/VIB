@@ -149,7 +149,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	public ImagePlus stopRecording() {
 		animatedRecording = false;
 		freeRecording = false;
-		if(stack == null)
+		if(stack == null || stack.getSize() == 0)
 			return null;
 		ImagePlus imp = new ImagePlus("Movie", stack);
 		stack = null;
