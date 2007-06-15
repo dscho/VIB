@@ -212,9 +212,12 @@ public class Orthoslice extends AxisRenderer {
 		Appearance a = getAppearance(textures[r], tg);
 
 		Shape3D frontShape = new Shape3D(quadArray, a);
+		frontShape.setCapability(Shape3D.ALLOW_GEOMETRY_READ);
+		frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
 
 		BranchGroup frontShapeGroup = new BranchGroup();
 		frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+		frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 		frontShapeGroup.addChild(frontShape);
 		frontGroup.addChild(frontShapeGroup);
 	} 
@@ -223,6 +226,8 @@ public class Orthoslice extends AxisRenderer {
 		Appearance a = new Appearance();
 		a.setCapability(Appearance.ALLOW_TEXGEN_WRITE);
 		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
+		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
 
 		TextureAttributes texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);
