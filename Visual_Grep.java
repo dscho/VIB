@@ -91,9 +91,14 @@ public class Visual_Grep implements PlugInFilter {
 				Point p = (Point)initial.get(i);
 				p.x *= 2;
 				p.y *= 2;
+				int xo = 2, yo = 2;
+				if (p.x + xo + needleW > w)
+					xo = 1;
+				if (p.y + yo + needleH > h)
+					yo = 1;
 				getPoints(points, pixels, w,
 						needlePixels, needleW, needleH,
-						p.x, p.y, p.x + 2, p.y + 2,
+						p.x, p.y, p.x + xo, p.y + yo,
 						tolerance, false);
 			}
 		} else
