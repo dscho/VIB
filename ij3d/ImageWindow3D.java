@@ -70,6 +70,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		canvas3D.addKeyListener(this);
 		universe.addUniverseListener(this);
 		updateImagePlus();
+		Toolbar.getInstance().setTool(Toolbar.HAND);
 		show();
 	}
 
