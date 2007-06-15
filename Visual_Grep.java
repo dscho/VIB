@@ -36,6 +36,7 @@ public class Visual_Grep implements PlugInFilter {
 		gd.addChoice("needle", idList, idList[0]);
 		gd.addNumericField("tolerance", 5000, 0);
 		gd.addNumericField("pyramidLevel", level, 0);
+		gd.addCheckbox("testDistance", false);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -44,6 +45,12 @@ public class Visual_Grep implements PlugInFilter {
 		ImagePlus needle = WindowManager.getImage(needleIndex);
 		int tolerance = (int)gd.getNextNumber();
 		level = (int)gd.getNextNumber();
+		boolean testDistance = gd.getNextBoolean();
+
+		if (testDistance) {
+			testDistance(ip, needle.getProcessor(), level);
+			return;
+		}
 
 		minDistance = Float.MAX_VALUE;
 		ArrayList points = getPoints(ip, needle.getProcessor(),
@@ -57,6 +64,30 @@ public class Visual_Grep implements PlugInFilter {
 				needle.getWidth(), needle.getHeight());
 		imp.setRoi(roi);
 		imp.updateAndDraw();
+	}
+
+	void testDistance(ImageProcessor haystack, ImageProcessor needle,
+			int level) {
+		int factor = 1 << level;
+		haystack = haystack.resize(haystack.getWidth() / factor, haystack.getHeight() / factor);
+		needle = needle.resize(needle.getWidth() / factor, needle.getHeight() / factor);
+		int[] haystackPixels = (int[])haystack.getPixels();
+		int[] needlePixels = (int[])needle.getPixels();
+		int haystackW = haystack.getWidth();
+		int haystackH = haystack.getHeight();
+		int needleW = needle.getWidth();
+		int needleH = needle.getHeight();
+		int w = haystackW - needleW;
+		int h = haystackH - needleH;
+		float[] pixels = new float[w * h];
+		for (int j = 0; j < h; j++) {
+			for (int i = 0; i < w; i++)
+				pixels[i + w * j] = distance(haystackPixels,
+						i, j, haystackW, needlePixels,
+						needleW, needleH);
+			IJ.showProgress(j + 1, h);
+		}
+		new ImagePlus("distance", new ij.process.FloatProcessor(w, h, pixels, null)).show();
 	}
 
 	ArrayList getPoints(ImageProcessor haystack, ImageProcessor needle,
