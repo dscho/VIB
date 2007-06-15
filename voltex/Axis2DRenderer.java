@@ -60,7 +60,8 @@ public class Axis2DRenderer extends AxisRenderer {
 			int num = g.numChildren();
 			for(int y = 0; y < num; y++) {
 				Shape3D shape = (Shape3D)
-					((Group)g.getChild(y)).getChild(0);
+					((Group)g.getChild(y)).
+							getChild(0);
 				shape.getAppearance().
 					getColoringAttributes().
 						setColor(c);
@@ -129,22 +130,25 @@ public class Axis2DRenderer extends AxisRenderer {
 						GeometryArray.COORDINATES);
 
 			quadArray.setCoordinates(0, quadCoords);
-
 			quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
 
 			Appearance a = getAppearance(textures[i], tg);
 
 			Shape3D frontShape = new Shape3D(quadArray, a);
+			frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
 
 			BranchGroup frontShapeGroup = new BranchGroup();
 			frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+			frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 			frontShapeGroup.addChild(frontShape);
 			frontGroup.addChild(frontShapeGroup);
 
 			Shape3D backShape = new Shape3D(quadArray, a);
+			backShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
 
 			BranchGroup backShapeGroup = new BranchGroup();
 			backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+			backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 			backShapeGroup.addChild(backShape);
 			backGroup.insertChild(backShapeGroup, 0);
 		} 
@@ -152,6 +156,8 @@ public class Axis2DRenderer extends AxisRenderer {
 
 	private Appearance getAppearance(Texture tex, TexCoordGeneration tg) {
 		Appearance a = new Appearance();
+		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
 
 		TextureAttributes texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);
