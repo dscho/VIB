@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 public class Visual_Grep implements PlugInFilter {
 	ImagePlus imp;
+	float minDistance;
 
 	public int setup(String arg, ImagePlus imp) {
 		this.imp = imp;
@@ -33,8 +34,9 @@ public class Visual_Grep implements PlugInFilter {
 
 		GenericDialog gd = new GenericDialog("Visual Grep");
 		gd.addChoice("needle", idList, idList[0]);
-		gd.addNumericField("tolerance", 3000, 0);
+		gd.addNumericField("tolerance", 5000, 0);
 		gd.addNumericField("pyramidLevel", level, 0);
+		gd.addCheckbox("testDistance", false);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -43,13 +45,55 @@ public class Visual_Grep implements PlugInFilter {
 		ImagePlus needle = WindowManager.getImage(needleIndex);
 		int tolerance = (int)gd.getNextNumber();
 		level = (int)gd.getNextNumber();
+		boolean testDistance = gd.getNextBoolean();
 
+		if (testDistance) {
+			testDistance(ip, needle.getProcessor(), level);
+			return;
+		}
+
+		minDistance = Float.MAX_VALUE;
 		ArrayList points = getPoints(ip, needle.getProcessor(),
 				tolerance, level, level, null);
+		if (points.size() == 0) {
+			IJ.error("No region found! Minimal tolerance needed: "
+				+ minDistance);
+			return;
+		}
 		Roi roi = getRoi(points,
 				needle.getWidth(), needle.getHeight());
 		imp.setRoi(roi);
 		imp.updateAndDraw();
+	}
+
+	void testDistance(ImageProcessor haystack, ImageProcessor needle,
+			int level) {
+		if (level > 0) {
+			int factor = 1 << level;
+			haystack =
+				haystack.resize(haystack.getWidth() / factor,
+						haystack.getHeight() / factor);
+			needle =
+				needle.resize(needle.getWidth() / factor,
+						needle.getHeight() / factor);
+		}
+		int[] haystackPixels = (int[])haystack.getPixels();
+		int[] needlePixels = (int[])needle.getPixels();
+		int haystackW = haystack.getWidth();
+		int haystackH = haystack.getHeight();
+		int needleW = needle.getWidth();
+		int needleH = needle.getHeight();
+		int w = haystackW - needleW;
+		int h = haystackH - needleH;
+		float[] pixels = new float[w * h];
+		for (int j = 0; j < h; j++) {
+			for (int i = 0; i < w; i++)
+				pixels[i + w * j] = distance(haystackPixels,
+						i, j, haystackW, needlePixels,
+						needleW, needleH);
+			IJ.showProgress(j + 1, h);
+		}
+		new ImagePlus("distance", new ij.process.FloatProcessor(w, h, pixels, null)).show();
 	}
 
 	ArrayList getPoints(ImageProcessor haystack, ImageProcessor needle,
@@ -84,9 +128,14 @@ public class Visual_Grep implements PlugInFilter {
 				Point p = (Point)initial.get(i);
 				p.x *= 2;
 				p.y *= 2;
+				int xo = 2, yo = 2;
+				if (p.x + xo + needleW > w)
+					xo = 1;
+				if (p.y + yo + needleH > h)
+					yo = 1;
 				getPoints(points, pixels, w,
 						needlePixels, needleW, needleH,
-						p.x, p.y, p.x + 2, p.y + 2,
+						p.x, p.y, p.x + xo, p.y + yo,
 						tolerance, false);
 			}
 		} else
@@ -150,7 +199,10 @@ public class Visual_Grep implements PlugInFilter {
 				int b = (v1 & 0xff) - (v2 & 0xff);
 				diff += r * r + g * g + b * b;
 			}
-		return diff / (float)(needleW * needleH);
+		float result = diff / (float)(needleW * needleH);
+		if (minDistance > result)
+			minDistance = result;
+		return result;
 	}
 
 	Roi getRoi(ArrayList points, int w, int h) {

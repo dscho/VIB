@@ -127,17 +127,6 @@ public class ThreePaneCropCanvas extends ThreePanesCanvas {
 		return new ThreePaneCropCanvas( imagePlus, owner, plane );
 	}
 
-	// FIXME: I'm not bothering to do any double-buffering here at the moment.
-	
-	public void paint(Graphics g) {
-		super.paint(g);
-		drawOverlay(g);
-		nw.draw(g);
-		ne.draw(g);
-		sw.draw(g);
-		se.draw(g);
-	}
-	
 	public void setCropBounds( int offscreen_min_x, int offscreen_max_x,
 				   int offscreen_min_y, int offscreen_max_y ) {
 		
@@ -147,6 +136,50 @@ public class ThreePaneCropCanvas extends ThreePanesCanvas {
 		crop_max_offscreen_y = offscreen_max_y;
 		
 		setHandlesFromBounds( );
+	}
+
+	/* Keep another Graphics for double-buffering... */
+
+	private int backBufferWidth;
+	private int backBufferHeight;
+
+	private Graphics backBufferGraphics;
+	private Image backBufferImage;
+
+	private void resetBackBuffer() {
+
+		if(backBufferGraphics!=null){
+			backBufferGraphics.dispose();
+			backBufferGraphics=null;
+		}
+
+		if(backBufferImage!=null){
+			backBufferImage.flush();
+			backBufferImage=null;
+		}
+		
+		backBufferWidth=getSize().width;
+		backBufferHeight=getSize().height;
+
+		backBufferImage=createImage(backBufferWidth,backBufferHeight);
+	        backBufferGraphics=backBufferImage.getGraphics();
+	}
+
+	public void paint(Graphics g) {
+		
+		if(backBufferWidth!=getSize().width ||
+		   backBufferHeight!=getSize().height ||
+		   backBufferImage==null ||
+		   backBufferGraphics==null)
+			resetBackBuffer();
+		
+		super.paint(backBufferGraphics);
+		drawOverlay(backBufferGraphics);
+		nw.draw(backBufferGraphics);
+		ne.draw(backBufferGraphics);
+		sw.draw(backBufferGraphics);
+		se.draw(backBufferGraphics);
+		g.drawImage(backBufferImage,0,0,this);
 	}
 	
 	protected void drawOverlay( Graphics g ) {
