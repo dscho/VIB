@@ -274,7 +274,7 @@ public class UnpackToPNG_ implements PlugIn {
 
 		PrintStream ps = new PrintStream(jsIndexFileName);
 
-		ps.println("materials = [");
+		ps.println("var materials = [");
 
 		byte [] reds =   new byte[materialCount];
 		byte [] greens = new byte[materialCount];
@@ -303,9 +303,9 @@ public class UnpackToPNG_ implements PlugIn {
 		String dimensionsFileName = destinationDirectory + File.separator + "dimensions.js";
 
 		ps = new PrintStream(dimensionsFileName);
-		ps.println("stack_width = "+width+";");
-		ps.println("stack_height = "+height+";");
-		ps.println("stack_depth = "+stackDepth+";");
+		ps.println("var stack_width = "+width+";");
+		ps.println("var stack_height = "+height+";");
+		ps.println("var stack_depth = "+stackDepth+";");
 		ps.close();
 
 		long [] pixelCountsForMaterial = new long[materialCount];
@@ -313,8 +313,21 @@ public class UnpackToPNG_ implements PlugIn {
 		float [] ySumsForMaterial = new float[materialCount];
 		float [] zSumsForMaterial = new float[materialCount];
 
+		byte [] alphas = new byte[materialCount];
+
 		IndexColorModel cm = new IndexColorModel(8,materialCount,reds,greens,blues,0 /* the transparent color */ );
+
+		/*
+		alphas[0] = (byte)255;
+		for( int i = 1; i < materialCount; ++i )
+			alphas[i] = (byte)128;
 			
+		IndexColorModel cm = new IndexColorModel(8,materialCount,reds,greens,blues,alphas );
+		*/
+
+		String allMapsFileName = destinationDirectory + File.separator + "all-maps.html";
+		PrintStream allps = new PrintStream( allMapsFileName );
+
 		for( int z = 0; z < stackDepth; ++z ) {
 			
 			DecimalFormat f2 = new DecimalFormat("00");
@@ -336,6 +349,9 @@ public class UnpackToPNG_ implements PlugIn {
 			
 			HashSet materialsInThisSlice = new HashSet();
 
+			String mapOpen = "<MAP NAME=\"map-"+f5.format(z)+"\">";
+			String mapClose = "</MAP>";
+
 			for(int i = 0; i<pixels.length; ++i ) {
 				
 				int intValue = pixels[i]&0xFF;
@@ -350,6 +366,8 @@ public class UnpackToPNG_ implements PlugIn {
 				zSumsForMaterial[intValue] += z;
 
 			}
+
+			allps.println(mapOpen);
 
 			// First just write all the labels out in one PNG:
 
@@ -420,12 +438,16 @@ public class UnpackToPNG_ implements PlugIn {
 						
 						Polygon p = (Polygon)iterator.next();
 						
-						ps.println( "<area shape=\"poly\" coords=\""+
-							    polygonToAreaCoords(p) + "\" href=\"#" +
-							    regionName + "-" +
-							    f5.format(z) + "\" onclick=\"selectedArea("+
-							    z+",'" + regionName + "')\"/>" );
+						String areaString = "<area shape=\"poly\" " +
+							"alt=\"" + regionName + "\" " +
+							"coords=\"" +
+							polygonToAreaCoords(p) + "\" href=\"#" +
+							regionName + "-" +
+							f5.format(z) + "\" onclick=\"selectedArea("+
+							z+",'" + regionName + "')\">";
 						
+						ps.println( areaString  );
+						allps.println( areaString );						
 					}
 					
 				} else {
@@ -439,14 +461,18 @@ public class UnpackToPNG_ implements PlugIn {
 			
 			ps.close();
 
+			allps.println(mapClose);
+					
 		}
+
+		allps.close();
 		
 
 		String centresFileName = destinationDirectory + File.separator + "centres.js";
 
 		ps = new PrintStream(centresFileName);
 
-		ps.println( "centres_of_gravity = [" );
+		ps.println( "var centres_of_gravity = [" );
 
 		for( int i = 0; i < materialCount; ++i ) {
 
