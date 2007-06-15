@@ -68,9 +68,15 @@ public class Visual_Grep implements PlugInFilter {
 
 	void testDistance(ImageProcessor haystack, ImageProcessor needle,
 			int level) {
-		int factor = 1 << level;
-		haystack = haystack.resize(haystack.getWidth() / factor, haystack.getHeight() / factor);
-		needle = needle.resize(needle.getWidth() / factor, needle.getHeight() / factor);
+		if (level > 0) {
+			int factor = 1 << level;
+			haystack =
+				haystack.resize(haystack.getWidth() / factor,
+						haystack.getHeight() / factor);
+			needle =
+				needle.resize(needle.getWidth() / factor,
+						needle.getHeight() / factor);
+		}
 		int[] haystackPixels = (int[])haystack.getPixels();
 		int[] needlePixels = (int[])needle.getPixels();
 		int haystackW = haystack.getWidth();
