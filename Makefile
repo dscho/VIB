@@ -101,7 +101,12 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 
 Install_Java3D.jar: SOURCES=Install_Java3D.java
 
-ThreePaneCrop_.jar: SOURCES=$(wildcard stacks/Three*.java)
+ThreePaneCrop_.jar: SOURCES=stacks/PaneOwner.java \
+	stacks/ThreePaneCropCanvas.java \
+	stacks/ThreePaneCrop_.java \
+	stacks/ThreePaneCrop.java \
+	stacks/ThreePanesCanvas.java \
+	stacks/ThreePanes.java
 
 SimpleNeuriteTracer_.jar: SOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
@@ -118,14 +123,24 @@ SimpleNeuriteTracer_.jar: SOURCES=stacks/ThreePanes.java \
 	tracing/FillerThread.java \
 	tracing/FillerProgressCallback.java \
 	tracing/FillerNode.java \
+	tracing/NormalPlaneCanvas.java \
+	$(wildcard pal/math/*.java) \
+	features/ComputeCurvatures.java \
+	features/GaussianGenerationCallback.java \
 	client/ArchiveClient.java \
 	util/Arrow.java \
-	util/ArrowDisplayer.java \
-	tracing/HessianAnalyzer.java \
-	math3d/JacobiFloat.java \
-	tracing/EigenResultsDouble.java \
-	tracing/EigenResultsFloat.java \
-	math3d/FloatMatrixN.java
+	util/ArrowDisplayer.java
+
+ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
+	marchingcubes/MCTriangulator.java \
+	marchingcubes/MCCube.java \
+	vib/Resample_.java \
+	amira/AmiraParameters.java \
+	amira/AmiraTable.java \
+	ij3d/ColorTable.java \
+	isosurface/Triangulator.java \
+	vib/InterpolatedImage.java \
+	math3d/Point3d.java
 
 VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard vib/app/gui/*.java) \
