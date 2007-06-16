@@ -57,11 +57,11 @@ public class VoltexGroup extends Content {
 		compile();
 	}
 
-	public void setThreshold(double d) {
+	public void setThreshold(int d) {
 		renderer.setThreshold(d);
 	}
 
-	public double getThreshold() {
+	public int  getThreshold() {
 		return renderer.getThreshold();
 	}
 		

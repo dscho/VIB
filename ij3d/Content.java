@@ -199,8 +199,8 @@ public abstract class Content extends BranchGroup {
 	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
 	public abstract void channelsUpdated(boolean[] channels);
 	public abstract void transparencyUpdated(float transparency);
-	public abstract void setThreshold(double t);
-	public abstract double getThreshold();
+	public abstract void setThreshold(int t);
+	public abstract int getThreshold();
 	public abstract void flush();
 }
 

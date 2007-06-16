@@ -125,11 +125,11 @@ public class OrthoGroup extends Content {
 		renderer.eyePtChanged(view);
 	}
 
-	public void setThreshold(double d) {
+	public void setThreshold(int d) {
 		renderer.setThreshold(d);
 	}
 
-	public double getThreshold() {
+	public int getThreshold() {
 		return renderer.getThreshold();
 	}
 

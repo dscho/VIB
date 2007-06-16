@@ -299,10 +299,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == threshold) {
 			Content c = univ.getSelected();
-			if(c == null || !(c instanceof OrthoGroup || 
-				c instanceof VoltexGroup)) {
-				IJ.error("Orthoslices or Volume " + 
-						"must be selected");
+			if(c == null) {
+				IJ.error("Selection required");
 				return;
 			}
 			adjustThreshold(c);
@@ -440,14 +438,24 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	public void adjustThreshold(final Content selected) {
+		final int oldTr = (int)(selected.getThreshold());
+		if(selected instanceof MeshGroup) {
+			int th = (int)Math.round(
+				IJ.getNumber("Threshold [0..255]", oldTr));
+			th = Math.max(0, th);
+			th = Math.min(th, 255);
+			selected.setThreshold(th);
+			univ.fireContentChanged(selected);
+			return;
+		}
+		// in case we've not a mesh, change it interactively
 		final GenericDialog gd = 
 				new GenericDialog("Adjust threshold...");
-		final int oldTr = (int)(selected.getThreshold() * 100);
-		gd.addSlider("Transparency", 0, 100, oldTr);
+		gd.addSlider("Transparency", 0, 255, oldTr);
 		((Scrollbar)gd.getSliders().get(0)).
 			addAdjustmentListener(new AdjustmentListener() {
 			public void adjustmentValueChanged(AdjustmentEvent e) {
-				float newTr = (float)e.getValue() / 100f; 
+				int newTr = (int)e.getValue();
 				selected.setThreshold(newTr);
 				univ.fireContentChanged(selected);
 			}
@@ -456,17 +464,13 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
-					float newTr = (float)oldTr / 100f;
-					selected.setThreshold(newTr);
+					selected.setThreshold(oldTr);
 					univ.fireContentChanged(selected);
 					return;
 				}
 			}
 		});
 		gd.showDialog();
-		
-		record(SET_TRANSPARENCY,Float.toString(
-			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
 	}
 
 	public void adjustSlices(final Content selected) {

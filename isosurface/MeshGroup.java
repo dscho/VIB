@@ -69,15 +69,29 @@ public class MeshGroup extends Content {
 		// do nothing
 	}
 
-	public void setThreshold(double d) {
-		// do nothing
+	public void setThreshold(int d) {
+		if(getImage() == null) {
+			IJ.error("Mesh was not calculated of a grayscale " +
+				"image. Can't change threshold");
+			return;
+		}
+		this.threshold = d;
+		List mesh = triangulator.getTriangles(getImage(), 
+			threshold, getChannels(), getResamplingFactor());
+		shape.mesh = mesh;
+		shape.update();
 	}
 
-	public double getThreshold() {
-		return 0.0;
+	public int getThreshold() {
+		return threshold;
 	}
 
 	public void channelsUpdated(boolean [] channels) {
+		if(getImage() == null) {
+			IJ.error("Mesh was not calculated of a grayscale " +
+				"image. Can't change channels");
+			return;
+		}
 		List mesh = triangulator.getTriangles(getImage(), 
 			threshold, channels, getResamplingFactor());
 		shape.mesh = mesh;
