@@ -29,6 +29,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem color;
 	private MenuItem channels;
 	private MenuItem transparency;
+	private MenuItem threshold;
 	private MenuItem fill;
 	private MenuItem slices;
 	private MenuItem delete;
@@ -165,6 +166,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		// Contents
 		Menu content = new Menu("Content");
 		
+		threshold = new MenuItem("Adjust threshold");
+		threshold.addActionListener(this);
+		content.add(threshold);
+		
 		slices = new MenuItem("Adjust slices");
 		slices.addActionListener(this);
 		content.add(slices);
@@ -290,6 +295,18 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(e.getSource() == stopAnimation) {
 			record(STOP_ANIMATE);
 			univ.pauseAnimation();
+		}
+
+		if(e.getSource() == threshold) {
+			Content c = univ.getSelected();
+			if(c == null || !(c instanceof OrthoGroup || 
+				c instanceof VoltexGroup)) {
+				IJ.error("Orthoslices or Volume " + 
+						"must be selected");
+				return;
+			}
+			adjustThreshold(c);
+			univ.clearSelection();
 		}
 
 		if(e.getSource() == slices) {
@@ -420,6 +437,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 		record(SET_TRANSPARENCY,Float.toString(
 			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
+	}
+
+	public void adjustThreshold(final Content selected) {
+		double oldVal = selected.getThreshold();
+		double threshold = IJ.getNumber("Threshold [0..1]", (float)oldVal);
+		selected.setThreshold(threshold);
 	}
 
 	public void adjustSlices(final Content selected) {

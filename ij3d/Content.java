@@ -22,7 +22,7 @@ public abstract class Content extends BranchGroup {
 
 	String name;
 	Color3f color;
-	ImagePlus image;
+	protected ImagePlus image;
 	boolean[] channels = new boolean[]{true, true, true};
 	float transparency = 0f;
 	int resamplingF = 1;
@@ -199,6 +199,9 @@ public abstract class Content extends BranchGroup {
 	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
 	public abstract void channelsUpdated(boolean[] channels);
 	public abstract void transparencyUpdated(float transparency);
+	public abstract void setThreshold(double t);
+	public abstract double getThreshold();
+	public abstract void flush();
 }
 
 

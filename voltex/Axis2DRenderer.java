@@ -32,6 +32,23 @@ public class Axis2DRenderer extends AxisRenderer {
 		setWhichChild();
 	}
 
+	public void setThreshold(double threshold) {
+		threshold = Math.min(1, threshold);
+		threshold = Math.max(0.1, threshold);
+		this.threshold = threshold;
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			Group g = (Group)axisSwitch.getChild(i);
+			int num = g.numChildren();
+			for(int y = 0; y < num; y++) {
+				Shape3D shape = (Shape3D)
+					((Group)g.getChild(y)).getChild(0);
+				shape.getAppearance().
+					getRenderingAttributes().
+					setAlphaTestValue((float)threshold);
+			}
+		}
+	}
+
 	public void setTransparency(float transparency) {
 		this.transparency = transparency;
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {
@@ -158,6 +175,7 @@ public class Axis2DRenderer extends AxisRenderer {
 		Appearance a = new Appearance();
 		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
 		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_RENDERING_ATTRIBUTES_READ);
 
 		TextureAttributes texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);
@@ -186,6 +204,7 @@ public class Axis2DRenderer extends AxisRenderer {
 
 		// Avoid rendering of voxels having an alpha value of zero
 		RenderingAttributes ra = new RenderingAttributes();
+		ra.setCapability(RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
 		ra.setAlphaTestValue(0.1f);
 		ra.setAlphaTestFunction(RenderingAttributes.GREATER);
 		

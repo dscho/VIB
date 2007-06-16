@@ -69,6 +69,14 @@ public class MeshGroup extends Content {
 		// do nothing
 	}
 
+	public void setThreshold(double d) {
+		// do nothing
+	}
+
+	public double getThreshold() {
+		return 0.0;
+	}
+
 	public void channelsUpdated(boolean [] channels) {
 		List mesh = triangulator.getTriangles(getImage(), 
 			threshold, channels, getResamplingFactor());
@@ -151,6 +159,11 @@ public class MeshGroup extends Content {
 		}
 		univ.addMesh(mesh, color, 
 			name, threshold, channels, factor);
+	}
+
+	public void flush() {
+		shape = null;
+		image = null;
 	}
 }
 

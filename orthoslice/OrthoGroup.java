@@ -125,6 +125,14 @@ public class OrthoGroup extends Content {
 		renderer.eyePtChanged(view);
 	}
 
+	public void setThreshold(double d) {
+		renderer.setThreshold(d);
+	}
+
+	public double getThreshold() {
+		return renderer.getThreshold();
+	}
+
 	public void channelsUpdated(boolean[] channels) {
 		IndexColorModel cmodel = getColor() == null ?
 			ColorTable.getOpaqueIndexedColorModel(
@@ -156,6 +164,11 @@ public class OrthoGroup extends Content {
 
 	public void setSlices(int x, int y, int z) {
 		((Orthoslice)renderer).setSlices(x, y, z);
+	}
+
+	public void flush() {
+		image = null;
+		renderer = null;
 	}
 }
 

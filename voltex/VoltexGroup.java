@@ -56,6 +56,14 @@ public class VoltexGroup extends Content {
 
 		compile();
 	}
+
+	public void setThreshold(double d) {
+		renderer.setThreshold(d);
+	}
+
+	public double getThreshold() {
+		return renderer.getThreshold();
+	}
 		
 	public void calculateMinMaxCenterPoint() {
 		ImagePlus imp = getImage();
@@ -205,6 +213,12 @@ public class VoltexGroup extends Content {
 			IJ.showProgress(z, d);
 		}
 		renderer.fullReload();
+	}
+
+	public void flush() {
+		System.out.println("Set renderer = null");
+		renderer = null;
+		image = null;
 	}
 }
 
