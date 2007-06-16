@@ -440,9 +440,33 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	public void adjustThreshold(final Content selected) {
-		double oldVal = selected.getThreshold();
-		double threshold = IJ.getNumber("Threshold [0..1]", (float)oldVal);
-		selected.setThreshold(threshold);
+		final GenericDialog gd = 
+				new GenericDialog("Adjust threshold...");
+		final int oldTr = (int)(selected.getThreshold() * 100);
+		gd.addSlider("Transparency", 0, 100, oldTr);
+		((Scrollbar)gd.getSliders().get(0)).
+			addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				float newTr = (float)e.getValue() / 100f; 
+				selected.setThreshold(newTr);
+				univ.fireContentChanged(selected);
+			}
+		});
+		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					float newTr = (float)oldTr / 100f;
+					selected.setThreshold(newTr);
+					univ.fireContentChanged(selected);
+					return;
+				}
+			}
+		});
+		gd.showDialog();
+		
+		record(SET_TRANSPARENCY,Float.toString(
+			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
 	}
 
 	public void adjustSlices(final Content selected) {
