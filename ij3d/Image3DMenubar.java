@@ -156,6 +156,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		universe.addSeparator();
 
 		delete = new MenuItem("Delete");
+		delete.setEnabled(false);
 		delete.addActionListener(this);
 		universe.add(delete);
 
@@ -166,10 +167,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public Menu createSelectedMenu() {
 		// Contents
 		Menu content = new Menu("Content");
-		
-		threshold = new MenuItem("Adjust threshold");
-		threshold.addActionListener(this);
-		content.add(threshold);
 		
 		slices = new MenuItem("Adjust slices");
 		slices.addActionListener(this);
@@ -197,6 +194,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		transparency.addActionListener(this);
 		content.add(transparency);
 
+		threshold = new MenuItem("Adjust threshold");
+		threshold.addActionListener(this);
+		content.add(threshold);
+		
 		coordinateSystem = new CheckboxMenuItem(
 					"Show coordinate system", true);
 		coordinateSystem.addItemListener(this);
