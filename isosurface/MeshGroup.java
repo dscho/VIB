@@ -29,7 +29,6 @@ import javax.vecmath.Color3f;
 public class MeshGroup extends Content {
 
 	IsoShape shape; 
-	int threshold;
 	Triangulator triangulator = new MCTriangulator();
 //	Triangulator triangulator = new discMC.DiscMCTriangulator();
 	
@@ -69,7 +68,7 @@ public class MeshGroup extends Content {
 		// do nothing
 	}
 
-	public void setThreshold(int d) {
+	public void thresholdUpdated(int d) {
 		if(getImage() == null) {
 			IJ.error("Mesh was not calculated of a grayscale " +
 				"image. Can't change threshold");
@@ -80,10 +79,6 @@ public class MeshGroup extends Content {
 			threshold, getChannels(), getResamplingFactor());
 		shape.mesh = mesh;
 		shape.update();
-	}
-
-	public int getThreshold() {
-		return threshold;
 	}
 
 	public void channelsUpdated(boolean [] channels) {

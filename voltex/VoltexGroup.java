@@ -57,14 +57,10 @@ public class VoltexGroup extends Content {
 		compile();
 	}
 
-	public void setThreshold(int d) {
+	public void thresholdUpdated(int d) {
 		renderer.setThreshold(d);
 	}
 
-	public int  getThreshold() {
-		return renderer.getThreshold();
-	}
-		
 	public void calculateMinMaxCenterPoint() {
 		ImagePlus imp = getImage();
 		Calibration c = imp.getCalibration();
