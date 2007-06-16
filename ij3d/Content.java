@@ -27,6 +27,7 @@ public abstract class Content extends BranchGroup {
 	float transparency = 0f;
 	int resamplingF = 1;
 	protected int threshold = 0;
+	private boolean locked = false;
 
 	private Switch bbSwitch;
 	private BitSet whichChild = new BitSet(2);
@@ -106,6 +107,10 @@ public abstract class Content extends BranchGroup {
 	public void setSelected(boolean selected) {
 		this.selected = selected;
 		showBoundingBox(selected);
+	}
+
+	public void toggleLock() {
+		locked = !locked;
 	}
 
 	public void applyTransform(Transform3D transform) {
@@ -203,6 +208,14 @@ public abstract class Content extends BranchGroup {
 
 	public TransformGroup getLocalTranslate() {
 		return localTranslate;
+	}
+
+	public boolean isLocked() {
+		return locked;
+	}
+
+	public boolean hasCoord() {
+		return bbSwitch.getChildMask().get(CS);
 	}
 
 	public abstract void eyePtChanged(View view);

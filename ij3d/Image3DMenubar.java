@@ -47,6 +47,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem exportDXF;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
+	private CheckboxMenuItem lock;
 
 	private Menu selectedMenu;
 	private Menu viewMenu;
@@ -179,6 +180,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		content.add(fill);
 
 		content.addSeparator();
+		
+		lock = new CheckboxMenuItem("Lock");
+		lock.addItemListener(this);
+		content.add(lock);
 		
 		channels = new MenuItem("Change channels");
 		channels.addActionListener(this);
@@ -340,40 +345,52 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == resetTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
 				return;
 			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
+				return;
+			}
 			univ.fireTransformationStarted();
-			univ.getSelected().setTransform(
-					new Transform3D());
+			c.setTransform(new Transform3D());
 			univ.fireTransformationFinished();
 		}
 
 		if(e.getSource() == setTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
 				return;
 			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
+				return;
+			}
 			univ.fireTransformationStarted();
-			float[] t = readTransform(univ.getSelected());
+			float[] t = readTransform(c);
 			if(t != null) {
-				univ.getSelected().setTransform(
-					new Transform3D(t));
+				c.setTransform(new Transform3D(t));
 				univ.fireTransformationFinished();
 			}
 		}
 
 		if(e.getSource() == applyTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
+				return;
+			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
 				return;
 			}
 			univ.fireTransformationStarted();
 			float[] t = readTransform(univ.getSelected());
 			if(t != null) {
-				univ.getSelected().applyTransform(
-					new Transform3D(t));
+				c.applyTransform(new Transform3D(t));
 				univ.fireTransformationFinished();
 			}
 		}
@@ -405,6 +422,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.getSelected().showCoordinateSystem(
 				coordinateSystem.getState());
 		}
+
+		if(e.getSource() == lock) {
+			Content selected = univ.getSelected();
+			if(selected == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			selected.toggleLock();
+		}
+
 	}
 
 	public void changeTransparency(final Content selected) {
@@ -654,6 +681,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 		slices.setEnabled(c instanceof OrthoGroup);
 		fill.setEnabled(c instanceof VoltexGroup);
+
+		coordinateSystem.setState(c.hasCoord());
+		lock.setState(c.isLocked());
 	}
 
 	private boolean containsSelectedMenu() {
