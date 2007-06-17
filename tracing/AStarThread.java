@@ -4,6 +4,8 @@ package tracing;
 
 import java.util.*;
 
+import features.ComputeCurvatures;
+
 public class AStarThread extends Thread {
 	
 	byte [][] slices_data;
@@ -26,7 +28,8 @@ public class AStarThread extends Thread {
 	int depth;
 
 	boolean reciprocal;
-	boolean preprocess;
+
+	ComputeCurvatures hessian;
 
 	int timeoutSeconds;
 	long reportEveryMilliseconds;
@@ -35,7 +38,6 @@ public class AStarThread extends Thread {
 	AStarProgressCallback progress;
 
 	Connection result;
-
 	
 	/* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
@@ -48,9 +50,9 @@ public class AStarThread extends Thread {
 			    int goal_z,
 			    SimpleNeuriteTracer_ plugin,
 			    boolean reciprocal,
-			    boolean preprocess,                        
 			    int timeoutSeconds,
 			    long reportEveryMilliseconds,
+			    ComputeCurvatures hessian,
 			    AStarProgressCallback progress ) {
 		
 		this.slices_data = slices_data;
@@ -74,9 +76,10 @@ public class AStarThread extends Thread {
 		this.depth = plugin.depth;
 
 		this.reciprocal = reciprocal;
-		this.preprocess = preprocess;
 		this.timeoutSeconds = timeoutSeconds;
 		this.reportEveryMilliseconds = reportEveryMilliseconds;
+
+		this.hessian = hessian;
 		
 		this.progress = progress;
 
@@ -94,6 +97,14 @@ public class AStarThread extends Thread {
 	}
 
 	public void run( ) {
+
+		ComputeCurvatures hessian = this.hessian;
+		double [] hessianEigenValues = new double[3];
+
+		// double hessian_minimum_cost_per_unit_distance = 1E-4;  /* for the ratio of e0/e1 */
+		double hessian_minimum_cost_per_unit_distance = 0.002; // 1;  /* for e1 - e0 */
+
+		double measured_minimum_hessian_measure = Double.MAX_VALUE;
 		
 		long started_at = lastReportMilliseconds = System.currentTimeMillis();
 		
@@ -110,8 +121,13 @@ public class AStarThread extends Thread {
 		Hashtable closed_from_start_hash = new Hashtable();
 		Hashtable open_from_goal_hash = new Hashtable();
 		Hashtable closed_from_goal_hash = new Hashtable();
-		
-		double minimum_cost_per_unit_distance = reciprocal ? ( 1 / 255.0 ) : 1;
+
+		double minimum_cost_per_unit_distance;
+		if( hessian == null ) {
+			minimum_cost_per_unit_distance = reciprocal ? ( 1 / 255.0 ) : 1;
+		} else {
+			minimum_cost_per_unit_distance = hessian_minimum_cost_per_unit_distance;
+		}
 		
 		AStarNode start = new AStarNode( start_x, start_y, start_z,
 						 0,
@@ -211,6 +227,7 @@ public class AStarThread extends Thread {
 			if( (p != null) && (p.x == goal_x) && (p.y == goal_y) && (p.z == goal_z) ) {
 				// System.out.println( "Found the goal! (from start to end)" );
 				result = p.asConnection();
+				System.out.println("minimum hessian ratio was: "+((measured_minimum_hessian_measure == Double.MAX_VALUE) ? "(not relevant)" : ("" + measured_minimum_hessian_measure)));
 				progress.finished(true);
 				return;
 			}
@@ -220,6 +237,7 @@ public class AStarThread extends Thread {
 			if( (q != null) && (q.x == start_x) && (q.y == start_y) && (q.z == start_z) ) {
 				// System.out.println( "Found the goal! (from end to start)" );
 				result = p.asConnectionReversed();
+				System.out.println("minimum hessian ratio was: "+((measured_minimum_hessian_measure == Double.MAX_VALUE) ? "(not relevant)" : ("" + measured_minimum_hessian_measure)));
 				progress.finished(true);
 				return;
 			}
@@ -239,11 +257,13 @@ public class AStarThread extends Thread {
 					AStarNode a = p.getPredecessor();
 					if( a == null ) {
 						result = foundInRouteFromGoal.asConnectionReversed();
+						System.out.println("minimum hessian ratio was: "+((measured_minimum_hessian_measure == Double.MAX_VALUE) ? "(not relevant)" : ("" + measured_minimum_hessian_measure)));
 						progress.finished(true);
 						return;
 					} else {
 						result = a.asConnection();
 						result.add( foundInRouteFromGoal.asConnectionReversed() );
+						System.out.println("minimum hessian ratio was: "+((measured_minimum_hessian_measure == Double.MAX_VALUE) ? "(not relevant)" : ("" + measured_minimum_hessian_measure)));
 						progress.finished(true);
 						return;
 					}
@@ -308,12 +328,41 @@ public class AStarThread extends Thread {
 							
 							double cost_moving_to_new_point;
 							
-							if( reciprocal ) {
-								cost_moving_to_new_point = 1 / reciprocal_fudge;
-								if( value_at_new_point != 0 )
-									cost_moving_to_new_point = 1.0 / value_at_new_point;
+							if( hessian == null ) {
+								if( reciprocal ) {
+									cost_moving_to_new_point = 1 / reciprocal_fudge;
+									if( value_at_new_point != 0 )
+										cost_moving_to_new_point = 1.0 / value_at_new_point;
+								} else {
+									cost_moving_to_new_point = 256 - value_at_new_point;
+								}
 							} else {
-								cost_moving_to_new_point = 256 - value_at_new_point;
+								hessian.hessianEigenvaluesAtPoint( new_x, new_y, new_z,
+											   true, hessianEigenValues, true );
+
+								/*
+								double ratio = Math.abs( hessianEigenValues[0] / hessianEigenValues[1] );
+							
+								if( ratio < measured_minimum_hessian_measure )
+									measured_minimum_hessian_measure = ratio;
+	
+								if( ratio < hessian_minimum_cost_per_unit_distance ) {
+									cost_moving_to_new_point = hessian_minimum_cost_per_unit_distance;
+									// System.out.println("clipped hessian: "+ratio+" < "+hessian_minimum_cost_per_unit_distance);
+								} else
+									cost_moving_to_new_point = ratio;
+								*/
+								double difference = hessianEigenValues[1] - hessianEigenValues[0];
+								double ratio = 1 / difference;
+							
+								if( ratio < measured_minimum_hessian_measure )
+									measured_minimum_hessian_measure = ratio;
+	
+								if( ratio < hessian_minimum_cost_per_unit_distance ) {
+									cost_moving_to_new_point = hessian_minimum_cost_per_unit_distance;
+									// System.out.println("clipped hessian: "+difference+" < "+hessian_minimum_cost_per_unit_distance);
+								} else
+									cost_moving_to_new_point = ratio;
 							}
 							
 							float g_for_new_point = (float) ( p.g + Math.sqrt( xdiffsq + ydiffsq + zdiffsq ) * cost_moving_to_new_point );
@@ -427,12 +476,42 @@ public class AStarThread extends Thread {
 							
 							double cost_moving_to_new_point;
 							
-							if( reciprocal ) {
-								cost_moving_to_new_point = 1 / reciprocal_fudge;
-								if( value_at_new_point != 0 )
-									cost_moving_to_new_point = 1.0 / value_at_new_point;
+							if( hessian == null ) {
+								if( reciprocal ) {
+									cost_moving_to_new_point = 1 / reciprocal_fudge;
+									if( value_at_new_point != 0 )
+										cost_moving_to_new_point = 1.0 / value_at_new_point;
+								} else {
+									cost_moving_to_new_point = 256 - value_at_new_point;
+								}
 							} else {
-								cost_moving_to_new_point = 256 - value_at_new_point;
+								hessian.hessianEigenvaluesAtPoint( new_x, new_y, new_z,
+											   true, hessianEigenValues, true );
+
+								/*
+								double ratio = Math.abs( hessianEigenValues[0] / hessianEigenValues[1] );
+							
+								if( ratio < measured_minimum_hessian_measure )
+									measured_minimum_hessian_measure = ratio;
+	
+								if( ratio < hessian_minimum_cost_per_unit_distance ) {
+									cost_moving_to_new_point = hessian_minimum_cost_per_unit_distance;
+									// System.out.println("clipped hessian: "+ratio+" < "+hessian_minimum_cost_per_unit_distance);
+								} else
+									cost_moving_to_new_point = ratio;
+								*/
+								double difference = hessianEigenValues[1] - hessianEigenValues[0];
+								double ratio = 1 / difference;
+							
+								if( ratio < measured_minimum_hessian_measure )
+									measured_minimum_hessian_measure = ratio;
+	
+								if( ratio < hessian_minimum_cost_per_unit_distance ) {
+									cost_moving_to_new_point = hessian_minimum_cost_per_unit_distance;
+									// System.out.println("clipped hessian: "+difference+" < "+hessian_minimum_cost_per_unit_distance);
+								} else
+									cost_moving_to_new_point = ratio;
+
 							}
 							
 							float g_for_new_point = (float) ( q.g + Math.sqrt( xdiffsq + ydiffsq + zdiffsq ) * cost_moving_to_new_point );

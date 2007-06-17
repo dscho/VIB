@@ -77,6 +77,11 @@ class NeuriteTracerResultsDialog
 
 	// ------------------------------------------------------------------------
 
+	public void gaussianCalculated() {
+		preprocess.setEnabled(true);
+
+	}
+
 	public void exitRequested() {
 
 		// FIXME: check that everything is saved...
@@ -171,7 +176,7 @@ class NeuriteTracerResultsDialog
 			break;
 
 		default:
-			IJ.error("BUG: trying to change to an unknown state");
+			IJ.error("BUG: disable much of the dialog for the filling state");
 			return;
 
 		}
@@ -280,8 +285,9 @@ class NeuriteTracerResultsDialog
 			viewPathChoice.addItem(partsNearbyChoice);
 			viewPathChoice.addItemListener( this );
 			
-			preprocess = new Checkbox("Hessian-based analysis");
-			justLog = new Checkbox("Just log points");
+			preprocess = new Checkbox("Hessian-based analysis (early version)");
+			preprocess.addItemListener( this );
+			// justLog = new Checkbox("Just log points");
 			showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
 			
 			co.gridx = 0;
@@ -294,11 +300,13 @@ class NeuriteTracerResultsDialog
 			co.gridy = 1;
 			co.gridwidth = 2;
 			otherOptionsPanel.add(preprocess,co);
+			/*
 			co.gridx = 0;
 			co.gridy = 2;
 			co.gridwidth = 2;
 			otherOptionsPanel.add(justLog,co);
-			
+			*/
+
 			c.gridx = 0;
 			c.gridy = 2;
 			add(otherOptionsPanel,c);
@@ -353,7 +361,8 @@ class NeuriteTracerResultsDialog
 			cf.gridwidth = 4;
 			cf.weightx = 1;
 			cf.anchor = GridBagConstraints.LINE_START;
-			fillStatus = new Label("Not filling                             ",Label.LEFT); // FIXME: why doesn't it fill the row?
+			cf.fill = GridBagConstraints.HORIZONTAL;
+			fillStatus = new Label("Not filling.");
 			fillingOptionsPanel.add(fillStatus,cf);
 			
 			thresholdField = new TextField("",5);
@@ -362,6 +371,7 @@ class NeuriteTracerResultsDialog
 			cf.gridy = 1;
 			cf.weightx = 0;
 			cf.gridwidth = 1;
+			cf.fill = GridBagConstraints.NONE;
 			fillingOptionsPanel.add(thresholdField,cf);
 
 			maxThreshold = new Label("(0)      ");
@@ -397,7 +407,7 @@ class NeuriteTracerResultsDialog
 			cf.anchor = GridBagConstraints.LINE_START;
 			fillingOptionsPanel.add(maskNotReal,cf);
 
-			transparent = new Checkbox("Transparent");
+			transparent = new Checkbox("Transparent fill display (slow!)");
 			transparent.addItemListener(this);
 			cf.gridx = 0;
 			cf.gridy = 4;
@@ -648,7 +658,22 @@ class NeuriteTracerResultsDialog
 			plugin.setFillTransparent( transparent.getState() );
 
 
+		} else if( source == preprocess ) {
+			
+			System.out.println("change in status of preprocess to: "+preprocess.getState());
+
+			if( preprocess.getState() ) {
+				synchronized (plugin) {
+					if( plugin.hessian == null )
+						preprocess.setEnabled(false);
+					plugin.enableHessian(true);
+				}
+			} else {
+				plugin.enableHessian(false);
+			}
+
 		}
+
 	}
 	
         public void paint(Graphics g) {
