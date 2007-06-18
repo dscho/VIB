@@ -184,6 +184,10 @@ public class CustomStackWindow extends StackWindow
 		}).start();
 		cc.requestFocus();
 	}
+
+	public void processThresholdButton() {
+		IJ.runPlugIn("vib.Local_Threshold", "");
+	}
 	
 	public void assignSliceTo(int slice, Roi roi, int materialID){
 		ImagePlus grey = cc.getImage();
@@ -290,6 +294,8 @@ public class CustomStackWindow extends StackWindow
 			processMinusButton();
 		} else if (command.equals("interpolate")) {
 			processInterpolateButton();
+		} else if (command.equals("threshold")) {
+			processThresholdButton();
 		} else if (command.equals("Ok")) {
 			// call the action listener before destroying the window
 			if(al != null)

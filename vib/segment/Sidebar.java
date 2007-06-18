@@ -39,7 +39,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 	private GridBagConstraints constr;
 	private Label lZoomLevel;
 	private ImageButton bZoomPlus, bZoomMinus;
-	private ImageButton bPlus, bMinus, bInterpolate;
+	private ImageButton bPlus, bMinus, bInterpolate, bThreshold;
 	private Checkbox check3d;
 	private Choice labelImagesChoice;
 	private Vector labelImages;
@@ -74,6 +74,7 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 
 		addZoom();
 		addSelection();
+		addTools();
 
 		this.itemStateChanged(null);
 	}
@@ -252,13 +253,23 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 		bPlus.setActionCommand("plus");
 		bMinus = addImageButton("iconMinus.png", al);
 		bMinus.setActionCommand("minus");
-		bInterpolate = addImageButton("iconInterpolate.png", al);
-		bInterpolate.setActionCommand("interpolate");
 		
 		constr.gridwidth = GridBagConstraints.REMAINDER;
 		constr.fill = GridBagConstraints.NONE;
 		check3d = new Checkbox("3d", false);
 		add(check3d, constr);
+		constr.fill = GridBagConstraints.BOTH;
+	}
+
+	private void addTools() {
+		constr.gridwidth = GridBagConstraints.REMAINDER;
+		addLabel("Tools:");
+		
+		constr.gridwidth = 1;
+		bInterpolate = addImageButton("iconInterpolate.png", al);
+		bInterpolate.setActionCommand("interpolate");
+		bThreshold = addImageButton("iconThreshold.png", al);
+		bThreshold.setActionCommand("threshold");
 		constr.fill = GridBagConstraints.BOTH;
 	}
 
