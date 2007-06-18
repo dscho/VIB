@@ -2,17 +2,17 @@
 
 package stacks;
 
-import ij.*;
-import ij.gui.ImageCanvas;
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.IJ;
 import ij.plugin.PlugIn;
-import ij.process.ByteProcessor;
 
-public class ThreePaneCrop_ implements PlugIn {
-	
-	ThreePaneCrop threePaneCrop;
-	
-	public void run( String argument ) {
-		
+public class ThreePaneContainer_ implements PlugIn {
+
+    ThreePaneContainer threePaneContainer;
+
+	public void run(String foo) {
+        		
 		ImagePlus currentImage = WindowManager.getCurrentImage();
 
 		if( currentImage == null ) {
@@ -30,10 +30,8 @@ public class ThreePaneCrop_ implements PlugIn {
 			return;
 		}
 
-		threePaneCrop = new ThreePaneCrop( );
+		threePaneContainer = new ThreePaneContainer( currentImage );
 
-		threePaneCrop.initialize( currentImage );
-		
-	}
+    }
 
 }

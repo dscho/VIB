@@ -101,6 +101,32 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 
 Install_Java3D.jar: SOURCES=Install_Java3D.java
 
+ThreePaneCrop_.jar: SOURCES=$(wildcard stacks/Three*.java)
+
+SimpleNeuriteTracer_.jar: SOURCES=stacks/ThreePanes.java \
+	stacks/ThreePanesCanvas.java \
+	stacks/PaneOwner.java \
+	tracing/AStarNode.java \
+	tracing/AStarProgressCallback.java \
+	tracing/AStarThread.java \
+	tracing/Connection.java \
+	tracing/SimpleNeuriteTracer_.java \
+	tracing/NeuriteTracerResultsDialog.java \
+	tracing/PointInImage.java \
+	tracing/SegmentedConnection.java \
+	tracing/TracerCanvas.java \
+	tracing/FillerThread.java \
+	tracing/FillerProgressCallback.java \
+	tracing/FillerNode.java \
+	client/ArchiveClient.java \
+	util/Arrow.java \
+	util/ArrowDisplayer.java \
+	tracing/HessianAnalyzer.java \
+	math3d/JacobiFloat.java \
+	tracing/EigenResultsDouble.java \
+	tracing/EigenResultsFloat.java \
+	math3d/FloatMatrixN.java
+
 VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard vib/app/gui/*.java) \
 	$(wildcard vib/app/module/*.java) \
@@ -125,7 +151,6 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	vib/BatchLog_.java \
 	vib/IDT_Interpolate_Binary.java \
 	VIB_Protocol.java
-	
 
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar
@@ -156,6 +181,13 @@ clean-jars:
 	mkdir tempdir
 	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
 	(cd tempdir && javac $(JAVACOPTS) $(SOURCES) && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
+
+# Unpack the jar, remove the source files and jar it up again :)
+
+%.jar-without-source: %.jar
+	test ! -d tempdir || rm -rf tempdir
+	mkdir tempdir
+	(cd tempdir && jar xvf ../$< && find . -name '*.java' -exec rm {} \; && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
 clean:
 	find . -name \*.class -exec rm {} \;

@@ -113,9 +113,9 @@ public class MouseBehavior extends Behavior {
 		transformX.rotX(x_angle);
 		transformY.rotY(y_angle);
 
-		TransformGroup tg = (c == null) ? 
+		TransformGroup tg = (c == null || c.isLocked()) ? 
 				univ.getGlobalRotate() : c.getLocalRotate();
-		Point3f center = (c==null) ?  
+		Point3f center = (c==null || c.isLocked()) ?  
 				((Image3DUniverse)univ).getGlobalCenterPoint() :
 				c.centerPoint;
 		tg.getTransform(currentXform);
@@ -126,7 +126,7 @@ public class MouseBehavior extends Behavior {
 		globalRotInverse.invert(globalRotate);
 		globalTransInverse.invert(globalTranslate);
 		
-		if(c != null) {
+		if(c != null && !c.isLocked()) {
 			transl.x = -center.x;
 			transl.y = -center.y;
 			transl.z = -center.z;
@@ -138,7 +138,7 @@ public class MouseBehavior extends Behavior {
 		currentXform.mul(transformX, currentXform);
 		currentXform.mul(transformY, currentXform);
 
-		if(c != null) {
+		if(c != null && !c.isLocked()) {
 			currentXform.mul(globalRotInverse, currentXform);
 			transl.x = -transl.x;
 			transl.y = -transl.y;
@@ -163,7 +163,7 @@ public class MouseBehavior extends Behavior {
 		transl.z = 0;	
 		transformX.set(transl);
 		
-		TransformGroup tg = (c == null) ? 
+		TransformGroup tg = (c == null || c.isLocked()) ? 
 			univ.getGlobalTranslate() : c.getLocalTranslate();
 
 		tg.getTransform(currentXform);

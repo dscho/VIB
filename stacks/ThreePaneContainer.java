@@ -6,13 +6,19 @@ import ij.*;
 import ij.process.ByteProcessor;
 import ij.gui.*;
 
+import java.awt.*;
+
+import java.awt.event.ActionListener;
+
 import java.io.*;
 
-public class ThreePanes implements PaneOwner {
-	
-	public static final int XY_PLANE = 0; // constant z
-	public static final int XZ_PLANE = 1; // constant y
-	public static final int ZY_PLANE = 2; // constant x	
+public class ThreePaneContainer extends StackWindow 
+	implements PaneOwner, ActionListener {
+
+/*
+  implements AdjustmentListener, KeyListener, ActionListener, MouseMotionListener, MouseWheelListener  { */
+
+	protected ImageCanvas original_xy_canvas;	
 
 	protected ImagePlus xy;
 	protected ImagePlus xz;
@@ -21,88 +27,16 @@ public class ThreePanes implements PaneOwner {
 	protected ThreePanesCanvas xy_canvas;
 	protected ThreePanesCanvas xz_canvas;
 	protected ThreePanesCanvas zy_canvas;
-	
-	protected ImageCanvas original_xy_canvas;
-	
-	protected StackWindow xy_window;
-	protected StackWindow xz_window;
-	protected StackWindow zy_window;
-	
-	public void findPointInStack( int x_in_pane, int y_in_pane, int plane, int [] point ) {
 		
-		switch( plane ) {
-			
-		case ThreePanes.XY_PLANE:
-		{
-			point[0] = x_in_pane;
-			point[1] = y_in_pane;
-			point[2] = xy.getCurrentSlice( ) - 1;
-		}
-		break;
-		
-		case ThreePanes.XZ_PLANE:
-		{
-			point[0] = x_in_pane;
-			point[1] = xz.getCurrentSlice( ) - 1;
-			point[2] = y_in_pane;
-		}
-		break;
-		
-		case ThreePanes.ZY_PLANE:
-		{
-			point[0] = zy.getCurrentSlice( ) - 1;
-			point[1] = y_in_pane;
-			point[2] = x_in_pane;
-		}
-		break;
-		
-		}        
-		
-	}
-
 	public ThreePanesCanvas createCanvas( ImagePlus imagePlus, int plane ) {
 		return new ThreePanesCanvas( imagePlus, this, plane );
 	}
 	
-	public void mouseMovedTo( int off_screen_x, int off_screen_y, int in_plane, boolean shift_down ) {
-		
-		int point[] = new int[3];
-		
-		findPointInStack( off_screen_x, off_screen_y, in_plane, point );
-		
-		xy_canvas.setCrosshairs( point[0], point[1], point[2], true /* in_plane != XY_PLANE */ );
-		xz_canvas.setCrosshairs( point[0], point[1], point[2], true /* in_plane != XZ_PLANE */ );
-		zy_canvas.setCrosshairs( point[0], point[1], point[2], true /* in_plane != ZY_PLANE */ );
-		
-		if( shift_down )
-			setSlicesAllPanes( point[0], point[1], point[2] );
-	}
-	
-	public void setSlicesAllPanes( int new_x, int new_y, int new_z ) {
-		
-		xy.setSlice( new_z + 1 );
-		xz.setSlice( new_y + 1 );
-		zy.setSlice( new_x + 1 );
-	}
-	
-	public void repaintAllPanes( ) {
+	public ThreePaneContainer( ImagePlus imagePlus ) {
 
-		xy_canvas.repaint();
-		xz_canvas.repaint();
-		zy_canvas.repaint();
-	}
+		super(imagePlus);
 
-	public void closeAndReset( ) {
-		zy.close();
-		xz.close();
-		xy_window = new StackWindow( xy, original_xy_canvas );
-	}
-	
-	public ThreePanes( ) {
-
-	}
-
-	public void initialize( ImagePlus imagePlus ) {
+		System.out.println("Creating ThreePaneContainer");
 
 		xy = imagePlus;
 		
@@ -113,6 +47,13 @@ public class ThreePanes implements PaneOwner {
 		}
 
 		original_xy_canvas = imagePlus.getWindow().getCanvas();		
+		
+		remove(getCanvas());
+		remove(sliceSelector);
+
+		setLayout( new GridBagLayout() );
+
+		GridBagConstraints c = new GridBagConstraints();
 		
 		int width = xy.getWidth();
 		int height = xy.getHeight();
@@ -202,14 +143,110 @@ public class ThreePanes implements PaneOwner {
 		
 		System.gc();
 			       		
-		xy_canvas = createCanvas( xy, XY_PLANE );
-		xz_canvas = createCanvas( xz, XZ_PLANE );
-		zy_canvas = createCanvas( zy, ZY_PLANE );
-					
+		xy_canvas = createCanvas( xy, ThreePanes.XY_PLANE );
+		xz_canvas = createCanvas( xz, ThreePanes.XZ_PLANE );
+		zy_canvas = createCanvas( zy, ThreePanes.ZY_PLANE );
+			
+		Container xy_container = new Container();
+		Container xz_container = new Container();
+		Container zy_container = new Container();
+
+		xy_container.setLayout(new ImageLayout(xy_canvas));
+		xz_container.setLayout(new ImageLayout(xz_canvas));
+		zy_container.setLayout(new ImageLayout(zy_canvas));
+
+		xy_container.add(xy_canvas);
+		xz_container.add(xz_canvas);
+		zy_container.add(zy_canvas);
+
+		c.gridx = 1; c.gridy = 0;
+		c.insets = new Insets(3, 3, 3, 3);
+		add( xz_container, c );
+		c.gridx = 0; c.gridy = 1;
+		add( zy_container, c );
+		c.gridx = 1; c.gridy = 1;
+		add( xy_container, c );
+		c.gridx = 1; c.gridy = 2;
+		
+		c.fill = GridBagConstraints.HORIZONTAL;
+		add( sliceSelector, c );
+		
+		/*
 		xy_window = new StackWindow( xy, xy_canvas );
 		xz_window = new StackWindow( xz, xz_canvas );
 		zy_window = new StackWindow( zy, zy_canvas );
+		*/
 
+		pack();
+
+		show();
+		
 	}
 
+	public void findPointInStack( int x_in_pane, int y_in_pane, int plane, int [] point ) {
+		
+		switch( plane ) {
+			
+		case ThreePanes.XY_PLANE:
+		{
+			point[0] = x_in_pane;
+			point[1] = y_in_pane;
+			point[2] = xy.getCurrentSlice( ) - 1;
+		}
+		break;
+		
+		case ThreePanes.XZ_PLANE:
+		{
+			point[0] = x_in_pane;
+			point[1] = xz.getCurrentSlice( ) - 1;
+			point[2] = y_in_pane;
+		}
+		break;
+		
+		case ThreePanes.ZY_PLANE:
+		{
+			point[0] = zy.getCurrentSlice( ) - 1;
+			point[1] = y_in_pane;
+			point[2] = x_in_pane;
+		}
+		break;
+		
+		}        
+		
+	}
+
+	public void mouseMovedTo( int off_screen_x, int off_screen_y, int in_plane, boolean shift_down ) {
+		
+		int point[] = new int[3];
+		
+		findPointInStack( off_screen_x, off_screen_y, in_plane, point );
+		
+		xy_canvas.setCrosshairs( point[0], point[1], point[2], true /* in_plane != XY_PLANE */ );
+		xz_canvas.setCrosshairs( point[0], point[1], point[2], true /* in_plane != XZ_PLANE */ );
+		zy_canvas.setCrosshairs( point[0], point[1], point[2], true /* in_plane != ZY_PLANE */ );
+		
+		if( shift_down )
+			setSlicesAllPanes( point[0], point[1], point[2] );
+	}
+
+	public void setSlicesAllPanes( int new_x, int new_y, int new_z ) {
+		
+		xy.setSlice( new_z + 1 );
+		xz.setSlice( new_y + 1 );
+		zy.setSlice( new_x + 1 );
+	}
+	
+	public void repaintAllPanes( ) {
+
+		xy_canvas.repaint();
+		xz_canvas.repaint();
+		zy_canvas.repaint();
+	}
+
+	public void closeAndReset( ) {
+		zy.close();
+		xz.close();
+		new StackWindow( xy, original_xy_canvas );
+	}
+		
 }

@@ -29,6 +29,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem color;
 	private MenuItem channels;
 	private MenuItem transparency;
+	private MenuItem threshold;
 	private MenuItem fill;
 	private MenuItem slices;
 	private MenuItem delete;
@@ -46,6 +47,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem exportDXF;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
+	private CheckboxMenuItem lock;
 
 	private Menu selectedMenu;
 	private Menu viewMenu;
@@ -165,6 +167,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		// Contents
 		Menu content = new Menu("Content");
 		
+		threshold = new MenuItem("Adjust threshold");
+		threshold.addActionListener(this);
+		content.add(threshold);
+		
 		slices = new MenuItem("Adjust slices");
 		slices.addActionListener(this);
 		content.add(slices);
@@ -174,6 +180,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		content.add(fill);
 
 		content.addSeparator();
+		
+		lock = new CheckboxMenuItem("Lock");
+		lock.addItemListener(this);
+		content.add(lock);
 		
 		channels = new MenuItem("Change channels");
 		channels.addActionListener(this);
@@ -292,6 +302,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.pauseAnimation();
 		}
 
+		if(e.getSource() == threshold) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			adjustThreshold(c);
+			univ.clearSelection();
+		}
+
 		if(e.getSource() == slices) {
 			Content c = univ.getSelected();
 			if(c == null || !(c instanceof OrthoGroup)) {
@@ -325,40 +345,52 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == resetTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
 				return;
 			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
+				return;
+			}
 			univ.fireTransformationStarted();
-			univ.getSelected().setTransform(
-					new Transform3D());
+			c.setTransform(new Transform3D());
 			univ.fireTransformationFinished();
 		}
 
 		if(e.getSource() == setTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
 				return;
 			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
+				return;
+			}
 			univ.fireTransformationStarted();
-			float[] t = readTransform(univ.getSelected());
+			float[] t = readTransform(c);
 			if(t != null) {
-				univ.getSelected().setTransform(
-					new Transform3D(t));
+				c.setTransform(new Transform3D(t));
 				univ.fireTransformationFinished();
 			}
 		}
 
 		if(e.getSource() == applyTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
+				return;
+			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
 				return;
 			}
 			univ.fireTransformationStarted();
 			float[] t = readTransform(univ.getSelected());
 			if(t != null) {
-				univ.getSelected().applyTransform(
-					new Transform3D(t));
+				c.applyTransform(new Transform3D(t));
 				univ.fireTransformationFinished();
 			}
 		}
@@ -390,6 +422,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.getSelected().showCoordinateSystem(
 				coordinateSystem.getState());
 		}
+
+		if(e.getSource() == lock) {
+			Content selected = univ.getSelected();
+			if(selected == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			selected.toggleLock();
+		}
+
 	}
 
 	public void changeTransparency(final Content selected) {
@@ -420,6 +462,42 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 		record(SET_TRANSPARENCY,Float.toString(
 			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
+	}
+
+	public void adjustThreshold(final Content selected) {
+		final int oldTr = (int)(selected.getThreshold());
+		if(selected instanceof MeshGroup) {
+			int th = (int)Math.round(
+				IJ.getNumber("Threshold [0..255]", oldTr));
+			th = Math.max(0, th);
+			th = Math.min(th, 255);
+			selected.setThreshold(th);
+			univ.fireContentChanged(selected);
+			return;
+		}
+		// in case we've not a mesh, change it interactively
+		final GenericDialog gd = 
+				new GenericDialog("Adjust threshold...");
+		gd.addSlider("Transparency", 0, 255, oldTr);
+		((Scrollbar)gd.getSliders().get(0)).
+			addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				int newTr = (int)e.getValue();
+				selected.setThreshold(newTr);
+				univ.fireContentChanged(selected);
+			}
+		});
+		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					selected.setThreshold(oldTr);
+					univ.fireContentChanged(selected);
+					return;
+				}
+			}
+		});
+		gd.showDialog();
 	}
 
 	public void adjustSlices(final Content selected) {
@@ -603,6 +681,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 		slices.setEnabled(c instanceof OrthoGroup);
 		fill.setEnabled(c instanceof VoltexGroup);
+
+		coordinateSystem.setState(c.hasCoord());
+		lock.setState(c.isLocked());
 	}
 
 	private boolean containsSelectedMenu() {
