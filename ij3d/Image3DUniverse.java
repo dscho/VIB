@@ -109,6 +109,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 	}
 
+	public void close() {
+		super.close();
+		removeAllContents();
+		contents = null;
+	}
+
 	public Image3DMenubar getMenuBar() {
 		return menubar;
 	}
@@ -222,6 +228,13 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		fireContentAdded(meshG);
 	}
 
+	public void removeAllContents() {
+		for(Iterator it = contents.keySet().iterator(); it.hasNext();) {
+			String name = (String)it.next();
+			removeContent(name);
+		}
+	}
+
 	public void removeContent(String name) {
 		Content content = (Content)contents.get(name);
 		if(content == null)
@@ -231,6 +244,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		if(selected == content)
 			clearSelection();
 		fireContentRemoved(content);
+		content.flush();
+		content = null;
 	}
 
 	public Iterator contents() {

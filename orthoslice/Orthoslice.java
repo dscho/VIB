@@ -57,6 +57,24 @@ public class Orthoslice extends AxisRenderer {
 		}
 	}
 
+	public void setThreshold(int threshold) {
+		float  value = threshold / 255f;
+		value = Math.min(1f, value);
+		value = Math.max(0.1f, value);
+		this.threshold = (int)Math.round(value*255);;
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			Group g = (Group)axisSwitch.getChild(i);
+			int num = g.numChildren();
+			for(int y = 0; y < num; y++) {
+				Shape3D shape = (Shape3D)
+					((Group)g.getChild(y)).getChild(0);
+				shape.getAppearance().
+					getRenderingAttributes().
+					setAlphaTestValue(value);
+			}
+		}
+	}
+
 	public void setTransparency(float transparency) {
 		this.transparency = transparency;
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {

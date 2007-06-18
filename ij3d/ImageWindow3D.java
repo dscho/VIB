@@ -74,6 +74,12 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		show();
 	}
 
+	public boolean close() {
+		boolean b = super.close();
+		universe.removeUniverseListener(this);
+		return b;
+	}
+
 	public ImageCanvas getCanvas() {
 		return new ImageCanvas(getImagePlus());
 	}

@@ -22,10 +22,12 @@ public abstract class Content extends BranchGroup {
 
 	String name;
 	Color3f color;
-	ImagePlus image;
+	protected ImagePlus image;
 	boolean[] channels = new boolean[]{true, true, true};
 	float transparency = 0f;
 	int resamplingF = 1;
+	protected int threshold = 0;
+	private boolean locked = false;
 
 	private Switch bbSwitch;
 	private BitSet whichChild = new BitSet(2);
@@ -107,6 +109,10 @@ public abstract class Content extends BranchGroup {
 		showBoundingBox(selected);
 	}
 
+	public void toggleLock() {
+		locked = !locked;
+	}
+
 	public void applyTransform(Transform3D transform) {
 		Transform3D t1 = new Transform3D();
 		localTranslate.getTransform(t1);
@@ -139,7 +145,13 @@ public abstract class Content extends BranchGroup {
 		this.channels = channels;
 		channelsUpdated(channels);
 	}
-		
+
+	public void setThreshold(int th) {
+		if(th != threshold) {
+			this.threshold = th;
+			thresholdUpdated(threshold);
+		}
+	}
 
 	public void setColor(Color3f color) {
 		boolean colorChanged = !(this.color == null && color == null)
@@ -178,6 +190,10 @@ public abstract class Content extends BranchGroup {
 		return color;
 	}
 
+	public int getThreshold() {
+		return threshold;
+	}
+
 	public float getTransparency() {
 		return transparency;
 	}
@@ -194,11 +210,21 @@ public abstract class Content extends BranchGroup {
 		return localTranslate;
 	}
 
+	public boolean isLocked() {
+		return locked;
+	}
+
+	public boolean hasCoord() {
+		return bbSwitch.getChildMask().get(CS);
+	}
+
 	public abstract void eyePtChanged(View view);
 	public abstract void calculateMinMaxCenterPoint();
 	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
 	public abstract void channelsUpdated(boolean[] channels);
 	public abstract void transparencyUpdated(float transparency);
+	public abstract void thresholdUpdated(int t);
+	public abstract void flush();
 }
 
 
