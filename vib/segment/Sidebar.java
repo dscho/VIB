@@ -39,7 +39,8 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 	private GridBagConstraints constr;
 	private Label lZoomLevel;
 	private ImageButton bZoomPlus, bZoomMinus;
-	private ImageButton bPlus, bMinus, bInterpolate, bThreshold;
+	private ImageButton bPlus, bMinus, bInterpolate;
+	private ImageButton bThreshold, bOpen, bClose;
 	private Checkbox check3d;
 	private Choice labelImagesChoice;
 	private Vector labelImages;
@@ -270,6 +271,10 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 		bInterpolate.setActionCommand("interpolate");
 		bThreshold = addImageButton("iconThreshold.png", al);
 		bThreshold.setActionCommand("threshold");
+		bOpen = addImageButton("iconOpen.png", al);
+		bOpen.setActionCommand("open");
+		bClose = addImageButton("iconClose.png", al);
+		bClose.setActionCommand("close");
 		constr.fill = GridBagConstraints.BOTH;
 	}
 
