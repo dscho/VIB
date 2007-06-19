@@ -2,6 +2,8 @@
 
 package tracing;
 
+/* FIXME: This plugin is a mess now, needs a lot of tidying up. */
+
 import ij.*;
 import ij.process.*;
 import ij.gui.*;
@@ -35,13 +37,16 @@ import stacks.ThreePanes;
 import util.Arrow;
 import util.ArrowDisplayer;
 
+import features.GaussianGenerationCallback;
+import features.ComputeCurvatures;
+
 /* Note On Confusing Terminology: traces and paths are the same
    thing; they're made up of connections.  Traces, paths and
    connections are all non-branching sequences of adjacent points in
    the image. */
 
 public class SimpleNeuriteTracer_ extends ThreePanes
-	implements PlugIn, AStarProgressCallback, ArrowDisplayer, FillerProgressCallback {
+	implements PlugIn, AStarProgressCallback, ArrowDisplayer, FillerProgressCallback, GaussianGenerationCallback {
 
 	boolean unsavedPaths = false;
 
@@ -75,9 +80,26 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			currentSearchThread.requestStop();
 	}
 
-	public void cancelFilling( ) {
-		if( filler != null )
+
+	synchronized public void saveFill( ) {
+		if( filler != null ) {
 			filler.requestStop();
+			
+		}
+	}
+
+	synchronized public void discardFill( ) {
+		if( filler != null ) {
+			filler.requestStop();
+			resultsDialog.changeState( NeuriteTracerResultsDialog.WAITING_TO_START_PATH );	
+		}
+	}
+
+
+	synchronized public void pauseOrRestartExploring( ) {
+		if( filler != null ) {
+			filler.pauseOrUnpause( );
+		}
 	}
 
 	/* Now a couple of callback methods, which get information
@@ -838,9 +860,9 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 						       p[2],
 						       this,
 						       true, // reciprocal
-						       false, // preprocess
 						       0, // timeoutSeconds
 						       1000, // reportEveryMilliseconds 
+						       (hessianEnabled ? hessian : null),
 						       this );
 
 		currentSearchThread.start();
@@ -984,7 +1006,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		setFillThreshold( distance );
 	}
 
-	public void setFillThreshold( float distance ) {
+	public void setFillThreshold( double distance ) {
 
 		if( distance > 0 ) {
 
@@ -1496,6 +1518,33 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		nameForList += " (radiuses fitted)";
 		resultsDialog.addPathToList( nameForList );
 		
+	}
+
+	boolean hessianEnabled = false;
+	ComputeCurvatures hessian = null;
+
+	public synchronized void enableHessian( boolean enable ) {
+		if( enable ) {
+			if( hessian == null ) {
+				hessian = new ComputeCurvatures( xy, 1.0, this );
+				new Thread(hessian).start();
+				hessianEnabled = false;
+			} else {
+				hessianEnabled = true;
+			}
+		} else {
+			hessianEnabled = false;
+		}
+	}
+
+	// This is the implementation of GaussianGenerationCallback
+ 
+	public void proportionDone( double proportion ) {
+		if( proportion >= 1.0 ) {
+			hessianEnabled = true;
+			resultsDialog.gaussianCalculated();
+		}
+		IJ.showProgress(proportion);
 	}
 
 }

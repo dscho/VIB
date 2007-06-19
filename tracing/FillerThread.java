@@ -33,8 +33,8 @@ public class FillerThread extends Thread {
 
 	float minimumDistanceInOpen = 0;
 		
-	public void setThreshold( float threshold ) {
-		this.threshold = threshold;
+	public void setThreshold( double threshold ) {
+		this.threshold = (float)threshold;
 	}
 
 	public float getDistanceAtPoint(int x, int y, int z) {
@@ -165,9 +165,23 @@ public class FillerThread extends Thread {
 	}
 	
 	boolean stopRequested;
-	
-	public void requestStop( ) {
+	boolean requestPause;
+
+	synchronized public void requestStop( ) {
 		stopRequested = true;
+		if( requestPause ) {
+			requestPause = true;
+			this.interrupt();
+		}
+	}
+
+	synchronized public void pauseOrUnpause( ) {
+		if( requestPause ) {
+			requestPause = false;
+		} else {
+			requestPause = true;
+			this.interrupt();
+		}
 	}
 
 	public void run( ) {
@@ -183,6 +197,11 @@ public class FillerThread extends Thread {
 			if( stopRequested ) {
 				progress.stopped();
 				return;
+			} else if( requestPause ) {
+				try {
+					Thread.sleep(4000);					
+				} catch( InterruptedException e ) {
+				}
 			}
 			
 			if( 0 == (loops % 5000) ) {

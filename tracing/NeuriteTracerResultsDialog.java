@@ -24,6 +24,7 @@ class NeuriteTracerResultsDialog
 	static final int LOGGING_POINTS        = 4;
 	static final int DISPLAY_EVS           = 5;
 	static final int FILLING_PATHS         = 6;
+	static final int CALCULATING_GAUSSIAN  = 7;
 
 	static final String SEARCHING_STRING = "Searching for path between points...";
 
@@ -45,7 +46,6 @@ class NeuriteTracerResultsDialog
 	String partsNearbyChoice = "parts in nearby slices";	
 
 	Checkbox preprocess;
-	Checkbox justLog;
 	Checkbox showEVs;
 
 	List pathList;
@@ -62,7 +62,12 @@ class NeuriteTracerResultsDialog
 	Label maxThreshold;
 	Button setThreshold;
 	Button setMaxThreshold;
-	Button stopExploring;
+
+	boolean currentlyExploring = true;
+	Button pauseOrRestartExploring;
+
+	Button saveFill;
+	Button discardFill;
 
 	Button view3D;
 	Checkbox maskNotReal;
@@ -76,6 +81,12 @@ class NeuriteTracerResultsDialog
 	Button quitButton;
 
 	// ------------------------------------------------------------------------
+
+	int preGaussianState;
+
+	public void gaussianCalculated() {
+		changeState(preGaussianState);
+	}
 
 	public void exitRequested() {
 
@@ -92,9 +103,47 @@ class NeuriteTracerResultsDialog
 		}
 
 		plugin.cancelSearch();
-		plugin.cancelFilling();
+		// What if we're filling?
 		dispose();
 		plugin.closeAndReset();
+	}
+
+	public void disableEverything() {
+		statusText.setEnabled(false);
+		keepSegment.setEnabled(false);
+		junkSegment.setEnabled(false);
+		cancelSearch.setEnabled(false);
+		pathActionPanel.setEnabled(false);
+		completePath.setEnabled(false);
+		cancelPath.setEnabled(false);
+
+		viewPathChoice.setEnabled(false);
+		preprocess.setEnabled(false);
+
+		pathList.setEnabled(false);
+		deletePaths.setEnabled(false);
+		fillPaths.setEnabled(false);
+		fitCircles.setEnabled(false);
+		fillStatus.setEnabled(false);
+
+		thresholdField.setEnabled(false);
+		maxThreshold.setEnabled(false);
+		setThreshold.setEnabled(false);
+		setMaxThreshold.setEnabled(false);
+		pauseOrRestartExploring.setEnabled(false);
+		saveFill.setEnabled(false);
+		discardFill.setEnabled(false);
+
+		view3D.setEnabled(false);
+		maskNotReal.setEnabled(false);
+		transparent.setEnabled(false);
+
+		saveButton.setEnabled(false);
+		loadButton.setEnabled(false);
+		uploadButton.setEnabled(false);
+		fetchButton.setEnabled(false);
+
+		quitButton.setEnabled(false);
 	}
 
 	public void changeState( int newState ) {
@@ -103,26 +152,36 @@ class NeuriteTracerResultsDialog
 
 		case WAITING_TO_START_PATH:
 			statusText.setText("Click somewhere to start a new path...");
-			/*
-			statusPanel.remove(cancelSearch);
-			statusPanel.remove(keepSegment);
-			statusPanel.remove(junkSegment);
-			*/
+			disableEverything();
+
 			cancelSearch.setVisible(false);
 			keepSegment.setVisible(false);
 			junkSegment.setVisible(false);
 
-			completePath.setEnabled(false);
-			cancelPath.setEnabled(false);
+			completePath.setEnabled(true);
+			cancelPath.setEnabled(true);
+
+			viewPathChoice.setEnabled(true);
+			preprocess.setEnabled(true);
+
+			pathList.setEnabled(true);
+			deletePaths.setEnabled(true);
+			fillPaths.setEnabled(true);
+			fitCircles.setEnabled(true);
+			fillStatus.setEnabled(true);
+			
+			saveButton.setEnabled(true);
+			loadButton.setEnabled(true);
+			uploadButton.setEnabled(true);
+			fetchButton.setEnabled(true);
+
+			quitButton.setEnabled(true);
+
 			break;
 
 		case PARTIAL_PATH:
 			statusText.setText("Now select a point further along that structure...");
-			/*
-			statusPanel.remove(cancelSearch);
-			statusPanel.remove(keepSegment);
-			statusPanel.remove(junkSegment);
-			*/
+			disableEverything();
 
 			cancelSearch.setVisible(false);
 			keepSegment.setVisible(false);
@@ -133,47 +192,77 @@ class NeuriteTracerResultsDialog
 			else
 				completePath.setEnabled(true);
 			cancelPath.setEnabled(true);
+			
+			viewPathChoice.setEnabled(true);
+			preprocess.setEnabled(true);
+
+			quitButton.setEnabled(false);
+
 			break;
 
 		case SEARCHING:
 			statusText.setText("Searching for path between points...");
-			/*
-			statusPanel.remove(cancelSearch);
-			statusPanel.remove(keepSegment);
-			statusPanel.remove(junkSegment);
-			statusPanel.add(cancelSearch,BorderLayout.SOUTH);
-			*/
+			disableEverything();
 
+			cancelSearch.setLabel("Abandon search");
+			cancelSearch.setEnabled(true);
 			cancelSearch.setVisible(true);
 			keepSegment.setVisible(false);
 			junkSegment.setVisible(false);
 
 			completePath.setEnabled(false);
 			cancelPath.setEnabled(false);
+
+			quitButton.setEnabled(true);
+
 			break;
 
 		case QUERY_KEEP:
 			statusText.setText("Keep this new path segment?");
-			/*
-			statusPanel.remove(cancelSearch);
-			statusPanel.remove(keepSegment);
-			statusPanel.remove(junkSegment);
-			statusPanel.add(keepSegment,BorderLayout.SOUTH);
-			statusPanel.add(junkSegment,BorderLayout.SOUTH);
-			*/
+			disableEverything();
 
+			keepSegment.setEnabled(true);
+			junkSegment.setEnabled(true);
+			
 			cancelSearch.setVisible(false);
 			keepSegment.setVisible(true);
 			junkSegment.setVisible(true);
 
-			completePath.setEnabled(false);
-			cancelPath.setEnabled(false);
+			break;
+
+		case FILLING_PATHS:
+			statusText.setText("Filling out from neuron...");			
+			disableEverything();
+			
+			thresholdField.setEnabled(true);
+			maxThreshold.setEnabled(true);
+			setThreshold.setEnabled(true);
+			setMaxThreshold.setEnabled(true);
+			pauseOrRestartExploring.setEnabled(true);
+			saveFill.setEnabled(true);
+			discardFill.setEnabled(true);
+			
+			view3D.setEnabled(true);
+			maskNotReal.setEnabled(true);
+			transparent.setEnabled(true);
+
+			break;
+
+		case CALCULATING_GAUSSIAN:
+			statusText.setText("Calculating Gaussian...");
+			disableEverything();
+
+			cancelSearch.setLabel("Cancel");
+			cancelSearch.setEnabled(true);
+			cancelSearch.setVisible(true);
+			keepSegment.setVisible(true);
+			junkSegment.setVisible(true);
+
 			break;
 
 		default:
-			IJ.error("BUG: trying to change to an unknown state");
+			IJ.error("BUG: switching to an unknown state");
 			return;
-
 		}
 
 		pack();
@@ -280,8 +369,8 @@ class NeuriteTracerResultsDialog
 			viewPathChoice.addItem(partsNearbyChoice);
 			viewPathChoice.addItemListener( this );
 			
-			preprocess = new Checkbox("Hessian-based analysis");
-			justLog = new Checkbox("Just log points");
+			preprocess = new Checkbox("Hessian-based analysis (early version)");
+			preprocess.addItemListener( this );
 			showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
 			
 			co.gridx = 0;
@@ -294,11 +383,7 @@ class NeuriteTracerResultsDialog
 			co.gridy = 1;
 			co.gridwidth = 2;
 			otherOptionsPanel.add(preprocess,co);
-			co.gridx = 0;
-			co.gridy = 2;
-			co.gridwidth = 2;
-			otherOptionsPanel.add(justLog,co);
-			
+
 			c.gridx = 0;
 			c.gridy = 2;
 			add(otherOptionsPanel,c);
@@ -353,68 +438,95 @@ class NeuriteTracerResultsDialog
 			cf.gridwidth = 4;
 			cf.weightx = 1;
 			cf.anchor = GridBagConstraints.LINE_START;
-			fillStatus = new Label("Not filling                             ",Label.LEFT); // FIXME: why doesn't it fill the row?
+			cf.fill = GridBagConstraints.HORIZONTAL;
+			fillStatus = new Label("(Not filling at the moment.)");
 			fillingOptionsPanel.add(fillStatus,cf);
 			
-			thresholdField = new TextField("",5);
+			thresholdField = new TextField("",10);
 			thresholdField.addActionListener(this);
 			cf.gridx = 0;
 			cf.gridy = 1;
 			cf.weightx = 0;
-			cf.gridwidth = 1;
+			cf.gridwidth = 2;
+			cf.fill = GridBagConstraints.NONE;
 			fillingOptionsPanel.add(thresholdField,cf);
 
-			maxThreshold = new Label("(0)      ");
-			cf.gridx = 1;
+			maxThreshold = new Label("(0)                  ",Label.LEFT);
+			cf.gridx = 2;
 			cf.gridy = 1;
+			cf.gridwidth = 1;
+			cf.fill = GridBagConstraints.HORIZONTAL;
+			cf.anchor = GridBagConstraints.LINE_START;
 			fillingOptionsPanel.add(maxThreshold,cf);
 
 			setThreshold = new Button("Set");
 			setThreshold.addActionListener(this);
-			cf.gridx = 2;
-			cf.gridy = 1;
+			cf.gridx = 0;
+			cf.gridy = 2;
+			cf.gridwidth = 1;
+			cf.fill = GridBagConstraints.NONE;
 			fillingOptionsPanel.add(setThreshold,cf);
 
 			setMaxThreshold = new Button("Set Max");
 			setMaxThreshold.addActionListener(this);
-			cf.gridx = 3;
-			cf.gridy = 1;
+			cf.gridx = 1;
+			cf.gridy = 2;
 			fillingOptionsPanel.add(setMaxThreshold,cf);
 			
 			view3D = new Button("View with 3D Viewer");
 			view3D.addActionListener(this);
 			cf.gridx = 0;
-			cf.gridy = 2;
-			cf.gridwidth = 4;
+			cf.gridy = 3;
+			cf.gridwidth = 2;
 			cf.anchor = GridBagConstraints.LINE_START;
 			fillingOptionsPanel.add(view3D,cf);
 
 			maskNotReal = new Checkbox("Create as Mask");
 			maskNotReal.addItemListener(this);
 			cf.gridx = 0;
-			cf.gridy = 3;
-			cf.gridwidth = 4;
+			cf.gridy = 4;
+			cf.gridwidth = 3;
 			cf.anchor = GridBagConstraints.LINE_START;
 			fillingOptionsPanel.add(maskNotReal,cf);
 
-			transparent = new Checkbox("Transparent");
+			transparent = new Checkbox("Transparent fill display (slow!)");
 			transparent.addItemListener(this);
 			cf.gridx = 0;
-			cf.gridy = 4;
-			cf.gridwidth = 4;
+			cf.gridy = 5;
+			cf.gridwidth = 3;
 			cf.anchor = GridBagConstraints.LINE_START;
 			fillingOptionsPanel.add(transparent,cf);
 
-			stopExploring = new Button("Stop Exploring");
-			stopExploring.addActionListener(this);
+			pauseOrRestartExploring = new Button("Pause Filling");
+			currentlyExploring = true;
+			pauseOrRestartExploring.addActionListener(this);
 			cf.gridx = 0;
-			cf.gridy = 5;
-			cf.gridwidth = 4;
+			cf.gridy = 6;
+			cf.gridwidth = 3;
+			cf.fill = GridBagConstraints.HORIZONTAL;
 			cf.anchor = GridBagConstraints.LINE_START;
-			fillingOptionsPanel.add(stopExploring,cf);
+			fillingOptionsPanel.add(pauseOrRestartExploring,cf);	
+		
+			saveFill = new Button("Save Fill");
+			saveFill.addActionListener(this);
+			cf.gridx = 0;
+			cf.gridy = 7;
+			cf.gridwidth = 2;
+			cf.fill = GridBagConstraints.NONE;
+			cf.anchor = GridBagConstraints.LINE_START;
+			fillingOptionsPanel.add(saveFill,cf);
 			
+			discardFill = new Button("Cancel Fill");
+			discardFill.addActionListener(this);
+			cf.gridx = 2;
+			cf.gridy = 7;
+			cf.gridwidth = 1;
+			cf.anchor = GridBagConstraints.LINE_START;
+			fillingOptionsPanel.add(discardFill,cf);
+
 			c.gridx = 0;
-			c.gridy = 4;			
+			c.gridy = 4;
+			c.gridwidth = 1;
 			add(fillingOptionsPanel,c);
 		}
 
@@ -586,6 +698,8 @@ class NeuriteTracerResultsDialog
 
 		}  else if( source == fillPaths ) {
 			
+			currentlyExploring = true;
+			pauseOrRestartExploring.setLabel("Pause Filling");
 			plugin.startFillingPaths();
 
 		} else if( source == quitButton ) {
@@ -596,10 +710,40 @@ class NeuriteTracerResultsDialog
 
 			plugin.setFillThreshold( maxThresholdValue );
 
-		} else if( source == stopExploring ) {
+		} else if( source == setThreshold ) {
 
-			plugin.cancelFilling();
-			
+			try {
+				double t = Double.parseDouble( thresholdField.getText() );			
+				if( t < 0 ) {
+					IJ.error("The fill threshold cannot be negative.");
+					return;
+				}
+				plugin.setFillThreshold( t );
+			} catch( NumberFormatException nfe ) {
+				IJ.error("The threshold '" + thresholdField.getText() + "' wasn't a valid number.");
+				return;
+			}
+
+		} else if( source == discardFill ) {
+
+			plugin.discardFill();
+
+		} else if( source == saveFill ) {
+						
+			plugin.saveFill();
+
+		} else if( source == pauseOrRestartExploring ) {
+
+			if( currentlyExploring ) {
+				currentlyExploring = false;
+				pauseOrRestartExploring.setLabel("Continue Filling");
+			} else {
+				currentlyExploring = true;
+				pauseOrRestartExploring.setLabel("Pause Filling");
+			}
+
+			plugin.pauseOrRestartExploring();
+
 		} else if( source == view3D ) {
 
 			plugin.viewFillIn3D();
@@ -618,7 +762,7 @@ class NeuriteTracerResultsDialog
 
 	}
 
-	public void thresholdChanged( float f ) {
+	public void thresholdChanged( double f ) {
 		thresholdField.setText(""+f);
 	}
 
@@ -648,7 +792,25 @@ class NeuriteTracerResultsDialog
 			plugin.setFillTransparent( transparent.getState() );
 
 
+		} else if( source == preprocess ) {
+			
+			System.out.println("change in status of preprocess to: "+preprocess.getState());
+
+			if( preprocess.getState() ) {
+				preGaussianState = currentState;
+				synchronized (plugin) {
+					if( plugin.hessian == null )
+						preprocess.setEnabled(false);
+					plugin.enableHessian(true);
+				}
+				changeState(CALCULATING_GAUSSIAN);
+			} else {
+				plugin.enableHessian(false);
+				changeState(preGaussianState);
+			}
+
 		}
+
 	}
 	
         public void paint(Graphics g) {
