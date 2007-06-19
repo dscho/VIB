@@ -22,7 +22,7 @@ else
 PLUGINSHOME=$(shell pwd)
 CPSEP=:
 endif
-JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).
+JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).
 JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 
 all: $(CLASSES)
@@ -56,7 +56,7 @@ Segmentation_Editor_compat.jar: SOURCES=amira/AmiraParameters.java \
 	vib/SegmentationViewerCanvas.java vib/segment/*.java \
 	vib/IDT_Interpolate_Binary.java math3d/FastMatrixN.java \
 	Segmentation_Editor.java vib/segment/icons/*.png \
-	vib/segment/materials/*
+	vib/segment/materials/* vib/Local_Threshold.java
 
 %_compat.jar:
 	test ! -d tempdir || rm -rf tempdir
