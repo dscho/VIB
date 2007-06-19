@@ -2,21 +2,27 @@ import ij.process.ImageProcessor;
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import ij.gui.GenericDialog;
+import ij.measure.Calibration;
 import ij.IJ;
+import ij.WindowManager;
 
 import ij3d.ImageWindow3D;
 import ij3d.Content;
+import ij3d.ColorTable;
+import ij3d.Image3DUniverse;
+import ij3d.Image3DMenubar;
+
 import java.awt.Dimension;
 import java.awt.MenuBar;
 import java.awt.Menu;
 
-import ij3d.Image3DUniverse;
-import ij3d.Image3DMenubar;
 import isosurface.MeshGroup;
 import voltex.VoltexGroup;
 import orthoslice.OrthoGroup;
 
 import javax.media.j3d.Transform3D;
+import javax.vecmath.Vector3f;
+import javax.vecmath.Color3f;
 
 public class ImageJ_3D_Viewer implements PlugInFilter {
 
@@ -96,27 +102,44 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 	}
 
 	// Contents menu
-	public static void addVolume(String image, String color, String name,
+	public static void addMesh(String image, String c, String name,
+		String th, String r, String g, String b, String resamplingF) {
+
+		ImagePlus grey = WindowManager.getImage(image);
+		Color3f color = ColorTable.getColor(c);
+
+		int factor = getInt(resamplingF);
+		int thresh = getInt(th);
+		boolean[] channels = new boolean[]{getBoolean(r),
+						getBoolean(g), 
+						getBoolean(b)};
+		univ.addMesh(grey, color, name, thresh, channels, factor);
+	}
+
+	public static void addVolume(String image, String c, String name,
 			String r, String g, String b, String resamplingF) {
 
-		/*
 		ImagePlus grey = WindowManager.getImage(image);
-		Color3f color = ColorTable.getColor(color);
+		Color3f color = ColorTable.getColor(c);
 
-		int factor = (int)gd.getNextNumber();
-		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
-						gd.getNextBoolean(), 
-						gd.getNextBoolean()};
-		Vector3f tr = new Vector3f();
-		if(grey != null) {
-			Calibration c = grey.getCalibration();
-			tr.x = (float)(-grey.getWidth() * c.pixelWidth/2);
-			tr.y = (float)(-grey.getHeight() * c.pixelHeight/2);
-			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
-		}
-		
+		int factor = getInt(resamplingF);
+		boolean[] channels = new boolean[]{getBoolean(r),
+						getBoolean(g), 
+						getBoolean(b)};
 		univ.addVoltex(grey, color, name, channels, factor);
-		*/
+	}
+
+	public static void addOrthoslice(String image, String c, String name,
+			String r, String g, String b, String resamplingF) {
+
+		ImagePlus grey = WindowManager.getImage(image);
+		Color3f color = ColorTable.getColor(c);
+
+		int factor = getInt(resamplingF);
+		boolean[] channels = new boolean[]{getBoolean(r),
+						getBoolean(g), 
+						getBoolean(b)};
+		univ.addOrthoslice(grey, color, name, channels, factor);
 	}
 
 	public static void delete() {
@@ -132,9 +155,7 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 			univ.getSelected() instanceof OrthoGroup) {
 
 			OrthoGroup vg = (OrthoGroup)univ.getSelected();
-			vg.setSlices(Integer.parseInt(x),
-					Integer.parseInt(y),
-					Integer.parseInt(z));
+			vg.setSlices(getInt(x), getInt(y), getInt(z));
 		}
 	}
 
@@ -144,6 +165,18 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 
 			VoltexGroup vg = (VoltexGroup)univ.getSelected();
 			vg.fillRoiBlack(univ, (byte)0);
+		}
+	}
+
+	public static void lock() {
+		if(univ != null && univ.getSelected() != null) {
+			univ.getSelected().setLocked(true);
+		}
+	}
+
+	public static void unlock() {
+		if(univ != null && univ.getSelected() != null) {
+			univ.getSelected().setLocked(false);
 		}
 	}
 
@@ -157,9 +190,9 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 	}
 
 	public static void setColor(String red, String green, String blue) {
-		float r = Integer.parseInt(red) / 256f;
-		float g = Integer.parseInt(green) / 256f;
-		float b = Integer.parseInt(blue) / 256f;
+		float r = getInt(red) / 256f;
+		float g = getInt(green) / 256f;
+		float b = getInt(blue) / 256f;
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().setColor(
 				new javax.vecmath.Color3f(r, g, b));
@@ -172,6 +205,20 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 			univ.getSelected().setTransparency(tr);
 		}
 	}
+
+	public static void setCoorinateSystem(String s) {
+		if(univ != null && univ.getSelected() != null) {
+			univ.getSelected().showCoordinateSystem(
+				getBoolean(s));
+		}
+	}
+
+	public static void setThreshold(String s) {
+		if(univ != null && univ.getSelected() != null) {
+			univ.getSelected().setThreshold(getInt(s));
+		}
+	}
+		
 
 	public static void applyTransform(String transform) {
 		if(univ != null && univ.getSelected() != null) {
@@ -199,6 +246,14 @@ public class ImageJ_3D_Viewer implements PlugInFilter {
 			}
 			univ.getSelected().setTransform(new Transform3D(m));
 		}
+	}
+
+	private static int getInt(String s) {
+		return Integer.parseInt(s);
+	}
+
+	private static boolean getBoolean(String s) {
+		return new Boolean(s).booleanValue();
 	}
 
 	public int setup(String arg, ImagePlus img) {

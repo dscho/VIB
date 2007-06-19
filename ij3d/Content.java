@@ -114,6 +114,10 @@ public abstract class Content extends BranchGroup {
 		locked = !locked;
 	}
 
+	public void setLocked(boolean b) {
+		locked = b;
+	}
+
 	public void applyTransform(Transform3D transform) {
 		Transform3D t1 = new Transform3D();
 		localTranslate.getTransform(t1);
