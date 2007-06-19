@@ -30,6 +30,7 @@ public class Local_Threshold implements PlugInFilter {
 			IJ.error("Selection required");
 			return;
 		}
+		Roi roiCopy = (Roi)image.getRoi().clone();
 		copy = ip.duplicate();
 		final GenericDialog gd = 
 				new GenericDialog("Adjust local threshold");
@@ -52,12 +53,21 @@ public class Local_Threshold implements PlugInFilter {
 
 		gd.showDialog();
 
-		ip.setThreshold(255, 255, ImageProcessor.NO_LUT_UPDATE);
+		// Convert area to selection
+		ip.setRoi(image.getRoi());
+		ImageProcessor newip = ip.crop();
+		newip.setThreshold(255, 255, ImageProcessor.NO_LUT_UPDATE);
+		ImagePlus tmp = new ImagePlus("", newip);
 		ThresholdToSelection ts = new ThresholdToSelection();
-		ts.setup("", image);
-		ts.run(ip);
-		ip.resetThreshold();
+		ts.setup("", tmp);
+		ts.run(newip);
+		newip.resetThreshold();
 		ip.insert(copy, 0, 0);
+		Rectangle roiCopyR = roiCopy.getBounds();
+		Rectangle roiTempR = tmp.getRoi().getBounds();
+		tmp.getRoi().setLocation(roiCopyR.x + roiTempR.x, 
+					roiCopyR.y + roiTempR.y);
+		image.setRoi(tmp.getRoi());
 	}
 
 	public static void applyThreshold(ImageProcessor ip, 
@@ -77,6 +87,8 @@ public class Local_Threshold implements PlugInFilter {
 
 		for(int y = r.y; y < r.y+r.height; y++) {
 			for(int x = r.x; x < r.x+r.width; x++) {
+				if(!roi.contains(x, y))
+					continue;
 				int index = y*ip.getWidth() + x;
 				if(((int)c[index]&0xff) >= min &&
 						((int)c[index]&0xff) <= max) {
