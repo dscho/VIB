@@ -80,9 +80,26 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			currentSearchThread.requestStop();
 	}
 
-	public void cancelFilling( ) {
-		if( filler != null )
+
+	synchronized public void saveFill( ) {
+		if( filler != null ) {
 			filler.requestStop();
+			
+		}
+	}
+
+	synchronized public void discardFill( ) {
+		if( filler != null ) {
+			filler.requestStop();
+			resultsDialog.changeState( NeuriteTracerResultsDialog.WAITING_TO_START_PATH );	
+		}
+	}
+
+
+	synchronized public void pauseOrRestartExploring( ) {
+		if( filler != null ) {
+			filler.pauseOrUnpause( );
+		}
 	}
 
 	/* Now a couple of callback methods, which get information
@@ -989,7 +1006,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		setFillThreshold( distance );
 	}
 
-	public void setFillThreshold( float distance ) {
+	public void setFillThreshold( double distance ) {
 
 		if( distance > 0 ) {
 
