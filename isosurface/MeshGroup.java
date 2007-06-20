@@ -99,9 +99,9 @@ public class MeshGroup extends Content {
 		if(shape != null) {
 			shape.calculateMinMaxCenterPoint(minPoint, maxPoint,
 				centerPoint);
+			createBoundingBox();
+			showBoundingBox(false);
 		}
-		createBoundingBox();
-		showBoundingBox(false);
 	}
 
 	public void colorUpdated(Color3f oldColor, Color3f newColor) {
