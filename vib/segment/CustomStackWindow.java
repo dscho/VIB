@@ -12,7 +12,9 @@ import ij.gui.Roi;
 import ij.gui.ImageLayout;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
+import ij.plugin.filter.ThresholdToSelection;
 
 public class CustomStackWindow extends StackWindow
 				 implements AdjustmentListener, 
@@ -184,6 +186,60 @@ public class CustomStackWindow extends StackWindow
 		}).start();
 		cc.requestFocus();
 	}
+
+	public void processThresholdButton() {
+		IJ.runPlugIn("vib.Local_Threshold", "");
+	}
+
+	public void processCloseButton() {
+		// Convert to mask
+		ImagePlus image = cc.getImage();
+		ImageProcessor ip = image.getProcessor();
+		ImageProcessor newip = new ByteProcessor(
+						ip.getWidth(), ip.getHeight());
+		newip.setBackgroundValue(0);
+		newip.setRoi(image.getRoi());
+		newip.setValue(255);
+		newip.fill(newip.getMask());
+
+		// open
+		newip.dilate();
+		newip.erode();
+		
+		// convert back to selection
+		newip.setThreshold(255, 255, ImageProcessor.NO_LUT_UPDATE);
+		ImagePlus tmp = new ImagePlus(" ", newip);
+		ThresholdToSelection ts = new ThresholdToSelection();
+		ts.setup("", tmp);
+		ts.run(newip);
+		newip.resetThreshold();
+		image.setRoi(tmp.getRoi());
+	}
+	
+	public void processOpenButton() {
+		// Convert to mask
+		ImagePlus image = cc.getImage();
+		ImageProcessor ip = image.getProcessor();
+		ImageProcessor newip = new ByteProcessor(
+						ip.getWidth(), ip.getHeight());
+		newip.setBackgroundValue(0);
+		newip.setRoi(image.getRoi());
+		newip.setValue(255);
+		newip.fill(newip.getMask());
+
+		// open
+		newip.erode();
+		newip.dilate();
+		
+		// convert back to selection
+		newip.setThreshold(255, 255, ImageProcessor.NO_LUT_UPDATE);
+		ImagePlus tmp = new ImagePlus(" ", newip);
+		ThresholdToSelection ts = new ThresholdToSelection();
+		ts.setup("", tmp);
+		ts.run(newip);
+		newip.resetThreshold();
+		image.setRoi(tmp.getRoi());
+	}
 	
 	public void assignSliceTo(int slice, Roi roi, int materialID){
 		ImagePlus grey = cc.getImage();
@@ -290,6 +346,12 @@ public class CustomStackWindow extends StackWindow
 			processMinusButton();
 		} else if (command.equals("interpolate")) {
 			processInterpolateButton();
+		} else if (command.equals("threshold")) {
+			processThresholdButton();
+		} else if (command.equals("open")) {
+			processOpenButton();
+		} else if (command.equals("close")) {
+			processCloseButton();
 		} else if (command.equals("Ok")) {
 			// call the action listener before destroying the window
 			if(al != null)

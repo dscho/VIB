@@ -4,6 +4,11 @@ package tracing;
 
 import java.util.*;
 
+import features.ComputeCurvatures;
+
+/* This is the thread that explores between two points in an image,
+ * doing an A* search with a choice of distance measures. */
+
 public class AStarThread extends Thread {
 	
 	byte [][] slices_data;
@@ -26,7 +31,8 @@ public class AStarThread extends Thread {
 	int depth;
 
 	boolean reciprocal;
-	boolean preprocess;
+
+	ComputeCurvatures hessian;
 
 	int timeoutSeconds;
 	long reportEveryMilliseconds;
@@ -35,7 +41,6 @@ public class AStarThread extends Thread {
 	AStarProgressCallback progress;
 
 	Connection result;
-
 	
 	/* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
@@ -48,9 +53,9 @@ public class AStarThread extends Thread {
 			    int goal_z,
 			    SimpleNeuriteTracer_ plugin,
 			    boolean reciprocal,
-			    boolean preprocess,                        
 			    int timeoutSeconds,
 			    long reportEveryMilliseconds,
+			    ComputeCurvatures hessian,
 			    AStarProgressCallback progress ) {
 		
 		this.slices_data = slices_data;
@@ -74,9 +79,10 @@ public class AStarThread extends Thread {
 		this.depth = plugin.depth;
 
 		this.reciprocal = reciprocal;
-		this.preprocess = preprocess;
 		this.timeoutSeconds = timeoutSeconds;
 		this.reportEveryMilliseconds = reportEveryMilliseconds;
+
+		this.hessian = hessian;
 		
 		this.progress = progress;
 
@@ -93,8 +99,86 @@ public class AStarThread extends Thread {
 		stopRequested = true;
 	}
 
+	/* This cost doesn't take into account the distance between
+	 * the points - it will be post-multiplied by that value.
+	 *
+	 * The minimum cost should be > 0 - it is the value that is
+	 * used in calculating the heuristic for how far a given point
+	 * is from the goal. */
+
+	public double costMovingTo( int new_x, int new_y, int new_z, int value_at_new_point, double minimumCost ) {
+	       
+		double result;
+				
+		if( hessian == null ) {
+			
+			if( reciprocal ) {
+				result = 1 / reciprocal_fudge;
+				if( value_at_new_point != 0 )
+					result = 1.0 / value_at_new_point;
+			} else {
+				result = 256 - value_at_new_point;
+			}
+
+		} else {
+
+			double [] hessianEigenValues = new double[3];
+
+			hessian.hessianEigenvaluesAtPoint( new_x, new_y, new_z,
+							   true, hessianEigenValues, true );
+			
+			/* FIXME: there's lots of literature on how to
+                           pick this rule (see Sato et al,
+                           "Three-dimensional multi-scale line filter
+                           for segmentation and visualization of
+                           curvilinear structures in medical images".
+                           The rule I'm using here probably isn't optimal. */
+			
+			double e0 = hessianEigenValues[0];
+			double e1 = hessianEigenValues[1];
+			double e2 = hessianEigenValues[2];
+
+			if( (hessianEigenValues[1] < 0) && (hessianEigenValues[2] < 0) ) {
+				
+				double measure = Math.sqrt( hessianEigenValues[1] * hessianEigenValues[2] );
+
+				if( measure == 0 ) // This should never happen in practice...
+					measure = 0.2;
+
+				result = 1 / measure;
+
+			} else {
+				
+				result = 1 / 0.2;
+				
+			}
+			
+		}
+
+		if( result < minimumCost )
+			result = minimumCost;
+
+		return result;
+	}
+
 	public void run( ) {
-		
+
+		ComputeCurvatures hessian = this.hessian;
+
+		double minimum_cost_per_unit_distance;
+
+		if( hessian == null ) {
+			
+			minimum_cost_per_unit_distance = reciprocal ? ( 1 / 255.0 ) : 1;
+					
+		} else {
+
+			// minimum_cost_per_unit_distance = 1E-4;  /* for the ratio of e0/e1 */
+			// minimum_cost_per_unit_distance = 0.002; // 1;  /* for e1 - e0 */
+			
+			minimum_cost_per_unit_distance = 1 / 60.0; 
+		}
+
 		long started_at = lastReportMilliseconds = System.currentTimeMillis();
 		
 		int loops = 0;
@@ -110,9 +194,7 @@ public class AStarThread extends Thread {
 		Hashtable closed_from_start_hash = new Hashtable();
 		Hashtable open_from_goal_hash = new Hashtable();
 		Hashtable closed_from_goal_hash = new Hashtable();
-		
-		double minimum_cost_per_unit_distance = reciprocal ? ( 1 / 255.0 ) : 1;
-		
+
 		AStarNode start = new AStarNode( start_x, start_y, start_z,
 						 0,
 						 estimateCostToGoal( start_x, start_y, start_z,
@@ -142,7 +224,7 @@ public class AStarThread extends Thread {
 				return;
 			}
 
-			if( 0 == (loops % 5000) ) {
+			if( 0 == (loops % 1000) ) {
 				
 				long currentMilliseconds = System.currentTimeMillis();
 				
@@ -273,8 +355,8 @@ public class AStarThread extends Thread {
 				closed_from_start.add( p );
 				closed_from_start_hash.put( p, p );
 				
-				// Now look at the neighbours of p.  We're going to look
-				// at the 26 neighbours in 3D.
+				// Now look at the neighbours of p.  We're going to consider
+				// the 26 neighbours in 3D.
 				
 				for( int xdiff = -1; xdiff <= 1; xdiff++ )
 					for( int ydiff = -1; ydiff <= 1; ydiff++ )
@@ -306,16 +388,10 @@ public class AStarThread extends Thread {
 							
 							int value_at_new_point = slices_data[new_z][new_y*width+new_x] & 0xFF;
 							
-							double cost_moving_to_new_point;
-							
-							if( reciprocal ) {
-								cost_moving_to_new_point = 1 / reciprocal_fudge;
-								if( value_at_new_point != 0 )
-									cost_moving_to_new_point = 1.0 / value_at_new_point;
-							} else {
-								cost_moving_to_new_point = 256 - value_at_new_point;
-							}
-							
+							double cost_moving_to_new_point = costMovingTo( new_x, new_y, new_z,
+													value_at_new_point,
+													minimum_cost_per_unit_distance );
+														
 							float g_for_new_point = (float) ( p.g + Math.sqrt( xdiffsq + ydiffsq + zdiffsq ) * cost_moving_to_new_point );
 							
 							float f_for_new_point = (float)( h_for_new_point + g_for_new_point );
@@ -425,15 +501,9 @@ public class AStarThread extends Thread {
 							
 							int value_at_new_point = slices_data[new_z][new_y*width+new_x] & 0xFF;
 							
-							double cost_moving_to_new_point;
-							
-							if( reciprocal ) {
-								cost_moving_to_new_point = 1 / reciprocal_fudge;
-								if( value_at_new_point != 0 )
-									cost_moving_to_new_point = 1.0 / value_at_new_point;
-							} else {
-								cost_moving_to_new_point = 256 - value_at_new_point;
-							}
+							double cost_moving_to_new_point = costMovingTo( new_x, new_y, new_z,
+													value_at_new_point,
+													minimum_cost_per_unit_distance );
 							
 							float g_for_new_point = (float) ( q.g + Math.sqrt( xdiffsq + ydiffsq + zdiffsq ) * cost_moving_to_new_point );
 							
@@ -510,11 +580,11 @@ public class AStarThread extends Thread {
 
 		}
 		
-		// If we get to here then we haven't found a route to the
-		// point.  (With the current impmlementation this shouldn't
-		// happen, so print a warning.)  However, in this case let's
-		// return the best option:
-		
+		/* If we get to here then we haven't found a route to the
+		   point.  (With the current impmlementation this shouldn't
+		   happen, so print a warning.)  However, in this case let's
+		   return the best option: */
+		  
 		System.out.println( "FAILED to find a route.  Shouldn't happen..." );
 		
 		result = ((AStarNode)(open_from_start.poll())).asConnection();
@@ -523,8 +593,14 @@ public class AStarThread extends Thread {
 		
 	}
 
-	double reciprocal_fudge = 0.5;
+	/* If we're taking the reciprocal of the value at the new
+	 * point as our cost, then values of zero cause a problem.
+	 * This is the value that we use instead of zero there. */
+
+	static final double reciprocal_fudge = 0.5;
 	
+	/* This is the heuristic value for the A* search */
+
 	float estimateCostToGoal( int current_x, int current_y, int current_z,
 				  int goal_x, int goal_y, int goal_z,
 				  double minimum_cost_per_unit_distance ) {

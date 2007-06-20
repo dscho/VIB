@@ -86,7 +86,8 @@ public abstract class Content extends BranchGroup {
 			
 		BoundingBox b = new BoundingBox(minPoint, maxPoint);
 		bbSwitch.addChild(b);
-		CoordinateSystem cs = new CoordinateSystem(100f, new Color3f(0, 1, 0));
+		float cl = (float)Math.abs(maxPoint.x - minPoint.x) / 5f;
+		CoordinateSystem cs = new CoordinateSystem(cl, new Color3f(0, 1, 0));
 		bbSwitch.addChild(cs);
 		// initially show the bounding box, but not the coordinate system
 		whichChild.set(BB, false);
@@ -111,6 +112,10 @@ public abstract class Content extends BranchGroup {
 
 	public void toggleLock() {
 		locked = !locked;
+	}
+
+	public void setLocked(boolean b) {
+		locked = b;
 	}
 
 	public void applyTransform(Transform3D transform) {

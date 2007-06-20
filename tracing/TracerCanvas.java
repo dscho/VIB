@@ -190,7 +190,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			
 			tracerPlugin.setPositionAllPanes( x, y, z );
 
-			/* FIXME: put this back
+			/* FIXME: put this back at some point
 
 			EigenResultsDouble er;
 			try {
@@ -206,7 +206,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			
 		} else if( tracerPlugin.setupEv ) {
 			
-			/* FIXME: put this back
+			/* FIXME: put this back at some point
 
 			int x = offScreenX(e.getX());
 			int y = offScreenX(e.getY());
@@ -312,9 +312,8 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 				}
 			}
 
-			if( verbose && (ThreePanes.XY_PLANE == plane) )
-				System.out.println( "Drawing points in the XY plane took: " +
-						    ((float)(System.currentTimeMillis()-beforeLoop)/1000.0f) );
+			/* if( verbose && (ThreePanes.XY_PLANE == plane) )
+				 System.out.println( "Drawing points in the XY plane took: " + ((float)(System.currentTimeMillis()-beforeLoop)/1000.0f) ); */
 
 		}
 	}
@@ -348,14 +347,6 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			}
 		}
 		
-		/*
-		if( orangePath != null ) {
-			orangePath.drawConnectionAsPoints( g, java.awt.Color.RED, plane );
-			// orangePath.drawConnectionAsPoints( g, java.awt.Color.ORANGE, plane );
-			// orangePath.drawConnection( g, java.awt.Color.ORANGE, plane );
-		}
-		*/
-
 		int current_z = -1;
 
 		if( plane == ThreePanes.XY_PLANE ) {
@@ -454,16 +445,5 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	public void setConnection( Connection c )  {
 		orangePath = c;
 	}
-	
-	/*
-	static public void drawCrossHairs( Graphics g, Color c, int x, int y ) {
-		g.setColor( c );
-		int hairLength = 8;
-		g.drawLine( x, y + 1, x, y + (hairLength - 1) );
-		g.drawLine( x, y - 1, x, y - (hairLength - 1) );
-		g.drawLine( x + 1, y, x + (hairLength - 1), y );
-		g.drawLine( x - 1, y, x - (hairLength - 1), y );
-	}
-	*/
-	
+
 }
