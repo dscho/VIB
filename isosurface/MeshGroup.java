@@ -117,7 +117,8 @@ public class MeshGroup extends Content {
 		shape.setTransparency(transparency);
 	}
 
-	public static void addContent(Image3DUniverse univ, ImagePlus mesh) {
+	public static MeshGroup addContent(Image3DUniverse univ, 
+							ImagePlus mesh) {
 		GenericDialog gd = new GenericDialog("Add mesh");
 		int img_count = WindowManager.getImageCount();
 		Vector meshV = new Vector();
@@ -148,7 +149,7 @@ public class MeshGroup extends Content {
 
 		gd.showDialog();
 		if(gd.wasCanceled())
-			return;
+			return null;
 			
 		if(mesh == null)
 			mesh = WindowManager.getImage(gd.getNextChoice());
@@ -166,7 +167,7 @@ public class MeshGroup extends Content {
 			tr.y = (float)(-mesh.getHeight() * c.pixelHeight/2f); 
 			tr.z = (float)(-mesh.getStackSize() * c.pixelDepth/2f);
 		}
-		univ.addMesh(mesh, color, 
+		return univ.addMesh(mesh, color, 
 			name, threshold, channels, factor);
 	}
 

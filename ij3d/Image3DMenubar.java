@@ -64,6 +64,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String SET_TRANSPARENCY = "setTransparency";
 	public static final String SET_CHANNELS = "setChannels";
 	public static final String FILL_SELECTION = "fillSelection";
+
+	public static final String ADD_VOLUME = "addVolume";
+	public static final String ADD_MESH = "addMesh";
+	public static final String ADD_ORTHO = "addOrthoslice";
 	public static final String DELETE = "delete";
 
 	public Image3DMenubar(Image3DUniverse univ) {
@@ -256,15 +260,36 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == voltex) {
-			VoltexGroup.addContent(univ, null);
+			Content c = VoltexGroup.addContent(univ, null);
+			String[] arg = new String[] {c.image.getTitle(), 
+				ColorTable.getColorName(c.color), 
+				c.name, Boolean.toString(c.channels[0]), 
+				Boolean.toString(c.channels[1]), Boolean.
+				toString(c.channels[2]), Integer.toString(
+				c.resamplingF)};
+			record(ADD_VOLUME, arg);
 		}
 		
 		if(e.getSource() == mesh) {
-			MeshGroup.addContent(univ, null);
+			Content c = MeshGroup.addContent(univ, null);
+			String[] arg = new String[] {c.image.getTitle(), 
+				ColorTable.getColorName(c.color), 
+				c.name, Integer.toString(c.threshold), 
+				Boolean.toString(c.channels[0]), 
+				Boolean.toString(c.channels[1]), Boolean.
+				toString(c.channels[2]), Integer.toString(
+				c.resamplingF)};
+			record(ADD_MESH, arg);
 		}
 
 		if(e.getSource() == ortho) {
-			OrthoGroup.addContent(univ, null);
+			Content c = OrthoGroup.addContent(univ, null);
+			String[] arg = new String[] {c.image.getTitle(), 
+				ColorTable.getColorName(c.color), 
+				c.name, Boolean.toString(c.channels[0]), 
+				Boolean.toString(c.channels[1]), Boolean.
+				toString(c.channels[2]), Integer.toString(
+				c.resamplingF)};
 		}
 
 		if(e.getSource() == delete) {
@@ -343,6 +368,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == close) {
 			univ.close();
+			ImageJ3DViewer.freeUniverse();
 		}
 
 		if(e.getSource() == resetTransform) {
@@ -630,32 +656,43 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			Boolean.toString(channels[2]));
 	}
 
-	public void record(String command) {
+	public static void record(String command) {
 		command = "ImageJ_3D_Viewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call", command);
 		}
 	}
 	
-	public void record(String command, String a1) {
+	public static void record(String command, String a1) {
 		command = "ImageJ_3D_Viewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call", command, a1);
 		}
 	}
 
-	public void record(String command, String a1, String a2) {
+	public static void record(String command, String a1, String a2) {
 		command = "ImageJ_3D_Viewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call",command,a1,a2);
 		}
 	}
 
-	public void record(String command, String a1, String a2, String a3) {
+	public static void record(String command, String a1, String a2, String a3) {
 		command = "call(\"ImageJ_3D_Viewer." + command + "\", " + 
 				"\"" + a1 + "\"," + 
 				"\"" + a2 + "\"," + 
 				"\"" + a3 + "\")"; 
+		if(ij.plugin.frame.Recorder.record) {
+			ij.plugin.frame.Recorder.recordString(command);
+		}
+	}
+
+	public static void record(String command, String[] args) {
+		command = "call(\"ImageJ_3D_Viewer." + command + "\"";
+		for(int i = 0; i < args.length; i++) {
+			command += ", \"" + args[i] + "\"";
+		}
+		command += ");";
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.recordString(command);
 		}
@@ -723,5 +760,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 		return m;
 	}
+
 }
 
