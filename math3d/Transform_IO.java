@@ -1,3 +1,5 @@
+package math3d;
+
 import ij.IJ;
 
 import java.io.BufferedReader;
