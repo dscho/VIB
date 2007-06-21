@@ -4,6 +4,8 @@ import ij.gui.GenericDialog;
 import ij.IJ;
 import ij.ImagePlus;
 
+import math3d.Transform_IO;
+
 import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
@@ -423,6 +425,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == saveTransform) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			Transform3D t1 = new Transform3D();
+			c.getLocalTranslate().getTransform(t1);
+			Transform3D t2 = new Transform3D();
+			c.getLocalRotate().getTransform(t2);
+			t1.mul(t2);
+			float[] matrix = new float[16];
+			t1.get(matrix);
+			new Transform_IO().saveAffineTransform(matrix);
 		}
 
 		if (e.getSource() == exportDXF) {
@@ -734,7 +749,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	private float[] readTransform(Content selected) {
-		GenericDialog gd = new GenericDialog(
+		final GenericDialog gd = new GenericDialog(
 					"Read transformation", null);
 		Transform3D t1 = new Transform3D();
 		selected.getLocalTranslate().getTransform(t1);
@@ -743,16 +758,42 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		t1.mul(t2);
 		float[] matrix = new float[16];
 		t1.get(matrix);
-		String transform = "";
-		for(int i = 0; i < matrix.length; i++) {
-			transform += matrix[i] + " ";
-		}
+		String transform = affine2string(matrix);
 		gd.addStringField("Transformation", transform, 25);
+		Panel p = new Panel(new FlowLayout());
+		Button b = new Button("Open from file");
+		b.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				float[] m = new Transform_IO().
+						openAffineTransform();
+				if(m != null) {
+					TextField tf = (TextField)gd.
+						getStringFields().get(0);
+					tf.setText(affine2string(m));
+					tf.repaint();
+				}
+			}
+		});
+		p.add(b);
+		gd.addPanel(p);
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return null;
 
 		transform = gd.getNextString();
+		float[] m = string2affine(transform);
+		return m;
+	}
+
+	private String affine2string(float[] matrix) {
+		String transform = "";
+		for(int i = 0; i < matrix.length; i++) {
+			transform += matrix[i] + " ";
+		}
+		return transform;
+	}
+
+	private float[] string2affine(String transform){
 		String[] s = ij.util.Tools.split(transform);
 		float[] m = new float[s.length];
 		for(int i = 0; i < s.length; i++) {
