@@ -167,6 +167,13 @@ public class MeshGroup extends Content {
 			tr.y = (float)(-mesh.getHeight() * c.pixelHeight/2f); 
 			tr.z = (float)(-mesh.getStackSize() * c.pixelDepth/2f);
 		}
+
+		if(univ.contains(name)) {
+			IJ.error("Could not add new content. A content with " +
+				"name \"" + name + "\" exists already.");
+			return null;
+		}
+		
 		return univ.addMesh(mesh, color, 
 			name, threshold, channels, factor);
 	}

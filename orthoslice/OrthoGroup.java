@@ -115,6 +115,13 @@ public class OrthoGroup extends Content {
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
 		
+
+		if(univ.contains(name)) {
+			IJ.error("Could not add new content. A content with " +
+				"name \"" + name + "\" exists already.");
+			return null;
+		}
+		
 		return univ.addOrthoslice(grey, color, name, channels, factor);
 	}
 

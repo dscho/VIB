@@ -259,6 +259,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Collection getContents() {
 		return contents.values();
 	}
+	
+	public boolean contains(String name) {
+		return contents.containsKey(name);
+	}
 
 	public Content getContent(String name) {
 		if (null == name) return null;
