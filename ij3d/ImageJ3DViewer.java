@@ -168,7 +168,7 @@ public class ImageJ3DViewer implements PlugInFilter {
 
 
 	// Individual content's menu
-	public static void adjustSlices(String x, String y, String z) {
+	public static void setSlices(String x, String y, String z) {
 		if(univ != null && univ.getSelected() != null && 
 			univ.getSelected() instanceof OrthoGroup) {
 
@@ -208,12 +208,18 @@ public class ImageJ3DViewer implements PlugInFilter {
 	}
 
 	public static void setColor(String red, String green, String blue) {
-		float r = getInt(red) / 256f;
-		float g = getInt(green) / 256f;
-		float b = getInt(blue) / 256f;
-		if(univ != null && univ.getSelected() != null) {
-			univ.getSelected().setColor(
-				new javax.vecmath.Color3f(r, g, b));
+		if(univ == null || univ.getSelected() == null)
+			return;
+		Content sel = univ.getSelected();
+		try {
+			float r = getInt(red) / 256f;
+			float g = getInt(green) / 256f;
+			float b = getInt(blue) / 256f;
+			if(univ != null && univ.getSelected() != null) {
+				sel.setColor(new Color3f(r, g, b));
+			}
+		} catch(NumberFormatException e) {
+			sel.setColor(null);
 		}
 	}
 
@@ -224,7 +230,7 @@ public class ImageJ3DViewer implements PlugInFilter {
 		}
 	}
 
-	public static void setCoorinateSystem(String s) {
+	public static void setCoordinateSystem(String s) {
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().showCoordinateSystem(
 				getBoolean(s));
@@ -249,10 +255,19 @@ public class ImageJ3DViewer implements PlugInFilter {
 		}
 	}
 
-	public static void resetTransform(String transform) {
+	public static void resetTransform() {
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().setTransform(new Transform3D());
 		}
+	}
+
+	public static void saveTransform(String transform, String path) {
+		String[] s = ij.util.Tools.split(transform);
+		float[] m = new float[s.length];
+		for(int i = 0; i < s.length; i++) {
+			m[i] = Float.parseFloat(s[i]);
+		}
+		new math3d.Transform_IO().saveAffineTransform(m);
 	}
 
 	public static void setTransform(String transform) {

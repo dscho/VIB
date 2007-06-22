@@ -246,6 +246,7 @@ public class Orthoslice extends AxisRenderer {
 		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
 		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
 		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_RENDERING_ATTRIBUTES_READ);
 
 		TextureAttributes texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);
@@ -271,6 +272,11 @@ public class Orthoslice extends AxisRenderer {
 		} else {
 			c.setColor(color);
 		}
+
+		RenderingAttributes ra = new RenderingAttributes();
+		ra.setCapability(RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
+		ra.setAlphaTestValue(0.1f);
+		ra.setAlphaTestFunction(RenderingAttributes.GREATER);
 		
 		a.setMaterial(m);
 		a.setTransparencyAttributes(t);

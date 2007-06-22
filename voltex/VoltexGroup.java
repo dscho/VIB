@@ -121,6 +121,12 @@ public class VoltexGroup extends Content {
 			tr.y = (float)(-grey.getHeight() * c.pixelHeight/2);
 			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
 		}
+
+		if(univ.contains(name)) {
+			IJ.error("Could not add new content. A content with " +
+				"name \"" + name + "\" exists already.");
+			return null;
+		}
 		
 		return univ.addVoltex(grey, color, name, channels, factor);
 	}

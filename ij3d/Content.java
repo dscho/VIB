@@ -131,13 +131,25 @@ public abstract class Content extends BranchGroup {
 
 	public void setTransform(Transform3D transform) {
 		Transform3D t = new Transform3D();
+		Point3f c = centerPoint;
+		
 		Matrix3f m = new Matrix3f();
 		transform.getRotationScale(m);
 		t.setRotationScale(m);
-		localRotate.setTransform(t);
+		// One might thing a rotation matrix has no translational 
+		// component, however, if the rotation is composed of 
+		// translation - rotation - backtranslation, it has indeed.
 		Vector3f v = new Vector3f();
-		transform.get(v);
-		t.set(v);
+		v.x = -m.m00*c.x - m.m01*c.y - m.m02*c.z + c.x;
+		v.y = -m.m10*c.x - m.m11*c.y - m.m12*c.z + c.y;
+		v.z = -m.m20*c.x - m.m21*c.y - m.m22*c.z + c.z;
+		t.setTranslation(v);
+		localRotate.setTransform(t);
+		
+		Vector3f v2 = new Vector3f();
+		transform.get(v2);
+		v2.sub(v);
+		t.set(v2);
 		localTranslate.setTransform(t);
 	}
 
