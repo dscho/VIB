@@ -1,14 +1,21 @@
 package math3d;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
+
+import nrrd.NrrdHeader;
 import ij.IJ;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
@@ -38,99 +45,34 @@ public class Transform_IO implements PlugIn {
 	public static final int matCols=4;
 	public static final int matSize=matRows*matCols;
 	
-	LinkedHashMap tags;
-	LinkedHashMap fields;
+	NrrdHeader nh;
 	
-	String getTags() {return tags.toString();}
-	//void setTags(String tags) { this.tags=tags;}
-	boolean appendTag(String tag) {
-		//tag=tag.trim();
-		int sepPos=tag.indexOf(":=");
-		if(sepPos<1 || tag.length()<3) return false;
-		String tagKey=tag.substring(0, sepPos);		
-		String tagValue=tag.substring(sepPos+2,tag.length());
-		tags.put(tagKey,tagValue);
-		return true;
-	}
-	
-	String getFields() {return fields.toString();}
-	
-	boolean appendField(String fieldspec){
-		// Separate the field spec
-		int sepIndex=fieldspec.indexOf(": ");
-		String fieldName=standardFieldName(fieldspec.substring(0, sepIndex));
-		String allFieldVals=fieldspec.substring(sepIndex+2,fieldspec.length());
-		String[] fieldVals;
+	String getTags() { return nh==null?null:nh.getTagStrings(); }
+	String getFields() {return nh==null?null:nh.getFieldStrings();}	
+	String getHeader() {return nh==null?null:nh.toString();}	
 
-		if(fieldName.equals("content")){
-			// this field contains a string that should not be split
-			fieldVals=new String[1];
-			fieldVals[0]=allFieldVals;
-			return true;
-		}
-		allFieldVals=allFieldVals.trim();
-		// Now split field vals
-		if(allFieldVals.startsWith("\"") && allFieldVals.endsWith("\"")){
-			// Remove the first and last quote
-			allFieldVals=allFieldVals.substring(1, allFieldVals.length()-1);
-			fieldVals=allFieldVals.split("\"\\s+\"");
-			if(fieldVals.length<1) return false;
-		} else fieldVals=allFieldVals.split("\\s+");
-		fields.put(fieldName, fieldVals);
-		return true;
-	}
-	
-	String standardFieldName(String fieldName){
-		fieldName=fieldName.toLowerCase();
-		if(fieldName.equals("centerings")) return "centers";		
-		if(fieldName.equals("axismaxs")) return "axis maxs";
-		if(fieldName.equals("axismins")) return "axis mins";
-		if(fieldName.equals("lineskip")) return "line skip";
-		if(fieldName.equals("byteskip")) return "byte skip";
-		if(fieldName.equals("datafile")) return "data file";
-		if(fieldName.equals("oldmax")) return "old max";
-		if(fieldName.equals("oldmin")) return "old min";
-		return fieldName;
-	}
-	
 	float[] openAffineTransform(String path) {
+		nh=new NrrdHeader();
 		float[] mat = new float[matSize];
-		tags=new LinkedHashMap();
-		fields=new LinkedHashMap();
 		try {
-			File f=new File (path);
-			LineNumberReader in=new LineNumberReader(new FileReader(f));
-			
+			nh.readHeader(path);
+			LineNumberReader in=new LineNumberReader(
+					new InputStreamReader(new FileInputStream(path), "UTF-8") );
 			String s;
 			int nLines=0;
-			while((s = in.readLine()) != null && nLines<matRows){
-				if(IJ.debugMode) IJ.log("Processing line: "+in.getLineNumber());
-				if(s.startsWith("#")) continue;
-				if(s.indexOf(":=")>-1) {
-					appendTag(s);
-					continue;
-				}
-				if(s.indexOf(": ")>-1){
-					appendField(s);
-					continue;
-				}
-				if(s.startsWith("NRRD")) continue;
-				
-				// Otherwise process as data
-				s=s.trim();
-				String[] floatStrings = s.split("\\s+", matCols);
-				if(floatStrings.length!=4) throw new 
-					Exception("Could not read 4 floats from line "+nLines+" of file "+path);
+			while((s = in.readLine()) != null){
+				String[] floatStrings = s.split("\\s+");
+            	if(floatStrings.length!=4) throw new 
+            		Exception("Could not read 4 floats from line "+in.getLineNumber()+" of file "+path);
 				for(int i=0;i<floatStrings.length;i++){
-					mat[nLines*matCols+i]=s2f(floatStrings[i]);
-					if(IJ.debugMode) IJ.log("nLines = "+nLines+" i = "+i+" val = "+floatStrings[i]);
+                    	mat[nLines*matCols+i]=s2f(floatStrings[i]);
 				}
 				nLines++;
 			}
 		} catch (Exception e){
-			IJ.log("Exception: "+e);
-			return null;
+			IJ.error("Unable to read affine transfomation from file: "+path+"\n"+e);
 		}
+		
 		return mat;
 	}
 	
@@ -191,9 +133,9 @@ public class Transform_IO implements PlugIn {
 		float[] mat;
 		if(arg.equals("")) mat=openAffineTransform();
 		else mat=openAffineTransform(arg);
-		IJ.log("fields:="+fields);
-		IJ.log("tags:="+tags);
-		IJ.log("mat = "+mat);
+		IJ.log("fields:="+getFields());
+		IJ.log("tags:="+getTags());
+		IJ.log("mat = "+Arrays.toString(mat));
 		//saveAffineTransform(mat);
 	}
 }
