@@ -188,9 +188,6 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 				listeners.remove(0);
 			win.close();
 			win = null;
-			if(ij.plugin.frame.Recorder.record)
-				ij.plugin.frame.Recorder.record(
-					"call", "ImageJ_3D_Viewer.close");
 		}
 	}
 
