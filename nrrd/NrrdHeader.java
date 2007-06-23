@@ -14,7 +14,14 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 /**
- * Class to read and represent the header of a NRRD file
+ * Class to read and represent the header of a NRRD file.
+ * This is for a generic nrrd reader.  The only special processing that it 
+ * does is:
+ * - change field names to lower case
+ * - turn nrrd field names into a standard form 
+ *   (e.g. "axismin"->"axis min")
+ * - doesn't attempt to white space separate content field
+ * - records content-type tag if present  
  * @author jefferis
  *
  */
@@ -108,6 +115,7 @@ public class NrrdHeader {
 			// special case: this field contains a string that should not be split
 			fieldVals=new String[1];
 			fieldVals[0]=allFieldVals;
+			this.content=allFieldVals;
 			return;
 		}
 		allFieldVals=allFieldVals.trim();
@@ -118,7 +126,7 @@ public class NrrdHeader {
 			fieldVals=allFieldVals.split("\"\\s+\"");
 			if(fieldVals.length<1) throw 
 				new Exception("nrrd: trouble parsing quoted field values: "+fieldspec);
-		} else fieldVals=allFieldVals.split("\\s+");
+		} else fieldVals=allFieldVals.toLowerCase().split("\\s+");
 		fields.put(fieldName, fieldVals);
 	}
 	
