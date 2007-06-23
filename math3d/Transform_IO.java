@@ -41,7 +41,7 @@ public class Transform_IO implements PlugIn {
 	LinkedHashMap tags;
 	LinkedHashMap fields;
 	
-	String getTags() {return tags.toString();}
+	String getTags() {return tags==null?"":tags.toString();}
 	//void setTags(String tags) { this.tags=tags;}
 	boolean appendTag(String tag) {
 		//tag=tag.trim();
@@ -53,7 +53,7 @@ public class Transform_IO implements PlugIn {
 		return true;
 	}
 	
-	String getFields() {return fields.toString();}
+	String getFields() {return fields==null?"":fields.toString();}
 	
 	boolean appendField(String fieldspec){
 		// Separate the field spec
@@ -152,10 +152,12 @@ public class Transform_IO implements PlugIn {
 			Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f)));
 			out.write("# Simple Affine Transformation written by Transform_IO\n");
 			out.write("# at "+(new Date())+"\n");
+			String tags=getTags();
+			if (!tags.equals("")) out.write(tags+"\n");
 			out.write(toString(mat));
 			out.close();
 		} catch (Exception e) {
-			IJ.error("Unable to write transformation to file: "+f.getAbsolutePath());
+			IJ.error("Unable to write transformation to file: "+f.getAbsolutePath()+"error: "+e);
 			return false;
 		}
 		return true;
@@ -163,7 +165,6 @@ public class Transform_IO implements PlugIn {
 	
 	public String toString(float[]  mat){
 		StringBuffer sb=new StringBuffer();
-		sb.append(getTags());
 		for(int i=0;i<matRows;i++){
 			sb.append(mat[i*matCols]+" "+mat[i*matCols+1]+" "+mat[i*matCols+2]+" "+mat[i*matCols+3]+"\n");
 		}
