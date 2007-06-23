@@ -7,6 +7,7 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Vector3f;
 import javax.media.j3d.LineArray;
 import javax.media.j3d.Geometry;
+import javax.media.j3d.OrientedShape3D;
 import javax.media.j3d.Shape3D;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Transform3D;
@@ -64,9 +65,13 @@ public class CoordinateSystem extends BranchGroup {
                                     new FontExtrusion());
 		Text3D textGeom = new Text3D(font3D, s);
 		textGeom.setAlignment(Text3D.ALIGN_CENTER);
-		Shape3D textShape = new Shape3D();
+		//Shape3D textShape = new Shape3D();
+		// GJ: this allows slightly better alignment of text wrt viewer
+        OrientedShape3D textShape = new OrientedShape3D();
 		textShape.setGeometry(textGeom);
 		textShape.setAppearance(textAppear);
+		// GJ: this allows slightly better alignment of text wrt viewer
+		textShape.setAlignmentAxis( 0.0f, 1.0f, 0.0f);
 		tg.addChild(textShape);
 	}	
 
