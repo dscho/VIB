@@ -158,26 +158,18 @@ public class NrrdInfo {
 			units=getStringFieldChecked("units",dim,false);
 			kinds=getStringFieldChecked("kinds",dim,false);
 			
-			
-//			long size;
-//			double spacing;
-//			double min, max;
-//			double[] spaceDirection;
-//			String center;
-//			String kind;
-//			String label,units;
-			
 			// SET per axis info
 			nai=new NrrdAxisInfo[dim];
 			for(int i = 0; i<dim;i++){
 				nai[i]=new NrrdAxisInfo();
 				nai[i].size=sizes[i];
-				if(sd!=null) nai[i].spaceDirection=getVector(sd[i], spaceDim);
-				if(axismins!=null) nai[i].min=axismins[i];
-				if(axismaxs!=null) nai[i].max=axismaxs[i];
+				if(sd!=null) nai[i].setSpaceDirection(getVector(sd[i], spaceDim));
+				if(axismins!=null) nai[i].setMin(axismins[i]);
+				if(axismaxs!=null) nai[i].setMax(axismaxs[i]);
+				if(units!=null) nai[i].setUnits(units[i]);
+
 				if(centers!=null) nai[i].center=centers[i];
 				if(labels!=null) nai[i].label=labels[i];
-				if(units!=null) nai[i].units=units[i];
 				if(kinds!=null) nai[i].kind=kinds[i];
 			}
 
@@ -380,6 +372,15 @@ class NrrdAxisInfo {
 	String kind;
 	String label,units;
 	
+	public double getMax() {return max;}
+	public double getMin() {return min;}
+
+	public String getUnits() {return units;}
+	
+	public double getSpacing() {return spacing;}
+	
+	public double[] getSpaceDirection(){ return spaceDirection;}
+
 	public void setUnits(String units) throws Exception {
 		if(spaceDirection==null) this.units=units;
 		else throw new Exception ("Conflict between existing space direction and per axis unit field");
@@ -411,9 +412,8 @@ class NrrdAxisInfo {
 			Exception("Conflict between existing axis min field and space direction");
 
 		if(units!=null || !units.equals("")) throw new 
-			Exception("Conflict between existing axis min field and non-empty units field");
+			Exception("Conflict between existing non-empty units field and space direction");
 
 		this.spaceDirection=spaceDirection;
 	}
-	
 }
