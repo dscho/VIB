@@ -26,73 +26,52 @@ public class NrrdInfo {
 	 *
 	 */
 	
+	// this will contain the header info that we parse
+	NrrdHeader nh;
+
 	public static final int NRRD_DIM_MAX = 16;
 	public static final int NRRD_SPACE_DIM_MAX = 8;
-	int type;
+	// GJ: decided it was simpler just to stay as text
+	String type, encoding;
 	int dim=-1;
+	long[] sizes;
+	long nsamples, nbytes; // the total data size in samples and bytes 
+	
 	Object[] data;
-	NrrdAxisInfo[] nai=new NrrdAxisInfo[NRRD_DIM_MAX];
+	NrrdAxisInfo[] nai;
 	
 	String content,sampleUnits;
 	String contentType; // gj - my own
-	int space; // ->string?
-	String[] spaceUnits = new String[NRRD_SPACE_DIM_MAX];
-	double[] spaceOrigin = new double[NRRD_SPACE_DIM_MAX];
-	double[][] measurementFrame = new double[NRRD_SPACE_DIM_MAX][NRRD_SPACE_DIM_MAX];
+	String space;
+	int spaceDim;
+	String[] spaceUnits;
+	double[] spaceOrigin;
+	double[][] measurementFrame;
 	double oldMin,oldMax;
 	
+	public static final String[] int8Types={"char", "int8","int8_t", "signed char"};
+	public static final String[] uint8Types={"uchar", "uint8","uint8_t", "unsigned char"};
+	public static final String[] int16Types={"int16", "int16_t","short", "short int", "signed short", "signed short int"};
+	public static final String[] uint16Types={"uint16", "uint16_t","unsigned short", "unsigned short int","ushort"};
+	public static final String[] int32Types={"int", "int32", "int32_t", "signed int"};
+	public static final String[] uint32Types={"uint", "uint32", "uint32_t", "unsigned int"};
+	public static final String[] int64Types={"int64","int64_t","long long", "long long int", "longlong", "signed long long", "signed long long int"};
+	public static final String[] uint64Types={"uint64", "uint64_t","ulonglong", "unsigned long long", "unsigned long long int"};
 	
-	public final String int8Types="char, signed char, int8, int8_t";
-	public final String[] int8 = {"char","signed char", "int8", "int8_t"};
-//	List mylist = Arrays.asList(int8Types.split(", "));
-	List mylist = Arrays.asList(int8);
-	boolean x= mylist.contains("char");
+//	public static final int NRRD_TYPE_DEFAULT=0;
+//	public static final int NRRD_TYPE_CHAR=1;         
+//	public static final int NRRD_TYPE_UCHAR=2;         
+//	public static final int NRRD_TYPE_SHORT=3;     
+//	public static final int NRRD_TYPE_USHORT=4;        
+//	public static final int NRRD_TYPE_INT=5;       
+//	public static final int NRRD_TYPE_UINT=6;         
+//	public static final int NRRD_TYPE_LLONG=7;        
+//	public static final int NRRD_TYPE_ULLONG=8;       
+//	public static final int NRRD_TYPE_FLOAT=9;      
+//	public static final int NRRD_TYPE_DOUBLE=10;       
+//	public static final int NRRD_TYPE_BLOCK=11;     
+//	public static final int NRRD_TYPE_LAST=12;
 	
-	public final String uint8Types="uchar, unsigned char, uint8, uint8_t";
-	public final String int16Types="short, short int, signed short, signed short int, int16, int16_t";
-	public final String uint16Types="ushort, unsigned short, unsigned short int, uint16, uint16_t";
-	public final String int32Types="int, signed int, int32, int32_t";
-	public final String uint32Types="uint, unsigned int, uint32, uint32_t";
-	public final String int64Types="longlong, long long, long long int, signed long long, signed long long int, int64 int64_t";
-	public final String uint64Types="ulonglong, unsigned long long, unsigned long long int, uint64, uint64_t";
-	
-	public static final int NRRD_TYPE_DEFAULT=0;
-	public static final int NRRD_TYPE_CHAR=1;         
-	public static final int NRRD_TYPE_UCHAR=2;         
-	public static final int NRRD_TYPE_SHORT=3;     
-	public static final int NRRD_TYPE_USHORT=4;        
-	public static final int NRRD_TYPE_INT=5;       
-	public static final int NRRD_TYPE_UINT=6;         
-	public static final int NRRD_TYPE_LLONG=7;        
-	public static final int NRRD_TYPE_ULLONG=8;       
-	public static final int NRRD_TYPE_FLOAT=9;      
-	public static final int NRRD_TYPE_DOUBLE=10;       
-	public static final int NRRD_TYPE_BLOCK=11;     
-	public static final int NRRD_TYPE_LAST=12;
-	
-//	String getStandardType(String stype) throws Exception{
-//		
-//		if (uint8Types.indexOf(stype)>=0) {
-//			return 
-//		} else if(uint16Types.indexOf(type)>=0) {
-//			fi.fileType=FileInfo.GRAY16_SIGNED;
-//		} else if(int16Types.indexOf(type)>=0) {
-//			fi.fileType=FileInfo.GRAY16_UNSIGNED;
-//		} else if(uint32Types.indexOf(type)>=0) {
-//			fi.fileType=FileInfo.GRAY32_UNSIGNED;
-//		} else if(int32Types.indexOf(type)>=0) {
-//			fi.fileType=FileInfo.GRAY32_INT;
-//		} else if(type.equals("float")) {
-//			fi.fileType=FileInfo.GRAY32_FLOAT;
-//		} else if(type.equals("double")) {
-//			fi.fileType=FileInfo.GRAY64_FLOAT;
-//		} else {
-//			throw new Exception("Unimplemented data type ="+type);
-//		}
-//	}
-	
-	// this will contain the basic info
-	NrrdHeader nh;
 	
 	/**
 	 * @param args
@@ -101,19 +80,173 @@ public class NrrdInfo {
 	public NrrdInfo(NrrdHeader nh){
 		this.nh=nh;
 	}
+	
+	void parseHeader() throws Exception {
+		try{	
+			// BASIC information
+			encoding= getStandardEncoding(getStringFieldChecked("encoding",1, true)[0]);
+			if(encoding == null) throw new Exception("Unknown encoding: "+getStringField("type"));
+	
+			type= getStandardType(getStringFieldChecked("type",1, true)[0]);
+			if(type == null) throw new Exception("Unknown data type: "+getStringField("type"));
+	
+			dim=getIntegerFieldChecked("dimension", 1, true)[0];
+			if(dim<1 || dim>NRRD_DIM_MAX) throw new Exception("dim out of range:"+dim);
+			
+			sizes=getLongFieldChecked("sizes", dim, true);		
+			
+			int byteSize;
+			if(type.equals("block")){
+				byteSize=getIntegerFieldChecked("block size", 1, true)[0];
+			} else {
+				byteSize=getByteSize("type");
+			}
+			if (byteSize<1) throw new Exception(
+					"Inferred byte size less than 1; check type or block size specification");
+			nsamples=sizes[0];
+			for(int i=1;i<dim;i++) nsamples*=sizes[i];
+			if(nsamples<1) throw new Exception(
+					"Invalid number of samples: "+nsamples+"; check sizes field");
+			nbytes=nsamples*(long)byteSize;
+			
+			// other per file information
+			
+			// SPACE info
+			// space, space dimension, space units, space origin, space directions, measurement frame
+			String[] sa;
+			int[] ia;
+			sa=getStringFieldChecked("space",1,false);
+			if(sa!=null) processSpace(sa[0]);
+			if(spaceDim<1){
+				// we couldn't find a space field so should be explicit space info
+				ia=getIntegerFieldChecked("space dimension",1,false);
+				if(ia!=null) spaceDim=ia[0];
+			}
+			String[] sd,su;
+			int[] so;
+			if(spaceDim>0){
+				// Space directions must be provided if we have a space
+				sd=getStringFieldChecked("space directions",dim,true);
+				su=getStringFieldChecked("space units",spaceDim,false);
+				so=getIntegerFieldChecked("space units",spaceDim,false);
+				String[] mf=getStringFieldChecked("measurement frame",dim,false);
+				// Process the measurement frame if required
+				processMeasurementFram(mf);
+			}
+			
+			// FETCH general PER AXIS info
+			// sizes, spacings, thicknesses, axis mins, axis maxs, centers, labels, units, kinds
+			
+			// SET per axis info
+			nai=new NrrdAxisInfo[dim];
+			for(int i = 0; i<dim;i++){
+				nai[i]=new NrrdAxisInfo();
+				
+			}
+
+		} catch (Exception e){
+			throw new Exception ("nrrd: trouble parsing header for field: "+e);
+		}
+	}
+	
+	void processMeasurementFram(String[] mf) throws Exception {
+		measurementFrame = new double[spaceDim][spaceDim];
+		try {
+			for(int i=0;i<spaceDim;i++){
+				// NB measurementFrame[i] refers to the ith column, see:
+				// http://teem.sourceforge.net/nrrd/format.html#measurementframe
+				measurementFrame[i]=getVector(mf[i],spaceDim);
+			}
+		} catch (Exception e) {
+			measurementFrame=null;
+			throw new Exception("trouble parsing measurement frame:"+ e);
+		}
+	}
+	
+	double[] getVector(String vecStr, int vecLen) throws Exception {
+		// (a,b,c)
+		double[] da;
+		// should we trim?  should have been done before!
+		if(vecStr.startsWith("(") && vecStr.endsWith(")")){
+			
+			String[] sa=vecStr.substring(1, vecStr.length()-1).split(",");
+			if(vecLen!=sa.length) throw new Exception("Vector "+vecStr+" should have length: "+vecLen);
+			da=new double[vecLen];
+			for(int i=0;i<vecLen;i++){
+				try{ da[i]=new Double(sa[i]).doubleValue(); }
+				catch (NumberFormatException e){
+					throw new Exception("Can't parse component: "+sa[i]+" of vector: "+vecStr);
+				}
+			}
+		} else throw new Exception("String "+vecStr+" does not look like vector.");
+		return da;
+	}
+	
+	int getByteSize(String stype){
+		if(stype.endsWith("int8")) return 1;
+		if(stype.endsWith("int16")) return 2;
+		if(stype.endsWith("int32") || stype.equals("float")) return 4;
+		if(stype.endsWith("int64") || stype.equals("double")) return 8;
+		return -1;
+	}
+	
+	String getStandardType(String stype) {
+		if(stype.equals("float") || stype.equals("double") || stype.equals("block")) return stype;		
+		if(Arrays.binarySearch(int8Types, stype)>=0) return "int8";
+		if(Arrays.binarySearch(uint8Types, stype)>=0) return "uint8";
+		if(Arrays.binarySearch(int16Types, stype)>=0) return "int16";
+		if(Arrays.binarySearch(uint16Types, stype)>=0) return "uint16";
+		if(Arrays.binarySearch(int32Types, stype)>=0) return "int32";
+		if(Arrays.binarySearch(uint32Types, stype)>=0) return "uint32";
+		if(Arrays.binarySearch(int64Types, stype)>=0) return "int64";
+		if(Arrays.binarySearch(uint64Types, stype)>=0) return "uint64";
+		return null;
+	}
+	String getStandardEncoding(String senc) {
+		if(senc.equals("raw") || senc.equals("hex")) return senc;
+		if(senc.equals("txt") || senc.equals("text") || senc.equals("ascii")) return "txt";
+		if(senc.equals("gz") || senc.equals("gzip")) return "gz";
+		if(senc.equals("bz2") || senc.equals("bzip2")) return "bz2";
+		return null;
+	}
+	boolean processSpace(String s) throws Exception {
+		if(s==null) return false;
+		if(s.equals("ras") || s.equals("right-anterior-superior")){
+			space="right-anterior-superior";
+			spaceDim=3;
+		} else if (s.equals("rast") || s.equals("right-anterior-superior-time")){
+			space="right-anterior-superior-time";
+			spaceDim=4;
+			
+		} else if(s.equals("las") || s.equals("left-anterior-superior")){
+			space="left-anterior-superior";
+			spaceDim=3;
+		} else if (s.equals("last") || s.equals("left-anterior-superior-time")){
+			space="left-anterior-superior-time";
+			spaceDim=4;
+		} else if(s.equals("lps") || s.equals("left-posterior-superior")){
+			space="left-posterior-superior";
+			spaceDim=3;
+		} else if (s.equals("lpst") || s.equals("left-posterior-superior-time")){
+			space="left-posterior-superior-time";
+			spaceDim=4;
+		} else if( s.startsWith("scanner-xyz") || s.startsWith("3d-right-handed") ||
+				s.startsWith("3d-left-handed") ){
+			space=s;
+			if(s.endsWith("-time")) spaceDim=4;
+			else spaceDim=3;
+		} else {
+			throw new Exception ("Unknown space: "+s);
+		}
+		return true;
+	}
+	
 	String[] getStringField(String key){
 		if(nh.fields.containsKey(key)){
 			return (String[]) nh.fields.get(key);
 		} else return null;
 	}
-	
-	String[] getStringFieldChecked(String key, int n) throws Exception {
-		String[] sa;
-		sa=getStringField(key);
-		if(sa==null || sa.length!=n) throw new Exception("Field: "+key+" must have excatly "+n+" values");
-		return sa;
-	}
-	 
+		 
 	double[] getDoubleField(String key){
 		if(nh.fields.containsKey(key)){
 			String[] sa=(String[]) nh.fields.get(key);
@@ -146,28 +279,37 @@ public class NrrdInfo {
 		} else return null;
 	}
 
-	int[] getIntegerFieldChecked(String key, int n) throws Exception {
+	String[] getStringFieldChecked(String key, int n, boolean required) throws Exception {
+		String[] sa;
+		sa=getStringField(key);
+		if(sa==null){
+			if(required) throw new Exception("Required field: "+key+" is missing");
+			else return null;
+		}
+		if(sa.length!=n) throw new Exception("Field: "+key+" must have exactly "+n+" values");
+		return sa;
+	}
+
+	int[] getIntegerFieldChecked(String key, int n, boolean required) throws Exception {
 		int[] ia;
 		ia=getIntegerField(key);
-		if(ia==null || ia.length!=n) throw new Exception("Field: "+key+" must have excatly "+n+" values");
+		if(ia==null){
+			if(required) throw new Exception("Required field: "+key+" is missing");
+			else return null;
+		}
+		if(ia.length!=n) throw new Exception("Field: "+key+" must have exactly "+n+" values");
 		return ia;
 	}
-	
-	void parseHeader() throws Exception {
-		try{
-		String[] sa;
-		int[] ia;
-		double[] da;
-		
-		dim=getIntegerFieldChecked("dimension", 1)[0];
-		if(dim<1 || dim>NRRD_DIM_MAX) throw new Exception("dim out of range:"+dim);
-		
-		String typeStr=getStringFieldChecked("type",1)[0];
-		
-		if(sa!=null && sa.length==1) dim=new Integer(sa[0].toString()).intValue();
-		} catch (Exception e){
-			throw new Exception ("nrrd: trouble parsing header for field: "+e);
+
+	long[] getLongFieldChecked(String key, int n, boolean required) throws Exception {
+		long[] la;
+		la=getLongField(key);
+		if(la==null){
+			if(required) throw new Exception("Required field: "+key+" is missing");
+			else return null;
 		}
+		if(la!=null && la.length!=n) throw new Exception("Field: "+key+" must have exactly "+n+" values");
+		return la;
 	}
 	
 	public static void main(String[] args) {
@@ -181,7 +323,7 @@ class NrrdAxisInfo {
 	int size;
 	double spacing;
 	double min, max;
-	double[] spaceDirection=new double[NrrdInfo.NRRD_SPACE_DIM_MAX];
+	double[] spaceDirection;
 	int center;
 	int kind;
 	String label,units;
