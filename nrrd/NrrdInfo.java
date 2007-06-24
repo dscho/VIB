@@ -48,6 +48,16 @@ public class NrrdInfo {
 	double[] spaceOrigin;
 	double[][] measurementFrame;
 	double oldMin,oldMax;
+
+	// Per axis info - there will be dim of these
+	private double[] spacings;
+	private double[] thicknesses;
+	private double[] axismins;
+	private double[] axismaxs;
+	private String[] centers;
+	private String[] labels;
+	private String[] kinds;
+	private String[] units;
 	
 	public static final String[] int8Types={"char", "int8","int8_t", "signed char"};
 	public static final String[] uint8Types={"uchar", "uint8","uint8_t", "unsigned char"};
@@ -115,6 +125,7 @@ public class NrrdInfo {
 			// space, space dimension, space units, space origin, space directions, measurement frame
 			String[] sa;
 			int[] ia;
+			double[] da;
 			sa=getStringFieldChecked("space",1,false);
 			if(sa!=null) processSpace(sa[0]);
 			if(spaceDim<1){
@@ -122,26 +133,52 @@ public class NrrdInfo {
 				ia=getIntegerFieldChecked("space dimension",1,false);
 				if(ia!=null) spaceDim=ia[0];
 			}
-			String[] sd,su;
-			int[] so;
+			String[] sd=null, su=null;
 			if(spaceDim>0){
 				// Space directions must be provided if we have a space
 				sd=getStringFieldChecked("space directions",dim,true);
-				su=getStringFieldChecked("space units",spaceDim,false);
-				so=getIntegerFieldChecked("space units",spaceDim,false);
+				// other space fields optional
+				spaceUnits=getStringFieldChecked("space units",spaceDim,false);
+				sa=getStringFieldChecked("space origin",1,false);
+				if(sa!=null) spaceOrigin=getVector(sa[0],spaceDim);
+				
 				String[] mf=getStringFieldChecked("measurement frame",dim,false);
 				// Process the measurement frame if required
 				processMeasurementFram(mf);
 			}
 			
-			// FETCH general PER AXIS info
-			// sizes, spacings, thicknesses, axis mins, axis maxs, centers, labels, units, kinds
+			// FETCH general PER AXIS info (there should be dim of these fields
+			// spacings, thicknesses, axis mins, axis maxs, centers, labels, units, kinds
+			spacings=getDoubleFieldChecked("spacings",dim,false);
+			thicknesses=getDoubleFieldChecked("thicknesses",dim,false);
+			axismins=getDoubleFieldChecked("axis mins",dim,false);
+			axismaxs=getDoubleFieldChecked("axis maxs",dim,false);
+			centers=getStringFieldChecked("centers",dim,false);
+			labels=getStringFieldChecked("labels",dim,false);
+			units=getStringFieldChecked("units",dim,false);
+			kinds=getStringFieldChecked("kinds",dim,false);
+			
+			
+//			long size;
+//			double spacing;
+//			double min, max;
+//			double[] spaceDirection;
+//			String center;
+//			String kind;
+//			String label,units;
 			
 			// SET per axis info
 			nai=new NrrdAxisInfo[dim];
 			for(int i = 0; i<dim;i++){
 				nai[i]=new NrrdAxisInfo();
-				
+				nai[i].size=sizes[i];
+				if(sd!=null) nai[i].spaceDirection=getVector(sd[i], spaceDim);
+				if(axismins!=null) nai[i].min=axismins[i];
+				if(axismaxs!=null) nai[i].max=axismaxs[i];
+				if(centers!=null) nai[i].center=centers[i];
+				if(labels!=null) nai[i].label=labels[i];
+				if(units!=null) nai[i].units=units[i];
+				if(kinds!=null) nai[i].kind=kinds[i];
 			}
 
 		} catch (Exception e){
@@ -167,14 +204,17 @@ public class NrrdInfo {
 		// (a,b,c)
 		double[] da;
 		// should we trim?  should have been done before!
+		if(vecStr.equals("none")) return null;
 		if(vecStr.startsWith("(") && vecStr.endsWith(")")){
 			
 			String[] sa=vecStr.substring(1, vecStr.length()-1).split(",");
 			if(vecLen!=sa.length) throw new Exception("Vector "+vecStr+" should have length: "+vecLen);
 			da=new double[vecLen];
 			for(int i=0;i<vecLen;i++){
-				try{ da[i]=new Double(sa[i]).doubleValue(); }
-				catch (NumberFormatException e){
+				try{ 
+					if(sa[i].equals("nan")) da[i]=Double.NaN;
+					else da[i]=new Double(sa[i]).doubleValue(); 
+				} catch (NumberFormatException e){
 					throw new Exception("Can't parse component: "+sa[i]+" of vector: "+vecStr);
 				}
 			}
@@ -252,7 +292,9 @@ public class NrrdInfo {
 			String[] sa=(String[]) nh.fields.get(key);
 			double[] da=new double[sa.length];
 			for(int i=0;i<sa.length;i++){
-				da[i] = new Double(sa[i]).doubleValue();
+				// only string "NaN" -> (double) NaN
+				if(sa[i].equals("nan")) da[i]=Double.NaN;
+				else da[i] = new Double(sa[i]).doubleValue();
 			}
 			return da;
 		} else return null;
@@ -311,20 +353,67 @@ public class NrrdInfo {
 		if(la!=null && la.length!=n) throw new Exception("Field: "+key+" must have exactly "+n+" values");
 		return la;
 	}
+	double[] getDoubleFieldChecked(String key, int n, boolean required) throws Exception {
+		double[] da;
+		da=getDoubleField(key);
+		if(da==null){
+			if(required) throw new Exception("Required field: "+key+" is missing");
+			else return null;
+		}
+		if(da!=null && da.length!=n) throw new Exception("Field: "+key+" must have exactly "+n+" values");
+		return da;
+	}
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-
+		System.out.println("Double nan "+new Double("NaN").doubleValue());
 	}
 
 }
 
 class NrrdAxisInfo {
-	int size;
-	double spacing;
-	double min, max;
-	double[] spaceDirection;
-	int center;
-	int kind;
+	long size;
+	double spacing=Double.NaN;
+	double min=Double.NaN, max=Double.NaN;
+	double[] spaceDirection=null;
+	String center;
+	String kind;
 	String label,units;
+	
+	public void setUnits(String units) throws Exception {
+		if(spaceDirection==null) this.units=units;
+		else throw new Exception ("Conflict between existing space direction and per axis unit field");
+	}
+	
+	public void setMin (double min) throws Exception {
+		if(spaceDirection==null) this.min=min;
+		else throw new Exception ("Conflict between existing space direction and axis min field");
+	}
+	
+	public void setMax (double max) throws Exception {
+		if(spaceDirection==null) this.max=max;
+		else throw new Exception ("Conflict between existing space direction and axis max field");
+	}
+	
+	public void setSpacing (double spacing) throws Exception {
+		if(spaceDirection==null) this.spacing=spacing;
+		else throw new Exception ("Conflict between existing space direction and spacing field");
+	}
+	
+	public void setSpaceDirection (double[] spaceDirection) throws Exception {
+		if(spacing!=Double.NaN) throw new 
+			Exception("Conflict between existing spacing field and space direction");
+
+		if(max!=Double.NaN) throw new 
+			Exception("Conflict between existing axis max field and space direction");
+
+		if(min!=Double.NaN) throw new 
+			Exception("Conflict between existing axis min field and space direction");
+
+		if(units!=null || !units.equals("")) throw new 
+			Exception("Conflict between existing axis min field and non-empty units field");
+
+		this.spaceDirection=spaceDirection;
+	}
+	
 }
