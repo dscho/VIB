@@ -94,6 +94,10 @@ public class Transform_IO implements PlugIn {
 			Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f)));
 			out.write("# Simple Affine Transformation written by Transform_IO\n");
 			out.write("# at "+(new Date())+"\n");
+			// There's no point in writing out the tags as long as we
+			// are writing a simple format header
+//			String tags=getTags();
+//			if(tags!=null) out.write(tags+"\n");
 			out.write(toString(mat));
 			out.close();
 		} catch (Exception e) {
@@ -105,7 +109,6 @@ public class Transform_IO implements PlugIn {
 	
 	public String toString(float[]  mat){
 		StringBuffer sb=new StringBuffer();
-		sb.append(getTags());
 		for(int i=0;i<matRows;i++){
 			sb.append(mat[i*matCols]+" "+mat[i*matCols+1]+" "+mat[i*matCols+2]+" "+mat[i*matCols+3]+"\n");
 		}
