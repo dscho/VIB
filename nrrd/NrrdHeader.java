@@ -2,12 +2,10 @@ package nrrd;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -35,6 +33,12 @@ public class NrrdHeader {
 	String encoding;
 	
 	public int lineSkip;
+
+	boolean detachedHeader=false;
+	// If the data file spec looks like: data file: LIST [<subdim>]
+	// and the filenames are on multiple additional lines 
+	boolean multiLineDataFile=false;
+	ArrayList dataFiles;
 	
 	// For handling the basic magic-less text format 
 	StringBuffer textData;
@@ -68,19 +72,22 @@ public class NrrdHeader {
 		header=new ArrayList();
 		comments=new ArrayList();
 		textData=new StringBuffer();
+		dataFiles=new ArrayList();
+		detachedHeader=false;
+		multiLineDataFile=false;
 	}
 	
 	public String getCommentStrings() {return comments.toString();}
 	void appendCommment(String comment) throws Exception {
 		//tag=tag.trim();
 		if(!comment.startsWith("#")) throw new Exception("nrrd invalid comment: "+comment);
-		header.add(comment);
+		appendLine(comment);
 		comment=comment.split("#\\s*", 1)[0];
 	}
 	
 	public String getTagStrings() {return tags.toString();}
 	void appendTag(String tag) throws Exception {
-		header.add(tag);
+		appendLine(tag);
 		//tag=tag.trim();
 		int sepPos=tag.indexOf(":=");
 		if(sepPos<1 || tag.length()<3) throw new Exception("nrrd: invalid tag: "+tag);
@@ -97,29 +104,71 @@ public class NrrdHeader {
 		String fieldname;
 		while (it.hasNext()){
 			fieldname=(String) it.next();
+			System.out.println(fieldname);
 			sb.append(fieldname+"="+Arrays.toString((String[]) fields.get(fieldname)));
 			if(it.hasNext()) sb.append(", ");
 		}
 		sb.append("}");
 		return sb.toString();
 	}
+	
+	void processDataFile(String allFieldVals) throws Exception {
+		String[] fieldVals=null;	
+		detachedHeader=true;
+		if(allFieldVals.startsWith("LIST")){
+			// ie: data file: LIST [<subdim>]
+			multiLineDataFile=true;
+			fieldVals=allFieldVals.trim().split("\\s+");
+		} else {
+			// check for format specifier %[0-9]d
+			// TODO - cleverer check in case of escaped %?
+			if(allFieldVals.matches("[%\\d*d")){
+				// looks like data file: <format> <min> <max> <step> [<subdim>]
+				if(allFieldVals.startsWith("\"")){
+					// NB actually reference NRRD library cannot cope with
+					// spaces in names because this format specifier cannot be quoted
+					// now look for last quote (since the other items should not be quoted)
+					int lastQuotePos=allFieldVals.lastIndexOf("\"", 1);
+					if(lastQuotePos<2) throw new Exception
+						("Unable to read quoted format string in data file line");	
+					String[] sa=allFieldVals.substring(lastQuotePos+1).split("\\s+");
+					if(sa.length<3 || sa.length>4) throw new Exception 
+						("Incorrect number of field specifications in data file field");
+					fieldVals=new String[1+sa.length];
+					fieldVals[0]=allFieldVals.substring(1, lastQuotePos);
+					System.arraycopy(sa, 0, fieldVals, 0, sa.length);
+				}
+			} else {
+				// looks like data file: <filename>
+				fieldVals=new String[1]; fieldVals[0]=allFieldVals;
+			}
+		}
+		// Store the data file specification and return
+		fields.put("data file", fieldVals);
+	}
+	
 	void appendField(String fieldspec) throws Exception {
 		header.add(fieldspec);
 		// Separate the field spec
 		int sepIndex=fieldspec.indexOf(": ");
 		String fieldName=standardFieldName(fieldspec.substring(0, sepIndex));
 		String allFieldVals=fieldspec.substring(sepIndex+2,fieldspec.length());
-		String[] fieldVals;
+		String[] fieldVals=null;
 		
 		if(fieldName.equals("content")){
 			// special case: this field contains a string that should not be split
-			fieldVals=new String[1];
-			fieldVals[0]=allFieldVals;
 			this.content=allFieldVals;
+			fields.put(fieldName, allFieldVals);
 			return;
 		}
-		allFieldVals=allFieldVals.trim();
-		// Now split field vals
+		if(fieldName.equals("data file")){
+			// data file needs special handling
+			processDataFile(allFieldVals);
+			return;			
+		}
+
+		// Now trim and split field vals if required
+		allFieldVals=allFieldVals.trim();		
 		if(allFieldVals.startsWith("\"") && allFieldVals.endsWith("\"")){
 			// Remove the first and last quote
 			allFieldVals=allFieldVals.substring(1, allFieldVals.length()-1);
@@ -179,6 +228,11 @@ public class NrrdHeader {
 					// First blank line marks the end of the header
 					lineSkip=in.getLineNumber();
 					break;
+				} else if (multiLineDataFile) {
+					// if this is true then we are at the end of the header and 
+					// each line contains a filename without any spaces
+					appendLine(s); dataFiles.add(s);					
+					continue;
 				}
 				if(textNrrd){
 					// If data line from a text nrrd then just append

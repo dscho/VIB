@@ -3,8 +3,6 @@
  */
 package nrrd;
 
-import ij.io.FileInfo;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -82,17 +80,29 @@ public class NrrdInfo {
 //	public static final int NRRD_TYPE_BLOCK=11;     
 //	public static final int NRRD_TYPE_LAST=12;
 	
+	public static final int NRRD_FALSE=-1;
+	public static final int NRRD_UNKNOWN=0;
+	public static final int NRRD_TRUE=1;
+	public static final int NRRD_BIG_ENDIAN=4321;
+	public static final int NRRD_LITTLE_ENDIAN=1234;
+	
+	int endian=NRRD_UNKNOWN;
+	int lineSkip=0;
+	long byteSkip=0;
 	
 	/**
-	 * @param args
+	 * Constructor takes a NrrdHeader as argument
+	 * @param nh
 	 */
-	
 	public NrrdInfo(NrrdHeader nh){
 		this.nh=nh;
 	}
 	
 	void parseHeader() throws Exception {
 		try{	
+			// Temp variables to store field values
+			String[] sa; int[] ia; long[] la; double[] da;
+
 			// BASIC information
 			encoding= getStandardEncoding(getStringFieldChecked("encoding",1, true)[0]);
 			if(encoding == null) throw new Exception("Unknown encoding: "+getStringField("type"));
@@ -120,12 +130,25 @@ public class NrrdInfo {
 			nbytes=nsamples*(long)byteSize;
 			
 			// other per file information
+//			endian, line skip, byte skip, data file, content, number (ignored)
+//			min, max, old min, old max, sample units
+			if(!type.equals("block") && !encoding.equals("txt") && byteSize>1) {
+				String endianStr=getStringFieldChecked("endian", 1, true)[0];
+				if(endianStr.equals("little")) endian=NRRD_LITTLE_ENDIAN;
+				else if(endianStr.equals("big")) endian=NRRD_BIG_ENDIAN;
+				else throw new Exception("Unknown endian specification: "+endianStr);
+			}
+			
+			ia=getIntegerFieldChecked("line skip", 1, false);
+			if(ia!=null) lineSkip=ia[0];
+			
+			la=getLongFieldChecked("byte skip", 1, false);
+			if(la!=null) byteSkip=la[0];
+			
+			
 			
 			// SPACE info
 			// space, space dimension, space units, space origin, space directions, measurement frame
-			String[] sa;
-			int[] ia;
-			double[] da;
 			sa=getStringFieldChecked("space",1,false);
 			if(sa!=null) processSpace(sa[0]);
 			if(spaceDim<1){
