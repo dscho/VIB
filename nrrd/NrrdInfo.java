@@ -3,8 +3,10 @@
  */
 package nrrd;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Formatter;
 import java.util.List;
 
 /**
@@ -35,6 +37,24 @@ public class NrrdInfo {
 	long[] sizes;
 	long nsamples, nbytes; // the total data size in samples and bytes 
 	
+	// File unknown
+	public static final int NRRD_FALSE=-1;
+	public static final int NRRD_UNKNOWN=0;
+	public static final int NRRD_TRUE=1;
+	public static final int NRRD_BIG_ENDIAN=4321;
+	public static final int NRRD_LITTLE_ENDIAN=1234;
+	
+	int endian=NRRD_UNKNOWN;
+	int lineSkip=0;
+	long byteSkip=0;
+
+	// the nrrd file or the nhdr file (including suffix)
+	boolean detachedHeader;
+	// this will point either to a combined nrrd file or the header file
+	public String primaryFileDirectory=null;
+	public String primaryFileName=null;
+	File[] dataFiles=null;
+	
 	Object[] data;
 	NrrdAxisInfo[] nai;
 	
@@ -56,6 +76,8 @@ public class NrrdInfo {
 	private String[] labels;
 	private String[] kinds;
 	private String[] units;
+
+	private int dataFileSubDim;
 	
 	public static final String[] int8Types={"char", "int8","int8_t", "signed char"};
 	public static final String[] uint8Types={"uchar", "uint8","uint8_t", "unsigned char"};
@@ -79,17 +101,7 @@ public class NrrdInfo {
 //	public static final int NRRD_TYPE_DOUBLE=10;       
 //	public static final int NRRD_TYPE_BLOCK=11;     
 //	public static final int NRRD_TYPE_LAST=12;
-	
-	public static final int NRRD_FALSE=-1;
-	public static final int NRRD_UNKNOWN=0;
-	public static final int NRRD_TRUE=1;
-	public static final int NRRD_BIG_ENDIAN=4321;
-	public static final int NRRD_LITTLE_ENDIAN=1234;
-	
-	int endian=NRRD_UNKNOWN;
-	int lineSkip=0;
-	long byteSkip=0;
-	
+		
 	/**
 	 * Constructor takes a NrrdHeader as argument
 	 * @param nh
@@ -98,7 +110,7 @@ public class NrrdInfo {
 		this.nh=nh;
 	}
 	
-	void parseHeader() throws Exception {
+	public void parseHeader() throws Exception {
 		try{	
 			// Temp variables to store field values
 			String[] sa; int[] ia; long[] la; double[] da;
@@ -119,7 +131,7 @@ public class NrrdInfo {
 			if(type.equals("block")){
 				byteSize=getIntegerFieldChecked("block size", 1, true)[0];
 			} else {
-				byteSize=getByteSize("type");
+				byteSize=getByteSize(type);
 			}
 			if (byteSize<1) throw new Exception(
 					"Inferred byte size less than 1; check type or block size specification");
@@ -145,6 +157,53 @@ public class NrrdInfo {
 			la=getLongFieldChecked("byte skip", 1, false);
 			if(la!=null) byteSkip=la[0];
 			
+			primaryFileDirectory=nh.directory;			
+			primaryFileName=nh.filename;
+			if(nh.detachedHeader){
+				String[] df=getStringField("data file");
+				if(df==null) throw new Exception("Supposed to be a detached header file, but no data file field");
+				if(df.length==1 || df.length==2){
+					if(df[0].equals("LIST")){
+						// should be a list type
+						if(nh.dataFiles==null || nh.dataFiles.size()==0) throw new Exception
+							("No data files listed after data file LIST line");
+						if(df.length==2) dataFileSubDim=new Integer(df[1]).intValue();
+					} else {
+						dataFiles=new File[1];
+						dataFiles[0]=makeCheckedFile(df[0]);
+					}
+				} else {
+					// Should be a format specifier type
+					String dataFNFormat=df[0];
+					int dataFNMin, dataFNMax,dataFNStep;
+					
+					try{
+						dataFNMin=new Integer(df[1]).intValue();
+						dataFNMax=new Integer(df[2]).intValue();
+						dataFNStep=new Integer(df[3]).intValue();
+						if(df.length==5) dataFileSubDim=new Integer(df[4]).intValue();
+					} catch (NumberFormatException e){
+						throw new Exception("Could not parse data file field; expected data file: <format> <min> <max> <step> [<subdim>]");
+					}
+					
+					int numFiles=1+(dataFNMax-dataFNMin)/dataFNStep;
+					int num=dataFNMin;
+					dataFiles=new File[numFiles];
+					try{
+						;
+						for	(int i=0;i<numFiles;i++){
+							Formatter f = new Formatter().format(dataFNFormat, num);
+							//System.out.println("looking for file: "+f.toString());
+							dataFiles[i]=makeCheckedFile(f.toString());
+							num+=dataFNStep;
+						}
+					} catch(IOException e) {
+						throw new IOException("Unable to find data files referred to by data file field");
+					} catch (Exception e) {
+						throw new Exception("Unable to process format specifier data file fields with Java<1.5");
+					}
+				}
+			}
 			
 			
 			// SPACE info
@@ -156,7 +215,7 @@ public class NrrdInfo {
 				ia=getIntegerFieldChecked("space dimension",1,false);
 				if(ia!=null) spaceDim=ia[0];
 			}
-			String[] sd=null, su=null;
+			String[] sd=null;
 			if(spaceDim>0){
 				// Space directions must be provided if we have a space
 				sd=getStringFieldChecked("space directions",dim,true);
@@ -167,7 +226,7 @@ public class NrrdInfo {
 				
 				String[] mf=getStringFieldChecked("measurement frame",dim,false);
 				// Process the measurement frame if required
-				processMeasurementFram(mf);
+				processMeasurementFrame(mf);
 			}
 			
 			// FETCH general PER AXIS info (there should be dim of these fields
@@ -201,7 +260,15 @@ public class NrrdInfo {
 		}
 	}
 	
-	void processMeasurementFram(String[] mf) throws Exception {
+	File makeCheckedFile(String path) throws IOException {
+		File f= new File(path);
+		if(f.getParent()==null) f=new File(primaryFileDirectory,path);
+		if (!f.exists()) throw new IOException("Unable to find file: "+path);
+		return f;
+	}
+	
+	boolean processMeasurementFrame(String[] mf) throws Exception {
+		if (mf == null) return false; 
 		measurementFrame = new double[spaceDim][spaceDim];
 		try {
 			for(int i=0;i<spaceDim;i++){
@@ -213,6 +280,7 @@ public class NrrdInfo {
 			measurementFrame=null;
 			throw new Exception("trouble parsing measurement frame:"+ e);
 		}
+		return true;
 	}
 	
 	double[] getVector(String vecStr, int vecLen) throws Exception {
@@ -425,17 +493,17 @@ class NrrdAxisInfo {
 	}
 	
 	public void setSpaceDirection (double[] spaceDirection) throws Exception {
-		if(spacing!=Double.NaN) throw new 
+		if(!Double.isNaN(spacing)) throw new 
 			Exception("Conflict between existing spacing field and space direction");
 
-		if(max!=Double.NaN) throw new 
+		if(!Double.isNaN(max)) throw new 
 			Exception("Conflict between existing axis max field and space direction");
 
-		if(min!=Double.NaN) throw new 
+		if(!Double.isNaN(min)) throw new 
 			Exception("Conflict between existing axis min field and space direction");
 
-		if(units!=null || !units.equals("")) throw new 
-			Exception("Conflict between existing non-empty units field and space direction");
+		if(units!=null && !units.equals("")) throw new 
+			Exception("Conflict between existing non-empty units field and space direction"); 
 
 		this.spaceDirection=spaceDirection;
 	}

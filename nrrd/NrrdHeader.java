@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
  *
  */
 public class NrrdHeader {
+	String filename,directory;
 	LinkedHashMap tags;
 	LinkedHashMap fields;
 	ArrayList header,comments; 
@@ -104,7 +105,6 @@ public class NrrdHeader {
 		String fieldname;
 		while (it.hasNext()){
 			fieldname=(String) it.next();
-			System.out.println(fieldname);
 			sb.append(fieldname+"="+Arrays.toString((String[]) fields.get(fieldname)));
 			if(it.hasNext()) sb.append(", ");
 		}
@@ -122,7 +122,7 @@ public class NrrdHeader {
 		} else {
 			// check for format specifier %[0-9]d
 			// TODO - cleverer check in case of escaped %?
-			if(allFieldVals.matches("[%\\d*d")){
+			if(allFieldVals.matches(".*%[0-9]*d.*")){
 				// looks like data file: <format> <min> <max> <step> [<subdim>]
 				if(allFieldVals.startsWith("\"")){
 					// NB actually reference NRRD library cannot cope with
@@ -132,11 +132,14 @@ public class NrrdHeader {
 					if(lastQuotePos<2) throw new Exception
 						("Unable to read quoted format string in data file line");	
 					String[] sa=allFieldVals.substring(lastQuotePos+1).split("\\s+");
-					if(sa.length<3 || sa.length>4) throw new Exception 
+					if(sa.length<4 || sa.length>5) throw new Exception 
 						("Incorrect number of field specifications in data file field");
 					fieldVals=new String[1+sa.length];
 					fieldVals[0]=allFieldVals.substring(1, lastQuotePos);
 					System.arraycopy(sa, 0, fieldVals, 0, sa.length);
+				} else{
+					// format string not quoted, so just split
+					fieldVals=allFieldVals.split("\\s+");
 				}
 			} else {
 				// looks like data file: <filename>
@@ -148,7 +151,7 @@ public class NrrdHeader {
 	}
 	
 	void appendField(String fieldspec) throws Exception {
-		header.add(fieldspec);
+		appendLine(fieldspec);
 		// Separate the field spec
 		int sepIndex=fieldspec.indexOf(": ");
 		String fieldName=standardFieldName(fieldspec.substring(0, sepIndex));
@@ -196,6 +199,8 @@ public class NrrdHeader {
 		FileInputStream fis;
 		try {
 			File f=new File (path);
+			filename=f.getName();
+			directory=f.getParent();
 			fis=new FileInputStream(f);
 		} catch (Exception e){
 			throw new IOException("Unable to access nrrd file: "+path);
@@ -266,14 +271,22 @@ public class NrrdHeader {
 	{
 		if(args.length!=1) System.err.println("Must specify a file name!");
 		else {
+			int reps=10;
 			try{
-				NrrdHeader nh=new NrrdHeader();
-				nh.readHeader(args[0]);
+				NrrdHeader nh=null; NrrdInfo ni=null;
+				for(int i=0;i<reps;i++){
+					nh=new NrrdHeader();
+					nh.readHeader(args[0]);					
+					ni = new NrrdInfo(nh);
+					ni.parseHeader();
+				}
 				System.out.println(""+nh);
 				System.out.println("fields:\n"+nh.getFieldStrings()+"\n");
-				
+
 			} catch (IOException e){
 				System.err.println("Problem reading file name: "+args[0]+"\n"+e);
+			} catch (Exception e){
+				System.err.println("Problem parsing file name: "+args[0]+"\n"+e);				
 			}
 		}
 	}
