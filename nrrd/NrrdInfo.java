@@ -31,18 +31,17 @@ public class NrrdInfo {
 
 	public static final int NRRD_DIM_MAX = 16;
 	public static final int NRRD_SPACE_DIM_MAX = 8;
-	// GJ: decided it was simpler just to stay as text
-	String type, encoding;
-	int dim=-1;
-	long[] sizes;
-	long nsamples, nbytes; // the total data size in samples and bytes 
-	
-	// File unknown
-	public static final int NRRD_FALSE=-1;
-	public static final int NRRD_UNKNOWN=0;
+	public static final int NRRD_UNKNOWN=-1;
+	public static final int NRRD_FALSE=0;
 	public static final int NRRD_TRUE=1;
 	public static final int NRRD_BIG_ENDIAN=4321;
 	public static final int NRRD_LITTLE_ENDIAN=1234;
+
+	// GJ: decided it was simpler just to stay as text
+	String type, encoding;
+	int dim=NRRD_UNKNOWN;
+	long[] sizes;
+	long nsamples, nbytes; // the total data size in samples and bytes 
 	
 	int endian=NRRD_UNKNOWN;
 	int lineSkip=0;
@@ -77,7 +76,9 @@ public class NrrdInfo {
 	private String[] kinds;
 	private String[] units;
 
-	private int dataFileSubDim;
+	private int dataFileSubDim=NRRD_UNKNOWN;
+
+	private long dataFileByteSize;
 	
 	public static final String[] int8Types={"char", "int8","int8_t", "signed char"};
 	public static final String[] uint8Types={"uchar", "uint8","uint8_t", "unsigned char"};
@@ -202,6 +203,40 @@ public class NrrdInfo {
 					} catch (Exception e) {
 						throw new Exception("Unable to process format specifier data file fields with Java<1.5");
 					}
+				}
+				// OK now validate detached header info
+				
+				if(dataFileSubDim==NRRD_UNKNOWN) dataFileSubDim=dim-1;
+				if(dataFileSubDim<1 || dataFileSubDim>dim) throw new 
+				Exception("Detached header subdim specification must be in range [1,"+dim+"]");
+				
+				if(dataFileSubDim==dim){
+					// Check that the number of 'slabs' divides into number of samples
+					if((dataFiles.length%nsamples)!=0) throw new Exception
+						("Number of slabs indicated by \"data file\" ("+dataFiles.length+
+								") does not divide evenly into number of samples ("+nsamples+")");
+						
+					dataFileByteSize=nbytes/dataFiles.length;
+				} else if(dataFileSubDim < (dim-1)){
+					// When <subdim> is less than D-1 
+					// (for example, giving a 4-D volume one 2-D slice at a time), 
+					// the number of data files can be determined by the product 
+					// of one or more of the slowest axes
+					
+					// e.g. 3 512 512 88 20 (C X Y Z T)
+					// if subdim == 3 then => 88 x 20 slabs of 3 x 512 x 512
+					// dim=5 
+					// i=dim-1=4
+					// 
+					
+					int i=dim-1;
+					int nFiles=(int) sizes[i];
+					while(i>=dataFileSubDim) nFiles*=sizes[i];
+					if(nFiles!=dataFiles.length) throw new Exception
+						("Number of data files indicated by \"data file\" ("+dataFiles.length+
+							") does not match product of dimension sizes >"+dataFileSubDim);
+				} else {
+					// default dataFileSubdim==dim-1
 				}
 			}
 			
