@@ -105,7 +105,8 @@ public class NrrdHeader {
 		String fieldname;
 		while (it.hasNext()){
 			fieldname=(String) it.next();
-			sb.append(fieldname+"="+Arrays.toString((String[]) fields.get(fieldname)));
+			String sa=Arrays.toString((String[]) fields.get(fieldname));
+			if(sa!=null) sb.append(fieldname+"="+sa);
 			if(it.hasNext()) sb.append(", ");
 		}
 		sb.append("}");
@@ -161,7 +162,8 @@ public class NrrdHeader {
 		if(fieldName.equals("content")){
 			// special case: this field contains a string that should not be split
 			this.content=allFieldVals;
-			fields.put(fieldName, allFieldVals);
+			fieldVals=new String[1]; fieldVals[0]=allFieldVals;
+			fields.put(fieldName, fieldVals);
 			return;
 		}
 		if(fieldName.equals("data file")){
@@ -269,25 +271,24 @@ public class NrrdHeader {
 	
 	public static void main(String [] args)
 	{
-		if(args.length!=1) System.err.println("Must specify a file name!");
+		if(args.length<1) System.err.println("Must specify a file name!");
 		else {
-			int reps=10;
-			try{
-				NrrdHeader nh=null; NrrdInfo ni=null;
-				for(int i=0;i<reps;i++){
+			NrrdHeader nh=null; NrrdInfo ni=null;
+			for(int i=0;i<args.length;i++){
+				try{
 					nh=new NrrdHeader();
-					nh.readHeader(args[0]);					
+					nh.readHeader(args[i]);					
 					ni = new NrrdInfo(nh);
 					ni.parseHeader();
+					System.out.println(""+nh);
+					System.out.println("fields:\n"+nh.getFieldStrings()+"\n");
+				} catch (IOException e){
+					System.err.println("Problem reading file name: "+args[i]+"\n"+e);
+				} catch (Exception e){
+					System.err.println("Problem parsing file name: "+args[i]+"\n"+e);				
+					e.printStackTrace();				
 				}
-				System.out.println(""+nh);
-				System.out.println("fields:\n"+nh.getFieldStrings()+"\n");
-
-			} catch (IOException e){
-				System.err.println("Problem reading file name: "+args[0]+"\n"+e);
-			} catch (Exception e){
-				System.err.println("Problem parsing file name: "+args[0]+"\n"+e);				
-			}
+			}	
 		}
 	}
 }
