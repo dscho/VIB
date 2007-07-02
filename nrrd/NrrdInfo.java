@@ -54,7 +54,7 @@ public class NrrdInfo {
 	public String primaryFileName=null;
 	File[] dataFiles=null;
 	
-	Object[] data;
+	Object data;
 	NrrdAxisInfo[] nai;
 	
 	String content,sampleUnits;
@@ -76,8 +76,7 @@ public class NrrdInfo {
 	private String[] kinds;
 	private String[] units;
 
-	private int dataFileSubDim=NRRD_UNKNOWN;
-
+	private int dataFileSubDim=NRRD_UNKNOWN;	
 	private long dataFileByteSize;
 	
 	public static final String[] int8Types={"char", "int8","int8_t", "signed char"};
@@ -169,6 +168,12 @@ public class NrrdInfo {
 						if(nh.dataFiles==null || nh.dataFiles.size()==0) throw new Exception
 							("No data files listed after data file LIST line");
 						if(df.length==2) dataFileSubDim=new Integer(df[1]).intValue();
+						else dataFileSubDim=dim-1;
+						dataFiles=new File[nh.dataFiles.size()];
+						
+						for(int i=0;i<dataFiles.length;i++){
+							dataFiles[i]=makeCheckedFile((String) nh.dataFiles.get(i));
+						}
 					} else {
 						dataFiles=new File[1];
 						dataFiles[0]=makeCheckedFile(df[0]);
@@ -183,6 +188,7 @@ public class NrrdInfo {
 						dataFNMax=new Integer(df[2]).intValue();
 						dataFNStep=new Integer(df[3]).intValue();
 						if(df.length==5) dataFileSubDim=new Integer(df[4]).intValue();
+						else dataFileSubDim=dim-1;
 					} catch (NumberFormatException e){
 						throw new Exception("Could not parse data file field; expected data file: <format> <min> <max> <step> [<subdim>]");
 					}
@@ -204,39 +210,41 @@ public class NrrdInfo {
 						throw new Exception("Unable to process format specifier data file fields with Java<1.5");
 					}
 				}
-				// OK now validate detached header info
 				
-				if(dataFileSubDim==NRRD_UNKNOWN) dataFileSubDim=dim-1;
-				if(dataFileSubDim<1 || dataFileSubDim>dim) throw new 
-				Exception("Detached header subdim specification must be in range [1,"+dim+"]");
-				
-				if(dataFileSubDim==dim){
-					// Check that the number of 'slabs' divides into number of samples
-					if((dataFiles.length%nsamples)!=0) throw new Exception
-						("Number of slabs indicated by \"data file\" ("+dataFiles.length+
-								") does not divide evenly into number of samples ("+nsamples+")");
+				// OK now validate number of provided files				
+				if(dataFileSubDim!=NRRD_UNKNOWN){
+					if(dataFileSubDim<1 || dataFileSubDim>dim) throw new 
+					Exception("Detached header subdim specification must be in range [1,"+dim+"]");
+					if(dataFileSubDim==dim){
+						// Check that the number of 'slabs' divides into number of samples
+						if((dataFiles.length%nsamples)!=0) throw new Exception
+							("Number of slabs indicated by \"data file\" ("+dataFiles.length+
+									") does not divide evenly into number of samples ("+nsamples+")");
+							
+						dataFileByteSize=nbytes/dataFiles.length;
+					} else if(dataFileSubDim < (dim-1)){
+						// When <subdim> is less than D-1 
+						// (for example, giving a 4-D volume one 2-D slice at a time), 
+						// the number of data files can be determined by the product 
+						// of one or more of the slowest axes
 						
-					dataFileByteSize=nbytes/dataFiles.length;
-				} else if(dataFileSubDim < (dim-1)){
-					// When <subdim> is less than D-1 
-					// (for example, giving a 4-D volume one 2-D slice at a time), 
-					// the number of data files can be determined by the product 
-					// of one or more of the slowest axes
-					
-					// e.g. 3 512 512 88 20 (C X Y Z T)
-					// if subdim == 3 then => 88 x 20 slabs of 3 x 512 x 512
-					// dim=5 
-					// i=dim-1=4
-					// 
-					
-					int i=dim-1;
-					int nFiles=(int) sizes[i];
-					while(i>=dataFileSubDim) nFiles*=sizes[i];
-					if(nFiles!=dataFiles.length) throw new Exception
+						// e.g. 3 512 512 88 20 (C X Y Z T)
+						// if subdim == 3 then => 88 x 20 slabs of 3 x 512 x 512
+						// dim=5 
+						// i=dim-1=4
+						
+						int i=dim-1;
+						int nFiles=(int) sizes[i];
+						while(i>=dataFileSubDim) nFiles*=sizes[i];
+						if(nFiles!=dataFiles.length) throw new Exception
+							("Number of data files indicated by \"data file\" ("+dataFiles.length+
+								") does not match product of dimension sizes >"+dataFileSubDim+" (ie "+nFiles+")");
+					} else {
+						// default: dataFileSubdim==dim-1
+						if(dataFiles.length>1 && (dataFiles.length!=sizes[dim-1])) throw new Exception
 						("Number of data files indicated by \"data file\" ("+dataFiles.length+
-							") does not match product of dimension sizes >"+dataFileSubDim);
-				} else {
-					// default dataFileSubdim==dim-1
+								") does not match final dimension size "+sizes[dim-1]);
+					}
 				}
 			}
 			
