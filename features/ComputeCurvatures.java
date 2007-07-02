@@ -35,8 +35,20 @@
  * 
  * - Now implements Runnable, with the void run() method creating
  *   the Gaussian and reporting progress via an optional callback.
- *   (If used in this way you need to use the non-default constructor.)
+ *   (If used in this way you need to use the constructor where you
+ *   supply an ImagePlus, sigma and an optional callback.
  * 
+ * - Switched to using Johannes's JacobiDouble class instead of the
+ *   Jama classes, so we don't introduce an additional dependency.
+ *   It's about 15% faster with JacobiDouble, and presumbly that could
+ *   be faster again wtih JacobiFloat.
+ * 
+ * - Added ordering of the eigenvalues (optionally on absolute
+ *   values).
+ * 
+ * TODO:
+ * 
+ *   Use calibration information.
  * 
  */
 
@@ -380,7 +392,9 @@ public class ComputeCurvatures implements Runnable
         double e2c = orderOnAbsoluteSize ? Math.abs( e2 ) : e2;
 
         /* This should sort a, b and c with the minimum number of
-           comparisons -  */
+           comparisons - it's not necessarily faster than Arrays.sort,
+           but we may want to reorder the evectors with them, in which
+           case it would be. */
 
         if( e0c <= e1c ) {
             if( e1c <= e2c ) {
