@@ -194,10 +194,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		content.addSeparator();
 		
-		lock = new CheckboxMenuItem("Lock");
-		lock.addItemListener(this);
-		content.add(lock);
-		
 		channels = new MenuItem("Change channels");
 		channels.addActionListener(this);
 		content.add(channels);
@@ -221,6 +217,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		content.addSeparator();
 
+		lock = new CheckboxMenuItem("Lock");
+		lock.addItemListener(this);
+		content.add(lock);
+		
 		setTransform = new MenuItem("Set Transform");
 		setTransform.addActionListener(this);
 		content.add(setTransform);
