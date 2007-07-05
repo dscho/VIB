@@ -19,6 +19,10 @@ import java.awt.Rectangle;
 public class Moving_Least_Squares implements PlugInFilter {
 	ImagePlus image;
 
+	final public static int AFFINE = 0;
+	final public static int SIMILARITY = 1;
+	final public static int RIGID = 2;
+
 	public void run(ImageProcessor ip) {
 		Roi roi = image.getRoi();
 		if (!(roi instanceof PointRoi)) {
@@ -69,15 +73,7 @@ public class Moving_Least_Squares implements PlugInFilter {
 		if (gd.wasCanceled())
 			return;
 
-		Method method;
-		switch (gd.getNextChoiceIndex()) {
-			case 0:
-				method = new Affine(); break;
-			case 1:
-				method = new Similarity(); break;
-			default:
-				method = new Rigid(); break;
-		}
+		Method method = getMethod(gd.getNextChoiceIndex());
 		id = ids[gd.getNextChoiceIndex()];
 		method.alpha = (float)gd.getNextNumber();
 		float gridSize = (float)gd.getNextNumber();
@@ -110,6 +106,17 @@ public class Moving_Least_Squares implements PlugInFilter {
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
 		return DOES_RGB | DOES_8G | DOES_16 | DOES_32;
+	}
+
+	public static Method getMethod(int method) {
+		switch (method) {
+			case AFFINE:
+				return new Affine();
+			case SIMILARITY:
+				return new Similarity();
+			default:
+				return new Rigid();
+		}
 	}
 
 	static abstract class Method {
@@ -149,6 +156,15 @@ public class Moving_Least_Squares implements PlugInFilter {
 				qX[i] = x2[i] + oX2;
 				qY[i] = y2[i] + oY2;
 			}
+		}
+
+		public void setCoordinates(float[] x1, float[] y1,
+				float[] x2, float[] y2, int n) {
+			this.n = n;
+			pX = x1;
+			pY = y1;
+			qX = x2;
+			qY = y2;
 		}
 
 		// both x, y and px, py are supposed to be absolute
