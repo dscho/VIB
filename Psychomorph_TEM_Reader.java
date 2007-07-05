@@ -15,11 +15,12 @@ import ij.text.TextWindow;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.StringTokenizer;
+import java.io.PrintStream;
 
-public class TEM_Reader implements PlugInFilter {
+public class Psychomorph_TEM_Reader implements PlugInFilter {
 	ImagePlus image;
 
 	public int setup(String arg, ImagePlus ip) {
@@ -34,60 +35,21 @@ public class TEM_Reader implements PlugInFilter {
 		if(arg==null)
 			return;
 		try {
-			TEMFileParser parser =
-				new TEMFileParser(dir + File.separator + arg);
-			parser.parse(image);
+			TEM tem = new TEM();
+			tem.readFile(dir + File.separator + arg);
+			tem.setRoi(image);
 		} catch(IOException ex) {
 			ex.printStackTrace();
 		}
 	}
 
-	static class TEMFileParser {
-		FileReader fileReader;
-		BufferedReader reader;
-
+	private static class TEM {
+		int pointCount, lineCount;
 		float[] x, y;
-		int[][] segments;
+		int[][] lines;
 
-		TEMFileParser(String path) throws IOException {
-			fileReader = new FileReader(path);
-			reader = new BufferedReader(fileReader);
-		}
-
-		float[] readLine() throws IOException {
-			String line = reader.readLine();
-			if (line == null)
-				return null;
-			StringTokenizer t = new StringTokenizer(line);
-			int count = 0;
-			while (t.hasMoreTokens()) {
-				t.nextToken();
-				count++;
-			}
-			float[] result = new float[count];
-			t = new StringTokenizer(line);
-			int i;
-			for (i = 0; i < count && t.hasMoreTokens(); i++)
-				result[i] = Float.parseFloat(t.nextToken());
-			return result;
-		}
-
-		void parse(ImagePlus target) throws IOException {
-			float[] line = readLine();
-			if (line == null)
-				return;
-			int count = (int)line[0];
-			x = new float[count];
-			y = new float[count];
-			for (int i = 0; i < count; i++) {
-				line = readLine();
-				if (line == null || line.length < 2)
-					throw new IOException("early EOF");
-				x[i] = line[0];
-				y[i] = line[1];
-			}
-
-			// TODO: read segments
+		void setRoi(ImagePlus imp) {
+			int count = x.length;
 			int[] x1 = new int[count];
 			int[] y1 = new int[count];
 			for (int i = 0; i < count; i++) {
@@ -95,8 +57,134 @@ public class TEM_Reader implements PlugInFilter {
 				y1[i] = (int)Math.round(y[i]);
 			}
 			PointRoi roi = new PointRoi(x1, y1, count);
-			target.setRoi(roi);
-			target.updateAndDraw();
+			imp.setRoi(roi);
+			imp.updateAndDraw();
+		}
+
+		// TODO: addToRoiManager()
+
+		void readFile(String fileName) throws IOException {
+			BufferedReader in = new BufferedReader(new
+					FileReader(fileName));
+			pointCount = Integer.parseInt(in.readLine());
+			x = new float[pointCount];
+			y = new float[pointCount];
+			for (int i = 0; i < pointCount; i++) {
+				String[] values =
+					ij.util.Tools.split(in.readLine());
+				x[i] = Float.parseFloat(values[0]);
+				y[i] = Float.parseFloat(values[1]);
+			}
+			lineCount = Integer.parseInt(in.readLine());
+			lines = new int[lineCount][];
+			for (int i = 0; i < lineCount; i++) {
+				in.readLine();
+				int len = Integer.parseInt(in.readLine());
+				String line = in.readLine();
+				String[] values = ij.util.Tools.split(line);
+				if (len != values.length)
+					throw new RuntimeException("len "
+						+ "mismatch: len=" + len
+						+ ", line is " + line);
+				lines[i] = new int[len];
+				for (int j = 0; j < len; j++)
+					lines[i][j] =
+						Integer.parseInt(values[j]);
+			}
+			in.close();
+		}
+
+		void writeFile(String fileName) throws IOException {
+			PrintStream out = new PrintStream(new
+					FileOutputStream(fileName));
+			out.println(pointCount);
+			for (int i = 0; i < pointCount; i++)
+				out.println("" + x[i] + "\t" + y[i]);
+			out.println(lineCount);
+			for (int i = 0; i < lineCount; i++) {
+				out.println(0);
+				int len = lines[i].length;
+				out.println(len);
+				for (int j = 0; j < len - 1; j++)
+					out.print(lines[i][j] + " ");
+				out.println(lines[i][len - 1]);
+			}
+			out.println(0);
+			out.close();
+		}
+
+		boolean lineSetsEqual(TEM other) {
+			if (lines.length != other.lines.length)
+				return false;
+			for (int i = 0; i < lines.length; i++) {
+				if (lines[i].length != other.lines[i].length)
+					return false;
+				for (int j = 0; j < lines[i].length; j++)
+					if (lines[i][j] != other.lines[i][j])
+						return false;
+			}
+			return true;
+		}
+
+		void addPoint(float x, float y) {
+			if (pointCount + 1 > this.x.length) {
+				int newLength = pointCount + 32;
+				float[] dummy = new float[newLength];
+				System.arraycopy(this.x, 0,
+						dummy, 0, pointCount);
+				this.x = dummy;
+				dummy = new float[newLength];
+				System.arraycopy(this.y, 0,
+						dummy, 0, pointCount);
+				this.y = dummy;
+			}
+			this.x[pointCount] = x;
+			this.y[pointCount++] = y;
+		}
+
+		void addLine(int[] line) {
+			if (lineCount + 1 > lines.length) {
+				int newLength = lineCount + 32;
+				int[][] dummy = new int[newLength][];
+				System.arraycopy(lines, 0,
+						dummy, 0, lineCount);
+				lines = dummy;
+			}
+			lines[lineCount++] = line;
+		}
+	}
+
+	public static void main(String[] args) {
+		if (args.length != 3) {
+			System.err.println("Usage: "
+				+ "prog <original-tem> <incomplete-tem>"
+				+ " <output-tem>");
+			System.exit(1);
+		}
+
+		TEM tem1 = new TEM(), tem2 = new TEM();
+		try {
+			tem1.readFile(args[0]);
+			tem2.readFile(args[1]);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+		Moving_Least_Squares.Method m = Moving_Least_Squares.getMethod(
+				Moving_Least_Squares.RIGID);
+		int n1 = tem1.pointCount, n2 = tem2.pointCount;
+		m.setCoordinates(tem1.x, tem1.y, tem2.x, tem2.y, n2);
+		for (int i = n2; i < n1; i++) {
+			m.calculate(tem1.x[i], tem1.y[i]);
+			tem2.addPoint(m.resultX, m.resultY);
+		}
+		for (int i = tem2.lineCount; i < tem1.lineCount; i++)
+			tem2.addLine(tem1.lines[i]);
+		try {
+			tem2.writeFile(args[2]);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 	}
 }
