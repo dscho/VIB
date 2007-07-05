@@ -253,7 +253,12 @@ public class CustomStackWindow extends StackWindow
 		Rectangle bounds = roi.getBoundingRect();
 		for(int i=bounds.x;i<=bounds.x+bounds.width;i++){
 			for(int j=bounds.y;j<=bounds.y+bounds.height;j++){
-				if(roi.contains(i,j)) labP.set(i,j,materialID);
+				if(roi.contains(i,j)) {
+					int oldID = labP.get(i, j);
+					if(!sidebar.getMaterials().
+							isLocked(oldID))
+						labP.set(i,j,materialID);
+				}
 			}
 		}
 		cc.updateSlice(slice);
@@ -265,6 +270,8 @@ public class CustomStackWindow extends StackWindow
 		if (grey == null || labels == null)
 			return;			
 		if (roi == null)
+			return;
+		if (sidebar.getMaterials().isLocked(materialID))
 			return;
 		ImageProcessor labP = labels.getStack().getProcessor(slice);
 		labP.setRoi(roi);

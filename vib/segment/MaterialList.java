@@ -12,10 +12,13 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Label;
+import java.awt.CheckboxMenuItem;
 import java.awt.MenuItem;
 import java.awt.Point;
 import java.awt.PopupMenu;
 import java.awt.ScrollPane;
+import java.awt.event.ItemListener;
+import java.awt.event.ItemEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -26,7 +29,8 @@ import javax.naming.OperationNotSupportedException;
 
 import amira.AmiraParameters;
 
-public class MaterialList extends ScrollPane implements ActionListener {
+public class MaterialList extends ScrollPane implements ActionListener,
+					ItemListener {
 	PopupMenu popup;
 
 	ImagePlus labels;
@@ -36,6 +40,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 	Font font;
 	int lineHeight, lineWidth;
 	List list;
+	private boolean[] locked;
 
 	public MaterialList(CustomCanvas cc) {
 		super();
@@ -47,6 +52,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		lineWidth = 200;
 		list = new List();
 		add(list);
+		locked = new boolean[0];
 	}
 
 	public MaterialList(ImagePlus ip, CustomCanvas cc) {
@@ -83,7 +89,16 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		return getItem(getSelectedIndex());
 	}
 
+	public int getIndexOf(String item) {
+		for(int i = 0; i < getItemCount(); i++) {
+			if(getItem(i).equals(item))
+				return i;
+		}
+		return -1;
+	}
+
 	MenuItem remove, add, rename, color;
+	CheckboxMenuItem lock;
 
 	public void createPopup() {
 		popup = new PopupMenu("");
@@ -95,10 +110,14 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		popup.add(rename);
 		color = new MenuItem("Change Color");
 		popup.add(color);
+		popup.addSeparator();
+		lock = new CheckboxMenuItem("Locked");
+		popup.add(lock);
 		add.addActionListener(this);
 		remove.addActionListener(this);
 		rename.addActionListener(this);
 		color.addActionListener(this);
+		lock.addItemListener(this);
 		add(popup);
 	}
 
@@ -110,6 +129,8 @@ public class MaterialList extends ScrollPane implements ActionListener {
 			params.addMaterial("Interior", 1,0,0);
 			params.setParameters(labels);
 		}
+		// initialize locked array, defaults to false
+		locked = new boolean[params.getMaterialCount()];
 		if (list != null) {
 			list.invalidate();
 			list.repaint();
@@ -118,6 +139,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 
 	public void setMaterials(String materials) {
 		params = new AmiraParameters(materials);
+		locked = new boolean[params.getMaterialCount()];
 		if (list != null) {
 			list.invalidate();
 			list.repaint();
@@ -129,6 +151,8 @@ public class MaterialList extends ScrollPane implements ActionListener {
 		num++;
 		params.addMaterial("Material" + num, 1,0,0); // TODO change color
 		params.setParameters(labels);
+		boolean[] newlocked = new boolean[num];
+		System.arraycopy(locked, 0, newlocked, 0, locked.length);
 		select(num);
 		doLayout();
 		list.repaint();
@@ -141,6 +165,7 @@ public class MaterialList extends ScrollPane implements ActionListener {
 			return;
 		}
 		throw new RuntimeException("delete not yet implemented");
+		// not forget to delete entry in locked-array
 	}
 
 	private void renameMaterial() {
@@ -186,6 +211,13 @@ public class MaterialList extends ScrollPane implements ActionListener {
 			setColor();
 	}
 
+	public void itemStateChanged(ItemEvent e) {
+		if(e.getSource() == lock) {
+			boolean b = lock.getState();
+			locked[getSelectedIndex()] = b;
+		}
+	}
+
 	public int currentMaterialID(){
 		if(getSelectedIndex()==-1){
 			return -1;
@@ -203,6 +235,10 @@ public class MaterialList extends ScrollPane implements ActionListener {
 	
 	public int getDefaultMaterialID(){
 		return params.getMaterialID(getItem(0));
+	}
+
+	public boolean isLocked(int matID) {
+		return locked[getIndexOf(params.getMaterialName(matID))];
 	}
 
 	private class List extends Canvas {
@@ -225,8 +261,10 @@ public class MaterialList extends ScrollPane implements ActionListener {
 				selectedIndex = e.getY() / lineHeight;
 				repaint();
 			}
-			if (e.isPopupTrigger())
+			if (e.isPopupTrigger()) {
+				lock.setState(locked[e.getY() / lineHeight]);
 				popup.show(this, e.getX(), e.getY());
+			}
 		}
 
 		public void processKeyEvent(KeyEvent e) {
