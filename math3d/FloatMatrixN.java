@@ -102,6 +102,18 @@ public class FloatMatrixN {
 		return result;
 	}
 	
+	public static float[] times(float[][] m, float[] v) {
+		int K = v.length;
+		if (m[0].length != v.length)
+			throw new RuntimeException("rank mismatch");
+		int M = m.length;
+		float[] result = new float[M];
+		for (int i = 0; i < M; i++)
+			for (int k = 0; k < K; k++)
+					result[i] += m[i][k] * v[k];
+		return result;
+	}
+
 	/**
 	 * @return The lower triangular form resulting from a 
 	 * LU decomposition
@@ -143,7 +155,8 @@ public class FloatMatrixN {
 	static float[][] choleskyDecomposition(float[][] m){
 		
 		if(m.length != m[0].length){
-			throw new RuntimeException("matrix must be symmetric and positive definite");
+			throw new RuntimeException("Row and column rank "
+				+ "must be equal");
 		}
 		int N = m.length;
 		float[][] l = new float[N][N];
@@ -158,7 +171,10 @@ public class FloatMatrixN {
 				sum += l[k][i] * l[k][i];
 			}
 			if(m[i][i] - sum < 0){
-				throw new RuntimeException("Matrix must be symmetric and positive definite");
+				throw new RuntimeException("Matrix must be "
+					+ "positive definite (trace is "
+					+ sum + ", but diagonal element "
+					+ i + " is " + m[i][i] + ")");
 			}
 			l[i][i] = (float)Math.sqrt(m[i][i] - sum);
 			// l[i][j]
@@ -222,7 +238,7 @@ public class FloatMatrixN {
 		try {
 			U = choleskyDecomposition(A);
 		} catch (RuntimeException e) {
-			throw new RuntimeException("Matrix must be symmetric and positive definite");
+			throw e;
 		}
 		U = choleskyDecomposition(A);
 		float [][] L = transpose(U);
