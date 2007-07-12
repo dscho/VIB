@@ -11,7 +11,7 @@ public class FastMatrixN {
 	public static void invert(double[][] matrix) {
 		invert(matrix, false);
 	}
-	
+
 	public static void invert(double[][] matrix, boolean showStatus) {
 		int M = matrix.length;
 
@@ -101,7 +101,7 @@ public class FastMatrixN {
 					result[i][j] += m1[i][k] * m2[k][j];
 		return result;
 	}
-	
+
 	public static double[] times(double[][] m, double[] v) {
 		int K = v.length;
 		if (m[0].length != v.length)
@@ -115,7 +115,7 @@ public class FastMatrixN {
 	}
 
 	/**
-	 * @return The lower triangular form resulting from a 
+	 * @return The lower triangular form resulting from a
 	 * LU decomposition
 	 * Note: no pivoting is done // TODO
 	 */
@@ -123,8 +123,7 @@ public class FastMatrixN {
 
 		int N = m.length;
 		double[][] R = new double[N][N], L = new double[N][N];
-	
-		
+
 		for(int i=0;i<N;i++){
 			for(int j=i;j<N;j++){
 				R[i][j] = m[i][j];
@@ -146,14 +145,14 @@ public class FastMatrixN {
 				LU[i][j] = L[i][j] + R[i][j];
 		return LU;
 	}
-	
+
 	/**
-	 * @return The upper triangular form resulting from the 
+	 * @return The upper triangular form resulting from the
 	 * Cholensky decomposition
 	 * @see http://en.wikipedia.org/wiki/Cholesky_decomposition
 	 */
 	static double[][] choleskyDecomposition(double[][] m){
-		
+
 		if(m.length != m[0].length){
 			throw new RuntimeException("Row and column rank "
 				+ "must be equal");
@@ -181,11 +180,11 @@ public class FastMatrixN {
 			for(int j=i+1;j<N;j++){
 				sum = 0.0;
 				for(int k=0;k<i;k++){
-					sum += l[k][j] * l[k][i];					
+					sum += l[k][j] * l[k][i];
 				}
 				l[i][j] = (m[i][j] - sum)/l[i][i];
 			}
-		}		
+		}
 		return l;
 	}
 
@@ -198,10 +197,10 @@ public class FastMatrixN {
 		}
 		return ret;
 	}
-	
+
 	public static double[] solve_UL(double[][] A, double[] b){
 		double[][] LU = LU_decomposition(A);
-		
+
 		// forward substitution
 		double[] y = new double[b.length];
 		for(int i=0;i<y.length;i++){
@@ -211,7 +210,7 @@ public class FastMatrixN {
 			}
 			y[i] = (b[i] - sum);
 		}
-		
+
 		// backward substitution
 		double[] x = new double[b.length];
 		for(int i=x.length-1;i>=0;i--){
@@ -223,7 +222,7 @@ public class FastMatrixN {
 		}
 		return x;
 	}
-	
+
 	/**
 	 * Solve Ax = b. Note: A has to be symmetric and positive definite
 	 * @param A matrix to be applied
@@ -232,7 +231,7 @@ public class FastMatrixN {
 	 * @see http://planetmath.org/?op=getobj&from=objects&id=1287
 	 */
 	public static double[] solve_cholesky(double[][]A, double[] b){
-		
+
 		// get the cholesky decomposition of A which is in upper triangle form
 		double[][] U;
 		try {
@@ -246,10 +245,10 @@ public class FastMatrixN {
 		double[] y = forward_substitution(L, b);
 		// then solve Ux = y for x
 		double[] x = backward_substitution(U, y);
-		
+
 		return x;
 	}
-	
+
 	/**
 	 * Backward substitution algorithm. Solves a linear equation system
 	 * Ux = b for x, where U is a matrix in upper trianglular form
@@ -267,7 +266,7 @@ public class FastMatrixN {
 		}
 		return x;
 	}
-	
+
 	/**
 	 * Forward substitution algorithm. Solves a linear equation system
 	 * Ly = b for y, where L is a matrix in lower trianglular form
@@ -285,7 +284,7 @@ public class FastMatrixN {
 		}
 		return y;
 	}
-	
+
 	/**
 	 * Calculates b in Ax = b
 	 * @param A matrix to apply
@@ -301,10 +300,10 @@ public class FastMatrixN {
 			for(int j=0;j<n;j++){
 				b[i] += A[i][j] * x[j];
 			}
-		}		
+		}
 		return b;
 	}
-	
+
 	public static void print(double[] v){
 		System.out.print("[");
 		for(int i=0;i<v.length;i++){
@@ -317,7 +316,7 @@ public class FastMatrixN {
 	public static void print(double[][] m) {
 		print(m,System.out);
 	}
-	
+
 	public static void print(double[][] m, PrintStream out, char del){
 		DecimalFormat f = new DecimalFormat("0.00");
 		for (int i = 0; i < m.length; i++) {
@@ -327,26 +326,26 @@ public class FastMatrixN {
 		}
 		out.println();
 	}
-	
+
 	public static float round(double d, int scale,RoundingMode mode){
 		BigDecimal bd = BigDecimal.valueOf(d);
 		return (bd.setScale(scale, mode)).floatValue();
 	}
-	
+
 	public static void print(double[][] m, PrintStream out) {
-		print(m,out,'\t');		
+		print(m,out,'\t');
 	}
-	
+
 	public static void main(String[] args) {
-		
+
 		double dou = 1234.1234;
 		BigDecimal bd = BigDecimal.valueOf(dou);
 		System.out.println(bd.unscaledValue() + " " + bd.scale());
-		
+
 		int inte = BigDecimal.valueOf(dou).movePointLeft(2).unscaledValue().intValue() * 100;
 		bd = bd.movePointLeft(2);
 		System.out.println(bd.unscaledValue());
-		
+
 		System.out.println("Test rounding");
 		double d = 1.234567889;
 		System.out.println("Math.round(" + d + ") = " + Math.round(d));
@@ -362,7 +361,7 @@ public class FastMatrixN {
 
 		double[][] m2 = times(m, m1);
 		print(m2);
-		
+
 		// test it with a hilbert matrix
 		double[][] k = new double[5][5];
 		for(int i=0;i<k.length;i++)
@@ -380,24 +379,24 @@ public class FastMatrixN {
 		double[][] prod = times(l_t,l);
 		System.out.println("Finally the product of the u^T and u, which should give the original matrix ");
 		print(prod);
-		
+
 		double[] x = new double[]{1.0,2.0,3.0, 4.0, 5.0};
 		System.out.println("A vector x: x = [1.0 2.0 3.0]^T\n");
 		double[] b = apply(k, x);
 		System.out.println("Applying the original matrix to x gives b: ");
 		print(b);
-		
+
 		System.out.println("\n\nTest different solve methods");
 		System.out.println("\nTest Cholesky decomposition");
 		double[] x_n = solve_cholesky(k,b);
 		System.out.println("Now solve Ax = b for x and see if it is the original x");
 		print(x_n);
-		
+
 		System.out.println("\nTest LU decomposition");
 		System.out.println("Now solve Ax = b for x and see if it is the original x");
 		x_n = solve_UL(k, b);
 		print(x_n);
-		
+
 		System.out.println("\nTest ordinary invert method");
 		System.out.println("Now solve Ax = b for x and see if it is the original x");
 		double[][] k_inv = clone(k);
