@@ -17,6 +17,7 @@ wbgn129)
 	MEM=1500m
 	;;
 racer)
+	MEM=320m
 	EXTRADEFS="$EXTRADEFS -Dj3d.noOffScreen=true"
 	;;
 rudi)
