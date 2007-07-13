@@ -86,7 +86,7 @@ public class State {
 	}
 
 	public static String getBaseName(String fileName) {
-		int slash = fileName.lastIndexOf('/');
+		int slash = fileName.lastIndexOf(File.separator);
 		if (slash >= 0)
 			fileName = fileName.substring(slash + 1);
 		int dot = fileName.lastIndexOf('.');
@@ -110,8 +110,10 @@ public class State {
 			return options.templatePath;
 		if (options.numChannels < 2)
 			return channels[channel][index];
-		return imagesPath + getChannelName(channel) + File.separator
+		String path = 
+			imagesPath + getChannelName(channel) + File.separator
 			+ getBaseName(index) + ".tif";
+		return path;
 	}
 
 	public String getResampledPath(int channel, int index) {
