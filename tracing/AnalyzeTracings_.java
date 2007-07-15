@@ -136,7 +136,7 @@ class PointInPath {
 
 public class AnalyzeTracings_ implements PlugIn {
 
-	static public Connectivity buildGraph( String imageFileName, ArrayList< SegmentedConnection > allPaths ) {
+	static public Connectivity buildGraph( String imageFileName, ArrayList< Path > allPaths ) {
 
 		Connectivity result = new Connectivity();
 
@@ -201,20 +201,16 @@ public class AnalyzeTracings_ implements PlugIn {
 		int paths = allPaths.size();
 		// System.out.println("Paths to draw: "+paths);
 		for( int i = 0; i < paths; ++i ) {
-			SegmentedConnection s = (SegmentedConnection)allPaths.get(i);
+			Path path = (Path)allPaths.get(i);
 
-			int segments_in_path = s.connections.size();
+			for( int k = 0; k < path.size(); ++k ) {
 
-			for( int j = 0; j < segments_in_path; ++j ) {
-				Connection connection = (Connection)s.connections.get(j);
-				for( int k = 0; k < connection.points; ++k ) {
-
-					int x_in_domain = connection.x_positions[k];
-					int y_in_domain = connection.y_positions[k];
-					int z_in_domain = connection.z_positions[k];
-
+					int x_in_domain = path.x_positions[k];
+					int y_in_domain = path.y_positions[k];
+					int z_in_domain = path.z_positions[k];
+					
 					transformation.apply(x_in_domain,y_in_domain,z_in_domain,transformedPoint);
-
+					
 					int x_in_template=(int)transformedPoint[0];
 					int y_in_template=(int)transformedPoint[1];
 					int z_in_template=(int)transformedPoint[2];
@@ -232,15 +228,14 @@ public class AnalyzeTracings_ implements PlugIn {
 					p.setNeuropilRegion( result.materialNames[label_value] );
 					p.setPathID( i );
 
-					if( j == 0 && k == 0 )
+					if( k == 0 )
 						p.setStart( true );
-					if( j == (segments_in_path - 1) && k == (connection.points - 1) )
+					if( k == (path.size() - 1) )
 						p.setEnd( true );
 
 					// System.out.println( p.getPathID() + "|" + i + " - " + p.getNeuropilRegion() + ": at (" + x_in_template + "," + y_in_template + "," + z_in_template + ")" );
 
 					transformedPoints.add(p);
-				}
 			}
 		}
 
@@ -530,7 +525,7 @@ public class AnalyzeTracings_ implements PlugIn {
 	static public Connectivity buildGraph( String imageFileName ) {
 
 		String tracesFileName = imageFileName + ".traces";
-		ArrayList< SegmentedConnection > allPaths = SimpleNeuriteTracer_.loadTracingsFromFile(tracesFileName);
+		ArrayList< Path > allPaths = PathAndFillManager.loadTracingsFromFile(tracesFileName);
 
 		return buildGraph( imageFileName, allPaths );
 	}

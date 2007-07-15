@@ -33,11 +33,11 @@ public class FillerThread extends Thread {
 
 	float minimumDistanceInOpen = 0;
 		
-	public void setThreshold( float threshold ) {
-		this.threshold = threshold;
+	public void setThreshold( double threshold ) {
+		this.threshold = (float)threshold;
 	}
 
-	public float getDistanceAtPoint(int x, int y, int z) {
+	public float getDistanceAtPoint( int x, int y, int z ) {
 
 		FillerNode f = new FillerNode( x, y, z, 0, null );
 
@@ -104,6 +104,57 @@ public class FillerThread extends Thread {
 	Hashtable open_from_start_hash = new Hashtable();
 	Hashtable closed_from_start_hash = new Hashtable();
 
+	public Fill getFill( double distanceThreshold ) {
+
+		Hashtable< FillerNode, Integer > h =
+			new Hashtable< FillerNode, Integer >();
+
+		ArrayList< FillerNode > a = 
+			new ArrayList< FillerNode >();
+
+		int i = 0;
+
+		for( Iterator<FillerNode> j = open_from_start.iterator();
+		     j.hasNext(); ) {
+			FillerNode current = j.next();
+			if( current.g <= threshold ) {
+				h.put( current, new Integer(i) );
+				a.add( current );
+				++ i;
+			}
+		}
+		
+		for( Iterator<FillerNode> j = closed_from_start.iterator();
+		     j.hasNext(); ) {
+			FillerNode current = j.next();
+			if( current.g <= threshold ) {
+				h.put( current, new Integer(i) );
+				a.add( current );
+				++ i;
+			}
+		}
+
+		Fill fill = new Fill();
+
+		fill.distanceThreshold = distanceThreshold;
+		
+		for( i = 0; i < a.size(); ++i ) {
+			FillerNode f = a.get(i);
+			int previousIndex = -1;
+			FillerNode previous = f.getPredecessor();
+			if( previous == null ) {
+				previousIndex = i;
+			}
+			Integer p = h.get(previous);
+			if( p != null ) {
+				previousIndex = p.intValue();
+			}
+			fill.add( f.x, f.y, f.z, f.g, previousIndex );
+		}
+
+		return fill;
+	}
+
 	/* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
 	public FillerThread( SimpleNeuriteTracer_ plugin,
@@ -136,20 +187,23 @@ public class FillerThread extends Thread {
 		long lastThresholdChange = 0;
 		this.progress = progress;
 
+		PathAndFillManager pathAndFillManager = plugin.getPathAndFillManager();
+
 		// Just get these from the plugin; this thread should be
 		// created synchronized...
 		
-		for( int i = 0; i < plugin.selectedPaths.length; ++i ) {
-			SegmentedConnection s = (SegmentedConnection)plugin.allPaths.get(plugin.selectedPaths[i]);
-			int segments_in_path = s.connections.size();
-			for( int j = 0; j < segments_in_path; ++j ) {				
-				Connection connection = (Connection)s.connections.get(j);
-				for( int k = 0; k < connection.size(); ++k ) {
-					FillerNode f = new FillerNode( connection.x_positions[k],
-								       connection.y_positions[k],
-								       connection.z_positions[k],
-								       0,
-								       null );
+		for( int i = 0; i < pathAndFillManager.size(); ++i ) {
+			
+			if( ! pathAndFillManager.selectedPaths[i] )
+				continue;
+
+			Path p = pathAndFillManager.getPath(i);
+			for( int k = 0; k < p.size(); ++k ) {
+				FillerNode f = new FillerNode( p.x_positions[k],
+							       p.y_positions[k],
+							       p.z_positions[k],
+							       0,
+							       null );
 					
 
 					if( null == open_from_start_hash.get(f) ) {					
@@ -158,16 +212,28 @@ public class FillerThread extends Thread {
 					} else {
 						System.out.println("Not adding duplicate point: "+f);
 					}
-				}
 			}
 		}
-			
 	}
 	
 	boolean stopRequested;
-	
-	public void requestStop( ) {
+	boolean requestPause;
+
+	synchronized public void requestStop( ) {
 		stopRequested = true;
+		if( requestPause ) {
+			requestPause = true;
+			this.interrupt();
+		}
+	}
+
+	synchronized public void pauseOrUnpause( ) {
+		if( requestPause ) {
+			requestPause = false;
+		} else {
+			requestPause = true;
+			this.interrupt();
+		}
 	}
 
 	public void run( ) {
@@ -183,6 +249,11 @@ public class FillerThread extends Thread {
 			if( stopRequested ) {
 				progress.stopped();
 				return;
+			} else if( requestPause ) {
+				try {
+					Thread.sleep(4000);					
+				} catch( InterruptedException e ) {
+				}
 			}
 			
 			if( 0 == (loops % 5000) ) {

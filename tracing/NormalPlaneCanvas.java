@@ -16,7 +16,7 @@ class NormalPlaneCanvas extends ImageCanvas {
 				  double [] centre_x_positions,
 				  double [] centre_y_positions,
 				  double [] radiuses,
-				  SegmentedConnection fittedPath ) {
+				  Path fittedPath ) {
 		super(imp);
 		tracerPlugin = plugin;
 		this.centre_x_positions = centre_x_positions;
@@ -30,7 +30,7 @@ class NormalPlaneCanvas extends ImageCanvas {
 	double [] centre_y_positions;
 	double [] radiuses;
 
-	SegmentedConnection fittedPath;
+	Path fittedPath;
 
 	SimpleNeuriteTracer_ tracerPlugin;
 

@@ -48,10 +48,16 @@ import features.ComputeCurvatures;
 public class SimpleNeuriteTracer_ extends ThreePanes
 	implements PlugIn, AStarProgressCallback, ArrowDisplayer, FillerProgressCallback, GaussianGenerationCallback {
 
+	PathAndFillManager pathAndFillManager;
+
 	boolean unsavedPaths = false;
 
 	public boolean pathsUnsaved() {
 		return unsavedPaths;
+	}
+
+	public PathAndFillManager getPathAndFillManager() {
+		return pathAndFillManager;
 	}
 
 	/* Just for convenience, keep casted references to the
@@ -80,9 +86,29 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			currentSearchThread.requestStop();
 	}
 
-	public void cancelFilling( ) {
-		if( filler != null )
+
+	synchronized public void saveFill( ) {
+		if( filler != null ) {
 			filler.requestStop();
+			pathAndFillManager.addFill( filler );
+			resultsDialog.changeState( NeuriteTracerResultsDialog.WAITING_TO_START_PATH );	
+		}
+		filler = null;
+	}
+
+	synchronized public void discardFill( ) {
+		if( filler != null ) {
+			filler.requestStop();
+			resultsDialog.changeState( NeuriteTracerResultsDialog.WAITING_TO_START_PATH );	
+		}
+		filler = null;
+	}
+
+
+	synchronized public void pauseOrRestartExploring( ) {
+		if( filler != null ) {
+			filler.pauseOrUnpause( );
+		}
 	}
 
 	/* Now a couple of callback methods, which get information
@@ -91,22 +117,27 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 	public void finished( boolean success ) {
 
 		if( success ) {
-			Connection result = currentSearchThread.getResult();
-			if( result == null )
+			Path result = currentSearchThread.getResult();
+			if( result == null ) {
 				IJ.error("Bug! Succeeded, but null result.");
-			else
-				setTemporaryConnection( result );
+				return;
+			}
+			System.out.println( "finished, with endJoin: "+endJoin+" and "+endJoinIndex );
+			result.setJoin( Path.PATH_END, endJoin, endJoinIndex );
+			setTemporaryPath( result );
+
+			resultsDialog.changeState(NeuriteTracerResultsDialog.QUERY_KEEP);
+
+		} else {
+
+			resultsDialog.changeState(NeuriteTracerResultsDialog.PARTIAL_PATH);
 		}
+
 		synchronized(nonsense) {
 			currentOpenBoundaryPoints = null;
 		}
 		
 		// Indicate in the dialog that we've finished...
-
-		if( success )
-			resultsDialog.changeState(NeuriteTracerResultsDialog.QUERY_KEEP);
-		else
-			resultsDialog.changeState(NeuriteTracerResultsDialog.PARTIAL_PATH);
 
 		currentSearchThread = null;
 
@@ -188,11 +219,15 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		
 	}
 
-	public void justDisplayNearSlices( boolean value ) {
+	public void justDisplayNearSlices( boolean value, int eitherSide ) {
 
 		xy_tracer_canvas.just_near_slices = value;
 		xz_tracer_canvas.just_near_slices = value;
 		zy_tracer_canvas.just_near_slices = value;
+
+		xy_tracer_canvas.eitherSide = eitherSide;
+		xz_tracer_canvas.eitherSide = eitherSide;
+		zy_tracer_canvas.eitherSide = eitherSide;
 
 		repaintAllPanes();
 
@@ -211,318 +246,6 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		xy_tracer_canvas.setCrosshairs( new_x, new_y, new_z, true );
 		xz_tracer_canvas.setCrosshairs( new_x, new_y, new_z, true );
 		zy_tracer_canvas.setCrosshairs( new_x, new_y, new_z, true );
-		
-	}
-
-	public void getTracings( boolean mineOnly ) {
-
-		Hashtable<String,String> parameters = new Hashtable<String,String>();
-
-		parameters.put("method","most-recent-annotation");
-		parameters.put("type","traces");
-		parameters.put("variant","basic");
-		parameters.put("md5sum",archiveClient.getValue("md5sum"));
-		if( mineOnly )
-			parameters.put("for_user",archiveClient.getValue("user"));
-		else
-			parameters.put("for_user","");
-
-		ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, null );
-
-		String [] first_line = (String [])tsv_results.get(0);
-		int urls_found;
-		String bestUrl = null;
-		if( first_line[0].equals("success") ) {
-			urls_found = Integer.parseInt(first_line[1]);
-			if( urls_found == 0 )
-				IJ.error( "No anntation files by " + (mineOnly ? archiveClient.getValue("user") : "any user") + " found." );
-			else {
-				bestUrl = ((String [])tsv_results.get(1))[1];
-				// IJ.error( "Got the URL: " + bestUrl );
-			}
-		} else if( first_line[0].equals("error") ) {
-			IJ.error("There was an error while getting the most recent annotation: "+first_line[1]);
-		} else {
-			IJ.error("There was an unknown response to request for an annotation file: " + first_line[0]);
-		}
-
-		// Now fetch that file:
-
-		// FIXME:
-
-		if( bestUrl == null )
-			return;
-
-		String fileContents =  ArchiveClient.justGetFileAsString( bestUrl );
-
-		// IJ.error( "got fileContents: " +fileContents);
-
-		if( fileContents != null ) {
-
-			ArrayList< SegmentedConnection > all_paths = loadFromString(fileContents);
-			// IJ.error("got new all_paths: " + all_paths);
-			if( all_paths != null )
-				setAllPaths( all_paths );
-		}
-
-	}
-
-	static public ArrayList< SegmentedConnection > loadFromString( String fileContents ) {
-
-		ArrayList< SegmentedConnection > all_paths = new ArrayList< SegmentedConnection >();
-
-		StringTokenizer tokenizer = new StringTokenizer( fileContents, "\n" );
-
-		try {
-
-			int last_path_index = -1;
-			
-			String line;
-			Connection currentConnection = new Connection();
-			
-			while( tokenizer.hasMoreTokens() ) {
-
-				line = (String)tokenizer.nextToken();
-
-				int nextTabIndex = line.indexOf('\t');
-				if( nextTabIndex < 0 )
-					throw new Exception("No tabs found in the line");
-				int path_index = Integer.parseInt( line.substring(0,nextTabIndex) );
-				line = line.substring(nextTabIndex+1);
-				
-				nextTabIndex = line.indexOf('\t');
-				if( nextTabIndex < 0 )
-					throw new Exception("Not enough fields in the line");
-				int x = Integer.parseInt( line.substring(0,nextTabIndex) );
-				line = line.substring(nextTabIndex+1);
-				
-				nextTabIndex = line.indexOf('\t');
-				if( nextTabIndex < 0 )
-					throw new Exception("Not enough fields in the line");
-				int y = Integer.parseInt( line.substring(0,nextTabIndex) );
-				line = line.substring(nextTabIndex+1);
-				
-				nextTabIndex = line.indexOf('\t');
-				if( nextTabIndex < 0 )
-					throw new Exception("No tabs found in the first line");
-				int z = Integer.parseInt( line.substring(0,nextTabIndex) );
-				line = line.substring(nextTabIndex+1);
-				
-				boolean join = new Boolean(line).booleanValue();
-
-				// System.out.println( "got point " + path_index + ", (" + x + ", " + y + ", " + z + ") " + join );
-
-				// System.out.println( "(last path_index " + last_path_index + ", current: " + path_index + ")" );
-
-				if( ((last_path_index >= 0) && (last_path_index != path_index)) || ! tokenizer.hasMoreTokens() ) {
-					
-					// IJ.error( "adding that path" );
-
-					// System.out.println("adding that path");
-
-					SegmentedConnection s = new SegmentedConnection();
-					s.addConnection( currentConnection );
-					s.startsAtJoin( join );
-
-					all_paths.add( s );
-					
-					currentConnection = new Connection();
-
-				}
-
-				currentConnection.addPoint( x, y, z );
-				
-				last_path_index = path_index;
-
-			}
-
-		} catch( Exception e ) {
-			
-			IJ.error( "Exception while parsing the data" );
-			return null;
-		}
-		
-		return all_paths;
-	}
-
-	static public ArrayList< SegmentedConnection > loadTracingsFromFile( String filename ) {
-
-		ArrayList< SegmentedConnection > all_paths = new ArrayList< SegmentedConnection >();
-
-		try {
-
-			BufferedReader in = new BufferedReader( new FileReader(filename) );
-			
-			int last_path_index = -1;
-			
-			String line;
-			Connection currentConnection = new Connection();
-			boolean join = false;
-			
-			while( null != (line = in.readLine()) ) {
-				
-				int nextTabIndex = line.indexOf('\t');
-				if( nextTabIndex < 0 )
-					throw new Exception("No tabs found in the line");
-				int path_index = Integer.parseInt( line.substring(0,nextTabIndex) );
-				line = line.substring(nextTabIndex+1);
-				
-				nextTabIndex = line.indexOf('\t');
-				if( nextTabIndex < 0 )
-					throw new Exception("Not enough fields in the line");
-				int x = Integer.parseInt( line.substring(0,nextTabIndex) );
-				line = line.substring(nextTabIndex+1);
-				
-				nextTabIndex = line.indexOf('\t');
-				if( nextTabIndex < 0 )
-					throw new Exception("Not enough fields in the line");
-				int y = Integer.parseInt( line.substring(0,nextTabIndex) );
-				line = line.substring(nextTabIndex+1);
-				
-				nextTabIndex = line.indexOf('\t');
-				if( nextTabIndex < 0 )
-					throw new Exception("No tabs found in the first line");
-				int z = Integer.parseInt( line.substring(0,nextTabIndex) );
-				line = line.substring(nextTabIndex+1);
-				
-				join = new Boolean(line).booleanValue();
-
-				// System.out.println( "got point " + path_index + ", (" + x + ", " + y + ", " + z + ") " + join );
-
-				// System.out.println( "(last path_index " + last_path_index + ", current: " + path_index + ")" );
-
-				if( (last_path_index >= 0) && (last_path_index != path_index) ) {
-					
-					// System.out.println("adding that path");
-
-					SegmentedConnection s = new SegmentedConnection();
-					s.addConnection( currentConnection );
-					s.startsAtJoin( join );
-
-					all_paths.add( s );
-					
-					currentConnection = new Connection();
-
-				}
-
-				currentConnection.addPoint( x, y, z );
-				
-				last_path_index = path_index;
-
-			}
-
-			// Now just add the last path.
-
-			SegmentedConnection s = new SegmentedConnection();
-			s.addConnection( currentConnection );
-			s.startsAtJoin( join );
-
-			all_paths.add( s );
-
-
-		} catch( FileNotFoundException e ) {
-			
-			IJ.error( "Couldn't find the file: " + filename );
-			return null;
-
-		} catch( IOException e ) {
-			
-			IJ.error( "There was an error while reading the file: " + filename );
-			return null;
-
-		} catch( Exception e ) {
-			
-			IJ.error( "Exception while reading the file: " + filename );
-			return null;
-		}
-
-		return all_paths;
-	}
-
-	public static byte [] tracesAsBytes( ArrayList< SegmentedConnection > all_paths ) {
-		String s = tracesAsString( all_paths );
-		try {
-			byte [] bytes = s.getBytes("UTF-8");
-			return bytes;
-		} catch( UnsupportedEncodingException e ) {
-			return null;
-		}
-	}
-
-	public static String tracesAsString( ArrayList< SegmentedConnection > all_paths ) {
-		
-		StringBuffer sb = new StringBuffer();
-
-		if( all_paths != null ) {
-			// System.out.println("Have some all_paths paths to draw.");
-			int paths = all_paths.size();
-			// System.out.println("Paths to draw: "+paths);
-			for( int i = 0; i < paths; ++i ) {
-
-				int last_x = -1;
-				int last_y = -1;
-				int last_z = -1;
-
-				SegmentedConnection s = (SegmentedConnection)all_paths.get(i);
-				int segments_in_path = s.connections.size();
-				for( int j = 0; j < segments_in_path; ++j ) {
-					Connection connection = (Connection)s.connections.get(j);
-					for( int k = 0; k < connection.points; ++k ) {
-						int x = connection.x_positions[k];
-						int y = connection.y_positions[k];
-						int z = connection.z_positions[k];
-						if( (last_x == x) && (last_y == y) && (last_z == z) ) {
-							// Skip this, it's just the same.
-						} else {
-							String toWrite = "" + i + "\t" +
-								x + "\t" +
-								y + "\t" + 
-								z + "\t" +
-								s.join_at_start + "\n";
-							// System.out.println( "Writing line: " + toWrite );
-							sb.append( toWrite );							
-						}
-						last_x = x;
-						last_y = y;
-						last_z = z;
-					}
-				}
-				
-			}
-		}
-
-		return sb.toString();
-                
-	}
-
-	public void uploadTracings( ) {
-
-		Hashtable<String,String> parameters = new Hashtable<String,String>();
-
-		parameters.put("method","upload-annotation");
-		parameters.put("type","traces");
-		parameters.put("variant","basic");
-		parameters.put("md5sum",archiveClient.getValue("md5sum"));
-
-		// Need to included data too....
-		
-		byte [] fileAsBytes;
-
-		synchronized(this) {
-			fileAsBytes = tracesAsBytes( allPaths );
-		}
-
-		ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, fileAsBytes );
-
-		String [] first_line = (String [])tsv_results.get(0);
-		if( first_line[0].equals("success") ) {
-			IJ.error("Annotations uploaded successfully!");
-			unsavedPaths = false;
-		} else if( first_line[0].equals("error") ) {
-			IJ.error("There was an error while uploading the annotation file: "+first_line[1]);
-		} else {
-			IJ.error("There was an unknown response to the annotation file upload request: " + first_line[0]);
-		}
 		
 	}
 	
@@ -548,10 +271,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 				
 				if( d.yesPressed() ) {
 					
-					ArrayList< SegmentedConnection > all_paths = loadTracingsFromFile(path);
-					if( all_paths != null )
-						setAllPaths( all_paths );
-					
+					pathAndFillManager.loadTracingsFromFile(path);
 					unsavedPaths = false;
 					
 					return;
@@ -577,79 +297,33 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		if( fileName != null ) {				
 
-			ArrayList< SegmentedConnection > all_paths = loadTracingsFromFile(directory+File.separator+fileName);
-			if( all_paths != null )
-				setAllPaths( all_paths );
-			
-			unsavedPaths = false;
-			
+			if( pathAndFillManager.load( fileName ) )
+				unsavedPaths = false;
+
 			return;
 		}
 
 	}
 
-	synchronized public void writeTracesToFile( String filename ) {
-		
-                try {
+	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, boolean shift_key_down, boolean control_key_down ) {
 
-                        BufferedWriter out = new BufferedWriter(new FileWriter(filename,false));
-
-			if( allPaths != null ) {
-				// System.out.println("Have some allPaths paths to draw.");
-				int paths = allPaths.size();
-				// System.out.println("Paths to draw: "+paths);
-				for( int i = 0; i < paths; ++i ) {
-
-					int last_x = -1;
-					int last_y = -1;
-					int last_z = -1;
-
-					SegmentedConnection s = (SegmentedConnection)allPaths.get(i);
-					int segments_in_path = s.connections.size();
-					for( int j = 0; j < segments_in_path; ++j ) {
-						Connection connection = (Connection)s.connections.get(j);
-						for( int k = 0; k < connection.points; ++k ) {
-							int x = connection.x_positions[k];
-							int y = connection.y_positions[k];
-							int z = connection.z_positions[k];
-							if( (last_x == x) && (last_y == y) && (last_z == z) ) {
-								// Skip this, it's just the same.
-							} else {
-								String toWrite = "" + i + "\t" +
-									x + "\t" +
-									y + "\t" + 
-									z + "\t" +
-									s.join_at_start + "\n";
-								// System.out.println( "Writing line: " + toWrite );
-								out.write( toWrite );
-
-							}
-							last_x = x;
-							last_y = y;
-							last_z = z;
-						}
-					}
-
-				}
-			}
-
-                        out.close();
-
-                } catch (IOException e) {
-                        IJ.error( "Writing traces to file '" + filename + "' failed" );
-                }
-
-	}
-	
-	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, boolean shift_key_down ) {
+		int x, y, z;
 
 		int [] p = new int[3];
-
 		findPointInStack( x_in_pane, y_in_pane, in_plane, p );
+		x = p[0];
+		y = p[1];
+		z = p[2];
 
-		int x = p[0];
-		int y = p[1];
-		int z = p[2];
+		if( control_key_down ) {
+
+			PointInImage pointInImage = pathAndFillManager.nearestJoinPointOnSelectedPaths( x, y, z );
+			if( pointInImage != null ) {
+				x = pointInImage.x;
+				y = pointInImage.y;
+				z = pointInImage.z;
+			}
+		}
 
 		if( shift_key_down )
 			setSlicesAllPanes( x, y, z );
@@ -658,6 +332,8 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		    (xz_tracer_canvas != null) &&
 		    (zy_tracer_canvas != null) ) {
 			
+			// I'm pretty sure this isn't needed any more:
+
 			if( currentConnection != null ) {
 				
 				xy_tracer_canvas.setConnection( currentConnection );
@@ -688,29 +364,46 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 	int last_start_point_y;
 	int last_start_point_z;
 
-	ArrayList< SegmentedConnection > allPaths;
+	Path endJoin;
+	int endJoinIndex;
 
 	/* If we've finished searching for a path, but the user hasn't
-	 * confirmed that they want to keep it yet, temporaryConnection is
-	 * non-null and holds the Connection we just searched out. */
+	 * confirmed that they want to keep it yet, temporaryPath is
+	 * non-null and holds the Path we just searched out. */
 
-	Connection temporaryConnection = null;
+	// Any method that deals with these two fields should be synchronized.
 
-	// When we set temporaryConnection, we also want to update the display
+	Path temporaryPath = null;
+	Path currentPath = null;
 
-	synchronized public void setTemporaryConnection( Connection connection ) {
+	// When we set temporaryPath, we also want to update the display
 
-		xy_tracer_canvas.setTemporaryConnection( connection );
-		zy_tracer_canvas.setTemporaryConnection( connection );
-		xz_tracer_canvas.setTemporaryConnection( connection );
+	synchronized public void setTemporaryPath( Path path ) {
 
-		temporaryConnection = connection;
+		xy_tracer_canvas.setTemporaryPath( path );
+		zy_tracer_canvas.setTemporaryPath( path );
+		xz_tracer_canvas.setTemporaryPath( path );
+
+		temporaryPath = path;
+	}
+	
+	synchronized public void setCurrentPath( Path path ) {
+
+		xy_tracer_canvas.setCurrentPath( path );
+		zy_tracer_canvas.setCurrentPath( path );
+		xz_tracer_canvas.setCurrentPath( path );
+
+		currentPath = path;
 	}
 
+	synchronized public Path getCurrentPath( ) {
+		return currentPath;
+	}
+	
 	/* pathUnfinished indicates that we have started to create a
-	   path, but not yet finished it (in the sense of moving on
-	   the a new disconnected starting.  FIXME: this may be
-	   redundant..
+	   path, but not yet finished it (in the sense of moving on to
+	   a new path with a differen starting point.)  FIXME: this
+	   may be redundant..
          */
 
 	boolean pathUnfinished = false;
@@ -723,47 +416,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		xz_tracer_canvas.setPathUnfinished( unfinished );
 	}
 
-	synchronized public void setAllPaths( ArrayList< SegmentedConnection > allPaths ) {
-
-		// System.out.println("Setting completed in each canvas to: " +allPaths );
-
-		xy_tracer_canvas.setCompleted( allPaths );
-		zy_tracer_canvas.setCompleted( allPaths );
-		xz_tracer_canvas.setCompleted( allPaths );
-
-		this.allPaths = allPaths;
-
-		int paths = allPaths.size();
-		// System.out.println("Paths to draw: "+paths);
-		for( int i = 0; i < paths; ++i ) {
-						
-			SegmentedConnection s = (SegmentedConnection)allPaths.get(i);
-			resultsDialog.addPathToList("Path with index: " +(i+1));
-		}
-
-		repaintAllPanes();
-	}
-
 	int [] selectedPaths = null;
-
-	public synchronized void showPaths(int [] selectedIndices) {
-
-		int length = selectedIndices.length;
-		selectedPaths = new int[length];
-		System.arraycopy(selectedIndices,0,selectedPaths,0,length);
-
-		repaintAllPanes();
-	}
-
-	synchronized boolean pathSelected( int index ) {
-		if( selectedPaths != null ) {
-			for( int i = 0; i < selectedPaths.length; ++i ) {
-				if( selectedPaths[i] == index )
-					return true;
-			}
-		}
-		return false;
-	}
 
 	/* Create a new 8 bit ImagePlus of the same dimensions as this
 	   image, but with values set to either 255 (if there's a point
@@ -771,35 +424,13 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	synchronized public void makePathVolume( ) {
 
-
                 byte [][] snapshot_data = new byte[depth][];
 
                 for( int i = 0; i < depth; ++i )
                         snapshot_data[i] = new byte[width*height];
 		
-		// ------------------------------------------------------------
-			
-		if( allPaths != null ) {
-			// System.out.println("Have some allPaths paths to draw.");
-			int paths = allPaths.size();
-			// System.out.println("Paths to draw: "+paths);
-			for( int i = 0; i < paths; ++i ) {
-				SegmentedConnection s = (SegmentedConnection)allPaths.get(i);
-				int segments_in_path = s.connections.size();
-				for( int j = 0; j < segments_in_path; ++j ) {
-					Connection connection = (Connection)s.connections.get(j);
-					for( int k = 0; k < connection.points; ++k ) {
-						int x = connection.x_positions[k];
-						int y = connection.y_positions[k];
-						int z = connection.z_positions[k];
-						snapshot_data[z][y*width+x] = (byte)255;
-					}
-				}
-			}
-		}
+		pathAndFillManager.setPathPointsInVolume( snapshot_data, width, height, depth );
 
-		// ------------------------------------------------------------
-		
 		ImageStack newStack = new ImageStack( width, height );
 		
 		for( int i = 0; i < depth; ++i ) {
@@ -818,7 +449,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	/* Start a search thread looking for the goal in the arguments... */
 
-	synchronized public void testPathTo( int x_in_pane, int y_in_pane, int plane ) {
+	synchronized public void testPathTo( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
 
 		if( ! lastStartPointSet ) {
 			IJ.showStatus( "No initial start point has been set.  Do that with a mouse click." +
@@ -826,7 +457,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			return;
 		}
 
-		if( temporaryConnection != null ) {
+		if( temporaryPath != null ) {
 			IJ.showStatus( "There's already a temporary path; use 'N' to cancel it or 'Y' to keep it." );
 			return;
 		}
@@ -834,13 +465,30 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		int [] p = new int[3];
 		findPointInStack( x_in_pane, y_in_pane, plane, p );
 
+		int x_end, y_end, z_end;
+		if( joinPoint == null ) {
+			x_end = p[0];
+			y_end = p[1];
+			z_end = p[2];
+
+			System.out.println("not setting endJoin");
+		} else {
+			x_end = joinPoint.x;
+			y_end = joinPoint.y;
+			z_end = joinPoint.z;
+			endJoin = joinPoint.onPath;
+			endJoinIndex = joinPoint.onPathIndex;
+
+			System.out.println("set endJoin");
+		}
+
 		currentSearchThread = new AStarThread( slices_data, 
 						       last_start_point_x,
 						       last_start_point_y,
 						       last_start_point_z,
-						       p[0],
-						       p[1],
-						       p[2],
+						       x_end,
+						       y_end,
+						       z_end,
 						       this,
 						       true, // reciprocal
 						       0, // timeoutSeconds
@@ -856,47 +504,49 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	synchronized public void confirmTemporary( ) {
 
-		int pathsSoFar = allPaths.size();
-		// System.out.println("confirming path; have "+pathsSoFar+" already");
-		SegmentedConnection currentPath = (SegmentedConnection)allPaths.get(pathsSoFar-1);
-		currentPath.addConnection( temporaryConnection );
-		PointInImage last = temporaryConnection.lastPoint();
+		currentPath.add( temporaryPath );
+
+		PointInImage last = temporaryPath.lastPoint();
 		last_start_point_x = last.x;
 		last_start_point_y = last.y;
 		last_start_point_z = last.z;
-		setTemporaryConnection( null );
 
 		// System.out.println("confirming path; have "+allPaths.size()+" afterwards");
 		
-		resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
-			
-		repaintAllPanes();
+		if( temporaryPath.endJoins == null ) {
+			setTemporaryPath( null );
+			resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
+			repaintAllPanes( );
+		} else {
+			System.out.println("confirming, but with an endJoin");
+			setTemporaryPath( null );
+			finishedPath( ); // Since joining onto another path for the end must finish the path.
+		}
 	}
 
 	synchronized public void cancelTemporary( ) {
 		
 		if( ! lastStartPointSet ) {
 			IJ.error( "No initial start point has been set yet.  Do that with a mouse click." +
-				  " (Or a shift-click if the start of the path should join another neurite." );
+				  " (Or a control-click if the start of the path should join another neurite." );
 			return;
 		}
 
-		if( temporaryConnection == null ) {
+		if( temporaryPath == null ) {
 			IJ.error( "There's no temporary path to cancel!" );
 			return;
 		}
 
-		// Remove that last temporary path...
-		setTemporaryConnection( null );
+		setTemporaryPath( null );
 
 		resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
-
 		repaintAllPanes( );
 	}
 
 	synchronized public void cancelPath( ) {
 
-		allPaths.remove(allPaths.size()-1);
+		setCurrentPath( null );
+		setTemporaryPath( null );
 
 		lastStartPointSet = false;
 		setPathUnfinished( false );
@@ -906,23 +556,11 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		repaintAllPanes();
 	}
 	
-	synchronized public void removePath( int index ) {
-
-		if( (index < 0) || (index >= allPaths.size()) ) {
-			IJ.error( "BUG: NeuriteTracer_ asked to remove an out-of-range index" );
-		}
-
-		allPaths.remove(index);
-
-		repaintAllPanes();
-
-	}
-
 	synchronized public void finishedPath( ) {
 
 		// Is there an unconfirmed path?  If so, warn people about it...
 		
-		if( temporaryConnection != null ) {
+		if( temporaryPath != null ) {
 			IJ.error( "There's an unconfirmed path, need to confirm or cancel it before finishing the path." );
 			return;
 		}
@@ -930,13 +568,8 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		lastStartPointSet = false;
 		setPathUnfinished( false );
 	       
-		// Now tell the UI that it can add that path...
-
-		{
-			String nameForList = "Path with index: " + allPaths.size();
-			resultsDialog.addPathToList( nameForList );
-
-		}
+		pathAndFillManager.addPath( currentPath );
+		setCurrentPath( null );
 
 		unsavedPaths = true;
 
@@ -948,12 +581,20 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	synchronized public void clickForTrace( int x_in_pane, int y_in_pane, int plane, boolean join ) {
 		
+		PointInImage joinPoint = null;
+
+		if( join ) {		       
+			int [] p = new int[3];
+			findPointInStack( x_in_pane, y_in_pane, plane, p );
+			joinPoint = pathAndFillManager.nearestJoinPointOnSelectedPaths( p[0], p[1], p[2] );
+		}
+	       
 		// FIXME: in some of the states this doesn't make sense; check for them...
 
 		if( currentSearchThread != null )
 			return;
 
-		if( temporaryConnection != null )
+		if( temporaryPath != null )
 			return;
 
 		if( filler != null ) {
@@ -964,11 +605,11 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		if( pathUnfinished ) {
 			/* Then this is a succeeding point, and we
 			   should start a search. */
-			testPathTo( x_in_pane, y_in_pane, plane );
+			testPathTo( x_in_pane, y_in_pane, plane, joinPoint );
 			resultsDialog.changeState( NeuriteTracerResultsDialog.SEARCHING );
 		} else {
 			/* This is an initial point. */
-			startPath( x_in_pane, y_in_pane, plane, join );
+			startPath( x_in_pane, y_in_pane, plane, joinPoint );
 			resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 		}
 
@@ -989,7 +630,7 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		setFillThreshold( distance );
 	}
 
-	public void setFillThreshold( float distance ) {
+	public void setFillThreshold( double distance ) {
 
 		if( distance > 0 ) {
 
@@ -1004,15 +645,14 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		
 	}
 
-	synchronized public void startPath( int x_in_pane, int y_in_pane, int plane, boolean join ) {
+	synchronized public void startPath( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
+
+		endJoin = null;
+		endJoinIndex = -1;
 
 		if( lastStartPointSet ) {
 			IJ.showStatus( "The start point has already been set; to finish a path press 'F'" );
 			return;
-		}
-
-		if( allPaths == null ) {
-			setAllPaths( new ArrayList< SegmentedConnection >( ) );
 		}
 
 		int [] p = new int[3];
@@ -1020,28 +660,29 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 		setPathUnfinished( true );
 		lastStartPointSet = true;
-		last_start_point_x = p[0];
-		last_start_point_y = p[1];
-		last_start_point_z = p[2];
-		SegmentedConnection s = new SegmentedConnection();
-		s.startsAtJoin( join );
-		allPaths.add( s );
 
+		Path path = new Path();
+
+		if( joinPoint == null ) {
+			last_start_point_x = p[0];
+			last_start_point_y = p[1];
+			last_start_point_z = p[2];
+		} else {
+			last_start_point_x = joinPoint.x;
+			last_start_point_y = joinPoint.y;
+			last_start_point_z = joinPoint.z;
+			path.setJoin( Path.PATH_START, joinPoint.onPath, joinPoint.onPathIndex );		       
+		}
+
+		setCurrentPath( path );
 	}	
 
 	/* Return true if we have just started a new path, but have
 	   not yet added any connections to it, otherwise return
 	   false. */
 
-	public boolean justFirstPoint() {
-		
-		if( pathUnfinished ) {
-			SegmentedConnection currentPath = (SegmentedConnection)allPaths.get(allPaths.size()-1);
-			if( currentPath.size() == 0 )
-				return true;
-		}
-		
-		return false;
+	public boolean justFirstPoint() {		
+		return pathUnfinished && (currentPath.size() == 0);
 	}
 
 	String getStackTrace( ) {
@@ -1075,6 +716,8 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 
 	public void run( String ignoredArguments ) {
 		
+		pathAndFillManager = new PathAndFillManager();
+
 		// System.err.println("Macro options are: "+Macro.getOptions());
 
 		// System.err.println("client running with arguments: "+arguments);
@@ -1128,6 +771,8 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 			resultsDialog = new NeuriteTracerResultsDialog( "Tracing for: " + xy.getShortTitle(),
 									this,
 									applet != null );
+
+			pathAndFillManager.addPathListener(resultsDialog);
 
 			width = xy.getWidth();
 			height = xy.getHeight();
@@ -1491,16 +1136,9 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 	
 	synchronized public void fitCircles( int index, boolean display, int withinSide ) {
 
-		SegmentedConnection s = (SegmentedConnection)allPaths.get(index);
-
-		SegmentedConnection fitted = s.fitCircles( withinSide, this, display );
-		
-		allPaths.add(fitted);
-
-		String nameForList = "Path: " + (index+1);
-		nameForList += " (radiuses fitted)";
-		resultsDialog.addPathToList( nameForList );
-		
+		Path s = pathAndFillManager.getPath(index);
+		Path fitted = s.fitCircles( withinSide, this, display );
+		pathAndFillManager.addPath( fitted );
 	}
 
 	boolean hessianEnabled = false;
@@ -1529,5 +1167,19 @@ public class SimpleNeuriteTracer_ extends ThreePanes
 		}
 		IJ.showProgress(proportion);
 	}
+
+	public void getTracings( boolean mineOnly ) {
+		boolean result = pathAndFillManager.getTracings( mineOnly, archiveClient );
+		if( result )
+			unsavedPaths = false;
+	}
+
+	public void uploadTracings( ) {
+		boolean result = pathAndFillManager.uploadTracings( archiveClient );
+		if( result )
+			unsavedPaths = false;
+		
+	}
+
 
 }

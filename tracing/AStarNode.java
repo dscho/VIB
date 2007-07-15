@@ -121,8 +121,8 @@ class AStarNode implements Comparable {
 		return "("+x+","+y+","+z+") h: "+h+" g: "+g+" f: "+f;
 	}
 	
-	public Connection asConnection( ) {
-		Connection creversed = new Connection();
+	public Path asPath( ) {
+		Path creversed = new Path();
 		AStarNode p = this;
 		do {
 			creversed.addPoint( p.x, p.y, p.z );
@@ -135,8 +135,8 @@ class AStarNode implements Comparable {
 		return predecessor;
 	}
 	
-	public Connection asConnectionReversed( ) {
-		Connection result = new Connection();
+	public Path asPathReversed( ) {
+		Path result = new Path();
 		AStarNode p = this;
 		do {
 			result.addPoint( p.x, p.y, p.z );

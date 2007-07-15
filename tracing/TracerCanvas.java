@@ -40,30 +40,34 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			arrows[i] = null;
 	}
 	
+	// -------------------------------------------------------------
+	
 	private SimpleNeuriteTracer_ tracerPlugin;
 	
 	TracerCanvas( ImagePlus imp, SimpleNeuriteTracer_ plugin, int plane ) {
 		super(imp,plugin,plane);
 		tracerPlugin = plugin;
+		pathAndFillManager = plugin.getPathAndFillManager();
 		// SimpleNeuriteTracer_.toastKeyListeners( IJ.getInstance(), "TracerCanvas constructor" );
 		// addKeyListener( this );
 		// System.out.println("Added keylistener");
 	}
 
-	private Connection unconfirmedSegment = null;
-	private ArrayList< SegmentedConnection > completed = null;
+	private Path unconfirmedSegment;
+	private Path currentPath;
+	private PathAndFillManager pathAndFillManager;
 	private boolean lastPathUnfinished;
 
 	public void setPathUnfinished( boolean unfinished ) {
 		this.lastPathUnfinished = unfinished;
 	}
 
-	public void setTemporaryConnection( Connection connection ) {
-		this.unconfirmedSegment = connection;
+	public void setTemporaryPath( Path path ) {
+		this.unconfirmedSegment = path;
 	}
-	
-	public void setCompleted( ArrayList< SegmentedConnection > completed ) {
-		this.completed = completed;
+
+	public void setCurrentPath( Path path ) {
+		this.currentPath = path;
 	}
 
 	public void keyPressed(KeyEvent e) {
@@ -72,23 +76,21 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		char keyChar = e.getKeyChar();
 		int flags = e.getModifiers();
 
+		boolean shift_down = (keyCode == KeyEvent.VK_SHIFT);
+		boolean control_down = (keyCode == KeyEvent.VK_CONTROL);
+
 		/*
 		System.out.println("keyCode=" + keyCode + " (" + KeyEvent.getKeyText(keyCode)
 				   + ") keyChar=\"" + keyChar + "\" (" + (int)keyChar + ") "
 				   + KeyEvent.getKeyModifiersText(flags));
 		*/
 				   
-		if( keyChar == 't' || keyChar == 'T' ) {
-
-			// System.out.println( "Yes, running testPathTo" );
-			tracerPlugin.testPathTo( last_x_in_pane, last_y_in_pane, plane );
-
-		} else if( keyChar == 'y' || keyChar == 'Y' ) {
+		if( keyChar == 'y' || keyChar == 'Y' ) {
 
 			// System.out.println( "Yes, running confirmPath" );
 			tracerPlugin.confirmTemporary( );
 
-		} else if( keyChar == 'n' || keyChar == 'N' ) {
+		} else if( keyCode == KeyEvent.VK_ESCAPE ) {
 
 			// System.out.println( "Yes, running cancelPath+" );
 			tracerPlugin.cancelTemporary( );
@@ -107,16 +109,17 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 
 			just_near_slices = ! just_near_slices;
 
-		} else if( keyCode == KeyEvent.VK_SHIFT ) {
+		} else if( shift_down || control_down ) {
 			
-			tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, true );
- 
+			tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_down, control_down );
+
 		}
 
 		e.consume();
 	}
 	
 	boolean just_near_slices = false;
+	int eitherSide;
 
 	public void keyReleased(KeyEvent e) {}
 	
@@ -168,8 +171,9 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		last_y_in_pane = offScreenY(e.getY());
 		
 		boolean shift_key_down = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
+		boolean control_key_down = (e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
 
-		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_key_down );
+		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_key_down, control_key_down );
 		
 	}
 	
@@ -242,7 +246,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 
 		} else if( tracerPlugin.setupTrace ) {
 			
-			boolean join = e.isShiftDown();
+			boolean join = e.isControlDown();
 
 			tracerPlugin.clickForTrace( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
 			// tracerPlugin.startPath( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
@@ -366,47 +370,32 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			}
 		}
 
-		if( completed != null ) {
-			synchronized(tracerPlugin) {
-				// System.out.println("Have some completed paths to draw.");
-				int paths = completed.size();
-				// System.out.println("Paths to draw: "+paths);
-				for( int i = 0; i < paths; ++i ) {
-					// System.out.println("Drawing path: "+i);
-					Color color = Color.MAGENTA;
-					if( (i == (paths - 1)) && lastPathUnfinished ) {
-						color = Color.RED;
-					}
-					if( tracerPlugin.pathSelected(i) ) {
-						color = Color.GREEN;
-					}
-					SegmentedConnection s = (SegmentedConnection)completed.get(i);
-					int segments_in_path = s.connections.size();
-					// System.out.println(""+segments_in_path+" segments in that path");
-					for( int j = 0; j < segments_in_path; ++j ) {
-						// System.out.println("drawing segment "+j);
-						Connection connection = (Connection)s.connections.get(j);
-						// FIXME: npe here?
-						if( connection == null ) {
-							System.out.println("BUG: connection is null");
-						}
-						if( plane == ThreePanes.XY_PLANE ) {
-							if( just_near_slices )
-								connection.drawConnectionAsPoints( this, g, color, plane, current_z, 2 );
-							else
-								connection.drawConnectionAsPoints( this, g, color, plane );
-						} else
-							connection.drawConnectionAsPoints( this, g, color, plane );
-							
-					}
-				}
+		for( int i = 0; i < pathAndFillManager.size(); ++i ) {
+
+			Path p = pathAndFillManager.getPath(i);
+			if( p == null )
+				continue;
+			
+			Color color = Color.MAGENTA;
+			if( pathAndFillManager.isSelected(i) ) {
+				color = Color.GREEN;
 			}
+
+			if( just_near_slices ) {
+				p.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );
+			} else
+				p.drawPathAsPoints( this, g, color, plane );
+
 		}
 
 		if( unconfirmedSegment != null ) {
-			synchronized(tracerPlugin) {
-				unconfirmedSegment.drawConnectionAsPoints( this, g, Color.BLUE, plane );
-			}
+			unconfirmedSegment.drawPathAsPoints( this, g, Color.BLUE, plane );
+		}
+
+		Path currentPath = tracerPlugin.getCurrentPath();
+		
+		if( currentPath != null ) {
+			currentPath.drawPathAsPoints( this, g, Color.RED, plane );
 		}
 
 		super.drawOverlay(g);
