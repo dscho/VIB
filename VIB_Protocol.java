@@ -5,6 +5,7 @@ import java.util.Vector;
 import java.io.File;
 
 import ij.IJ;
+import ij.macro.Interpreter;
 import ij.ImagePlus;
 import ij.Macro;
 import ij.gui.GenericDialog;
@@ -103,8 +104,14 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 			return;
 
 		initOptions();
-		options.saveTo(options.workingDirectory + File.separator
-				+ Options.CONFIG_FILE);
+		String confFile = options.workingDirectory + File.separator
+					+ Options.CONFIG_FILE;
+		options.saveTo(confFile);
+		if(!Interpreter.isBatchMode()) {
+			IJ.showMessage("Stored configuration in \n" + confFile 
+				+ "\nYou can load it the next time you start "
+				+ "the protocol.");
+		}
 
 		State state = new State(options);
 		new EndModule().runOnAllImages(state);
