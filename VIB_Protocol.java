@@ -11,6 +11,7 @@ import ij.gui.GenericDialog;
 import ij.plugin.PlugIn;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
+import ij.io.DirectoryChooser;
 
 import vib.app.gui.Console;
 import vib.app.gui.FileGroupDialog;
@@ -166,9 +167,8 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 				setString(TEMPL, selected.getAbsolutePath());
 			}
 		} else if (e.getSource() == load) {
-			FileDialog dialog =
-				new FileDialog(gd, "Working Directory");
-			dialog.setVisible(true);
+			DirectoryChooser dialog = 
+				new DirectoryChooser("Working Directory");
 			String dir = dialog.getDirectory();
 			if (dir != null)
 				loadFrom(dir);
