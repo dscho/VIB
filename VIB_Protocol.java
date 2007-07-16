@@ -39,6 +39,27 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		options = new Options();
 
 		gd = new GenericDialog("VIB Protocol");
+		gd.addMessage("Do you want to load a stored configuration? ");
+		gd.addMessage("If not, leave blank and click 'OK'");
+		gd.addMessage("  ");
+		Panel panel = new Panel();
+		Button button = new Button("Load");
+		panel.add(button);
+		gd.addPanel(panel);
+		gd.addStringField("Configuration file", "", 25);
+		final TextField confTF = (TextField)gd.getStringFields().get(0);
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				OpenDialog d = new OpenDialog("Load", "");
+				String f = d.getDirectory() + d.getFileName();
+				confTF.setText(f);
+			}
+		});
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		
+		gd = new GenericDialog("VIB Protocol");
 		fgd = new FileGroupDialog(options.fileGroup);
 		templateButton = fgd.getTemplateButton();
 		templateButton.addActionListener(this);
@@ -52,7 +73,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		load = new Button("Select working directory");
 		load.addActionListener(this);
 		// work around not being able to access gd.y
-		Panel panel = new Panel();
+		panel = new Panel();
 		gd.addPanel(panel);
 		gd.remove(panel);
 		gd.add(load, c);
@@ -65,22 +86,17 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		gd.addNumericField("Resampling factor", 2, 0);
 
 		final TextField wdtf = (TextField)gd.getStringFields().get(WD);
-		wdtf.addFocusListener(new FocusAdapter() {
-			public void focusLost(FocusEvent e) {
-				loadFrom(wdtf.getText());
-			}
-		});
+
+		// if an option file is available, fill the forms
+		if(!confTF.getText().trim().equals("")) {
+			loadFrom(confTF.getText());
+		}
 
 		// make the template textfield ineditable
 		TextField templateField =
 			(TextField)gd.getStringFields().get(TEMPL);
 		templateField.setEditable(false);
 
-		String optionsString = Macro.getOptions();
-		String workingDirectory = optionsString == null ? null :
-			Macro.getValue(optionsString, "cwd", null);
-		if (workingDirectory != null)
-			loadFrom(workingDirectory);
 
 		gd.showDialog();
 		if(gd.wasCanceled())
@@ -94,12 +110,9 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		new EndModule().runOnAllImages(state);
 	}
 
-	public void loadFrom(String workingDirectory) {
-		setString(WD, workingDirectory);
-		File f = new File(workingDirectory + File.separator +
-				Options.CONFIG_FILE);
-		if(f.exists()) {
-			options.loadFrom(f.getAbsolutePath());
+	public void loadFrom(String confFile) {
+		if(new File(confFile).exists()) {
+			options.loadFrom(confFile);
 			initTextFields();
 		}
 	}
