@@ -176,6 +176,10 @@ public class Psychomorph_TEM_Reader implements PlugInFilter {
 		m.setCoordinates(tem1.x, tem1.y, tem2.x, tem2.y, n2);
 		for (int i = n2; i < n1; i++) {
 			m.calculate(tem1.x[i], tem1.y[i]);
+			if (m.resultX < 1)
+				m.resultX = 1;
+			if (m.resultY < 1)
+				m.resultY = 1;
 			tem2.addPoint(m.resultX, m.resultY);
 		}
 		for (int i = tem2.lineCount; i < tem1.lineCount; i++)
