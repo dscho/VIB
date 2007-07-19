@@ -155,14 +155,33 @@ public class Psychomorph_TEM_Reader implements PlugInFilter {
 	}
 
 	public static void main(String[] args) {
-		if (args.length != 3) {
+		if (args.length != 3 && args.length != 4) {
 			System.err.println("Usage: "
 				+ "prog <original-tem> <incomplete-tem>"
+				+ " <output-tem>");
+			System.err.println("       "
+				+ "prog -scale <factor> <original-tem> "
 				+ " <output-tem>");
 			System.exit(1);
 		}
 
 		TEM tem1 = new TEM(), tem2 = new TEM();
+		if (args[0].equals("-scale")) {
+			float factor = Float.parseFloat(args[1]);
+			try {
+				tem1.readFile(args[2]);
+				for (int i = 0; i < tem1.pointCount; i++) {
+					tem1.x[i] *= factor;
+					tem1.y[i] *= factor;
+				}
+				tem1.writeFile(args[3]);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+			System.exit(0);
+		}
+
 		try {
 			tem1.readFile(args[0]);
 			tem2.readFile(args[1]);
