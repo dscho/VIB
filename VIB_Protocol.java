@@ -38,6 +38,13 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	
 	public void run(String arg) {
 		options = new Options();
+		String option = Macro.getValue(Macro.getOptions() ,"load", "");
+		if(!option.equals("")) {
+			options.loadFrom(option);
+			State state = new State(options);
+			new EndModule().runOnAllImages(state);
+			return;
+		}
 
 		gd = new GenericDialog("VIB Protocol");
 		gd.addMessage("Do you want to load a stored configuration? ");
@@ -107,7 +114,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		String confFile = options.workingDirectory + File.separator
 					+ Options.CONFIG_FILE;
 		options.saveTo(confFile);
-		if(!Interpreter.isBatchMode()) {
+		if(!Interpreter.isBatchMode() && Macro.getOptions() == null) {
 			IJ.showMessage("Stored configuration in \n" + confFile 
 				+ "\nYou can load it the next time you start "
 				+ "the protocol.");
