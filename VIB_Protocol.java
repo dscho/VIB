@@ -14,10 +14,12 @@ import ij.io.OpenDialog;
 import ij.io.SaveDialog;
 import ij.io.DirectoryChooser;
 
+import vib.app.gui.ProgressIndicator;
 import vib.app.gui.Console;
 import vib.app.gui.FileGroupDialog;
 import vib.app.FileGroup;
 import vib.app.Options;
+import vib.app.module.Module;
 import vib.app.module.EndModule;
 import vib.app.module.State;
 
@@ -38,10 +40,14 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	
 	public void run(String arg) {
 		options = new Options();
-		String option = Macro.getValue(Macro.getOptions() ,"load", "");
-		if(!option.equals("")) {
+		String option;
+
+		if(Macro.getOptions() != null && !(option = Macro.getValue(
+			Macro.getOptions(), "load", "")).equals("")) {
+			
 			options.loadFrom(option);
 			State state = new State(options);
+			Module.addModuleListener(new ProgressIndicator(options));
 			new EndModule().runOnAllImages(state);
 			return;
 		}
@@ -121,6 +127,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		}
 
 		State state = new State(options);
+		Module.addModuleListener(new ProgressIndicator(options));
 		new EndModule().runOnAllImages(state);
 	}
 
