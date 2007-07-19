@@ -22,23 +22,17 @@ public class State {
 	public State(Options options) {
 		this.options = options;
 
-		imagesPath = options.workingDirectory + File.separator +
-			"images";
-		labelPath = options.workingDirectory + File.separator +
-			"labels";
+		imagesPath = createDirname("images");
+		labelPath = createDirname("labels");
 		mkdir(labelPath);
 		if (options.resamplingFactor > 1)
-			resampledPath = options.workingDirectory +
-				File.separator + "resampled";
+			resampledPath = createDirname("resampled");
 		else
 			resampledPath = null;
 		if (options.transformationMethod == Options.LABEL_DIFFUSION)
-			warpedPath = options.workingDirectory +
-				File.separator + "warped";
-		outputPath = options.workingDirectory + File.separator +
-			"output";
-		statisticsPath = options.workingDirectory + File.separator +
-			"statistics";
+			warpedPath = createDirname("warped");
+		outputPath = createDirname("output");
+		statisticsPath = createDirname("statistics");
 		mkdir(statisticsPath);
 		for (int c = -1; c < options.numChannels; c++) {
 			if (warpedPath != null)
@@ -186,9 +180,9 @@ public class State {
 		File output = new File(target);
 		if (!output.exists()) {
 			if (debug)
-				System.err.println("File " + target +
-						" is not up-to-date, since it "
-						+ "does not exist");
+				System.err.println("File " + target 
+					+ " is not up-to-date, since it "
+					+ "does not exist");
 			return false;
 		}
 		for (int i = 0; i < sources.length; i++) {
@@ -199,7 +193,10 @@ public class State {
 				if (source.lastModified() >
 						output.lastModified()) {
 					if (debug)
-						System.err.println("File " + target + " is older than " + sources[i]);
+						System.err.println("File " 
+							+ target 
+							+ " is older than " 
+							+ sources[i]);
 					return false;
 				}
 			} catch (Exception e) {
@@ -216,8 +213,7 @@ public class State {
 	public boolean save(ImagePlus image, String path) {
 		currentImagePath = path;
 		currentImage = image;
-		FileSaver fs = new FileSaver(image);
-		return fs.saveAsTiffStack(path);
+		return new FileSaver(image).saveAsTiffStack(path);
 	}
 
 	// caching the latest image
@@ -255,6 +251,10 @@ public class State {
 
 	private void mkdir(String path) {
 		new File(path).mkdir();
+	}
+
+	private String createDirname(String name) {
+		return options.workingDirectory + File.separator + name;
 	}
 }
 
