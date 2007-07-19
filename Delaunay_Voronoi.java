@@ -68,6 +68,12 @@ public class Delaunay_Voronoi implements PlugIn {
 			Calibration calib = imp.getCalibration();
 			int xCol = results.getColumnIndex("XM");
 			int yCol = results.getColumnIndex("YM");
+			if (xCol < 0 || yCol < 0) {
+				IJ.error("You did not select Center of Mass in"
+					+ " Analyze>Set Measurements...\n"
+					+ "Select it and try again.");
+				return;
+			}
 			float[] x = results.getColumn(xCol);
 			float[] y = results.getColumn(yCol);
 			int[] xInt = new int[x.length];
