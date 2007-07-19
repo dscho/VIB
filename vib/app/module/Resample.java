@@ -7,7 +7,7 @@ import vib.app.Options;
 import vib.Resample_;
 
 public class Resample extends Module {
-	protected String getName() { return "Resample"; }
+	public String getName() { return "Resample"; }
 	protected String getMessage() { return "Resampling"; }
 
 	protected void run(State state, int index) {

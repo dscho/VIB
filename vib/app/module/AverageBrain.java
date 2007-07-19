@@ -9,7 +9,7 @@ import vib.FastMatrix;
 import vib.InterpolatedImage;
 
 public class AverageBrain extends Module {
-	protected String getName() { return "AverageBrain"; }
+	public String getName() { return "AverageBrain"; }
 	protected String getMessage() { return "Averaging brain"; }
 	protected boolean runsOnce() { return true; }
 

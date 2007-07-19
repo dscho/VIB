@@ -12,7 +12,7 @@ import vib.app.Options;
 import vib.FloatMatrix;
 
 public class CenterTransformation extends Module {
-	protected String getName() { return "CenterTransformation"; }
+	public String getName() { return "CenterTransformation"; }
 	protected String getMessage() { return "Calculating center transformation"; }
 
 	protected void run(State state, int index) {

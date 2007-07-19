@@ -10,7 +10,7 @@ import vib.TissueStatistics_;
 import vib.app.ImageMetaData;
 
 public class TissueStatistics extends Module {
-	protected String getName() { return "TissueStatistics"; }
+	public String getName() { return "TissueStatistics"; }
 	protected String getMessage() { return "Calculating tissue statistics"; }
 
 	protected void run(State state, int index) {
