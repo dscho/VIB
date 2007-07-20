@@ -33,6 +33,8 @@ public class TissueStatistics extends Module {
 					stats.voxelVolume(),
 					stats.centerX(i), stats.centerY(i),
 					stats.centerZ(i));
-		metaData.saveTo(statisticsPath);
+		if(!metaData.saveTo(statisticsPath))
+			throw new RuntimeException("Could not save " + 
+				statisticsPath);
 	}
 }

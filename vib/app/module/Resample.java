@@ -41,6 +41,9 @@ public class Resample extends Module {
 			return;
 		ImagePlus resampled = Resample_.resample(image,
 				state.options.resamplingFactor);
-		state.save(resampled, resampledPath);
+	
+		if(!state.save(resampled, resampledPath))
+			throw new RuntimeException("Could not save " + 
+				resampledPath);
 	}
 }

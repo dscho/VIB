@@ -88,7 +88,9 @@ public class LabelCenterTransformation extends Module {
 			FloatMatrix floatMatrix =
 				FloatMatrix.parseMatrix(forAmira);
 			stats.setMatrix(matTransformLabel, floatMatrix);
-			stats.saveTo(statisticsPath);
+			if(!stats.saveTo(statisticsPath))
+				throw new RuntimeException("Could not save " + 
+					statisticsPath);
 		}
 	}
 }

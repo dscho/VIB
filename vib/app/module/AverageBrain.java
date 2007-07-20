@@ -49,7 +49,9 @@ public class AverageBrain extends Module {
 				state.getTemplateLabels() :
 				state.getTemplate();
 		averageBrain.doit(scratch, images, matrices);
-		state.save(scratch, outputPath);
+		if(!state.save(scratch, outputPath))
+			throw new RuntimeException(
+				"Could not save " + outputPath);
 	}
 
 	private FastMatrix[] getMatrices(State state) {

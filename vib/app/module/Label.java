@@ -53,7 +53,9 @@ public class Label extends Module {
 		labels = csw.getLabels();
 		image.close();
 		csw.cleanUp();
-		state.save(labels, labelPath);
+		if(!state.save(labels, labelPath))
+			throw new RuntimeException("Could not save " + 
+				labelPath);
 	}
 
 	private static void setGrayLUT(ImagePlus ip) {
