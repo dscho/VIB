@@ -13,7 +13,7 @@ import vib.RigidRegistration_;
 import vib.TransformedImage;
 
 public class LabelCenterTransformation extends Module {
-	protected String getName() { return "LabelCenterTransformation"; }
+	public String getName() { return "LabelCenterTransformation"; }
 	protected String getMessage() { return "Registering the individual neuropils"; }
 
 	protected void run(State state, int index) {

@@ -5,7 +5,7 @@ import ij.ImagePlus;
 import vib.Resample_;
 
 public class ResampleLabels extends Module {
-	protected String getName() { return "ResampleLabels"; }
+	public String getName() { return "ResampleLabels"; }
 	protected String getMessage() { return "Resampling label"; }
 
 	protected void run(State state, int index) {

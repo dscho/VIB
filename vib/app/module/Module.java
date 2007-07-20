@@ -1,11 +1,14 @@
 package vib.app.module;
 
+import java.util.Vector;
+import java.util.Iterator;
 import vib.app.gui.Console;
 
 public abstract class Module {
 	protected Console console;
+	protected static Vector listeners = new Vector();
 
-	protected abstract String getName();
+	public abstract String getName();
 	protected abstract String getMessage();
 	protected abstract void run(State state, int index);
 
@@ -15,6 +18,7 @@ public abstract class Module {
 	public void runOnOneImage(State state, int index) {
 		console = Console.instance();
 		run(state, index);
+		finished(index);
 	}
 
 	public void runOnAllImages(State state) {
@@ -34,5 +38,19 @@ public abstract class Module {
 				" (" + (index + 1) + "/" +
 				state.getImageCount() + ")";
 		console.append(message);
+	}
+
+	public void finished(int index) {
+		for(Iterator it = listeners(); it.hasNext();) {
+			((ModuleListener)it.next()).moduleFinished(this, index);
+		}
+	}
+
+	public static void addModuleListener(ModuleListener l) {
+		listeners.add(l);
+	}
+
+	public static Iterator listeners() {
+		return listeners.iterator();
 	}
 }

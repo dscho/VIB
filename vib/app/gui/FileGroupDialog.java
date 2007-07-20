@@ -1,5 +1,6 @@
 package vib.app.gui;
 
+import ij.io.OpenDialog;
 import vib.app.FileGroup;
 
 import java.io.File;
@@ -17,7 +18,6 @@ import java.awt.ScrollPane;
 import java.awt.Panel;
 import java.awt.Button;
 import java.awt.Checkbox;
-import java.awt.FileDialog;
 import java.awt.Dimension;
 import java.awt.TextField;
 
@@ -40,8 +40,6 @@ import java.awt.datatransfer.Transferable;
 public class FileGroupDialog extends Panel 
 				implements ActionListener, DropTargetListener {
 
-	private final FileDialog fd = new FileDialog(new java.awt.Frame(), "Open...", 
-			FileDialog.LOAD);
 
 	private FileGroup files;
 	private boolean showWholePath = false;
@@ -127,8 +125,9 @@ public class FileGroupDialog extends Panel
 
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == add) {
-			fd.setVisible(true);
-			String f = fd.getDirectory() + fd.getFile();
+			OpenDialog dialog = new OpenDialog("Add file...", "");
+			String f = dialog.getDirectory() + dialog.getFileName();
+			
 			if(f != null)
 				if(!files.add(f))
 					System.out.println("File " + f + 

@@ -8,7 +8,7 @@ import java.awt.image.IndexColorModel;
 import vib.app.gui.Console;
 
 public class Show extends Module {
-	protected String getName() { return "Show"; }
+	public String getName() { return "Show"; }
 	protected String getMessage() { return "Displaying the results"; }
 	protected boolean runsOnce() { return true; }
 

@@ -13,7 +13,7 @@ import vib.RigidRegistration_;
 import vib.TransformedImage;
 
 public class GreyTransformation extends Module {
-	protected String getName() { return "GreyTransformation"; }
+	public String getName() { return "GreyTransformation"; }
 	protected String getMessage() { return "Registering the brains"; }
 
 	protected void run(State state, int index) {

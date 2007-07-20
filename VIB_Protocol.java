@@ -5,17 +5,21 @@ import java.util.Vector;
 import java.io.File;
 
 import ij.IJ;
+import ij.macro.Interpreter;
 import ij.ImagePlus;
 import ij.Macro;
 import ij.gui.GenericDialog;
 import ij.plugin.PlugIn;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
+import ij.io.DirectoryChooser;
 
+import vib.app.gui.ProgressIndicator;
 import vib.app.gui.Console;
 import vib.app.gui.FileGroupDialog;
 import vib.app.FileGroup;
 import vib.app.Options;
+import vib.app.module.Module;
 import vib.app.module.EndModule;
 import vib.app.module.State;
 
@@ -36,7 +40,39 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 	
 	public void run(String arg) {
 		options = new Options();
+		String option;
 
+		if(Macro.getOptions() != null && !(option = Macro.getValue(
+			Macro.getOptions(), "load", "")).equals("")) {
+			
+			options.loadFrom(option);
+			State state = new State(options);
+			Module.addModuleListener(new ProgressIndicator(options));
+			new EndModule().runOnAllImages(state);
+			return;
+		}
+
+		gd = new GenericDialog("VIB Protocol");
+		gd.addMessage("Do you want to load a stored configuration? ");
+		gd.addMessage("If not, leave blank and click 'OK'");
+		gd.addMessage("  ");
+		Panel panel = new Panel();
+		Button button = new Button("Load");
+		panel.add(button);
+		gd.addPanel(panel);
+		gd.addStringField("Configuration file", "", 25);
+		final TextField confTF = (TextField)gd.getStringFields().get(0);
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				OpenDialog d = new OpenDialog("Load", "");
+				String f = d.getDirectory() + d.getFileName();
+				confTF.setText(f);
+			}
+		});
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		
 		gd = new GenericDialog("VIB Protocol");
 		fgd = new FileGroupDialog(options.fileGroup);
 		templateButton = fgd.getTemplateButton();
@@ -51,7 +87,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		load = new Button("Select working directory");
 		load.addActionListener(this);
 		// work around not being able to access gd.y
-		Panel panel = new Panel();
+		panel = new Panel();
 		gd.addPanel(panel);
 		gd.remove(panel);
 		gd.add(load, c);
@@ -64,41 +100,40 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		gd.addNumericField("Resampling factor", 2, 0);
 
 		final TextField wdtf = (TextField)gd.getStringFields().get(WD);
-		wdtf.addFocusListener(new FocusAdapter() {
-			public void focusLost(FocusEvent e) {
-				loadFrom(wdtf.getText());
-			}
-		});
+
+		// if an option file is available, fill the forms
+		if(!confTF.getText().trim().equals("")) {
+			loadFrom(confTF.getText());
+		}
 
 		// make the template textfield ineditable
 		TextField templateField =
 			(TextField)gd.getStringFields().get(TEMPL);
 		templateField.setEditable(false);
 
-		String optionsString = Macro.getOptions();
-		String workingDirectory = optionsString == null ? null :
-			Macro.getValue(optionsString, "cwd", null);
-		if (workingDirectory != null)
-			loadFrom(workingDirectory);
 
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
 
 		initOptions();
-		options.saveTo(options.workingDirectory + File.separator
-				+ Options.CONFIG_FILE);
+		String confFile = options.workingDirectory + File.separator
+					+ Options.CONFIG_FILE;
+		options.saveTo(confFile);
+		if(!Interpreter.isBatchMode() && Macro.getOptions() == null) {
+			IJ.showMessage("Stored configuration in \n" + confFile 
+				+ "\nYou can load it the next time you start "
+				+ "the protocol.");
+		}
 
 		State state = new State(options);
+		Module.addModuleListener(new ProgressIndicator(options));
 		new EndModule().runOnAllImages(state);
 	}
 
-	public void loadFrom(String workingDirectory) {
-		setString(WD, workingDirectory);
-		File f = new File(workingDirectory + File.separator +
-				Options.CONFIG_FILE);
-		if(f.exists()) {
-			options.loadFrom(f.getAbsolutePath());
+	public void loadFrom(String confFile) {
+		if(new File(confFile).exists()) {
+			options.loadFrom(confFile);
 			initTextFields();
 		}
 	}
@@ -166,9 +201,8 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 				setString(TEMPL, selected.getAbsolutePath());
 			}
 		} else if (e.getSource() == load) {
-			FileDialog dialog =
-				new FileDialog(gd, "Working Directory");
-			dialog.setVisible(true);
+			DirectoryChooser dialog = 
+				new DirectoryChooser("Working Directory");
 			String dir = dialog.getDirectory();
 			if (dir != null)
 				loadFrom(dir);

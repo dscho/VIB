@@ -8,7 +8,9 @@ import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
 import ij.gui.GenericDialog;
 import ij.gui.PointRoi;
+import ij.gui.PolygonRoi;
 import ij.gui.Roi;
+import ij.gui.ShapeRoi;
 import ij.gui.StackWindow;
 import ij.gui.Toolbar;
 import ij.macro.Interpreter;
@@ -19,7 +21,9 @@ import ij.plugin.filter.Analyzer;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
+import java.awt.geom.GeneralPath;
 import java.awt.Graphics;
+import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.event.KeyEvent;
@@ -49,6 +53,7 @@ public class Delaunay_Voronoi implements PlugIn {
 		gd.addChoice("mode", new String[] { "Delaunay", "Voronoi"},
 				"Delaunay");
 		gd.addCheckbox("interactive", !Interpreter.isBatchMode());
+		gd.addCheckbox("make Delaunay ROI", false);
 		gd.addCheckbox("showMeanDistance", false);
 		ResultsTable results = Analyzer.getResultsTable();
 		gd.addCheckbox("inferSelectionFromParticles",
@@ -61,6 +66,7 @@ public class Delaunay_Voronoi implements PlugIn {
 	
 		mode = gd.getNextChoiceIndex() + 1;
 		boolean interactive = gd.getNextBoolean();
+		boolean makeROI = gd.getNextBoolean();
 		showMeanDistance = gd.getNextBoolean();
 		boolean fromParticles = gd.getNextBoolean();
 
@@ -68,6 +74,12 @@ public class Delaunay_Voronoi implements PlugIn {
 			Calibration calib = imp.getCalibration();
 			int xCol = results.getColumnIndex("XM");
 			int yCol = results.getColumnIndex("YM");
+			if (xCol < 0 || yCol < 0) {
+				IJ.error("You did not select Center of Mass in"
+					+ " Analyze>Set Measurements...\n"
+					+ "Select it and try again.");
+				return;
+			}
 			float[] x = results.getColumn(xCol);
 			float[] y = results.getColumn(yCol);
 			int[] xInt = new int[x.length];
@@ -85,6 +97,12 @@ public class Delaunay_Voronoi implements PlugIn {
 
 		CustomCanvas cc = new CustomCanvas(imp);
 
+		if (makeROI) {
+			imp.setRoi(getRoi(cc.delaunay, cc.inf));
+			imp.updateAndDraw();
+			return;
+		}
+
 		if (!interactive) {
 			cc.drawOverlay(null);
 			imp.updateAndDraw();
@@ -99,6 +117,61 @@ public class Delaunay_Voronoi implements PlugIn {
 		if (roi != null)
 			// implicitely set the new image canvas
 			roi.setImage(imp);
+	}
+
+	Roi getRoi(DelaunayTriangulation delaunay, double inf) {
+		if (delaunay == null)
+			return null;
+
+		if (mode != DELAUNAY) {
+			IJ.error("Operation only supported for Delaunay");
+			return null;
+		}
+
+		int i = 0;
+		GeneralPath path = new GeneralPath(GeneralPath.WIND_EVEN_ODD);
+		Polygon poly = null;
+		for (Iterator iter = delaunay.iterator();
+				iter.hasNext(); ) {
+			Simplex triangle = (Simplex)iter.next();
+
+			if (mode == DELAUNAY) {
+				Iterator iter2 = triangle.iterator();
+				Pnt a = (Pnt)iter2.next();
+				Pnt b = (Pnt)iter2.next();
+				Pnt c = (Pnt)iter2.next();
+				if (Math.abs(a.coord(0)) >= inf ||
+						Math.abs(b.coord(0)) >= inf ||
+						Math.abs(c.coord(0)) >= inf)
+					continue;
+				int[] x = new int[3];
+				int[] y = new int[3];
+				x[0] = (int)Math.round(a.coord(0));
+				y[0] = (int)Math.round(a.coord(1));
+				x[1] = (int)Math.round(b.coord(0));
+				y[1] = (int)Math.round(b.coord(1));
+				x[2] = (int)Math.round(c.coord(0));
+				y[2] = (int)Math.round(c.coord(1));
+				poly = new Polygon(x, y, 3);
+				path.append(poly, false);
+				i++;
+			} else {
+				return null;
+				/*
+					TODO:
+				Iterator iter2 = delaunay
+					.neighbors(triangle).iterator();
+				while (iter2.hasNext())
+					draw(g, triangle,
+							(Simplex)iter2.next());
+				*/
+			}
+		}
+		if (i == 0)
+			return null;
+		if (i == 1)
+			return new PolygonRoi(poly, PolygonRoi.POLYGON);
+		return new ShapeRoi(path);
 	}
 
 	class CustomCanvas extends ImageCanvas implements KeyListener {
