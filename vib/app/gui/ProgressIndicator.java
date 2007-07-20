@@ -60,8 +60,10 @@ public class ProgressIndicator implements ModuleListener {
 		if(index < 0)
 			return;
 		int modIndex = getModuleIndex(m.getName());
-		done[index][modIndex] = EXCEPTION;
-		garten.repaint();
+		if(modIndex != -1) {
+			done[index][modIndex] = EXCEPTION;
+			garten.repaint();
+		}
 	}
 
 	private int getModuleIndex(String name) {
