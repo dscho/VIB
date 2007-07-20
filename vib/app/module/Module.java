@@ -7,6 +7,7 @@ import vib.app.gui.Console;
 public abstract class Module {
 	protected Console console;
 	protected static Vector listeners = new Vector();
+	private static boolean exception = false;
 
 	public abstract String getName();
 	protected abstract String getMessage();
@@ -17,7 +18,16 @@ public abstract class Module {
 	// at a later stage, these functions will schedule multi-threaded jobs
 	public void runOnOneImage(State state, int index) {
 		console = Console.instance();
-		run(state, index);
+		try {
+			run(state, index);
+		} catch(Exception e) {
+			if(!exception) {
+				exception = true;
+				exceptionOccurred(index);
+			}
+			// throw again to stop the execution
+			throw new RuntimeException("Exception in " + getName(), e);
+		}
 		finished(index);
 	}
 
@@ -43,6 +53,13 @@ public abstract class Module {
 	public void finished(int index) {
 		for(Iterator it = listeners(); it.hasNext();) {
 			((ModuleListener)it.next()).moduleFinished(this, index);
+		}
+	}
+
+	public void exceptionOccurred(int index) {
+		for(Iterator it = listeners(); it.hasNext();) {
+			((ModuleListener)it.next()).
+					exceptionOccurred(this, index);
 		}
 	}
 
