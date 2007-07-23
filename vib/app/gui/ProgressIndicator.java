@@ -201,9 +201,14 @@ public class ProgressIndicator implements ModuleListener {
 		final float SIN45 = (float)(0.5 * Math.sqrt(2.0));
 		public int calculateColWidth() {
 			int w = 0;
+			FontMetrics fm = new Frame().getFontMetrics(f);
 			for(int i = 0; i < modules.length; i++) {
-				int c = new Frame().getFontMetrics(f).
-						stringWidth(modules[i]);
+				int c = fm.stringWidth(modules[i]);
+				if(w < c)
+					w = c;
+			}
+			for(int i = 0; i < files.length; i++) {
+				int c = fm.stringWidth(files[i]);
 				if(w < c)
 					w = c;
 			}
