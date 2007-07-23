@@ -47,21 +47,26 @@ public class Show_centers implements PlugInFilter {
 	public ImagePlus getCenters(AmiraTable statistics) { 
 		Point3d[] points = getList(statistics);
 		ImagePlus ret = new InterpolatedImage(image).
-									cloneDimensionsOnly().getImage();
-		int w = ret.getWidth(), h = ret.getHeight(), d = ret.getStackSize();
+					cloneDimensionsOnly().getImage();
+		ret.setTitle("Centers");
+		int w = ret.getWidth(), h = ret.getHeight();
+		int d = ret.getStackSize();
 		Calibration cal = ret.getCalibration();
 
 		for(int z = 0; z < d; z++) {
 			double coordz = (double)Math.abs(z * cal.pixelDepth);
-			byte[] p = (byte[])ret.getStack().getProcessor(z+1).getPixels();
+			byte[] p = (byte[])ret.getStack().
+						getProcessor(z+1).getPixels();
 			for(int x = 0; x < w; x++) {
 				for(int y = 0; y < h; y++) {
 					int index = y * w + x;
-					double coordx = (double)(x * cal.pixelWidth); 
-					double coordy = (double)(y * cal.pixelHeight);
-					Point3d p2 = new Point3d(coordx, coordy, coordz);
+					double coordx = x * cal.pixelWidth; 
+					double coordy = y * cal.pixelHeight;
+					Point3d p2 = new Point3d(coordx, 
+								coordy, coordz);
 					for(int i = 0; i < points.length; i++) {
-						if(p2.distance2(points[i]) < 200) {
+						if(p2.distance2(points[i]) 
+									< 200) {
 							p[index] = (byte)255;
 						}
 					}

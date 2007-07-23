@@ -37,17 +37,17 @@ public class SplitChannels extends Module {
 		reader.run(path);
 		if(reader.getNumberOfChannels() < numChannels) {
 			if (index < 0 && reader.getNumberOfChannels() == 1) {
-				// be graceful when the template has only one channel
+				// be graceful when the template has 
+				// only one channel
 				path = state.getImagePath(refChannel, index);
 				if(!state.save(reader.getImage(0), path))
-					console.append(
-						"Could not save " + path);;
+					throw new RuntimeException("Could not "
+						+ "save " + path);	
 				return;
 			}
-			console.append("File " + path + " does not contain " +
-					numChannels + " channels, but " +
-					reader.getNumberOfChannels());
-			throw new RuntimeException();
+			throw new RuntimeException("Found unexpectedly " 
+				+ reader.getNumberOfChannels() + " channels " 
+				+ " in " + path);
 		}
 		// save reference channel last, to avoid unnecessary loading
 		for(int i = 0; i < numChannels; i++) {
@@ -56,12 +56,13 @@ public class SplitChannels extends Module {
 			ImagePlus img = reader.getImage(i);
 			path = state.getImagePath(i, index);
 			if(!state.save(img, path))
-				console.append("Could not save " + path);
+				throw new RuntimeException("Could not save " + 
+					path);
 			new File(path).setLastModified(file.lastModified());
 		}
 		path = state.getImagePath(refChannel, index);
 		if(!state.save(reader.getImage(refChannel), path))
-			console.append("Could not save " + path);
+			throw new RuntimeException("Could not save " + path);
 		new File(path).setLastModified(file.lastModified());
 	}
 }

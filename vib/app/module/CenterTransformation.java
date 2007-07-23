@@ -59,6 +59,8 @@ public class CenterTransformation extends Module {
 		}
 		FloatMatrix matrix = FloatMatrix.bestRigid(c2, c1);
 		stats.setMatrix(transformLabel, matrix);
-		stats.saveTo(statisticsPath);
+		if(!stats.saveTo(statisticsPath))
+			throw new RuntimeException("Could not save " + 
+				statisticsPath);
 	}
 }

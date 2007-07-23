@@ -64,6 +64,8 @@ public class GreyTransformation extends Module {
 		String forAmira = matrix2.toStringForAmira();
 		FloatMatrix floatMatrix = FloatMatrix.parseMatrix(forAmira);
 		stats.setMatrix(transformLabel, floatMatrix);
-		stats.saveTo(statisticsPath);
+		if(!stats.saveTo(statisticsPath))
+			throw new RuntimeException("Could not save " + 
+				statisticsPath);
 	}
 }

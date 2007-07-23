@@ -19,7 +19,7 @@ public class TransformImages extends Module {
 			module = new LabelDiffusionTransformation();
 			break;
 		default:
-			throw new RuntimeException("invalid transformation: "
+			throw new RuntimeException("Invalid transformation: "
 				+ state.options.transformationMethod);
 		}
 		module.runOnOneImage(state, index);

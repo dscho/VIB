@@ -65,7 +65,9 @@ public class LabelDiffusionTransformation extends Module {
 					tolerance);
 			interpol.doit();
 			reuseDistortion = true; // true after the first channel
-			state.save(scratch, warpedPath);
+			if(!state.save(scratch, warpedPath))
+				throw new RuntimeException("Could not save " + 
+					warpedPath);
 		}
 
 	}
