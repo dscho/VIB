@@ -4,6 +4,9 @@ import java.io.File;
 import java.awt.*;
 
 import ij.IJ;
+import ij.ImagePlus;
+import ij.process.ImageProcessor;
+import ij.process.ColorProcessor;
 
 import vib.app.module.*;
 import vib.app.*;
@@ -52,7 +55,7 @@ public class ProgressIndicator implements ModuleListener {
 		int modIndex = getModuleIndex(m.getName());
 		if(modIndex != -1 && done[index][modIndex] != DONE) {
 			done[index][modIndex] = DONE;
-			garten.repaint();
+			garten.draw();
 		}
 	}
 
@@ -62,7 +65,7 @@ public class ProgressIndicator implements ModuleListener {
 		int modIndex = getModuleIndex(m.getName());
 		if(modIndex != -1) {
 			done[index][modIndex] = EXCEPTION;
-			garten.repaint();
+			garten.draw();
 		}
 	}
 
@@ -76,15 +79,12 @@ public class ProgressIndicator implements ModuleListener {
 	}
 
 	public void showDialog() {
-		Dialog d = new Dialog(IJ.getInstance());
 		garten = new Garten();
-		d.setTitle("Progress of the VIB Protocol");
-		d.add(garten);
-		d.pack();
-		d.setVisible(true);
+		garten.image.show();
+
 	}
 	
-	class Garten extends Panel {
+	class Garten  {
 
 		Font f = new Font("Verdana", Font.BOLD, 12);
 		int colW = calculateColWidth();
@@ -94,15 +94,19 @@ public class ProgressIndicator implements ModuleListener {
 		final int xIndent = 10;
 		final int yIndent = 10;
 		final int strIndent = 5;
+		ImagePlus image;
 
 		Garten() {
-			setPreferredSize(new Dimension(
+			ImageProcessor ip = new ColorProcessor(
 				colW * (cols+1) + 2 * xIndent,
-				rowH * (rows+1) + 2 * yIndent));
-			setBackground(Color.WHITE);
+				rowH * (rows+1) + 2 * yIndent);
+			ip.setBackgroundValue((double)0);
+			image = new ImagePlus("Progress", ip);
 		}
 
-		public void paint(Graphics g) {
+		public void draw() {
+			Graphics g = image.getProcessor().
+					createImage().getGraphics();
 			g.setFont(f);
 			// draw horizontal lines
 			for(int i = 0; i < rows; i++) {
@@ -148,6 +152,7 @@ public class ProgressIndicator implements ModuleListener {
 					}
 				}
 			}
+			image.updateAndDraw();
 		}
 
 		public void drawNY(int file, int mod, Graphics g) {
@@ -171,10 +176,11 @@ public class ProgressIndicator implements ModuleListener {
 			g.setColor(Color.GREEN);
 			g.fillOval(cx - r, cy - r, 2*r, 2*r);
 			g.setColor(Color.BLACK);
-			g.drawOval(cx - r, cy - r, 2*r, 2*r);
 			int cross = (int) (r * SIN45);
-			g.drawLine(cx-cross, cy, cx, cy+r);
-			g.drawLine(cx, cy+cross, cx+2*cross, cy-2*cross);
+			g.drawLine(cx-cross, cy, cx, cy+cross);
+			g.drawLine(cx, cy+cross, cx+cross, cy-cross);
+			g.setColor(Color.WHITE);
+			g.drawLine(cx+cross, cy-cross, cx+r, cy-r);
 		}
 		
 		public void drawEX(int file, int mod, Graphics g) {
@@ -196,8 +202,8 @@ public class ProgressIndicator implements ModuleListener {
 		public int calculateColWidth() {
 			int w = 0;
 			for(int i = 0; i < modules.length; i++) {
-				int c = this.getFontMetrics(f).stringWidth(
-					modules[i]);
+				int c = new Frame().getFontMetrics(f).
+						stringWidth(modules[i]);
 				if(w < c)
 					w = c;
 			}
@@ -205,7 +211,7 @@ public class ProgressIndicator implements ModuleListener {
 		}
 		
 		public int calculateRowHeight() {
-			return getFontMetrics(f).getHeight() + 10;
+			return new Frame().getFontMetrics(f).getHeight() + 10;
 		}
 	}
 }
