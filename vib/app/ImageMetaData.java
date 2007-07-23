@@ -126,6 +126,7 @@ public class ImageMetaData {
 		}
 
 		Hashtable props = table.getParameters();
+		table.close();
 		ArrayList transforms = new ArrayList();
 		Enumeration keys = props.keys();
 		while (keys.hasMoreElements()) {
