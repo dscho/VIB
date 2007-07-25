@@ -25,5 +25,12 @@ rudi)
 	;;
 esac
 
-java -Xmx$MEM -Dplugins.dir="$curdir" $EXTRADEFS \
-	-jar "$curdir"/../ImageJ/ij.jar "$@"
+case "$DEBUGIJ" in
+'')
+	java -Xmx$MEM -Dplugins.dir="$curdir" $EXTRADEFS \
+		-jar "$curdir"/../ImageJ/ij.jar "$@"
+;;
+*)
+	jdb -classpath "$curdir"/../ImageJ/ij.jar ij.ImageJ "$@"
+esac
+
