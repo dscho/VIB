@@ -74,7 +74,8 @@ public class OrthoGroup extends Content {
 		showBoundingBox(false);
 	}
 		
-	public static void addContent(Image3DUniverse univ, ImagePlus grey) {
+	public static OrthoGroup addContent(Image3DUniverse univ, 
+							ImagePlus grey) {
 		GenericDialog gd = new GenericDialog("Add grey");
 		int img_count = WindowManager.getImageCount();
 		Vector greyV = new Vector();
@@ -103,7 +104,7 @@ public class OrthoGroup extends Content {
 					new boolean[]{true, true, true});
 		gd.showDialog();
 		if(gd.wasCanceled())
-			return;
+			return null;
 			
 		if(grey == null)
 			grey = WindowManager.getImage(gd.getNextChoice());
@@ -114,7 +115,14 @@ public class OrthoGroup extends Content {
 						gd.getNextBoolean(), 
 						gd.getNextBoolean()};
 		
-		univ.addOrthoslice(grey, color, name, channels, factor);
+
+		if(univ.contains(name)) {
+			IJ.error("Could not add new content. A content with " +
+				"name \"" + name + "\" exists already.");
+			return null;
+		}
+		
+		return univ.addOrthoslice(grey, color, name, channels, factor);
 	}
 
 	public int[] getSlices() {
@@ -123,6 +131,10 @@ public class OrthoGroup extends Content {
 
 	public void eyePtChanged(View view) {
 		renderer.eyePtChanged(view);
+	}
+
+	public void thresholdUpdated(int d) {
+		renderer.setThreshold(d);
 	}
 
 	public void channelsUpdated(boolean[] channels) {
@@ -156,6 +168,11 @@ public class OrthoGroup extends Content {
 
 	public void setSlices(int x, int y, int z) {
 		((Orthoslice)renderer).setSlices(x, y, z);
+	}
+
+	public void flush() {
+		image = null;
+		renderer = null;
 	}
 }
 

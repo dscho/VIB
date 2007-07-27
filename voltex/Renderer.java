@@ -14,11 +14,18 @@ abstract public class Renderer {
 
 	protected ImagePlus image;
 	protected Volume volume;
+	protected int threshold = 0;
 
 	public Renderer(ImagePlus image) {
 		this.image = image;
 		this.volume = new Volume(image);
 	}
+
+	public int  getThreshold() {
+		return threshold;
+	}
+
+	abstract public void setThreshold(int d);
 
 	/** 
 	 * Retrieve the branchgroup of this renderer

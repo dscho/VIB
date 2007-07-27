@@ -22,10 +22,12 @@ public abstract class Content extends BranchGroup {
 
 	String name;
 	Color3f color;
-	ImagePlus image;
+	protected ImagePlus image;
 	boolean[] channels = new boolean[]{true, true, true};
 	float transparency = 0f;
 	int resamplingF = 1;
+	protected int threshold = 0;
+	private boolean locked = false;
 
 	private Switch bbSwitch;
 	private BitSet whichChild = new BitSet(2);
@@ -84,7 +86,8 @@ public abstract class Content extends BranchGroup {
 			
 		BoundingBox b = new BoundingBox(minPoint, maxPoint);
 		bbSwitch.addChild(b);
-		CoordinateSystem cs = new CoordinateSystem(100f, new Color3f(0, 1, 0));
+		float cl = (float)Math.abs(maxPoint.x - minPoint.x) / 5f;
+		CoordinateSystem cs = new CoordinateSystem(cl, new Color3f(0, 1, 0));
 		bbSwitch.addChild(cs);
 		// initially show the bounding box, but not the coordinate system
 		whichChild.set(BB, false);
@@ -107,6 +110,14 @@ public abstract class Content extends BranchGroup {
 		showBoundingBox(selected);
 	}
 
+	public void toggleLock() {
+		locked = !locked;
+	}
+
+	public void setLocked(boolean b) {
+		locked = b;
+	}
+
 	public void applyTransform(Transform3D transform) {
 		Transform3D t1 = new Transform3D();
 		localTranslate.getTransform(t1);
@@ -120,13 +131,25 @@ public abstract class Content extends BranchGroup {
 
 	public void setTransform(Transform3D transform) {
 		Transform3D t = new Transform3D();
+		Point3f c = centerPoint;
+		
 		Matrix3f m = new Matrix3f();
 		transform.getRotationScale(m);
 		t.setRotationScale(m);
-		localRotate.setTransform(t);
+		// One might thing a rotation matrix has no translational 
+		// component, however, if the rotation is composed of 
+		// translation - rotation - backtranslation, it has indeed.
 		Vector3f v = new Vector3f();
-		transform.get(v);
-		t.set(v);
+		v.x = -m.m00*c.x - m.m01*c.y - m.m02*c.z + c.x;
+		v.y = -m.m10*c.x - m.m11*c.y - m.m12*c.z + c.y;
+		v.z = -m.m20*c.x - m.m21*c.y - m.m22*c.z + c.z;
+		t.setTranslation(v);
+		localRotate.setTransform(t);
+		
+		Vector3f v2 = new Vector3f();
+		transform.get(v2);
+		v2.sub(v);
+		t.set(v2);
 		localTranslate.setTransform(t);
 	}
 
@@ -139,7 +162,13 @@ public abstract class Content extends BranchGroup {
 		this.channels = channels;
 		channelsUpdated(channels);
 	}
-		
+
+	public void setThreshold(int th) {
+		if(th != threshold) {
+			this.threshold = th;
+			thresholdUpdated(threshold);
+		}
+	}
 
 	public void setColor(Color3f color) {
 		boolean colorChanged = !(this.color == null && color == null)
@@ -178,6 +207,10 @@ public abstract class Content extends BranchGroup {
 		return color;
 	}
 
+	public int getThreshold() {
+		return threshold;
+	}
+
 	public float getTransparency() {
 		return transparency;
 	}
@@ -194,11 +227,21 @@ public abstract class Content extends BranchGroup {
 		return localTranslate;
 	}
 
+	public boolean isLocked() {
+		return locked;
+	}
+
+	public boolean hasCoord() {
+		return bbSwitch.getChildMask().get(CS);
+	}
+
 	public abstract void eyePtChanged(View view);
 	public abstract void calculateMinMaxCenterPoint();
 	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
 	public abstract void channelsUpdated(boolean[] channels);
 	public abstract void transparencyUpdated(float transparency);
+	public abstract void thresholdUpdated(int t);
+	public abstract void flush();
 }
 
 

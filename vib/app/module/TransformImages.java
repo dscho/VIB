@@ -3,7 +3,7 @@ package vib.app.module;
 import vib.app.Options;
 
 public class TransformImages extends Module {
-	protected String getName() { return "TransformImages"; }
+	public String getName() { return "TransformImages"; }
 	protected String getMessage() { return "Transforming images"; }
 
 	protected void run(State state, int index) {
@@ -19,7 +19,7 @@ public class TransformImages extends Module {
 			module = new LabelDiffusionTransformation();
 			break;
 		default:
-			throw new RuntimeException("invalid transformation: "
+			throw new RuntimeException("Invalid transformation: "
 				+ state.options.transformationMethod);
 		}
 		module.runOnOneImage(state, index);

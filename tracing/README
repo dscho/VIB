@@ -107,6 +107,14 @@ For fitting centres:
 
 ------------------------------------------------------------------------
 
+For fitting centres:
+
+  - assume that we're trying to place a circle
+  - intensity is the maximum in that slice
+  - three parameters to optimize: position from centre in x, y in the normal plane and 
+
+------------------------------------------------------------------------
+
 -- New interface:
 
 One of a number of states:

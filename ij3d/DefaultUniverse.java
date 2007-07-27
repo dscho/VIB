@@ -184,10 +184,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public void close() {
 		if(win != null) {
+			while(!listeners.isEmpty())
+				listeners.remove(0);
 			win.close();
-			if(ij.plugin.frame.Recorder.record)
-				ij.plugin.frame.Recorder.record(
-					"call", "ImageJ_3D_Viewer.close");
+			win = null;
 		}
 	}
 

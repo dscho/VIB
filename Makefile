@@ -22,7 +22,7 @@ else
 PLUGINSHOME=$(shell pwd)
 CPSEP=:
 endif
-JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).
+JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).
 JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 
 all: $(CLASSES)
@@ -51,12 +51,12 @@ FibonacciHeapInt.java: FibonacciHeap.java Makefile
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(JAVAS)) vib/segment/icons/*.png
 
-Segmentation_Editor_compat.jar: SOURCES=amira/AmiraParameters.java \
-	amira/AmiraTable.java vib/InterpolatedImage.java math3d/Point3d.java \
+Segmentation_Editor_compat.jar: SOURCES=amira/*.java \
+	vib/InterpolatedImage.java math3d/Point3d.java \
 	vib/SegmentationViewerCanvas.java vib/segment/*.java \
 	vib/IDT_Interpolate_Binary.java math3d/FastMatrixN.java \
 	Segmentation_Editor.java vib/segment/icons/*.png \
-	vib/segment/materials/*
+	vib/segment/materials/* vib/Local_Threshold.java
 
 %_compat.jar:
 	test ! -d tempdir || rm -rf tempdir
@@ -97,7 +97,7 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard orthoslice/*.java) \
 	vib/Resample_.java vib/InterpolatedImage.java \
 	amira/AmiraParameters.java amira/AmiraTable.java \
-	math3d/Point3d.java ImageJ_3D_Viewer.java
+	math3d/Point3d.java math3d/Transform_IO.java ImageJ_3D_Viewer.java
 
 Install_Java3D.jar: SOURCES=Install_Java3D.java
 

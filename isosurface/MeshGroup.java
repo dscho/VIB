@@ -29,7 +29,6 @@ import javax.vecmath.Color3f;
 public class MeshGroup extends Content {
 
 	IsoShape shape; 
-	int threshold;
 	Triangulator triangulator = new MCTriangulator();
 //	Triangulator triangulator = new discMC.DiscMCTriangulator();
 	
@@ -69,7 +68,25 @@ public class MeshGroup extends Content {
 		// do nothing
 	}
 
+	public void thresholdUpdated(int d) {
+		if(getImage() == null) {
+			IJ.error("Mesh was not calculated of a grayscale " +
+				"image. Can't change threshold");
+			return;
+		}
+		this.threshold = d;
+		List mesh = triangulator.getTriangles(getImage(), 
+			threshold, getChannels(), getResamplingFactor());
+		shape.mesh = mesh;
+		shape.update();
+	}
+
 	public void channelsUpdated(boolean [] channels) {
+		if(getImage() == null) {
+			IJ.error("Mesh was not calculated of a grayscale " +
+				"image. Can't change channels");
+			return;
+		}
 		List mesh = triangulator.getTriangles(getImage(), 
 			threshold, channels, getResamplingFactor());
 		shape.mesh = mesh;
@@ -82,9 +99,9 @@ public class MeshGroup extends Content {
 		if(shape != null) {
 			shape.calculateMinMaxCenterPoint(minPoint, maxPoint,
 				centerPoint);
+			createBoundingBox();
+			showBoundingBox(false);
 		}
-		createBoundingBox();
-		showBoundingBox(false);
 	}
 
 	public void colorUpdated(Color3f oldColor, Color3f newColor) {
@@ -100,7 +117,8 @@ public class MeshGroup extends Content {
 		shape.setTransparency(transparency);
 	}
 
-	public static void addContent(Image3DUniverse univ, ImagePlus mesh) {
+	public static MeshGroup addContent(Image3DUniverse univ, 
+							ImagePlus mesh) {
 		GenericDialog gd = new GenericDialog("Add mesh");
 		int img_count = WindowManager.getImageCount();
 		Vector meshV = new Vector();
@@ -131,7 +149,7 @@ public class MeshGroup extends Content {
 
 		gd.showDialog();
 		if(gd.wasCanceled())
-			return;
+			return null;
 			
 		if(mesh == null)
 			mesh = WindowManager.getImage(gd.getNextChoice());
@@ -149,8 +167,20 @@ public class MeshGroup extends Content {
 			tr.y = (float)(-mesh.getHeight() * c.pixelHeight/2f); 
 			tr.z = (float)(-mesh.getStackSize() * c.pixelDepth/2f);
 		}
-		univ.addMesh(mesh, color, 
+
+		if(univ.contains(name)) {
+			IJ.error("Could not add new content. A content with " +
+				"name \"" + name + "\" exists already.");
+			return null;
+		}
+		
+		return univ.addMesh(mesh, color, 
 			name, threshold, channels, factor);
+	}
+
+	public void flush() {
+		shape = null;
+		image = null;
 	}
 }
 

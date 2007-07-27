@@ -4,6 +4,8 @@ import ij.gui.GenericDialog;
 import ij.IJ;
 import ij.ImagePlus;
 
+import math3d.Transform_IO;
+
 import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
@@ -29,6 +31,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem color;
 	private MenuItem channels;
 	private MenuItem transparency;
+	private MenuItem threshold;
 	private MenuItem fill;
 	private MenuItem slices;
 	private MenuItem delete;
@@ -46,6 +49,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem exportDXF;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
+	private CheckboxMenuItem lock;
 
 	private Menu selectedMenu;
 	private Menu viewMenu;
@@ -57,11 +61,25 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String START_RECORD = "startRecord";
 	public static final String STOP_RECORD = "stopRecord";
 	public static final String RESET_VIEW = "resetView";
+	public static final String CLOSE = "close";
 
 	public static final String SET_COLOR = "setColor"; 
 	public static final String SET_TRANSPARENCY = "setTransparency";
 	public static final String SET_CHANNELS = "setChannels";
 	public static final String FILL_SELECTION = "fillSelection";
+	public static final String SET_SLICES = "setSlices";
+	public static final String LOCK = "lock";
+	public static final String UNLOCK = "unlock";
+	public static final String SET_THRESHOLD = "setThreshold";
+	public static final String SET_CS = "setCoordinateSystem";
+	public static final String SET_TRANSFORM = "setTransform";
+	public static final String APPLY_TRANSFORM = "applyTransform";
+	public static final String SAVE_TRANSFORM = "saveTransform";
+	public static final String RESET_TRANSFORM = "resetTransform";
+
+	public static final String ADD_VOLUME = "addVolume";
+	public static final String ADD_MESH = "addMesh";
+	public static final String ADD_ORTHO = "addOrthoslice";
 	public static final String DELETE = "delete";
 
 	public Image3DMenubar(Image3DUniverse univ) {
@@ -154,6 +172,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		universe.addSeparator();
 
 		delete = new MenuItem("Delete");
+		delete.setEnabled(false);
 		delete.addActionListener(this);
 		universe.add(delete);
 
@@ -187,6 +206,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		transparency.addActionListener(this);
 		content.add(transparency);
 
+		threshold = new MenuItem("Adjust threshold");
+		threshold.addActionListener(this);
+		content.add(threshold);
+		
 		coordinateSystem = new CheckboxMenuItem(
 					"Show coordinate system", true);
 		coordinateSystem.addItemListener(this);
@@ -194,6 +217,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		content.addSeparator();
 
+		lock = new CheckboxMenuItem("Lock");
+		lock.addItemListener(this);
+		content.add(lock);
+		
 		setTransform = new MenuItem("Set Transform");
 		setTransform.addActionListener(this);
 		content.add(setTransform);
@@ -245,15 +272,36 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == voltex) {
-			VoltexGroup.addContent(univ, null);
+			Content c = VoltexGroup.addContent(univ, null);
+			String[] arg = new String[] {c.image.getTitle(), 
+				ColorTable.getColorName(c.color), 
+				c.name, Boolean.toString(c.channels[0]), 
+				Boolean.toString(c.channels[1]), Boolean.
+				toString(c.channels[2]), Integer.toString(
+				c.resamplingF)};
+			record(ADD_VOLUME, arg);
 		}
 		
 		if(e.getSource() == mesh) {
-			MeshGroup.addContent(univ, null);
+			Content c = MeshGroup.addContent(univ, null);
+			String[] arg = new String[] {c.image.getTitle(), 
+				ColorTable.getColorName(c.color), 
+				c.name, Integer.toString(c.threshold), 
+				Boolean.toString(c.channels[0]), 
+				Boolean.toString(c.channels[1]), Boolean.
+				toString(c.channels[2]), Integer.toString(
+				c.resamplingF)};
+			record(ADD_MESH, arg);
 		}
 
 		if(e.getSource() == ortho) {
-			OrthoGroup.addContent(univ, null);
+			Content c = OrthoGroup.addContent(univ, null);
+			String[] arg = new String[] {c.image.getTitle(), 
+				ColorTable.getColorName(c.color), 
+				c.name, Boolean.toString(c.channels[0]), 
+				Boolean.toString(c.channels[1]), Boolean.
+				toString(c.channels[2]), Integer.toString(
+				c.resamplingF)};
 		}
 
 		if(e.getSource() == delete) {
@@ -292,6 +340,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.pauseAnimation();
 		}
 
+		if(e.getSource() == threshold) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			adjustThreshold(c);
+			univ.clearSelection();
+		}
+
 		if(e.getSource() == slices) {
 			Content c = univ.getSelected();
 			if(c == null || !(c instanceof OrthoGroup)) {
@@ -322,48 +380,79 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == close) {
 			univ.close();
+			ImageJ3DViewer.freeUniverse();
+			record(CLOSE);
 		}
 
 		if(e.getSource() == resetTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
 				return;
 			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
+				return;
+			}
 			univ.fireTransformationStarted();
-			univ.getSelected().setTransform(
-					new Transform3D());
+			c.setTransform(new Transform3D());
 			univ.fireTransformationFinished();
+			record(RESET_TRANSFORM);
 		}
 
 		if(e.getSource() == setTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
 				return;
 			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
+				return;
+			}
 			univ.fireTransformationStarted();
-			float[] t = readTransform(univ.getSelected());
+			float[] t = readTransform(c);
 			if(t != null) {
-				univ.getSelected().setTransform(
-					new Transform3D(t));
+				c.setTransform(new Transform3D(t));
 				univ.fireTransformationFinished();
 			}
+			record(SET_TRANSFORM, affine2string(t));
 		}
 
 		if(e.getSource() == applyTransform) {
-			if(univ.getSelected() == null) {
+			Content c = univ.getSelected();
+			if(c == null) {
 				IJ.error("Selection required");
+				return;
+			}
+			if(c.isLocked()) {
+				IJ.error(c.name + " is locked");
 				return;
 			}
 			univ.fireTransformationStarted();
 			float[] t = readTransform(univ.getSelected());
 			if(t != null) {
-				univ.getSelected().applyTransform(
-					new Transform3D(t));
+				c.applyTransform(new Transform3D(t));
 				univ.fireTransformationFinished();
 			}
+			record(APPLY_TRANSFORM, affine2string(t));
 		}
 
 		if(e.getSource() == saveTransform) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			Transform3D t1 = new Transform3D();
+			c.getLocalTranslate().getTransform(t1);
+			Transform3D t2 = new Transform3D();
+			c.getLocalRotate().getTransform(t2);
+			t1.mul(t2);
+			float[] matrix = new float[16];
+			t1.get(matrix);
+			if(new Transform_IO().saveAffineTransform(matrix))
+				record(SAVE_TRANSFORM, affine2string(matrix));
 		}
 
 		if (e.getSource() == exportDXF) {
@@ -387,9 +476,24 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				IJ.error("Selection required");
 				return;
 			}
-			univ.getSelected().showCoordinateSystem(
-				coordinateSystem.getState());
+			boolean b = coordinateSystem.getState();
+			univ.getSelected().showCoordinateSystem(b);
+			record(SET_CS, Boolean.toString(b));
 		}
+
+		if(e.getSource() == lock) {
+			Content selected = univ.getSelected();
+			if(selected == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			selected.toggleLock();
+			if(selected.isLocked())
+				record(LOCK);
+			else
+				record(UNLOCK);
+		}
+
 	}
 
 	public void changeTransparency(final Content selected) {
@@ -413,13 +517,56 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					selected.setTransparency(newTr);
 					univ.fireContentChanged(selected);
 					return;
+				} else {
+					record(SET_TRANSPARENCY, Float.
+					toString(((Scrollbar)gd.getSliders().
+					get(0)).getValue() / 100f));
 				}
 			}
 		});
 		gd.showDialog();
 		
-		record(SET_TRANSPARENCY,Float.toString(
-			((Scrollbar)gd.getSliders().get(0)).getValue() / 100f));
+	}
+
+	public void adjustThreshold(final Content selected) {
+		final int oldTr = (int)(selected.getThreshold());
+		if(selected instanceof MeshGroup) {
+			int th = (int)Math.round(
+				IJ.getNumber("Threshold [0..255]", oldTr));
+			th = Math.max(0, th);
+			th = Math.min(th, 255);
+			selected.setThreshold(th);
+			univ.fireContentChanged(selected);
+			record(SET_THRESHOLD, Integer.toString(th));
+			return;
+		}
+		// in case we've not a mesh, change it interactively
+		final GenericDialog gd = 
+				new GenericDialog("Adjust threshold...");
+		gd.addSlider("Transparency", 0, 255, oldTr);
+		((Scrollbar)gd.getSliders().get(0)).
+			addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				int newTr = (int)e.getValue();
+				selected.setThreshold(newTr);
+				univ.fireContentChanged(selected);
+			}
+		});
+		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					selected.setThreshold(oldTr);
+					univ.fireContentChanged(selected);
+					return;
+				} else {
+					record(SET_THRESHOLD, 
+						Integer.toString(
+							selected.threshold));
+				}
+			}
+		});
+		gd.showDialog();
 	}
 
 	public void adjustSlices(final Content selected) {
@@ -462,6 +609,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						oldvalues[2]);
 					univ.fireContentChanged(selected);
 					return;
+				} else {
+					record(SET_SLICES, 
+					Integer.toString(xSlider.getValue()), 
+					Integer.toString(ySlider.getValue()),
+					Integer.toString(zSlider.getValue()));
 				}
 			}
 		});
@@ -521,14 +673,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					selected.setColor(oldC);
 					univ.fireContentChanged(selected);
 					return;
+				} else if(cBox.getState()){
+					record(SET_COLOR,
+						"null", "null", "null");
+				} else {
+					record(SET_COLOR, 
+					Integer.toString(rSlider.getValue()), 
+					Integer.toString(gSlider.getValue()),
+					Integer.toString(bSlider.getValue()));
 				}
 			}
 		});
 		gd.showDialog();
 		
-		record(SET_COLOR, Integer.toString(rSlider.getValue()), 
-				Integer.toString(gSlider.getValue()),
-				Integer.toString(bSlider.getValue()));
 	}
 
 	public void changeChannels(Content selected) {
@@ -551,32 +708,43 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			Boolean.toString(channels[2]));
 	}
 
-	public void record(String command) {
+	public static void record(String command) {
 		command = "ImageJ_3D_Viewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call", command);
 		}
 	}
 	
-	public void record(String command, String a1) {
+	public static void record(String command, String a1) {
 		command = "ImageJ_3D_Viewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call", command, a1);
 		}
 	}
 
-	public void record(String command, String a1, String a2) {
+	public static void record(String command, String a1, String a2) {
 		command = "ImageJ_3D_Viewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call",command,a1,a2);
 		}
 	}
 
-	public void record(String command, String a1, String a2, String a3) {
+	public static void record(String command, String a1, String a2, String a3) {
 		command = "call(\"ImageJ_3D_Viewer." + command + "\", " + 
 				"\"" + a1 + "\"," + 
 				"\"" + a2 + "\"," + 
 				"\"" + a3 + "\")"; 
+		if(ij.plugin.frame.Recorder.record) {
+			ij.plugin.frame.Recorder.recordString(command);
+		}
+	}
+
+	public static void record(String command, String[] args) {
+		command = "call(\"ImageJ_3D_Viewer." + command + "\"";
+		for(int i = 0; i < args.length; i++) {
+			command += ", \"" + args[i] + "\"";
+		}
+		command += ");";
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.recordString(command);
 		}
@@ -603,6 +771,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 		slices.setEnabled(c instanceof OrthoGroup);
 		fill.setEnabled(c instanceof VoltexGroup);
+
+		coordinateSystem.setState(c.hasCoord());
+		lock.setState(c.isLocked());
 	}
 
 	private boolean containsSelectedMenu() {
@@ -615,7 +786,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	private float[] readTransform(Content selected) {
-		GenericDialog gd = new GenericDialog(
+		final GenericDialog gd = new GenericDialog(
 					"Read transformation", null);
 		Transform3D t1 = new Transform3D();
 		selected.getLocalTranslate().getTransform(t1);
@@ -624,16 +795,42 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		t1.mul(t2);
 		float[] matrix = new float[16];
 		t1.get(matrix);
-		String transform = "";
-		for(int i = 0; i < matrix.length; i++) {
-			transform += matrix[i] + " ";
-		}
+		String transform = affine2string(matrix);
 		gd.addStringField("Transformation", transform, 25);
+		Panel p = new Panel(new FlowLayout());
+		Button b = new Button("Open from file");
+		b.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				float[] m = new Transform_IO().
+						openAffineTransform();
+				if(m != null) {
+					TextField tf = (TextField)gd.
+						getStringFields().get(0);
+					tf.setText(affine2string(m));
+					tf.repaint();
+				}
+			}
+		});
+		p.add(b);
+		gd.addPanel(p);
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return null;
 
 		transform = gd.getNextString();
+		float[] m = string2affine(transform);
+		return m;
+	}
+
+	private String affine2string(float[] matrix) {
+		String transform = "";
+		for(int i = 0; i < matrix.length; i++) {
+			transform += matrix[i] + " ";
+		}
+		return transform;
+	}
+
+	private float[] string2affine(String transform){
 		String[] s = ij.util.Tools.split(transform);
 		float[] m = new float[s.length];
 		for(int i = 0; i < s.length; i++) {
@@ -641,5 +838,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 		return m;
 	}
+
 }
 

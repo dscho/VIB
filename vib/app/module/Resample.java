@@ -7,7 +7,7 @@ import vib.app.Options;
 import vib.Resample_;
 
 public class Resample extends Module {
-	protected String getName() { return "Resample"; }
+	public String getName() { return "Resample"; }
 	protected String getMessage() { return "Resampling"; }
 
 	protected void run(State state, int index) {
@@ -41,6 +41,9 @@ public class Resample extends Module {
 			return;
 		ImagePlus resampled = Resample_.resample(image,
 				state.options.resamplingFactor);
-		state.save(resampled, resampledPath);
+	
+		if(!state.save(resampled, resampledPath))
+			throw new RuntimeException("Could not save " + 
+				resampledPath);
 	}
 }

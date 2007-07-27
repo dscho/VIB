@@ -7,7 +7,7 @@ import java.io.File;
 import leica.Leica_SP_Reader;
 
 public class SplitChannels extends Module {
-	protected String getName() { return "SplitChannels"; }
+	public String getName() { return "SplitChannels"; }
 	protected String getMessage() { return "Splitting channels"; }
 
 	protected void run(State state, int index) {
@@ -37,15 +37,17 @@ public class SplitChannels extends Module {
 		reader.run(path);
 		if(reader.getNumberOfChannels() < numChannels) {
 			if (index < 0 && reader.getNumberOfChannels() == 1) {
-				// be graceful when the template has only one channel
+				// be graceful when the template has 
+				// only one channel
 				path = state.getImagePath(refChannel, index);
-				state.save(reader.getImage(0), path);
+				if(!state.save(reader.getImage(0), path))
+					throw new RuntimeException("Could not "
+						+ "save " + path);	
 				return;
 			}
-			console.append("File " + path + " does not contain " +
-					numChannels + " channels, but " +
-					reader.getNumberOfChannels());
-			throw new RuntimeException();
+			throw new RuntimeException("Found unexpectedly " 
+				+ reader.getNumberOfChannels() + " channels " 
+				+ " in " + path);
 		}
 		// save reference channel last, to avoid unnecessary loading
 		for(int i = 0; i < numChannels; i++) {
@@ -53,11 +55,14 @@ public class SplitChannels extends Module {
 				continue;
 			ImagePlus img = reader.getImage(i);
 			path = state.getImagePath(i, index);
-			state.save(img, path);
+			if(!state.save(img, path))
+				throw new RuntimeException("Could not save " + 
+					path);
 			new File(path).setLastModified(file.lastModified());
 		}
 		path = state.getImagePath(refChannel, index);
-		state.save(reader.getImage(refChannel), path);
+		if(!state.save(reader.getImage(refChannel), path))
+			throw new RuntimeException("Could not save " + path);
 		new File(path).setLastModified(file.lastModified());
 	}
 }

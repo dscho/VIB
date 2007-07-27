@@ -56,7 +56,11 @@ public class VoltexGroup extends Content {
 
 		compile();
 	}
-		
+
+	public void thresholdUpdated(int d) {
+		renderer.setThreshold(d);
+	}
+
 	public void calculateMinMaxCenterPoint() {
 		ImagePlus imp = getImage();
 		Calibration c = imp.getCalibration();
@@ -70,7 +74,8 @@ public class VoltexGroup extends Content {
 		showBoundingBox(false);
 	}
 		
-	public static void addContent(Image3DUniverse univ, ImagePlus grey) {
+	public static VoltexGroup addContent(Image3DUniverse univ, 
+							ImagePlus grey) {
 		GenericDialog gd = new GenericDialog("Add grey");
 		int img_count = WindowManager.getImageCount();
 		Vector greyV = new Vector();
@@ -99,7 +104,7 @@ public class VoltexGroup extends Content {
 					new boolean[]{true, true, true});
 		gd.showDialog();
 		if(gd.wasCanceled())
-			return;
+			return null;
 			
 		if(grey == null)
 			grey = WindowManager.getImage(gd.getNextChoice());
@@ -116,8 +121,14 @@ public class VoltexGroup extends Content {
 			tr.y = (float)(-grey.getHeight() * c.pixelHeight/2);
 			tr.z = (float)(-grey.getStackSize() * c.pixelDepth/2);
 		}
+
+		if(univ.contains(name)) {
+			IJ.error("Could not add new content. A content with " +
+				"name \"" + name + "\" exists already.");
+			return null;
+		}
 		
-		univ.addVoltex(grey, color, name, channels, factor);
+		return univ.addVoltex(grey, color, name, channels, factor);
 	}
 
 	public void eyePtChanged(View view) {
@@ -205,6 +216,12 @@ public class VoltexGroup extends Content {
 			IJ.showProgress(z, d);
 		}
 		renderer.fullReload();
+	}
+
+	public void flush() {
+		System.out.println("Set renderer = null");
+		renderer = null;
+		image = null;
 	}
 }
 

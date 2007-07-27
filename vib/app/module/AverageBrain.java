@@ -9,7 +9,7 @@ import vib.FastMatrix;
 import vib.InterpolatedImage;
 
 public class AverageBrain extends Module {
-	protected String getName() { return "AverageBrain"; }
+	public String getName() { return "AverageBrain"; }
 	protected String getMessage() { return "Averaging brain"; }
 	protected boolean runsOnce() { return true; }
 
@@ -49,7 +49,9 @@ public class AverageBrain extends Module {
 				state.getTemplateLabels() :
 				state.getTemplate();
 		averageBrain.doit(scratch, images, matrices);
-		state.save(scratch, outputPath);
+		if(!state.save(scratch, outputPath))
+			throw new RuntimeException(
+				"Could not save " + outputPath);
 	}
 
 	private FastMatrix[] getMatrices(State state) {

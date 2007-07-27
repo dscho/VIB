@@ -13,7 +13,7 @@ import vib.RigidRegistration_;
 import vib.TransformedImage;
 
 public class GreyTransformation extends Module {
-	protected String getName() { return "GreyTransformation"; }
+	public String getName() { return "GreyTransformation"; }
 	protected String getMessage() { return "Registering the brains"; }
 
 	protected void run(State state, int index) {
@@ -64,6 +64,8 @@ public class GreyTransformation extends Module {
 		String forAmira = matrix2.toStringForAmira();
 		FloatMatrix floatMatrix = FloatMatrix.parseMatrix(forAmira);
 		stats.setMatrix(transformLabel, floatMatrix);
-		stats.saveTo(statisticsPath);
+		if(!stats.saveTo(statisticsPath))
+			throw new RuntimeException("Could not save " + 
+				statisticsPath);
 	}
 }

@@ -57,6 +57,24 @@ public class Orthoslice extends AxisRenderer {
 		}
 	}
 
+	public void setThreshold(int threshold) {
+		float  value = threshold / 255f;
+		value = Math.min(1f, value);
+		value = Math.max(0.1f, value);
+		this.threshold = (int)Math.round(value*255);;
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			Group g = (Group)axisSwitch.getChild(i);
+			int num = g.numChildren();
+			for(int y = 0; y < num; y++) {
+				Shape3D shape = (Shape3D)
+					((Group)g.getChild(y)).getChild(0);
+				shape.getAppearance().
+					getRenderingAttributes().
+					setAlphaTestValue(value);
+			}
+		}
+	}
+
 	public void setTransparency(float transparency) {
 		this.transparency = transparency;
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {
@@ -228,6 +246,7 @@ public class Orthoslice extends AxisRenderer {
 		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
 		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
 		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_RENDERING_ATTRIBUTES_READ);
 
 		TextureAttributes texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);
@@ -253,6 +272,11 @@ public class Orthoslice extends AxisRenderer {
 		} else {
 			c.setColor(color);
 		}
+
+		RenderingAttributes ra = new RenderingAttributes();
+		ra.setCapability(RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
+		ra.setAlphaTestValue(0.1f);
+		ra.setAlphaTestFunction(RenderingAttributes.GREATER);
 		
 		a.setMaterial(m);
 		a.setTransparencyAttributes(t);

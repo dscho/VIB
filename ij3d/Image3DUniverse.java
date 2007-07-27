@@ -109,6 +109,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 	}
 
+	public void close() {
+		super.close();
+		removeAllContents();
+		contents = null;
+	}
+
 	public Image3DMenubar getMenuBar() {
 		return menubar;
 	}
@@ -136,11 +142,11 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return globalCenter;
 	}
 
-	public void addVoltex(ImagePlus image, Color3f color, 
+	public VoltexGroup addVoltex(ImagePlus image, Color3f color, 
 		String name, boolean[] channels, int resamplingF) {
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
-			return;
+			return null;
 		}
 		ensureScale(image);
 		VoltexGroup content = new VoltexGroup(
@@ -149,13 +155,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
 		fireContentAdded(content);
+		return content;
 	}
 
-	public void addOrthoslice(ImagePlus image, Color3f color, 
+	public OrthoGroup addOrthoslice(ImagePlus image, Color3f color, 
 		String name, boolean[] channels, int resamplingF) {
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
-			return;
+			return null;
 		}
 		ensureScale(image);
 		OrthoGroup content = new OrthoGroup(
@@ -164,6 +171,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
 		fireContentAdded(content);
+		return content;
 	}
 
 
@@ -180,12 +188,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 	}
 	
-	public void addMesh(ImagePlus image, Color3f color, String name, 
+	public MeshGroup addMesh(ImagePlus image, Color3f color, String name, 
 		int threshold, boolean[] channels, int resamplingF){
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
-			return;
+			return null;
 		}
 		ensureScale(image);
 		MeshGroup meshG = new MeshGroup(
@@ -194,9 +202,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		contents.put(name, meshG);
 		recalculateGlobalMinMax(meshG);
 		fireContentAdded(meshG);
+		return meshG;
 	}
 
-	public void addMesh(List mesh, Color3f color, 
+	public MeshGroup addMesh(List mesh, Color3f color, 
 			String name, float scale, int threshold){
 		// correct global scaling transformation
 		Transform3D scaletr = new Transform3D();
@@ -204,15 +213,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scaletr.setScale(scale);
 		scaleTG.setTransform(scaletr);
 		// add the mesh
-		addMesh(mesh, color, name, threshold);
+		return addMesh(mesh, color, name, threshold);
 	}
 
-	public void addMesh(List mesh, 
+	public MeshGroup addMesh(List mesh, 
 			Color3f color, String name, int threshold) {
 		// check if exists already
 		if(contents.contains(name)) {
 			IJ.error("Name exists already");
-			return;
+			return null;
 		}
 	
 		MeshGroup meshG = new MeshGroup(name, color, mesh, threshold);
@@ -220,6 +229,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		contents.put(name, meshG);
 		recalculateGlobalMinMax(meshG);
 		fireContentAdded(meshG);
+		return meshG;
+	}
+
+	public void removeAllContents() {
+		for(Iterator it = contents.keySet().iterator(); it.hasNext();) {
+			String name = (String)it.next();
+			removeContent(name);
+		}
 	}
 
 	public void removeContent(String name) {
@@ -231,6 +248,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		if(selected == content)
 			clearSelection();
 		fireContentRemoved(content);
+		content.flush();
+		content = null;
 	}
 
 	public Iterator contents() {
@@ -239,6 +258,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Collection getContents() {
 		return contents.values();
+	}
+	
+	public boolean contains(String name) {
+		return contents.containsKey(name);
 	}
 
 	public Content getContent(String name) {

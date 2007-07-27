@@ -12,7 +12,7 @@ import vib.RigidRegistration_;
 import vib.TransformedImage;
 
 public class LabelDiffusionTransformation extends Module {
-	protected String getName() { return "LabelDiffusionTransformation"; }
+	public String getName() { return "LabelDiffusionTransformation"; }
 	protected String getMessage() {
 		return "Calculating label diffusion transformation";
 	}
@@ -65,7 +65,9 @@ public class LabelDiffusionTransformation extends Module {
 					tolerance);
 			interpol.doit();
 			reuseDistortion = true; // true after the first channel
-			state.save(scratch, warpedPath);
+			if(!state.save(scratch, warpedPath))
+				throw new RuntimeException("Could not save " + 
+					warpedPath);
 		}
 
 	}

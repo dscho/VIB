@@ -32,6 +32,24 @@ public class Axis2DRenderer extends AxisRenderer {
 		setWhichChild();
 	}
 
+	public void setThreshold(int threshold) {
+		float value = threshold/255f;
+		value = Math.min(1f, value);
+		value = Math.max(0.1f, value);
+		this.threshold = (int)Math.round(value * 255);
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			Group g = (Group)axisSwitch.getChild(i);
+			int num = g.numChildren();
+			for(int y = 0; y < num; y++) {
+				Shape3D shape = (Shape3D)
+					((Group)g.getChild(y)).getChild(0);
+				shape.getAppearance().
+					getRenderingAttributes().
+					setAlphaTestValue(value);
+			}
+		}
+	}
+
 	public void setTransparency(float transparency) {
 		this.transparency = transparency;
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {
@@ -60,7 +78,8 @@ public class Axis2DRenderer extends AxisRenderer {
 			int num = g.numChildren();
 			for(int y = 0; y < num; y++) {
 				Shape3D shape = (Shape3D)
-					((Group)g.getChild(y)).getChild(0);
+					((Group)g.getChild(y)).
+							getChild(0);
 				shape.getAppearance().
 					getColoringAttributes().
 						setColor(c);
@@ -129,22 +148,25 @@ public class Axis2DRenderer extends AxisRenderer {
 						GeometryArray.COORDINATES);
 
 			quadArray.setCoordinates(0, quadCoords);
-
 			quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
 
 			Appearance a = getAppearance(textures[i], tg);
 
 			Shape3D frontShape = new Shape3D(quadArray, a);
+			frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
 
 			BranchGroup frontShapeGroup = new BranchGroup();
 			frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+			frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 			frontShapeGroup.addChild(frontShape);
 			frontGroup.addChild(frontShapeGroup);
 
 			Shape3D backShape = new Shape3D(quadArray, a);
+			backShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
 
 			BranchGroup backShapeGroup = new BranchGroup();
 			backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+			backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 			backShapeGroup.addChild(backShape);
 			backGroup.insertChild(backShapeGroup, 0);
 		} 
@@ -152,6 +174,9 @@ public class Axis2DRenderer extends AxisRenderer {
 
 	private Appearance getAppearance(Texture tex, TexCoordGeneration tg) {
 		Appearance a = new Appearance();
+		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_RENDERING_ATTRIBUTES_READ);
 
 		TextureAttributes texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);
@@ -180,6 +205,7 @@ public class Axis2DRenderer extends AxisRenderer {
 
 		// Avoid rendering of voxels having an alpha value of zero
 		RenderingAttributes ra = new RenderingAttributes();
+		ra.setCapability(RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
 		ra.setAlphaTestValue(0.1f);
 		ra.setAlphaTestFunction(RenderingAttributes.GREATER);
 		

@@ -11,12 +11,12 @@ import vib.segment.CustomStackWindow;
 import ij.ImagePlus;
 
 public class Label extends Module {
-	protected String getName() { return "Label"; }
+	public String getName() { return "Label"; }
 	protected String getMessage() { return "Labelling"; }
 
 	protected void run(State state, int index) {
 		new SplitChannels().runOnOneImage(state, index);
-
+		
 		prereqsDone(state, index);
 
 		int refChannel = state.options.refChannel - 1;
@@ -53,7 +53,9 @@ public class Label extends Module {
 		labels = csw.getLabels();
 		image.close();
 		csw.cleanUp();
-		state.save(labels, labelPath);
+		if(!state.save(labels, labelPath))
+			throw new RuntimeException("Could not save " + 
+				labelPath);
 	}
 
 	private static void setGrayLUT(ImagePlus ip) {

@@ -12,7 +12,9 @@ import ij.gui.Roi;
 import ij.gui.ImageLayout;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
+import ij.plugin.filter.ThresholdToSelection;
 
 public class CustomStackWindow extends StackWindow
 				 implements AdjustmentListener, 
@@ -184,6 +186,60 @@ public class CustomStackWindow extends StackWindow
 		}).start();
 		cc.requestFocus();
 	}
+
+	public void processThresholdButton() {
+		IJ.runPlugIn("vib.Local_Threshold", "");
+	}
+
+	public void processCloseButton() {
+		// Convert to mask
+		ImagePlus image = cc.getImage();
+		ImageProcessor ip = image.getProcessor();
+		ImageProcessor newip = new ByteProcessor(
+						ip.getWidth(), ip.getHeight());
+		newip.setBackgroundValue(0);
+		newip.setRoi(image.getRoi());
+		newip.setValue(255);
+		newip.fill(newip.getMask());
+
+		// open
+		newip.dilate();
+		newip.erode();
+		
+		// convert back to selection
+		newip.setThreshold(255, 255, ImageProcessor.NO_LUT_UPDATE);
+		ImagePlus tmp = new ImagePlus(" ", newip);
+		ThresholdToSelection ts = new ThresholdToSelection();
+		ts.setup("", tmp);
+		ts.run(newip);
+		newip.resetThreshold();
+		image.setRoi(tmp.getRoi());
+	}
+	
+	public void processOpenButton() {
+		// Convert to mask
+		ImagePlus image = cc.getImage();
+		ImageProcessor ip = image.getProcessor();
+		ImageProcessor newip = new ByteProcessor(
+						ip.getWidth(), ip.getHeight());
+		newip.setBackgroundValue(0);
+		newip.setRoi(image.getRoi());
+		newip.setValue(255);
+		newip.fill(newip.getMask());
+
+		// open
+		newip.erode();
+		newip.dilate();
+		
+		// convert back to selection
+		newip.setThreshold(255, 255, ImageProcessor.NO_LUT_UPDATE);
+		ImagePlus tmp = new ImagePlus(" ", newip);
+		ThresholdToSelection ts = new ThresholdToSelection();
+		ts.setup("", tmp);
+		ts.run(newip);
+		newip.resetThreshold();
+		image.setRoi(tmp.getRoi());
+	}
 	
 	public void assignSliceTo(int slice, Roi roi, int materialID){
 		ImagePlus grey = cc.getImage();
@@ -197,7 +253,12 @@ public class CustomStackWindow extends StackWindow
 		Rectangle bounds = roi.getBoundingRect();
 		for(int i=bounds.x;i<=bounds.x+bounds.width;i++){
 			for(int j=bounds.y;j<=bounds.y+bounds.height;j++){
-				if(roi.contains(i,j)) labP.set(i,j,materialID);
+				if(roi.contains(i,j)) {
+					int oldID = labP.get(i, j);
+					if(!sidebar.getMaterials().
+							isLocked(oldID))
+						labP.set(i,j,materialID);
+				}
 			}
 		}
 		cc.updateSlice(slice);
@@ -209,6 +270,8 @@ public class CustomStackWindow extends StackWindow
 		if (grey == null || labels == null)
 			return;			
 		if (roi == null)
+			return;
+		if (sidebar.getMaterials().isLocked(materialID))
 			return;
 		ImageProcessor labP = labels.getStack().getProcessor(slice);
 		labP.setRoi(roi);
@@ -290,6 +353,12 @@ public class CustomStackWindow extends StackWindow
 			processMinusButton();
 		} else if (command.equals("interpolate")) {
 			processInterpolateButton();
+		} else if (command.equals("threshold")) {
+			processThresholdButton();
+		} else if (command.equals("open")) {
+			processOpenButton();
+		} else if (command.equals("close")) {
+			processCloseButton();
 		} else if (command.equals("Ok")) {
 			// call the action listener before destroying the window
 			if(al != null)

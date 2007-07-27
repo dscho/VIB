@@ -110,6 +110,8 @@ public final class IsoShape extends Shape3D {
 
 	private Appearance createAppearance () {
 		Appearance appearance = new Appearance();
+		appearance.setCapability(Appearance.
+					ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
 		
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		//polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_LINE);

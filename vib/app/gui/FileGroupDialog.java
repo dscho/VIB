@@ -1,25 +1,23 @@
 package vib.app.gui;
 
+import ij.io.OpenDialog;
 import vib.app.FileGroup;
 
 import java.io.File;
+
+import java.util.Iterator;
 
 import java.awt.List;
 import java.awt.GridLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
-import java.awt.Dialog;
-import java.awt.Frame;
 import java.awt.Label;
 import java.awt.Insets;
 import java.awt.Font;
 import java.awt.ScrollPane;
-import java.awt.Frame;
 import java.awt.Panel;
-import java.awt.FlowLayout;
 import java.awt.Button;
 import java.awt.Checkbox;
-import java.awt.FileDialog;
 import java.awt.Dimension;
 import java.awt.TextField;
 
@@ -30,10 +28,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-public class FileGroupDialog extends Panel implements ActionListener {
+import java.awt.dnd.DropTargetListener;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
 
-	private final FileDialog fd = new FileDialog(new Frame(), "Open...", 
-			FileDialog.LOAD);
+public class FileGroupDialog extends Panel 
+				implements ActionListener, DropTargetListener {
+
 
 	private FileGroup files;
 	private boolean showWholePath = false;
@@ -47,7 +53,8 @@ public class FileGroupDialog extends Panel implements ActionListener {
 		super();
 		this.files = fg;
 		list = new List();
-	//	list.setMultipleMode(true);
+		list.setDropTarget(null);
+		DropTarget dropTarget = new DropTarget(list, this);
 		createList();
 
 		GridBagLayout gridbag = new GridBagLayout();
@@ -62,15 +69,6 @@ public class FileGroupDialog extends Panel implements ActionListener {
 		c.fill = GridBagConstraints.NONE;
 		gridbag.setConstraints(name, c);
 		this.add(name);
-
-//		nameTF = new TextField(20);
-//		nameTF.setText(this.workingFG.getName());
-//		c.gridx++;
-//		c.gridwidth = GridBagConstraints.REMAINDER;
-//		c.fill = GridBagConstraints.HORIZONTAL;
-//		c.weightx = 0.5;
-//		gridbag.setConstraints(nameTF, c);
-//		this.add(nameTF);
 
 		ScrollPane scroll = new ScrollPane();
 		scroll.add(list);
@@ -127,12 +125,13 @@ public class FileGroupDialog extends Panel implements ActionListener {
 
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == add) {
-			fd.setVisible(true);
-			String f = fd.getDirectory() + fd.getFile();
+			OpenDialog dialog = new OpenDialog("Add file...", "");
+			String f = dialog.getDirectory() + dialog.getFileName();
+			
 			if(f != null)
 				if(!files.add(f))
 					System.out.println("File " + f + 
-							" could not be added to the filegroup");
+					" could not be added to the filegroup");
 			createList();
 			repaint();			
 		} else if(e.getSource() == delete) {
@@ -157,6 +156,35 @@ public class FileGroupDialog extends Panel implements ActionListener {
 				list.add(files.get(i).getAbsolutePath());
 			else
 				list.add(files.get(i).getName());
+		}
+	}
+
+	// drag & drop
+	public void dragEnter(DropTargetDragEvent e) {}
+	public void dragExit(DropTargetEvent e) {}
+	public void dragOver(DropTargetDragEvent e) {}
+	public void dropActionChanged(DropTargetDragEvent e) {}
+	public void drop(DropTargetDropEvent e) {
+		e.acceptDrop(DnDConstants.ACTION_COPY);
+		try {
+			Transferable t = e.getTransferable();
+			if(t.isDataFlavorSupported(
+					DataFlavor.javaFileListFlavor)) {
+				java.util.List l = (java.util.List)
+						t.getTransferData(
+						DataFlavor.javaFileListFlavor);
+				if(l != null) {
+					Iterator it;
+					for(it = l.iterator(); it.hasNext();) {
+						File f = (File)it.next();
+						files.add(f.getAbsolutePath());
+					}
+					update();
+				}
+			}
+			e.dropComplete(true);
+		} catch(Exception ex) {
+			e.dropComplete(false);
 		}
 	}
 
