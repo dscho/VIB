@@ -32,9 +32,13 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowStateListener;
 import java.awt.event.WindowEvent;
 
+import java.lang.reflect.Method;
+
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.GraphicsConfigTemplate3D;
 import javax.media.j3d.ImageComponent2D;
+import javax.media.j3d.RenderingError;
+import javax.media.j3d.RenderingErrorListener;
 import javax.media.j3d.Screen3D;
 
 public class ImageWindow3D extends ImageWindow implements UniverseListener, 
@@ -52,6 +56,8 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		imp = new ImagePlus();
 		this.universe = universe;
 		this.canvas3D = (ImageCanvas3D)universe.getCanvas();
+
+		new ErrorListener().addTo(universe);
 
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
@@ -238,6 +244,35 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 			else {
 				lastToolID = Toolbar.getToolId();
 				Toolbar.getInstance().setTool(Toolbar.HAND);
+			}
+		}
+	}
+
+	private class ErrorListener implements RenderingErrorListener {
+		public void errorOccurred(RenderingError error) {
+			throw new RuntimeException(error.getDetailMessage());
+		}
+
+		/*
+		 * This is a slightly ugly workaround for DefaultUniverse not
+		 * having addRenderingErrorListener() in Java3D 1.5.
+		 * The problem, of course, is that Java3D 1.5 just exit(1)s
+		 * on error by default, _unless_ you add a listener!
+		 */
+		public void addTo(DefaultUniverse universe) {
+			try {
+				Class[] params = {
+					RenderingErrorListener.class
+				};
+				Class c = universe.getClass();
+				String name = "addRenderingErrorListener";
+				Method m = c.getMethod(name, params);
+				Object[] list = { this };
+				m.invoke(universe, list);
+			} catch (Exception e) {
+				/* method not found -> Java3D 1.4 */
+				System.err.println("Java3D < 1.5 detected");
+				//e.printStackTrace();
 			}
 		}
 	}
