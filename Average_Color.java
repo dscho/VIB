@@ -1,5 +1,6 @@
 import ij.IJ;
 import ij.ImagePlus;
+import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
@@ -160,7 +161,7 @@ public class Average_Color implements PlugInFilter {
 		return f < 0 ? 0 : f > 1 ? 255 : (int)Math.round(f * 255);
 	}
 
-	private void averageColorInRoi(Roi roi, boolean cielab) {
+	final float[] getAverageColor(Roi roi, boolean cielab) {
 		Rectangle r = roi.getBounds();
 		float[] rgb = new float[3];
 		float[] lab = new float[3];
@@ -194,7 +195,15 @@ public class Average_Color implements PlugInFilter {
 		cumul[1] /= count;
 		cumul[2] /= count;
 
+		return cumul;
+	}
+
+	private void averageColorInRoi(Roi roi, boolean cielab) {
+		Rectangle r = roi.getBounds();
+		float[] cumul = getAverageColor(roi, cielab);
+		float[] rgb = new float[3];
 		int[] rgbi = new int[3];
+
 		if (cielab) {
 			CIELAB2sRGB(cumul, rgb);
 			rgbi[0] = unnorm(rgb[0]);
@@ -218,5 +227,41 @@ public class Average_Color implements PlugInFilter {
 	public int setup(String args, ImagePlus imp) {
 		this.image = imp;
 		return DOES_RGB;
+	}
+
+	public static String getAverageCIELAB() {
+		Average_Color t = new Average_Color();
+		try {
+			t.image = WindowManager.getCurrentImage();
+			t.pixels = (int[])t.image.getProcessor().getPixels();
+			t.w = t.image.getWidth();
+			t.h = t.image.getHeight();
+			Roi roi = t.image.getRoi();
+			if (roi == null)
+				roi = new Roi(0, 0, t.w, t.h);
+			float[] result = t.getAverageColor(roi, true);
+			return "" + result[0] + " " + result[1] + " " + result[2];
+		} catch (Exception e) {
+			return "";
+		}
+
+	}
+
+	public static String setColorCIELAB(String L, String a, String b) {
+		try {
+			float[] lab = new float[3];
+			lab[0] = Float.parseFloat(L);
+			lab[1] = Float.parseFloat(a);
+			lab[2] = Float.parseFloat(b);
+			float[] rgb = new float[3];
+			CIELAB2sRGB(lab, rgb);
+			int red = unnorm(rgb[0]);
+			int green = unnorm(rgb[1]);
+			int blue = unnorm(rgb[2]);
+			IJ.setForegroundColor(red, green, blue);
+			return "" + red + " " + green + " " + blue;
+		} catch (Exception e) {
+			return "";
+		}
 	}
 }
