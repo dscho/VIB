@@ -324,7 +324,7 @@ public class PathAndFillManager extends DefaultHandler {
                 pw.println("  <!ATTLIST node           z             CDATA           #REQUIRED>");
                 pw.println("  <!ATTLIST node           previousid    CDATA           #IMPLIED>");
                 pw.println("  <!ATTLIST node           distance      CDATA           #REQUIRED>");
-		pw.println("  <!ATTLIST node           status        (open,closed)   #REQUIRED>");
+		pw.println("  <!ATTLIST node           status        (open|closed)   #REQUIRED>");
                 pw.println("]>");
                 pw.println("");
 
