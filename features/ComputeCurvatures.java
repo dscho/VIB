@@ -281,6 +281,12 @@ public class ComputeCurvatures implements Runnable
 
     }
 
+    private boolean cancelGeneration = false;
+
+    public void cancelGaussianGeneration( ) {
+        cancelGeneration = true;
+    }
+
     /* The 2 methods below are useful for using this class
        programmatically (i.e. not as a plugin) and creating the
        Gaussian in a separate thread. */
@@ -297,51 +303,81 @@ public class ComputeCurvatures implements Runnable
 
     public void setup( ) {
         
-        if( imp == null ) {
-            IJ.error("BUG: imp should not be null - are you using the right constructor?");
+        try {
+            
+            if( imp == null ) {
+                IJ.error("BUG: imp should not be null - are you using the right constructor?");
+                return;
+            }
+            
+            if( callback != null )
+                callback.proportionDone( 0.0 );
+            
+            if (imp.getStackSize() > 1)
+                {
+                    // IJ.log("3D");
+                    ImageStack stack = imp.getStack();
+                    _3D = true;
+                    data = StackToFloatArray(stack);
+                    if (data == null)
+                        return;
+                }
+            else
+                {
+                    // IJ.log("2D");
+                    _3D = false;
+                    data = ImageToFloatArray(imp.getProcessor());
+                    if (data == null)
+                        return;
+                }
+            
+            boolean computeGauss = true;
+            boolean showGauss = false;
+            
+            // IJ.log("Computing Gauss image");
+            if (_3D)
+                {
+                    data = computeGaussianFastMirror((FloatArray3D) data, (float)sigma, callback);
+                    if( data == null ) {
+                        if( callback != null )
+                            callback.proportionDone( -1 );
+                        return;
+                    }
+                    if (showGauss)
+                        FloatArrayToStack((FloatArray3D)data, "Gauss image", 0, 255).show();
+                }
+            else
+                {
+                    data = computeGaussianFastMirror((FloatArray2D) data, (float)sigma, callback);
+                    if( data == null ) {
+                        if( callback != null )
+                            callback.proportionDone( -1 );
+                        return;
+                    }
+                    if (showGauss)
+                        FloatArrayToImagePlus((FloatArray2D)data, "Gauss image", 0, 255).show();
+                }
+            
+            if( callback != null )
+                callback.proportionDone( 1.0 );
+
+            
+        } catch( OutOfMemoryError e ) {
+        
+            long requiredMiB = ( imp.getWidth() *
+                                 imp.getHeight() *
+                                 imp.getStackSize() * 4 ) / (1024 * 1024);
+            
+            IJ.error("Out of memory when calculating the Gaussian " +
+                     "convolution of the image (requires " +
+                     requiredMiB + "MiB");
+            
+            if( callback != null )
+                callback.proportionDone( -1 );
+            
             return;
         }
 
-        if( callback != null )
-            callback.proportionDone( 0.0 );
-        
-        if (imp.getStackSize() > 1)
-        {
-            // IJ.log("3D");
-            ImageStack stack = imp.getStack();
-            _3D = true;
-            data = StackToFloatArray(stack);
-            if (data == null)
-                return;
-        }
-        else
-        {
-            // IJ.log("2D");
-            _3D = false;
-            data = ImageToFloatArray(imp.getProcessor());
-            if (data == null)
-                return;
-        }
-
-        boolean computeGauss = true;
-        boolean showGauss = false;
-
-        // IJ.log("Computing Gauss image");
-        if (_3D)
-            {
-                data = computeGaussianFastMirror((FloatArray3D) data, (float)sigma, callback);
-                if (showGauss)
-                    FloatArrayToStack((FloatArray3D)data, "Gauss image", 0, 255).show();
-            }
-        else
-            {
-                data = computeGaussianFastMirror((FloatArray2D) data, (float)sigma, callback);
-                if (showGauss)
-                    FloatArrayToImagePlus((FloatArray2D)data, "Gauss image", 0, 255).show();
-            }
-
-        if( callback != null )
-            callback.proportionDone( 1.0 );
     }
 
     public void hessianEigenvaluesAtPoint( int x,
@@ -760,6 +796,8 @@ public class ComputeCurvatures implements Runnable
 
         // fold in x
         for (int x = 0; x < input.width; x++) {
+            if( cancelGeneration )
+                return null;
             for (int y = 0; y < input.height; y++)
                 {
                     avg = 0;
@@ -780,7 +818,9 @@ public class ComputeCurvatures implements Runnable
         }
         
         // fold in y
-        for (int x = 0; x < input.width; x++)
+        for (int x = 0; x < input.width; x++) {
+            if( cancelGeneration )
+                return null;
             {
                 float[] temp = new float[input.height];
 
@@ -806,6 +846,7 @@ public class ComputeCurvatures implements Runnable
                     callback.proportionDone( pointsDone / totalPoints );
                 
             }
+        }
 
         if( callback != null )
             callback.proportionDone(1.0);
@@ -843,6 +884,8 @@ public class ComputeCurvatures implements Runnable
 
         // fold in x
         for (int x = 0; x < input.width; x++) {
+            if( cancelGeneration )
+                return null;
             for (int y = 0; y < input.height; y++)
                 for (int z = 0; z < input.depth; z++)
                 {
@@ -865,6 +908,8 @@ public class ComputeCurvatures implements Runnable
 
         // fold in y
         for (int x = 0; x < input.width; x++) {
+            if( cancelGeneration )
+                return null;
             for (int z = 0; z < input.depth; z++)
             {
                 float[] temp = new float[input.height];
@@ -894,6 +939,8 @@ public class ComputeCurvatures implements Runnable
 
         // fold in z
         for (int x = 0; x < input.width; x++) {
+            if( cancelGeneration )
+                return null;
             for (int y = 0; y < input.height; y++)
             {
                 float[] temp = new float[input.depth];

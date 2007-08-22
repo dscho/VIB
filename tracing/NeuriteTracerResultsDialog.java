@@ -1,5 +1,26 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+/* Copyright 2006, 2007 Mark Longair */
+
+/*
+    This file is part of the ImageJ plugin "Simple Neurite Tracer".
+
+    The ImageJ plugin "Simple Neurite Tracer" is free software; you
+    can redistribute it and/or modify it under the terms of the GNU
+    General Public License as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version.
+
+    The ImageJ plugin "Simple Neurite Tracer" is distributed in the
+    hope that it will be useful, but WITHOUT ANY WARRANTY; without
+    even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+    PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package tracing;
 
 import ij.*;
@@ -13,7 +34,7 @@ import java.util.Arrays;
 
 class NeuriteTracerResultsDialog
         extends Dialog
-        implements ActionListener, WindowListener, ItemListener, PathListener, TextListener {
+        implements ActionListener, WindowListener, ItemListener, PathAndFillListener, TextListener, FillerProgressCallback {
 
         // These are the states that the UI can be in:
 
@@ -30,7 +51,7 @@ class NeuriteTracerResultsDialog
 
         private int currentState;
 
-        SimpleNeuriteTracer_ plugin;
+        Simple_Neurite_Tracer plugin;
 
         Panel statusPanel;
         TextArea statusText;
@@ -57,7 +78,8 @@ class NeuriteTracerResultsDialog
         Button fitCircles;
 
         List fillList;
-        Button deleteFill;
+        Button deleteFills;
+	Button reloadFill;
 
         Panel fillControlPanel;
 
@@ -70,8 +92,8 @@ class NeuriteTracerResultsDialog
         Button setThreshold;
         Button setMaxThreshold;
 
-        boolean currentlyExploring = true;
-        Button pauseOrRestartExploring;
+        boolean currentlyFilling = true;
+        Button pauseOrRestartFilling;
 
         Button saveFill;
         Button discardFill;
@@ -79,6 +101,8 @@ class NeuriteTracerResultsDialog
         Button view3D;
         Checkbox maskNotReal;
         Checkbox transparent;
+
+	Button loadLabelsButton;
 
         Button saveButton;
         Button loadButton;
@@ -93,11 +117,19 @@ class NeuriteTracerResultsDialog
                         pathList.add( newList[i] );
         }
 
+        public void setFillList( String [] newList ) {
+                fillList.removeAll();
+                for( int i = 0; i < newList.length; ++i )
+                        fillList.add( newList[i] );
+        }
+
         // ------------------------------------------------------------------------
 
         int preGaussianState;
 
-        public void gaussianCalculated() {
+        public void gaussianCalculated(boolean succeeded) {
+		if( !succeeded )
+			preprocess.setState(false);
                 changeState(preGaussianState);
         }
 
@@ -143,12 +175,13 @@ class NeuriteTracerResultsDialog
                 maxThreshold.setEnabled(false);
                 setThreshold.setEnabled(false);
                 setMaxThreshold.setEnabled(false);
-                pauseOrRestartExploring.setEnabled(false);
+                pauseOrRestartFilling.setEnabled(false);
                 saveFill.setEnabled(false);
                 discardFill.setEnabled(false);
 
                 fillList.setEnabled(false);
-                deleteFill.setEnabled(false);
+                deleteFills.setEnabled(false);
+		reloadFill.setEnabled(false);
 
                 view3D.setEnabled(false);
                 maskNotReal.setEnabled(false);
@@ -156,8 +189,10 @@ class NeuriteTracerResultsDialog
 
                 saveButton.setEnabled(false);
                 loadButton.setEnabled(false);
-                uploadButton.setEnabled(false);
-                fetchButton.setEnabled(false);
+		if( uploadButton != null ) {
+			uploadButton.setEnabled(false);
+			fetchButton.setEnabled(false);
+		}
 
                 quitButton.setEnabled(false);
         }
@@ -179,14 +214,21 @@ class NeuriteTracerResultsDialog
 
                         pathList.setEnabled(true);
                         deletePaths.setEnabled(true);
+
+                        fillList.setEnabled(true);
+                        deleteFills.setEnabled(true);
+			reloadFill.setEnabled(true);
+
                         fillPaths.setEnabled(true);
                         fitCircles.setEnabled(true);
                         fillStatus.setEnabled(true);
 
                         saveButton.setEnabled(true);
                         loadButton.setEnabled(true);
-                        uploadButton.setEnabled(true);
-                        fetchButton.setEnabled(true);
+			if( uploadButton != null ) {
+				uploadButton.setEnabled(true);
+				fetchButton.setEnabled(true);
+			}
 
                         quitButton.setEnabled(true);
 
@@ -253,7 +295,7 @@ class NeuriteTracerResultsDialog
                         maxThreshold.setEnabled(true);
                         setThreshold.setEnabled(true);
                         setMaxThreshold.setEnabled(true);
-                        pauseOrRestartExploring.setEnabled(true);
+                        pauseOrRestartFilling.setEnabled(true);
                         saveFill.setEnabled(true);
                         discardFill.setEnabled(true);
 
@@ -315,7 +357,7 @@ class NeuriteTracerResultsDialog
         boolean launchedByArchive;
 
         public NeuriteTracerResultsDialog( String title,
-                                           SimpleNeuriteTracer_ plugin,
+                                           Simple_Neurite_Tracer plugin,
                                            boolean launchedByArchive ) {
 
                 super( IJ.getInstance(), title, false );
@@ -401,7 +443,7 @@ class NeuriteTracerResultsDialog
                         nearbyPanel.add(nearbyField,BorderLayout.CENTER);
                         nearbyPanel.add(new Label("slices to each side)"),BorderLayout.EAST);
 
-                        preprocess = new Checkbox("Hessian-based analysis (early version)");
+                        preprocess = new Checkbox("Hessian-based analysis");
                         preprocess.addItemListener( this );
                         showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
 
@@ -473,12 +515,22 @@ class NeuriteTracerResultsDialog
                         c.fill = GridBagConstraints.HORIZONTAL;
                         add(fillList,c);
 
+			Panel fillListCommandsPanel = new Panel();
+			fillListCommandsPanel.setLayout(new BorderLayout());
+
+                        deleteFills = new Button("Delete Fill(s)");
+			deleteFills.addActionListener( this );
+                        fillListCommandsPanel.add(deleteFills,BorderLayout.WEST);
+
+			reloadFill = new Button("Reload Fill");
+			reloadFill.addActionListener( this );
+			fillListCommandsPanel.add(reloadFill,BorderLayout.CENTER);
+
                         c.insets = new Insets( 1, 8, 8, 8 );
-                        deleteFill = new Button("Delete Fill");
-                        c.gridx = 0;
-                        c.gridy = 5;
-                        c.fill = GridBagConstraints.HORIZONTAL;
-                        add(deleteFill,c);
+			c.gridx = 0;
+			c.gridy = 5;
+
+			add(fillListCommandsPanel,c);
                 }
 
                 { /* The panel with options for filling out neurons... */
@@ -557,10 +609,10 @@ class NeuriteTracerResultsDialog
                                 fillControlPanel = new Panel();
                                 fillControlPanel.setLayout(new BorderLayout());
 
-                                pauseOrRestartExploring = new Button("Pause");
-                                currentlyExploring = true;
-                                pauseOrRestartExploring.addActionListener(this);
-                                fillControlPanel.add(pauseOrRestartExploring,BorderLayout.WEST);
+                                pauseOrRestartFilling = new Button("Pause");
+                                currentlyFilling = true;
+                                pauseOrRestartFilling.addActionListener(this);
+                                fillControlPanel.add(pauseOrRestartFilling,BorderLayout.WEST);
 
                                 saveFill = new Button("Save Fill");
                                 saveFill.addActionListener(this);
@@ -580,15 +632,15 @@ class NeuriteTracerResultsDialog
                         }
 
                         /*
-                        pauseOrRestartExploring = new Button("Pause");
-                        currentlyExploring = true;
-                        pauseOrRestartExploring.addActionListener(this);
+                        pauseOrRestartFilling = new Button("Pause");
+                        currentlyFilling = true;
+                        pauseOrRestartFilling.addActionListener(this);
                         cf.gridx = 0;
                         cf.gridy = 6;
                         cf.gridwidth = 3;
                         cf.fill = GridBagConstraints.HORIZONTAL;
                         cf.anchor = GridBagConstraints.LINE_START;
-                        fillingOptionsPanel.add(pauseOrRestartExploring,cf);
+                        fillingOptionsPanel.add(pauseOrRestartFilling,cf);
 
                         saveFill = new Button("Save Fill");
                         saveFill.addActionListener(this);
@@ -610,7 +662,6 @@ class NeuriteTracerResultsDialog
 
                         c.gridx = 0;
                         c.gridy = 6;
-                        c.gridwidth = 1;
                         c.insets = new Insets( 8, 8, 8, 8 );
                         add(fillingOptionsPanel,c);
                 }
@@ -623,20 +674,35 @@ class NeuriteTracerResultsDialog
 
                         GridBagConstraints ct = new GridBagConstraints();
 
+                        ct.gridy = 0;
+
+			if( false ) {
+
                         uploadButton = new Button("Upload Traces");
                         uploadButton.addActionListener( this );
                         fetchButton = new Button("Fetch Traces");
                         fetchButton.addActionListener( this );
                         ct.gridx = 0;
-                        ct.gridy = 0;
                         traceFileOptionsPanel.add( uploadButton, ct );
                         ct.gridx = 1;
-                        ct.gridy = 0;
                         traceFileOptionsPanel.add( fetchButton, ct );
 
-                        saveButton = new Button("Save");
+			++ ct.gridy;
+
+			}
+
+			c.gridx = 0;
+			c.gridy = 7;
+			c.anchor = GridBagConstraints.CENTER;
+			c.fill = GridBagConstraints.NONE;
+
+			loadLabelsButton = new Button("Load Labels");
+			loadLabelsButton.addActionListener( this );
+			add(loadLabelsButton,c);
+
+                        saveButton = new Button("Save Traces File");
                         saveButton.addActionListener( this );
-                        loadButton = new Button("Load");
+                        loadButton = new Button("Load Traces File");
                         loadButton.addActionListener( this );
                         ct.gridx = 0;
                         ct.gridy = 1;
@@ -646,7 +712,7 @@ class NeuriteTracerResultsDialog
                         traceFileOptionsPanel.add( loadButton, ct );
 
                         c.gridx = 0;
-                        c.gridy = 7;
+                        c.gridy = 8;
                         add(traceFileOptionsPanel,c);
 
                 }
@@ -656,7 +722,7 @@ class NeuriteTracerResultsDialog
                 quitButton = new Button("Quit Tracer");
                 quitButton.addActionListener(this);
                 c.gridx = 0;
-                c.gridy = 8;
+                c.gridy = 9;
                 c.anchor = GridBagConstraints.CENTER;
                 add(quitButton,c);
 
@@ -733,7 +799,17 @@ class NeuriteTracerResultsDialog
 
                         IJ.showStatus("Saving label annotations to "+savePath);
 
-                        pathAndFillManager.writeTracesToFile( savePath );
+                        // pathAndFillManager.writeTracesToFile( savePath );
+
+                        try {
+
+                                BufferedWriter out = new BufferedWriter(new FileWriter(savePath,false));
+
+                                pathAndFillManager.writeXML( out, plugin );
+
+                        } catch( IOException ioe ) {
+                                IJ.error("Writing traces to '"+savePath+"' failed: "+ioe);
+                        }
 
                 } else if( source == loadButton ) {
 
@@ -747,10 +823,21 @@ class NeuriteTracerResultsDialog
 
                         plugin.loadTracings();
 
-                } else if( source == cancelSearch ) {
+		} else if( source == loadLabelsButton ) {
 
-                        statusText.setText("Cancelling...");
-                        plugin.cancelSearch();
+			plugin.loadLabels();
+
+                } else if( source == cancelSearch ) {
+			
+			if( currentState == SEARCHING ) {
+				statusText.setText("Cancelling path search...");
+				plugin.cancelSearch();
+			} else if( currentState == CALCULATING_GAUSSIAN ) {
+				statusText.setText("Cancelling Gaussian generation...");
+				plugin.cancelGaussian();
+			} else {
+				IJ.error("BUG! (wrong state for cancelling...)");
+			}
 
                 } else if( source == keepSegment ) {
 
@@ -775,10 +862,26 @@ class NeuriteTracerResultsDialog
                         pathAndFillManager.deletePaths( selectedIndices );
                         plugin.repaintAllPanes();
 
+                } else if( source == deleteFills ) {
+
+                        System.out.println("deleteFills called");
+                        int [] selectedIndices = fillList.getSelectedIndexes();
+                        pathAndFillManager.deleteFills( selectedIndices );
+                        plugin.repaintAllPanes();
+
+		} else if( source == reloadFill ) {
+
+			int [] selectedIndices = fillList.getSelectedIndexes();
+			if( selectedIndices.length != 1 ) {
+				IJ.error("You must have a single fill selected in order to reload.");
+				return;
+			}
+			pathAndFillManager.reloadFill(selectedIndices[0]);
+
                 }  else if( source == fillPaths ) {
 
-                        currentlyExploring = true;
-                        pauseOrRestartExploring.setLabel("Pause");
+                        currentlyFilling = true;
+                        pauseOrRestartFilling.setLabel("Pause");
                         plugin.startFillingPaths();
 
                 } else if( source == quitButton ) {
@@ -811,19 +914,9 @@ class NeuriteTracerResultsDialog
 
                         plugin.saveFill();
 
-                } else if( source == pauseOrRestartExploring ) {
+                } else if( source == pauseOrRestartFilling ) {
 
-                        if( currentlyExploring ) {
-                                currentlyExploring = false;
-                                pauseOrRestartExploring.setLabel("Continue");
-                                fillControlPanel.doLayout();
-                        } else {
-                                currentlyExploring = true;
-                                pauseOrRestartExploring.setLabel("Pause");
-                                fillControlPanel.doLayout();
-                        }
-
-                        plugin.pauseOrRestartExploring();
+                        plugin.pauseOrRestartFilling();
 
                 } else if( source == view3D ) {
 
@@ -857,7 +950,7 @@ class NeuriteTracerResultsDialog
 
                 if( source == viewPathChoice ) {
 
-                        System.out.println("e.getItem() is of class "+e.getItem().getClass());
+                        // System.out.println("e.getItem() is of class "+e.getItem().getClass());
 
                         plugin.justDisplayNearSlices(nearbySlices(),getEitherSide());
 
@@ -875,7 +968,7 @@ class NeuriteTracerResultsDialog
 
                 } else if( source == preprocess ) {
 
-                        System.out.println("change in status of preprocess to: "+preprocess.getState());
+                        // System.out.println("change in status of preprocess to: "+preprocess.getState());
 
                         if( preprocess.getState() ) {
                                 preGaussianState = currentState;
@@ -896,11 +989,6 @@ class NeuriteTracerResultsDialog
 
         public void paint(Graphics g) {
                 super.paint(g);
-        }
-
-        public void setMaxDistanceExplored( float f ) {
-                maxThreshold.setText("("+f+")");
-                maxThresholdValue = f;
         }
 
         boolean reportedInvalid;
@@ -939,5 +1027,31 @@ class NeuriteTracerResultsDialog
         public void textValueChanged( TextEvent e ) {
                 plugin.justDisplayNearSlices(nearbySlices(),getEitherSide());
         }
+
+
+	public void fillerStatus( int threadStatus ) {
+		switch(threadStatus) {
+		case FillerThread.STOPPING:
+			pauseOrRestartFilling.setLabel("Stopping..");
+			pauseOrRestartFilling.setEnabled(false);
+			break;
+		case FillerThread.PAUSED:
+			pauseOrRestartFilling.setLabel("Continue");
+			break;
+		case FillerThread.RUNNING:
+			pauseOrRestartFilling.setLabel("Pause");
+			break;
+		}
+		fillControlPanel.doLayout();
+	}
+
+	public void maximumDistanceCompletelyExplored( float f ) {		
+                maxThreshold.setText("("+f+")");
+                maxThresholdValue = f;
+	}
+	
+	public void pointsWithinThreshold( short[] points ) {
+		// Just ignore this...
+	}
 
 }

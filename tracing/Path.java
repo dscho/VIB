@@ -1,5 +1,26 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+/* Copyright 2006, 2007 Mark Longair */
+
+/*
+    This file is part of the ImageJ plugin "Simple Neurite Tracer".
+
+    The ImageJ plugin "Simple Neurite Tracer" is free software; you
+    can redistribute it and/or modify it under the terms of the GNU
+    General Public License as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version.
+
+    The ImageJ plugin "Simple Neurite Tracer" is distributed in the
+    hope that it will be useful, but WITHOUT ANY WARRANTY; without
+    even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+    PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package tracing;
 
 import java.awt.*;
@@ -25,7 +46,25 @@ public class Path implements Cloneable {
 
 	public static final int PATH_START = 0;
 	public static final int PATH_END = 1;
+
+	public double getRealLength( double x_spacing, double y_spacing, double z_spacing ) {
+		double totalLength = 0;
+		for( int i = 1; i < points; ++i  ) {
+			double xdiff = (x_positions[i] - x_positions[i-1]) * x_spacing;
+			double ydiff = (y_positions[i] - y_positions[i-1]) * y_spacing;
+			double zdiff = (z_positions[i] - z_positions[i-1]) * z_spacing;
+			totalLength += Math.sqrt(
+				xdiff * xdiff +
+				ydiff * ydiff +
+				zdiff * zdiff );
+		}
+		return totalLength;
+	}
 	
+	public String getRealLengthString( double x_spacing, double y_spacing, double z_spacing ) {
+		return String.format( "%6.4g", getRealLength( x_spacing, y_spacing, z_spacing ) );
+	}
+
 	/* To unset a join, make 'other' null */
 
 	void setJoin( int startOrEnd, Path other, int indexInOther ) {
@@ -50,7 +89,7 @@ public class Path implements Cloneable {
 		z_positions = new int[maxPoints];
 	}
 	
-	Path( int reserve ) {
+	Path(  int reserve ) {
 		points = 0;
 		maxPoints = reserve;
 		x_positions = new int[maxPoints];
@@ -406,7 +445,7 @@ public class Path implements Cloneable {
 		
 	}
 	
-	public Path fitCircles( int side, SimpleNeuriteTracer_ plugin, boolean display ) {
+	public Path fitCircles( int side, Simple_Neurite_Tracer plugin, boolean display ) {
 
 		boolean verbose = false;
 

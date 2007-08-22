@@ -1,5 +1,26 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+/* Copyright 2006, 2007 Mark Longair */
+
+/*
+    This file is part of the ImageJ plugin "Simple Neurite Tracer".
+
+    The ImageJ plugin "Simple Neurite Tracer" is free software; you
+    can redistribute it and/or modify it under the terms of the GNU
+    General Public License as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version.
+
+    The ImageJ plugin "Simple Neurite Tracer" is distributed in the
+    hope that it will be useful, but WITHOUT ANY WARRANTY; without
+    even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+    PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package tracing;
 
 import ij.*;
@@ -42,13 +63,13 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	
 	// -------------------------------------------------------------
 	
-	private SimpleNeuriteTracer_ tracerPlugin;
+	private Simple_Neurite_Tracer tracerPlugin;
 	
-	TracerCanvas( ImagePlus imp, SimpleNeuriteTracer_ plugin, int plane ) {
+	TracerCanvas( ImagePlus imp, Simple_Neurite_Tracer plugin, int plane ) {
 		super(imp,plugin,plane);
 		tracerPlugin = plugin;
 		pathAndFillManager = plugin.getPathAndFillManager();
-		// SimpleNeuriteTracer_.toastKeyListeners( IJ.getInstance(), "TracerCanvas constructor" );
+		// Simple_Neurite_Tracer.toastKeyListeners( IJ.getInstance(), "TracerCanvas constructor" );
 		// addKeyListener( this );
 		// System.out.println("Added keylistener");
 	}
@@ -395,7 +416,10 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		Path currentPath = tracerPlugin.getCurrentPath();
 		
 		if( currentPath != null ) {
-			currentPath.drawPathAsPoints( this, g, Color.RED, plane );
+			if( just_near_slices )
+				currentPath.drawPathAsPoints( this, g, Color.RED, plane, current_z, eitherSide );
+			else
+				currentPath.drawPathAsPoints( this, g, Color.RED, plane );
 		}
 
 		super.drawOverlay(g);
@@ -429,10 +453,4 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		
 	}
 	
-	Connection orangePath;
-	
-	public void setConnection( Connection c )  {
-		orangePath = c;
-	}
-
 }
