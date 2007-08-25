@@ -1,5 +1,26 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+/* Copyright 2006, 2007 Mark Longair */
+
+/*
+    This file is part of the ImageJ plugin "Simple Neurite Tracer".
+
+    The ImageJ plugin "Simple Neurite Tracer" is free software; you
+    can redistribute it and/or modify it under the terms of the GNU
+    General Public License as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version.
+
+    The ImageJ plugin "Simple Neurite Tracer" is distributed in the
+    hope that it will be useful, but WITHOUT ANY WARRANTY; without
+    even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+    PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package tracing;
 
 import java.awt.*;
@@ -85,7 +106,7 @@ public class CreateTracingVolume_ implements PlugIn {
 
 		// ------------------------------------------------------------------------
 
-		ArrayList< SegmentedConnection > allPaths = SimpleNeuriteTracer_.loadTracingsFromFile(tracesFileName);
+		ArrayList< Path > allPaths = PathAndFillManager.loadTracingsFromFile(tracesFileName);
 
                 Bookstein_FromMarkers matcher=new Bookstein_FromMarkers();
                 matcher.loadImages(standardBrainFC,realImageFC);
@@ -119,7 +140,7 @@ public class CreateTracingVolume_ implements PlugIn {
 		int blueValues[] = new int[materials];
 
 		for( int i=0; i < materials; i++ ) {
-
+			
 			double[] c = parameters.getMaterialColor(i);
 
 			redValues[i] = (int)(255*c[0]);
@@ -180,178 +201,172 @@ public class CreateTracingVolume_ implements PlugIn {
 			int paths = allPaths.size();
 			// System.out.println("Paths to draw: "+paths);
 			for( int i = 0; i < paths; ++i ) {
-				SegmentedConnection s = (SegmentedConnection)allPaths.get(i);
-				int segments_in_path = s.connections.size();
-				for( int j = 0; j < segments_in_path; ++j ) {
-					Connection connection = (Connection)s.connections.get(j);
 
-					int last_x_in_template = -1;
-					int last_y_in_template = -1;
-					int last_z_in_template = -1;
+				Path p = (Path)allPaths.get(i);
 
-					for( int k = 0; k < connection.points; ++k ) {
+				int last_x_in_template = -1;
+				int last_y_in_template = -1;
+				int last_z_in_template = -1;
 
-						int x_in_domain = connection.x_positions[k];
-						int y_in_domain = connection.y_positions[k];
-						int z_in_domain = connection.z_positions[k];
+				for( int k = 0; k < p.size(); ++k ) {
+
+					int x_in_domain = p.x_positions[k];
+					int y_in_domain = p.y_positions[k];
+					int z_in_domain = p.z_positions[k];
+					
+					transformation.apply(x_in_domain,y_in_domain,z_in_domain,transformedPoint);
 						
-						transformation.apply(x_in_domain,y_in_domain,z_in_domain,transformedPoint);
+					int x_in_template=(int)transformedPoint[0];
+					int y_in_template=(int)transformedPoint[1];
+					int z_in_template=(int)transformedPoint[2];
+					
+					if( (last_x_in_template >= 0) &&
+					    (last_y_in_template >= 0) &&
+					    (last_z_in_template >= 0) ) {
 						
-						int x_in_template=(int)transformedPoint[0];
-						int y_in_template=(int)transformedPoint[1];
-						int z_in_template=(int)transformedPoint[2];
-						
-						if( (last_x_in_template >= 0) &&
-						    (last_y_in_template >= 0) &&
-						    (last_z_in_template >= 0) ) {
+						int xdiff = Math.abs( x_in_template - last_x_in_template );
+						int ydiff = Math.abs( y_in_template - last_y_in_template );
+						int zdiff = Math.abs( z_in_template - last_z_in_template );
 
-							int xdiff = Math.abs( x_in_template - last_x_in_template );
-							int ydiff = Math.abs( y_in_template - last_y_in_template );
-							int zdiff = Math.abs( z_in_template - last_z_in_template );
-
-							if( xdiff > 5 || ydiff > 5 || zdiff > 5 ) {
-								System.out.println("too long in path: "+i+", at point "+k);
-							}
-
-							int xdiff_s = x_in_template - last_x_in_template;
-							int ydiff_s = y_in_template - last_y_in_template;
-							int zdiff_s = z_in_template - last_z_in_template;
-
-							// Draw a line from last_ to current...
-
-							// Shoddy algorithm for the moment.
-							
-							// In order of size, must be one of these options:
-							//
-							//    zdiff >= ydiff >= xdiff
-							//    zdiff >= xdiff >= ydiff
-							//    ydiff >= xdiff >= zdiff
-							//    ydiff >= zdiff >= xdiff
-							//    xdiff >= ydiff >= zdiff
-							//    xdiff >= zdiff >= ydiff
-
-							// For the moment i'm collapsing these into 3 cases (zdiff, ydiff or xdiff largest)
-
-							// Each of these cases:
-							
-							// System.out.println( "x from: " + last_x_in_template + " to " + x_in_template );
-							// System.out.println( "y from: " + last_y_in_template + " to " + y_in_template );
-							// System.out.println( "z from: " + last_z_in_template + " to " + z_in_template );
-							
-							long line_x, line_y, line_z;
-
-							if( (zdiff >= ydiff) && (zdiff >= xdiff) ) {
-
-								if( zdiff == 0 ) {
-									int in_plane = y_in_template*newWidth+x_in_template;
-									redPixels[z_in_template][in_plane] = (byte)255;
-									greenPixels[z_in_template][in_plane] = (byte)255;
-									bluePixels[z_in_template][in_plane] = (byte)255;
-								} else {
-									int z_step;
-									if( last_z_in_template <= z_in_template ) {
-										z_step = 1;
-									} else {
-										z_step = -1;
-									}
-									line_z = last_z_in_template;
-									do {
-										// So the vector from the start point (last_(xyz)) to the end point is
-										double proportion_along = Math.abs(line_z - last_z_in_template) / (double)zdiff;
-										// System.out.println( proportion_along + " of xdiff_s " + xdiff_s ); 
-										// System.out.println( proportion_along + " of ydiff_s " + ydiff_s ); 
-										double y_delta = proportion_along * ydiff_s;
-										double x_delta = proportion_along * xdiff_s;
-										line_y = Math.round(y_delta + last_y_in_template);
-										line_x = Math.round(x_delta + last_x_in_template);
-										// System.out.println( "x is: "+line_x+" (width: "+newWidth+")");
-										// System.out.println( "y is: "+line_y+" (height: "+newHeight+")");
-										int in_plane = (int)( line_y * newWidth + line_x );
-										redPixels[(int)line_z][in_plane] = (byte)255;
-										greenPixels[(int)line_z][in_plane] = (byte)255;
-										bluePixels[(int)line_z][in_plane] = (byte)255;
-										line_z += z_step;
-									} while( line_z != z_in_template );							
-								}
-
-							} else if( (ydiff >= zdiff) && (ydiff >= xdiff) ) {
-
-								if( ydiff == 0 ) {
-									int in_plane = y_in_template*newWidth+x_in_template;
-									redPixels[z_in_template][in_plane] = (byte)255;
-									greenPixels[z_in_template][in_plane] = (byte)255;
-									bluePixels[z_in_template][in_plane] = (byte)255;
-								} else {
-									int y_step;
-									if( last_y_in_template <= y_in_template ) {
-										y_step = 1;
-									} else {
-										y_step = -1;
-									}
-									line_y = last_y_in_template;
-									do {
-										// So the vector from the start point (last_(xyz)) to the end point is
-										double proportion_along = Math.abs(line_y - last_y_in_template) / (double)ydiff;
-										// System.out.println( proportion_along + " of xdiff_s " + xdiff_s ); 
-										// System.out.println( proportion_along + " of zdiff_s " + zdiff_s ); 
-										double z_delta = proportion_along * zdiff_s;
-										double x_delta = proportion_along * xdiff_s;
-										line_z = Math.round(z_delta + last_z_in_template);
-										line_x = Math.round(x_delta + last_x_in_template);
-										// System.out.println( "x is: "+line_x+" (width: "+newWidth+")");
-										// System.out.println( "z is: "+line_z+" (height: "+newHeight+")");
-										int in_plane = (int)( line_y * newWidth + line_x );
-										redPixels[(int)line_z][in_plane] = (byte)255;
-										greenPixels[(int)line_z][in_plane] = (byte)255;
-										bluePixels[(int)line_z][in_plane] = (byte)255;
-										line_y += y_step;
-									} while( line_y != y_in_template );						
-								}
-								
-							} else if( (xdiff >= ydiff) && (xdiff >= zdiff) ) {
-
-								if( xdiff == 0 ) {
-									int in_plane = y_in_template*newWidth+x_in_template;
-									redPixels[z_in_template][in_plane] = (byte)255;
-									greenPixels[z_in_template][in_plane] = (byte)255;
-									bluePixels[z_in_template][in_plane] = (byte)255;
-								} else {
-									int x_step;
-									if( last_x_in_template <= x_in_template ) {
-										x_step = 1;
-									} else {
-										x_step = -1;
-									}
-									line_x = last_x_in_template;
-									do {
-										// So the vector from the start point (last_(xyz)) to the end point is
-										double proportion_along = Math.abs(line_x - last_x_in_template) / (double)xdiff;
-										// System.out.println( proportion_along + " of ydiff_s " + ydiff_s ); 
-										// System.out.println( proportion_along + " of zdiff_s " + zdiff_s ); 
-										double z_delta = proportion_along * zdiff_s;
-										double y_delta = proportion_along * ydiff_s;
-										line_z = Math.round(z_delta + last_z_in_template);
-										line_y = Math.round(y_delta + last_y_in_template);
-										// System.out.println( "z is: "+line_z+" (depth: "+newDepth+")");
-										// System.out.println( "y is: "+line_y+" (height: "+newHeight+")");
-										int in_plane = (int)( line_y * newWidth + line_x );
-										redPixels[(int)line_z][in_plane] = (byte)255;
-										greenPixels[(int)line_z][in_plane] = (byte)255;
-										bluePixels[(int)line_z][in_plane] = (byte)255;
-										line_x += x_step;
-									} while( line_x != x_in_template );						
-
-								}
-							}
+						if( xdiff > 5 || ydiff > 5 || zdiff > 5 ) {
+							System.out.println("too long in path: "+i+", at point "+k);
 						}
 
-						last_x_in_template = x_in_template;
-						last_y_in_template = y_in_template;
-						last_z_in_template = z_in_template;
-					}
+						int xdiff_s = x_in_template - last_x_in_template;
+						int ydiff_s = y_in_template - last_y_in_template;
+						int zdiff_s = z_in_template - last_z_in_template;
 
-					if( j == 1 )
-						break;
+						// Draw a line from last_ to current...
+						
+						// Shoddy algorithm for the moment.
+						
+						// In order of size, must be one of these options:
+						//
+						//    zdiff >= ydiff >= xdiff
+						//    zdiff >= xdiff >= ydiff
+						//    ydiff >= xdiff >= zdiff
+						//    ydiff >= zdiff >= xdiff
+						//    xdiff >= ydiff >= zdiff
+						//    xdiff >= zdiff >= ydiff
+						
+						// For the moment i'm collapsing these into 3 cases (zdiff, ydiff or xdiff largest)
+						
+						// Each of these cases:
+						
+						// System.out.println( "x from: " + last_x_in_template + " to " + x_in_template );
+						// System.out.println( "y from: " + last_y_in_template + " to " + y_in_template );
+						// System.out.println( "z from: " + last_z_in_template + " to " + z_in_template );
+						
+						long line_x, line_y, line_z;
+
+						if( (zdiff >= ydiff) && (zdiff >= xdiff) ) {
+							
+							if( zdiff == 0 ) {
+								int in_plane = y_in_template*newWidth+x_in_template;
+								redPixels[z_in_template][in_plane] = (byte)255;
+								greenPixels[z_in_template][in_plane] = (byte)255;
+								bluePixels[z_in_template][in_plane] = (byte)255;
+							} else {
+								int z_step;
+								if( last_z_in_template <= z_in_template ) {
+									z_step = 1;
+								} else {
+									z_step = -1;
+								}
+								line_z = last_z_in_template;
+								do {
+									// So the vector from the start point (last_(xyz)) to the end point is
+									double proportion_along = Math.abs(line_z - last_z_in_template) / (double)zdiff;
+									// System.out.println( proportion_along + " of xdiff_s " + xdiff_s ); 
+									// System.out.println( proportion_along + " of ydiff_s " + ydiff_s ); 
+									double y_delta = proportion_along * ydiff_s;
+									double x_delta = proportion_along * xdiff_s;
+									line_y = Math.round(y_delta + last_y_in_template);
+									line_x = Math.round(x_delta + last_x_in_template);
+									// System.out.println( "x is: "+line_x+" (width: "+newWidth+")");
+									// System.out.println( "y is: "+line_y+" (height: "+newHeight+")");
+									int in_plane = (int)( line_y * newWidth + line_x );
+									redPixels[(int)line_z][in_plane] = (byte)255;
+									greenPixels[(int)line_z][in_plane] = (byte)255;
+									bluePixels[(int)line_z][in_plane] = (byte)255;
+									line_z += z_step;
+								} while( line_z != z_in_template );							
+							}
+							
+						} else if( (ydiff >= zdiff) && (ydiff >= xdiff) ) {
+							
+							if( ydiff == 0 ) {
+								int in_plane = y_in_template*newWidth+x_in_template;
+								redPixels[z_in_template][in_plane] = (byte)255;
+								greenPixels[z_in_template][in_plane] = (byte)255;
+								bluePixels[z_in_template][in_plane] = (byte)255;
+							} else {
+								int y_step;
+								if( last_y_in_template <= y_in_template ) {
+									y_step = 1;
+								} else {
+									y_step = -1;
+								}
+								line_y = last_y_in_template;
+								do {
+									// So the vector from the start point (last_(xyz)) to the end point is
+									double proportion_along = Math.abs(line_y - last_y_in_template) / (double)ydiff;
+									// System.out.println( proportion_along + " of xdiff_s " + xdiff_s ); 
+									// System.out.println( proportion_along + " of zdiff_s " + zdiff_s ); 
+									double z_delta = proportion_along * zdiff_s;
+									double x_delta = proportion_along * xdiff_s;
+									line_z = Math.round(z_delta + last_z_in_template);
+									line_x = Math.round(x_delta + last_x_in_template);
+									// System.out.println( "x is: "+line_x+" (width: "+newWidth+")");
+									// System.out.println( "z is: "+line_z+" (height: "+newHeight+")");
+									int in_plane = (int)( line_y * newWidth + line_x );
+									redPixels[(int)line_z][in_plane] = (byte)255;
+									greenPixels[(int)line_z][in_plane] = (byte)255;
+									bluePixels[(int)line_z][in_plane] = (byte)255;
+									line_y += y_step;
+								} while( line_y != y_in_template );						
+							}
+							
+						} else if( (xdiff >= ydiff) && (xdiff >= zdiff) ) {
+							
+							if( xdiff == 0 ) {
+								int in_plane = y_in_template*newWidth+x_in_template;
+								redPixels[z_in_template][in_plane] = (byte)255;
+								greenPixels[z_in_template][in_plane] = (byte)255;
+								bluePixels[z_in_template][in_plane] = (byte)255;
+							} else {
+								int x_step;
+								if( last_x_in_template <= x_in_template ) {
+									x_step = 1;
+								} else {
+									x_step = -1;
+								}
+								line_x = last_x_in_template;
+								do {
+									// So the vector from the start point (last_(xyz)) to the end point is
+									double proportion_along = Math.abs(line_x - last_x_in_template) / (double)xdiff;
+									// System.out.println( proportion_along + " of ydiff_s " + ydiff_s ); 
+									// System.out.println( proportion_along + " of zdiff_s " + zdiff_s ); 
+									double z_delta = proportion_along * zdiff_s;
+									double y_delta = proportion_along * ydiff_s;
+									line_z = Math.round(z_delta + last_z_in_template);
+									line_y = Math.round(y_delta + last_y_in_template);
+									// System.out.println( "z is: "+line_z+" (depth: "+newDepth+")");
+									// System.out.println( "y is: "+line_y+" (height: "+newHeight+")");
+									int in_plane = (int)( line_y * newWidth + line_x );
+									redPixels[(int)line_z][in_plane] = (byte)255;
+									greenPixels[(int)line_z][in_plane] = (byte)255;
+									bluePixels[(int)line_z][in_plane] = (byte)255;
+									line_x += x_step;
+								} while( line_x != x_in_template );						
+								
+							}
+						}
+					}
+					
+					last_x_in_template = x_in_template;
+					last_y_in_template = y_in_template;
+					last_z_in_template = z_in_template;
 				}
 			}
 		}
@@ -359,7 +374,7 @@ public class CreateTracingVolume_ implements PlugIn {
 		for( z = 0; z < newDepth; ++z ) {
 
 			// System.out.println("Actually adding slice: "+z);
-
+			
                         ColorProcessor cp = new ColorProcessor( newWidth, newHeight );
                         cp.setRGB( redPixels[z], greenPixels[z], bluePixels[z] );
                         newStack.addSlice( null, cp );

@@ -1,5 +1,28 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+
+/* Copyright 2006, 2007 Mark Longair */
+
+/*
+    This file is part of the ImageJ plugin "Simple Neurite Tracer".
+
+    The ImageJ plugin "Simple Neurite Tracer" is free software; you
+    can redistribute it and/or modify it under the terms of the GNU
+    General Public License as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version.
+
+    The ImageJ plugin "Simple Neurite Tracer" is distributed in the
+    hope that it will be useful, but WITHOUT ANY WARRANTY; without
+    even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+    PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
 package tracing;
 
 class AStarNode implements Comparable {
@@ -121,8 +144,8 @@ class AStarNode implements Comparable {
 		return "("+x+","+y+","+z+") h: "+h+" g: "+g+" f: "+f;
 	}
 	
-	public Connection asConnection( ) {
-		Connection creversed = new Connection();
+	public Path asPath( ) {
+		Path creversed = new Path();
 		AStarNode p = this;
 		do {
 			creversed.addPoint( p.x, p.y, p.z );
@@ -135,8 +158,8 @@ class AStarNode implements Comparable {
 		return predecessor;
 	}
 	
-	public Connection asConnectionReversed( ) {
-		Connection result = new Connection();
+	public Path asPathReversed( ) {
+		Path result = new Path();
 		AStarNode p = this;
 		do {
 			result.addPoint( p.x, p.y, p.z );

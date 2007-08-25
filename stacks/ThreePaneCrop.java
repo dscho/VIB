@@ -1,17 +1,43 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+/* Copyright 2006, 2007 Mark Longair */
+
+/*
+    This file is part of the ImageJ plugin "Three Pane Crop".
+
+    The ImageJ plugin "Three Pane Crop" is free software; you can
+    redistribute it and/or modify it under the terms of the GNU
+    General Public License as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version.
+
+    The ImageJ plugin "Three Pane Crop" is distributed in the hope
+    that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+    PURPOSE.  See the GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package stacks;
 
 import ij.*;
 import ij.gui.ImageCanvas;
+import ij.gui.GenericDialog;
+import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import ij.process.ByteProcessor;
+import ij.process.ColorProcessor;
+import ij.process.FloatProcessor;
 
 import java.awt.*;
 import java.awt.event.*;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import java.awt.image.ColorModel;
 
 /* A small dialog for confirming the region to crop and reporting
  * numerically what the current crop boundaries are. */
@@ -247,7 +273,7 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 
 	public void setFromThreshold() {
 		
-		int t;
+		double t;
 
 		try {
 
@@ -256,10 +282,10 @@ class CropDialog extends Dialog implements ActionListener, WindowListener {
 			 * malformed field. */
 
 			String threshold_s = threshold.getText( );
-			t = Integer.parseInt( threshold_s );
+			t = Double.parseDouble( threshold_s );
 
 		} catch( NumberFormatException e ) {
-			IJ.error( "The threshold must be an integer." );
+			IJ.error( "The threshold must be a number." );
 			return;
 		}
 
@@ -388,8 +414,7 @@ public class ThreePaneCrop extends ThreePanes {
 		return new ThreePaneCropCanvas( imagePlus, this, plane );
 	}
 
-	public void setCropAbove( int above ) {
-
+	public void setCropAbove( double above ) {
 
 		int min_x_above = Integer.MAX_VALUE;
 		int max_x_above = Integer.MIN_VALUE;
@@ -406,28 +431,102 @@ public class ThreePaneCrop extends ThreePanes {
 		int height = xy.getHeight();
 		int depth = xy.getStackSize();
 
+		int type = xy.getType();
+
 		for( int z = 0; z < depth; z ++ ) {
 
-			byte [] slice_bytes = (byte [])stack.getPixels(z+1);
+			switch (type) {
+				
+			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
+			{
+				byte [] slice_bytes = (byte [])stack.getPixels(z+1);
 			
-			for( int x = 0; x < width; ++x )
-				for( int y = 0; y < height; ++y ) {
-
-					int value = slice_bytes[y*width+x]&0xFF;
-
-					if( value > above ) {
+				for( int x = 0; x < width; ++x )
+					for( int y = 0; y < height; ++y ) {
 						
-						if( x < min_x_above ) min_x_above = x;
-						if( y < min_y_above ) min_y_above = y;
-						if( z < min_z_above ) min_z_above = z;
-
-						if( x > max_x_above ) max_x_above = x;
-						if( y > max_y_above ) max_y_above = y;
-						if( z > max_z_above ) max_z_above = z;
+						int value = slice_bytes[y*width+x]&0xFF;
+						
+						if( value > above ) {
+							
+							if( x < min_x_above ) min_x_above = x;
+							if( y < min_y_above ) min_y_above = y;
+							if( z < min_z_above ) min_z_above = z;
+							
+							if( x > max_x_above ) max_x_above = x;
+							if( y > max_y_above ) max_y_above = y;
+							if( z > max_z_above ) max_z_above = z;
+							
+						}
 
 					}
+			}
+			break;
 
-				}
+			case ImagePlus.COLOR_RGB:
+			{
+				int [] slice_ints = (int [])stack.getPixels(z+1);
+			
+				for( int x = 0; x < width; ++x )
+					for( int y = 0; y < height; ++y ) {
+						
+						// FIXME: this isn't very sensible; should probably allow
+						// the user to set different thresholds for R, G & B or
+						// something...  (COLOR_RGB seems to be ARGB.)
+
+						int raw_value = slice_ints[y*width+x];
+
+						int r = (raw_value & 0xFF0000) >> 16;
+						int g = (raw_value & 0xFF00) >> 8;
+						int b = raw_value & 0xFF;
+
+						int value = (r + g + b) / 3;
+						
+						if( value > above ) {
+							
+							if( x < min_x_above ) min_x_above = x;
+							if( y < min_y_above ) min_y_above = y;
+							if( z < min_z_above ) min_z_above = z;
+							
+							if( x > max_x_above ) max_x_above = x;
+							if( y > max_y_above ) max_y_above = y;
+							if( z > max_z_above ) max_z_above = z;
+							
+						}
+
+					}
+			}
+			break;
+
+			case ImagePlus.GRAY32:
+			{
+				float [] slice_floats = (float [])stack.getPixels(z+1);
+			
+				for( int x = 0; x < width; ++x )
+					for( int y = 0; y < height; ++y ) {
+						
+						float value = slice_floats[y*width+x];
+						
+						if( value > above ) {
+							
+							if( x < min_x_above ) min_x_above = x;
+							if( y < min_y_above ) min_y_above = y;
+							if( z < min_z_above ) min_z_above = z;
+							
+							if( x > max_x_above ) max_x_above = x;
+							if( y > max_y_above ) max_y_above = y;
+							if( z > max_z_above ) max_z_above = z;
+							
+						}
+
+					}
+			}
+
+
+
+
+
+			}
 
 
 			IJ.showProgress( z / (float)depth );
@@ -461,7 +560,8 @@ public class ThreePaneCrop extends ThreePanes {
 			performCrop( imp,
 				     min_x_offscreen, max_x_offscreen,
 				     min_y_offscreen, max_y_offscreen,
-				     min_z_offscreen, max_z_offscreen );
+				     min_z_offscreen, max_z_offscreen,
+				     changeOrigin );
 			
 		}
 	}
@@ -469,7 +569,8 @@ public class ThreePaneCrop extends ThreePanes {
 	static public void performCrop( ImagePlus imp,
 					int min_x, int max_x,
 					int min_y, int max_y,
-					int min_z, int max_z ) {
+					int min_z, int max_z,
+					boolean adjust_origin ) {
 
 		int original_width = imp.getWidth();
 
@@ -482,36 +583,124 @@ public class ThreePaneCrop extends ThreePanes {
 		ImageStack stack=imp.getStack();
 		ImageStack new_stack=new ImageStack( new_width, new_height );
 
-		for( int slice = first_slice; slice <= last_slice; slice ++ ) {
+		int type = imp.getType();
 
-			byte [] slice_bytes = (byte [])stack.getPixels(slice);
+		ColorModel cm = null;
+		if( ImagePlus.COLOR_256 == type ) {
+			cm = stack.getColorModel();
+		}
 
-			byte [] new_slice = new byte[new_width * new_height];
-			for( int y = min_y; y <= max_y; ++y ) {
-				System.arraycopy( slice_bytes, y * original_width + min_x,
-						  new_slice, (y - min_y) * new_width,
-						  new_width );
+		switch (type) {
+
+		case ImagePlus.GRAY8:
+		case ImagePlus.COLOR_256:
+
+			for( int slice = first_slice; slice <= last_slice; slice ++ ) {
+				
+				byte [] slice_bytes = (byte [])stack.getPixels(slice);
+				
+				byte [] new_slice = new byte[new_width * new_height];
+				for( int y = min_y; y <= max_y; ++y ) {
+					System.arraycopy( slice_bytes, y * original_width + min_x,
+							  new_slice, (y - min_y) * new_width,
+							  new_width );
+				}
+				
+				ByteProcessor bp = new ByteProcessor( new_width, new_height );
+				
+				bp.setPixels( new_slice );
+				
+				new_stack.addSlice( null, bp );
+				
+				IJ.showProgress( (slice - first_slice) / ((last_slice - first_slice) + 1) );
 			}
+			break;
 			
-			ByteProcessor bp = new ByteProcessor( new_width, new_height );
-			
-			bp.setPixels( new_slice );
+		case ImagePlus.COLOR_RGB:
 
-			new_stack.addSlice( null, bp );
+			for( int slice = first_slice; slice <= last_slice; slice ++ ) {
+				
+				int [] slice_ints = (int [])stack.getPixels(slice);
+				
+				int [] new_slice = new int[new_width * new_height];
+				for( int y = min_y; y <= max_y; ++y ) {
+					System.arraycopy( slice_ints, y * original_width + min_x,
+							  new_slice, (y - min_y) * new_width,
+							  new_width );
+				}
+				
+				ColorProcessor cp = new ColorProcessor( new_width, new_height );
+				
+				cp.setPixels( new_slice );
+				
+				new_stack.addSlice( null, cp );
+				
+				IJ.showProgress( (slice - first_slice) / ((last_slice - first_slice) + 1) );
+			}
+			break;
 
-			IJ.showProgress( (slice - first_slice) / ((last_slice - first_slice) + 1) );
+		case ImagePlus.GRAY32:
+
+			for( int slice = first_slice; slice <= last_slice; slice ++ ) {
+				
+				float [] slice_floats = (float [])stack.getPixels(slice);
+				
+				float [] new_slice = new float[new_width * new_height];
+				for( int y = min_y; y <= max_y; ++y ) {
+					System.arraycopy( slice_floats, y * original_width + min_x,
+							  new_slice, (y - min_y) * new_width,
+							  new_width );
+				}
+				
+				FloatProcessor fp = new FloatProcessor( new_width, new_height );
+				
+				fp.setPixels( new_slice );
+				
+				new_stack.addSlice( null, fp );
+				
+				IJ.showProgress( (slice - first_slice) / ((last_slice - first_slice) + 1) );
+			}
+			break;
+
+		}
+
+		if( ImagePlus.COLOR_256 == type ) {
+			if( cm != null ) {
+				new_stack.setColorModel( cm );
+			}
 		}
 
 		IJ.showProgress( 1 );
 			       
 		ImagePlus imagePlus = new ImagePlus( "cropped "+imp.getTitle(), new_stack );
 
-		/* FIXME: should probably adjust the origin according
-		 * to the crop rather than just copying the Calibration */
+		/* Should we adjust the origin according to the crop
+		 * rather than just copying the Calibration?  I'm not
+		 * doing so by default, since the ImageJ built-in Crop
+		 * command doesn't.  However, you can select that
+		 * option in the interface.  */
 
-		imagePlus.setCalibration(imp.getCalibration());
+		Calibration oldCalibration = imp.getCalibration();
+
+		if( oldCalibration != null ) {
+
+			Calibration newCalibration = (Calibration)oldCalibration.clone();
+
+			if( adjust_origin ) {
+				newCalibration.xOrigin -= min_x;
+				newCalibration.yOrigin -= min_y;
+				newCalibration.zOrigin -= min_z;
+			}
+			
+			if( newCalibration != null ) {
+				imagePlus.setCalibration(newCalibration);
+			}
+
+		}
+
 		if( imp.getProperty("Info") != null)
 			imagePlus.setProperty("Info",imp.getProperty("Info"));
+
 		imagePlus.setFileInfo(imp.getOriginalFileInfo());
 
 		imagePlus.show();
@@ -544,11 +733,14 @@ public class ThreePaneCrop extends ThreePanes {
 		((ThreePaneCropCanvas)xy_canvas).setCropBounds( min_x, max_x,
 								min_y, max_y );
 
-		((ThreePaneCropCanvas)xz_canvas).setCropBounds( min_x, max_x,
-								min_z, max_z );
-
-		((ThreePaneCropCanvas)zy_canvas).setCropBounds( min_z, max_z,
-								min_y, max_y );
+		if( ! single_pane ) {
+			((ThreePaneCropCanvas)xz_canvas).setCropBounds( min_x, max_x,
+									min_z, max_z );
+			
+			((ThreePaneCropCanvas)zy_canvas).setCropBounds( min_z, max_z,
+									min_y, max_y );
+			
+		}
 
 		min_x_offscreen = min_x;
 		max_x_offscreen = max_x;
@@ -573,20 +765,50 @@ public class ThreePaneCrop extends ThreePanes {
 
 	}
 
+	/* Should we attempt to update the origin in the cropped version?
+	   (Almost certainly, but there's an option for it anyway.) */
+
+	boolean changeOrigin;
+
 	public void initialize( ImagePlus imagePlus ) {
 
+		/* We might need up to three times the memory; the two
+		   panes and the cropped image. */
+
+		checkMemory( imagePlus, 3 );
+
+		/* Pop up a dialog asking about:
+		      - how many panes to use
+		      - whether to preserve the origin
+		*/
+
+		{
+			GenericDialog gd = new GenericDialog("Three Pane Crop (v" +
+				Three_Pane_Crop.PLUGIN_VERSION + ")");
+			gd.addMessage("Cropping: "+imagePlus.getTitle());
+			gd.addCheckbox("Three pane view?", true);
+			gd.addCheckbox("Change origin?", true);
+
+			gd.showDialog();
+			if (gd.wasCanceled())
+				return;
+		
+			single_pane = ! gd.getNextBoolean();
+			changeOrigin = gd.getNextBoolean();
+		}
+		
 		super.initialize( imagePlus );
 
 		overall_min_x = 0;
 		overall_min_y = 0;
 		overall_min_z = 0;
-
+		
 		overall_max_x = imagePlus.getWidth() - 1;
 		overall_max_y = imagePlus.getHeight() - 1;
 		overall_max_z = imagePlus.getStackSize() - 1;
-
+		
 		dialog = new CropDialog("Crop Options",this);
-
+		
 		setCropCuboid( 0, imagePlus.getWidth() - 1,
 			       0, imagePlus.getHeight() - 1,
 			       0, imagePlus.getStackSize() - 1 );

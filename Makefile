@@ -101,25 +101,33 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 
 Install_Java3D.jar: SOURCES=Install_Java3D.java
 
-ThreePaneCrop_.jar: SOURCES=stacks/PaneOwner.java \
+Three_Pane_Crop.jar: SOURCES=stacks/PaneOwner.java \
 	stacks/ThreePaneCropCanvas.java \
-	stacks/ThreePaneCrop_.java \
+	stacks/Three_Pane_Crop.java \
 	stacks/ThreePaneCrop.java \
 	stacks/ThreePanesCanvas.java \
-	stacks/ThreePanes.java
+	stacks/ThreePanes.java stacks/COPYING stacks/README
 
-SimpleNeuriteTracer_.jar: SOURCES=stacks/ThreePanes.java \
+Unpack_To_PNG.jar: SOURCES=stacks/Unpack_To_PNG.java \
+	amira/AmiraParameters.java \
+	amira/AmiraTable.java \
+	util/BatchOpener.java \
+	zeiss/LSM_Reader.java
+
+Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
 	stacks/PaneOwner.java \
 	tracing/AStarNode.java \
 	tracing/AStarProgressCallback.java \
 	tracing/AStarThread.java \
-	tracing/Connection.java \
-	tracing/SimpleNeuriteTracer_.java \
+	tracing/Path.java \
+	tracing/PathAndFillManager.java \
+	tracing/PathAndFillListener.java \
+	tracing/Simple_Neurite_Tracer.java \
 	tracing/NeuriteTracerResultsDialog.java \
 	tracing/PointInImage.java \
-	tracing/SegmentedConnection.java \
 	tracing/TracerCanvas.java \
+	tracing/Fill.java \
 	tracing/FillerThread.java \
 	tracing/FillerProgressCallback.java \
 	tracing/FillerNode.java \
@@ -129,7 +137,13 @@ SimpleNeuriteTracer_.jar: SOURCES=stacks/ThreePanes.java \
 	features/GaussianGenerationCallback.java \
 	client/ArchiveClient.java \
 	util/Arrow.java \
-	util/ArrowDisplayer.java
+	util/ArrowDisplayer.java \
+	tracing/README tracing/COPYING \
+	math3d/JacobiDouble.java \
+	math3d/FastMatrixN.java \
+	amira/AmiraParameters.java \
+	amira/AmiraMeshDecoder.java \
+	amira/AmiraTable.java
 
 ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	marchingcubes/MCTriangulator.java \
@@ -194,8 +208,8 @@ clean-jars:
 %.jar:
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
-	tar cvf - $(SOURCES) | (cd tempdir; tar xvf -)
-	(cd tempdir && javac $(JAVACOPTS) $(SOURCES) && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
+	tar cvf - $(SOURCES) $(EXTRAS) | (cd tempdir; tar xvf -)
+	(cd tempdir && javac $(JAVACOPTS) $(filter %.java,$(SOURCES)) && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
 # Unpack the jar, remove the source files and jar it up again :)
 
