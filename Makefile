@@ -182,7 +182,8 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	VIB_Protocol.java
 
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
-	Align_Image.jar Moving_Least_Squares.jar Average_Color.jar
+	Align_Image.jar Moving_Least_Squares.jar Average_Color.jar \
+	Seam_Remover.jar
 
 $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 
