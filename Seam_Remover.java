@@ -32,23 +32,39 @@ public class Seam_Remover implements PlugInFilter {
 	protected ImageEnergy energy;
 
 	public void run(ImageProcessor ip) {
-		String[] labels = { "horizontal", "vertical" };
+		String[] labels = {
+			"Remove one Horizontal Seam",
+			"Remove one Vertical Seam",
+			"Mark one Horizontal Seam",
+			"Mark one Vertical Seam",
+			"Resize by removing Seams"
+		};
 		GenericDialog gd = new GenericDialog("Seam Remover");
-		gd.addChoice("mode", labels, labels[0]);
-		gd.addCheckbox("visualize", false);
+		gd.addChoice("mode", labels, labels[4]);
+		gd.addNumericField("width", image.getWidth(), 0);
+		gd.addNumericField("height", image.getHeight(), 0);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
 
 		int mode = gd.getNextChoiceIndex();
-		boolean visualize = gd.getNextBoolean();
+		int width = (int)gd.getNextNumber();
+		int height = (int)gd.getNextNumber();
 
 		w = image.getWidth();
 		h = image.getHeight();
 		pixels = (int[])image.getProcessor().getPixels();
 		energy = new ColorDerivativeEnergy(w, h, pixels);
 
-		boolean vertical = mode == 1;
+		if (mode == 4) {
+			ImageProcessor n = resize(energy, width, height);
+			new ImagePlus("resized " + image.getTitle(), n).show();
+			return;
+		}
+
+		boolean visualize = mode == 2 || mode == 3;
+		boolean vertical = mode == 1 || mode == 3;
+
 		int[] seam = vertical ?
 			energy.getVerticalSeam() : energy.getHorizontalSeam();
 
@@ -56,7 +72,8 @@ public class Seam_Remover implements PlugInFilter {
 			image.setRoi(energy.seam2roi(seam, vertical));
 			image.updateAndDraw();
 		} else {
-			ImageProcessor n = energy.removeSeam(seam, vertical);
+			ImageProcessor n = energy.removeSeam(seam,
+					vertical).getProcessor();
 			new ImagePlus("removed seam", n).show();
 		}
 	}
@@ -64,6 +81,24 @@ public class Seam_Remover implements PlugInFilter {
 	public int setup(String args, ImagePlus imp) {
 		this.image = imp;
 		return DOES_RGB;
+	}
+
+	public ImageProcessor resize(ImageEnergy energy, int w, int h) {
+		if (w > energy.w || h > energy.h)
+			throw new RuntimeException("Cannot enlarge image");
+		int total = energy.w - w + energy.h - h;
+		int count = 0;
+		while (w < energy.w || h < energy.h) {
+			if (energy.w - w < energy.h - h) {
+				int[] seam = energy.getHorizontalSeam();
+				energy = energy.removeSeam(seam, false);
+			} else {
+				int[] seam = energy.getVerticalSeam();
+				energy = energy.removeSeam(seam, true);
+			}
+			IJ.showProgress(++count, total);
+		}
+		return energy.getProcessor();
 	}
 
 	private abstract static class ImageEnergy {
@@ -136,15 +171,19 @@ new ImagePlus("energy", new ij.process.FloatProcessor(w, h, f, null)).show();
 			return new FlippedImageEnergy(this).getVerticalSeam();
 		}
 
-		public abstract ImageProcessor
+		public abstract ImageProcessor getProcessor();
+
+		public abstract ImageEnergy
 			removeSeam(int[] seam, boolean vertical);
 
 		public ImageProcessor removeVerticalSeam() {
-			return removeSeam(getVerticalSeam(), true);
+			return removeSeam(getVerticalSeam(),
+					true).getProcessor();
 		}
 
 		public ImageProcessor removeHorizontalSeam() {
-			return removeSeam(getHorizontalSeam(), false);
+			return removeSeam(getHorizontalSeam(),
+					false).getProcessor();
 		}
 
 		public Roi seam2roi(int[] seam, boolean vertical) {
@@ -169,8 +208,13 @@ new ImagePlus("energy", new ij.process.FloatProcessor(w, h, f, null)).show();
 			return orig.get(y, x);
 		}
 
-		public ImageProcessor removeSeam(int[] seam, boolean vert) {
+		public ImageEnergy removeSeam(int[] seam, boolean vert) {
 			return orig.removeSeam(seam, !vert);
+		}
+
+		public ImageProcessor getProcessor() {
+			throw new RuntimeException("Cannot flip arbitrary "
+				+ "ImageProcessor");
 		}
 	}
 
@@ -200,7 +244,7 @@ new ImagePlus("energy", new ij.process.FloatProcessor(w, h, f, null)).show();
 				  getDiff(x, y - 1, x, y + 1)));
 		}
 
-		public ImageProcessor removeSeam(int[] seam, boolean vert) {
+		public ImageEnergy removeSeam(int[] seam, boolean vert) {
 			if (vert) {
 				int[] p = new int[(w - 1) * h];
 				for (int y = 0; y < h; y++) {
@@ -211,7 +255,7 @@ new ImagePlus("energy", new ij.process.FloatProcessor(w, h, f, null)).show();
 						p[x - 1 + y * (w - 1)] =
 							pixels[x + y * w];
 				}
-				return new ColorProcessor(w - 1, h, p);
+				return new ColorDerivativeEnergy(w - 1, h, p);
 			} else {
 				int[] p = new int[w * (h - 1)];
 				for (int x = 0; x < w; x++) {
@@ -222,8 +266,12 @@ new ImagePlus("energy", new ij.process.FloatProcessor(w, h, f, null)).show();
 						p[x + (y - 1) * w] =
 							pixels[x + y * w];
 				}
-				return new ColorProcessor(w, h - 1, p);
+				return new ColorDerivativeEnergy(w, h - 1, p);
 			}
+		}
+
+		public ImageProcessor getProcessor() {
+			return new ColorProcessor(w, h, pixels);
 		}
 	}
 }
