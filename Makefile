@@ -204,7 +204,7 @@ show-jars:
 all-jars: $(JARS)
 
 clean-jars:
-	rm $(JARS)
+	-rm $(JARS)
 
 %-compat.jar: %.jar
 	test ! -d tempdir || rm -rf tempdir
