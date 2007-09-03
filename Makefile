@@ -183,6 +183,9 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 
 Average_Color.jar: SOURCES=Average_Color.java CIELAB.java
 
+Bilateral_Filter.jar: SOURCES=Bilateral_Filter.java \
+	vib/InterpolatedImage.java math3d/Point3d.java
+
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar \
 	Seam_Remover.jar
@@ -195,7 +198,7 @@ JARS=Delaunay_Voronoi.jar AmiraMesh_.jar AmiraSurface_.jar \
 	ImageJ_3D_Viewer.jar \
 	Install_Java3D.jar Three_Pane_Crop.jar Unpack_To_PNG.jar \
 	Simple_Neurite_Tracer.jar ExportMesh_.jar VIB_Protocol.jar \
-	Average_Color.jar \
+	Average_Color.jar Bilateral_Filter.jar \
 	$(SIMPLE_JARS)
 
 show-jars:
