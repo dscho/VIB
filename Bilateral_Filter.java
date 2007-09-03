@@ -1,11 +1,13 @@
-package vib;
-
 import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import ij.process.ImageProcessor;
 import ij.plugin.filter.PlugInFilter;
 
-public class BilateralFilter_ implements PlugInFilter {
+import math3d.Point3d;
+
+import vib.InterpolatedImage;
+
+public class Bilateral_Filter implements PlugInFilter {
 	ImagePlus image;
 
 	public void run(ImageProcessor ip) {
