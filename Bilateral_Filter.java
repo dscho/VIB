@@ -7,6 +7,19 @@ import math3d.Point3d;
 
 import vib.InterpolatedImage;
 
+/*
+
+ This plugin implements the Bilateral Filter, described in
+
+  C. Tomasi and R. Manduchi, "Bilateral Filtering for Gray and Color Images",
+  Proceedings of the 1998 IEEE International Conference on Computer Vision,
+  Bombay, India.
+
+ Basically, it does a Gaussian blur taking into account the intensity domain
+ in addition to the spatial domain (i.e. pixels are smoothed when they are
+ close together _both_ spatially and by intensity.
+
+*/
 public class Bilateral_Filter implements PlugInFilter {
 	ImagePlus image;
 
