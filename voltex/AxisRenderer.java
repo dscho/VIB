@@ -9,68 +9,13 @@ import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import ij.ImagePlus;
 
-abstract public class AxisRenderer extends Renderer 
-				implements VolRendConstants{
+abstract public class AxisRenderer implements VolRendConstants{
 
-
-	protected Switch axisSwitch;
-	private BranchGroup root;
-	protected int[][] axisIndex = new int[3][2];
 	protected double[] quadCoords;
+	protected Volume volume;
 
-	private int	curAxis = Z_AXIS;
-	private int	curDir = FRONT;
-
-	public AxisRenderer(ImagePlus image) {
-		super(image);
-		axisIndex[X_AXIS][FRONT] = 0;
-		axisIndex[X_AXIS][BACK] = 1;
-		axisIndex[Y_AXIS][FRONT] = 2;
-		axisIndex[Y_AXIS][BACK] = 3;
-		axisIndex[Z_AXIS][FRONT] = 4;
-		axisIndex[Z_AXIS][BACK] = 5;
-
-		axisSwitch = new Switch();
-		axisSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
-		axisSwitch.setCapability(Switch.ALLOW_SWITCH_WRITE);
-		axisSwitch.setCapability(Group.ALLOW_CHILDREN_READ);
-		axisSwitch.setCapability(Group.ALLOW_CHILDREN_WRITE);
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-
-
-		root = new BranchGroup();
-		root.addChild(axisSwitch);
-		root.setCapability(BranchGroup.ALLOW_DETACH);
-		root.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
-	}
-
-	public BranchGroup getVolumeNode() {
-		return root;
-	}
-
-	protected void clearData() {
-		clearGroup(axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]));
-		clearGroup(axisSwitch.getChild(axisIndex[Z_AXIS][BACK]));
-		clearGroup(axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]));
-		clearGroup(axisSwitch.getChild(axisIndex[Y_AXIS][BACK]));
-		clearGroup(axisSwitch.getChild(axisIndex[X_AXIS][FRONT]));
-		clearGroup(axisSwitch.getChild(axisIndex[X_AXIS][BACK]));
-	}
-
-	protected void clearGroup(Node node) {
-		Group group = (Group) node;
-		int numChildren = group.numChildren();
-		for (int i = numChildren-1; i >= 0; i--) {
-			group.removeChild(i);
-		}
-		if ((numChildren = group.numChildren()) > 0) {
-			System.out.println("clearGroup(): still got a kid");
-		}
+	public AxisRenderer(Volume volume) {
+		this.volume = volume;
 	}
 
 	protected void setCurCoordX(int i) {
@@ -152,56 +97,5 @@ abstract public class AxisRenderer extends Renderer
 		// upper left
 		quadCoords[9] = volume.minCoord.x;
 		quadCoords[10] = volume.maxCoord.y;
-	}
-
-	protected OrderedGroup getOrderedGroup() {
-		OrderedGroup og = new OrderedGroup();
-		og.setCapability(Group.ALLOW_CHILDREN_READ);
-		og.setCapability(Group.ALLOW_CHILDREN_WRITE);
-		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
-		return og;
-	}
-
-	public void eyePtChanged(View view) {
-
-		Point3d eyePt = getViewPosInLocal(view, root);
-		if (eyePt != null) {
-			Point3d  volRefPt = volume.volRefPt;
-			Vector3d eyeVec = new Vector3d();
-			eyeVec.sub(eyePt, volRefPt);
-
-			// compensate for different xyz resolution/scale
-			eyeVec.x /= volume.xSpace;
-			eyeVec.y /= volume.ySpace;
-			eyeVec.z /= volume.zSpace;
-
-			// select the axis with the greatest magnitude 
-			int axis = X_AXIS;
-			double value = eyeVec.x;
-			double max = Math.abs(eyeVec.x);
-			if (Math.abs(eyeVec.y) > max) {
-				axis = Y_AXIS;
-				value = eyeVec.y;
-				max = Math.abs(eyeVec.y);
-			}
-			if (Math.abs(eyeVec.z) > max) {
-				axis = Z_AXIS;
-				value = eyeVec.z;
-				max = Math.abs(eyeVec.z);
-			}
-
-			// select the direction based on the sign of the magnitude
-			int dir = value > 0.0 ? FRONT : BACK;
-
-			if ((axis != curAxis) || (dir != curDir)) {
-				curAxis = axis;
-				curDir = dir;
-				setWhichChild();
-			}
-		}
-	}
-
-	protected void setWhichChild() {
-		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 	}
 }
