@@ -9,9 +9,9 @@ import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import ij.ImagePlus;
 
-import voltex.Axis2DRenderer;
+import voltex.VolumeRenderer;
 
-public class Orthoslice extends Axis2DRenderer {
+public class Orthoslice extends VolumeRenderer {
 
 	private int x, y, z;
 

@@ -9,7 +9,7 @@ import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import ij.ImagePlus;
 
-public class Axis2DRenderer extends Renderer implements VolRendConstants {
+public class VolumeRenderer extends Renderer implements VolRendConstants {
 
 	private float transparency;
 	private Color3f color;
@@ -25,7 +25,7 @@ public class Axis2DRenderer extends Renderer implements VolRendConstants {
 	protected Switch axisSwitch;
 	protected int[][] axisIndex = new int[3][2];
 
-	public Axis2DRenderer(ImagePlus img, IndexColorModel cmodel, 
+	public VolumeRenderer(ImagePlus img, IndexColorModel cmodel, 
 					Color3f color, float tr) {
 		super(img);
 		this.transparency = tr;
