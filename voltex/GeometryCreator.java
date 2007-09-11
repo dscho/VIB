@@ -21,6 +21,11 @@ public class GeometryCreator implements VolRendConstants {
 		return quadArray;
 	}
 
+	public double[] getQuadCoords(int direction, int index) {
+		calculateQuad(direction, index);
+		return quadCoords;
+	}
+
 	private void calculateQuad(int direction, int index) {
 		switch(direction) {
 			case X_AXIS: 	

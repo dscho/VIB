@@ -11,15 +11,18 @@ import ij.ImagePlus;
 
 public class Axis2DRenderer extends Renderer implements VolRendConstants {
 
-	private Texture2DVolume texVol;
 	private float transparency;
 	private Color3f color;
 
 	private int curAxis = Z_AXIS;
 	private int curDir = FRONT;
 
-	protected Switch axisSwitch;
 	private BranchGroup root;
+
+	protected AppearanceCreator appCreator;
+	protected GeometryCreator geomCreator;
+
+	protected Switch axisSwitch;
 	protected int[][] axisIndex = new int[3][2];
 
 	public Axis2DRenderer(ImagePlus img, IndexColorModel cmodel, 
@@ -27,7 +30,8 @@ public class Axis2DRenderer extends Renderer implements VolRendConstants {
 		super(img);
 		this.transparency = tr;
 		this.color = color;
-		texVol = new Texture2DVolume(volume, cmodel);
+		appCreator = new AppearanceCreator(volume, cmodel);
+		geomCreator = new GeometryCreator(volume);
 
 		axisIndex[X_AXIS][FRONT] = 0;
 		axisIndex[X_AXIS][BACK] = 1;
@@ -41,13 +45,8 @@ public class Axis2DRenderer extends Renderer implements VolRendConstants {
 		axisSwitch.setCapability(Switch.ALLOW_SWITCH_WRITE);
 		axisSwitch.setCapability(Group.ALLOW_CHILDREN_READ);
 		axisSwitch.setCapability(Group.ALLOW_CHILDREN_WRITE);
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.addChild(getOrderedGroup());
-
+		for(int i = 0; i < 6; i++)
+			axisSwitch.addChild(getOrderedGroup());
 
 		root = new BranchGroup();
 		root.addChild(axisSwitch);
@@ -57,26 +56,6 @@ public class Axis2DRenderer extends Renderer implements VolRendConstants {
 
 	public BranchGroup getVolumeNode() {
 		return root;
-	}
-
-	protected void clearData() {
-		clearGroup(axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]));
-		clearGroup(axisSwitch.getChild(axisIndex[Z_AXIS][BACK]));
-		clearGroup(axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]));
-		clearGroup(axisSwitch.getChild(axisIndex[Y_AXIS][BACK]));
-		clearGroup(axisSwitch.getChild(axisIndex[X_AXIS][FRONT]));
-		clearGroup(axisSwitch.getChild(axisIndex[X_AXIS][BACK]));
-	}
-
-	private void clearGroup(Node node) {
-		Group group = (Group) node;
-		int numChildren = group.numChildren();
-		for (int i = numChildren-1; i >= 0; i--) {
-			group.removeChild(i);
-		}
-		if ((numChildren = group.numChildren()) > 0) {
-			System.out.println("clearGroup(): still got a kid");
-		}
 	}
 
 	private OrderedGroup getOrderedGroup() {
@@ -121,76 +100,76 @@ public class Axis2DRenderer extends Renderer implements VolRendConstants {
 			if ((axis != curAxis) || (dir != curDir)) {
 				curAxis = axis;
 				curDir = dir;
-				setWhichChild();
+				axisSwitch.setWhichChild(
+					axisIndex[curAxis][curDir]);
 			}
 		}
 	}
 
-	protected void setWhichChild() {
-		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
-	}
 	public void fullReload() {
-		texVol.loadTexture();
-		clearData();
+		appCreator.loadTexture();
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			((Group)axisSwitch.getChild(i)).removeAllChildren();
+		}
 		if (volume.hasData()) {
 			loadQuads();
 		}
-		setWhichChild();
+		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 	}
 
 	public void setThreshold(int threshold) {
-//		float value = threshold/255f;
-//		value = Math.min(1f, value);
-//		value = Math.max(0.1f, value);
-//		this.threshold = (int)Math.round(value * 255);
-//		for(int i = 0; i < axisSwitch.numChildren(); i++) {
-//			Group g = (Group)axisSwitch.getChild(i);
-//			int num = g.numChildren();
-//			for(int y = 0; y < num; y++) {
-//				Shape3D shape = (Shape3D)
-//					((Group)g.getChild(y)).getChild(0);
-//				shape.getAppearance().
-//					getRenderingAttributes().
-//					setAlphaTestValue(value);
-//			}
-//		}
+		float value = threshold/255f;
+		value = Math.min(1f, value);
+		value = Math.max(0.1f, value);
+		this.threshold = (int)Math.round(value * 255);
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			Group g = (Group)axisSwitch.getChild(i);
+			int num = g.numChildren();
+			for(int y = 0; y < num; y++) {
+				Shape3D shape = (Shape3D)
+					((Group)g.getChild(y)).getChild(0);
+				shape.getAppearance().
+					getRenderingAttributes().
+					setAlphaTestValue(value);
+			}
+		}
 	}
 
 	public void setTransparency(float transparency) {
-//		this.transparency = transparency;
-//		for(int i = 0; i < axisSwitch.numChildren(); i++) {
-//			Group g = (Group)axisSwitch.getChild(i);
-//			int num = g.numChildren();
-//			for(int y = 0; y < num; y++) {
-//				Shape3D shape = (Shape3D)
-//					((Group)g.getChild(y)).getChild(0);
-//				shape.getAppearance().
-//					getTransparencyAttributes().
-//						setTransparency(transparency);
-//			}
-//		}
+		this.transparency = transparency;
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			Group g = (Group)axisSwitch.getChild(i);
+			int num = g.numChildren();
+			for(int y = 0; y < num; y++) {
+				Shape3D shape = (Shape3D)
+					((Group)g.getChild(y)).getChild(0);
+				shape.getAppearance().
+					getTransparencyAttributes().
+						setTransparency(transparency);
+			}
+		}
 	}
 
 	public void setColorModel(IndexColorModel cmodel) {
-//		texVol.setColorModel(cmodel);
+//		appCreator.setColorModel(cmodel);
 //		fullReload();
 	}
 
 	public void setColor(Color3f color) {
-//		this.color = color;
-//		Color3f c = color != null ? color : new Color3f(1f, 1f, 1f);
-//		for(int i = 0; i < axisSwitch.numChildren(); i++) {
-//			Group g = (Group)axisSwitch.getChild(i);
-//			int num = g.numChildren();
-//			for(int y = 0; y < num; y++) {
-//				Shape3D shape = (Shape3D)
-//					((Group)g.getChild(y)).
-//							getChild(0);
-//				shape.getAppearance().
-//					getColoringAttributes().
-//						setColor(c);
-//			}
-//		}
+		this.color = color;
+		Color3f c = color != null ? color : new Color3f(1f, 1f, 1f);
+		for(int i = 0; i < axisSwitch.numChildren(); i++) {
+			Group g = (Group)axisSwitch.getChild(i);
+			int num = g.numChildren();
+			for(int y = 0; y < num; y++) {
+				Shape3D shape = (Shape3D)
+					((Group)g.getChild(y)).
+							getChild(0);
+				shape.getAppearance().
+					getColoringAttributes().
+						setColor(c);
+			}
+		}
 	}
 
 	private void loadQuads() {
@@ -200,121 +179,43 @@ public class Axis2DRenderer extends Renderer implements VolRendConstants {
 	}
 
 	private void loadAxis(int axis) {
-//		int rSize = 0;		// number of tex maps to create
-//		OrderedGroup frontGroup = null;
-//		OrderedGroup backGroup = null;
-//		Texture2D[] textures = null;
-//		TexCoordGeneration tg = null;
-//
-//		frontGroup = 
-//		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][FRONT]);
-//		backGroup = 
-//		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][BACK]);
-//		switch (axis) {
-//		case Z_AXIS:
-//			rSize = volume.zDim;
-//			textures = texVol.zTextures;
-//			tg = texVol.zTg;
-//			setCoordsZ();
-//			break;
-//		case Y_AXIS:
-//			rSize = volume.yDim;
-//			textures = texVol.yTextures;
-//			tg = texVol.yTg;
-//			setCoordsY();
-//			break;
-//		case X_AXIS:
-//			rSize = volume.xDim;
-//			textures = texVol.xTextures;
-//			tg = texVol.xTg;
-//			setCoordsX();
-//			break;
-//		}
-//
-//		for (int i=0; i < rSize; i ++) { 
-//
-//			switch (axis) {
-//			case Z_AXIS: setCurCoordZ(i); break;
-//			case Y_AXIS: setCurCoordY(i); break;
-//			case X_AXIS: setCurCoordX(i); break;
-//			}
-//
-//			Texture2D tex = textures[i];
-//
-//
-//			QuadArray quadArray = new QuadArray(4, 
-//						GeometryArray.COORDINATES);
-//
-//			quadArray.setCoordinates(0, quadCoords);
-//			quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
-//
-//			Appearance a = getAppearance(textures[i], tg);
-//
-//			Shape3D frontShape = new Shape3D(quadArray, a);
-//			frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
-//
-//			BranchGroup frontShapeGroup = new BranchGroup();
-//			frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-//			frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
-//			frontShapeGroup.addChild(frontShape);
-//			frontGroup.addChild(frontShapeGroup);
-//
-//			Shape3D backShape = new Shape3D(quadArray, a);
-//			backShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
-//
-//			BranchGroup backShapeGroup = new BranchGroup();
-//			backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-//			backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
-//			backShapeGroup.addChild(backShape);
-//			backGroup.insertChild(backShapeGroup, 0);
-//		} 
-	} 
+		int rSize = 0;		// number of tex maps to create
+		OrderedGroup frontGroup = null;
+		OrderedGroup backGroup = null;
 
-	private Appearance getAppearance(Texture tex, TexCoordGeneration tg) {
-		Appearance a = new Appearance();
-		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
-		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
-		a.setCapability(Appearance.ALLOW_RENDERING_ATTRIBUTES_READ);
-
-		TextureAttributes texAttr = new TextureAttributes();
-		texAttr.setTextureMode(TextureAttributes.COMBINE);
-		texAttr.setCombineRgbMode(TextureAttributes.COMBINE_MODULATE);
-		//texAttr.setCombineRgbMode(TextureAttributes.COMBINE_REPLACE);
-
-		TransparencyAttributes t = new TransparencyAttributes();
-		t.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
-		t.setTransparencyMode(TransparencyAttributes.BLENDED);
-		t.setTransparency(transparency);
-
-		PolygonAttributes p = new PolygonAttributes();
-		p.setCullFace(PolygonAttributes.CULL_NONE);
-
-		Material m = new Material();
-		m.setLightingEnable(false);
-		
-		ColoringAttributes c = new ColoringAttributes();
-		c.setCapability(ColoringAttributes.ALLOW_COLOR_WRITE);
-		c.setShadeModel(ColoringAttributes.FASTEST);
-		if(color == null) {
-			c.setColor(1f, 1f, 1f);
-		} else {
-			c.setColor(color);
+		frontGroup = 
+		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][FRONT]);
+		backGroup = 
+		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][BACK]);
+		switch (axis) {
+			case Z_AXIS: rSize = volume.zDim; break;
+			case Y_AXIS: rSize = volume.yDim; break;
+			case X_AXIS: rSize = volume.xDim; break;
 		}
 
-		// Avoid rendering of voxels having an alpha value of zero
-		RenderingAttributes ra = new RenderingAttributes();
-		ra.setCapability(RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
-		ra.setAlphaTestValue(0.1f);
-		ra.setAlphaTestFunction(RenderingAttributes.GREATER);
-		
-		a.setMaterial(m);
-		a.setTransparencyAttributes(t);
-		a.setTexture(tex);
-		a.setTextureAttributes(texAttr);
-		a.setTexCoordGeneration(tg);
-		a.setPolygonAttributes(p);
-		a.setColoringAttributes(c);
-		a.setRenderingAttributes(ra);
-		return a;
-	}
+		for (int i=0; i < rSize; i++) { 
+			GeometryArray quadArray = 
+				geomCreator.getQuad(axis, i);
+			Appearance a = appCreator.getAppearance(
+				axis, i, color, transparency);
+			Shape3D frontShape = new Shape3D(quadArray, a);
+
+			frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
+
+			BranchGroup frontShapeGroup = new BranchGroup();
+			frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+			frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
+			frontShapeGroup.addChild(frontShape);
+			frontGroup.addChild(frontShapeGroup);
+
+			Shape3D backShape = new Shape3D(quadArray, a);
+			backShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
+
+			BranchGroup backShapeGroup = new BranchGroup();
+			backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+			backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
+			backShapeGroup.addChild(backShape);
+			backGroup.insertChild(backShapeGroup, 0);
+		} 
+	} 
 }
