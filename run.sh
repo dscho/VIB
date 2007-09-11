@@ -13,6 +13,9 @@ esac
 
 MEM=256m
 case $HOSTNAME in
+VIB)
+	MEM=1000m
+	;;
 wbgn129)
 	MEM=1500m
 	;;
