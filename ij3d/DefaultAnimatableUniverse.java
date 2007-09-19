@@ -110,6 +110,13 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		double pi2 = Math.PI*2;
 		int circles = (int)Math.round(pi2/deg5);
 		getCanvas().getView().stopView();
+		rotate.rotY(angle);
+		rotationsTG.setTransform(rotate);
+		transformChanged(-1, rotationsTG);
+		getCanvas().getView().renderOnce();
+		try {
+			Thread.currentThread().sleep(1000);
+		} catch (Exception e) {e.printStackTrace();}
 		for(int i = 0; i < circles; i++) {
 			angle = i * deg5;
 			rotate.rotY(angle);
@@ -151,6 +158,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		freeRecording = false;
 		if(stack == null || stack.getSize() == 0)
 			return null;
+		stack.deleteSlice(1);
 		ImagePlus imp = new ImagePlus("Movie", stack);
 		stack = null;
 		return imp;

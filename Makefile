@@ -49,7 +49,7 @@ math3d/JacobiFloat.java: math3d/JacobiDouble.java
 FibonacciHeapInt.java: FibonacciHeap.java Makefile
 	sed -e "s/FibonacciHeap/FibonacciHeapInt/g" -e "s/ implements Comparable//" -e "s/Comparable/int/g" -e "s/\.compareTo(\([^)]*\))/- \1/g" -e "s/Object other/int other/g" -e "s/heap.add(p, p);/heap.add((int)prios[i], new Double((int)prios[i]));/" -e "s/Node(null/Node(0/" < $< > $@
 
-VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(JAVAS)) vib/segment/icons/*.png
+VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java), $(JAVAS))) vib/segment/icons/*.png
 
 Segmentation_Editor_compat.jar: SOURCES=amira/*.java \
 	vib/InterpolatedImage.java math3d/Point3d.java \
@@ -182,15 +182,24 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	vib/IDT_Interpolate_Binary.java \
 	VIB_Protocol.java
 
+Average_Color.jar: SOURCES=Average_Color.java CIELAB.java
+
+Bilateral_Filter.jar: SOURCES=Bilateral_Filter.java \
+	vib/InterpolatedImage.java math3d/Point3d.java
+
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
-	Align_Image.jar Moving_Least_Squares.jar Average_Color.jar
+	Align_Image.jar Moving_Least_Squares.jar \
+	Seam_Remover.jar Triangle_Algorithm.jar
 
 $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 
-JARS=Delaunay_Voronoi.jar AmiraMesh_.jar Extract_Surface.jar \
-	Rigid_Registration.jar \
+JARS=Delaunay_Voronoi.jar AmiraMesh_.jar AmiraSurface_.jar \
+	Rigid_Registration.jar Extract_Surface.jar \
 	Segmentation_Editor_compat.jar VIB_compat.jar \
 	ImageJ_3D_Viewer.jar \
+	Install_Java3D.jar Three_Pane_Crop.jar Unpack_To_PNG.jar \
+	Simple_Neurite_Tracer.jar ExportMesh_.jar VIB_Protocol.jar \
+	Average_Color.jar Bilateral_Filter.jar \
 	$(SIMPLE_JARS)
 
 show-jars:
@@ -199,7 +208,7 @@ show-jars:
 all-jars: $(JARS)
 
 clean-jars:
-	rm $(JARS)
+	-rm $(JARS)
 
 %-compat.jar: %.jar
 	test ! -d tempdir || rm -rf tempdir

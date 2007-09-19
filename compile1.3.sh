@@ -8,7 +8,7 @@ case "$(uname)" in
 CYGWIN*) CP="$(echo $CP | tr \: \;)";;
 esac
 
-java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java LabelInterpolator_.java LabelThresholder_.java Name_Points.java OrderedTransformations.java PCA_Registration.java Segmentator_.java Segmenter_.java Utils.java vib/PointList.java vib/BenesName_Points.java vib/LocalRigidRegistration_.java Particle_Analyzer_3D.java marchingcubes/MCCube.java marchingcubes/MCShape.java vib/app/FileGroup.java vib/app/gui/Bubble.java vib/app/Options.java vib/app/gui/dialog/FileGroupDialog.java vib/app/gui/dialog/OptionsDialog.java vib/app/module/Module.java vib/app/module/Load.java vib/Center_Transformation.java ij3d/RoiCanvas3D.java voltex/VolRend.java vib/app/gui/FileGroupDialog.java vib/Show_centers.java isosurface/IsoShape.java marchingcubes/ExportMesh_.java"
+java5s="adt/Connectivity2D.java adt/Points.java adt/Sparse3DByteArray.java Affine_FromMarkers.java AutoLabeller.java AutoLabellerNaive.java BatchProcessor_.java events/RoiWatcher.java events/SliceWatcher.java Fill_holes.java gui/GuiBuilder.java LabelBinaryOps.java vib/PointList.java vib/BenesName_Points.java vib/LocalRigidRegistration_.java Particle_Analyzer_3D.java marchingcubes/MCCube.java marchingcubes/MCShape.java vib/app/FileGroup.java vib/app/gui/Bubble.java vib/app/Options.java vib/app/gui/dialog/FileGroupDialog.java vib/app/gui/dialog/OptionsDialog.java vib/app/module/Module.java vib/app/module/Load.java vib/Center_Transformation.java ij3d/RoiCanvas3D.java voltex/VolRend.java vib/app/gui/FileGroupDialog.java vib/Show_centers.java isosurface/IsoShape.java marchingcubes/ExportMesh_.java vib/transforms/BoundsInclusive.java vib/transforms/OrderedTransformations.java vib/oldregistration/Bookstein_FromMarkers.java vib/oldregistration/PCA_Registration.java oldsegmenters/LabelInterpolator_.java oldsegmenters/AutoLabeller.java oldsegmenters/Segmenter_.java oldsegmenters/Utils.java oldsegmenters/LabelBinaryOps.java oldsegmenters/Segmentator_.java oldsegmenters/LabelThresholder_.java client/ArchiveClient.java tracing/Connectivity.java tracing/AStarThread.java tracing/AnalyzeTracings_.java tracing/Fill.java tracing/FillerThread.java tracing/CreateTracingVolume_.java tracing/SegmentedConnection.java tracing/PathAndFillManager.java stacks/ThreePaneCrop.java stacks/Unpack_To_PNG.java landmarks/NamedPoint.java landmarks/Name_Points.java vib/app/gui/ProgressIndicator.java vib/app/gui/FileGroupDialog.java vib/transforms/FastMatrixTransform.java"
 for i in $java5s; do
 	if [ -e $i ]; then
 	classfile=$(echo $i | sed "s/java$/class/")
@@ -20,9 +20,11 @@ for i in $java5s; do
 		-e '24s/implements Iterable<BenesNamedPoint>//' \
 		-e '24s/implements Iterable<NamedPoint>//' \
 		-e 's/<[A-Za-z][]A-Za-z3[]*>//g' \
+		-e 's/< [A-Za-z][]A-Za-z3[]* \[\] >//g' \
+		-e 's/< [A-Za-z][]A-Za-z3[]* >//g' \
 		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
-		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
-		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
+		-e 's/< [A-Za-z]*, *[A-Za-z][]A-Za-z[]* >//g' \
+		-e 's/< [A-Za-z]*, *[A-Za-z][]A-Za-z[]* \[\] >//g' \
 		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
 		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
 		-e 's/<[A-Za-z]*, *[A-Za-z][]A-Za-z[]*>//g' \
@@ -34,7 +36,7 @@ for i in $java5s; do
                       while (iter\2.hasNext()) {\
                               \1 \2 = (\1)iter\2.next();/" \
 		-e 's/Iterable/java.util.Collection/g' \
-		-e 's/^[ 	]*assert \(.*\);/if (!(\1)) throw new RuntimeException("assert failed");/' \
+		-e 's/^[ 	]*assert *\(.*\);/if (!(\1)) throw new RuntimeException("assert failed");/' \
 		-e '32s/\(data\.get(\)\([^)]*\)/(HashMap)\1new Integer(\2)/g' \
 		-e '49s/\(data\.get(\)\([^)]*\)/(HashMap)\1new Integer(\2)/g' \
 		-e 's/\( zDim\.get(\)\([^)]*\)/(Byte)\1new Integer(\2)/g' \
@@ -123,6 +125,13 @@ for i in $java5s; do
 		-e '90s/\(new ColorInterpolator\)/(Interpolator)\1/' \
 		-e '91s/\(new BilinearInterpolator\)/(Interpolator)\1/' \
 		-e '144s/<Point3f>//g' \
+		-e '41s/options.fileGroup.get(i)/((File)&)/' \
+		-e '118s/files.get(/(File)&/' \
+		-e '156s/files.get(i)/((File)&)/' \
+		-e '158s/files.get(i)/((File)&)/' \
+		-e '29s/pointsInTemplate.get(/(NamedPoint)&/' \
+		-e '56s/public FastMatrixTransform inverse/public Transform inverse/' \
+		-e '62s/return result/return (Transform)result/' \
 	> $i
 	fi
 done
