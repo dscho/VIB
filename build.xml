@@ -20,6 +20,7 @@
              jar="../ImageJ/ij.jar"
 	     maxmemory="1024m">
           <sysproperty key="plugins.dir" value="${basedir}/build"/>
+          <sysproperty key="j3d.noOffScreen" value="true"/>
           <classpath>
 	      <pathelement location="."/>
               <pathelement location="jzlib-1.0.7.jar"/>

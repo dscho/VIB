@@ -131,7 +131,6 @@ Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
 	tracing/Fill.java \
 	tracing/FillerThread.java \
 	tracing/FillerProgressCallback.java \
-	tracing/FillerNode.java \
 	tracing/NormalPlaneCanvas.java \
 	$(wildcard pal/math/*.java) \
 	features/ComputeCurvatures.java \
