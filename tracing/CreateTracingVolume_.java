@@ -24,43 +24,22 @@
 package tracing;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowFocusListener;
-import java.util.HashMap;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.io.*;
 
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import amira.AmiraParameters;
-import amira.AmiraMeshEncoder;
-import amira.AmiraMeshDecoder;
-import vib.SegmentationViewerCanvas;
-import vib.FastMatrix;
 
-import math3d.Point3d;
 
-import gui.GuiBuilder;
 import ij.*;
 import ij.io.*;
-import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 
 import ij.gui.*;
 
-import ij.ImageJ;
 
 import ij.plugin.PlugIn;
-import ij.plugin.MacroInstaller;
 
-import ij.measure.Calibration;
 
 import vib.oldregistration.Bookstein_FromMarkers;
 
@@ -202,7 +181,7 @@ public class CreateTracingVolume_ implements PlugIn {
 			// System.out.println("Paths to draw: "+paths);
 			for( int i = 0; i < paths; ++i ) {
 
-				Path p = (Path)allPaths.get(i);
+				Path p = allPaths.get(i);
 
 				int last_x_in_template = -1;
 				int last_y_in_template = -1;

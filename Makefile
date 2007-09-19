@@ -117,9 +117,10 @@ Unpack_To_PNG.jar: SOURCES=stacks/Unpack_To_PNG.java \
 Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
 	stacks/PaneOwner.java \
-	tracing/AStarNode.java \
-	tracing/AStarProgressCallback.java \
-	tracing/AStarThread.java \
+	tracing/SearchNode.java \
+	tracing/SearchProgressCallback.java \
+	tracing/SearchThread.java \
+	tracing/TracerThread.java \
 	tracing/Path.java \
 	tracing/PathAndFillManager.java \
 	tracing/PathAndFillListener.java \

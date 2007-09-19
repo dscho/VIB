@@ -82,6 +82,7 @@ class NormalPlaneCanvas extends ImageCanvas {
 	        backBufferGraphics=backBufferImage.getGraphics();
 	}
 
+	@Override
 	public void paint(Graphics g) {
 		
 		if(backBufferWidth!=getSize().width ||

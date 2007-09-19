@@ -57,15 +57,17 @@ class GraphNode implements Comparable {
 	}
 	
 	public int compareTo( Object other ) {
-		GraphNode g = (GraphNode)other;
-		return Double.compare( f(), g.f() );
+		GraphNode n = (GraphNode)other;
+		return Double.compare( f(), n.f() );
 	}
 
+	@Override
 	public boolean equals( Object other ) {
 		// System.out.println("  equals called "+id);
 		return this.id == ((GraphNode)other).id;
 	}
 
+	@Override
 	public int hashCode() {
 		// System.out.println("  hashcode called "+id);
 		return this.id;

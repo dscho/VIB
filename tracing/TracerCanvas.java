@@ -35,7 +35,7 @@ import stacks.ThreePanes;
 
 import util.Arrow;
 
-class TracerCanvas extends ThreePanesCanvas implements KeyListener {
+public class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	
 	private int maxArrows = 4;
 	private Arrow[] arrows = new Arrow[maxArrows];
@@ -95,7 +95,6 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 
 		int keyCode = e.getKeyCode();
 		char keyChar = e.getKeyChar();
-		int flags = e.getModifiers();
 
 		boolean shift_down = (keyCode == KeyEvent.VK_SHIFT);
 		boolean control_down = (keyCode == KeyEvent.VK_CONTROL);
@@ -173,6 +172,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	        backBufferGraphics=backBufferImage.getGraphics();
 	}
 
+	@Override
 	public void paint(Graphics g) {
 		
 		if(backBufferWidth!=getSize().width ||
@@ -186,6 +186,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		g.drawImage(backBufferImage,0,0,this);
 	}
 	
+	@Override
 	public void mouseMoved( MouseEvent e ) {
 		
 		last_x_in_pane = offScreenX(e.getX());
@@ -201,6 +202,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	int last_x_in_pane;
 	int last_y_in_pane;
 
+	@Override
 	public void mouseClicked( MouseEvent e ) {
 		
 		// IJ.showStatus( "click at " + System.currentTimeMillis() + ": " + e );
@@ -279,70 +281,7 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		}
 	}
 
-	boolean dumpDrawnPoints = true;
-
-	protected void drawPointsInArray( short [] points, Graphics g, Color c, boolean verbose ) {
-
-		int currentSlice = imp.getCurrentSlice() - 1;
-		g.setColor( c );
-		
-		if( points != null ) {
-
-			/*
-			if( plane == ThreePanes.XY_PLANE ) {
-				System.out.println("drawPointsInArray drawing stuff in XY");
-				Exception e = new Exception();
-				e.printStackTrace();
-			}
-			*/
-			
-			long beforeLoop = System.currentTimeMillis();
-
-			int n = points.length / 3;
-			
-			for( int i = 0; i < n; ++i ) {
-				if( currentSlice == points[ 3*i + (2 - plane) ] ) {
-
-					// Then draw that point.
-					
-					int x = points[ 3*i ];
-					int y = points[ 3*i + 1 ];
-					int z = points[ 3*i + 2 ];
-
-					if( plane == ThreePanes.XY_PLANE ) {
-						int sx = screenX(x);
-						int sx_pixel_size = screenX(x+1) - sx;
-						if( sx_pixel_size < 1 ) sx_pixel_size = 1;
-						int sy = screenY(y);
-						int sy_pixel_size = screenY(y+1) - sy;
-						if( sy_pixel_size < 1 ) sy_pixel_size = 1;
-						g.fillRect( screenX(x), screenY(y), sx_pixel_size, sy_pixel_size );
-					} else if( plane == ThreePanes.XZ_PLANE ) {
-						int sx = screenX(x);
-						int sx_pixel_size = screenX(x+1) - sx;
-						if( sx_pixel_size < 1 ) sx_pixel_size = 1;
-						int sy = screenY(z);
-						int sy_pixel_size = screenY(z+1) - sy;
-						if( sy_pixel_size < 1 ) sy_pixel_size = 1;
-						g.fillRect( screenX(x), screenY(z), sx_pixel_size, sy_pixel_size );
-					} else if( plane == ThreePanes.ZY_PLANE ) {
-						int sx = screenX(z);
-						int sx_pixel_size = screenX(z+1) - sx;
-						if( sx_pixel_size < 1 ) sx_pixel_size = 1;
-						int sy = screenY(y);
-						int sy_pixel_size = screenY(y+1) - sy;
-						if( sy_pixel_size < 1 ) sy_pixel_size = 1;
-						g.fillRect( screenX(z), screenY(y), sx_pixel_size, sy_pixel_size );
-					}
-				}
-			}
-
-			/* if( verbose && (ThreePanes.XY_PLANE == plane) )
-				 System.out.println( "Drawing points in the XY plane took: " + ((float)(System.currentTimeMillis()-beforeLoop)/1000.0f) ); */
-
-		}
-	}
-
+	@Override
 	protected void drawOverlay(Graphics g) {
 
 		for( int i = maxArrows - 1; i >= 0; --i ) {
@@ -379,17 +318,18 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		}
 
 		synchronized(tracerPlugin.nonsense) {
-			// Plot the tracing progress:
-			drawPointsInArray( tracerPlugin.currentOpenBoundaryPoints, g, Color.CYAN, false );
-		}
 
-		synchronized(tracerPlugin.nonsense) {
-			// Plot the filler progress:
-			if( (tracerPlugin.currentSubthresholdFillerPoints != null) && (tracerPlugin.currentSubthresholdFillerPoints.length > 0) ) {
-				drawPointsInArray( tracerPlugin.currentSubthresholdFillerPoints, g, fillTransparent ? transparentGreen : Color.GREEN, true );
-				dumpDrawnPoints = false;
+			TracerThread tracer = tracerPlugin.currentSearchThread;
+			if( tracer != null ) {
+				tracer.drawProgressOnSlice( plane, imp.getCurrentSlice(), Color.CYAN, null, this, g, -1.0f );
 			}
-		}
+
+			FillerThread filler = tracerPlugin.filler;
+			if( filler != null ) {
+				Color c = fillTransparent ? transparentGreen : Color.GREEN;
+				filler.drawProgressOnSlice( plane, imp.getCurrentSlice(), c, c, this, g, filler.getThreshold() );
+			}
+		}		
 
 		for( int i = 0; i < pathAndFillManager.size(); ++i ) {
 
@@ -413,44 +353,17 @@ class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			unconfirmedSegment.drawPathAsPoints( this, g, Color.BLUE, plane );
 		}
 
-		Path currentPath = tracerPlugin.getCurrentPath();
+		Path currentPathFromTracer = tracerPlugin.getCurrentPath();
 		
-		if( currentPath != null ) {
+		if( currentPathFromTracer != null ) {
 			if( just_near_slices )
-				currentPath.drawPathAsPoints( this, g, Color.RED, plane, current_z, eitherSide );
+				currentPathFromTracer.drawPathAsPoints( this, g, Color.RED, plane, current_z, eitherSide );
 			else
-				currentPath.drawPathAsPoints( this, g, Color.RED, plane );
+				currentPathFromTracer.drawPathAsPoints( this, g, Color.RED, plane );
 		}
 
 		super.drawOverlay(g);
 				
-	}
-	
-	private double cost( int from_x,
-			     int from_y,
-			     int from_z,
-			     int to_x,
-			     int to_y,
-			     int to_z ) {
-		
-		double xdiff = to_x - from_x;
-		double ydiff = to_y - from_y;
-		double zdiff = to_z - from_z;
-		
-		double distance = Math.sqrt( xdiff * xdiff +
-					     ydiff * ydiff + 
-					     zdiff * zdiff );
-		
-		if( distance > 1.001 )        
-			throw new RuntimeException( "Currently can only calculate " +
-						    "cost between this pixel and " +
-						    "an adjacent one." );
-		
-		
-		
-		
-		return -1;
-		
 	}
 	
 }

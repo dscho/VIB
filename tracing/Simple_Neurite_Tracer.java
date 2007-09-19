@@ -39,19 +39,9 @@ import java.applet.Applet;
 import java.awt.*;
 import java.awt.event.*;
 
-import java.util.PriorityQueue;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Date;
-import java.util.ArrayList;
-
-import java.text.SimpleDateFormat;
-
 import java.io.*;
 
 import client.ArchiveClient;
-
-import java.util.StringTokenizer;
 
 import stacks.ThreePanes;
 
@@ -69,7 +59,7 @@ import amira.AmiraParameters;
    all non-branching sequences of adjacent points in the image. */
 
 public class Simple_Neurite_Tracer extends ThreePanes
-        implements PlugIn, AStarProgressCallback, ArrowDisplayer, FillerProgressCallback, GaussianGenerationCallback {
+        implements PlugIn, SearchProgressCallback, ArrowDisplayer, FillerProgressCallback, GaussianGenerationCallback {
 
 	public static final String PLUGIN_VERSION = "1.0";
 
@@ -102,6 +92,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
         /* This override the method in ThreePanes... */
 
+	@Override
         public TracerCanvas createCanvas( ImagePlus imagePlus, int plane ) {
                 return new TracerCanvas( imagePlus, this, plane );
         }
@@ -111,6 +102,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
                         currentSearchThread.requestStop();
         }
 
+	public void threadStatus( SearchThread source, int status ) {
+
+	}
 
         synchronized public void saveFill( ) {
 
@@ -157,7 +151,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
         /* Now a couple of callback methods, which get information
            about the progress of the search. */
 
-        public void finished( boolean success ) {
+        public void finished( SearchThread source, boolean success ) {
 
                 if( success ) {
                         Path result = currentSearchThread.getResult();
@@ -176,10 +170,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
                         resultsDialog.changeState(NeuriteTracerResultsDialog.PARTIAL_PATH);
                 }
 
-                synchronized(nonsense) {
-                        currentOpenBoundaryPoints = null;
-                }
-
                 // Indicate in the dialog that we've finished...
 
                 currentSearchThread = null;
@@ -188,22 +178,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
         }
 
-        short[] currentSubthresholdFillerPoints;
-        short[] currentOpenBoundaryPoints;
+	public void pointsInSearch( SearchThread source, int inOpen, int inClosed ) {
+		// IJ.error("FIXME: implement");
+	}
+
         String nonsense = "unused"; // FIXME, just for synchronization...
-
-        public void currentOpenBoundary( short[] points ) {
-
-                // FIXME: complete this
-
-                synchronized(nonsense) {
-                        this.currentOpenBoundaryPoints = points;
-                        resultsDialog.updateSearchingStatistics(points.length/3);
-                }
-
-                repaintAllPanes();
-
-        }
 
         /* These member variables control what we're actually doing -
            whether that's tracing, logging points or displaying values
@@ -603,11 +582,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
         /* If non-null, holds a reference to the currently searching thread */
 
-        AStarThread currentSearchThread;
+        TracerThread currentSearchThread;
 
         /* Start a search thread looking for the goal in the arguments... */
 
-        synchronized public void testPathTo( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
+        synchronized void testPathTo( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
 
                 if( ! lastStartPointSet ) {
                         IJ.showStatus( "No initial start point has been set.  Do that with a mouse click." +
@@ -640,24 +619,24 @@ public class Simple_Neurite_Tracer extends ThreePanes
                         // System.out.println("set endJoin");
                 }
 
-                currentSearchThread = new AStarThread( slices_data,
-                                                       last_start_point_x,
-                                                       last_start_point_y,
-                                                       last_start_point_z,
-                                                       x_end,
-                                                       y_end,
-                                                       z_end,
-                                                       this,
-                                                       true, // reciprocal
-                                                       0, // timeoutSeconds
-                                                       1000, // reportEveryMilliseconds
-                                                       (hessianEnabled ? hessian : null),
-                                                       this );
+		currentSearchThread = new TracerThread(
+			xy,		       
+			0, // timeoutSeconds
+			1000, // reportEveryMilliseconds
+			last_start_point_x,
+			last_start_point_y,
+			last_start_point_z,
+			x_end,
+			y_end,
+			z_end,
+			true, // reciprocal
+			(hessianEnabled ? hessian : null) );
+
+		currentSearchThread.addProgressListener( this );
 
                 currentSearchThread.start();
 
                 repaintAllPanes();
-
         }
 
         synchronized public void confirmTemporary( ) {
@@ -797,13 +776,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
                         resultsDialog.thresholdChanged(distance);
 
                         filler.setThreshold(distance);
-                        filler.displayUpdate();
-
                 }
 
         }
 
-        synchronized public void startPath( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
+        synchronized void startPath( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
 
                 endJoin = null;
                 endJoinIndex = -1;
@@ -854,6 +831,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
         double z_spacing;
 
         String spacing_units;
+
+	public void viewFillIn3D( ) {
+		ImagePlus imagePlus = filler.fillAsImagePlus( ! resultsDialog.createMask() );
+                imagePlus.show();
+	}
 
         public void setPositionAllPanes( int x, int y, int z ) {
 
@@ -1027,6 +1009,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		this.filler = filler;
 
 		filler.addProgressListener(this);
+		filler.addProgressListener(resultsDialog);
 
 		filler.start();
 
@@ -1041,7 +1024,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
                 // FIXME: check if one is running already, etc.
 
-                filler = new FillerThread( this, // plugin
+                filler = new FillerThread( xy,
 					   false, // startPaused
                                            true, // reciprocal
                                            0.03f, // Initial threshold to display
@@ -1050,7 +1033,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		filler.addProgressListener( this );
 		filler.addProgressListener( resultsDialog );
 		
-		filler.getSourcePathsFromPlugin();
+		filler.getSourcePathsFromPlugin(this);
 
                 filler.start();
 		
@@ -1066,78 +1049,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
         }
 
-        public void pointsWithinThreshold( short [] points ) {
-
-                synchronized(nonsense) {
-                        this.currentSubthresholdFillerPoints = points;
-                }
-
-                repaintAllPanes();
-
-        }
-
-	synchronized public void fillerStatus( int threadStatus ) {
-		if( threadStatus ==  FillerThread.STOPPING ) {
-			synchronized(nonsense) {
-				this.currentSubthresholdFillerPoints = null;
-			}
-			
-			repaintAllPanes();
-		}
-	}
-
-        public void maximumDistanceCompletelyExplored( float f ) {
-        }
-
-        public void viewFillIn3D() {
-
-                byte [][] new_slice_data = new byte[depth][];
-                for( int z = 0; z < depth; ++z ) {
-                        new_slice_data[z] = new byte[width * height];
-                }
-
-                boolean realData = ! resultsDialog.createMask();
-
-                synchronized(nonsense) {
-                        int n = currentSubthresholdFillerPoints.length / 3;
-                        for( int i = 0; i < n; ++i ) {
-
-                                int x = currentSubthresholdFillerPoints[3*i];
-                                int y = currentSubthresholdFillerPoints[3*i+1];
-                                int z = currentSubthresholdFillerPoints[3*i+2];
-
-                                if( realData ) {
-
-
-                                        new_slice_data[z][y*width+x] = slices_data[z][y*width+x];
-
-                                } else {
-
-                                        new_slice_data[z][y*width+x] = (byte)255;
-                                }
-                        }
-                }
-
-                ImageStack stack = new ImageStack(width,height);
-
-                for( int z = 0; z < depth; ++z ) {
-                        ByteProcessor bp = new ByteProcessor(width,height);
-                        bp.setPixels( new_slice_data[z] );
-                        stack.addSlice(null,bp);
-                }
-
-                ImagePlus imp=new ImagePlus("filled neuron",stack);
-
-                imp.setCalibration(xy.getCalibration());
-
-                imp.show();
-
-                /*
-                ImageJ_3D_Viewer viewer = new ImageJ_3D_Viewer();
-                viewer.setup("",imp);
-                viewer.run(imp.getProcessor());
-                */
-
+        public void maximumDistanceCompletelyExplored( SearchThread source, float f ) {
+		// IJ.error("FIXME: implement");
         }
 
         public byte [] squareNormalToVector( int side,     // The number of samples in x and y in the plane, separated by step

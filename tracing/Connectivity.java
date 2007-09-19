@@ -36,7 +36,7 @@ class PathWithLength {
 
 public class Connectivity {
 
-    public ArrayList< GraphNode > allNodes;
+    ArrayList< GraphNode > allNodes;
     public double [][] distances;
 
     public int[] redValues;
@@ -52,7 +52,7 @@ public class Connectivity {
             return "#DDDDDD";
         else {
 
-            Integer material_id_integer = (Integer)materialNameToIndex.get(materialName);
+            Integer material_id_integer = materialNameToIndex.get(materialName);
             int material_id = material_id_integer.intValue();
 
             double scaling = 1.4;
@@ -101,11 +101,11 @@ public class Connectivity {
     }
     */
  
-    public ArrayList< GraphNode > trimPath( ArrayList< GraphNode > originalPath, String from_material, String to_material ) {
+    ArrayList< GraphNode > trimPath( ArrayList< GraphNode > originalPath, String from_material, String to_material ) {
 
         int last_from_material = -1;
         for( int i = 0; i < originalPath.size(); ++i ) {
-            GraphNode g = (GraphNode)originalPath.get(i);
+            GraphNode g = originalPath.get(i);
             if( from_material.equals(g.material_name) ) {
                 last_from_material = i;
             }
@@ -113,7 +113,7 @@ public class Connectivity {
 
         int first_to_material = -1;
         for( int i = originalPath.size() - 1; i >= 0; --i ) {
-            GraphNode g = (GraphNode)originalPath.get(i);
+            GraphNode g = originalPath.get(i);
             if( to_material.equals(g.material_name) ) {
                 first_to_material = i;
             }
@@ -126,7 +126,7 @@ public class Connectivity {
                 System.out.println( "********* Very odd path ********** (" + last_from_material +"," + first_to_material );
                 System.out.println( "   from " + from_material + " to " +to_material );
                 for( int i = 0; i < originalPath.size(); ++i ) {
-                    GraphNode g = (GraphNode)originalPath.get(i);
+                    GraphNode g = 	originalPath.get(i);
                     System.out.println("  - "+g.toDotName());
                 }
             }
@@ -140,7 +140,7 @@ public class Connectivity {
         return result;
     }
 
-    public ArrayList< GraphNode > makePath( GraphNode lastNode ) {       
+    ArrayList< GraphNode > makePath( GraphNode lastNode ) {       
 
         // System.out.println( "Trying to return result" );
 
@@ -154,7 +154,7 @@ public class Connectivity {
         ArrayList< GraphNode > realResult = new ArrayList< GraphNode >();
 
         for( int i = resultReversed.size() - 1; i >= 0; --i )
-            realResult.add( (GraphNode)resultReversed.get(i) );
+            realResult.add( resultReversed.get(i) );
 
         return realResult;
     }   
@@ -163,7 +163,7 @@ public class Connectivity {
     PathWithLength pathBetween( GraphNode start, GraphNode goal ) {
 
         for( int i = 0; i < allNodes.size(); i++ ) {
-            GraphNode g = (GraphNode)allNodes.get(i);
+            GraphNode g = allNodes.get(i);
             g.g = 0;
             g.h = 0;
             g.previous = null;
@@ -172,8 +172,8 @@ public class Connectivity {
 		PriorityQueue< GraphNode > closed_from_start = new PriorityQueue< GraphNode >();
 		PriorityQueue< GraphNode > open_from_start = new PriorityQueue< GraphNode >();
 
-		Hashtable open_from_start_hash = new Hashtable();
-		Hashtable closed_from_start_hash = new Hashtable();
+		Hashtable< GraphNode, GraphNode > open_from_start_hash = new Hashtable< GraphNode, GraphNode >();
+		Hashtable< GraphNode, GraphNode > closed_from_start_hash = new Hashtable< GraphNode, GraphNode >();
 
         start.g = 0;
         start.h = 0;
@@ -188,7 +188,7 @@ public class Connectivity {
             // GraphNode p = get_highest_priority( open_from_start, open_from_start_hash );
 
             // System.out.println("Before poll: "+open_from_start_hash.size()+"/"+open_from_start.size());
-            GraphNode p = (GraphNode)open_from_start.poll();
+            GraphNode p = open_from_start.poll();
             open_from_start_hash.remove( p );
             // System.out.println("After poll: "+open_from_start_hash.size()+"/"+open_from_start.size());
 			
@@ -221,7 +221,7 @@ public class Connectivity {
                 
                 if( d >= 0 ) {
                     
-                    GraphNode neighbour = (GraphNode)allNodes.get(i);
+                    GraphNode neighbour = allNodes.get(i);
                     if( neighbour.material_name.equals("Exterior") ||
                         neighbour.material_name.equals(start.material_name) ||
                         neighbour.material_name.equals(goal.material_name) ) {
@@ -234,9 +234,9 @@ public class Connectivity {
                         newNode.h = 0;
                         newNode.previous = p;
                         
-                        GraphNode foundInClosed = (GraphNode)closed_from_start_hash.get( neighbour );
+                        GraphNode foundInClosed = closed_from_start_hash.get(neighbour);
                         
-                        GraphNode foundInOpen = (GraphNode)open_from_start_hash.get( neighbour );
+                        GraphNode foundInOpen = open_from_start_hash.get(neighbour);
                         
                         // Is there an exisiting route which is
                         // better?  If so, discard this new candidate...

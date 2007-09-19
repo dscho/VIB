@@ -25,7 +25,7 @@
 
 package tracing;
 
-class AStarNode implements Comparable {
+public class SearchNode implements Comparable {
 	
 	public int x;
 	public int y;
@@ -34,13 +34,33 @@ class AStarNode implements Comparable {
 	public float g; // cost of the path so far (up to and including this node)
 	public float h; // heuristic esimate of the cost of going from here to the goal
 	
-	public float f;
+	public float f; // should always be the sum of g and h
 	
-	private AStarNode predecessor;
+	private SearchNode predecessor;
+
+        public SearchNode getPredecessor( ) {
+                return predecessor;
+        }
+
+	public void setPredecessor( SearchNode p ) {
+		this.predecessor = p;
+	}
+
+	/* This must be one of:
+	   
+	        SearchThread.OPEN_FROM_START
+		SearchThread.CLOSED_FROM_START
+		SearchThread.OPEN_FROM_GOAL
+		SearchThread.CLOSED_FROM_GOAL
+		SearchThread.FREE
+	 */
+
+	public byte searchStatus;
 	
-	public AStarNode( int x, int y, int z,
-			  float g, float h,
-			  AStarNode predecessor ) {
+	public SearchNode( int x, int y, int z,
+			   float g, float h,
+			   SearchNode predecessor,
+			   byte searchStatus ) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -48,22 +68,27 @@ class AStarNode implements Comparable {
 		this.h = h;
 		this.f = g + h;
 		this.predecessor = predecessor;
+		this.searchStatus = searchStatus;
 	}
+
+	// FIXME: check whether this is used any more:
 	
+    @Override
 	public boolean equals( Object other ) {
-		AStarNode o = (AStarNode) other;
-		// System.out.println( "  equals called between " + this + " and other " + other );
-		// System.out.println( "  equals called between " );
+		SearchNode o = (SearchNode) other;
 		return (x == o.x) && (y == o.y) && (z == o.z);
 	}
+
+    @Override
+        public int hashCode() {
+            int hash = 3;
+            hash = 67 * hash + this.x;
+            hash = 67 * hash + this.y;
+            hash = 67 * hash + this.z;
+            return hash;
+        }
 	
-	public int hashCode( ) {
-		// System.out.println( "  hashCode called on " + this );
-		// System.out.println( "  hashCode called on " );
-		return x + (1024 * y) + (1024 * 1024 * z);
-	}
-	
-	public void setFrom( AStarNode another ) {
+	public void setFrom( SearchNode another ) {
 		this.x = another.x;
 		this.y = another.y;
 		this.z = another.z;
@@ -71,28 +96,14 @@ class AStarNode implements Comparable {
 		this.h = another.h;
 		this.f = another.f;
 		this.predecessor = another.predecessor;
+		this.searchStatus = another.searchStatus;
 	}
-	
-/*
-    public void setFrom( int x, int y, int z,
-                         float g, float h,
-                         AStarNode predecessor ) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.g = g;
-        this.h = h;
-        this.f = g + h;
-        this.predecessor = predecessor;
-    }
-*/
+
+	/* This is used by PriorityQueue: */
 	
 	public int compareTo( Object other ) {
 		
-		AStarNode o = (AStarNode) other;
-		
-		// System.out.println( "  compareTo called between " + this + " and other " + other );        
-		// System.out.println( "  compareTo called between " );
+		SearchNode o = (SearchNode) other;
 		
 		int compare_f_result = 0;
 		if( f > o.f )
@@ -140,13 +151,25 @@ class AStarNode implements Comparable {
 		
 	}
 	
+    @Override
 	public String toString( ) {
-		return "("+x+","+y+","+z+") h: "+h+" g: "+g+" f: "+f;
+		String searchStatusString = "BUG: unknown!";
+		if( searchStatus == SearchThread.OPEN_FROM_START )
+			searchStatusString = "open from start";
+		else if( searchStatus == SearchThread.CLOSED_FROM_START )
+			searchStatusString = "closed from start";
+		else if( searchStatus == SearchThread.OPEN_FROM_GOAL )
+			searchStatusString = "open from goal";
+		else if( searchStatus == SearchThread.CLOSED_FROM_GOAL )
+			searchStatusString = "closed from goal";
+		else if( searchStatus == SearchThread.FREE )
+			searchStatusString = "free";
+		return "("+x+","+y+","+z+") h: "+h+" g: "+g+" f: "+f+" ["+searchStatusString+"]";
 	}
 	
 	public Path asPath( ) {
 		Path creversed = new Path();
-		AStarNode p = this;
+		SearchNode p = this;
 		do {
 			creversed.addPoint( p.x, p.y, p.z );
 			p = p.predecessor;
@@ -154,13 +177,9 @@ class AStarNode implements Comparable {
 		return creversed.reversed();
 	}
 	
-	public AStarNode getPredecessor( ) {
-		return predecessor;
-	}
-	
 	public Path asPathReversed( ) {
 		Path result = new Path();
-		AStarNode p = this;
+		SearchNode p = this;
 		do {
 			result.addPoint( p.x, p.y, p.z );
 			p = p.predecessor;

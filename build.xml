@@ -1,0 +1,56 @@
+<project name="VIB" default="compile">
+    
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="build"/>
+        <javac srcdir="." destdir="build">
+	       <classpath>
+                   <pathelement location="../ImageJ/ij.jar"/>
+                   <pathelement location="jzlib-1.0.7.jar"/>
+                   <pathelement location="Quick3dApplet-1.0.8.jar"/>
+               </classpath>
+	</javac>
+    </target>
+
+    <target name="run">
+        <java fork="true"
+             jar="../ImageJ/ij.jar"
+	     maxmemory="1024m">
+          <sysproperty key="plugins.dir" value="${basedir}/build"/>
+          <classpath>
+	      <pathelement location="."/>
+              <pathelement location="jzlib-1.0.7.jar"/>
+	      <pathelement location="Quick3dApplet-1.0.8.jar"/>
+          </classpath>
+       </java>
+    </target>
+
+    <target name="profile" depends="compile" description="Profile Project">
+      <fail unless="netbeans.home">This target can only run inside the NetBeans IDE.</fail>
+
+        <nbprofiledirect>
+           <classpath>
+	      <pathelement location="."/>
+              <pathelement location="jzlib-1.0.7.jar"/>
+	      <pathelement location="Quick3dApplet-1.0.8.jar"/>               
+           </classpath>
+        </nbprofiledirect>
+
+        <java fork="true"
+             jar="../ImageJ/ij.jar"
+	     maxmemory="1024m">
+          <jvmarg value="${profiler.info.jvmargs.agent}"/>
+          <sysproperty key="plugins.dir" value="build"/>
+          <classpath>
+	      <pathelement location="."/>
+              <pathelement location="jzlib-1.0.7.jar"/>
+	      <pathelement location="Quick3dApplet-1.0.8.jar"/>
+          </classpath>
+       </java>
+
+  </target>
+        
+</project>

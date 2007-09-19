@@ -120,6 +120,7 @@ public class Path implements Cloneable {
 		p[2] = z_positions[i];
 	}
 
+	@Override
 	public Path clone() {
 
 		Path result = new Path( points );
@@ -399,7 +400,7 @@ public class Path implements Cloneable {
 			// System.out.println("   gave: "+badness);
 
 			if (badness < min) {
-				best = (double[])x.clone();
+				best = x.clone();
 				min = badness;
 			}
 			
@@ -483,13 +484,12 @@ public class Path implements Cloneable {
 
 		double [] centre_x_positions = new double[totalPoints];
 		double [] centre_y_positions = new double[totalPoints];
-		double [] radiuses = new double[totalPoints];
+		double [] rs = new double[totalPoints];
 
-		double [] tangents_x = new double[totalPoints];
-		double [] tangents_y = new double[totalPoints];
-		double [] tangents_z = new double[totalPoints];
+		double [] ts_x = new double[totalPoints];
+		double [] ts_y = new double[totalPoints];
+		double [] ts_z = new double[totalPoints];
 		
-
 		for( int i = 0; i < size(); ++i ) {
 
 			IJ.showProgress( i / (float)totalPoints );
@@ -560,9 +560,9 @@ public class Path implements Cloneable {
 				   a circle in there... */
 
 				// n.b. thes aren't normalized
-				tangents_x[i] = x_diff * x_spacing;
-				tangents_y[i] = y_diff * y_spacing;
-				tangents_z[i] = z_diff * z_spacing;
+				ts_x[i] = x_diff * x_spacing;
+				ts_y[i] = y_diff * y_spacing;
+				ts_z[i] = z_diff * z_spacing;
 					
 				ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
 				// optimizer.prin = 2; // debugging information on
@@ -597,7 +597,7 @@ public class Path implements Cloneable {
 				
 				centre_x_positions[i] = startValues[0];
 				centre_y_positions[i] = startValues[1];
-				radiuses[i] = startValues[2];
+				rs[i] = startValues[2];
 				
 				// Now we calculate the real co-ordinates of the new centre:
 				
@@ -668,10 +668,10 @@ public class Path implements Cloneable {
 
 		IJ.showProgress( 1.0 );
 
-		fitted.setFittedCircles( tangents_x,
-					 tangents_y,
-					 tangents_z,
-					 radiuses );
+		fitted.setFittedCircles( ts_x,
+					 ts_y,
+					 ts_z,
+					 rs                );
 
 		if( display ) {
 
@@ -682,8 +682,8 @@ public class Path implements Cloneable {
 				plugin,
 				centre_x_positions,
 				centre_y_positions,
-				radiuses,
-				fitted );
+				rs,
+				fitted  );
 
 			new StackWindow( imp, normalCanvas );
 
@@ -720,4 +720,15 @@ public class Path implements Cloneable {
 
 	}
 
+    @Override
+        public String toString() {
+            int n = size();
+            String result = "" + n + " points";
+            if( n > 0 ) {
+                result += " from " + x_positions[0] + ", " + y_positions[0] + ", " + z_positions[0];
+                result += " to " + x_positions[n-1] + ", " + y_positions[n-1] + ", " + z_positions[n-1];
+            }
+            return result;
+        }
+        
 }

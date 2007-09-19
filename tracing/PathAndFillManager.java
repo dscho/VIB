@@ -42,8 +42,6 @@ import org.xml.sax.Attributes;
 
 import org.xml.sax.helpers.DefaultHandler;
 
-import java.util.regex.Pattern;
-
 public class PathAndFillManager extends DefaultHandler {
 
 	Simple_Neurite_Tracer plugin;
@@ -279,7 +277,7 @@ public class PathAndFillManager extends DefaultHandler {
 
 		Fill toReload = allFills.get(index);
 
-		plugin.startFillerThread( FillerThread.fromFill( plugin,
+		plugin.startFillerThread( FillerThread.fromFill( plugin.getImagePlus(),
 								 true,
 								 toReload ) );
 		
@@ -363,12 +361,12 @@ public class PathAndFillManager extends DefaultHandler {
 			String endsString = "";
 
 			if( p.startJoins != null ) {
-				int startPathIndex = ((Integer)(h.get(p.startJoins))).intValue();
+				int startPathIndex = ((h.get(p.startJoins))).intValue();
 				startsString = " startson=\"" + startPathIndex + "\"" +
 					" startsindex=\"" + p.startJoinsIndex + "\"";
 			}
 			if( p.endJoins != null ) {
-				int endPathIndex = ((Integer)(h.get(p.endJoins))).intValue();
+				int endPathIndex = ((h.get(p.endJoins))).intValue();
 				endsString = " endson=\"" + endPathIndex + "\"" +
 					" endsindex=\"" + p.endJoinsIndex + "\"";
 			}
@@ -470,7 +468,7 @@ public class PathAndFillManager extends DefaultHandler {
                                 int last_y = -1;
                                 int last_z = -1;
 
-                                Path path = (Path)allPaths.get(i);
+                                Path path = allPaths.get(i);
                                 for( int k = 0; k < path.size(); ++k ) {
                                         int x = path.x_positions[k];
                                         int y = path.y_positions[k];
@@ -530,13 +528,27 @@ public class PathAndFillManager extends DefaultHandler {
         ArrayList< Integer > startJoins;
         ArrayList< Integer > endJoins;
 
+	ArrayList< int [] > sourcePathIndicesForFills;
+
 	int last_fill_node_id;
 
-        public void startElement(String uri, String localName, String qName, Attributes attributes) {
+	int last_fill_id;
+
+        @Override
+	public void startElement(String uri, String localName, String qName, Attributes attributes) {
 
                 int width, height, depth;
 
-                if( qName.equals("imagesize") ) {
+		if( qName.equals("tracings") ) {
+
+                        startJoins = new ArrayList< Integer >();
+                        endJoins = new ArrayList< Integer >();
+
+			sourcePathIndicesForFills = new ArrayList< int [] >();
+
+			last_fill_id = -1;
+
+		} else if( qName.equals("imagesize") ) {
 
                         try {
 
@@ -552,7 +564,6 @@ public class PathAndFillManager extends DefaultHandler {
 
                                 IJ.error("There was an invalid attribute to <imagesize/>: "+e);
                                 // FIXME: do something else to abandon this...
-
 
                         }
 
@@ -601,6 +612,9 @@ public class PathAndFillManager extends DefaultHandler {
 
                         current_path = new Path();
 
+			Integer startsOnInteger = null;
+			Integer endsOnInteger = null;
+
                         try {
 
                                 int id = Integer.parseInt(idString);
@@ -610,7 +624,8 @@ public class PathAndFillManager extends DefaultHandler {
                                 else {
                                         startson = Integer.parseInt(startsonString);
                                         startsindex = Integer.parseInt(startsindexString);
-					
+
+					startsOnInteger = new Integer( startson );
                                         current_path.startJoinsIndex = startsindex;
                                 }
 
@@ -620,6 +635,7 @@ public class PathAndFillManager extends DefaultHandler {
                                         endson = Integer.parseInt(endsonString);
                                         endsindex = Integer.parseInt(endsindexString);
 					
+					endsOnInteger = new Integer( endson );
                                         current_path.endJoinsIndex = endsindex;
                                 }
 
@@ -627,9 +643,11 @@ public class PathAndFillManager extends DefaultHandler {
 
                                 IJ.error("There was an invalid attribute in <path/>");
                                 // FIXME: do something else to abandon this...
-                        }
+                        }			
 
-			
+			startJoins.add( startsOnInteger );
+			endJoins.add( endsOnInteger );
+
 		} else if( qName.equals("point") ) {
 
                         try {
@@ -652,19 +670,55 @@ public class PathAndFillManager extends DefaultHandler {
 
 		} else if( qName.equals("fill") ) {
 
-			String fromPathsString = attributes.getValue("frompaths");
-			String [] sourcePaths = fromPathsString.split(", *");
+			try {
 			
-			/*
-			for( int i = 0; i < sourcePaths.length; ++i )
-				System.out.println("sourcePath: "+sourcePaths[i]);
-			*/
+				String fromPathsString = attributes.getValue("frompaths");
+				String [] sourcePaths = fromPathsString.split(", *");
 
-			current_fill = new Fill();
+				current_fill = new Fill();
+				
+				String metric = attributes.getValue("metric");
+				current_fill.setMetric(metric);
+				
+				last_fill_node_id = -1;
+				
+				String fill_id_string = attributes.getValue("id");
+				
+				int fill_id = Integer.parseInt(fill_id_string);
 
-			last_fill_node_id = -1;
+				if( fill_id < 0 ) {
+					IJ.error("Can't have a negative id in <fill>");
+					// FIXME: do something else to abandon this....
+				}
 
-		} else if( qName.equals("node") ) {
+				if( fill_id != (last_fill_id + 1) ) {
+					IJ.error( "Out of order id in <fill> (" + fill_id +
+						  " when we were expecting " + (last_fill_id + 1) + ")" );
+					// FIXME: do something else to abandon this....
+				}
+
+				int [] sourcePathIndices = new int[ sourcePaths.length ];
+
+				for( int i = 0; i < sourcePaths.length; ++i )
+					sourcePathIndices[i] = Integer.parseInt(sourcePaths[i]);
+
+				sourcePathIndicesForFills.add( sourcePathIndices );
+
+				last_fill_id = fill_id;
+
+				String thresholdString = attributes.getValue("threshold");
+				double fillThreshold = Double.parseDouble(thresholdString);
+
+				current_fill.setThreshold(fillThreshold);
+
+                        } catch( NumberFormatException e ) {
+				
+                                IJ.error("There was an invalid attribute to <fill>");
+                                // FIXME: do something else to abandon this...
+                        }
+
+
+       	} else if( qName.equals("node") ) {
 			
                         try {
 
@@ -691,14 +745,14 @@ public class PathAndFillManager extends DefaultHandler {
 					// FIXME: 
 				}
 				
-				String openString = attributes.getValue("open");
+				String openString = attributes.getValue("status");
 
 				current_fill.add( parsed_x,
 						  parsed_y,
 						  parsed_z,
 						  parsed_distance,
 						  parsed_previous,
-						  openString != null );
+						  openString.equals("open") );
 				
 				last_fill_node_id = parsed_id;
 				
@@ -722,14 +776,49 @@ public class PathAndFillManager extends DefaultHandler {
 
         }
 
+	@Override
 	public void endElement(String uri, String localName, String qName) {
 
 		if( qName.equals("path") ) {
+
 			allPaths.add( current_path );
+
 		} else if( qName.equals("fill") ) {
+
 			allFills.add( current_fill );
+
 		} else if( qName.equals("tracings") ) {
+
 			// Then we've finished...
+
+			for( int i = 0; i < allPaths.size(); ++i ) {
+				Path p = allPaths.get(i);
+				Integer startInteger = startJoins.get(i);
+				Integer endInteger = endJoins.get(i);
+				if( startInteger != null ) {
+					int start = startInteger.intValue();
+					Path startPath = allPaths.get(start);
+					p.startJoins = startPath;
+				}
+				if( endInteger != null ) {
+					int end = endInteger.intValue();	
+					Path endPath = allPaths.get(end);	
+					p.endJoins = endPath;
+				}
+			}
+			
+			// Now turn the source paths into real paths...
+
+			for( int i = 0; i < allFills.size(); ++i ) {
+				Fill f = allFills.get(i);
+				int [] sourcePathIndices = sourcePathIndicesForFills.get(i);
+				Path [] realSourcePaths = new Path[sourcePathIndices.length];
+				for( int j = 0; j < sourcePathIndices.length; ++j ) {
+					realSourcePaths[j] = allPaths.get(sourcePathIndices[j]);
+				}
+				f.setSourcePaths( realSourcePaths );
+			}
+
 			setSelected( new int[0] );
 			resetListeners();
 			plugin.repaintAllPanes();
@@ -747,9 +836,6 @@ public class PathAndFillManager extends DefaultHandler {
                         factory.setValidating(true);
                         SAXParser parser = factory.newSAXParser();
                         BufferedInputStream is = new BufferedInputStream(new FileInputStream(filename));
-
-                        startJoins = new ArrayList< Integer >();
-                        endJoins = new ArrayList< Integer >();
 
                         parser.parse( is, this );
 
@@ -875,7 +961,7 @@ public class PathAndFillManager extends DefaultHandler {
 
                 ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, null );
 
-                String [] first_line = (String [])tsv_results.get(0);
+                String [] first_line = tsv_results.get(0);
                 int urls_found;
                 String bestUrl = null;
                 if( first_line[0].equals("success") ) {
@@ -884,7 +970,7 @@ public class PathAndFillManager extends DefaultHandler {
                                 IJ.error( "No anntation files by " + (mineOnly ? archiveClient.getValue("user") : "any user") + " found." );
                                 return false;
                         } else {
-                                bestUrl = ((String [])tsv_results.get(1))[1];
+                                bestUrl = (tsv_results.get(1))[1];
                                 // IJ.error( "Got the URL: " + bestUrl );
                         }
                 } else if( first_line[0].equals("error") ) {
@@ -930,7 +1016,7 @@ public class PathAndFillManager extends DefaultHandler {
 
                         while( tokenizer.hasMoreTokens() ) {
 
-                                line = (String)tokenizer.nextToken();
+                                line = tokenizer.nextToken();
 
                                 int nextTabIndex = line.indexOf('\t');
                                 if( nextTabIndex < 0 )
@@ -1063,7 +1149,7 @@ public class PathAndFillManager extends DefaultHandler {
 
                 ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, fileAsBytes );
 
-                String [] first_line = (String [])tsv_results.get(0);
+                String [] first_line = tsv_results.get(0);
                 if( first_line[0].equals("success") ) {
                         IJ.error("Annotations uploaded successfully!");
                         return true;
@@ -1109,7 +1195,7 @@ public class PathAndFillManager extends DefaultHandler {
                         if( ! selectedPaths[s] )
                                 continue;
 
-                        Path p = (Path)allPaths.get(s);
+                        Path p = allPaths.get(s);
 
                         for( int i = 0; i < p.size(); ++i ) {
 

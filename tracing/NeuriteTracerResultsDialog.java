@@ -30,7 +30,6 @@ import ij.gui.YesNoCancelDialog;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
-import java.util.Arrays;
 
 class NeuriteTracerResultsDialog
         extends Dialog
@@ -193,6 +192,7 @@ class NeuriteTracerResultsDialog
 			uploadButton.setEnabled(false);
 			fetchButton.setEnabled(false);
 		}
+                loadLabelsButton.setEnabled(false);
 
                 quitButton.setEnabled(false);
         }
@@ -920,7 +920,7 @@ class NeuriteTracerResultsDialog
 
                 } else if( source == view3D ) {
 
-                        plugin.viewFillIn3D();
+                        plugin.viewFillIn3D();			
 
                 } else if( source == fitCircles ) {
 
@@ -1029,7 +1029,8 @@ class NeuriteTracerResultsDialog
         }
 
 
-	public void fillerStatus( int threadStatus ) {
+	public void threadStatus( SearchThread source, int threadStatus ) {
+		System.out.println("threadStatus reported as: "+threadStatus);
 		switch(threadStatus) {
 		case FillerThread.STOPPING:
 			pauseOrRestartFilling.setLabel("Stopping..");
@@ -1045,13 +1046,17 @@ class NeuriteTracerResultsDialog
 		fillControlPanel.doLayout();
 	}
 
-	public void maximumDistanceCompletelyExplored( float f ) {		
+	public void maximumDistanceCompletelyExplored( SearchThread source, float f ) {		
                 maxThreshold.setText("("+f+")");
                 maxThresholdValue = f;
 	}
-	
-	public void pointsWithinThreshold( short[] points ) {
-		// Just ignore this...
+
+	public void finished( SearchThread source, boolean success ) {
+		// IJ.error("FIXME: implement");
 	}
 
+	public void pointsInSearch( SearchThread source, int inOpen, int inClosed ) {
+		// IJ.error("FIXME: implement");
+	}
 }
+

@@ -40,6 +40,7 @@ public class Connection implements Cloneable {
 		return points;
 	}
 	
+    @Override
 	public Connection clone() {
 
 		Connection result = new Connection( points );
