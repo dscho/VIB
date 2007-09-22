@@ -8,7 +8,7 @@ import ij.process.ImageProcessor;
 import math3d.Point3d;
 
 public class InterpolatedImage {
-	ImagePlus image;
+	public ImagePlus image;
 	int w,h,d;
 	private byte[][] pixels;
 	private float[][] pixelsFloat;
@@ -238,7 +238,7 @@ public class InterpolatedImage {
 
 	public class Iterator implements java.util.Iterator {
 		// these are the coordinates
-		int i, j, k;
+		public int i, j, k;
 
 		boolean showProgress = false;
 

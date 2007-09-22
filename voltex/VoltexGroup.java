@@ -48,7 +48,7 @@ public class VoltexGroup extends Content {
 			ColorTable.getAverageGrayColorModel(image, channels);
 		ImagePlus imp = resamplingF == 1 ? image 
 				: Resample_.resample(image, resamplingF);
-		renderer = new Axis2DRenderer(imp, cmodel, 
+		renderer = new VolumeRenderer(imp, cmodel, 
 					color, getTransparency());
 		renderer.fullReload();
 

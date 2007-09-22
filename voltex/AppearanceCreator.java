@@ -10,7 +10,7 @@ import javax.vecmath.*;
 import java.io.*;
 import java.text.NumberFormat;
 
-public class Texture2DVolume implements VolRendConstants {
+public class AppearanceCreator implements VolRendConstants {
 
 	public TexCoordGeneration xTg = new TexCoordGeneration();
 	public TexCoordGeneration yTg = new TexCoordGeneration();
@@ -22,14 +22,42 @@ public class Texture2DVolume implements VolRendConstants {
 	private Volume volume;
 	private IndexColorModel cmodel;
 
-
-	public Texture2DVolume(Volume volume, IndexColorModel cmodel) {
+	public AppearanceCreator(Volume volume, IndexColorModel cmodel) {
 		this.volume = volume;
 		this.cmodel = cmodel;
 	}
 
 	public void setColorModel(IndexColorModel cmodel) {
 		this.cmodel = cmodel;
+	}
+
+	public Appearance getAppearance(int direction, 
+			int index, Color3f color, float transparency) {
+		Texture tex = null;
+		TexCoordGeneration tg = null;
+		return createAppearance(
+			getTexture(direction, index),
+			getTg(direction, index),
+			color,
+			transparency);
+	}
+
+	public Texture2D getTexture(int direction, int index) {
+		switch(direction) {
+			case X_AXIS: return xTextures[index];
+			case Y_AXIS: return yTextures[index];
+			case Z_AXIS: return zTextures[index];
+		} 
+		return null;
+	}
+
+	public TexCoordGeneration getTg(int direction, int index) {
+		switch(direction) {
+			case X_AXIS: return xTg;
+			case Y_AXIS: return yTg;
+			case Z_AXIS: return zTg;
+		} 
+		return null;
 	}
 
 	public void loadTexture() {
@@ -40,6 +68,55 @@ public class Texture2DVolume implements VolRendConstants {
 		loadAxis(Y_AXIS);
 		IJ.showStatus("Loading X axis texture maps");
 		loadAxis(X_AXIS);
+	}
+
+	private Appearance createAppearance(Texture tex, TexCoordGeneration tg, 
+			Color3f color, float transparency) {
+		Appearance a = new Appearance();
+		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_RENDERING_ATTRIBUTES_READ);
+
+		TextureAttributes texAttr = new TextureAttributes();
+		texAttr.setTextureMode(TextureAttributes.COMBINE);
+		texAttr.setCombineRgbMode(TextureAttributes.COMBINE_MODULATE);
+		//texAttr.setCombineRgbMode(TextureAttributes.COMBINE_REPLACE);
+
+		TransparencyAttributes t = new TransparencyAttributes();
+		t.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
+		t.setTransparencyMode(TransparencyAttributes.BLENDED);
+		t.setTransparency(transparency);
+
+		PolygonAttributes p = new PolygonAttributes();
+		p.setCullFace(PolygonAttributes.CULL_NONE);
+
+		Material m = new Material();
+		m.setLightingEnable(false);
+		
+		ColoringAttributes c = new ColoringAttributes();
+		c.setCapability(ColoringAttributes.ALLOW_COLOR_WRITE);
+		c.setShadeModel(ColoringAttributes.FASTEST);
+		if(color == null) {
+			c.setColor(1f, 1f, 1f);
+		} else {
+			c.setColor(color);
+		}
+
+		// Avoid rendering of voxels having an alpha value of zero
+		RenderingAttributes ra = new RenderingAttributes();
+		ra.setCapability(RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
+		ra.setAlphaTestValue(0.1f);
+		ra.setAlphaTestFunction(RenderingAttributes.GREATER);
+		
+		a.setMaterial(m);
+		a.setTransparencyAttributes(t);
+		a.setTexture(tex);
+		a.setTextureAttributes(texAttr);
+		a.setTexCoordGeneration(tg);
+		a.setPolygonAttributes(p);
+		a.setColoringAttributes(c);
+		a.setRenderingAttributes(ra);
+		return a;
 	}
 
 	private void loadAxis(int axis) {
