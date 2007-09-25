@@ -177,6 +177,7 @@ public class State {
 	}
 
 	public static boolean upToDate(String[] sources, String target) {
+		System.out.println("in upToDate: "+sources[0]+" to "+target);
 		File output = new File(target);
 		if (!output.exists()) {
 			if (debug)

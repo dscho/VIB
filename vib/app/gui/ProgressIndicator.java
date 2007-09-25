@@ -50,6 +50,7 @@ public class ProgressIndicator implements ModuleListener {
 	}
 	
 	public void moduleFinished(Module m, int index) {
+		System.out.println("in moduleFinished");
 		if(index < 0)
 			return;
 		int modIndex = getModuleIndex(m.getName());
@@ -105,8 +106,14 @@ public class ProgressIndicator implements ModuleListener {
 		}
 
 		public void draw() {
+			if(true)
+				return;
+			System.out.println("Going to get graphics from "+image);
+			System.out.println("Processor is "+image.getProcessor());
+			System.out.println("Image is "+image.getProcessor().createImage());
 			Graphics g = image.getProcessor().
 					createImage().getGraphics();
+			System.out.println("Successfully did getGraphics()");
 			g.setFont(f);
 			// draw horizontal lines
 			for(int i = 0; i < rows; i++) {

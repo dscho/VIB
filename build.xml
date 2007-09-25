@@ -13,16 +13,22 @@
                    <pathelement location="Quick3dApplet-1.0.8.jar"/>
                </classpath>
 	</javac>
+	<copy todir="build">
+		<fileset dir=".">
+			<include name="**/*.png"/>
+		</fileset>
+	</copy>
+	<copy file="LSM_Toolbox.jar" todir="build"/>
+	<copy file="jzlib-1.0.7.jar" todir="build"/>
     </target>
 
     <target name="run">
         <java fork="true"
              jar="../ImageJ/ij.jar"
-	     maxmemory="1024m">
+	     maxmemory="1800m">
           <sysproperty key="plugins.dir" value="${basedir}/build"/>
           <sysproperty key="j3d.noOffScreen" value="true"/>
           <classpath>
-              <pathelement location="${basedir}/jzlib-1.0.7.jar"/>
 	      <pathelement location="${basedir}/Quick3dApplet-1.0.8.jar"/>
           </classpath>
        </java>

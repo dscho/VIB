@@ -20,6 +20,7 @@ public abstract class Module {
 		console = Console.instance();
 		try {
 			run(state, index);
+			System.out.println("Finished run() of "+getName()+" in runOnOneImage");
 		} catch(Exception e) {
 			if(!exception) {
 				exception = true;

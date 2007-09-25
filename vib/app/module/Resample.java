@@ -11,11 +11,14 @@ public class Resample extends Module {
 	protected String getMessage() { return "Resampling"; }
 
 	protected void run(State state, int index) {
+		System.out.println("MHL: in Resample.run()");
 		if (state.options.numChannels > 1)
 			new SplitChannels().runOnOneImage(state, index);
 
+		System.out.println("MHL: in resample, done splitting...");
+		
 		prereqsDone(state, index);
-
+		
 		if (state.options.resamplingFactor == 1)
 			return;
 
@@ -33,6 +36,7 @@ public class Resample extends Module {
 	private void run(State state, int channel, int index) {
 		String imagePath = state.getImagePath(channel, index);
 		String resampledPath = state.getResampledPath(channel, index);
+		System.out.println("MHL: in Resample.run() imagePath: "+imagePath+", resampledPath: "+resampledPath);
 		if (state.upToDate(imagePath, resampledPath))
 			return;
 

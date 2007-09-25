@@ -67,6 +67,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 				OpenDialog d = new OpenDialog("Load", "");
 				String f = d.getDirectory() + d.getFileName();
 				confTF.setText(f);
+				gd.repaint();
 			}
 		});
 		gd.showDialog();
@@ -204,6 +205,7 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 			DirectoryChooser dialog = 
 				new DirectoryChooser("Working Directory");
 			String dir = dialog.getDirectory();
+			System.out.println("Got working directory: "+dir);
 			if (dir != null)
 				loadFrom(dir);
 		}
