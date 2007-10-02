@@ -12,10 +12,12 @@ import java.util.*;
  * Opens multi-image 8-bits tiff files created by Leica confocal microscope
  * systems using each channels own LUT.  Modified by Nico Stuurman June 2000
  * Modified to set the real dimensions by J. Schindelin 2006
+ * Modified to read the new Leica tiff format by B. Schmid 2007
  */
 public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 	
 	private ImagePlus[] images;
+	private int nr_frames = 1;
 	private int nr_channels = 1;
 	private String imageInfo;
 	
@@ -40,6 +42,7 @@ public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 		
 		try {
 			FileInfo[] fi =  getFileInfo(dir, file);
+			nr_channels = fi.length / nr_frames;
 			images = new ImagePlus[nr_channels];
 			for(int channel = 0; channel < nr_channels; channel++) {
 				ImageStack stack = openStack(fi, channel);
@@ -147,8 +150,8 @@ public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 				StringTokenizer st = new StringTokenizer(file_specs, "\n= ");
 				while (st.hasMoreTokens()) {
 					String s = st.nextToken();
-					if (s.equals ("NumOfVisualisations")) {
-						nr_channels = getInt(st);
+					if (s.equals ("NumOfFrames")) {
+						nr_frames = getInt(st);
 						if (debugMode)
 							IJ.write(nr_channels + " channels detected\n");
 					} else if (s.equals ("VoxelSizeX"))
