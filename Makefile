@@ -156,6 +156,8 @@ ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	vib/InterpolatedImage.java \
 	math3d/Point3d.java
 
+Quantile_Based_Normalization.jar: SOURCES=util/Quantile_Based_Normalization.java
+
 VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard vib/app/gui/*.java) \
 	$(wildcard vib/app/module/*.java) \
