@@ -103,7 +103,7 @@ public class CreateTracingVolume_ implements PlugIn {
 
                 ImagePlus labels;
                 {
-                        ImagePlus[] tmp=BatchOpener.openFromFile(standardBrainLabelsFileName);
+                        ImagePlus[] tmp=BatchOpener.open(standardBrainLabelsFileName);
                         labels=tmp[0];
                 }
                 System.out.println("   labels were: "+labels);
