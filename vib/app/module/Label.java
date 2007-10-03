@@ -22,7 +22,6 @@ public class Label extends Module {
 		int refChannel = state.options.refChannel - 1;
 		String imagePath = state.getImagePath(refChannel, index);
 		String labelPath = state.getImagePath(-1, index);
-		System.out.println("MHL: Looking for label path: "+labelPath);
 		if (state.upToDate(imagePath, labelPath))
 			return;
 

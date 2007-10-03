@@ -6,7 +6,7 @@ import java.io.File;
 
 import leica.Leica_SP_Reader;
 
-import util.HandleExtraTiddlyPom;
+import util.BatchOpener;
 
 public class SplitChannels extends Module {
 	public String getName() { return "SplitChannels"; }
@@ -14,13 +14,8 @@ public class SplitChannels extends Module {
 
 	protected void run(State state, int index) {
 		
-		System.out.println("MHL: in SplitChannels.");
-		
 		prereqsDone(state, index);
 
-		System.out.println("MHL: past prereqs done.");
-		
-		
 		int numChannels = state.options.numChannels;
 		if (numChannels < 2)
 			return;
@@ -33,20 +28,16 @@ public class SplitChannels extends Module {
 			file = (File)state.options.fileGroup.get(index);
 		String path = file.getAbsolutePath();
 
-		System.out.println("MHL: testing upToDateness of "+path);
-		
 		boolean upToDate = true;
 		for (int i = 0; i < numChannels; i++)
 			if (!state.upToDate(path,
 						state.getImagePath(i, index)))
 				upToDate = false;
 
-		System.out.println("MHL: in SplitChannels, upToDate was: "+upToDate);
-		
 		if (upToDate)
 			return;
 		
-		ImagePlus [] allChannels = HandleExtraTiddlyPom.open(path);
+		ImagePlus [] allChannels = BatchOpener.open(path);
 		
 		int channelsInFile = allChannels.length;
 		
@@ -55,7 +46,6 @@ public class SplitChannels extends Module {
 				// be graceful when the template has 
 				// only one channel
 				path = state.getImagePath(refChannel, index);
-				System.out.println("MHL: Saving template to: "+path);
 				if(!state.save(allChannels[0], path))
 					throw new RuntimeException("Could not "
 						+ "save " + path);	
@@ -71,7 +61,6 @@ public class SplitChannels extends Module {
 				continue;
 			ImagePlus img = allChannels[i];
 			path = state.getImagePath(i, index);
-			System.out.println("MHL: Saving channel "+i+" to: "+path);
 			if(!state.save(img, path))
 				throw new RuntimeException("Could not save " + 
 					path);
@@ -82,7 +71,5 @@ public class SplitChannels extends Module {
 			throw new RuntimeException("Could not save " + path);
 		new File(path).setLastModified(file.lastModified());
 
-		System.out.println("MHL: done splitting...");
-		
 	}
 }

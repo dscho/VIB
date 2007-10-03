@@ -22,7 +22,6 @@ public class LabelCenterTransformation extends Module {
 		prereqsDone(state, index);
 
 		String labelPath = state.getResampledPath(-1, index);
-		System.out.println("MHL: Got label path: "+labelPath);
 		String statisticsPath = state.getStatisticsPath(index);
 		ImageMetaData templStats = state.getStatistics(-1);
 		ImageMetaData stats = new ImageMetaData(statisticsPath);

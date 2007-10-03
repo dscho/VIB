@@ -18,11 +18,8 @@ public class LabelDiffusionTransformation extends Module {
 	}
 
 	protected void run(State state, int index) {
-		System.out.println("MHL: in LabelDiffusionTransformation");
 		new Resample().runOnOneImage(state, index);
-		System.out.println("MHL: in LabelDiffusionTransformation - done resample");
 		new LabelCenterTransformation().runOnOneImage(state, index);
-		System.out.println("MHL: in LabelDiffusionTransformation - done labelcenter");
 
 		prereqsDone(state, index);
 
