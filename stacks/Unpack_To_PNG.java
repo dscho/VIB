@@ -101,7 +101,7 @@ public class Unpack_To_PNG implements PlugIn {
 			return;
 		}	
 		
-		ImagePlus [] imps = BatchOpener.openFromFile(
+		ImagePlus [] imps = BatchOpener.open(
 			filename );
 
 		/*
