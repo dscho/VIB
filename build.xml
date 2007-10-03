@@ -6,7 +6,7 @@
 
     <target name="compile">
         <mkdir dir="build"/>
-        <javac srcdir="." destdir="build">
+        <javac srcdir="." destdir="build" debug="on">
 	       <classpath>
                    <pathelement location="../ImageJ/ij.jar"/>
                    <pathelement location="jzlib-1.0.7.jar"/>
@@ -16,6 +16,7 @@
 	<copy todir="build">
 		<fileset dir=".">
 			<include name="**/*.png"/>
+			<exclude name="build/**"/>
 		</fileset>
 	</copy>
 	<copy file="LSM_Toolbox.jar" todir="build"/>
@@ -25,12 +26,15 @@
     <target name="run">
         <java fork="true"
              jar="../ImageJ/ij.jar"
-	     maxmemory="1800m">
+	     maxmemory="1024m">
           <sysproperty key="plugins.dir" value="${basedir}/build"/>
           <sysproperty key="j3d.noOffScreen" value="true"/>
           <classpath>
 	      <pathelement location="${basedir}/Quick3dApplet-1.0.8.jar"/>
           </classpath>
+	  <!--    
+	  <arg value="run('Name Points','');"/>
+	  -->
        </java>
     </target>
 
