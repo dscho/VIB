@@ -205,7 +205,6 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 			DirectoryChooser dialog = 
 				new DirectoryChooser("Working Directory");
 			String dir = dialog.getDirectory();
-			System.out.println("Got working directory: "+dir);
 			if (dir != null)
 				loadFrom(dir);
 		}
