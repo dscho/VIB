@@ -171,6 +171,8 @@ public class NamedPointSet {
                 String defaultFilename=fullFileName+".points";
                 // System.out.println("Looking for points file at: "+fullFileName);
 		
+
+		System.out.println("Trying to load: "+defaultFilename);
 		try {
 			
                         NamedPointSet newNamedPoints = new NamedPointSet();
@@ -208,6 +210,9 @@ public class NamedPointSet {
                         return newNamedPoints;
 			
 		} catch( IOException e ) {
+			IJ.error("Error opening the points file "+defaultFilename+": "+e);
+			System.out.println("Got an IOException while loading the points file: "+e);
+			e.printStackTrace();
                         return null;
                 }
 		

@@ -24,7 +24,9 @@ import vib.FastMatrix;
 import vib.transforms.OrderedTransformations;
 import vib.transforms.FastMatrixTransform;
 import vib.transforms.BooksteinTransform;
+
 import landmarks.NamedPoint;
+import landmarks.NamedPointSet;
 
 public class Bookstein_FromMarkers extends RegistrationAlgorithm implements PlugIn {
 
@@ -68,8 +70,8 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
                 FastMatrixTransform toCorrectAspect1 = FastMatrixTransform.fromCalibrationWithoutOrigin(sourceImages[1]);
                 FastMatrixTransform fromCorrectAspect1=toCorrectAspect1.inverse();
 
-                ArrayList<NamedPoint> points0 = NamedPoint.pointsForImage(sourceImages[0]);
-                ArrayList<NamedPoint> points1 = NamedPoint.pointsForImage(sourceImages[1]);
+                NamedPointSet points0 = NamedPointSet.forImage(sourceImages[0]);
+                NamedPointSet points1 = NamedPointSet.forImage(sourceImages[1]);
 
                 if(points0==null) {
                         IJ.error("No corresponding .points file found "+
@@ -85,9 +87,7 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
                         return null;
                 }
 
-                ArrayList<String> commonPointNames = NamedPoint.pointsInBoth(
-                        points0,
-                        points1);
+                ArrayList<String> commonPointNames = points0.namesSharedWith(points1);
 
                 Point3d[] domainPoints=new Point3d[commonPointNames.size()];
                 Point3d[] templatePoints=new Point3d[commonPointNames.size()];
