@@ -37,6 +37,10 @@ public class Quantile_Based_Normalization implements PlugIn {
        each value in each quantile with the mean in that rank.  If you
        replace with the rank instead of the mean then you get histogram
        equalization.
+
+       FIXME: in practice this isn't very useful with just a single
+       image - my main Thing To Do is to get this to work across
+       multiple images.
        */
 
     /* The only subtlety with the former method is that the mean is not
