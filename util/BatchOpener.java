@@ -95,9 +95,10 @@ public class BatchOpener {
 					return null;
 				}
 				
-				//  Zeiss Confocal LSM 510 image file (.lsm) handler
-				//  http://rsb.info.nih.gov/ij/plugins/lsm-reader.html
-				// Insist on LSM_Toolbox for this:
+				// Zeiss Confocal LSM 510 image file (.lsm) handler
+				// Insist on LSM_Toolbox for this rather than LSM_Reader,
+				// which doesn't have an appropriate open method.
+				// http://imagejdocu.tudor.lu/Members/ppirrotte/lsmtoolbox
 				ClassLoader loader = IJ.getClassLoader();
 				if (loader == null) {
 					IJ.error("IJ.getClassLoader() failed (!)");
