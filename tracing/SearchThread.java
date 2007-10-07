@@ -394,15 +394,11 @@ public abstract class SearchThread extends Thread {
                                 reportFinished(false);
 				return;
                         } else if( threadStatus == PAUSED ) {				
-				synchronized (this) {
-					if( threadStatus == PAUSED ) {
-						try {
-							reportThreadStatus();
-							Thread.sleep(4000);
-						} catch( InterruptedException e ) {
-						}
-					}
-				}
+                                try {
+                                        reportThreadStatus();
+                                        Thread.sleep(4000);
+                                } catch( InterruptedException e ) {
+                                }
                         }
 
 			// We only check every thousandth loop for

@@ -153,33 +153,44 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
         public void finished( SearchThread source, boolean success ) {
 
-                if( success ) {
-                        Path result = currentSearchThread.getResult();
-                        if( result == null ) {
-                                IJ.error("Bug! Succeeded, but null result.");
-                                return;
-                        }
-                        // System.out.println( "finished, with endJoin: "+endJoin+" and "+endJoinIndex );
-                        result.setJoin( Path.PATH_END, endJoin, endJoinIndex );
-                        setTemporaryPath( result );
+                // This is called by both filler and currentSearchThread,
+                // so distinguish these:
 
-                        resultsDialog.changeState(NeuriteTracerResultsDialog.QUERY_KEEP);
+                if( source == currentSearchThread ) {
 
-                } else {
+                    if( success ) {
+                            Path result = currentSearchThread.getResult();
+                            if( result == null ) {
+                                    IJ.error("Bug! Succeeded, but null result.");
+                                    return;
+                            }
+                            // System.out.println( "finished, with endJoin: "+endJoin+" and "+endJoinIndex );
+                            result.setJoin( Path.PATH_END, endJoin, endJoinIndex );
+                            setTemporaryPath( result );
 
-                        resultsDialog.changeState(NeuriteTracerResultsDialog.PARTIAL_PATH);
+                            resultsDialog.changeState(NeuriteTracerResultsDialog.QUERY_KEEP);
+
+                    } else {
+
+                            resultsDialog.changeState(NeuriteTracerResultsDialog.PARTIAL_PATH);
+                    }
+
+
+                    // Indicate in the dialog that we've finished...
+
+                    currentSearchThread = null;
+
+                    repaintAllPanes();
+
                 }
-
-                // Indicate in the dialog that we've finished...
-
-                currentSearchThread = null;
-
-                repaintAllPanes();
 
         }
 
 	public void pointsInSearch( SearchThread source, int inOpen, int inClosed ) {
 		// IJ.error("FIXME: implement");
+                // Just use this signal to repaint the canvas, in case there's
+                // been no mouse movement.
+                repaintAllPanes();
 	}
 
         String nonsense = "unused"; // FIXME, just for synchronization...
@@ -402,8 +413,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
                                 if( d.yesPressed() ) {
 
-                                        pathAndFillManager.load(path);
-                                        unsavedPaths = false;
+                                        if( pathAndFillManager.load(path) )
+                                            unsavedPaths = false;
 
                                         return;
 
@@ -700,6 +711,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
                 if( temporaryPath != null ) {
                         IJ.error( "There's an unconfirmed path, need to confirm or cancel it before finishing the path." );
                         return;
+                }
+
+                if( currentPath == null ) {
+                    IJ.error("You can't complete a path with only a start point in it.");
+                    return;
                 }
 
                 lastStartPointSet = false;

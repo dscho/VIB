@@ -34,6 +34,8 @@ import java.io.*;
 import ij.*;
 
 import client.ArchiveClient;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.parsers.SAXParser;
@@ -283,9 +285,17 @@ public class PathAndFillManager extends DefaultHandler {
 		
 	}
 
-        synchronized public void writeXML( Writer w, Simple_Neurite_Tracer plugin ) {
+        synchronized public void writeXML( String fileName,
+                                           Simple_Neurite_Tracer plugin,
+                                           boolean compress ) throws IOException {
 
-                PrintWriter pw = new PrintWriter( w );
+                PrintWriter pw = null;
+
+                if( compress ) {
+                    pw = new PrintWriter(new GZIPOutputStream(new FileOutputStream(fileName)));
+                } else {
+                    pw = new PrintWriter(new BufferedWriter(new FileWriter(fileName,false)));
+                }
 
                 pw.println("<?xml version=\"1.0\"?>");
                 pw.println("<!DOCTYPE tracings [");
@@ -448,68 +458,6 @@ public class PathAndFillManager extends DefaultHandler {
                 pw.println("</tracings>");
 
                 pw.close();
-        }
-
-
-
-        // FIXME: replace this with something that writes out an XML format.
-
-        synchronized public void writeTracesToFile( String filename ) {
-
-                try {
-
-                        BufferedWriter out = new BufferedWriter(new FileWriter(filename,false));
-
-                        int paths = allPaths.size();
-                        // System.out.println("Paths to draw: "+paths);
-                        for( int i = 0; i < paths; ++i ) {
-
-                                int last_x = -1;
-                                int last_y = -1;
-                                int last_z = -1;
-
-                                Path path = allPaths.get(i);
-                                for( int k = 0; k < path.size(); ++k ) {
-                                        int x = path.x_positions[k];
-                                        int y = path.y_positions[k];
-                                        int z = path.z_positions[k];
-                                        if( (last_x == x) && (last_y == y) && (last_z == z) ) {
-                                                // Skip this, it's just the same.
-                                        } else {
-                                                String toWrite = "" + i + "\t" +
-                                                        x + "\t" +
-                                                        y + "\t" +
-                                                        z + "\t" +
-                                                        (path.startJoins != null) + "\n";
-                                                // System.out.println( "Writing line: " + toWrite );
-                                                out.write( toWrite );
-
-                                        }
-                                        last_x = x;
-                                        last_y = y;
-                                        last_z = z;
-                                }
-                        }
-
-                        out.close();
-
-                } catch (IOException e) {
-                        IJ.error( "Writing traces to file '" + filename + "' failed" );
-                }
-
-        }
-
-        public boolean oldLoad( String filename ) {
-
-                ArrayList< Path > all_paths = loadTracingsFromFile( filename );
-
-                if( all_paths == null ) {
-                        return false;
-                } else {
-                        this.allPaths = all_paths;
-                        return true;
-                }
-
         }
 
         double parsed_x_spacing;
@@ -826,16 +774,14 @@ public class PathAndFillManager extends DefaultHandler {
 
 	}
 
-        public boolean load( String filename ) {
 
-                // System.out.println("loading from "+filename);
+        public boolean load( InputStream is ) {
 
                 try {
 
                         SAXParserFactory factory = SAXParserFactory.newInstance();
                         factory.setValidating(true);
                         SAXParser parser = factory.newSAXParser();
-                        BufferedInputStream is = new BufferedInputStream(new FileInputStream(filename));
 
                         parser.parse( is, this );
 
@@ -865,6 +811,51 @@ public class PathAndFillManager extends DefaultHandler {
 
                 return true;
 
+        }
+
+        public boolean load( String filename ) {
+
+                File f = new File(filename);
+                if( ! f.exists() ) {
+                    IJ.error("The traces file '"+filename+"' does not exist.");
+                    return false;
+                }
+
+                boolean gzipped = false;
+
+		try {
+                        InputStream is;
+                        byte[] buf = new byte[2];
+			is = new FileInputStream(filename);
+			is.read(buf, 0, 2);
+			is.close();
+                        System.out.println("buf[0]: "+buf[0]+", buf[1]: "+buf[1]);
+                        if( ((buf[0]&0xFF) == 0x1F) && ((buf[1]&0xFF) == 0x8B) )
+                            gzipped = true;
+
+		} catch (IOException e) {
+                        IJ.error("Couldn't read from file: "+filename);
+			return false;
+		}
+
+                InputStream is;
+
+                try {
+
+                    if( gzipped ) {
+                        System.out.println("Loading gzipped file...");
+                        is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(filename)));
+                    } else {
+                        System.out.println("Loading uncompressed file...");
+                        is = new BufferedInputStream(new FileInputStream(filename));
+                    }
+
+                } catch( IOException ioe ) {
+                    IJ.error("Couldn't open file '"+filename+"' for reading.");
+                    return false;
+                }
+
+                return load(is);
         }
 
         static public ArrayList< Path > loadTracingsFromFile( String filename ) {
@@ -995,84 +986,14 @@ public class PathAndFillManager extends DefaultHandler {
                 if( fileContents == null ) {
                         return false;
                 } else {
-                        allPaths = loadFromString(fileContents);
-                        return true;
+                        // FIXME: new format
+                        //  allPaths = loadFromString(fileContents);
+
+                        // return true;
+                        IJ.error("BUG: not implemented yet...");
+                        return false;
                 }
 
-        }
-
-        static public ArrayList< Path > loadFromString( String fileContents ) {
-
-                ArrayList< Path > all_paths = new ArrayList< Path >();
-
-                StringTokenizer tokenizer = new StringTokenizer( fileContents, "\n" );
-
-                try {
-
-                        int last_path_index = -1;
-
-                        String line;
-                        Path currentPath = new Path();
-
-                        while( tokenizer.hasMoreTokens() ) {
-
-                                line = tokenizer.nextToken();
-
-                                int nextTabIndex = line.indexOf('\t');
-                                if( nextTabIndex < 0 )
-                                        throw new Exception("No tabs found in the line");
-                                int path_index = Integer.parseInt( line.substring(0,nextTabIndex) );
-                                line = line.substring(nextTabIndex+1);
-
-                                nextTabIndex = line.indexOf('\t');
-                                if( nextTabIndex < 0 )
-                                        throw new Exception("Not enough fields in the line");
-                                int x = Integer.parseInt( line.substring(0,nextTabIndex) );
-                                line = line.substring(nextTabIndex+1);
-
-                                nextTabIndex = line.indexOf('\t');
-                                if( nextTabIndex < 0 )
-                                        throw new Exception("Not enough fields in the line");
-                                int y = Integer.parseInt( line.substring(0,nextTabIndex) );
-                                line = line.substring(nextTabIndex+1);
-
-                                nextTabIndex = line.indexOf('\t');
-                                if( nextTabIndex < 0 )
-                                        throw new Exception("No tabs found in the first line");
-                                int z = Integer.parseInt( line.substring(0,nextTabIndex) );
-                                line = line.substring(nextTabIndex+1);
-
-                                boolean join = new Boolean(line).booleanValue();
-
-                                // System.out.println( "got point " + path_index + ", (" + x + ", " + y + ", " + z + ") " + join );
-
-                                // System.out.println( "(last path_index " + last_path_index + ", current: " + path_index + ")" );
-
-                                if( ((last_path_index >= 0) && (last_path_index != path_index)) || ! tokenizer.hasMoreTokens() ) {
-
-                                        // IJ.error( "adding that path" );
-
-                                        // System.out.println("adding that path");
-
-                                        all_paths.add( currentPath );
-
-                                        currentPath = new Path();
-
-                                }
-
-                                currentPath.addPoint( x, y, z );
-
-                                last_path_index = path_index;
-
-                        }
-
-                } catch( Exception e ) {
-
-                        IJ.error( "Exception while parsing the data" );
-                        return null;
-                }
-
-                return all_paths;
         }
 
         public static byte [] tracesAsBytes( ArrayList< Path > all_paths ) {

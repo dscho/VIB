@@ -30,6 +30,7 @@ import ij.gui.YesNoCancelDialog;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.util.zip.GZIPOutputStream;
 
 class NeuriteTracerResultsDialog
         extends Dialog
@@ -45,6 +46,15 @@ class NeuriteTracerResultsDialog
         static final int DISPLAY_EVS           = 5;
         static final int FILLING_PATHS         = 6;
         static final int CALCULATING_GAUSSIAN  = 7;
+
+        static final String [] stateNames = { "WAITING_TO_START_PATH",
+                                              "PARTIAL_PATH",
+                                              "SEARCHING",
+                                              "QUERY_KEEP",
+                                              "LOGGING_POINTS",
+                                              "DISPLAY_EVS",
+                                              "FILLING_PATHS",
+                                              "CALCULATING_GAUSSIAN" };
 
         static final String SEARCHING_STRING = "Searching for path between points...";
 
@@ -198,6 +208,9 @@ class NeuriteTracerResultsDialog
         }
 
         public void changeState( int newState ) {
+
+                System.out.println("changeState to: "+stateNames[newState]);
+                // System.out.println(Simple_Neurite_Tracer.getStackTrace());
 
                 switch( newState ) {
 
@@ -373,7 +386,7 @@ class NeuriteTracerResultsDialog
                 GridBagConstraints c = new GridBagConstraints();
 
                 c.anchor = GridBagConstraints.LINE_START;
-                c.insets = new Insets( 8, 8, 8, 8 );
+                c.insets = new Insets( 3, 3, 3, 3 );
 
                 { /* Add the status panel */
 
@@ -803,9 +816,11 @@ class NeuriteTracerResultsDialog
 
                         try {
 
-                                BufferedWriter out = new BufferedWriter(new FileWriter(savePath,false));
+                                // BufferedWriter out = new BufferedWriter(new FileWriter(savePath,false));
+                                // BufferedWriter out = new BufferedWriter(new GZIPOutputStream(new FileOutputStream(savePath)));
+                                // pathAndFillManager.writeXML( out, plugin );
 
-                                pathAndFillManager.writeXML( out, plugin );
+                                pathAndFillManager.writeXML( savePath, plugin, true );
 
                         } catch( IOException ioe ) {
                                 IJ.error("Writing traces to '"+savePath+"' failed: "+ioe);
