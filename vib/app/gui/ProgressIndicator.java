@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package vib.app.gui;
 
 import java.io.File;
@@ -50,7 +52,6 @@ public class ProgressIndicator implements ModuleListener {
 	}
 	
 	public void moduleFinished(Module m, int index) {
-		System.out.println("in moduleFinished");
 		if(index < 0)
 			return;
 		int modIndex = getModuleIndex(m.getName());
@@ -106,14 +107,9 @@ public class ProgressIndicator implements ModuleListener {
 		}
 
 		public void draw() {
-			if(true)
-				return;
-			System.out.println("Going to get graphics from "+image);
-			System.out.println("Processor is "+image.getProcessor());
-			System.out.println("Image is "+image.getProcessor().createImage());
+			// FIXME: MHL - this throws an exception on some platforms...
 			Graphics g = image.getProcessor().
 					createImage().getGraphics();
-			System.out.println("Successfully did getGraphics()");
 			g.setFont(f);
 			// draw horizontal lines
 			for(int i = 0; i < rows; i++) {
