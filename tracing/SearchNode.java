@@ -4,23 +4,23 @@
 /* Copyright 2006, 2007 Mark Longair */
 
 /*
-    This file is part of the ImageJ plugin "Simple Neurite Tracer".
-
-    The ImageJ plugin "Simple Neurite Tracer" is free software; you
-    can redistribute it and/or modify it under the terms of the GNU
-    General Public License as published by the Free Software
-    Foundation; either version 3 of the License, or (at your option)
-    any later version.
-
-    The ImageJ plugin "Simple Neurite Tracer" is distributed in the
-    hope that it will be useful, but WITHOUT ANY WARRANTY; without
-    even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-    PARTICULAR PURPOSE.  See the GNU General Public License for more
-    details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+  This file is part of the ImageJ plugin "Simple Neurite Tracer".
+  
+  The ImageJ plugin "Simple Neurite Tracer" is free software; you
+  can redistribute it and/or modify it under the terms of the GNU
+  General Public License as published by the Free Software
+  Foundation; either version 3 of the License, or (at your option)
+  any later version.
+  
+  The ImageJ plugin "Simple Neurite Tracer" is distributed in the
+  hope that it will be useful, but WITHOUT ANY WARRANTY; without
+  even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+  PARTICULAR PURPOSE.  See the GNU General Public License for more
+  details.
+  
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 
 package tracing;
@@ -37,24 +37,24 @@ public class SearchNode implements Comparable {
 	public float f; // should always be the sum of g and h
 	
 	private SearchNode predecessor;
-
+	
         public SearchNode getPredecessor( ) {
                 return predecessor;
         }
-
+	
 	public void setPredecessor( SearchNode p ) {
 		this.predecessor = p;
 	}
-
+	
 	/* This must be one of:
 	   
-	        SearchThread.OPEN_FROM_START
-		SearchThread.CLOSED_FROM_START
-		SearchThread.OPEN_FROM_GOAL
-		SearchThread.CLOSED_FROM_GOAL
-		SearchThread.FREE
-	 */
-
+	   SearchThread.OPEN_FROM_START
+	   SearchThread.CLOSED_FROM_START
+	   SearchThread.OPEN_FROM_GOAL
+	   SearchThread.CLOSED_FROM_GOAL
+	   SearchThread.FREE
+	*/
+	
 	public byte searchStatus;
 	
 	public SearchNode( int x, int y, int z,
@@ -70,22 +70,22 @@ public class SearchNode implements Comparable {
 		this.predecessor = predecessor;
 		this.searchStatus = searchStatus;
 	}
-
+	
 	// FIXME: check whether this is used any more:
 	
-    @Override
+	@Override
 	public boolean equals( Object other ) {
 		SearchNode o = (SearchNode) other;
 		return (x == o.x) && (y == o.y) && (z == o.z);
 	}
-
-    @Override
+	
+	@Override
         public int hashCode() {
-            int hash = 3;
-            hash = 67 * hash + this.x;
-            hash = 67 * hash + this.y;
-            hash = 67 * hash + this.z;
-            return hash;
+		int hash = 3;
+		hash = 67 * hash + this.x;
+		hash = 67 * hash + this.y;
+		hash = 67 * hash + this.z;
+		return hash;
         }
 	
 	public void setFrom( SearchNode another ) {
@@ -98,7 +98,7 @@ public class SearchNode implements Comparable {
 		this.predecessor = another.predecessor;
 		this.searchStatus = another.searchStatus;
 	}
-
+	
 	/* This is used by PriorityQueue: */
 	
 	public int compareTo( Object other ) {
@@ -151,7 +151,7 @@ public class SearchNode implements Comparable {
 		
 	}
 	
-    @Override
+	@Override
 	public String toString( ) {
 		String searchStatusString = "BUG: unknown!";
 		if( searchStatus == SearchThread.OPEN_FROM_START )

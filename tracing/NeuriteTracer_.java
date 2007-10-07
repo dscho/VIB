@@ -28,7 +28,7 @@ import client.ArchiveClient;
 
 
 public class NeuriteTracer_ implements PlugIn {
-
+	
 	/* We may keep a tranformation which maps to a template with
 	   label_data: */
 	
@@ -36,22 +36,22 @@ public class NeuriteTracer_ implements PlugIn {
 	byte[][] label_data;
 	String [] materialNames;       
 	int materials;
-
+	
 	int label_stack_width;
 	int label_stack_height;
 	int label_stack_depth;
-
+	
 	ArchiveClient archiveClient;
-
+	
 	public void run( String ignored ) {
-
+		
 		Applet applet = IJ.getApplet();
 		if( applet != null ) {
 			archiveClient = new ArchiveClient( applet, Macro.getOptions() );
 		}
-
+		
 	}
-
+	
 	FileInfo file_info;
 
 	public void loadCorrespondingPointsFile() {
@@ -116,7 +116,7 @@ public class NeuriteTracer_ implements PlugIn {
 			}
 		*/
 	}
-
+	
 	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane ) {
 
 /*
