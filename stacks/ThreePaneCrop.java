@@ -785,18 +785,21 @@ public class ThreePaneCrop extends ThreePanes {
 		   - whether to preserve the origin
 		*/
 		
-		{
+                boolean singleSlice =  imagePlus.getStackSize() == 1;
+                
+    		{
 			GenericDialog gd = new GenericDialog("Three Pane Crop (v" +
 							     Three_Pane_Crop.PLUGIN_VERSION + ")");
 			gd.addMessage("Cropping: "+imagePlus.getTitle());
-			gd.addCheckbox("Three pane view?", true);
+                        if( ! singleSlice )
+        			gd.addCheckbox("Three pane view?", true);
 			gd.addCheckbox("Change origin?", true);
 			
 			gd.showDialog();
 			if (gd.wasCanceled())
 				return;
 			
-			single_pane = ! gd.getNextBoolean();
+			single_pane = singleSlice || (! gd.getNextBoolean());
 			changeOrigin = gd.getNextBoolean();
 		}
 		
