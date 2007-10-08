@@ -283,6 +283,9 @@ public class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 	@Override
 	protected void drawOverlay(Graphics g) {
 		
+                if( tracerPlugin.loading )
+                    return;
+	    
 		for( int i = maxArrows - 1; i >= 0; --i ) {
 			// for( int i = 0; i < maxArrows; ++i ) {
 			

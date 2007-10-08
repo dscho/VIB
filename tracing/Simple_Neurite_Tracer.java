@@ -392,8 +392,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		
 	}
 	
+        boolean loading = false;
+	
         synchronized public void loadTracings( ) {
 		
+                loading = true;
+	    
                 String fileName;
                 String directory;
 		
@@ -417,10 +421,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
                                         if( pathAndFillManager.load(path) )
 						unsavedPaths = false;
 					
+					loading = false;
                                         return;
 					
                                 } else if( d.cancelPressed() ) {
 					
+					loading = false;
                                         return;
 					
                                 }
@@ -443,9 +449,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
                         if( pathAndFillManager.load( directory + fileName ) )
                                 unsavedPaths = false;
 			
+                        loading = false;
                         return;
                 }
-		
+
+		loading = false;
         }
 	
         public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, boolean shift_key_down, boolean control_key_down ) {
@@ -875,8 +883,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	
         public void run( String ignoredArguments ) {
 		
-                pathAndFillManager = new PathAndFillManager(this);
-		
                 // if (verbose) System.out.println("Macro options are: "+Macro.getOptions());
 		
                 // if (verbose) System.err.println("client running with arguments: "+arguments);
@@ -899,8 +905,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
                                 IJ.error( "There's no current image to trace." );
                                 return;
                         }
-			
-                        if( (currentImage.getWidth() < 2) ||
+
+			if( (currentImage.getWidth() < 2) ||
                             (currentImage.getHeight() < 2) ||
                             (currentImage.getStackSize() < 2) ) {
                                 IJ.error( "There must be at least two sample points in each dimension" );
@@ -911,7 +917,23 @@ public class Simple_Neurite_Tracer extends ThreePanes
                                 IJ.error("This plugin only works on 8 bit images at the moment.");
                                 return;
                         }
+					
+                        width = currentImage.getWidth();
+                        height = currentImage.getHeight();
+                        depth = currentImage.getStackSize();
 			
+                        Calibration calibration = currentImage.getCalibration();
+			
+                        x_spacing = calibration.pixelWidth;
+                        y_spacing = calibration.pixelHeight;
+                        z_spacing = calibration.pixelDepth;
+			
+                        spacing_units = calibration.getUnit();
+			
+                        // if (verbose) System.out.println( "calibration was: " + x_spacing + ", " + y_spacing + ", " + z_spacing );
+
+			pathAndFillManager = new PathAndFillManager(this);
+					
                         file_info = currentImage.getOriginalFileInfo();
 			
                         // Turn it grey, since I find that helpful...
@@ -947,20 +969,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
                                                                         applet != null );
 			
                         pathAndFillManager.addPathAndFillListener(resultsDialog);
-			
-                        width = xy.getWidth();
-                        height = xy.getHeight();
-                        depth = xy.getStackSize();
-			
-                        Calibration calibration = xy.getCalibration();
-			
-                        x_spacing = calibration.pixelWidth;
-                        y_spacing = calibration.pixelHeight;
-                        z_spacing = calibration.pixelDepth;
-			
-                        spacing_units = calibration.getUnit();
-			
-                        // if (verbose) System.out.println( "calibration was: " + x_spacing + ", " + y_spacing + ", " + z_spacing );
 			
                         if( (x_spacing == 0.0) ||
                             (y_spacing == 0.0) ||
