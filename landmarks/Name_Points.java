@@ -1371,7 +1371,6 @@ class RegistrationResult implements Comparable {
 	ImagePlus overlayed;
 	double[] parameters;
 	
-	@Override
 	public int compareTo(Object otherRegistrationResult) {
 		RegistrationResult other = (RegistrationResult) otherRegistrationResult;
 		return Double.compare(score, other.score);
