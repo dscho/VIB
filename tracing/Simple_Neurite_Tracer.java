@@ -61,7 +61,7 @@ import amira.AmiraParameters;
 public class Simple_Neurite_Tracer extends ThreePanes
         implements PlugIn, SearchProgressCallback, ArrowDisplayer, FillerProgressCallback, GaussianGenerationCallback {
 	
-	public static final String PLUGIN_VERSION = "1.1";
+	public static final String PLUGIN_VERSION = "1.1.1";
         static final boolean verbose = false;
 	
         PathAndFillManager pathAndFillManager;
@@ -398,39 +398,44 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		
                 loading = true;
 	    
-                String fileName;
-                String directory;
+                String fileName = null;
+                String directory = null;
 		
                 if( file_info != null ) {
 			
                         fileName = file_info.fileName;
                         directory = file_info.directory;
-			
-                        File possibleLoadFile = new File(directory,fileName+".traces");
-			
-                        String path = possibleLoadFile.getPath();
-			
-                        if(possibleLoadFile.exists()) {
+
+			File possibleLoadFile = null;
+
+			int dotIndex = fileName.lastIndexOf(".");
+			if( dotIndex >= 0 ) {
+				possibleLoadFile = new File(directory,fileName.substring(0,dotIndex)+".traces");
 				
-                                YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(),
-                                                                             "Confirm",
-                                                                             "Load the default traces file? ("+path+")" );
+				String path = possibleLoadFile.getPath();
 				
-                                if( d.yesPressed() ) {
+				if(possibleLoadFile.exists()) {
 					
-                                        if( pathAndFillManager.load(path) )
-						unsavedPaths = false;
+					YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(),
+										     "Confirm",
+										     "Load the default traces file? ("+path+")" );
 					
-					loading = false;
-                                        return;
-					
-                                } else if( d.cancelPressed() ) {
-					
-					loading = false;
-                                        return;
-					
-                                }
-                        }
+					if( d.yesPressed() ) {
+						
+						if( pathAndFillManager.load(path) )
+							unsavedPaths = false;
+						
+						loading = false;
+						return;
+						
+					} else if( d.cancelPressed() ) {
+						
+						loading = false;
+						return;
+						
+					}
+				}
+			}
                 }
 		
                 //  Presumably "No" was pressed...
@@ -438,7 +443,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
                 OpenDialog od;
 		
                 od = new OpenDialog("Select traces file...",
-                                    null,
+                                    directory,
                                     null );
 		
                 fileName = od.getFileName();

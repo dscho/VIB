@@ -42,8 +42,14 @@ import javax.xml.parsers.SAXParser;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
-
 import org.xml.sax.helpers.DefaultHandler;
+import org.xml.sax.SAXException;
+
+class TracesFileFormatException extends SAXException {
+	public TracesFileFormatException(String message) {
+		super(message);
+	}
+}
 
 public class PathAndFillManager extends DefaultHandler {
 	
@@ -325,176 +331,179 @@ public class PathAndFillManager extends DefaultHandler {
         synchronized public void writeXML( String fileName,
                                            Simple_Neurite_Tracer plugin,
                                            boolean compress ) throws IOException {
+
+		PrintWriter pw = null;
 		
-                PrintWriter pw = null;
-		
-                if( compress ) {
-			pw = new PrintWriter(new GZIPOutputStream(new FileOutputStream(fileName)));
-                } else {
-			pw = new PrintWriter(new BufferedWriter(new FileWriter(fileName,false)));
-                }
-		
-                pw.println("<?xml version=\"1.0\"?>");
-                pw.println("<!DOCTYPE tracings [");
-                pw.println("  <!ELEMENT tracings       (samplespacing,imagesize,path*,fill*)>");
-                pw.println("  <!ELEMENT imagesize      EMPTY>");
-                pw.println("  <!ELEMENT samplespacing  EMPTY>");
-                pw.println("  <!ELEMENT path           (point+)>");
-                pw.println("  <!ELEMENT point          EMPTY>");
-                pw.println("  <!ELEMENT fill           (node*)>");
-                pw.println("  <!ELEMENT node           EMPTY>");
-                pw.println("  <!ATTLIST samplespacing  x             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST samplespacing  y             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST samplespacing  z             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST samplespacing  units         CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST imagesize      width         CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST imagesize      height        CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST imagesize      depth         CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST path           id            CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST path           startson      CDATA           #IMPLIED>");
-                pw.println("  <!ATTLIST path           startsindex   CDATA           #IMPLIED>");
-                pw.println("  <!ATTLIST path           endson        CDATA           #IMPLIED>");
-                pw.println("  <!ATTLIST path           endsindex     CDATA           #IMPLIED>");
-                pw.println("  <!ATTLIST path           reallength    CDATA           #IMPLIED>");
-                pw.println("  <!ATTLIST point          x             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST point          y             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST point          z             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST fill           id            CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST fill           frompaths     CDATA           #IMPLIED>");
-                pw.println("  <!ATTLIST fill           metric        CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST fill           threshold     CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST node           id            CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST node           x             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST node           y             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST node           z             CDATA           #REQUIRED>");
-                pw.println("  <!ATTLIST node           previousid    CDATA           #IMPLIED>");
-                pw.println("  <!ATTLIST node           distance      CDATA           #REQUIRED>");
-		pw.println("  <!ATTLIST node           status        (open|closed)   #REQUIRED>");
-                pw.println("]>");
-                pw.println("");
-		
-                pw.println("<tracings>");
-		
-                pw.println("  <samplespacing x=\"" + x_spacing + "\" " +
-                           "y=\"" + y_spacing + "\" " +
-                           "z=\"" + z_spacing + "\" " +
-                           "units=\"" + spacing_units + "\"/>" );
-		
-                pw.println("  <imagesize width=\"" + width + "\" height=\"" + height + "\" depth=\"" + depth + "\"/>" );
-		
-                Hashtable< Path, Integer > h =
-                        new Hashtable< Path, Integer >();
-		
-                int pathIndex = 0;
-		
-                for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
-                        Path p = (Path)j.next();
-                        h.put( p, new Integer(pathIndex) );
+		try {
+			if( compress ) {
+				pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(fileName)),"UTF-8"));
+			} else {
+				pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName),"UTF-8"));
+			}
 			
-			++ pathIndex;
+			pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+			pw.println("<!DOCTYPE tracings [");
+			pw.println("  <!ELEMENT tracings       (samplespacing,imagesize,path*,fill*)>");
+			pw.println("  <!ELEMENT imagesize      EMPTY>");
+			pw.println("  <!ELEMENT samplespacing  EMPTY>");
+			pw.println("  <!ELEMENT path           (point+)>");
+			pw.println("  <!ELEMENT point          EMPTY>");
+			pw.println("  <!ELEMENT fill           (node*)>");
+			pw.println("  <!ELEMENT node           EMPTY>");
+			pw.println("  <!ATTLIST samplespacing  x             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  y             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  z             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  units         CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      width         CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      height        CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      depth         CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST path           id            CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST path           startson      CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsindex   CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endson        CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsindex     CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           reallength    CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          x             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST point          y             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST point          z             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST fill           id            CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST fill           frompaths     CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST fill           metric        CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST fill           threshold     CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           id            CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           x             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           y             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           z             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           previousid    CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST node           distance      CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           status        (open|closed)   #REQUIRED>");
+			pw.println("]>");
+			pw.println("");
+			
+			pw.println("<tracings>");
+			
+			pw.println("  <samplespacing x=\"" + x_spacing + "\" " +
+				   "y=\"" + y_spacing + "\" " +
+				   "z=\"" + z_spacing + "\" " +
+				   "units=\"" + spacing_units + "\"/>" );
+			
+			pw.println("  <imagesize width=\"" + width + "\" height=\"" + height + "\" depth=\"" + depth + "\"/>" );
+			
+			Hashtable< Path, Integer > h =
+				new Hashtable< Path, Integer >();
+			
+			int pathIndex = 0;
+			
+			for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
+				Path p = (Path)j.next();
+				h.put( p, new Integer(pathIndex) );
+				
+				++ pathIndex;
+			}
+			
+			pathIndex = 0;
+			
+			for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
+				Path p = (Path)j.next();
+				
+				// This probably should be a String returning
+				// method of Path.
+				
+				pw.print("  <path id=\"" + pathIndex + "\"" );
+				
+				String startsString = "";
+				String endsString = "";
+				
+				if( p.startJoins != null ) {
+					int startPathIndex = ((h.get(p.startJoins))).intValue();
+					startsString = " startson=\"" + startPathIndex + "\"" +
+						" startsindex=\"" + p.startJoinsIndex + "\"";
+				}
+				if( p.endJoins != null ) {
+					int endPathIndex = ((h.get(p.endJoins))).intValue();
+					endsString = " endson=\"" + endPathIndex + "\"" +
+						" endsindex=\"" + p.endJoinsIndex + "\"";
+				}
+				
+				pw.print(startsString);
+				pw.print(endsString);
+				
+				pw.print(" reallength=\"" +
+					 p.getRealLength(
+						 x_spacing,
+						 y_spacing,
+						 z_spacing ) + "\"");
+				
+				pw.println( ">" );
+				
+				for( int i = 0; i < p.size(); ++i ) {
+					
+					pw.println("    <point x=\"" +
+						   p.x_positions[i] + "\" " +
+						   "y=\"" + p.y_positions[i] + "\" z=\"" +
+						   p.z_positions[i] + "\"/>");
+					
+				}
+				
+				pw.println( "  </path>" );
+				
+				++ pathIndex;
+			}
+			
+			// Now output the fills:
+			
+			int fillIndex = 0;
+			
+			for( Iterator j = allFills.iterator(); j.hasNext(); ) {
+				
+				Fill f = (Fill) j.next();
+				
+				// This should probably be a method of Fill...
+				
+				pw.print( "  <fill id=\"" + fillIndex + "\""  );
+				
+				if( (f.sourcePaths != null) && (f.sourcePaths.size() > 0) ) {
+					
+					pw.print( " frompaths=\"" );
+					
+					
+					for( int k = 0; k < f.sourcePaths.size(); ++k ) {
+						
+						Path p = f.sourcePaths.get(k);
+						
+						if( k != 0 ) {
+							pw.print( ", " );
+						}
+						
+						Integer fromPath = h.get( p );
+						
+						if( fromPath == null ) {
+							pw.print( "-1" );
+						} else {
+							pw.print( "" + fromPath.intValue() );
+						}
+						
+					}
+					
+					pw.print( "\"" );
+					
+					
+					
+				}
+				
+				pw.println( " metric=\"" + f.getMetric() + "\" threshold=\"" + f.getThreshold() + "\">" );
+				
+				f.writeNodesXML( pw );
+				
+				pw.println( "  </fill>" );
+				
+			}
+			
+			pw.println("</tracings>");
+
+		} finally {
+			pw.close();
 		}
-		
-		pathIndex = 0;
-		
-                for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
-                        Path p = (Path)j.next();
-			
-                        // This probably should be a String returning
-                        // method of Path.
-			
-                        pw.print("  <path id=\"" + pathIndex + "\"" );
-			
-			String startsString = "";
-			String endsString = "";
-			
-			if( p.startJoins != null ) {
-				int startPathIndex = ((h.get(p.startJoins))).intValue();
-				startsString = " startson=\"" + startPathIndex + "\"" +
-					" startsindex=\"" + p.startJoinsIndex + "\"";
-			}
-			if( p.endJoins != null ) {
-				int endPathIndex = ((h.get(p.endJoins))).intValue();
-				endsString = " endson=\"" + endPathIndex + "\"" +
-					" endsindex=\"" + p.endJoinsIndex + "\"";
-			}
-			
-			pw.print(startsString);
-			pw.print(endsString);
-			
-			pw.print(" reallength=\"" +
-				 p.getRealLength(
-					 x_spacing,
-					 y_spacing,
-					 z_spacing ) + "\"");
-			
-                        pw.println( ">" );
-			
-                        for( int i = 0; i < p.size(); ++i ) {
-				
-                                pw.println("    <point x=\"" +
-					   p.x_positions[i] + "\" " +
-					   "y=\"" + p.y_positions[i] + "\" z=\"" +
-					   p.z_positions[i] + "\"/>");
-				
-                        }
-			
-                        pw.println( "  </path>" );
-			
-                        ++ pathIndex;
-                }
-		
-                // Now output the fills:
-		
-                int fillIndex = 0;
-		
-                for( Iterator j = allFills.iterator(); j.hasNext(); ) {
-			
-                        Fill f = (Fill) j.next();
-			
-                        // This should probably be a method of Fill...
-			
-                        pw.print( "  <fill id=\"" + fillIndex + "\""  );
-			
-                        if( (f.sourcePaths != null) && (f.sourcePaths.size() > 0) ) {
-				
-                                pw.print( " frompaths=\"" );
-				
-				
-                                for( int k = 0; k < f.sourcePaths.size(); ++k ) {
-					
-                                        Path p = f.sourcePaths.get(k);
-					
-                                        if( k != 0 ) {
-                                                pw.print( ", " );
-                                        }
-					
-                                        Integer fromPath = h.get( p );
-					
-                                        if( fromPath == null ) {
-                                                pw.print( "-1" );
-                                        } else {
-                                                pw.print( "" + fromPath.intValue() );
-                                        }
-					
-                                }
-				
-                                pw.print( "\"" );
-				
-				
-				
-                        }
-			
-                        pw.println( " metric=\"" + f.getMetric() + "\" threshold=\"" + f.getThreshold() + "\">" );
-			
-                        f.writeNodesXML( pw );
-			
-                        pw.println( "  </fill>" );
-			
-                }
-		
-                pw.println("</tracings>");
-		
-                pw.close();
         }
 	
         double parsed_x_spacing;
@@ -520,7 +529,7 @@ public class PathAndFillManager extends DefaultHandler {
 	int last_fill_id;
 	
         @Override
-	public void startElement(String uri, String localName, String qName, Attributes attributes) {
+	public void startElement(String uri, String localName, String qName, Attributes attributes) throws TracesFileFormatException {
 		
                 int width, height, depth;
 		
@@ -532,6 +541,16 @@ public class PathAndFillManager extends DefaultHandler {
 			sourcePathIndicesForFills = new ArrayList< int [] >();
 			
 			last_fill_id = -1;
+
+			/* We need to remove the old paths and fills
+			 * before loading the ones: */
+
+			if (verbose) System.out.println("Clearing old paths and fills...");
+
+			allPaths.clear();
+			allFills.clear();
+			
+			if (verbose) System.out.println("Now "+allPaths.size()+" paths and "+allFills.size()+" fills");
 			
 		} else if( qName.equals("imagesize") ) {
 			
@@ -546,10 +565,7 @@ public class PathAndFillManager extends DefaultHandler {
                                 parsed_depth = Integer.parseInt(depthString);
 				
                         } catch( NumberFormatException e ) {
-				
-                                IJ.error("There was an invalid attribute to <imagesize/>: "+e);
-                                // FIXME: do something else to abandon this...
-				
+                                throw new TracesFileFormatException("There was an invalid attribute to <imagesize/>: "+e);
                         }
 			
                 } else if( qName.equals("samplespacing") ) {
@@ -566,9 +582,7 @@ public class PathAndFillManager extends DefaultHandler {
                                 parsed_z_spacing = Double.parseDouble(zString);
 				
                         } catch( NumberFormatException e ) {
-				
-                                IJ.error("There was an invalid attribute to <samplespacing/>: "+e);
-                                // FIXME: do something else to abandon this...
+				throw new TracesFileFormatException("There was an invalid attribute to <samplespacing/>: "+e);
                         }
 			
                 } else if( qName.equals("path") ) {
@@ -583,14 +597,12 @@ public class PathAndFillManager extends DefaultHandler {
 			
                         if( (startsonString == null && startsindexString != null) ||
                             (startsonString != null && startsindexString == null) ) {
-                                IJ.error("If startson is specified for a path, then startsindex must also be specified.");
-                                // FIXME: error
+				throw new TracesFileFormatException("If startson is specified for a path, then startsindex must also be specified.");
                         }
 			
                         if( (endsonString == null && endsindexString != null) &&
                             (endsonString != null && endsindexString == null) ) {
-                                IJ.error("If endson is specified for a path, then endsindex must also be specified.");
-                                // FIXME: error
+                                throw new TracesFileFormatException("If endson is specified for a path, then endsindex must also be specified.");
                         }
 			
                         int startson, startsindex, endson, endsindex;
@@ -625,9 +637,7 @@ public class PathAndFillManager extends DefaultHandler {
                                 }
 				
                         } catch( NumberFormatException e ) {
-				
-                                IJ.error("There was an invalid attribute in <path/>");
-                                // FIXME: do something else to abandon this...
+				throw new TracesFileFormatException("There was an invalid attribute in <path/>: "+e);
                         }			
 			
 			startJoins.add( startsOnInteger );
@@ -648,17 +658,17 @@ public class PathAndFillManager extends DefaultHandler {
 				current_path.addPoint(parsed_x,parsed_y,parsed_z);
 				
                         } catch( NumberFormatException e ) {
-				
-                                IJ.error("There was an invalid attribute to <imagesize/>");
-                                // FIXME: do something else to abandon this...
+				throw new TracesFileFormatException("There was an invalid attribute to <imagesize/>");
                         }
 			
 		} else if( qName.equals("fill") ) {
 			
 			try {
 				
+				String [] sourcePaths = { };
 				String fromPathsString = attributes.getValue("frompaths");
-				String [] sourcePaths = fromPathsString.split(", *");
+				if( fromPathsString != null )
+					sourcePaths = fromPathsString.split(", *");
 				
 				current_fill = new Fill();
 				
@@ -672,14 +682,12 @@ public class PathAndFillManager extends DefaultHandler {
 				int fill_id = Integer.parseInt(fill_id_string);
 				
 				if( fill_id < 0 ) {
-					IJ.error("Can't have a negative id in <fill>");
-					// FIXME: do something else to abandon this....
+					throw new TracesFileFormatException("Can't have a negative id in <fill>");
 				}
 				
 				if( fill_id != (last_fill_id + 1) ) {
-					IJ.error( "Out of order id in <fill> (" + fill_id +
-						  " when we were expecting " + (last_fill_id + 1) + ")" );
-					// FIXME: do something else to abandon this....
+				       throw new TracesFileFormatException( "Out of order id in <fill> (" + fill_id +
+									    " when we were expecting " + (last_fill_id + 1) + ")" );
 				}
 				
 				int [] sourcePathIndices = new int[ sourcePaths.length ];
@@ -696,10 +704,8 @@ public class PathAndFillManager extends DefaultHandler {
 				
 				current_fill.setThreshold(fillThreshold);
 				
-                        } catch( NumberFormatException e ) {
-				
-                                IJ.error("There was an invalid attribute to <fill>");
-                                // FIXME: do something else to abandon this...
+                        } catch( NumberFormatException e ) {				
+                                throw new TracesFileFormatException("There was an invalid attribute to <fill>");
                         }
 			
 			
@@ -726,8 +732,7 @@ public class PathAndFillManager extends DefaultHandler {
 					parsed_previous = Integer.parseInt(previousString);
 				
 				if( parsed_id != (last_fill_node_id + 1) ) {
-					IJ.error("Fill node IDs weren't consecutive integers");
-					// FIXME: 
+					throw new TracesFileFormatException("Fill node IDs weren't consecutive integers");
 				}
 				
 				String openString = attributes.getValue("status");
@@ -742,22 +747,12 @@ public class PathAndFillManager extends DefaultHandler {
 				last_fill_node_id = parsed_id;
 				
                         } catch( NumberFormatException e ) {
-				
-                                IJ.error("There was an invalid attribute to <node/>: "+e);
-                                // FIXME: do something else to abandon this...
+				throw new TracesFileFormatException("There was an invalid attribute to <node/>: "+e);
                         }
 			
-		} else if( qName.equals("tracings") ) {
-			
                 } else {
-			
-			IJ.error("Unknown element: '"+qName+"'");
-			// FIXME: 
-			
+			throw new TracesFileFormatException("Unknown element: '"+qName+"'");
                 }
-		
-		
-		
 		
         }
 	
@@ -810,54 +805,17 @@ public class PathAndFillManager extends DefaultHandler {
 		}
 		
 	}
-	
-	
-	public boolean load( Reader reader ) {
-		
-		try {
-			
-			InputSource inputSource=new InputSource(reader);
-			
-			SAXParserFactory factory = SAXParserFactory.newInstance();
-			factory.setValidating(true);
-			SAXParser parser = factory.newSAXParser();
-			
-			parser.parse( inputSource, this );	    
-			
-		} catch( javax.xml.parsers.ParserConfigurationException e ) {
-			
-                        IJ.error("There was an exception: "+e);
-                        return false;
-			
-                } catch( org.xml.sax.SAXException e ) {
-			
-                        IJ.error("There was an exception: "+e);
-                        return false;
-			
-                } catch( java.io.FileNotFoundException e ) {
-			
-                        IJ.error("There was an exception: "+e);
-                        return false;
-			
-                } catch( java.io.IOException e ) {
-			
-                        IJ.error("There was an exception: "+e);
-                        return false;
-			
-                }
-		
-                return true;
-		
-        }
-	
+       	
 	public boolean loadFromString( String tracesFileAsString ) {
 		
 		StringReader reader=new StringReader(tracesFileAsString);
-		return load(reader);
+		boolean result = load(null,reader);
+		reader.close();
+		return result;
 		
 	}
 	
-        public boolean load( InputStream is ) {
+        public boolean load( InputStream is, Reader reader ) {
 		
                 try {
 			
@@ -865,28 +823,43 @@ public class PathAndFillManager extends DefaultHandler {
                         factory.setValidating(true);
                         SAXParser parser = factory.newSAXParser();
 			
-                        parser.parse( is, this );
-			
-                        // FIXME: somehow wait for parsing to end...
+			if( is != null )
+				parser.parse( is, this );
+			else if( reader != null ) {
+				InputSource inputSource=new InputSource(reader);				
+				parser.parse( inputSource, this );
+			}
 			
                 } catch( javax.xml.parsers.ParserConfigurationException e ) {
 			
-                        IJ.error("There was an exception: "+e);
+			allPaths.clear();
+			allFills.clear();
+			resetListeners();
+                        IJ.error("There was a ParserConfigurationException: "+e);
                         return false;
 			
-                } catch( org.xml.sax.SAXException e ) {
+                } catch( SAXException e ) {
 			
-                        IJ.error("There was an exception: "+e);
+			allPaths.clear();
+			allFills.clear();
+			resetListeners();
+                        IJ.error(e.toString());
                         return false;
 			
-                } catch( java.io.FileNotFoundException e ) {
+                } catch( FileNotFoundException e ) {
 			
-                        IJ.error("There was an exception: "+e);
+			allPaths.clear();
+			allFills.clear();
+			resetListeners();
+                        IJ.error("File not found: "+e);
                         return false;
 			
-                } catch( java.io.IOException e ) {
+                } catch( IOException e ) {
 			
-                        IJ.error("There was an exception: "+e);
+			allPaths.clear();
+			allFills.clear();
+			resetListeners();
+                        IJ.error("There was an IO exception while reading the file: "+e);
                         return false;
 			
                 }
@@ -920,7 +893,8 @@ public class PathAndFillManager extends DefaultHandler {
 			return false;
 		}
 		
-                InputStream is;
+                InputStream is = null;
+		boolean result = false;
 		
                 try {
 			
@@ -931,13 +905,18 @@ public class PathAndFillManager extends DefaultHandler {
 				if (verbose) System.out.println("Loading uncompressed file...");
 				is = new BufferedInputStream(new FileInputStream(filename));
 			}
+
+			result = load(is,null);
+			
+			if( is != null )
+				is.close();
 			
                 } catch( IOException ioe ) {
 			IJ.error("Couldn't open file '"+filename+"' for reading.");
 			return false;
                 }
 		
-                return load(is);
+		return result;
         }
 	
         public boolean getTracings( boolean mineOnly, ArchiveClient archiveClient ) {

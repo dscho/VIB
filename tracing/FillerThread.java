@@ -208,6 +208,8 @@ public class FillerThread extends SearchThread {
 			
 		}
 		
+		result.sourcePaths = (ArrayList<Path>)fill.sourcePaths.clone();
+		
 		return result;
 		
 	}
