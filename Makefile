@@ -197,7 +197,7 @@ $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 JARS=Delaunay_Voronoi.jar AmiraMesh_.jar AmiraSurface_.jar \
 	Rigid_Registration.jar Extract_Surface.jar \
 	Segmentation_Editor_compat.jar VIB_compat.jar \
-	ImageJ_3D_Viewer.jar \
+	ImageJ_3D_Viewer.jar Quantile_Based_Normalization.jar \
 	Install_Java3D.jar Three_Pane_Crop.jar Unpack_To_PNG.jar \
 	Simple_Neurite_Tracer.jar ExportMesh_.jar VIB_Protocol.jar \
 	Average_Color.jar Bilateral_Filter.jar \
