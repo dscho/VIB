@@ -168,7 +168,6 @@ class NeuriteTracerResultsDialog
                 keepSegment.setEnabled(false);
                 junkSegment.setEnabled(false);
                 cancelSearch.setEnabled(false);
-                pathActionPanel.setEnabled(false);
                 completePath.setEnabled(false);
                 cancelPath.setEnabled(false);
 		
@@ -747,7 +746,7 @@ class NeuriteTracerResultsDialog
                         if( info == null ) {
 				
                                 sd = new SaveDialog("Save traces as...",
-                                                    "image.traces",
+                                                    "image",
                                                     ".traces");
 				
                         } else {
@@ -757,7 +756,7 @@ class NeuriteTracerResultsDialog
 				
                                 String suggestedSaveFilename;
 				
-                                suggestedSaveFilename = fileName+".traces";
+                                suggestedSaveFilename = fileName;
 				
                                 sd = new SaveDialog("Save traces as...",
                                                     directory,
@@ -783,7 +782,7 @@ class NeuriteTracerResultsDialog
                                         return;
                         }
 			
-                        IJ.showStatus("Saving label annotations to "+savePath);
+                        IJ.showStatus("Saving traces to "+savePath);
 			
                         // pathAndFillManager.writeTracesToFile( savePath );
 			
@@ -797,7 +796,10 @@ class NeuriteTracerResultsDialog
 				
                         } catch( IOException ioe ) {
                                 IJ.error("Writing traces to '"+savePath+"' failed: "+ioe);
+				return;
                         }
+
+			plugin.unsavedPaths = false;
 			
                 } else if( source == loadButton ) {
 			
@@ -847,6 +849,10 @@ class NeuriteTracerResultsDialog
 			
                         // if (verbose) System.out.println("deletePaths called");
                         int [] selectedIndices = pathList.getSelectedIndexes();
+			if( selectedIndices.length < 1 ) {
+				IJ.error("No path was selected for deletion");
+				return;
+			}
                         pathAndFillManager.deletePaths( selectedIndices );
                         plugin.repaintAllPanes();
 			
@@ -854,6 +860,10 @@ class NeuriteTracerResultsDialog
 			
                         if (verbose) System.out.println("deleteFills called");
                         int [] selectedIndices = fillList.getSelectedIndexes();
+			if( selectedIndices.length < 1 ) {
+				IJ.error("No fill was selected for deletion");
+				return;
+			}
                         pathAndFillManager.deleteFills( selectedIndices );
                         plugin.repaintAllPanes();
 			
@@ -868,6 +878,13 @@ class NeuriteTracerResultsDialog
 			
                 }  else if( source == fillPaths ) {
 			
+			int [] selectedIndices = pathList.getSelectedIndexes();
+			
+			if( selectedIndices.length < 1 ) {
+				IJ.error("You must have one or more paths in the list selected");
+				return;
+			}
+
                         currentlyFilling = true;
                         pauseOrRestartFilling.setLabel("Pause");
                         plugin.startFillingPaths();
