@@ -595,7 +595,7 @@ class NeuriteTracerResultsDialog
                         cf.gridy = 2;
                         fillingOptionsPanel.add(setMaxThreshold,cf);
 			
-                        view3D = new Button("View with 3D Viewer");
+                        view3D = new Button("Create Image Stack from Fill");
                         view3D.addActionListener(this);
                         cf.gridx = 0;
                         cf.gridy = 3;

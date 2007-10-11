@@ -281,15 +281,16 @@ public class FillerThread extends SearchThread {
                 ImageStack stack = new ImageStack(width,height);
 		
                 for( int z = 0; z < depth; ++z ) {
-			
-			for( int y = 0; y < height; ++y ) {
-				for( int x = 0; x < width; ++x ) {
-					SearchNode s = nodes_as_image[z][y*width+x];
-					if( (s != null) && (s.g <= threshold) ) {
-						new_slice_data[z][y*width+x] = realData ? slices_data[z][y*width+x] : (byte)255;
+			SearchNode [] nodes_this_slice=nodes_as_image[z];
+			if( nodes_this_slice != null )
+				for( int y = 0; y < height; ++y ) {
+					for( int x = 0; x < width; ++x ) {
+						SearchNode s = nodes_as_image[z][y*width+x];
+						if( (s != null) && (s.g <= threshold) ) {
+							new_slice_data[z][y*width+x] = realData ? slices_data[z][y*width+x] : (byte)255;
+						}
 					}
 				}
-			}
 			
                         ByteProcessor bp = new ByteProcessor(width,height);
                         bp.setPixels( new_slice_data[z] );

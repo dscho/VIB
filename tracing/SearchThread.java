@@ -260,7 +260,6 @@ public abstract class SearchThread extends Thread {
 			}
 		}
 		
-		
 		Calibration calibration = imagePlus.getCalibration();
 		
 		x_spacing = calibration.pixelWidth;

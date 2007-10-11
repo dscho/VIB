@@ -531,8 +531,6 @@ public class PathAndFillManager extends DefaultHandler {
         @Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws TracesFileFormatException {
 		
-                int width, height, depth;
-		
 		if( qName.equals("tracings") ) {
 			
                         startJoins = new ArrayList< Integer >();
@@ -564,6 +562,12 @@ public class PathAndFillManager extends DefaultHandler {
                                 parsed_height = Integer.parseInt(heightString);
                                 parsed_depth = Integer.parseInt(depthString);
 				
+				if( ! ((parsed_width == width) &&
+                                       (parsed_height == height) &&
+                                       (parsed_depth == depth)) ) {
+					throw new TracesFileFormatException("The image size in the traces file didn't match - it's probably for another image");
+				}
+
                         } catch( NumberFormatException e ) {
                                 throw new TracesFileFormatException("There was an invalid attribute to <imagesize/>: "+e);
                         }
