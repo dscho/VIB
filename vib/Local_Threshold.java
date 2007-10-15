@@ -64,10 +64,12 @@ public class Local_Threshold implements PlugInFilter {
 		newip.resetThreshold();
 		ip.insert(copy, 0, 0);
 		Rectangle roiCopyR = roiCopy.getBounds();
-		Rectangle roiTempR = tmp.getRoi().getBounds();
-		tmp.getRoi().setLocation(roiCopyR.x + roiTempR.x, 
-					roiCopyR.y + roiTempR.y);
-		image.setRoi(tmp.getRoi());
+		if(tmp.getRoi() != null) {
+			Rectangle roiTempR = tmp.getRoi().getBounds();
+			tmp.getRoi().setLocation(roiCopyR.x + roiTempR.x, 
+						roiCopyR.y + roiTempR.y);
+			image.setRoi(tmp.getRoi());
+		}
 	}
 
 	public static void applyThreshold(ImageProcessor ip, 
