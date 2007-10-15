@@ -44,6 +44,7 @@ import java.awt.Checkbox;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.event.ItemListener;
+import java.awt.image.ColorModel;
 
 public class Quantile_Based_Normalization implements PlugIn, ActionListener, ItemListener {
 	
@@ -234,6 +235,7 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 		
                 if( useMask ) {
 			String maskFileName=maskFileInput.getText();
+			IJ.showStatus("Loading mask file: "+maskFileName);
 			ImagePlus [] channels=BatchOpener.open(maskFileName);
 			if( channels == null ) {
 				IJ.error("Couldn't open the mask file: "+maskFileName);
@@ -579,10 +581,18 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 			
 			
 			IJ.showProgress(1.0);
-			
+
+			if( ImagePlus.COLOR_256 == imagePlus.getType() ) {
+				ColorModel cm = null;
+				cm = stack.getColorModel();
+				if( cm != null ) {
+					newStack.setColorModel( cm );
+				}
+			}
+						
 			ImagePlus newImage = new ImagePlus( "normalized "+imagePlus.getTitle(), newStack );
 			newImage.setCalibration(imagePlus.getCalibration());
-			
+						
 			// newImage.show();
 			
                         if( outputFile.exists() ) {
@@ -607,6 +617,7 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 				return;
 			
                         newImage.close();
+			imagePlus.close();
 			
 		}
 		
