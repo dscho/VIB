@@ -136,11 +136,17 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 	
 	public void run(String ignored) {
 		
+		/*
 		String [] defaultFiles = { "/home/mark/corpus/central-complex/mhl-middle(C)c5(0).lsm",
 					   "/home/mark/corpus/central-complex/mhl-71yxUAS-lacZ(0).lsm",
 					   "/home/mark/corpus/central-complex/mhl-theotherone(A)c61(0).lsm" };
-		
-		String  defaultOutputDirectory = "/home/mark/tmp-output/";
+		*/
+		String [] defaultFiles = { };
+
+		// String  defaultOutputDirectory = "/home/mark/tmp-output/";
+		String defaultOutputDirectory = "";
+
+		String defaultMaskFileName = "";
 		
                 GenericDialog gd=new GenericDialog("Quantile Normalization");
 		
@@ -149,13 +155,13 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 		for( int i = 0; i < defaultFiles.length; ++i )
 			fg.add(defaultFiles[i]);
 		
-		FileGroupDialog fgd = new FileGroupDialog(fg);
+		FileGroupDialog fgd = new FileGroupDialog(fg,false);
 		
 		gd.addPanel(fgd);
 		
 		Panel outputDirectoryPanel=new Panel();
 		outputDirectoryPanel.add(new Label("Output directory: "));
-		outputDirectoryInput = new TextField(defaultOutputDirectory);
+		outputDirectoryInput = new TextField(defaultOutputDirectory,18);
 		outputDirectoryPanel.add(outputDirectoryInput);
 		chooseOutputDirectory = new Button("Choose ...");
 		outputDirectoryPanel.add(chooseOutputDirectory);
@@ -182,7 +188,7 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 		c.gridwidth = 1;
 		useMaskPanel.add(new Label("Mask file: "),c);		
 		c.gridx = 1;
-		maskFileInput = new TextField("/home/mark/example-mask.tif");
+		maskFileInput = new TextField(defaultMaskFileName,18);
                 maskFileInput.setEnabled(false);
 		useMaskPanel.add(maskFileInput,c);
 		c.gridx = 2;
@@ -206,6 +212,7 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 		int n = fg.size();
 		if (n < 1) {
 			IJ.error("No image files selected");
+			return;
 		}
 		
                 // First find the output directory...

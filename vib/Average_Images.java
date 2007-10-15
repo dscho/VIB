@@ -25,7 +25,7 @@ public class Average_Images implements PlugIn {
 		GenericDialog gd = new GenericDialog("Average Images");
 		
 		FileGroup fg = new FileGroup("foo");
-		FileGroupDialog fgd = new FileGroupDialog(fg);
+		FileGroupDialog fgd = new FileGroupDialog(fg,false);
 		
 		gd.addPanel(fgd);
 		gd.addNumericField("Index of channels to use (starting at 1): ", 1, 0);
