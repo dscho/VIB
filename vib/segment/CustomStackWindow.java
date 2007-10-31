@@ -401,37 +401,38 @@ public class CustomStackWindow extends StackWindow
 
 	public void keyReleased(KeyEvent e) {
 		int c = e.getKeyCode();
-		if(c == KeyEvent.VK_UP || c == KeyEvent.VK_RIGHT){
+        char ch = e.getKeyChar();
+		if(c == KeyEvent.VK_DOWN || c == KeyEvent.VK_RIGHT || ch == '>'){
 			imp.setSlice(oldSlice + 1);
 			adjustmentValueChanged(new AdjustmentEvent(
 						sliceSelector,
 						AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED,
 						AdjustmentEvent.BLOCK_INCREMENT,
 						oldSlice+1));
-		} else if (c == KeyEvent.VK_DOWN || c == KeyEvent.VK_LEFT){
+		} else if (c == KeyEvent.VK_UP || c == KeyEvent.VK_LEFT || ch == '<'){
 			imp.setSlice(oldSlice - 1);
 			adjustmentValueChanged(new AdjustmentEvent(
 						sliceSelector,
 						AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED,
 						AdjustmentEvent.BLOCK_DECREMENT,
 						oldSlice-1));
-		} else if (c == KeyEvent.VK_PAGE_DOWN){
+		} else if (c == KeyEvent.VK_PAGE_UP){
 			imp.setSlice(oldSlice - 5);
 			adjustmentValueChanged(new AdjustmentEvent(
 						sliceSelector,
 						AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED,
 						AdjustmentEvent.BLOCK_DECREMENT,
 						oldSlice-5));
-		} else if (c == KeyEvent.VK_PAGE_UP){
+		} else if (c == KeyEvent.VK_PAGE_DOWN){
 			imp.setSlice(oldSlice + 5);
 			adjustmentValueChanged(new AdjustmentEvent(
 						sliceSelector,
 						AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED,
 						AdjustmentEvent.BLOCK_DECREMENT,
 						oldSlice+5));
-		} else if (e.getKeyChar() == '+'){
+		} else if (ch == '+' || ch == '='){
 			processPlusButton();
-		} else if (e.getKeyChar() == '-'){
+		} else if (ch == '-'){
 			processMinusButton();
 		}			
 	}
