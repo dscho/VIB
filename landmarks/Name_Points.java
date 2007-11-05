@@ -32,6 +32,17 @@ import util.BatchOpener;
 import vib.FastMatrix;
 import vib.transforms.FastMatrixTransform;
 
+
+/* FIXME:
+
+     - scale the parameters to that i can set scbd to 1.0
+     - indicate where the point would be moved to
+     - add a key
+     - be able to interrupt to finish or cancel
+     - use a smoothed template?  (created on with 1.0 sigma, using calibration)
+     - why do some really good looking alignments score apparently so low?
+*/
+
 class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	
 	Label[] coordinateLabels;
@@ -177,7 +188,8 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		
                 optionsPanel = new Panel();
                 tryManyRotations=new Checkbox(" Try 24 initial starting rotations?",true);
-                optionsPanel.add(tryManyRotations);
+                // For the moment, don't add this:
+		// optionsPanel.add(tryManyRotations);
                 outerc.gridy = 4;
                 add(optionsPanel,outerc);
 
@@ -366,13 +378,13 @@ public class Name_Points implements PlugIn {
 			return;
 		}
 
-		// We need at least 3 points in common between the two point sets.
+		// We need at least 3 points in common between the two
+		// point sets for an initial guess:
+
 
 		ArrayList<String> namesInCommon = points.namesSharedWith(templatePoints);
-		if( namesInCommon.size() < 3 ) {
-			IJ.error("There must be at least 2 other points in common between the two images in order to fine-tune this point.");
-			return;
-		}
+
+		boolean initialGuess = (namesInCommon.size() >= 3);
 
                 dialog.setFineTuning(true);
 		
@@ -404,10 +416,10 @@ public class Name_Points implements PlugIn {
 		int z_max_template_i = (int) (z_max_template / z_spacing_template);
 		
 		ImagePlus cropped = ThreePaneCrop.performCrop(templateImage, x_min_template_i, x_max_template_i, y_min_template_i, y_max_template_i, z_min_template_i, z_max_template_i, false);
-		
+
                 double [] guessedRotation = null;
 		
-		if( ! dialog.tryManyRotations.getState() ) {
+		if( initialGuess ) {
                     // We could try to pick the other points we want to use
                     // in a more subtle way, but for the moment just pick
                     // the first two which are in common.
@@ -510,7 +522,7 @@ public class Name_Points implements PlugIn {
                         pointInTemplate,
                         imp,
                         p,
-                        dialog.tryManyRotations.getState() ? null : guessedRotation,
+                        guessedRotation,
                         this);
 
                 fineTuneThread.start();
@@ -728,23 +740,14 @@ public class Name_Points implements PlugIn {
 			}
 		}
 		
-		ImageStack overlayedStack=new ImageStack(transformed_width,transformed_height);		
-		
-		for (int z = 0; z < transformed_depth; ++z) {
-			ColorProcessor cp=new ColorProcessor(transformed_width,transformed_height);
-			cp.setRGB( transformedBytes[z],
-				   toKeepCroppedBytes[z],
-				   transformedBytes[z] );
-			overlayedStack.addSlice("",cp);
-		}
-		
-		ImagePlus overlayed=new ImagePlus(imageTitle,overlayedStack);
-                if(show)
-			overlayed.show();
-		
                 RegistrationResult result = new RegistrationResult();
 		
-		result.overlayed = overlayed;
+		result.overlay_width = transformed_width;
+		result.overlay_height = transformed_height;
+		result.overlay_depth = transformed_depth;
+		result.transformed_bytes = transformedBytes;
+		result.fixed_bytes = toKeepCroppedBytes;
+
 		result.parameters = mapValues;
 		
 		double maximumValue = 0;
@@ -1299,24 +1302,34 @@ class TransformationAttempt implements MultivariateFunction {
         ImagePlus newImage;
         NamedPoint guessedPoint;
 	
+	ProgressWindow progressWindow;
+	long timeLastProgressUpdate = 0;
+
         double minTranslation;
         double maxTranslation;
 	
 	int similarityMeasure;
+
+	RegistrationResult bestSoFar;
 	
         public TransformationAttempt( double cubeSide,
                                       ImagePlus croppedTemplate,
                                       NamedPoint templatePoint,
                                       ImagePlus newImage,
                                       NamedPoint guessedPoint,
-				      int similarityMeasure ) {
-		
+				      int similarityMeasure,
+				      RegistrationResult bestSoFar,
+				      ProgressWindow progressWindow ) {
+ 
                 this.cubeSide = cubeSide;
                 this.croppedTemplate = croppedTemplate;
                 this.templatePoint = templatePoint;
                 this.newImage = newImage;
                 this.guessedPoint = guessedPoint;
-		
+
+		this.progressWindow = progressWindow;
+		this.bestSoFar = bestSoFar;
+
 		this.similarityMeasure = similarityMeasure;
 		
                 minTranslation = -cubeSide;
@@ -1335,8 +1348,27 @@ class TransformationAttempt implements MultivariateFunction {
         public double evaluate( double[] argument ) {
 		
 		RegistrationResult r = Name_Points.mapImageWith( croppedTemplate, newImage, guessedPoint, argument, cubeSide, similarityMeasure, false, "");
-		return r.score;
-		
+		long timeCurrently = System.currentTimeMillis();
+		long timeSinceLastUpdate = timeCurrently - timeLastProgressUpdate;
+		if( (bestSoFar == null) || (r.score < bestSoFar.score) ) {
+			bestSoFar = r;
+			System.out.println("Found a better one: "+r.score);
+			if( (timeLastProgressUpdate == 0) || timeSinceLastUpdate > 1000 ) {
+				System.out.println("Yeah, it's been "+(timeSinceLastUpdate / 1000.0)+ "seconds.");
+				progressWindow.showThis(bestSoFar);
+				timeLastProgressUpdate = timeCurrently;
+			}
+		}
+		// But that might miss one, so check every 5 seconds
+		// that the currently displayed on is the best.
+		if( timeSinceLastUpdate > 5000 ) {
+			if( progressWindow.showingResult != bestSoFar ) {
+				progressWindow.showThis(bestSoFar);
+			}
+			timeLastProgressUpdate = timeCurrently;
+		}
+
+		return r.score;		
         }
 	
         public int getNumArguments() {
@@ -1366,9 +1398,15 @@ class TransformationAttempt implements MultivariateFunction {
 }
 
 class RegistrationResult implements Comparable {
+
+	int overlay_width;
+	int overlay_height;
+	int overlay_depth;
 	
+	byte [][] transformed_bytes;
+	byte [][] fixed_bytes;
+
 	double score;
-	ImagePlus overlayed;
 	double[] parameters;
 	
 	public int compareTo(Object otherRegistrationResult) {
@@ -1425,8 +1463,14 @@ class FineTuneThread extends Thread {
 	
 	public void run() {
 
-		croppedTemplate.show();
-		
+		ImageStack emptyStack = new ImageStack(100,100);
+		ColorProcessor emptyCP = new ColorProcessor(100,100);
+		emptyCP.setRGB( new byte[100*100], new byte[100*100], new byte[100*100] );
+		emptyStack.addSlice("",emptyCP);
+		ImagePlus progressImagePlus = new ImagePlus( "Fine-Tuning Progress", emptyStack );
+
+		ProgressWindow progressWindow = new ProgressWindow( progressImagePlus );
+
 		FastMatrix scalePointInTemplate=FastMatrix.fromCalibration(croppedTemplate);
 		FastMatrix scalePointInNewImage=FastMatrix.fromCalibration(newImage);
 		FastMatrix inverseScalePointInNewImage=scalePointInNewImage.inverse();
@@ -1438,218 +1482,151 @@ class FineTuneThread extends Thread {
 		double initial_trans_y = scalePointInNewImage.y;
 		double initial_trans_z = scalePointInNewImage.z;
 
-		if( guessedRotation == null ) {
-			
-			RegistrationResult [] results = new RegistrationResult[24];
-			
-			ImagePlus bestSoFar = null;
-			
-			IJ.showProgress(0.01);
-			
-                        /* We want to generate all possible rigid rotations
-                           of one axis onto another.  So, the x axis can be
-                           mapped on to one of 6 axes.  Then the y axis can
-                           be mapped on to one of 4 axes.  The z axis can
-                           then only be mapped onto 1 axis if the handedness
-                           is to be preserved. */
+		IJ.showProgress(0.01);
 
-			int rotation;
-			for( rotation = 0; rotation < 24; ++rotation ) {
+		RegistrationResult bestSoFar = null;
+			
+		/* We want to generate all possible rigid rotations
+		   of one axis onto another.  So, the x axis can be
+		   mapped on to one of 6 axes.  Then the y axis can
+		   be mapped on to one of 4 axes.  The z axis can
+		   then only be mapped onto 1 axis if the handedness
+		   is to be preserved.
+		   
+		   As a special case, if guessedRotation is supplied then
+		   we try that first.
+		*/
 
-                                int firstAxis = rotation / 8;
-                                int firstAxisParity = 2 * ((rotation / 4) % 2) - 1;
-                                int secondAxisInformation = rotation % 4;
-                                int secondAxisIncrement = 1 + (secondAxisInformation / 2);
-                                int secondAxisParity = 2 * (secondAxisInformation % 2) - 1;
-                                int secondAxis = (firstAxis + secondAxisIncrement) % 3;
+		int firstRotation = (guessedRotation == null) ? 0 : -1;
+
+		int rotation;
+		for( rotation = firstRotation; rotation < 24; ++rotation ) {
+			
+			if( guessedRotation == null )
+				progressWindow.updateTriedSoFar( rotation, 24 );
+			else
+				progressWindow.updateTriedSoFar( rotation + 1, 25 );
+
+			double [] startValues = new double[6];
+
+			if( rotation < 0 ) {
+				
+				startValues[0] = guessedRotation[0];
+				startValues[1] = guessedRotation[1];
+				startValues[2] = guessedRotation[2];
+				startValues[3] = initial_trans_x;
+				startValues[4] = initial_trans_y;
+				startValues[5] = initial_trans_z;
+
+			} else {
+
+				int firstAxis = rotation / 8;
+				int firstAxisParity = 2 * ((rotation / 4) % 2) - 1;
+				int secondAxisInformation = rotation % 4;
+				int secondAxisIncrement = 1 + (secondAxisInformation / 2);
+				int secondAxisParity = 2 * (secondAxisInformation % 2) - 1;
+				int secondAxis = (firstAxis + secondAxisIncrement) % 3;
                                 
-                                double [] xAxisMappedTo = new double[3];
-                                double [] yAxisMappedTo = new double[3];
+				double [] xAxisMappedTo = new double[3];
+				double [] yAxisMappedTo = new double[3];
 
                                 xAxisMappedTo[firstAxis] = firstAxisParity;
                                 yAxisMappedTo[secondAxis] = secondAxisParity;
-
+				
                                 double [] zAxisMappedTo = FastMatrix.crossProduct( xAxisMappedTo, yAxisMappedTo );
                                 
                                 System.out.println("x axis mapped to: "+xAxisMappedTo[0]+","+xAxisMappedTo[1]+","+xAxisMappedTo[2]);
                                 System.out.println("y axis mapped to: "+yAxisMappedTo[0]+","+yAxisMappedTo[1]+","+yAxisMappedTo[2]);
                                 System.out.println("z axis mapped to: "+zAxisMappedTo[0]+","+zAxisMappedTo[1]+","+zAxisMappedTo[2]);
-                        
+				
                                 double [][] m = new double[3][4];
                                 
                                 m[0][0] = xAxisMappedTo[0];
                                 m[1][0] = xAxisMappedTo[1];
                                 m[2][0] = xAxisMappedTo[2];
-
+				
                                 m[0][1] = yAxisMappedTo[0];
                                 m[1][1] = yAxisMappedTo[1];
                                 m[2][1] = yAxisMappedTo[2];
-
+				
                                 m[0][2] = zAxisMappedTo[0];
                                 m[1][2] = zAxisMappedTo[1];
                                 m[2][2] = zAxisMappedTo[2];
-
+				
                                 FastMatrix rotationMatrix = new FastMatrix(m);
                                 double [] eulerParameters = new double[6];
                                 rotationMatrix.guessEulerParameters(eulerParameters);
-        
+				
 				double z1 = eulerParameters[0];
 				double x1 = eulerParameters[1];
 				double z2 = eulerParameters[2];
+				
+				startValues[0] = z1;
+				startValues[1] = x1;
+				startValues[2] = z2;
+				startValues[3] = initial_trans_x;
+				startValues[4] = initial_trans_y;
+				startValues[5] = initial_trans_z;
+			}
 
-				double [] startValues = { z1,
-							  x1,
-							  z2,
-							  initial_trans_x,
-							  initial_trans_y,
-							  initial_trans_z };
+			// Now create the optimizer, etc.
 				
-				// Now create the optimizer, etc.
-				
-				ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
-				
-				optimizer.step = 10;
-				optimizer.scbd = 10.0;
-				optimizer.illc = true;
-				
-				TransformationAttempt attempt = new TransformationAttempt(
-					cubeSide,
-					croppedTemplate,
-					templatePoint,
-					newImage,
-					guessedPoint,
-					method );
-
-                                if( pleaseStop ) {
-                                    setResults(null);
-                                    return;
-                                }
-				
-				optimizer.optimize(attempt, startValues, 2, 2);		
-				
-				// Now it should be optimized such that our result
-				// is in startValues.
-				
-				System.out.println("startValues now: ");
-				Name_Points.printParameters(startValues);
-
-                                if( pleaseStop ) {
-                                    setResults(null);
-                                    return;
-                                }
-				
-				// Now reproduce those results; they might be good...
-				
-				RegistrationResult r = Name_Points.mapImageWith(
-					croppedTemplate,
-					newImage,
-					guessedPoint,
-					startValues,
-					cubeSide,
-					method,
-					false,
-					"score: ");
-
-                                if( pleaseStop ) {
-                                    setResults(null);
-                                    return;
-                                }
-				
-				String scoreString = (method == Name_Points.CORRELATION) ? ("" + r.score) : ("" + (int)Math.round(r.score));
-				
-				r.overlayed.setTitle(Name_Points.methodName[method]+": "+scoreString);
-				
-				results[rotation] = r;
-				
-				IJ.showProgress( (rotation + 1) / 24.0 );
-				
+			ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
+			
+			optimizer.step = 1;
+			optimizer.scbd = 10.0;
+			optimizer.illc = true;
+			
+			TransformationAttempt attempt = new TransformationAttempt(
+				cubeSide,
+				croppedTemplate,
+				templatePoint,
+				newImage,
+				guessedPoint,
+				method,
+				bestSoFar,
+				progressWindow );
+			
+			if( pleaseStop ) {
+				setResults(null);
+				return;
 			}
 			
-			IJ.showProgress(1);
+			optimizer.optimize(attempt, startValues, 2, 2);		
 			
-			Arrays.sort( results, 0, 24 );
+			// Save the best so far...
+			bestSoFar = attempt.bestSoFar;
 			
-			for( int i = 0; i < results.length; ++i ) {
-				System.out.println("result "+i+" after sorting is: "+results[i]);
+			// Now it should be optimized such that our result
+			// is in startValues.
+			
+			System.out.println("startValues now: ");
+			Name_Points.printParameters(startValues);
+			
+			if( pleaseStop ) {
+				setResults(null);
+				return;
 			}
 			
-			for( int i = 0; i < 5; ++i )
-				if( results[i] != null )
-					results[i].overlayed.show();
+			// Now reproduce those results; they might be good...
 			
-			setResults( results );
+			RegistrationResult r = Name_Points.mapImageWith(
+				croppedTemplate,
+				newImage,
+				guessedPoint,
+				startValues,
+				cubeSide,
+				method,
+				false,
+				"score: ");
 			
-		} else { // Just use the initial rotation based on the nearby points...
+			if( pleaseStop ) {
+				setResults(null);
+				return;
+			}
 			
-                        guessedRotation[3] = initial_trans_x;
-                        guessedRotation[4] = initial_trans_y;
-                        guessedRotation[5] = initial_trans_z;
+			IJ.showProgress( (rotation + 1) / 24.0 );
 
-			RegistrationResult [] results = new RegistrationResult[1];
-			
-			IJ.showProgress(0);
-			
-                        double [] startValues=guessedRotation;
-				
-                        // Now create the optimizer, etc.
-
-                        ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
-
-                        optimizer.step = 10;
-                        optimizer.scbd = 10.0;
-                        optimizer.illc = true;
-
-                        TransformationAttempt attempt = new TransformationAttempt(
-                                cubeSide,
-                                croppedTemplate,
-                                templatePoint,
-                                newImage,
-                                guessedPoint,
-                                method );
-
-                        if( pleaseStop ) {
-                            setResults(null);
-                            return;
-                        }
-
-                        optimizer.optimize(attempt, startValues, 2, 2);		
-
-                        // Now it should be optimized such that our result
-                        // is in startValues.
-
-                        System.out.println("startValues now: ");
-                        Name_Points.printParameters(startValues);
-
-                        if( pleaseStop ) {
-                            setResults(null);
-                            return;
-                        }
-
-                        // Now reproduce those results; they might be good...
-
-                        RegistrationResult r = Name_Points.mapImageWith(
-                                croppedTemplate,
-                                newImage,
-                                guessedPoint,
-                                startValues,
-                                cubeSide,
-                                method,
-                                false,
-                                "score: ");
-
-                        String scoreString = (method == Name_Points.CORRELATION) ? ("" + r.score) : ("" + (int)Math.round(r.score));
-
-                        r.overlayed.setTitle(Name_Points.methodName[method]+": "+scoreString);
-
-                        results[0] = r;
-
-                        IJ.showProgress( 1 );
-			
-			for( int i = 0; i < Math.min(5,results.length); ++i )
-				if( results[i] != null )
-					results[i].overlayed.show();
-			
-			setResults( results );
 		}
 
 	}
