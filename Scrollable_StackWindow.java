@@ -19,8 +19,15 @@ public class Scrollable_StackWindow implements PlugIn {
 			addMouseWheelListener(this);
 		}
 
+		/* For some funny reason, we get each event twice */
+		boolean skip;
+
 		public void mouseWheelMoved(MouseWheelEvent event) {
 			synchronized(this) {
+				skip = !skip;
+				if (skip)
+					return;
+
 				int slice = imp.getCurrentSlice()
 					+ event.getWheelRotation();
 				if (slice < 1)
