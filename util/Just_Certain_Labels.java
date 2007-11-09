@@ -24,14 +24,6 @@ import ij.ImageStack;
 import ij.Macro;
 import ij.plugin.PlugIn;
 import java.io.File;
-import java.io.FilenameFilter;
-
-class LabelFilenameFilter implements FilenameFilter {
-	public boolean accept(File directory, String name) {
-		return name.endsWith(".labels");
-	}
-}
-
 
 public class Just_Certain_Labels implements PlugIn {
 
