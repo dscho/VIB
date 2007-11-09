@@ -4,7 +4,9 @@ import pal.math.*;
 import math3d.*;
 import ij.IJ;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import util.StupidLog;
 
 public abstract class RegistrationOptimizer {
 
@@ -57,6 +59,14 @@ public abstract class RegistrationOptimizer {
 			eulerParameters = searchInitialEulerParams()[0];
 		}
 
+		/* MHL added ... */
+		double [] originalEulerParameters = (double [])eulerParameters.clone();		
+		double[] lastx = new double[6];
+                for(int i=0; i<6; ++i)
+                    lastx[i] = Double.MAX_VALUE;
+		boolean gotStuck = false;
+		/* ... end */
+		
 		Refinement refinement = new Refinement(eulerParameters);
 		refinement.showStatus = true;
 		double[] x = new double[6];
@@ -64,6 +74,23 @@ public abstract class RegistrationOptimizer {
 			//CG.step = 8.1;
 			CG.optimize(refinement, x, tol,  tol);
 			x = refinement.best;
+			/* MHL added ... */
+			if( Arrays.equals(x, lastx) ) {
+				// Just for the moment, log exactly what went on when we got stuck:
+				StupidLog.log("       Got stuck: x is (and was): "+x[0]+", "+x[1]+", "+x[2]+", "+x[3]+", "+x[4]+", "+x[5]);
+				StupidLog.log("                   maxAdjust was: "+refinement.maxAdjust);
+				StupidLog.log("                translateMax was: "+translateMax);
+				StupidLog.log("                          tol is: "+tol);
+				double [] e = originalEulerParameters;
+				StupidLog.log("    originalEulerParameters were: "+e[0]+", "+e[1]+", "+e[2]+", "+e[3]+", "+e[4]+", "+e[5]+", "+e[6]+", "+e[7]+", "+e[8]);
+				gotStuck = true;
+			    break;
+			}
+                        System.arraycopy(x, 0, lastx, 0, 6);
+			/* ... end */
+			
+                        // As a sideffect, this resets x to all zeros and
+                        // changes 'initial' in refinement.
 			eulerParameters = refinement.adjustInitial(x);
 
 			//CG.step = 1;
@@ -72,9 +99,16 @@ public abstract class RegistrationOptimizer {
 			if(verbose) VIB.println("eulerParameters: " + eulerParameters[0] + ", " + eulerParameters[1] + ", " + eulerParameters[2] + "; " + eulerParameters[3] + ", " + eulerParameters[4] + ", " + eulerParameters[5] + "; " + eulerParameters[6] + ", " + eulerParameters[7] + ", " + eulerParameters[8]);
 		} while(!false && refinement.maxAdjust > translateMax / 8);
 
-		return refinement.getMatrix(x);
+		if( gotStuck ) {
+			Refinement originalRefinement = new Refinement(originalEulerParameters);
+			for( int i = 0; i < x.length; ++i )
+				x[i] = 0;
+			return originalRefinement.getMatrix(x);
+		} else {
+			return refinement.getMatrix(x);
+		}
 	}
-
+		
 	//returns an ordered list of the 24 principle orientations tried
 	//results[0] is a 9 dim matrix representing the best EulerParameter
 	//result[1] is the 2nd best etc, upto [23]
