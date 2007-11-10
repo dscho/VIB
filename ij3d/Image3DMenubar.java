@@ -14,10 +14,14 @@ import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
 import isosurface.MeshGroup;
 import isosurface.MeshExporter;
+import isosurface.MeshEditor;
 
 import javax.vecmath.Color3f;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Collection;
 
 public class Image3DMenubar extends MenuBar implements ActionListener, 
 					 		ItemListener,
@@ -47,6 +51,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem saveTransform;
 	private MenuItem exportObj;
 	private MenuItem exportDXF;
+	private MenuItem smoothMesh;
+	private MenuItem smoothAllMeshes;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
 	private CheckboxMenuItem lock;
@@ -81,6 +87,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String ADD_MESH = "addMesh";
 	public static final String ADD_ORTHO = "addOrthoslice";
 	public static final String DELETE = "delete";
+
+	public static final String SMOOTH = "smooth";
 
 	public Image3DMenubar(Image3DUniverse univ) {
 		super();
@@ -176,6 +184,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		delete.addActionListener(this);
 		universe.add(delete);
 
+		universe.addSeparator();
+
+		smoothAllMeshes = new MenuItem("Smooth all meshes");
+		smoothAllMeshes.addActionListener(this);
+		universe.add(smoothAllMeshes);
 
 		return universe;
 	}
@@ -197,6 +210,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		channels = new MenuItem("Change channels");
 		channels.addActionListener(this);
 		content.add(channels);
+
+		smoothMesh = new MenuItem("Smooth mesh");
+		smoothMesh.addActionListener(this);
+		content.add(smoothMesh);
 
 		color = new MenuItem("Change color");
 		color.addActionListener(this);
@@ -460,6 +477,37 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 		if (e.getSource() == exportObj) {
 			MeshExporter.saveAsWaveFront(univ.getContents());
+		}
+		if (e.getSource() == smoothMesh) {
+			Content c = univ.getSelected();
+			if (null == c) {
+				IJ.error("Selection required");
+				return;
+			}
+			MeshEditor.smooth(c, 0.25f);
+			// needs studying first // record(SMOOTH);
+		}
+		if (e.getSource() == smoothAllMeshes) {
+			// process each Mesh in a separate thread
+			final Collection all = univ.getContents();
+			final Content[] c = new Content[all.size()];
+			all.toArray(c);
+			final AtomicInteger ai = new AtomicInteger(0);
+			final Thread[] thread = new Thread[Runtime.getRuntime().availableProcessors()];
+			for (int i = 0; i<thread.length; i++) {
+				thread[i] = new Thread() {
+					public void run() {
+						try {
+							for (int k = ai.getAndIncrement(); k < c.length; k = ai.getAndIncrement()) {
+								MeshEditor.smooth(c[k], 0.25f); // will ignore non-mesh Content instances
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				};
+				thread[i].start();
+			}
 		}
 	}
 
