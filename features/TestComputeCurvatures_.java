@@ -24,7 +24,7 @@ public class TestComputeCurvatures_ implements PlugIn, GaussianGenerationCallbac
         c.run();
 
         int width = imp.getWidth();
-        int height = imp.getWidth();
+        int height = imp.getHeight();
         int depth = imp.getStackSize();
 
         System.out.println("w: "+width+", h: "+height+", d:" +depth);

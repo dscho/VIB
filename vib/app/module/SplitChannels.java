@@ -6,11 +6,14 @@ import java.io.File;
 
 import leica.Leica_SP_Reader;
 
+import util.BatchOpener;
+
 public class SplitChannels extends Module {
 	public String getName() { return "SplitChannels"; }
 	protected String getMessage() { return "Splitting channels"; }
 
 	protected void run(State state, int index) {
+		
 		prereqsDone(state, index);
 
 		int numChannels = state.options.numChannels;
@@ -30,30 +33,33 @@ public class SplitChannels extends Module {
 			if (!state.upToDate(path,
 						state.getImagePath(i, index)))
 				upToDate = false;
+
 		if (upToDate)
 			return;
-
-		Leica_SP_Reader reader = new Leica_SP_Reader();
-		reader.run(path);
-		if(reader.getNumberOfChannels() < numChannels) {
-			if (index < 0 && reader.getNumberOfChannels() == 1) {
+		
+		ImagePlus [] allChannels = BatchOpener.open(path);
+		
+		int channelsInFile = allChannels.length;
+		
+		if(channelsInFile < numChannels) {
+			if (index < 0 && channelsInFile == 1) {
 				// be graceful when the template has 
 				// only one channel
 				path = state.getImagePath(refChannel, index);
-				if(!state.save(reader.getImage(0), path))
+				if(!state.save(allChannels[0], path))
 					throw new RuntimeException("Could not "
 						+ "save " + path);	
 				return;
 			}
 			throw new RuntimeException("Found unexpectedly " 
-				+ reader.getNumberOfChannels() + " channels " 
+				+ channelsInFile + " channels " 
 				+ " in " + path);
 		}
 		// save reference channel last, to avoid unnecessary loading
 		for(int i = 0; i < numChannels; i++) {
 			if (i == refChannel)
 				continue;
-			ImagePlus img = reader.getImage(i);
+			ImagePlus img = allChannels[i];
 			path = state.getImagePath(i, index);
 			if(!state.save(img, path))
 				throw new RuntimeException("Could not save " + 
@@ -61,9 +67,9 @@ public class SplitChannels extends Module {
 			new File(path).setLastModified(file.lastModified());
 		}
 		path = state.getImagePath(refChannel, index);
-		if(!state.save(reader.getImage(refChannel), path))
+		if(!state.save(allChannels[refChannel], path))
 			throw new RuntimeException("Could not save " + path);
 		new File(path).setLastModified(file.lastModified());
+
 	}
 }
-

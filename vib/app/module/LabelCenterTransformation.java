@@ -3,6 +3,7 @@ package vib.app.module;
 import distance.TwoValues;
 
 import ij.ImagePlus;
+import util.StupidLog;
 
 import vib.app.ImageMetaData;
 import vib.app.Options;
@@ -77,6 +78,10 @@ public class LabelCenterTransformation extends Module {
 			trans.measure = new TwoValues(iTempl, i);
 			RigidRegistration_ rr = new RigidRegistration_();
 
+			StupidLog.log("registering neuropil: "+m.name+" between:");
+			StupidLog.log("           labelPath: "+labelPath);
+			StupidLog.log("      templateLabels: "+templLabels.getTitle());
+			
 			FastMatrix matrix2 = rr.rigidRegistration(trans,
 					materialBBox, initialTransform,
 					iTempl, i, noOptimization,

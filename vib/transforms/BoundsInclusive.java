@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import landmarks.NamedPoint;
+import landmarks.NamedPointSet;
 
 public class BoundsInclusive {
 	
@@ -18,7 +19,7 @@ public class BoundsInclusive {
 		
 		BoundsInclusive result=new BoundsInclusive();
 		
-		ArrayList<NamedPoint> pointsInTemplate = NamedPoint.pointsForImage(fileName);
+		NamedPointSet pointsInTemplate = NamedPointSet.forImage(fileName);
 		
 		if( pointsInTemplate.size() < 1 ) {
 			IJ.error( "No points associated with the template image." );

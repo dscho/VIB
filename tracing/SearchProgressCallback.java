@@ -23,10 +23,25 @@
 
 package tracing;
 
-public interface PathAndFillListener {
+public interface SearchProgressCallback {
 	
-	void setPathList( String [] pathList );
+	/* How many points have we considered? */
 	
-	void setFillList( String [] fillList );
+	public void pointsInSearch( SearchThread source, int inOpen, int inClosed );
+	
+	/* Once finished is called, you should be able to get the
+	 * result from whatever means you've implemented,
+	 * e.g. TracerThreed.getResult() */
+	
+	public void finished( SearchThread source, boolean success );
+	
+	/* This reports the current status of the thread, which may be:
+	   
+	   SearchThread.RUNNING
+	   SearchThread.PAUSED
+	   SearchThread.STOPPING
+	*/
+	
+	public void threadStatus( SearchThread source, int currentStatus );
 	
 }

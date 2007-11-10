@@ -40,19 +40,20 @@ public class Connection implements Cloneable {
 		return points;
 	}
 	
+	@Override
 	public Connection clone() {
-
+		
 		Connection result = new Connection( points );
-
+		
 		System.arraycopy( x_positions, 0, result.x_positions, 0, points );
 		System.arraycopy( y_positions, 0, result.y_positions, 0, points );
 		System.arraycopy( z_positions, 0, result.z_positions, 0, points );
 		result.points = points;
-
+		
 		return result;
-
+		
 	}	
-
+	
 	PointInImage lastPoint( ) {
 		if( points < 1 )
 			return null;
@@ -177,13 +178,13 @@ public class Connection implements Cloneable {
 		case ThreePanes.XZ_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-					int x = canvas.screenX(x_positions[i]);
-					int x_pixel_size = canvas.screenX(x_positions[i]+1) - x;
-					if( x_pixel_size < 1 ) x_pixel_size = 1;
-					int y = canvas.screenY(z_positions[i]);
-					int y_pixel_size = canvas.screenY(z_positions[i]+1) - y;
-					if( y_pixel_size < 1 ) y_pixel_size = 1;
-					g.fillRect(  x, y, x_pixel_size, y_pixel_size );
+				int x = canvas.screenX(x_positions[i]);
+				int x_pixel_size = canvas.screenX(x_positions[i]+1) - x;
+				if( x_pixel_size < 1 ) x_pixel_size = 1;
+				int y = canvas.screenY(z_positions[i]);
+				int y_pixel_size = canvas.screenY(z_positions[i]+1) - y;
+				if( y_pixel_size < 1 ) y_pixel_size = 1;
+				g.fillRect(  x, y, x_pixel_size, y_pixel_size );
 			}
 		}
 		break;
@@ -206,5 +207,5 @@ public class Connection implements Cloneable {
 		}
 		
 	}
-
+	
 }

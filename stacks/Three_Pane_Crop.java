@@ -42,11 +42,6 @@ public class Three_Pane_Crop implements PlugIn {
 			return;
 		}
 
-		if( currentImage.getStackSize() <= 1 ) {
-			IJ.error( "This plugin is only for image stacks of more than one slice." );
-			return;
-		}
-
 		threePaneCrop = new ThreePaneCrop( );
 
 		threePaneCrop.initialize( currentImage );

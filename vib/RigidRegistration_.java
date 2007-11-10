@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package vib;
 
 /*
@@ -465,6 +467,7 @@ public class RigidRegistration_ implements PlugInFilter {
 			current = new Point3d();
 		}
 
+		@Override
 		public void getInitialCenters(){
 			super.getInitialCenters();
 			Calibration calib = t.orig.getImage().getCalibration();
@@ -493,6 +496,7 @@ public class RigidRegistration_ implements PlugInFilter {
 			current.z = start.z + i * stop.z / total;
 		}
 			
+		@Override
 		public double calculateBadness(FastMatrix matrix) {
 			t.setTransformation(matrix);
 			t.measure.reset();

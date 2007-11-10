@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package vib.app.gui;
 
 import java.io.File;
@@ -105,6 +107,7 @@ public class ProgressIndicator implements ModuleListener {
 		}
 
 		public void draw() {
+			// FIXME: MHL - this throws an exception on some platforms...
 			Graphics g = image.getProcessor().
 					createImage().getGraphics();
 			g.setFont(f);

@@ -68,8 +68,6 @@ import ij.process.FloatProcessor;
 
 import math3d.JacobiDouble;
 
-import features.GaussianGenerationCallback;
-
 public class ComputeCurvatures implements Runnable
 {
     private boolean _3D;
