@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 import pal.math.ConjugateDirectionSearch;
 import pal.math.MultivariateFunction;
 import util.BatchOpener;
+import util.Quantile_Based_Normalization;
 import vib.app.FileGroup;
 
 /**
@@ -39,7 +40,8 @@ public class Fit_Sphere implements PlugIn {
 	public void run(String ignored) {
 		
 		String averagedNC82Path = "/Users/mark/central-complex-complete-vib-protocol/output_1/71yAAeastmost.tif";
-
+		String normalizedRootDirectory = "/Users/mark/central-complex-complete-vib-protocol/normalized/";
+		
 		int[][][] pointsInShells =
 {{
 { 226, 450, 50 },
@@ -230,7 +232,7 @@ public class Fit_Sphere implements PlugIn {
 
 		heatmap.close();
 
-                boolean rescaleValues = true;
+                boolean rescaleValues = false;
 
 		double maxDistance = Math.sqrt(maxDistanceSquared);
 		double minDistance = Math.sqrt(minDistanceSquared);
@@ -343,7 +345,46 @@ public class Fit_Sphere implements PlugIn {
 						continue;
 				}
 				
-				System.out.println("Matched with: " + f);
+				fileGroupArray[i].add(f);
+			}
+		}
+		
+		File [] normalizedDirectories = new File[linesPatterns.length+1];
+		
+		for( int i = 0; i <= linesPatterns.length; ++i ) {
+			
+			String normalizedDirectory = normalizedRootDirectory +
+				( i == linesPatterns.length ? "nc82" : linesPatterns[i].toString() ) +
+				File.separator;
+			normalizedDirectories[i] = new File(normalizedDirectory);
+			System.out.println("Going to create: "+normalizedDirectory);
+			boolean result = normalizedDirectories[i].mkdir();
+			System.out.println("   result was: "+result);
+			
+			// Now actually normalize into those directories:
+			
+			Quantile_Based_Normalization qbn = new Quantile_Based_Normalization();
+			qbn.processToDirectory(fileGroupArray[i],
+					       normalizedDirectories[i].getAbsolutePath(),
+					       heatmapPath,
+					       0,
+					       256,
+					       false,
+					       false);
+		}
+		
+		
+		for (int i = 0; i <= linesPatterns.length; ++i) {
+
+			File directory=normalizedDirectories[i];
+			
+			File[] files=directory.listFiles();
+			
+			for (int j = 0; j < files.length; ++j) {
+
+				File f = files[j];
+
+				System.out.println("looking at values in: "+f);
 
 				ImagePlus[] gal4Channels = BatchOpener.open(f.getAbsolutePath());
 				if (gal4Channels == null) {
@@ -433,11 +474,17 @@ public class Fit_Sphere implements PlugIn {
                             pw.close();
 
                         }
-               
+			
 		} catch (IOException e) {
 			IJ.error("There was an exception while writing the data: " + e);
 			return;
 		}
+
+		// FIXME: also generate averaged images...
+		
+		
+               
+
 	}
 
         private int maxValueInImage( ImagePlus imp, boolean [][] includedVoxels ) {
