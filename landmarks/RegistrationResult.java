@@ -3,7 +3,7 @@
 package landmarks;
 
 public class RegistrationResult implements Comparable {
-	
+
 	int overlay_width;
 	int overlay_height;
 	int overlay_depth;

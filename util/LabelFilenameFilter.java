@@ -13,7 +13,18 @@ import java.io.File;
 import java.io.FilenameFilter;
 
 class LabelFilenameFilter implements FilenameFilter {
-	public boolean accept(File directory, String name) {
-		return name.endsWith(".labels");
+
+        String extension;
+
+	public LabelFilenameFilter(String extension) {
+                if( extension == null )
+                        this.extension = ".labels";
+                else
+            		this.extension = extension;
 	}
+
+	public boolean accept(File directory, String name) {
+		return name.endsWith(extension);
+	}
+
 }

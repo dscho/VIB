@@ -14,17 +14,22 @@ import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 import pal.math.ConjugateDirectionSearch;
 import pal.math.MultivariateFunction;
 import util.BatchOpener;
+import util.Quantile_Based_Normalization;
+import vib.app.FileGroup;
 
 /**
  *
@@ -34,8 +39,37 @@ public class Fit_Sphere implements PlugIn {
 	
 	public void run(String ignored) {
 		
-		String path = "/home/mark/central-complex-vib-protocol-full-size/mhl-output/71yAAeastmost-1.tif";
+		String averagedNC82Path = "/Users/mark/central-complex-complete-vib-protocol/output_1/71yAAeastmost.tif";
+		String normalizedRootDirectory = "/Users/mark/central-complex-complete-vib-protocol/normalized/";
 		
+		int[][][] pointsInShells =
+{{
+{ 226, 450, 50 },
+{ 232, 526, 50 },
+{ 250, 364, 50 },
+{ 248, 564, 50 },
+{ 254, 360, 47 },
+{ 226, 420, 47 },
+{ 228, 506, 47 },
+{ 244, 544, 47 },
+{ 246, 376, 44 },
+{ 222, 456, 44 },
+{ 240, 530, 44 },
+},
+{
+{ 270, 456, 50 },
+{ 298, 360, 50 },
+{ 290, 540, 50 },
+{ 292, 382, 47 },
+{ 268, 456, 47 },
+{ 284, 522, 47 },
+{ 280, 524, 44 },
+{ 266, 456, 44 },
+{ 290, 386, 44 },
+}};
+
+
+/*		
 		int[][][] pointsInShells = { { {249, 365, 43},
 					       {216, 454, 43},
 					       {244, 552, 43},
@@ -52,10 +86,10 @@ public class Fit_Sphere implements PlugIn {
 					       {264, 450, 56},
 					       {297, 566, 56} }
 		};
-		
-		ImagePlus[] channels = BatchOpener.open(path);
+*/		
+		ImagePlus[] channels = BatchOpener.open(averagedNC82Path);
 		if (channels == null) {
-			IJ.error("Couldn't open: " + path);
+			IJ.error("Couldn't open: " + averagedNC82Path);
 		}
 		
 		ImagePlus imp = channels[0];
@@ -152,7 +186,7 @@ public class Fit_Sphere implements PlugIn {
 		imp.show();
 
 		// Now load the heatmap showing overlap of all the labels...
-		String heatmapPath = "/home/mark/central-complex-vib-protocol-full-size/mhl-output/averaged-fb-labels.tif";
+		String heatmapPath = "/Users/mark/central-complex-complete-vib-protocol/fb-average.tif";
 		ImagePlus[] heatmapChannels = BatchOpener.open(heatmapPath);
 		if (heatmapChannels == null) {
 			IJ.error("Couldn't open: " + heatmapPath);
@@ -198,15 +232,60 @@ public class Fit_Sphere implements PlugIn {
 
 		heatmap.close();
 
-                boolean rescaleValues = true;
+                boolean rescaleValues = false;
 
 		double maxDistance = Math.sqrt(maxDistanceSquared);
 		double minDistance = Math.sqrt(minDistanceSquared);
 		
 		System.out.println("All distances between: "+maxDistance+" and "+minDistance);
 		
-		File filesDirectory = new File("/home/mark/central-complex-vib-protocol-full-size/warped_2");
+		/* Load the annotation file with scores for each one... */
+		
+		String annotationScoresFilename = "/Users/mark/thesis/annotations-with-scores.csv";
+		
+		Hashtable<String,Integer> scoresHash = new Hashtable<String,Integer>();
+		
+                System.out.println("Trying to load: "+annotationScoresFilename);
 
+		try {
+			
+                        BufferedReader f = new BufferedReader(
+                                new FileReader(annotationScoresFilename));
+                        String line;
+			int lineNumber = 0;
+                        while ((line=f.readLine())!=null) {
+				++ lineNumber;
+				if( lineNumber == 1 )
+					continue;
+				// There are some commas in the fields after
+				// the ones we care about here, so this  isn't
+				// good enough in general, just good enough here.
+				String [] fieldsSortOf = line.split(",");
+				String fileName = fieldsSortOf[2];
+				String scoreAsString = fieldsSortOf[3];
+				try {
+					int scoreInt = Integer.parseInt(scoreAsString);
+					int lastDotIndex = fileName.lastIndexOf(".");
+					if( lastDotIndex > 0 ) {
+						fileName = fileName.substring(0, lastDotIndex);
+					}
+					System.out.println("got score "+scoreAsString+" for file "+fileName);
+					scoresHash.put(fileName,new Integer(scoreInt));
+				
+				} catch( NumberFormatException e ) {
+					System.out.println("The score '"+scoreAsString+"' wasn't an integer - skipping that one.");
+				}
+				
+			}
+
+                } catch( IOException e ) {
+                        IJ.error("Error parsing the file "+annotationScoresFilename+": "+e);
+                        return;
+		}
+		
+		File filesDirectory = new File("/Users/mark/central-complex-complete-vib-protocol/warped_2");
+		File nc82FilesDirectory = new File("/Users/mark/central-complex-complete-vib-protocol/warped_1");
+		
 		Pattern[] linesPatterns = new Pattern[6];
 		linesPatterns[0] = Pattern.compile("71y");
 		linesPatterns[1] = Pattern.compile("210y");
@@ -217,22 +296,95 @@ public class Fit_Sphere implements PlugIn {
 		
                 int bins = 100;
 
-		Bins[] lineBins = new Bins[linesPatterns.length];
+		/* Not implemented yet... */
+		FileGroup [] fileGroupArray = new FileGroup[linesPatterns.length+1];
+		for( int i = 0; i < fileGroupArray.length; ++i )
+			fileGroupArray[i] = new FileGroup("group "+i);
+				
+		// Make the last time through be the nc82 channels on their own...		
+		Bins[] lineBins = new Bins[linesPatterns.length+1];
 
-		for (int i = 0; i < linesPatterns.length; ++i) {
+		// for (int i = 0; i <= linesPatterns.length; ++i) {
+		for (int i = 0; i <= linesPatterns.length; ++i) {
 
 			lineBins[i] = new Bins(bins, minDistance, maxDistance);
 
-			Pattern pattern = linesPatterns[i];
-			System.out.println("Finding files matching: " + pattern);
+			Pattern pattern;
+			if( i == linesPatterns.length )
+				pattern = Pattern.compile("^[a-zA-Z0-9][^/]+$");
+			else
+				pattern = linesPatterns[i];
+			
+			System.out.println("Finding files matching: /" + pattern+"/");
 
-			File[] files = filesDirectory.listFiles();
+			File[] files;
+			
+			if( i == linesPatterns.length )
+				files = nc82FilesDirectory.listFiles();
+			else
+				files = filesDirectory.listFiles();
+			
 			for (int j = 0; j < files.length; ++j) {
+
 				File f = files[j];
 				if (!pattern.matcher(f.getName()).find()) {
 					continue;
 				}
-				System.out.println("Matched with: " + f);
+				
+				// Check the score to see if we keep it.
+				
+				String nameWithoutExtension = f.getName();
+				int lastDotIndex = nameWithoutExtension.lastIndexOf(".");
+				if( lastDotIndex >= 0 )
+					nameWithoutExtension = nameWithoutExtension.substring(0,lastDotIndex);
+				Integer scoreInteger=scoresHash.get(nameWithoutExtension);
+				if( scoreInteger != null ) {
+					int score = scoreInteger.intValue();
+					System.out.println("... that had score "+score);
+					if( score < 6 )
+						continue;
+				}
+				
+				fileGroupArray[i].add(f);
+			}
+		}
+		
+		File [] normalizedDirectories = new File[linesPatterns.length+1];
+		
+		for( int i = 0; i <= linesPatterns.length; ++i ) {
+			
+			String normalizedDirectory = normalizedRootDirectory +
+				( i == linesPatterns.length ? "nc82" : linesPatterns[i].toString() ) +
+				File.separator;
+			normalizedDirectories[i] = new File(normalizedDirectory);
+			System.out.println("Going to create: "+normalizedDirectory);
+			boolean result = normalizedDirectories[i].mkdir();
+			System.out.println("   result was: "+result);
+			
+			// Now actually normalize into those directories:
+			
+			Quantile_Based_Normalization qbn = new Quantile_Based_Normalization();
+			qbn.processToDirectory(fileGroupArray[i],
+					       normalizedDirectories[i].getAbsolutePath(),
+					       heatmapPath,
+					       0,
+					       256,
+					       false,
+					       false);
+		}
+		
+		
+		for (int i = 0; i <= linesPatterns.length; ++i) {
+
+			File directory=normalizedDirectories[i];
+			
+			File[] files=directory.listFiles();
+			
+			for (int j = 0; j < files.length; ++j) {
+
+				File f = files[j];
+
+				System.out.println("looking at values in: "+f);
 
 				ImagePlus[] gal4Channels = BatchOpener.open(f.getAbsolutePath());
 				if (gal4Channels == null) {
@@ -276,13 +428,17 @@ public class Fit_Sphere implements PlugIn {
 		}
 
 
-                String outputPathStem = "/home/mark/central-complex-vib-protocol-full-size/mhl-output/";
+                String outputPathStem = "/Users/mark/central-complex-complete-vib-protocol/mhl-output/";
 
 		try {
 
-                        for( int i=0; i < linesPatterns.length; ++i ) {
+                        for( int i=0; i <= linesPatterns.length; ++i ) {
 
-                            String outputPath=outputPathStem+linesPatterns[i]+".tsv";
+                            String outputPath;
+			    if( i == linesPatterns.length )
+				    outputPath = outputPathStem+"nc82.tsv";
+			    else
+				    outputPath = outputPathStem+linesPatterns[i]+".tsv";
 
                             PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(new File(outputPath))));
 
@@ -295,11 +451,16 @@ public class Fit_Sphere implements PlugIn {
                                         "SDOfValuesInBin\t +" +
                                         "N");
 
-                            Pattern pattern = linesPatterns[i];
-                            Bins lineBin = lineBins[i];
+			    String lineName;
+			    if( i == linesPatterns.length )
+				lineName = "nc82";
+			    else
+				lineName = linesPatterns[i].toString();
+
+			    Bins lineBin = lineBins[i];
 
                             for( int b = 0; b < bins; ++b ) {
-                                pw.println("\"" + pattern +"\"\t" +
+                                pw.println("\"" + lineName +"\"\t" +
                                             b + "\t" +
                                             lineBin.getMinimumInBin(b) + "\t" +
                                             lineBin.getMaximumInBin(b) + "\t" +
@@ -313,11 +474,17 @@ public class Fit_Sphere implements PlugIn {
                             pw.close();
 
                         }
-               
+			
 		} catch (IOException e) {
 			IJ.error("There was an exception while writing the data: " + e);
 			return;
 		}
+
+		// FIXME: also generate averaged images...
+		
+		
+               
+
 	}
 
         private int maxValueInImage( ImagePlus imp, boolean [][] includedVoxels ) {

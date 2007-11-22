@@ -1,16 +1,35 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
 /*
- * Just_Certain_Labels.java
- * 
- * Created on Nov 6, 2007, 2:08:12 PM
- * 
- */
-
-
-/* Call with, e.g.
+    You can get a similar effect for a single label (index 11 in this case)
+    with a macro like this:
  
-      -eval "run('Just Certain Labels','labels=[9,11] source=[/Users/mark/central-complex-complete-vib-protocol/labels-original] output=[/Users/mark/central-complex-complete-vib-protocol/labels/]');"
+	working_directory = "/Users/mark/central-complex-complete-vib-protocol/";
+	source_directory = working_directory + "warped_labels/";
+	output_directory = working_directory + "fb_labels/";
+
+	File.makeDirectory(output_directory);
+
+	source_filenames = getFileList(source_directory);
+
+	for( i = 0; i < source_filenames.length; ++i ) {
+
+	  f = source_filenames[i];
+	  source_filename = source_directory + f;
+	  open( source_filename );
+	  setThreshold(11, 11);
+	  run("Convert to Mask", "  black");
+	  output_filename = output_directory + f;
+	  print("Writing to: "+output_filename);
+	  saveAs("Tiff", output_filename);
+	  close();
+
+	}
+
+   However it's slightly more complicated to do this in a macro with multiple
+   indices.  Call this plugin with something like:
+ 
+      -eval "run('Just Certain Labels','labels=[9,11] extension=[.warped] source=[/Users/mark/central-complex-complete-vib-protocol/labels-original] output=[/Users/mark/central-complex-complete-vib-protocol/labels/]');"
   
  */
 
@@ -68,6 +87,8 @@ public class Just_Certain_Labels implements PlugIn {
 			return;
 		}
 
+		String extension = Macro.getValue(macroOptions, "extension", null);
+
 		String labelsToKeepString = Macro.getValue(macroOptions, "labels", null);
 		if (labelsToKeepString == null) {
 			IJ.error("No labels to keep specified. (Macro option 'labels'.)");
@@ -96,7 +117,7 @@ public class Just_Certain_Labels implements PlugIn {
 		}
 		
 		// Now we should be OK to start:
-		LabelFilenameFilter filter = new LabelFilenameFilter();
+		LabelFilenameFilter filter = new LabelFilenameFilter(extension);
 		
 		File [] possibleSourceFiles = sourceDirectoryAsFile.listFiles(filter);
 		

@@ -1313,4 +1313,3 @@ public class Name_Points implements PlugIn {
         }
 	
 }
-
