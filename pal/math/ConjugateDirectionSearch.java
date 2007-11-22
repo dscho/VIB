@@ -76,6 +76,10 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
          * is found to to be ill-conditioned during iterations.  
 	 */
 	public boolean illc = false;
+
+    /** MHL: added this so we can interrupt the optimization if
+        we need to. */
+    public boolean interrupt = false;
  	
  	// implementation of abstract method 
 	
@@ -179,6 +183,10 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 				boolean gotoNext;
 				do
 				{
+                    if( interrupt ) {
+                        return;
+                    }
+
 					kl = k;
 					df = 0.0;
 					if (illc)
@@ -194,9 +202,14 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 						}
 						
 						checkBounds(x);
-						
+
 						fx = fun.evaluate(x);
 						numFun++;
+
+                        if( interrupt ) {
+                            return;
+                        }
+						
 					}
 		       
 					/* minimize along non-conjugate directions */ 
@@ -208,6 +221,8 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 						min1 = d[k2];
 						min2 = s;
 						min(k2, 2, fx, false);
+                        if(interrupt)
+                            return;
 						d[k2] = min1;
 						s = min2;
 						
@@ -246,6 +261,8 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 					min1 = d[k2];
 					min2 = s;
 					min(k2, 2, fx, false);
+                    if(interrupt)
+                        return;
 					d[k2] = min1;
 					s = min2;
 				}
@@ -278,6 +295,8 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 					min1 = d[k];
 					min2 = lds;
 					min(k, 4, f1, true);
+                    if(interrupt)
+                        return;
 					d[k] = min1;
 					lds = min2;
 					
@@ -602,7 +621,9 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 		if (!fk || Math.abs(min2) < t2)
 		{
 			min2 = (min2 > 0 ? t2 : -t2);
-      			f1 = flin(min2, j);
+            f1 = flin(min2, j);
+            if(interrupt)
+                return;           
 		}
 		if (f1 <= fm)
 		{
@@ -617,6 +638,9 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 			{
 				x2 = (f0 < f1 ? -(min2) : 2*(min2));
 				f2 = flin(x2, j);
+                if(interrupt)
+                    return;
+
 				if (f2 <= fm)
 				{
 					xm = x2;
@@ -638,6 +662,8 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 				x2 = (x2 > 0 ? h : -h);
 
 			f2 = flin(x2, j);
+            if(interrupt)
+                return;
 		
 			gotoNext = false;
 		
@@ -652,7 +678,9 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 				
 				
 				x2 *= 0.5;
-				f2 = flin(x2, j);	
+				f2 = flin(x2, j);
+                if(interrupt)
+                    return;
 			}
 		} while (gotoNext);
 		
