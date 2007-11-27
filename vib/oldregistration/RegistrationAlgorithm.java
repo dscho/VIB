@@ -26,8 +26,8 @@ public abstract class RegistrationAlgorithm {
 	
 	public void loadImages( FileAndChannel f0, FileAndChannel f1 ) {
 		
-		ImagePlus[] f0imps=BatchOpener.openFromFile(f0.getPath());
-		ImagePlus[] f1imps=BatchOpener.openFromFile(f1.getPath());
+		ImagePlus[] f0imps=BatchOpener.open(f0.getPath());
+		ImagePlus[] f1imps=BatchOpener.open(f1.getPath());
 		
 		sourceImages=new ImagePlus[2];
 		

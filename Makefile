@@ -117,9 +117,10 @@ Unpack_To_PNG.jar: SOURCES=stacks/Unpack_To_PNG.java \
 Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
 	stacks/PaneOwner.java \
-	tracing/AStarNode.java \
-	tracing/AStarProgressCallback.java \
-	tracing/AStarThread.java \
+	tracing/SearchNode.java \
+	tracing/SearchProgressCallback.java \
+	tracing/SearchThread.java \
+	tracing/TracerThread.java \
 	tracing/Path.java \
 	tracing/PathAndFillManager.java \
 	tracing/PathAndFillListener.java \
@@ -130,7 +131,6 @@ Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
 	tracing/Fill.java \
 	tracing/FillerThread.java \
 	tracing/FillerProgressCallback.java \
-	tracing/FillerNode.java \
 	tracing/NormalPlaneCanvas.java \
 	$(wildcard pal/math/*.java) \
 	features/ComputeCurvatures.java \
@@ -155,6 +155,8 @@ ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	isosurface/Triangulator.java \
 	vib/InterpolatedImage.java \
 	math3d/Point3d.java
+
+Quantile_Based_Normalization.jar: SOURCES=util/Quantile_Based_Normalization.java
 
 VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard vib/app/gui/*.java) \
@@ -195,7 +197,7 @@ $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 JARS=Delaunay_Voronoi.jar AmiraMesh_.jar AmiraSurface_.jar \
 	Rigid_Registration.jar Extract_Surface.jar \
 	Segmentation_Editor_compat.jar VIB_compat.jar \
-	ImageJ_3D_Viewer.jar \
+	ImageJ_3D_Viewer.jar Quantile_Based_Normalization.jar \
 	Install_Java3D.jar Three_Pane_Crop.jar Unpack_To_PNG.jar \
 	Simple_Neurite_Tracer.jar ExportMesh_.jar VIB_Protocol.jar \
 	Average_Color.jar Bilateral_Filter.jar \

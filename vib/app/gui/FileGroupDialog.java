@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package vib.app.gui;
 
 import ij.io.OpenDialog;
@@ -25,8 +27,6 @@ import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 import java.awt.dnd.DropTargetListener;
 import java.awt.dnd.DropTarget;
@@ -48,10 +48,16 @@ public class FileGroupDialog extends Panel
 	private TextField nameTF;
 	private Button add, delete, template;
 	private Checkbox wholePath;
+	private boolean showTemplateButton;
 
 	public FileGroupDialog(FileGroup fg) {
+		this(fg,true);
+	}
+
+	public FileGroupDialog(FileGroup fg,boolean showTemplateButton) {
 		super();
 		this.files = fg;
+                this.showTemplateButton = showTemplateButton;
 		list = new List();
 		list.setDropTarget(null);
 		DropTarget dropTarget = new DropTarget(list, this);
@@ -89,7 +95,8 @@ public class FileGroupDialog extends Panel
 		buttons.add(delete);
 		template = new Button("Use as template");
 		template.addActionListener(this);
-		buttons.add(template);
+                if(showTemplateButton)
+        		buttons.add(template);
 		c.gridx++;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		gridbag.setConstraints(buttons, c);
@@ -159,6 +166,29 @@ public class FileGroupDialog extends Panel
 		}
 	}
 
+	// From: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4899516
+	
+	private static java.util.List textURIListToFileList(String data) {
+		java.util.List list = new java.util.ArrayList(1);
+		for (java.util.StringTokenizer st = new java.util.StringTokenizer(data, "\r\n"); st.hasMoreTokens();) {
+			String s = st.nextToken();
+			if (s.startsWith("#")) {
+				// the line is a comment (as per the RFC 2483)
+				continue;
+			}
+			try {
+				java.net.URI uri = new java.net.URI(s);
+				java.io.File file = new java.io.File(uri);
+				list.add(file);
+			} catch (java.net.URISyntaxException e) {
+				// malformed URI
+			} catch (IllegalArgumentException e) {
+				// the URI is not a valid 'file:' URI
+			}
+		}
+		return list;
+	}
+	
 	// drag & drop
 	public void dragEnter(DropTargetDragEvent e) {}
 	public void dragExit(DropTargetEvent e) {}
@@ -168,20 +198,38 @@ public class FileGroupDialog extends Panel
 		e.acceptDrop(DnDConstants.ACTION_COPY);
 		try {
 			Transferable t = e.getTransferable();
+			
+			java.util.List l = null;
+			
 			if(t.isDataFlavorSupported(
-					DataFlavor.javaFileListFlavor)) {
-				java.util.List l = (java.util.List)
-						t.getTransferData(
-						DataFlavor.javaFileListFlavor);
-				if(l != null) {
-					Iterator it;
-					for(it = l.iterator(); it.hasNext();) {
-						File f = (File)it.next();
-						files.add(f.getAbsolutePath());
-					}
-					update();
-				}
+				   DataFlavor.javaFileListFlavor)) {
+				l = (java.util.List) t.getTransferData(
+					DataFlavor.javaFileListFlavor);
+				
+			} else {
+				
+				// The previous case doesn't work on Gnome, but
+				// the code below does.  From:
+				// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4899516
+				
+				DataFlavor uriListFlavor = new DataFlavor("text/uri-list;class=java.lang.String");
+				
+				if(t.isDataFlavorSupported(uriListFlavor)) {
+					String data = (String)t.getTransferData(uriListFlavor);
+					System.out.println("got data: "+data);
+					l = textURIListToFileList(data);
+				}			    			    
 			}
+			
+                        if(l != null) {
+                                Iterator it;
+                                for(it = l.iterator(); it.hasNext();) {
+                                        File f = (File)it.next();
+                                        files.add(f.getAbsolutePath());
+                                }
+                                update();
+                        }
+			
 			e.dropComplete(true);
 		} catch(Exception ex) {
 			e.dropComplete(false);

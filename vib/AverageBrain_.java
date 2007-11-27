@@ -31,7 +31,7 @@ public class AverageBrain_ implements PlugInFilter {
 	}
 
 	public void doit(ImagePlus image, String[] fileNames, FastMatrix[] matrices) {
-		count = (fileNames[0] == "" ? 0 : fileNames.length);
+		count = ("".equals(fileNames[0]) ? 0 : fileNames.length);
 		if (count != matrices.length) {
 			IJ.error("Count mismatch: " + count
 				+ " files, but " + matrices.length

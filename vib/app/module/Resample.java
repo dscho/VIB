@@ -15,7 +15,7 @@ public class Resample extends Module {
 			new SplitChannels().runOnOneImage(state, index);
 
 		prereqsDone(state, index);
-
+		
 		if (state.options.resamplingFactor == 1)
 			return;
 

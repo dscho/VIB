@@ -18,7 +18,7 @@ public class ThreePaneContainer extends StackWindow
 /*
   implements AdjustmentListener, KeyListener, ActionListener, MouseMotionListener, MouseWheelListener  { */
 
-	protected ImageCanvas original_xy_canvas;	
+	protected ThreePanesCanvas original_xy_canvas;	
 
 	protected ImagePlus xy;
 	protected ImagePlus xz;
@@ -34,7 +34,9 @@ public class ThreePaneContainer extends StackWindow
 	
 	public ThreePaneContainer( ImagePlus imagePlus ) {
 
-		super(imagePlus);
+		super(imagePlus, new ThreePanesCanvas(imagePlus, ThreePanes.XY_PLANE));
+		original_xy_canvas = (ThreePanesCanvas)imagePlus.getWindow().getCanvas();		
+		original_xy_canvas.setPaneOwner(this);
 
 		System.out.println("Creating ThreePaneContainer");
 
@@ -46,7 +48,6 @@ public class ThreePaneContainer extends StackWindow
 			return;
 		}
 
-		original_xy_canvas = imagePlus.getWindow().getCanvas();		
 		
 		remove(getCanvas());
 		remove(sliceSelector);
@@ -143,7 +144,7 @@ public class ThreePaneContainer extends StackWindow
 		
 		System.gc();
 			       		
-		xy_canvas = createCanvas( xy, ThreePanes.XY_PLANE );
+		xy_canvas = original_xy_canvas;
 		xz_canvas = createCanvas( xz, ThreePanes.XZ_PLANE );
 		zy_canvas = createCanvas( zy, ThreePanes.ZY_PLANE );
 			
@@ -180,6 +181,7 @@ public class ThreePaneContainer extends StackWindow
 		pack();
 
 		show();
+		repaintAllPanes();
 		
 	}
 
@@ -230,10 +232,13 @@ public class ThreePaneContainer extends StackWindow
 	}
 
 	public void setSlicesAllPanes( int new_x, int new_y, int new_z ) {
-		
 		xy.setSlice( new_z + 1 );
+		xy.updateImage();
 		xz.setSlice( new_y + 1 );
+		xz.updateImage();
 		zy.setSlice( new_x + 1 );
+		zy.updateImage();
+		repaintAllPanes();
 	}
 	
 	public void repaintAllPanes( ) {

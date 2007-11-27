@@ -101,13 +101,8 @@ public class Unpack_To_PNG implements PlugIn {
 			return;
 		}	
 		
-		ImagePlus [] imps = BatchOpener.openFromFile(
+		ImagePlus [] imps = BatchOpener.open(
 			filename );
-
-		/*
-		ImagePlus [] imps = HandleExtraFileTypes.open(
-			filename );
-		*/
 
 		if( imps == null ) {
 			IJ.error("Couldn't open the file: "+filename);
@@ -340,7 +335,7 @@ public class Unpack_To_PNG implements PlugIn {
 
 		IndexColorModel cm = new IndexColorModel(8,materialCount,reds,greens,blues,0 /* the transparent color */ );
 
-		/*
+		/* I don't think this approach actually works:
 		alphas[0] = (byte)255;
 		for( int i = 1; i < materialCount; ++i )
 			alphas[i] = (byte)128;

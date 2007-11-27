@@ -1,2 +1,4 @@
-*.class
+.git
 _darcs
+*.class
+.gitignore

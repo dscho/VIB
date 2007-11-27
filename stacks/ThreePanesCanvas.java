@@ -40,9 +40,18 @@ public class ThreePanesCanvas extends ImageCanvas {
 		this.owner = owner;
 		this.plane = plane;
 	}
+
+	protected ThreePanesCanvas( ImagePlus imagePlus, int plane) {
+		super(imagePlus);
+		this.plane = plane;
+	}
 	
 	static public Object newThreePanesCanvas( ImagePlus imagePlus, PaneOwner owner, int plane ) {
 		return new ThreePanesCanvas( imagePlus, owner, plane );
+	}
+
+	public void setPaneOwner(PaneOwner owner) {
+		this.owner = owner;
 	}
 	
 	protected void drawOverlay( Graphics g ) {

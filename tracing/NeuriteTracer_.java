@@ -11,45 +11,24 @@ import ij.gui.*;
 import ij.plugin.*;
 import ij.plugin.filter.*;
 import ij.text.*;
-import ij.measure.Calibration;
 import ij.io.*;
 
 import vib.transforms.OrderedTransformations;
-
-import math3d.Point3d;
-import math3d.JacobiFloat;
 
 import java.applet.Applet;
 
 import java.awt.*;
 import java.awt.event.*;
 
-import java.util.PriorityQueue;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Date;
-import java.util.ArrayList;
-
-import java.text.SimpleDateFormat;
-
 import java.io.*;
 
-import amira.AmiraParameters;
-import amira.AmiraMeshEncoder;
-import amira.AmiraMeshDecoder;
-import vib.FastMatrix;
 import client.ArchiveClient;
 
-import java.util.StringTokenizer;
 
-import vib.oldregistration.Bookstein_FromMarkers;
-import util.BatchOpener;
-import util.FileAndChannel;
 
-import stacks.ThreePanes;
 
 public class NeuriteTracer_ implements PlugIn {
-
+	
 	/* We may keep a tranformation which maps to a template with
 	   label_data: */
 	
@@ -57,22 +36,22 @@ public class NeuriteTracer_ implements PlugIn {
 	byte[][] label_data;
 	String [] materialNames;       
 	int materials;
-
+	
 	int label_stack_width;
 	int label_stack_height;
 	int label_stack_depth;
-
+	
 	ArchiveClient archiveClient;
-
+	
 	public void run( String ignored ) {
-
+		
 		Applet applet = IJ.getApplet();
 		if( applet != null ) {
 			archiveClient = new ArchiveClient( applet, Macro.getOptions() );
 		}
-
+		
 	}
-
+	
 	FileInfo file_info;
 
 	public void loadCorrespondingPointsFile() {
@@ -137,7 +116,7 @@ public class NeuriteTracer_ implements PlugIn {
 			}
 		*/
 	}
-
+	
 	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane ) {
 
 /*
