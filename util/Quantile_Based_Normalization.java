@@ -134,90 +134,14 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 	TextField maskFileInput;
 	Button chooseMaskButton;	
 	
-	public void run(String ignored) {
-		
-		/*
-		String [] defaultFiles = { "/home/mark/corpus/central-complex/mhl-middle(C)c5(0).lsm",
-					   "/home/mark/corpus/central-complex/mhl-71yxUAS-lacZ(0).lsm",
-					   "/home/mark/corpus/central-complex/mhl-theotherone(A)c61(0).lsm" };
-		*/
-		String [] defaultFiles = { };
-
-		// String  defaultOutputDirectory = "/home/mark/tmp-output/";
-		String defaultOutputDirectory = "";
-
-		String defaultMaskFileName = "";
-		
-                GenericDialog gd=new GenericDialog("Quantile Normalization");
-		
-		FileGroup fg = new FileGroup("foo");
-		
-		for( int i = 0; i < defaultFiles.length; ++i )
-			fg.add(defaultFiles[i]);
-		
-		FileGroupDialog fgd = new FileGroupDialog(fg,false);
-		
-		gd.addPanel(fgd);
-		
-		Panel outputDirectoryPanel=new Panel();
-		outputDirectoryPanel.add(new Label("Output directory: "));
-		outputDirectoryInput = new TextField(defaultOutputDirectory,18);
-		outputDirectoryPanel.add(outputDirectoryInput);
-		chooseOutputDirectory = new Button("Choose ...");
-		outputDirectoryPanel.add(chooseOutputDirectory);
-		chooseOutputDirectory.addActionListener(this);
-		
-		gd.addPanel(outputDirectoryPanel);
-		
-		Panel useMaskPanel=new Panel();
-		useMaskPanel.setLayout(new GridBagLayout());
-		GridBagConstraints c=new GridBagConstraints();
-		c.gridx = 0;
-		c.gridy = 0;
-		c.gridwidth = 3;		
-		c.anchor = GridBagConstraints.LINE_START;
-		useMaskCheckbox = new Checkbox("Use an image mask?");
-                useMaskCheckbox.addItemListener(this);
-		useMaskPanel.add(useMaskCheckbox,c);
-		c.gridx = 0;
-		c.gridy = 1;
-		c.gridwidth = 3;		
-		useMaskPanel.add(new Label("(If you use a mask, all images must be the same dimensions."),c);		
-		c.gridx = 0;
-		c.gridy = 2;
-		c.gridwidth = 1;
-		useMaskPanel.add(new Label("Mask file: "),c);		
-		c.gridx = 1;
-		maskFileInput = new TextField(defaultMaskFileName,18);
-                maskFileInput.setEnabled(false);
-		useMaskPanel.add(maskFileInput,c);
-		c.gridx = 2;
-		chooseMaskButton = new Button("Choose...");
-                chooseMaskButton.setEnabled(false);
-		useMaskPanel.add(chooseMaskButton,c);
-		
-                gd.addPanel(useMaskPanel);
-		
-		gd.addNumericField("Number of channel to use (starting at 1): ", 1, 0);
-                gd.addNumericField("Quantiles", 256, 0);
-                String [] choices={ "mean", "rank"};
-                gd.addChoice("Replace each quantile with", choices, "mean");
-                gd.addCheckbox("Rescale (if replacing with ranks)", true);
-		
-		gd.showDialog();
-		if (gd.wasCanceled()) {
-			return;
-		}
-		
-		int n = fg.size();
-		if (n < 1) {
-			IJ.error("No image files selected");
-			return;
-		}
-		
-                // First find the output directory...
-		
-		String outputDirectory=outputDirectoryInput.getText();
+	public void processToDirectory( FileGroup fg,
+					String outputDirectory,
+					String maskFileName,
+					int channelToUse,
+					int numberOfQuantiles,
+					boolean replaceWithRankInstead,
+					boolean rescaleRanks ) {
+				
 		File o=new File(outputDirectory);
 		if( ! o.exists() ) {
 			IJ.error("The output directory ('"+outputDirectory+"') doesn't exist.");
@@ -228,8 +152,6 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 			return;
 		}
 		
-                // Now whether there's a mask file, and if so then load it.
-		
                 boolean [][] inMask = null;
 		
                 int maskWidth = -1;
@@ -237,11 +159,9 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
                 int maskDepth = -1;
 		
                 long pointsInMask=0;
+
+		if( maskFileName != null ) {
 		
-                boolean useMask=useMaskCheckbox.getState();
-		
-                if( useMask ) {
-			String maskFileName=maskFileInput.getText();
 			IJ.showStatus("Loading mask file: "+maskFileName);
 			ImagePlus [] channels=BatchOpener.open(maskFileName);
 			if( channels == null ) {
@@ -262,31 +182,22 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 				byte [] pixels = (byte[])maskStack.getPixels(z+1);
 				for( int y = 0; y < maskHeight; ++y ) {
 					for( int x = 0; x < maskWidth; ++x ) {
-						if( (pixels[y*maskWidth+x]&0xFF) == 255 )
+						if( (pixels[y*maskWidth+x]&0xFF) > 127 ) {
 							inMask[z][y*maskWidth+x] = true;
-						++pointsInMask;
+							++pointsInMask;
+						}
 					}
 				}
 			}
 			maskImagePlus.close();
-                }
+		}
 		
-		int channelToUse = (int) gd.getNextNumber();
-                // ImageJ consistently 1-indexes things in its interface,
-                // so turn this into a zero-indexed channel number.
-		-- channelToUse;
-		
-                int numberOfQuantiles = (int)gd.getNextNumber();
-                if( numberOfQuantiles < 1 || numberOfQuantiles > 256 ) {
-			IJ.error("Number of quantiles must be between 1 and 256 inclusive.");
+		int n = fg.size();
+		if (n < 1) {
+			IJ.error("No image files selected");
 			return;
-                }
+		}
 		
-                boolean replaceWithRankInstead=false;
-                String choice=gd.getNextChoice();
-                replaceWithRankInstead = choice.equals("rank");
-		
-                boolean rescaleRanks=gd.getNextBoolean();
 		
                 /* First go through each image building totalling the
                    frequencies of each value. */
@@ -317,17 +228,20 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 				return;
 			}
 			
+			String freeMemory = IJ.freeMemory();
+			System.out.println("free memory is: "+freeMemory);
+			
 			int width=imagePlus.getWidth();
 			int height=imagePlus.getHeight();
 			int depth=imagePlus.getStackSize();
 			
                         // If we're using a mask they all have to be the right
-                        // dimensions.
+                        // dimensions.			
 			
-			
-                        if( useMask && ! ((width == maskWidth ) &&
-                                          (height == maskHeight) &&
-                                          (depth == maskDepth)) ) {
+                        if( (maskFileName != null) &&
+				! ((width == maskWidth ) &&
+                                   (height == maskHeight) &&
+                                   (depth == maskDepth)) ) {
                                 IJ.error("The image file "+path+" was not the same dimensions as the mask file");
                                 return;
                         }
@@ -340,14 +254,16 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 				byte [] pixels=(byte[])stack.getPixels(z+1);
 				for( int y=0; y<height; ++y )
 					for( int x=0; x<width; ++x ) {
-                                                if( (! useMask) || inMask[z][y*width+x] ) {
+                                                if( (maskFileName == null) || inMask[z][y*width+x] ) {
 							int value=pixels[y*width+x]&0xFF;
 							++frequencies[b][value];
                                                 }
 					}
 			}
 			
-			pointsInImage[b]= useMask ? pointsInMask : width*height*depth;
+			pointsInImage[b]= (maskFileName == null) ? width*height*depth : pointsInMask;
+
+			System.out.println("Proportion of points to consider: "+((double)pointsInMask/(width*height*depth)));
 			
 			for (int q = 0; q < numberOfQuantiles; ++q) {
 				
@@ -408,6 +324,7 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 			imagePlus.close();
 		}
 		
+		System.out.println("Now going on to calculate the mean in each quantile.");
 		
 		// Calculate the mean in each quantile (even if we're
 		// not going to use it)...
@@ -560,7 +477,7 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 				byte [] newPixels = new byte[width*height];
 				for( int y = 0; y < height; ++y )
 					for( int x = 0; x < width; ++x ) {
-                                                if( useMask && ! inMask[z][y*width+x] )
+                                                if( (maskFileName != null) && ! inMask[z][y*width+x] )
 							continue;
 						int oldValue = oldPixels[y*width+x]&0xFF;
 						int replacement;
@@ -628,7 +545,125 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 			
 		}
 		
-		IJ.showStatus("Normalization complete: files written to: "+outputDirectory);
+		IJ.showStatus("Normalization complete: files written to: "+outputDirectory);		
+		
+	}
+		
+		
+	public void run(String ignored) {
+		
+		/*
+		String [] defaultFiles = { "/home/mark/corpus/central-complex/mhl-middle(C)c5(0).lsm",
+					   "/home/mark/corpus/central-complex/mhl-71yxUAS-lacZ(0).lsm",
+					   "/home/mark/corpus/central-complex/mhl-theotherone(A)c61(0).lsm" };
+		*/
+		String [] defaultFiles = { };
+
+		// String  defaultOutputDirectory = "/home/mark/tmp-output/";
+		String defaultOutputDirectory = "";
+
+		String defaultMaskFileName = "";
+		
+                GenericDialog gd=new GenericDialog("Quantile Normalization");
+		
+		FileGroup fg = new FileGroup("foo");
+		
+		for( int i = 0; i < defaultFiles.length; ++i )
+			fg.add(defaultFiles[i]);
+		
+		FileGroupDialog fgd = new FileGroupDialog(fg,false);
+		
+		gd.addPanel(fgd);
+		
+		Panel outputDirectoryPanel=new Panel();
+		outputDirectoryPanel.add(new Label("Output directory: "));
+		outputDirectoryInput = new TextField(defaultOutputDirectory,18);
+		outputDirectoryPanel.add(outputDirectoryInput);
+		chooseOutputDirectory = new Button("Choose ...");
+		outputDirectoryPanel.add(chooseOutputDirectory);
+		chooseOutputDirectory.addActionListener(this);
+		
+		gd.addPanel(outputDirectoryPanel);
+		
+		Panel useMaskPanel=new Panel();
+		useMaskPanel.setLayout(new GridBagLayout());
+		GridBagConstraints c=new GridBagConstraints();
+		c.gridx = 0;
+		c.gridy = 0;
+		c.gridwidth = 3;		
+		c.anchor = GridBagConstraints.LINE_START;
+		useMaskCheckbox = new Checkbox("Use an image mask?");
+                useMaskCheckbox.addItemListener(this);
+		useMaskPanel.add(useMaskCheckbox,c);
+		c.gridx = 0;
+		c.gridy = 1;
+		c.gridwidth = 3;		
+		useMaskPanel.add(new Label("(If you use a mask, all images must be the same dimensions."),c);		
+		c.gridx = 0;
+		c.gridy = 2;
+		c.gridwidth = 1;
+		useMaskPanel.add(new Label("Mask file: "),c);		
+		c.gridx = 1;
+		maskFileInput = new TextField(defaultMaskFileName,18);
+                maskFileInput.setEnabled(false);
+		useMaskPanel.add(maskFileInput,c);
+		c.gridx = 2;
+		chooseMaskButton = new Button("Choose...");
+                chooseMaskButton.setEnabled(false);
+		useMaskPanel.add(chooseMaskButton,c);
+		
+                gd.addPanel(useMaskPanel);
+		
+		gd.addNumericField("Number of channel to use (starting at 1): ", 1, 0);
+                gd.addNumericField("Quantiles", 256, 0);
+                String [] choices={ "mean", "rank"};
+                gd.addChoice("Replace each quantile with", choices, "mean");
+                gd.addCheckbox("Rescale (if replacing with ranks)", true);
+		
+		gd.showDialog();
+		if (gd.wasCanceled()) {
+			return;
+		}
+		
+                // First find the output directory...
+		
+		String outputDirectory=outputDirectoryInput.getText();
+		
+                // Now whether there's a mask file, and if so then load it.		
+		
+                boolean useMask=useMaskCheckbox.getState();
+		
+		String maskFileName = null;
+		
+                if( useMask ) {
+			maskFileName=maskFileInput.getText();
+                }
+		
+		int channelToUse = (int) gd.getNextNumber();
+                // ImageJ consistently 1-indexes things in its interface,
+                // so turn this into a zero-indexed channel number.
+		-- channelToUse;
+				
+                int numberOfQuantiles = (int)gd.getNextNumber();
+                if( numberOfQuantiles < 1 || numberOfQuantiles > 256 ) {
+			IJ.error("Number of quantiles must be between 1 and 256 inclusive.");
+			return;
+                }
+		
+                boolean replaceWithRankInstead=false;
+                String choice=gd.getNextChoice();
+                replaceWithRankInstead = choice.equals("rank");		
+		
+                boolean rescaleRanks=gd.getNextBoolean();
+
+		processToDirectory( fg,
+				    outputDirectory,
+				    maskFileName,
+				    channelToUse,
+				    numberOfQuantiles,
+				    replaceWithRankInstead,
+				    rescaleRanks );
+		
 		
 	}	
 	
