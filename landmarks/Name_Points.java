@@ -971,9 +971,18 @@ public class Name_Points implements PlugIn {
 				return;
 			}
 			
-			int x = canvas.offScreenX(p.xpoints[0]);
-			int y = canvas.offScreenY(p.ypoints[0]);
+			System.out.println("Fetched ROI with co-ordinates: "+p.xpoints[0]+", "+p.ypoints[0]);
+			
+			/* The ROI co-ordinates do seem to be indexes into the
+			   samples in the image stack as opposed to values
+			   modified by the view (zoom, offset) or calibration.
+			 */
+			  
+			int x = p.xpoints[0];
+			int y = p.ypoints[0];
 			int z = imp.getCurrentSlice()-1;
+
+			System.out.println("Converted to our co-ordinates: "+x+","+y+","+z);
 			
 			if( false ) {
 				
