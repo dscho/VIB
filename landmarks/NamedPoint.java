@@ -90,5 +90,11 @@ public class NamedPoint {
                         z+" ]";
                 return line;
         }
-	
+
+	public String toString() {
+		return ""+name+
+			" at "+x+
+			", "+y+
+			", "+z;
+	}
 }
