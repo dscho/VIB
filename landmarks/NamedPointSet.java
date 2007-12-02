@@ -14,6 +14,7 @@ import ij.gui.ImageCanvas;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.io.FileInfo;
+import ij.measure.Calibration;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,6 +27,9 @@ import java.util.ListIterator;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import math3d.Point3d;
+import vib.transforms.FastMatrixTransform;
+import vib.transforms.OrderedTransformations;
 
 public class NamedPointSet {
 	
@@ -43,6 +47,30 @@ public class NamedPointSet {
 		return points.listIterator();
 	}
 	
+	/* FIXME: these next two methods should return new transformed
+	   point sets instead. */
+	
+        public void correctWithCalibration( Calibration c ) {
+		
+                FastMatrixTransform fm=FastMatrixTransform.fromCalibrationWithoutOrigin(c);
+		
+                Iterator i0;
+                for(i0=points.listIterator();i0.hasNext();) {
+                        NamedPoint p=(NamedPoint)i0.next();
+                        p.transformWith(fm);
+                }
+		
+        }	
+
+        public void transformPointsWith( OrderedTransformations o ) {
+		
+                Iterator i0;
+                for(i0=points.listIterator();i0.hasNext();) {
+                        NamedPoint p=(NamedPoint)i0.next();
+                        p.transformWith(o);
+                }
+	}
+	
 	public NamedPoint getPoint( String name ) {
 		Iterator i;
 		for (i = listIterator(); i.hasNext();) {
@@ -56,6 +84,16 @@ public class NamedPointSet {
 	
 	public NamedPoint get(int i) { 
 		return points.get(i);
+	}
+	
+	public NamedPoint get(String name) {
+                Iterator i0;
+                for(i0=points.listIterator();i0.hasNext();) {
+                        NamedPoint p=(NamedPoint)i0.next();
+                        if( p.getName().equals(name) )
+				return p;
+                }
+		return null;
 	}
 	
 	void showAsROI(int i, ImagePlus imp) {
@@ -248,5 +286,16 @@ public class NamedPointSet {
                 }
                 return common;
         }
-	
+
+	public Point3d[] getPoint3DArrayForNames( String [] names ) {
+		Point3d [] result = new Point3d[names.length];
+		for( int i = 0; i < names.length; ++i ) {
+			NamedPoint np = get(names[i]);
+			if( np == null )
+				return null;
+			else
+				result[i] = new Point3d( np.x, np.y, np.z );
+		}
+		return result;
+	}
 }
