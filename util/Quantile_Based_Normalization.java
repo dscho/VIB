@@ -61,6 +61,8 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 	   mean in such a proportion that the mean will be a close to
 	   correct as we can get it. */
 	
+	public static final String PLUGIN_VERSION = "1.1";
+	
 	class Replacements {
 		
 		long [] replacements;
@@ -564,7 +566,7 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 
 		String defaultMaskFileName = "";
 		
-                GenericDialog gd=new GenericDialog("Quantile Normalization");
+                GenericDialog gd=new GenericDialog("Quantile Based Normalization (version: "+PLUGIN_VERSION+")");
 		
 		FileGroup fg = new FileGroup("foo");
 		

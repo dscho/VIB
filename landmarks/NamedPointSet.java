@@ -210,10 +210,12 @@ public class NamedPointSet {
                         return newNamedPoints;
 			
 		} catch( IOException e ) {
+			/*
 			IJ.error("Error opening the points file "+defaultFilename+": "+e);
 			System.out.println("Got an IOException while loading the points file: "+e);
 			e.printStackTrace();
-                        return null;
+			*/
+			return null;
                 }
 		
         }
