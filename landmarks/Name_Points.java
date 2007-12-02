@@ -265,7 +265,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 				plugin.fineTune(i);
 				break;
 			}
-		}		
+		}
 		if(source == closeButton) {
 			dispose();
 		} else if (source == saveButton) {
@@ -323,7 +323,8 @@ public class Name_Points implements PlugIn {
         String templateImageFilename="/home/mark/arnim-brain/CantonF41c.grey";
 	ImagePlus templateImage;
         NamedPointSet templatePoints;
-	
+	String templateUnits;
+
 	int numberOfFineTuneThreads = 2;
 	
         double x_spacing;
@@ -394,7 +395,8 @@ public class Name_Points implements PlugIn {
 		double x_spacing_template = c.pixelWidth;
 		double y_spacing_template = c.pixelHeight;
 		double z_spacing_template = c.pixelDepth;
-		
+		templateUnits = c.getUnits();
+
 		double real_x_template = pointInTemplate.x * x_spacing_template;
 		double real_y_template = pointInTemplate.y * y_spacing_template;
 		double real_z_template = pointInTemplate.z * z_spacing_template;
@@ -518,29 +520,36 @@ public class Name_Points implements PlugIn {
 		ColorProcessor emptyCP = new ColorProcessor(100,100);
 		emptyCP.setRGB( new byte[100*100], new byte[100*100], new byte[100*100] );
 		emptyStack.addSlice("",emptyCP);
+
 		ImagePlus progressImagePlus = new ImagePlus( "Fine-Tuning Progress", emptyStack );
+		ProgressCanvas progressCanvas = new ProgressCanvas( progressImagePlus );
+
+		progressCanvas.setCrosshairs(50,50,2,true);
+		progressCanvas.setCrosshairs(60,60,2,false);
 		
-		progressWindow = new ProgressWindow( progressImagePlus );		
+		progressWindow = new ProgressWindow( progressImagePlus, progressCanvas );	
 		progressWindow.setPlugin(this);
+
+		progressWindow.indexOfPointBeingFineTuned = i;
 		
 		for( int threadIndex = 0; threadIndex < numberOfFineTuneThreads; ++threadIndex ) {
-		
-                    FineTuneThread fineTuneThread = new FineTuneThread(
-                            threadIndex,
-			    numberOfFineTuneThreads,
-                            CORRELATION,
-                            templateCubeSide,
-                            cropped,
-                            templateImage,
-                            pointInTemplate,
-                            imp,
-                            p,
-                            guessedRotation,
-			    progressWindow,
-                            this);
+			
+			FineTuneThread fineTuneThread = new FineTuneThread(
+				threadIndex,
+				numberOfFineTuneThreads,
+				CORRELATION,
+				templateCubeSide,
+				cropped,
+				templateImage,
+				pointInTemplate,
+				imp,
+				p,
+				guessedRotation,
+				progressWindow,
+				this);
 		    
-		    progressWindow.addFineTuneThread(fineTuneThread);
-		    
+			progressWindow.addFineTuneThread(fineTuneThread);
+			
 		}
 		
 		progressWindow.startThreads();
@@ -550,7 +559,24 @@ public class Name_Points implements PlugIn {
         void fineTuneResults( RegistrationResult bestResult ) {
 
 		dialog.setFineTuning(false);		
-		progressWindow = null;
+
+		if( bestResult != null ) {
+			
+			NamedPoint point = points.get(progressWindow.indexOfPointBeingFineTuned);			
+			point.x = bestResult.point_would_be_moved_to_x;
+			point.y = bestResult.point_would_be_moved_to_y;
+			point.z = bestResult.point_would_be_moved_to_z;
+			point.set = true;
+			System.out.println("Got a result, changed point to: "+point);
+			
+			dialog.setCoordinateLabel( progressWindow.indexOfPointBeingFineTuned,
+						   point.x,
+						   point.y,
+						   point.z );
+
+		}
+
+		progressWindow = null;	      
 
 		IJ.showProgress(1.0);
 
@@ -581,7 +607,13 @@ public class Name_Points implements PlugIn {
 		"norm mut inf"
 	};
 	
-	static RegistrationResult mapImageWith( ImagePlus toTransform, ImagePlus toKeep, NamedPoint guessedPoint, double[] mapValues, double cubeSide, int similarityMeasure, boolean show, String imageTitle ) {
+	/** 
+	    When this is called, toKeep is the full new image, and
+	    toTransform is just a cropped region of the template
+	    around the template point.
+	 */
+
+	static RegistrationResult mapImageWith( ImagePlus toTransform, ImagePlus toKeep, NamedPoint templatePoint, NamedPoint guessedPoint, double[] mapValues, double cubeSide, int similarityMeasure, boolean show, String imageTitle ) {
 		
 		double sumSquaredDifferences = 0;
                 double sumAbsoluteDifferences = 0;
@@ -614,8 +646,10 @@ public class Name_Points implements PlugIn {
 		m = m.composeWithFastMatrix(transformFromValues);
 		m = m.composeWithFastMatrix(scalePointInToKeepInverse);
 		
-		// Now transform the corner points to find the maximum and minimum
-		// extents of the transformed image.
+		/* Now transform the corner points of the cropped
+		   template image to find the maximum and minimum
+		   extents of the transformed image. */
+
 		int w = toTransform.getWidth();
 		int h = toTransform.getHeight();
 		int d = toTransform.getStackSize();
@@ -767,8 +801,10 @@ public class Name_Points implements PlugIn {
 		result.overlay_depth = transformed_depth;
 		result.transformed_bytes = transformedBytes;
 		result.fixed_bytes = toKeepCroppedBytes;
-		
+
 		result.parameters = mapValues;
+
+		/* Work out the score... */
 		
 		double maximumValue = 0;
 		
@@ -794,7 +830,7 @@ public class Name_Points implements PlugIn {
 			assert false : "Unknown similarity measure: "+similarityMeasure;
 			
 		}
-		
+
 		double pointDrift;
 		
 		{
@@ -809,20 +845,55 @@ public class Name_Points implements PlugIn {
 			m.apply( centre_cropped_template_x,
 				 centre_cropped_template_y,
 				 centre_cropped_template_z );
+
+			result.point_would_be_moved_to_x = (int)m.x;
+			result.point_would_be_moved_to_y = (int)m.y;
+			result.point_would_be_moved_to_z = (int)m.z;
 			
-			double xdiff = m.x - guessedPoint.x;
-			double ydiff = m.y - guessedPoint.y;
-			double zdiff = m.z - guessedPoint.z;
-			
+			/* I think this is buggy - we compare it with
+			cubeSide, so we need to scale these with the
+			calibration:
+
+			double xdiff = result.point_would_be_moved_to_x - guessedPoint.x;
+			double ydiff = result.point_would_be_moved_to_y - guessedPoint.y;
+			double zdiff = result.point_would_be_moved_to_z - guessedPoint.z;
+			*/
+
+			Calibration c = toKeep.getCalibration();
+
+			double xdiff = (result.point_would_be_moved_to_x - guessedPoint.x) * c.pixelWidth;
+			double ydiff = (result.point_would_be_moved_to_y - guessedPoint.y) * c.pixelHeight;
+			double zdiff = (result.point_would_be_moved_to_z - guessedPoint.z) * c.pixelDepth;
+
 			double pointDriftSquared =
 				(xdiff * xdiff) + (ydiff * ydiff) + (zdiff * zdiff);
 			
 			pointDrift = Math.sqrt(pointDriftSquared);
-			
 		}
-		
-		// Now use the logistic function to scale up the penalty
-		// as we get further away in translation...
+
+		result.pointMoved = pointDrift;
+	
+		/* Now what happens to the template point
+		 * (transformed) and the original guessed point. */
+
+		/* The original guessed point just has to have the
+		 * offset of newImage subtracted from it:
+		 */
+
+		result.fixed_point_x = (int)( guessedPoint.x - transformed_x_min );
+		result.fixed_point_y = (int)( guessedPoint.y - transformed_y_min );
+		result.fixed_point_z = (int)( guessedPoint.z - transformed_z_min );
+
+		/* The template point - we worked out where it moved
+		 * to above, but not adjusted for the cropping... */
+
+		result.transformed_point_x = (int)( result.point_would_be_moved_to_x - transformed_x_min );
+		result.transformed_point_y = (int)( result.point_would_be_moved_to_y - transformed_y_min );
+		result.transformed_point_z = (int)( result.point_would_be_moved_to_z - transformed_z_min );
+
+		// Back to the scoring now: now use the logistic
+		// function to scale up the penalty as we get further
+		// away in translation...
 		
 		double minimumPenaltyAt = 0.8;
 		double maximumPenaltyAt = 1.0;

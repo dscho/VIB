@@ -7,12 +7,26 @@ public class RegistrationResult implements Comparable {
 	int overlay_width;
 	int overlay_height;
 	int overlay_depth;
+
+	/* These two sets of coordinates are indexes into the cropped
+	 * images. */
+
+	int fixed_point_x, fixed_point_y, fixed_point_z;
+	int transformed_point_x, transformed_point_y, transformed_point_z;
 	
 	byte [][] transformed_bytes;
 	byte [][] fixed_bytes;
 	
 	double score;
 	double[] parameters;
+
+	double pointMoved;
+	
+	/* These are indices into the current image, not the cropped
+	 * one. */
+	int point_would_be_moved_to_x;
+	int point_would_be_moved_to_y;
+	int point_would_be_moved_to_z;
 	
 	public int compareTo(Object otherRegistrationResult) {
 		RegistrationResult other = (RegistrationResult) otherRegistrationResult;
@@ -23,4 +37,5 @@ public class RegistrationResult implements Comparable {
 	public String toString() {
 		return "score: " + score + " for parameters: " + parameters;
 	}
+
 }
