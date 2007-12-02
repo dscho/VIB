@@ -114,6 +114,11 @@ Unpack_To_PNG.jar: SOURCES=stacks/Unpack_To_PNG.java \
 	util/BatchOpener.java \
 	zeiss/LSM_Reader.java
 
+Find_Connected_Regions.jar: SOURCES=util/Find_Connected_Regions.java \
+	amira/AmiraParameters.java \
+	amira/AmiraTable.java \
+	util/COPYING
+
 Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
 	stacks/PaneOwner.java \
