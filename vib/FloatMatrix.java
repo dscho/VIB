@@ -340,6 +340,40 @@ public class FloatMatrix {
 		return result;
 	}
 
+	/*
+	 * This rotates in a "geodesic" fashion: if you imagine an equator
+	 * through a and b, the resulting rotation will have the poles as
+	 * invariants.
+	 */
+	public static FloatMatrix rotateFromTo(float aX, float aY, float aZ,
+			float bX, float bY, float bZ) {
+		float l = (float)Math.sqrt(aX * aX + aY * aY + aZ * aZ);
+		aX /= l; aY /= l; aZ /= l;
+		l = (float)Math.sqrt(bX * bX + bY * bY + bZ * bZ);
+		bX /= l; bY /= l; bZ /= l;
+		float cX, cY, cZ;
+		cX = aY * bZ - aZ * bY;
+		cY = aZ * bX - aX * bZ;
+		cZ = aX * bY - aY * bX;
+		float pX, pY, pZ;
+		pX = cY * aZ - cZ * aY;
+		pY = cZ * aX - cX * aZ;
+		pZ = cX * aY - cY * aX;
+		float qX, qY, qZ;
+		qX = cY * bZ - cZ * bY;
+		qY = cZ * bX - cX * bZ;
+		qZ = cX * bY - cY * bX;
+		FloatMatrix result = new FloatMatrix();
+		result.a00 = aX; result.a01 = aY; result.a02 = aZ;
+		result.a10 = cX; result.a11 = cY; result.a12 = cZ;
+		result.a20 = pX; result.a21 = pY; result.a22 = pZ;
+		FloatMatrix transp = new FloatMatrix();
+		transp.a00 = bX; transp.a01 = cX; transp.a02 = qX;
+		transp.a10 = bY; transp.a11 = cY; transp.a12 = qY;
+		transp.a20 = bZ; transp.a21 = cZ; transp.a22 = qZ;
+		return transp.times(result);
+	}
+
 	// ------------------------------------------------------------------------
 	// FIXME: This probably isn't the best place for these static functions...
 	
@@ -1011,126 +1045,15 @@ public class FloatMatrix {
 	}
 	
 	public static void main(String[] args) {
-		FloatMatrix ma = parseMatrix("1 5 9 0 2 6 10 0 3 7 11 0 4 8 12 1");
-		System.err.println("ma:\n"+ma);
-		FloatMatrix mb = parseMatrix("1 2 3 0 5 6 7 0 9 10 11 0");
-		System.err.println("mb:\n"+mb);
-		if (true)
-			return;
-		float a1 = 0, a2 = 0, a3 = 0;
-		float cx = 1200, cy = 250, cz = 380;
-		float[] params = new float[6];
-		for (int i = 0; i < 15; i++) {
-			if (i < 5)
-				a1 += Math.PI/6.0f;
-			else if (i < 10)
-				a2 += Math.PI/6.0f;
-			else
-				a3 += Math.PI/12.0f;
-			FloatMatrix m = rotateEulerAt(a1, a2, a3, cx, cy, cz);
-			m.guessEulerParameters(params);
-			System.err.println("+++ " + a1 + " " + a2 + " " + a3 + " " + cx + " " + cy + " " + cz);
-			System.err.println(m.toString());
-			System.err.println("--- " + params[0] + " " + params[1] + " " + params[2] + " " + params[3] + " " + params[4] + " " + params[5]);
-			System.err.println(rotateEulerAt(params[0], params[1], params[2], params[3], params[4], params[5]).toString());
-			System.out.println("$data setTransform "
-					   + m.toStringForAmira());
-			m.apply(cx, cy, cz);
-			//System.err.println(m.resultToString());
-			System.out.println("viewer redraw");
-			System.out.println("sleep 1");
-		}
-		/*
-		  FloatMatrix fromTemplate = FloatMatrix.parseMatrix(""+(624.39f/256)+" 0 0 0 0 "+(624.39f/256)+" 0 0 0 0 "+(225.854f/57)+" 0 0 0 0 1");
-		  FloatMatrix fromModel = FloatMatrix.parseMatrix(""+(648.716f/256)+" 0 0 0 0 "+(648.716f/256)+" 0 0 0 0 "+(204.005f/52)+" 0 0 0 0 1");
-		  FloatMatrix medullaRtrans = FloatMatrix.parseMatrix("-0.368795f 0.879484f 0.00272346f 0 -0.768404f -0.323649f 0.462943f 0 0.427849f 0.176829f 0.833778f 0 708.495f 123.043f -153.796f 1");
-		  
-		  FloatMatrix n = fromTemplate;
-		  n.apply(78.6146607088518ff, 205.734800365156ff, 31.0913908985451ff);
-		  System.err.println(""+n);
-		  
-		  FloatMatrix m = medullaRtrans.inverse();
-		  m.apply(191.743ff, 501.792ff, 123.195ff);
-		  System.err.println(""+m);
-		  
-		  n = m.times(fromTemplate);
-		  n.apply(78.6146607088518ff, 205.734800365156ff, 31.0913908985451ff);
-		  System.err.println(""+n);
-		  
-		  n = fromModel;
-		  n.apply(227, 175, 21);
-		  System.err.println(""+n);
-		  
-		  
-		  if (fromTemplate != null)
-		  return;
-		  
-		  FloatMatrix from = translate(-400, -400, -200).times(new FloatMatrix(20));
-		  FloatMatrix rot = rotate((float)(Math.PI/2.0f), 2);
-		  FloatMatrix to = new FloatMatrix((float)1.0f/20).times(translate(400, 400, 200));
-		  
-		  FloatMatrix cumul = to.times(rot.times(from));
-		  FloatMatrix cumul2 = to.times(rot).times(from);
-		  
-		  from.apply(30,20,10);
-		  rot.apply(from.x, from.y, from.z);
-		  to.apply(rot.x, rot.y, rot.z);
-		  cumul.apply(30,20,10);
-		  cumul2.apply(30,20,10);
-		  
-		  System.err.println(""+(new FloatMatrix((float)1.0f/20).times(translate(400,400,200))));
-		  System.err.println("\n"+to+"\n"+cumul+"\n"+cumul2+"\n");
-		  
-		  if (from != null)
-		  return;
-		  
-		  Jama.Matrix m1 = new Jama.Matrix(4,4);
-		  m1.set(0,0,Math.random());
-		  m1.set(0,1,Math.random());
-		  m1.set(0,2,Math.random());
-		  m1.set(0,3,Math.random());
-		  m1.set(1,0,Math.random());
-		  m1.set(1,1,Math.random());
-		  m1.set(1,2,Math.random());
-		  m1.set(1,3,Math.random());
-		  m1.set(2,0,Math.random());
-		  m1.set(2,1,Math.random());
-		  m1.set(2,2,Math.random());
-		  m1.set(2,3,Math.random());
-		  m1.set(3,0,0);
-		  m1.set(3,1,0);
-		  m1.set(3,2,0);
-		  m1.set(3,3,1);
-		  Jama.Matrix m2 = new Jama.Matrix(4,4);
-		  m2.set(0,0,Math.random());
-		  m2.set(0,1,Math.random());
-		  m2.set(0,2,Math.random());
-		  m2.set(0,3,Math.random());
-		  m2.set(1,0,Math.random());
-		  m2.set(1,1,Math.random());
-		  m2.set(1,2,Math.random());
-		  m2.set(1,3,Math.random());
-		  m2.set(2,0,Math.random());
-		  m2.set(2,1,Math.random());
-		  m2.set(2,2,Math.random());
-		  m2.set(2,3,Math.random());
-		  m2.set(3,0,0);
-		  m2.set(3,1,0);
-		  m2.set(3,2,0);
-		  m2.set(3,3,1);
-		  Jama.Matrix m3 = m1.times(m2);
-		  FloatMatrix t1 = new FloatMatrix(m3);
-		  FloatMatrix t2 = new FloatMatrix(m1).times(new FloatMatrix(m2));
-		  System.err.println("test:\n" + t1 + ",\n" + t2);
-		  
-		  m3 = new Jama.Matrix(4,4);
-		  m3.set(0,0,1); m3.set(0,1,-2); m3.set(0,2,-1);
-		  m3.set(1,0,2); m3.set(1,1,-3); m3.set(1,2,0);
-		  m3.set(2,0,4); m3.set(2,1,-2); m3.set(2,2,1);
-		  m3.set(3,3,1);
-		  FloatMatrix t3 = new FloatMatrix(m3.inverse());
-		  FloatMatrix t4 = new FloatMatrix(m3).inverse();
-		  System.err.println("test:\n" + t3 + ",\n" + t4);
-		*/
+		FloatMatrix ma = rotateFromTo(1, 0, 0, 0, 1, 0);
+		ma.apply(0, 0, 1);
+		System.err.println("expect 0 0 1: " +
+				ma.x + " " + ma.y + " " + ma.z);
+		ma.apply(1, 0, 0);
+		System.err.println("expect 0 1 0: " +
+				ma.x + " " + ma.y + " " + ma.z);
+		ma.apply(0, 1, 0);
+		System.err.println("expect -1 0 0: " +
+				ma.x + " " + ma.y + " " + ma.z);
 	}
 }
