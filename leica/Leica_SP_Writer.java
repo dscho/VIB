@@ -110,6 +110,7 @@ public class Leica_SP_Writer implements PlugInFilter {
 		fi.description = "[GLOBAL]\n" +
 			"[FILTERSETTING1]\n" +
 			"NumOfVisualisations=" + channels + "\n" +
+			"NumOfFrames=" + d + "\n" +
 			"VoxelSizeX=" + cal.pixelWidth + "\n" +
 			"VoxelSizeY=" + cal.pixelHeight + "\n" +
 			"VoxelSizeZ=" + cal.pixelDepth + "\n" +
