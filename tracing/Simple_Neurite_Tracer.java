@@ -461,7 +461,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		loading = false;
         }
 	
-        public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, boolean shift_key_down, boolean control_key_down ) {
+        public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, boolean shift_key_down, boolean join_modifier_down ) {
 		
                 int x, y, z;
 		
@@ -471,7 +471,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
                 y = p[1];
                 z = p[2];
 		
-                if( control_key_down ) {
+                if( join_modifier_down ) {
 			
                         PointInImage pointInImage = pathAndFillManager.nearestJoinPointOnSelectedPaths( x, y, z );
                         if( pointInImage != null ) {
