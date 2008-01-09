@@ -95,6 +95,7 @@ Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
 ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard marchingcubes/*.java) $(wildcard isosurface/*.java) \
 	$(wildcard orthoslice/*.java) \
+	$(wildcard javax/media/j3d/*.java) \
 	vib/Resample_.java vib/InterpolatedImage.java \
 	amira/AmiraParameters.java amira/AmiraTable.java \
 	math3d/Point3d.java math3d/Transform_IO.java ImageJ_3D_Viewer.java
