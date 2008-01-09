@@ -30,8 +30,8 @@ rudi)
 esac
 
 case "$DEBUGIJ" in
-'')
-	java -Xmx$MEM -Dplugins.dir="$curdir" $EXTRADEFS \
+''|echo)
+	$DEBUGIJ java -Xmx$MEM -Dplugins.dir="$curdir" $EXTRADEFS \
 		-jar "$curdir"/../ImageJ/ij.jar "$@"
 ;;
 *)
