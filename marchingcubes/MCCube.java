@@ -38,22 +38,7 @@ public final class MCCube {
 		v[6] = new Point3f(x+SIZE,y-SIZE,z+SIZE);
 		v[7] = new Point3f(x,     y-SIZE,z+SIZE);
 		this.e = new Point3f[12];
-		computeEdges();
 	} 
-	
-	/**
-	 * computes the case number of the cube
-	 * @return the number of the case corresponding to the cube
-	 */
-	private int caseNumber() {
-		int caseNumber = 0;
-		for (int index = -1; 
-			++index < v.length; 
-			caseNumber += (intensity(v[index]) - threshold > 0) 
-					? 1 << index
-					: 0);
-		return caseNumber;
-	}
 	
 	/**
 	 * computes the interpolated point along a specified whose 
@@ -63,11 +48,11 @@ public final class MCCube {
 	 * @return the point on the edge where intensity equals the isovalue; 
 	 * null is interpolated point is beyond edge boundaries
 	 */
-	private Point3f computeEdge(Point3f v1, Point3f v2) {
+	private Point3f computeEdge(Point3f v1, Point3f v2, final Carrier car) {
 		// 30 --- 50 --- 70 : t=0.5
 		// 70 --- 50 --- 30 : t=0.5
-		float t = (threshold - intensity(v1))/
-				(float) (intensity(v2) - intensity(v1));
+		float t = (car.threshold - car.intensity(v1))/
+				(float) (car.intensity(v2) - car.intensity(v1));
 		if (t >= 0 && t <= 1) {
 			// v1 + t*(v2-v1)
 			Point3f vDir = new Point3f(v2);
@@ -79,17 +64,17 @@ public final class MCCube {
 		return null;
 	}
 
-	private Point3f computeEdge2(Point3f v1, Point3f v2){
+	private Point3f computeEdge2(Point3f v1, Point3f v2, final Carrier car){
 		Point3f v1_cp = new Point3f(v1);
 		Point3f v2_cp = new Point3f(v2);
-		if(intensity(v1_cp) > intensity(v2_cp)) {
+		if(car.intensity(v1_cp) > car.intensity(v2_cp)) {
 			Point3f tmp = v1_cp;
 			v1_cp = v2_cp;
 			v2_cp = tmp;
 		}
-		if(intensity(v1_cp) <= threshold && 
-					intensity(v2_cp) >= threshold) {
-			while(intensity(v1_cp) < threshold){
+		if(car.intensity(v1_cp) <= car.threshold && 
+					car.intensity(v2_cp) >= car.threshold) {
+			while(car.intensity(v1_cp) < car.threshold){
 				stepTo(v1_cp, v2_cp);
 			}
 			return v1_cp;
@@ -111,21 +96,21 @@ public final class MCCube {
 	 * computes interpolated values along each edge of the cube 
 	 * (null if interpolated value doesn't belong to the edge)
 	 */
-	private void computeEdges() {
-		this.e[0] = this.computeEdge(v[0], v[1]);
-		this.e[1] = this.computeEdge(v[1], v[2]);
-		this.e[2] = this.computeEdge(v[2], v[3]);
-		this.e[3] = this.computeEdge(v[3], v[0]);
+	private void computeEdges(final Carrier car) {
+		this.e[0] = this.computeEdge(v[0], v[1], car);
+		this.e[1] = this.computeEdge(v[1], v[2], car);
+		this.e[2] = this.computeEdge(v[2], v[3], car);
+		this.e[3] = this.computeEdge(v[3], v[0], car);
 		
-		this.e[4] = this.computeEdge(v[4], v[5]);
-		this.e[5] = this.computeEdge(v[5], v[6]);
-		this.e[6] = this.computeEdge(v[6], v[7]);
-		this.e[7] = this.computeEdge(v[7], v[4]);
+		this.e[4] = this.computeEdge(v[4], v[5], car);
+		this.e[5] = this.computeEdge(v[5], v[6], car);
+		this.e[6] = this.computeEdge(v[6], v[7], car);
+		this.e[7] = this.computeEdge(v[7], v[4], car);
 		
-		this.e[8] = this.computeEdge(v[0], v[4]);
-		this.e[9] = this.computeEdge(v[1], v[5]);
-		this.e[10] = this.computeEdge(v[3], v[7]);
-		this.e[11] = this.computeEdge(v[2], v[6]);
+		this.e[8] = this.computeEdge(v[0], v[4], car);
+		this.e[9] = this.computeEdge(v[1], v[5], car);
+		this.e[10] = this.computeEdge(v[3], v[7], car);
+		this.e[11] = this.computeEdge(v[2], v[6], car);
 	}
 	
 	/**
@@ -133,7 +118,7 @@ public final class MCCube {
 	 * @param n number of the case to test
 	 * @return true if the case if ambigous
 	 */
-	public static boolean isAmbigous(int n) {
+	private static boolean isAmbigous(int n) {
 		boolean result = false;
 	        for (int index = 0; index < MCCube.ambigous.length; index++) {
 			result |= MCCube.ambigous[index] == n;
@@ -141,8 +126,8 @@ public final class MCCube {
 		return result;
 	}
 	
-	private void getTriangles(List<Point3f> list){
-		int cn = this.caseNumber();
+	private void getTriangles(List<Point3f> list, final Carrier car){
+		int cn = caseNumber(car);
 		boolean directTable = !(isAmbigous(cn));
 
 		// address in the table
@@ -159,39 +144,58 @@ public final class MCCube {
 		}
 	}
 
-	private static int w, h, d;
-	private static byte[][] voxData;
-	private static int threshold;
+	/**
+	 * computes the case number of the cube
+	 * @return the number of the case corresponding to the cube
+	 */
+	private int caseNumber(final Carrier car) {
+		int caseNumber = 0;
+		for (int index = -1; 
+			++index < v.length; 
+			caseNumber += (car.intensity(v[index]) - car.threshold > 0) 
+					? 1 << index
+					: 0);
+		return caseNumber;
+	}
 
-	private static int intensity(Point3f p) {
-		// int x = (int)p.x + 
-		//	w/2, y = (int)p.y + h/2, z = (int)p.z + d/2;
-		int x = (int)p.x, y = (int)p.y, z = (int)p.z;
-		return voxData[z][y * w + x] & 0xff;
+	/** An encapsulating class to avoid thread collisions on static fields. */
+	private static class Carrier {
+		int w, h, d;
+		byte[][] voxData;
+		int threshold;
+
+		int intensity(final Point3f p) {
+			// int x = (int)p.x + 
+			//	w/2, y = (int)p.y + h/2, z = (int)p.z + d/2;
+			int x = (int)p.x, y = (int)p.y, z = (int)p.z;
+			return voxData[z][y * w + x] & 0xff;
+		}
 	}
 
 	public static final List<Point3f> getTriangles(ImagePlus image, 
 							int thresh){
 		List<Point3f> tri = new ArrayList<Point3f>();
-		w = image.getWidth();
-		h = image.getHeight();
-		d = image.getStackSize();
-		threshold = thresh;
-		voxData = new byte[d][];
-		for(int z = 0; z < d; z++) {
-			voxData[z] = (byte[])image.
+		final Carrier car = new Carrier();
+		car.w = image.getWidth();
+		car.h = image.getHeight();
+		car.d = image.getStackSize();
+		car.threshold = thresh;
+		car.voxData = new byte[car.d][];
+		for(int z = 0; z < car.d; z++) {
+			car.voxData[z] = (byte[])image.
 				getStack().getProcessor(z+1).getPixels();
 		}
 		int SIZE = 1;
 		MCCube.SIZE = SIZE;
-		for(int z = 0; z < d-1; z+=SIZE){
-			for(int x = 0; x < w-SIZE; x+=SIZE){
-				for(int y = SIZE; y < h; y+=SIZE){
+		for(int z = 0; z < car.d-1; z+=SIZE){
+			for(int x = 0; x < car.w-SIZE; x+=SIZE){
+				for(int y = SIZE; y < car.h; y+=SIZE){
 					MCCube cube = new MCCube(x, y, z);
-					cube.getTriangles(tri);
+					cube.computeEdges(car);
+					cube.getTriangles(tri, car);
 				}
 			}
-			IJ.showProgress(z, d-2);
+			IJ.showProgress(z, car.d-2);
 		}
 
 		// convert pixel coordinates 

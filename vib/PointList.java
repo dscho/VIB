@@ -21,7 +21,7 @@ import java.util.List;
  * 
  * @author Benjamin Schmid
  */
-class PointList implements Iterable<BenesNamedPoint>{
+public class PointList implements Iterable<BenesNamedPoint>{
 	
 	private List<BenesNamedPoint> points;
 	

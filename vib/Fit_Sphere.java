@@ -12,6 +12,7 @@ import ij.gui.ImageCanvas;
 import ij.gui.StackWindow;
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
+import ij.process.ByteProcessor;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.io.BufferedReader;
@@ -87,6 +88,21 @@ public class Fit_Sphere implements PlugIn {
 					       {297, 566, 56} }
 		};
 */		
+		
+		/*
+		   These next two points are those that define the angle
+		   swepping through the fan-shaped body that we consider */
+		
+		int [] pointInferiorLowZ = { 294 ,466, 43 };
+		int [] pointInferiorHighZ = { 294 ,466, 49 };
+		
+		int [] pointSuperiorLowZ = { 234, 484, 42 };
+		int [] pointSuperiorHighZ = { 234, 484, 50 };
+
+		/* We ignore the y co-ordinates of these and 
+		   exclude those outside the angle in the XZ
+		   plane. */
+				    
 		ImagePlus[] channels = BatchOpener.open(averagedNC82Path);
 		if (channels == null) {
 			IJ.error("Couldn't open: " + averagedNC82Path);
@@ -103,7 +119,20 @@ public class Fit_Sphere implements PlugIn {
 		int width = imp.getWidth();
 		int height = imp.getHeight();
 		int depth = imp.getStackSize();
+
+		// Scale the limit points with the calibration...
 		
+		double [] pointMaxZDefiningAngle = new double[3];
+		double [] pointMinZDefiningAngle = new double[3];
+				
+		pointMaxZDefiningAngle[0] = pointInferiorHighZ[0] * x_spacing;
+		pointMaxZDefiningAngle[1] = pointInferiorHighZ[1] * y_spacing;
+		pointMaxZDefiningAngle[2] = pointInferiorHighZ[2] * z_spacing;
+		
+		pointMinZDefiningAngle[0] = pointInferiorLowZ[0] * x_spacing;
+		pointMinZDefiningAngle[1] = pointInferiorLowZ[1] * y_spacing;
+		pointMinZDefiningAngle[2] = pointInferiorLowZ[2] * z_spacing;
+
 		ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
 		
 		// optimizer.prin = 2; // Show some debugging information...
@@ -144,6 +173,13 @@ public class Fit_Sphere implements PlugIn {
 		double resultScaled_x = startValues[0];
 		double resultScaled_y = startValues[1];
 		double resultScaled_z = startValues[2];
+
+		// "max" is towards high Z...
+		double maxAngle = Math.atan( (pointMaxZDefiningAngle[2] - resultScaled_z) / (resultScaled_x - pointMaxZDefiningAngle[0]) );
+		double minAngle = Math.atan( (pointMinZDefiningAngle[2] - resultScaled_z) / (resultScaled_x - pointMinZDefiningAngle[0]) );
+
+		System.out.println("maxAngle is "+maxAngle+" (in degrees: "+((maxAngle*180)/Math.PI)+")");
+		System.out.println("minAngle is "+minAngle+" (in degrees: "+((minAngle*180)/Math.PI)+")");		
 		
 		// Now work out the radii from this:
 		double[] radii = new double[pointsInShells.length];
@@ -193,7 +229,8 @@ public class Fit_Sphere implements PlugIn {
 			return;
 		}
 
-		boolean[][] include = new boolean[depth][];
+		boolean [][] include = new boolean[depth][];
+		byte [][] excludedByAngle = new byte[depth][width*height];
 
 		double maxDistanceSquared = 0;
 		double minDistanceSquared = Double.MAX_VALUE;
@@ -206,12 +243,6 @@ public class Fit_Sphere implements PlugIn {
 			boolean[] includeSlice = new boolean[width * height];
 			for (int y = 0; y < height; ++y) {
 				for (int x = 0; x < width; ++x) {
-					int value = pixels[y * width + x] & 0xFF;
-					boolean includeThisOne = (value >= includeOverAndIncluding);
-					includeSlice[y * width + x] = includeThisOne;
-
-					if( ! includeThisOne )
-					    continue;
 					
                                         double x_real = x * x_spacing;
                                         double y_real = y * y_spacing;
@@ -219,6 +250,30 @@ public class Fit_Sphere implements PlugIn {
                                         double x_diff = x_real - resultScaled_x;
                                         double y_diff = y_real - resultScaled_y;
                                         double z_diff = z_real - resultScaled_z;
+					
+					double angle = Math.atan( z_diff / -x_diff );
+					/*
+					if( z == 45 )
+						System.out.println("in z slice: "+z+" got angle: "+angle);
+					 */
+					if( angle > maxAngle || x >= resultUnscaled_x ) {
+						excludedByAngle[z][y*width+x] = (byte)255;
+						continue;
+					}
+					if( angle < minAngle || x >= resultUnscaled_x ) {
+						excludedByAngle[z][y*width+x] = (byte)255;
+						continue;
+					}
+					
+					int value = pixels[y * width + x] & 0xFF;
+					boolean includeThisOne = (value >= includeOverAndIncluding);
+					includeSlice[y * width + x] = includeThisOne;
+
+					if( ! includeThisOne ) {
+						excludedByAngle[z][y*width+x] = (byte)128;
+					    continue;
+					}
+					
                                         double distanceSquared = x_diff * x_diff + y_diff * y_diff + z_diff * z_diff;
 
                                         if(distanceSquared > maxDistanceSquared)
@@ -232,6 +287,18 @@ public class Fit_Sphere implements PlugIn {
 
 		heatmap.close();
 
+		ImageStack newStack=new ImageStack(width,height);
+		for( int z = 0; z < depth; ++z ) {
+			ByteProcessor bp = new ByteProcessor(width,height);
+			bp.setPixels(excludedByAngle[z]);
+			newStack.addSlice("", bp);
+		}
+		ImagePlus newImagePlus=new ImagePlus("points excluded by angle",newStack );
+		newImagePlus.show();
+		
+		if(false)
+			return;
+		
                 boolean rescaleValues = false;
 
 		double maxDistance = Math.sqrt(maxDistanceSquared);

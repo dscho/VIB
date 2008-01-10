@@ -7,6 +7,19 @@ import ij.ImagePlus;
 import pal.math.ConjugateDirectionSearch;
 import vib.FastMatrix;
 
+/* This can all get very confusing, so to make my convention clear:
+
+     green channel == fixed image == current image
+     
+     magenta channel == transformed image == cropped template image
+
+   So we're transforming the template onto the current image.
+
+       templatePoint is in the template
+       guessedPoint is in the current image
+
+*/
+
 public class FineTuneThread extends Thread {
 	
 	boolean keepResults = true;
@@ -29,10 +42,10 @@ public class FineTuneThread extends Thread {
 		int totalThreads,
 		int method,
 		double cubeSide,
-                ImagePlus croppedTemplate,
-                ImagePlus template,
+                ImagePlus croppedTemplate, // The cropped template image.
+                ImagePlus template, // The full template image.
                 NamedPoint templatePoint,
-                ImagePlus newImage,
+                ImagePlus newImage, // The full current image.
                 NamedPoint guessedPoint,
                 double [] guessedRotation,
 		ProgressWindow progressWindow,
@@ -200,6 +213,7 @@ public class FineTuneThread extends Thread {
 			RegistrationResult r = Name_Points.mapImageWith(
 				croppedTemplate,
 				newImage,
+				templatePoint,
 				guessedPoint,
 				startValues,
 				cubeSide,

@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class MeshEditor {
 
-	/** If the content wraps a mesh, smooth it by the fraction K (0, 1). */
+	/** If the Content instance wraps a mesh, smooth it by the fraction K (0, 1). */
 	static public void smooth(final Content c, final float K) {
 		if (null == c || !(c instanceof MeshGroup)) return;
 		final MeshGroup mg = (MeshGroup)c;
@@ -24,7 +24,7 @@ public class MeshEditor {
 			return;
 		}
 		// for each unique point, find which other points are linked by one edge to it.
-		// In the traingles List, there are only points, but each sequence of 3 points makes a triangle.
+		// In the triangles List, there are only points, but each sequence of 3 points makes a triangle.
 		final Hashtable ht = new Hashtable();
 		for (int i=0; i<triangles.size(); i+=3) {
 			// process one triangle at a time
@@ -35,6 +35,16 @@ public class MeshEditor {
 			build(p2, p3, p1, ht);
 			build(p3, p1, p2, ht);
 		}
+		/*  // shrinkage correction works, but generates undesirably unsmooth edges
+		for (Iterator it = ht.values().iterator(); it.hasNext(); ) {
+			PointGroup pg = (PointGroup)it.next();
+			pg.computeVector(K);
+		}
+		for (Iterator it = ht.values().iterator(); it.hasNext(); ) {
+			PointGroup pg = (PointGroup)it.next();
+			pg.applyVector(ht);
+		}
+		*/
 		for (Iterator it = ht.values().iterator(); it.hasNext(); ) {
 			PointGroup pg = (PointGroup)it.next();
 			pg.smoothMembers(K);
@@ -43,11 +53,12 @@ public class MeshEditor {
 		mg.shape.update();
 	}
 
-	/** Represents one point in 3D space that appears in multiple intances within the triangles list. */
+	/** Represents one point in 3D space that appears in multiple instances within the triangles list. */
 	static private class PointGroup {
 		Point3f first;
 		HashSet edges = new HashSet();
 		ArrayList members = new ArrayList(); // can't be a HashSet, because points will compare as equal
+		float vx, vy, vz;
 
 		PointGroup(Point3f first) {
 			this.first = first;
@@ -61,9 +72,9 @@ public class MeshEditor {
 		}
 		void smoothMembers(float K) {
 			// Compute a vector composed of all vectors to other points with which it shares an edge, and add some fraction of that vector to each member point.
-			float vx = 0;
-			float vy = 0;
-			float vz = 0;
+			vx = 0;
+			vy = 0;
+			vz = 0;
 			for (Iterator it = edges.iterator(); it.hasNext(); ) {
 				Point3f po = (Point3f)it.next();
 				vx += po.x;
@@ -79,6 +90,49 @@ public class MeshEditor {
 				m.x += vx;
 				m.y += vy;
 				m.z += vz;
+			}
+		}
+		void computeVector(float K) {
+			// Compute a vector composed of all vectors to other points with which it shares an edge, and add some fraction of that vector to each member point.
+			vx = 0;
+			vy = 0;
+			vz = 0;
+			for (Iterator it = edges.iterator(); it.hasNext(); ) {
+				Point3f po = (Point3f)it.next();
+				vx += po.x;
+				vy += po.y;
+				vz += po.z;
+			}
+			int size = edges.size();
+			vx = (vx/size - first.x) * K;
+			vy = (vy/size - first.y) * K;
+			vz = (vz/size - first.z) * K;
+		}
+		void applyVector(Hashtable ht) {
+			// compute average displacement vector for all neighbors, i.e. edge points
+			float ax=0, ay=0, az=0;
+			int count = 0;
+			for (Iterator it = edges.iterator(); it.hasNext(); ) {
+				PointGroup pg = (PointGroup)ht.get(it.next());
+				if (null == pg) continue;
+				count++;
+				ax += pg.vx;
+				ay += pg.vy;
+				az += pg.vz;
+			}
+			ax += vx;
+			ay += vy;
+			az += vz;
+			count++; // so count can never be zero
+			ax /= count;
+			ay /= count;
+			az /= count;
+			// apply to each member the smoothing vector minus average neighborhood smoothing vector to avoid shrinking
+			for (Iterator it = members.iterator(); it.hasNext(); ) {
+				Point3f m = (Point3f)it.next();
+				m.x += vx;// - ax;
+				m.y += vy;// - ay;
+				m.z += vz;// - az;
 			}
 		}
 	}

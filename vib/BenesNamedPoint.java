@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 import math3d.Point3d;
 
-class BenesNamedPoint extends Point3d {
+public class BenesNamedPoint extends Point3d {
 
 	String name;
 	boolean set;
