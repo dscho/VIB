@@ -1,16 +1,30 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
-/* This plugin looks for connected regions with the same value in 8
- * bit images, and optionally displays images with just each of those
- * connected regions.  (Otherwise the useful information is just printed out.)
- */
+/* Copyright 2006, 2007 Mark Longair */
 
 /*
-    TODO: let the search start from point selection, so it's more like
-    a conventional fill.
+    This file is part of the ImageJ plugin "Find Connected Regions".
 
-    TODO: (?) let the user interrupt the search
+    The ImageJ plugin "Find Connected Regions" is free software; you
+    can redistribute it and/or modify it under the terms of the GNU
+    General Public License as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version.
 
+    The ImageJ plugin "Find Connected Regions" is distributed in the
+    hope that it will be useful, but WITHOUT ANY WARRANTY; without
+    even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+    PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/* This plugin looks for connected regions with the same value in 8
+ * bit images, and optionally displays images with just each of those
+ * connected regions.  (Otherwise the useful information is just
+ * printed out.)
  */
 
 package util;
@@ -19,6 +33,8 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.GenericDialog;
+import ij.gui.Roi;
+import ij.gui.PointRoi;
 import ij.plugin.PlugIn;
 import ij.process.ByteProcessor;
 import java.util.Collections;
@@ -28,27 +44,64 @@ import amira.AmiraParameters;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
 import java.awt.image.ColorModel;
+import ij.measure.ResultsTable;
+import java.awt.Dialog;
+import java.awt.Button;
+import java.awt.Polygon;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+class CancelDialog extends Dialog implements ActionListener {
+	Button cancel;
+	Find_Connected_Regions plugin;
+	public CancelDialog(Find_Connected_Regions plugin) {
+		super( IJ.getInstance(), "Find Connected Regions", false );
+		this.plugin = plugin;
+		cancel = new Button("Cancel 'Find Connected Regions'");
+		add(cancel);
+		cancel.addActionListener(this);
+		pack();
+	}
+        public void actionPerformed( ActionEvent e ) {
+		Object source = e.getSource();
+                if( source == cancel ) {
+                        plugin.cancel();
+		}
+	}
+}
 
 public class Find_Connected_Regions implements PlugIn {
+
+	public static final String PLUGIN_VERSION = "1.0";
+
+	boolean pleaseStop = false;
+
+	public void cancel() {
+		pleaseStop = true;
+	}
 
 	/* An inner class to make the results list sortable. */
 	private class Region implements Comparable {
 
-		Region(int value, String materialName, int points) {
+		Region(int value, String materialName, int points, boolean sameValue) {
 			byteImage = true;
 			this.value = value;
 			this.materialName = materialName;
 			this.points = points;
+			this.sameValue = sameValue;
 		}
 
-		Region(int points) {
+		Region(int points, boolean sameValue) {
 			byteImage = false;
 			this.points = points;
+			this.sameValue = sameValue;
 		}
+
 		boolean byteImage;
 		int points;
 		String materialName;
 		int value;
+		boolean sameValue;
 
 		public int compareTo(Object otherRegion) {
 			Region o = (Region) otherRegion;
@@ -67,21 +120,36 @@ public class Find_Connected_Regions implements PlugIn {
 				return "Region containing " + points + " points";
 			}
 		}
+
+		public void addRow( ResultsTable rt ) {
+			rt.incrementCounter();
+			if(byteImage) {
+				if(sameValue)
+					rt.addValue("Value in Region",value);
+				rt.addValue("Points In Region",points);
+				if(materialName!=null)
+					rt.addLabel("Material Name",materialName);
+			} else {
+				rt.addValue("Points in Region",points);
+			}
+		}
+
 	}
 	private static final byte IN_QUEUE = 1;
 	private static final byte ADDED = 2;
 
 	public void run(String ignored) {
 
-		GenericDialog gd = new GenericDialog("Find Connected Regions Options");
+		GenericDialog gd = new GenericDialog("Find Connected Regions Options (version: "+PLUGIN_VERSION+")");
 		gd.addCheckbox("Allow diagonal connections?", false);
 		gd.addCheckbox("Display an image for each region?", true);
+		gd.addCheckbox("Display results table?", true);
 		gd.addCheckbox("Regions must have the same value?", true);
+		gd.addCheckbox("Start from point selection?", false);
 		gd.addNumericField("Regions for values over: ", 0, 0);
 		gd.addNumericField("Minimum number of points in a region", 1, 0);
 		gd.addNumericField("Stop after this number of regions are found: ", 1, 0);
 		gd.addMessage("(If number of regions is -1, find all of them.)");
-		// gd.addCheckbox("Start from point selection?", false);
 
 		gd.showDialog();
 		if (gd.wasCanceled()) {
@@ -89,7 +157,9 @@ public class Find_Connected_Regions implements PlugIn {
 		}
 		boolean diagonal = gd.getNextBoolean();
 		boolean display = gd.getNextBoolean();
+		boolean showResults = gd.getNextBoolean();
 		boolean mustHaveSameValue = gd.getNextBoolean();
+		boolean startFromPointROI = gd.getNextBoolean();
 		double valuesOverDouble = gd.getNextNumber();
 		double minimumPointsInRegionDouble = gd.getNextNumber();
 		int stopAfterNumberOfRegions = (int) gd.getNextNumber();
@@ -115,9 +185,37 @@ public class Find_Connected_Regions implements PlugIn {
 		if (!byteImage && mustHaveSameValue) {
 			IJ.error("You can only specify that each region must have the same value for 8 bit images.");
 			return;
-		}
+		}				
 
 		boolean startAtMaxValue = !mustHaveSameValue;
+
+		int point_roi_x = -1;
+		int point_roi_y = -1;
+		int point_roi_z = -1;
+
+		if( startFromPointROI ) {
+			
+			Roi roi = imagePlus.getRoi();
+			if (roi == null) {
+				IJ.error("There's no point selected in the image.");
+				return;
+			}
+			if (roi.getType() != Roi.POINT) {
+				IJ.error("There's a selection in the image, but it's not a point selection.");
+				return;
+			}			
+			Polygon p = roi.getPolygon();
+			if(p.npoints > 1) {
+				IJ.error("You can only have one point selected.");
+				return;
+			}
+			
+			point_roi_x = p.xpoints[0];
+			point_roi_y = p.ypoints[0];
+			point_roi_z = imagePlus.getCurrentSlice()-1;
+			
+			System.out.println("Fetched ROI with co-ordinates: "+p.xpoints[0]+", "+p.ypoints[0]);			
+		}
 
 		int width = imagePlus.getWidth();
 		int height = imagePlus.getHeight();
@@ -167,12 +265,25 @@ public class Find_Connected_Regions implements PlugIn {
 			cm = stack.getColorModel();
 		}
 
+		ResultsTable rt=ResultsTable.getResultsTable();
+		rt.reset();
+
+		CancelDialog cancelDialog=new CancelDialog(this);
+		cancelDialog.show();
+
+		boolean firstTime = true;
+
 		while (true) {
 
-			// Find one pixel that's above the minimum, or find the
-			// maximum in the case where we're not insisting that
-			// all regions are made up of the same color.
-			// These are set in all cases...
+			if( pleaseStop )
+				break;
+
+			/* Find one pixel that's above the minimum, or
+			   find the maximum in the case where we're
+			   not insisting that all regions are made up
+			   of the same color.  These are set in all
+			   cases... */
+
 			int initial_x = -1;
 			int initial_y = -1;
 			int initial_z = -1;
@@ -182,7 +293,18 @@ public class Find_Connected_Regions implements PlugIn {
 			int maxValueInt = -1;
 			float maxValueFloat = Float.MIN_VALUE;
 
-			if (byteImage && startAtMaxValue) {
+			if (firstTime && startFromPointROI ) {
+				
+				initial_x = point_roi_x;
+				initial_y = point_roi_y;
+				initial_z = point_roi_z;
+
+				if(byteImage)
+					foundValueInt = sliceDataBytes[initial_z][initial_y * width + initial_x] & 0xFF;
+				else
+					foundValueFloat = sliceDataFloats[initial_z][initial_y * width + initial_x];
+
+			} else if (byteImage && startAtMaxValue) {
 
 				for (int z = 0; z < depth; ++z) {
 					for (int y = 0; y < height; ++y) {
@@ -200,11 +322,13 @@ public class Find_Connected_Regions implements PlugIn {
 
 				foundValueInt = maxValueInt;
 
-				// If the maximum value is below the level we
-				// care about, we're done.
+				/* If the maximum value is below the
+				   level we care about, we're done. */
+
 				if (foundValueInt < valuesOverDouble) {
 					break;
 				}
+
 			} else if (byteImage && !startAtMaxValue) {
 
 				// Just finding some point in the a region...
@@ -227,7 +351,9 @@ public class Find_Connected_Regions implements PlugIn {
 				if (foundValueInt == -1) {
 					break;
 				}
+
 			} else {
+
 				// This must be a 32 bit image and we're starting at the maximum
 				assert (!byteImage && startAtMaxValue);
 
@@ -256,7 +382,10 @@ public class Find_Connected_Regions implements PlugIn {
 				if (foundValueFloat < valuesOverDouble) {
 					break;
 				}
+
 			}
+
+			firstTime = false;
 
 			int vint = foundValueInt;
 			float vfloat = foundValueFloat;
@@ -277,6 +406,9 @@ public class Find_Connected_Regions implements PlugIn {
 			int pointsInThisRegion = 0;
 
 			while (pointsInQueue > 0) {
+
+				if(pleaseStop)
+					break;
 
 				int nextIndex = queue[--pointsInQueue];
 
@@ -361,16 +493,19 @@ public class Find_Connected_Regions implements PlugIn {
 				}
 			}
 
+			if(pleaseStop)
+				break;
+
 			// So now pointState should have no IN_QUEUE
 			// status points...
 			Region region;
 			if (byteImage) {
-				region = new Region(vint, materialName, pointsInThisRegion);
+				region = new Region(vint, materialName, pointsInThisRegion, mustHaveSameValue );
 			} else {
-				region = new Region(pointsInThisRegion);
+				region = new Region(pointsInThisRegion, mustHaveSameValue);
 			}
 			if (pointsInThisRegion < minimumPointsInRegionDouble) {
-				System.out.println("Too few points - only " + pointsInThisRegion);
+				// System.out.println("Too few points - only " + pointsInThisRegion);
 				continue;
 			}
 
@@ -393,7 +528,7 @@ public class Find_Connected_Regions implements PlugIn {
 							byte status = pointState[width * (z * height + y) + x];
 
 							if (status == IN_QUEUE) {
-								System.out.println("BUG: point " + x + "," + y + "," + z + " is still marked as IN_QUEUE");
+								IJ.log("BUG: point " + x + "," + y + "," + z + " is still marked as IN_QUEUE");
 							}
 
 							if (status == ADDED) {
@@ -424,15 +559,25 @@ public class Find_Connected_Regions implements PlugIn {
 				newImagePlus.show();
 			}
 
-			if (results.size() >= stopAfterNumberOfRegions) {
+			if ( (stopAfterNumberOfRegions > 0) && (results.size() >= stopAfterNumberOfRegions) ) {
 				break;
 			}
 		}
 
 		Collections.sort(results, Collections.reverseOrder());
 
+		cancelDialog.dispose();
+
 		for (Iterator<Region> it = results.iterator(); it.hasNext();) {
-			System.out.println(it.next().toString());
+			Region r = it.next();
+			System.out.println(r.toString());		       			
+			if( showResults ) {
+				r.addRow(rt);
+			}		
 		}
+
+		if( showResults )
+			rt.show("Results");
+		
 	}
 }

@@ -11,7 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-/* This class contains methods I would like to see incorporated into
+/** This class contains methods I would like to see incorporated into
    HandleExtraFileTypes.  The main features are:
 
      * An open method that returns an array of ImagePlus objects,
@@ -25,11 +25,56 @@ import java.util.Arrays;
        available.  This is a bit ugly, but means that this could be
        incorporated into the main ImageJ source code without the
        plugins also needing to be included at compile time.
-
+ 
  */
 
 public class BatchOpener {
-	
+
+	/**
+	 * Returns an ImagePlus corresponding to the first (and possibly only)
+	 * channel in the image file, without calling show() on the ImagePlus
+	 * object.  If the file contains no channels, or the file is not found
+	 * this returns null.
+	 *
+	 * @param  the path of the image file to open
+	 */
+	public static ImagePlus openFirstChannel(String path) {
+		ImagePlus [] channels = BatchOpener.open(path);
+		if( channels == null )
+			return null;
+		if( channels.length == 0 )
+			return null;
+		return channels[0];
+	}
+
+	/**
+	 * Returns an ImagePlus corresponding to the channel with the specified
+	 * index in the image file.  If that channel is not found in the image,
+	 * a util.NoSuchChannelException is thrown.  If the file cannot be
+	 * found or there is any other error in opening, null is returned.
+	 *
+	 * @param path   the path of the image file to open
+	 * @param i      the (zero-indexed) index of the channel to return
+	 */
+	public static ImagePlus openParticularChannel(String path, int i) throws NoSuchChannelException {
+		ImagePlus [] channels = BatchOpener.open(path);
+		if( channels == null )
+			return null;
+		if( i >= channels.length || i < 0 ) {
+			throw new NoSuchChannelException("No channel "+i+
+				" in file "+path+", which has "+channels.length+
+				" channels.  (Channel indices start at zero.)");
+		}
+		return channels[i];
+	}
+		
+	/**
+	 * Returns an array of ImagePlus objects corresponding to all of the
+	 * channels in the image file.  If the file cannot be
+	 * found or there is any other error in opening, null is returned.
+	 *
+	 * @param path   the path of the image file to open
+	 */
 	public static ImagePlus[] open(String path) {
 		
 		/* Read a few bytes from the beginning of the file into a
@@ -364,16 +409,15 @@ public class BatchOpener {
 
 		return null;
 	}
-    
-    static boolean findLSMTag(RandomAccessFile in, boolean littleEndian) throws IOException {
-        return findTag(34412,in,littleEndian);
-    }
-    
+		
+	private static boolean findLSMTag(RandomAccessFile in, boolean littleEndian) throws IOException {
+		return findTag(34412, in, littleEndian);
+	}
 	// This is a stripped down version of TiffDecoder.getTiffInfo() that just
 	// looks for an particular TIFF tag...
-	
-	static boolean findTag(long tagToLookFor, RandomAccessFile in, boolean littleEndian) throws IOException {
-		
+
+	private static boolean findTag(long tagToLookFor, RandomAccessFile in, boolean littleEndian) throws IOException {
+
 		int byteOrder = in.readShort();
 		int magicNumber = getShort(in, littleEndian); // 42
 		int offset = getInt(in, littleEndian);
@@ -381,16 +425,16 @@ public class BatchOpener {
 			IJ.error("Not really a TIFF file (BUG: should have been detected earlier.)");
 			// FIXME: throw an exception...
 		}
-		
+
 		if (offset < 0) {
 			IJ.error("TIFF file probably corrupted: offset is negative");
 			return false;
 		}
-		
+
 		while (offset > 0) {
-			
+
 			in.seek(offset);
-			
+
 			// Get Image File Directory data
 			int tag;
 			int fieldType;
@@ -413,8 +457,8 @@ public class BatchOpener {
 		}
 		return false;
 	}
-	
-	static int getInt(RandomAccessFile in, boolean littleEndian) throws IOException {
+
+	private static int getInt(RandomAccessFile in, boolean littleEndian) throws IOException {
 		int b1 = in.read();
 		int b2 = in.read();
 		int b3 = in.read();
@@ -425,8 +469,8 @@ public class BatchOpener {
 			return (b1 << 24) + (b2 << 16) + (b3 << 8) + b4;
 		}
 	}
-	
-	static int getShort(RandomAccessFile in, boolean littleEndian) throws IOException {
+
+	private static int getShort(RandomAccessFile in, boolean littleEndian) throws IOException {
 		int b1 = in.read();
 		int b2 = in.read();
 		if (littleEndian) {
@@ -437,8 +481,8 @@ public class BatchOpener {
 	}
 	private static final int TIFF_FIELD_TYPE_SHORT = 3;
 	private static final int TIFF_FIELD_TYPE_LONG = 4;
-	
-	static int getValue(RandomAccessFile in, boolean littleEndian, int fieldType, int count) throws IOException {
+
+	private static int getValue(RandomAccessFile in, boolean littleEndian, int fieldType, int count) throws IOException {
 		int value = 0;
 		int unused;
 		if (fieldType == TIFF_FIELD_TYPE_SHORT && count == 1) {
@@ -448,5 +492,12 @@ public class BatchOpener {
 			value = getInt(in, littleEndian);
 		}
 		return value;
+	}
+}
+
+class NoSuchChannelException extends Exception {
+
+	NoSuchChannelException(String message) {
+		super(message);
 	}
 }

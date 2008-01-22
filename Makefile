@@ -95,6 +95,7 @@ Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
 ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard marchingcubes/*.java) $(wildcard isosurface/*.java) \
 	$(wildcard orthoslice/*.java) \
+	$(wildcard javax/media/j3d/*.java) \
 	vib/Resample_.java vib/InterpolatedImage.java \
 	amira/AmiraParameters.java amira/AmiraTable.java \
 	math3d/Point3d.java math3d/Transform_IO.java ImageJ_3D_Viewer.java
@@ -113,6 +114,11 @@ Unpack_To_PNG.jar: SOURCES=stacks/Unpack_To_PNG.java \
 	amira/AmiraTable.java \
 	util/BatchOpener.java \
 	zeiss/LSM_Reader.java
+
+Find_Connected_Regions.jar: SOURCES=util/Find_Connected_Regions.java \
+	amira/AmiraParameters.java \
+	amira/AmiraTable.java \
+	util/COPYING
 
 Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
@@ -156,7 +162,10 @@ ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	vib/InterpolatedImage.java \
 	math3d/Point3d.java
 
-Quantile_Based_Normalization.jar: SOURCES=util/Quantile_Based_Normalization.java
+Quantile_Based_Normalization.jar: SOURCES=util/Quantile_Based_Normalization.java \
+	vib/app/FileGroup.java \
+	vib/app/gui/FileGroupDialog.java \
+	util/BatchOpener.java
 
 VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard vib/app/gui/*.java) \

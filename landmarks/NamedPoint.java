@@ -10,20 +10,12 @@ import ij.plugin.*;
 import ij.plugin.filter.*;
 import ij.text.*;
 
-import ij.measure.Calibration;
 
-import java.awt.Color;
 import java.io.*;
 
 import math3d.Point3d;
 
-import vib.transforms.Transform;
-import vib.transforms.FastMatrixTransform;
 import vib.transforms.OrderedTransformations;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.StringTokenizer;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -31,9 +23,6 @@ import java.awt.event.*;
 import java.io.*;
 import java.util.regex.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.ListIterator;
 
 import vib.FastMatrix;
 
@@ -60,18 +49,6 @@ public class NamedPoint {
                 this.set = false;
         }
 	
-        public static void correctWithCalibration( ArrayList<NamedPoint> namedPoints, Calibration c ) {
-		
-                FastMatrixTransform fm=FastMatrixTransform.fromCalibrationWithoutOrigin(c);
-		
-                Iterator i0;
-                for(i0=namedPoints.listIterator();i0.hasNext();) {
-                        NamedPoint p=(NamedPoint)i0.next();
-                        p.transformWith(fm);
-                }
-		
-        }
-	
         public void transformWith(FastMatrix m) {
                 m.apply(x,y,z);
                 x=m.x;
@@ -83,19 +60,6 @@ public class NamedPoint {
                 double[] result=new double[3];
                 o.apply(x,y,z,result);
                 return new NamedPoint(name,result[0],result[1],result[2]);
-        }
-	
-        public static ArrayList<NamedPoint> transformPointsWith( ArrayList<NamedPoint> namedPoints, OrderedTransformations o ) {
-		
-                ArrayList<NamedPoint> result=new ArrayList<NamedPoint>();
-		
-                Iterator i0;
-                for(i0=namedPoints.listIterator();i0.hasNext();) {
-                        NamedPoint p=(NamedPoint)i0.next();
-                        result.add(p.transformWith(o));
-                }
-		
-                return result;
         }
 		
         public static String escape(String s) {
@@ -126,5 +90,11 @@ public class NamedPoint {
                         z+" ]";
                 return line;
         }
-	
+
+	public String toString() {
+		return ""+name+
+			" at "+x+
+			", "+y+
+			", "+z;
+	}
 }

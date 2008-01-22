@@ -19,12 +19,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class ProgressWindow extends StackWindow implements ActionListener {
+
+	int indexOfPointBeingFineTuned;
 	
 	int width;
 	int height;
 	int depth;
 	
 	DecimalFormat scoreFormatter;
+	DecimalFormat distanceFormatter;
 	
 	Name_Points plugin;
 	public void setPlugin( Name_Points plugin ) {
@@ -33,20 +36,16 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 	
 	ArrayList<FineTuneThread> fineTuneThreads;
 	
-	// Do make sure you make this big enough in the first place...
-	public ProgressWindow( ImagePlus imp ) {
-		this(imp, null);
-		width = imp.getWidth();
-		height = imp.getHeight();
-		depth = imp.getStackSize();
-		scoreFormatter = new DecimalFormat("0.0000");
-	}
-	
 	Button useThis;
 	Button cancel;
 	Button refineBestSoFar;
 	Label lowestScore;
 	Label triedSoFar;
+
+	Button moveToRefinedPoint;
+	Button moveToOriginalPoint;
+
+	Label distanceMoved;
 	
 	RegistrationResult bestSoFar;
 	
@@ -57,7 +56,11 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 	void updateTriedSoFar( int done, int outOf ) {
 		triedSoFar.setText( "Seeds tried: "+done+" / "+outOf );
 	}
-	
+
+	void updateDistance(double newDistance,String units) {
+		distanceMoved.setText( "Moved: "+scoreFormatter.format(newDistance)+" "+units );
+	}
+		
 	void addFineTuneThread( FineTuneThread f ) {
 		fineTuneThreads.add(f);	    
 	}
@@ -89,34 +92,39 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 	
 	@Override
 	public void actionPerformed( ActionEvent e ) {
-
-		Object source = e.getSource();
-
-		System.out.println("Got event!");
-
-		if (!(source == useThis || source == cancel || source == refineBestSoFar)) {
-			return;
-		}
 		
-		cancel.setEnabled(false);
-		useThis.setEnabled(false);
-		stopThreads();
-
-		if (source == useThis) {
-			useTheResult = true;
-			triedSoFar.setText("Finishing...");
-			plugin.fineTuneResults(bestSoFar);
-		} else if (source == cancel) {
-			useTheResult = false;
-			triedSoFar.setText("Cancelling...");
-			plugin.fineTuneResults(null);
+		Object source = e.getSource();
+		
+		System.out.println("Got event!");
+		
+		if( source == useThis || source == cancel ) {
+			cancel.setEnabled(false);
+			useThis.setEnabled(false);
+			stopThreads();
+			if (source == useThis) {
+				useTheResult = true;
+				triedSoFar.setText("Finishing...");
+				plugin.fineTuneResults(bestSoFar);
+			} else if (source == cancel) {
+				useTheResult = false;
+				triedSoFar.setText("Cancelling...");
+				plugin.fineTuneResults(null);
+			}
+			close();		
 		} else if (source == refineBestSoFar) {
-			// FIXME: add this functionality...
-		}
 
-		close();
+			// FIXME: add this functionality...
+
+			/* Need to stop the threads and start a new
+			 * one from the best position so far. */
+
+		} else if (source == moveToOriginalPoint ) {
+			imp.setSlice( progressCanvas.fixed_z + 1 );
+		} else if (source == moveToRefinedPoint ) {
+			imp.setSlice( progressCanvas.transformed_z + 1 );
+		}		
 	}
-	
+
 	void startThreads() {
 		for( Iterator<FineTuneThread> i = fineTuneThreads.iterator();
 		     i.hasNext(); ) {
@@ -125,8 +133,24 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 		} 
 	}
 	
+	public ProgressWindow(ImagePlus imp) {
+		super(imp);
+		width = imp.getWidth();
+		height = imp.getHeight();
+		depth = imp.getStackSize();
+		scoreFormatter = new DecimalFormat("0.0000");
+		distanceFormatter = new DecimalFormat("0.00");
+	}
+	
+	protected ProgressCanvas progressCanvas;
+	
 	public ProgressWindow(ImagePlus imp, ImageCanvas ic) {
 		super( imp, ic );
+		ImageCanvas icAfter = getCanvas();
+		if( (icAfter != null) && (ic instanceof ProgressCanvas) )
+			progressCanvas = (ProgressCanvas)ic;
+		else
+			progressCanvas = null;
                 fineTuneThreads = new ArrayList<FineTuneThread>();
 		useThis = new Button("Use This");
 		cancel = new Button("Cancel");
@@ -139,7 +163,23 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 		add( cancel );
 		add( lowestScore );
 		add( triedSoFar );
+
+		moveToRefinedPoint = new Button("Goto refined point");
+		moveToOriginalPoint = new Button("Goto original guess");
+
+		moveToRefinedPoint.addActionListener(this);
+		moveToOriginalPoint.addActionListener(this);
+		add( moveToRefinedPoint );
+		add( moveToOriginalPoint );
+
+		distanceMoved = new Label("");
+		add( distanceMoved );
+
 		pack();
+		width = imp.getWidth();
+		height = imp.getHeight();
+		depth = imp.getStackSize();
+		scoreFormatter = new DecimalFormat("0.0000");
 	}
 	
 	boolean notShowingBest = true;
@@ -217,6 +257,23 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 		}
 		
 		depth = r.overlay_depth;
+		
+		/* Now set the crosshairs for the original and transformed points. */
+		
+		progressCanvas.setCrosshairs( r.fixed_point_x - subtract_from_new_x,
+					      r.fixed_point_y - subtract_from_new_y,
+					      r.fixed_point_z,
+					      true );
+
+		progressCanvas.setCrosshairs(  r.transformed_point_x - subtract_from_new_x,
+					       r.transformed_point_y - subtract_from_new_y,
+					       r.transformed_point_z,
+					       false );
+
+
+		updateDistance(r.pointMoved,plugin.templateUnits);
+
+		System.out.println("the point moved: "+r.pointMoved);
 		
 		// Call setSlice in any case since this might cause
 		// the scrollbar to update.
