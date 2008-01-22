@@ -7,12 +7,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 
+import ij.IJ;
 import ij.measure.Calibration;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
 import ij.plugin.filter.PlugInFilter;
+
+import ij.gui.GenericDialog;
+import ij.WindowManager;
 
 public class IFT_ implements PlugInFilter {
 	
@@ -27,13 +31,64 @@ public class IFT_ implements PlugInFilter {
 	private boolean[] flag;
 
 	public void run(ImageProcessor ip) {
-		init();
+		int[] wIDs = WindowManager.getIDList();
+		if(wIDs == null){
+			IJ.error("No images open");
+			return;
+		}
+		String[] titles = new String[wIDs.length+1];
+		for(int i=0;i<wIDs.length;i++){
+			titles[i] = WindowManager.getImage(wIDs[i]).getTitle();
+		}
+		titles[titles.length-1] = "use seeds from point list";
+		GenericDialog gd = new GenericDialog("Watershed from markers");
+		gd.addChoice("Seeds", titles, titles[0]);
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+
+		String seedtitle = gd.getNextChoice();
+		if(seedtitle.equals("use seeds from point list"))
+			initFromPointList();
+		else
+			initFromImage(WindowManager.getImage(seedtitle));
 		resultIm = createResult();
 		resultIm.show();
 		propagate();
 	}
 
-	public void init() {
+	public void initFromImage(ImagePlus seeds) {
+		w = image.getWidth();
+		h = image.getHeight();
+		d = image.getStackSize();
+		markers = PointList.load(image);
+		data = new byte[d][];
+		for(int z = 0; z < d; z++) {
+			data[z] = (byte[])image.getStack()
+					.getProcessor(z+1).getPixels();
+		}
+		C = new int[w*h*d];
+		flag = new boolean[w*h*d];
+		result = new byte[d][w*h];
+		for(int i = 0; i < C.length; i++)
+			C[i] = 255;
+		queue = new PriorityQueue();
+		byte m = 1;
+		for(int z = 0; z < seeds.getStackSize(); z++) {
+			byte[] b = (byte[])seeds.getStack().getPixels(z+1);
+			for(int i = 0; i < b.length; i++) {
+				if(b[i] == 0)
+					continue;
+				int index = z*b.length + i;
+				int cost = 0;
+				C[index] = cost;
+				result[z][i] = b[i];
+				queue.add(index, cost);
+			}
+		}
+	}
+
+	public void initFromPointList() {
 		w = image.getWidth();
 		h = image.getHeight();
 		d = image.getStackSize();
