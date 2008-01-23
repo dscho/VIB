@@ -199,7 +199,7 @@ Bilateral_Filter.jar: SOURCES=Bilateral_Filter.java \
 
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar \
-	Seam_Remover.jar Triangle_Algorithm.jar
+	Seam_Remover.jar Triangle_Algorithm.jar Menu_Font.jar
 
 $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 
