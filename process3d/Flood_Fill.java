@@ -9,6 +9,7 @@ import ij.ImagePlus;
 
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
+import ij.gui.Toolbar;
 
 import ij.plugin.MacroInstaller;
 import ij.plugin.PlugIn;
@@ -56,6 +57,7 @@ public class Flood_Fill implements PlugIn {
 	public synchronized static void fill(Vector seedpoints) {
 		ImagePlus imp = IJ.getImage();
 		IJ.showStatus("Flood fill");
+		byte color = (byte)Toolbar.getForegroundColor().getRGB();
 		int w = imp.getWidth(), h = imp.getHeight();
 		int d = imp.getStackSize();
 		byte[][] b = new byte[d][];
@@ -72,7 +74,7 @@ public class Flood_Fill implements PlugIn {
 			if(b[p.z][p.y*w+p.x] != (byte)255) {
 				continue;
 			}
-			b[p.z][p.y*w+p.x] = (byte)100;
+			b[p.z][p.y*w+p.x] = color;
 
 			if(p.x>0)   queue.addFirst(new Point(p.x-1,p.y,p.z));
 			if(p.x<w-1) queue.addFirst(new Point(p.x+1,p.y,p.z));
