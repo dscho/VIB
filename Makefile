@@ -119,6 +119,9 @@ Find_Connected_Regions.jar: SOURCES=util/Find_Connected_Regions.java \
 	amira/AmiraTable.java \
 	util/COPYING
 
+Mask_Of_Nearby_Points.jar: SOURCES=util/Mask_Of_Nearby_Points.java \
+	util/COPYING
+
 Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
 	stacks/PaneOwner.java \
