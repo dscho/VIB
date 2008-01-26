@@ -336,9 +336,13 @@ public class PathAndFillManager extends DefaultHandler {
 		
 		try {
 			if( compress ) {
+				System.out.println("Creating, with compression...");
 				pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(fileName)),"UTF-8"));
+				System.out.println("Created, pw is: "+pw);
 			} else {
+				System.out.println("Creating, without compression...");
 				pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName),"UTF-8"));
+				System.out.println("Created, pw is: "+pw);
 			}
 			
 			pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");

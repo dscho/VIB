@@ -22,7 +22,12 @@ else
 PLUGINSHOME=$(shell pwd)
 CPSEP=:
 endif
-JAVACOPTS=-classpath $(PLUGINSHOME)/../ImageJ/ij.jar$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).
+ifeq ($(wildcard $(PLUGINSHOME)/../ImageJ/ij.jar),)
+	IJ_JAR=../ij.jar
+else
+	IJ_JAR=../ImageJ/ij.jar
+endif
+JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).
 JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 
 all: $(CLASSES)
@@ -50,6 +55,8 @@ FibonacciHeapInt.java: FibonacciHeap.java Makefile
 	sed -e "s/FibonacciHeap/FibonacciHeapInt/g" -e "s/ implements Comparable//" -e "s/Comparable/int/g" -e "s/\.compareTo(\([^)]*\))/- \1/g" -e "s/Object other/int other/g" -e "s/heap.add(p, p);/heap.add((int)prios[i], new Double((int)prios[i]));/" -e "s/Node(null/Node(0/" < $< > $@
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java), $(JAVAS))) vib/segment/icons/*.png
+
+VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java), $(JAVAS))) vib/segment/icons/*.png
 
 Segmentation_Editor_compat.jar: SOURCES=amira/*.java \
 	vib/InterpolatedImage.java math3d/Point3d.java \
@@ -95,6 +102,7 @@ Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
 ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard marchingcubes/*.java) $(wildcard isosurface/*.java) \
 	$(wildcard orthoslice/*.java) \
+	$(wildcard javax/media/j3d/*.java) \
 	vib/Resample_.java vib/InterpolatedImage.java \
 	amira/AmiraParameters.java amira/AmiraTable.java \
 	math3d/Point3d.java math3d/Transform_IO.java ImageJ_3D_Viewer.java
@@ -201,7 +209,7 @@ Bilateral_Filter.jar: SOURCES=Bilateral_Filter.java \
 
 SIMPLE_JARS=Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar \
-	Seam_Remover.jar Triangle_Algorithm.jar
+	Seam_Remover.jar Triangle_Algorithm.jar Menu_Font.jar
 
 $(SIMPLE_JARS): SOURCES=$(patsubst %.jar,%.java,$@)
 

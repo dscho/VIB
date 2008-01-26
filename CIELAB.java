@@ -79,4 +79,14 @@ public class CIELAB {
 		return f < 0 ? 0 : f > 1 ? 255 : (int)Math.round(f * 255);
 	}
 
+	public final static void int2sRGB(int v, float[] rgb) {
+		rgb[0] = norm((v >> 16) & 0xff);
+		rgb[1] = norm((v >> 8) & 0xff);
+		rgb[2] = norm(v & 0xff);
+	}
+
+	public final static int sRGB2int(float[] rgb) {
+		return (unnorm(rgb[0]) << 16) | (unnorm(rgb[1]) << 8) |
+			unnorm(rgb[2]);
+	}
 }
