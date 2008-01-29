@@ -200,13 +200,12 @@ public class VoltexGroup extends Content {
 		int w = image.getWidth(), h = image.getHeight();
 		int d = image.getStackSize();
 		for(int z = 0; z < d; z++) {
-			byte[] data =(byte[])image.getStack().
-								getProcessor(z+1).getPixels();
+			byte[] data =(byte[])image.getStack().getPixels(z+1);
 			for(int y = 0; y < h; y++) {
 				for(int x = 0; x < w; x++) {
 					int index = y * w + x;
-					Point2d onCanvas = 
-						volumePointInCanvas(canvas, volToIP,x,y,z);
+					Point2d onCanvas = volumePointInCanvas(
+							canvas, volToIP,x,y,z);
 					if(p.contains(onCanvas.x, onCanvas.y)) {
 						data[index] = fillValue;
 					}
@@ -216,6 +215,31 @@ public class VoltexGroup extends Content {
 			IJ.showProgress(z, d);
 		}
 		renderer.fullReload();
+		// also fill the original image
+		image = super.image;
+		w = image.getWidth(); 
+		h = image.getHeight();
+		d = image.getStackSize();
+		int factor = getResamplingFactor();
+		for(int z = 0; z < d; z++) {
+			byte[] data =(byte[])image.getStack().getPixels(z+1);
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					int index = y * w + x;
+					Point2d onCanvas = volumePointInCanvas(
+						canvas, 
+						volToIP,
+						x/factor,
+						y/factor,
+						z/factor);
+					if(p.contains(onCanvas.x, onCanvas.y)) {
+						data[index] = fillValue;
+					}
+				}
+			}
+			IJ.showStatus("Filling...");
+			IJ.showProgress(z, d);
+		}
 	}
 
 	public void flush() {
