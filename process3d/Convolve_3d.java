@@ -76,10 +76,14 @@ public class Convolve_3d {
 		isFloat = slices_in[0] instanceof float[];
 
 		// convolve
-		for(int z = min_z; z < max_z; z++) {
+// 		for(int z = min_z; z < max_z; z++) {
+// 			IJ.showProgress(z, max_z);
+// 			for(int y = min_y; y < max_y; y++) {
+// 				for(int x = min_x; x < max_x; x++) {
+		for(int z = 0; z < d; z++) {
 			IJ.showProgress(z, max_z);
-			for(int y = min_y; y < max_y; y++) {
-				for(int x = min_x; x < max_x; x++) {
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
 					slices_out[z][y*w+x] = 
 						convolvePoint(z,y,x);
 				}
@@ -111,6 +115,12 @@ public class Convolve_3d {
 	}
 
 	private static float getValue(int x, int y, int z) {
+		if(x < 0) return 0f;
+		if(x > w-1) return 0f;
+		if(y < 0) return 0f;
+		if(y > h-1) return 0f;
+		if(z < 0) return 0f;
+		if(z > d-1) return 0f;
 		int index = y * w + x;
 		if(isByte)
 			return ((byte[])slices_in[z])[index] & 0xff;
