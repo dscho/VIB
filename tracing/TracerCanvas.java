@@ -97,9 +97,11 @@ public class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		int keyCode = e.getKeyCode();
 		char keyChar = e.getKeyChar();
 		
+                boolean mac = IJ.isMacintosh();
+                
 		boolean shift_down = (keyCode == KeyEvent.VK_SHIFT);
-		boolean control_down = (keyCode == KeyEvent.VK_CONTROL);
-		
+                boolean join_modifier_down = mac ? keyCode == KeyEvent.VK_ALT : keyCode == KeyEvent.VK_CONTROL;
+                
 		if (verbose) System.out.println("keyCode=" + keyCode + " (" + KeyEvent.getKeyText(keyCode)
 						+ ") keyChar=\"" + keyChar + "\" (" + (int)keyChar + ") "
 						+ KeyEvent.getKeyModifiersText(flags));
@@ -128,9 +130,9 @@ public class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			
 			just_near_slices = ! just_near_slices;
 			
-		} else if( shift_down || control_down ) {
+		} else if( shift_down || join_modifier_down ) {
 			
-			tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_down, control_down );
+			tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_down, join_modifier_down );
 			
 		}
 		
@@ -190,12 +192,13 @@ public class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 		
 		last_x_in_pane = offScreenX(e.getX());
 		last_y_in_pane = offScreenY(e.getY());
+                
+                boolean mac = IJ.isMacintosh();
 		
 		boolean shift_key_down = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
-		boolean control_key_down = (e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
-		
-		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_key_down, control_key_down );
-		
+		boolean joiner_modifier_down = mac ? ((e.getModifiersEx() & InputEvent.ALT_DOWN_MASK) != 0) : ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0);
+                
+		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_key_down, joiner_modifier_down );		
 	}
 	
 	int last_x_in_pane;
@@ -267,11 +270,10 @@ public class TracerCanvas extends ThreePanesCanvas implements KeyListener {
 			*/
 			
 		} else if( tracerPlugin.setupTrace ) {
-			
-			boolean join = e.isControlDown();
+			                    
+			boolean join = IJ.isMacintosh() ? e.isAltDown() : e.isControlDown();
 			
 			tracerPlugin.clickForTrace( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
-			// tracerPlugin.startPath( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
 			
 		} else {
 			
