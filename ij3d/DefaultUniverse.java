@@ -50,6 +50,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	protected BranchGroup root;
 	protected BranchGroup scene;
+	protected Scalebar scalebar;
 	protected TransformGroup centerTG;
 	protected TransformGroup translateTG;
 	protected TransformGroup rotationsTG;
@@ -80,6 +81,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		return centerTG;
 	}
 
+	public Scalebar getScalebar() {
+		return scalebar;
+	}
+
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height));
 		getViewingPlatform().setNominalViewingTransform();
@@ -95,6 +100,9 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		root.addChild(scaleTG);
+
+		scalebar = new Scalebar();
+		scaleTG.addChild(scalebar);
 
 		rotationsTG = new TransformGroup();
 		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
