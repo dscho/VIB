@@ -24,6 +24,8 @@ public class Local_Threshold implements PlugInFilter {
 
 	private ImagePlus image;
 	private static ImageProcessor copy;
+	private static int lastMinThreshold = 10;
+	private static int lastMaxThreshold = 255;
 
 	public void run(final ImageProcessor ip) {
 		if(image.getRoi() == null) {
@@ -34,8 +36,8 @@ public class Local_Threshold implements PlugInFilter {
 		copy = ip.duplicate();
 		final GenericDialog gd = 
 				new GenericDialog("Adjust local threshold");
-		gd.addSlider("min value", 0, 255, 10);
-		gd.addSlider("max value", 0, 255, 255);
+		gd.addSlider("min value", 0, 255, lastMinThreshold);
+		gd.addSlider("max value", 0, 255, lastMaxThreshold);
 
 		final Scrollbar minSlider = (Scrollbar)gd.getSliders().get(0);
 		final Scrollbar maxSlider = (Scrollbar)gd.getSliders().get(1);
@@ -45,12 +47,17 @@ public class Local_Threshold implements PlugInFilter {
 				applyThreshold(ip, image.getRoi(), 
 						minSlider.getValue(),
 						maxSlider.getValue());
+				lastMinThreshold = minSlider.getValue();
+				lastMaxThreshold = maxSlider.getValue();
 				image.updateAndDraw();
 			}
 		};
 		minSlider.addAdjustmentListener(listener);
 		maxSlider.addAdjustmentListener(listener);
 
+		applyThreshold(ip, image.getRoi(), 
+				lastMinThreshold, lastMaxThreshold);
+		image.updateAndDraw();
 		gd.showDialog();
 
 		// Convert area to selection
@@ -64,10 +71,12 @@ public class Local_Threshold implements PlugInFilter {
 		newip.resetThreshold();
 		ip.insert(copy, 0, 0);
 		Rectangle roiCopyR = roiCopy.getBounds();
-		Rectangle roiTempR = tmp.getRoi().getBounds();
-		tmp.getRoi().setLocation(roiCopyR.x + roiTempR.x, 
-					roiCopyR.y + roiTempR.y);
-		image.setRoi(tmp.getRoi());
+		if(tmp.getRoi() != null) {
+			Rectangle roiTempR = tmp.getRoi().getBounds();
+			tmp.getRoi().setLocation(roiCopyR.x + roiTempR.x, 
+						roiCopyR.y + roiTempR.y);
+			image.setRoi(tmp.getRoi());
+		}
 	}
 
 	public static void applyThreshold(ImageProcessor ip, 
