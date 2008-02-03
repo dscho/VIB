@@ -60,7 +60,7 @@ public class GreyTransformation extends Module {
 				level, stopLevel, tolerance,
 				nInitialPositions, showTransformed, 
 				showDifferenceImage,
-				fastButInaccurate);
+				fastButInaccurate, null);
 		String forAmira = matrix2.toStringForAmira();
 		FloatMatrix floatMatrix = FloatMatrix.parseMatrix(forAmira);
 		stats.setMatrix(transformLabel, floatMatrix);

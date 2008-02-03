@@ -88,7 +88,7 @@ public class LabelCenterTransformation extends Module {
 					level, stoplevel, tolerance,
 					nInitialPositions, showTransformed, 
 					showDifferenceImage,
-					fastButInaccurate);
+					fastButInaccurate, null);
 			String forAmira = matrix2.toStringForAmira();
 			FloatMatrix floatMatrix =
 				FloatMatrix.parseMatrix(forAmira);

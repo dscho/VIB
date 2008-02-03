@@ -24,7 +24,7 @@ public class TransformedImage {
 	FastMatrix matrix;
 
 	public TransformedImage(ImagePlus orig, ImagePlus transform) {
-		this.orig = new InterpolatedImage(orig);
+                this.orig = new InterpolatedImage(orig);
 		this.transform = new InterpolatedImage(transform);
 
 		fromOrig = FastMatrix.fromCalibration(orig);
@@ -33,6 +33,10 @@ public class TransformedImage {
 		x0 = y0 = z0 = 0;
 		x1 = this.orig.w; y1 = this.orig.h; z1 = this.orig.d;
 	}
+        
+        public ImagePlus getTemplate() {
+            return orig.getImage();
+        }
 
 	public void setTransformation(FastMatrix matrix) {
 		transformation = matrix.inverse();
