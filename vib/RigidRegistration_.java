@@ -36,6 +36,13 @@ public class RigidRegistration_ implements PlugInFilter {
 	GenericDialog gd;
 	String[] materials1, materials2;
 	private boolean verbose = false;
+        
+	public static int guessLevelFromWidth( int width ) {
+		int level = 0;
+		while((width >> level) > 20)
+			level++;
+		return level;
+	}
 
 	public void run(ImageProcessor ip) {
 		verbose = true;
