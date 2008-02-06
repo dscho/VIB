@@ -158,41 +158,33 @@ public class NamedPointSet {
 		
 		return result;
 	}
-	
+
+	static Pattern p_data =
+			Pattern.compile("^\"(.*)\": *"+
+					"\\[ *([eE0-9\\.\\-]+) *, *"+
+					"([eE0-9\\.\\-]+) *, *"+
+					"([eE0-9\\.\\-]+) *\\] *$");
+
+	static Pattern p_empty = Pattern.compile("^ *$");		
+
+	static Pattern p_name_no_data = Pattern.compile("^\"(.*)\":.*$");
+
 	public static NamedPointSet fromString( String fileContents ) {
 		
 		StringTokenizer tokenizer=new StringTokenizer(fileContents,"\n");
 		
 		NamedPointSet result = new NamedPointSet();
-		Pattern p_data =
-			Pattern.compile("^\"(.*)\": *"+
-					"\\[ *([eE0-9\\.\\-]+) *, *"+
-					"([eE0-9\\.\\-]+) *, *"+
-					"([eE0-9\\.\\-]+) *\\] *$");
-		Pattern p_empty = Pattern.compile("^ *$");
 		
 		while( tokenizer.hasMoreTokens() ) {
 			
 			String line = tokenizer.nextToken();
+
+			NamedPoint n = parseLine(line);
 			
-			System.err.println("parsing line: "+line);
-			
-			Matcher m_data = p_data.matcher(line);
-			Matcher m_empty = p_empty.matcher(line);
-			
-			if (m_data.matches()) {
-				result.add(
-					new NamedPoint(m_data.group(1),
-						       Double.parseDouble(m_data.group(2)),
-						       Double.parseDouble(m_data.group(3)),
-						       Double.parseDouble(m_data.group(4)))
-					);
-			} else if (m_empty.matches()) {
-				// Ignore empty lines...
-			} else {
-				IJ.error("There was a malformed line: "+line);
-				break;
+			if( n != null ) {
+				result.add(n);
 			}
+			
 		}
 		
 		return result;
@@ -200,6 +192,26 @@ public class NamedPointSet {
 	
 	public void add(NamedPoint namedPoint) {
 		points.add(namedPoint);
+	}
+	
+	static NamedPoint parseLine( String line ) {
+		Matcher m_data = p_data.matcher(line);
+		Matcher m_empty = p_empty.matcher(line);
+		Matcher m_name_no_data = p_name_no_data.matcher(line);
+
+		if (m_data.matches()) {
+			return new NamedPoint(m_data.group(1),
+						Double.parseDouble(m_data.group(2)),
+						Double.parseDouble(m_data.group(3)),
+						Double.parseDouble(m_data.group(4)));
+		} else if (m_empty.matches()) {
+			return null;
+		} else if (m_name_no_data.matches()) {
+			return new NamedPoint(m_name_no_data.group(1));
+		} else {
+			IJ.error("There was a malformed line: '"+line+"'. Continuing anyway...");
+			return null;
+		}
 	}
 	
         public static NamedPointSet forImage( String fullFileName ) {
@@ -214,36 +226,17 @@ public class NamedPointSet {
 		try {
 			
                         NamedPointSet newNamedPoints = new NamedPointSet();
-                        Pattern p_data =
-                                Pattern.compile("^\"(.*)\": *"+
-                                                "\\[ *([eE0-9\\.\\-]+) *, *"+
-                                                "([eE0-9\\.\\-]+) *, *"+
-                                                "([eE0-9\\.\\-]+) *\\] *$");
-                        Pattern p_empty = Pattern.compile("^ *$");
-                        BufferedReader f = new BufferedReader(
+
+			BufferedReader f = new BufferedReader(
                                 new FileReader(defaultFilename));
-                        String line;
+
+			String line;
                         while ((line=f.readLine())!=null) {
 				
-                                Matcher m_data = p_data.matcher(line);
-                                Matcher m_empty = p_empty.matcher(line);
-				
-                                if (m_data.matches()) {
-                                        newNamedPoints.add(
-                                                new NamedPoint(m_data.group(1),
-                                                               Double.parseDouble(m_data.group(2)),
-                                                               Double.parseDouble(m_data.group(3)),
-                                                               Double.parseDouble(m_data.group(4)))
-                                                );
-                                } else if (m_empty.matches()) {
-                                        // Ignore empty lines...
-                                } else {
-                                        IJ.error("There was a points file ("+
-                                                 defaultFilename+") but this line was malformed:\n"+
-                                                 line);
-                                        break;
-                                }
-                        }
+				NamedPoint n = parseLine(line);
+				if( n != null )
+					newNamedPoints.add(n);			
+			}
 			
                         return newNamedPoints;
 			

@@ -24,6 +24,8 @@ import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
 import ij.text.TextWindow;
 import java.awt.Choice;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.StringTokenizer;
 import math3d.Point3d;
 import pal.math.*;
@@ -38,6 +40,7 @@ public class RigidRegistration_ implements PlugInFilter {
 	public void run(ImageProcessor ip) {
 		verbose = true;
 		gd = new GenericDialog("Registration Parameters");
+                gd.addMessage("Transforming: "+image.getTitle());
 		gd.addStringField("initialTransform", "", 30);
 		gd.addNumericField("n initial positions to try", 1, 0);
 
@@ -52,7 +55,22 @@ public class RigidRegistration_ implements PlugInFilter {
 		gd.addCheckbox("showTransformed", false);
 		gd.addCheckbox("showDifferenceImage", false);
 		gd.addCheckbox("Fast but inaccurate", !true);
-		boolean isLabels = AmiraParameters.isAmiraLabelfield(image);
+
+                
+                int[] wIDs = WindowManager.getIDList();
+                if(wIDs == null){
+                        IJ.error("No images open");
+                        return;
+                }
+                String[] titles = new String[wIDs.length];
+                for(int i=0;i<wIDs.length;i++){
+                        titles[i] = WindowManager.
+                                        getImage(wIDs[i]).getTitle();
+                }
+
+                ArrayList<ImagePlus> otherImages = new ArrayList<ImagePlus>(); 
+                                
+                boolean isLabels = AmiraParameters.isAmiraLabelfield(image);
 
 		if (isLabels) {
 			AmiraParameters params = new AmiraParameters(image);
@@ -63,26 +81,29 @@ public class RigidRegistration_ implements PlugInFilter {
 			gd.addChoice("templateMaterial", 
 					materials1, materials1[0]);
 			getMaterials2();
-		} else {
-			int[] wIDs = WindowManager.getIDList();
-			if(wIDs == null){
-				IJ.error("No images open");
-				return;
-			}
-			String[] titles = new String[wIDs.length];
-			for(int i=0;i<wIDs.length;i++){
-				titles[i] = WindowManager.
-						getImage(wIDs[i]).getTitle();
-			}
-			
+		} else {			
 			gd.addChoice("Template", titles,
 				WindowManager.getCurrentImage().getTitle());
 			String[] methods = {
 				"Euclidean", "MutualInfo", "Threshold55",
 				"Threshold155" };
 			gd.addChoice("measure", methods, "Euclidean");
-		}
 
+                        // Add a list of images of the same size to also
+                        // transform....
+                        gd.addMessage("Also transform these images:");
+                        for (int i=0; i<wIDs.length; i++) {
+                                ImagePlus imp = WindowManager.getImage(wIDs[i]);
+                                if( imp.getWidth() == image.getWidth() &&
+                                    imp.getHeight() == image.getHeight() &&
+                                    imp.getStackSize() == image.getStackSize() ) {
+
+                                    otherImages.add(imp);
+                                    gd.addCheckbox(imp.getTitle(), false);
+                                }
+                        }                
+                }
+                
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -101,6 +122,7 @@ public class RigidRegistration_ implements PlugInFilter {
 		ImagePlus templ = WindowManager.getImage(gd.getNextChoice());
 		int mat2 = (isLabels ? gd.getNextChoiceIndex() : -1);
 		TransformedImage trans = new TransformedImage(templ, image);
+                ArrayList<ImagePlus> alsoTransform = new ArrayList<ImagePlus>();
 		if (isLabels) {
 			trans.measure = new distance.TwoValues(mat1, mat2);
 			if(verbose)
@@ -120,13 +142,17 @@ public class RigidRegistration_ implements PlugInFilter {
 			else
 				trans.measure =
 					new distance.Euclidean();
-		}
-
+                        for( int i = 0; i < otherImages.size(); ++i )
+                            if( gd.getNextBoolean() )
+                                alsoTransform.add(otherImages.get(i));
+		}                
+ 
 		FastMatrix matrix = rigidRegistration(trans, materialBBox, 
 					initial, mat1, mat2, noOptimization, 
 					level, stopLevel, tolerance, 
 					nInitialPositions, showTransformed, 
-					showDifferenceImage, fastButInaccurate);
+					showDifferenceImage, fastButInaccurate,
+                                        alsoTransform);
 
 		if (!Interpreter.isBatchMode() && verbose)
 			WindowManager.setWindow(new TextWindow("Matrix",
@@ -170,7 +196,8 @@ public class RigidRegistration_ implements PlugInFilter {
 			int nInitialPositions,
 			boolean showTransformed,
 			boolean showDifferenceImage, 
-			boolean fastButInaccurate) {
+			boolean fastButInaccurate,
+                        ArrayList<ImagePlus> alsoTransform ) {
 		if (mat1 >= 0)
 			trans.narrowSearchToMaterial(mat1, 10);
 
@@ -280,10 +307,38 @@ public class RigidRegistration_ implements PlugInFilter {
 		if (showDifferenceImage)
 			trans.getDifferenceImage().show();
 
+                ImagePlus template=trans.getTemplate();
+                PixelPairs measure = trans.measure;
+                
 		// give the garbage collector a chance:
 		trans = null;
 		System.gc();
 		System.gc();
+                
+                if(alsoTransform!=null) {
+                    for(Iterator<ImagePlus> i=alsoTransform.iterator();
+                        i.hasNext(); ) {
+                        
+                        ImagePlus toTransform=i.next();
+                        // System.out.println("Going to also transform "+toTransform.getTitle());
+                        TransformedImage transOther=new TransformedImage(
+                                template,
+                                toTransform);
+                        transOther.measure = measure;
+                        transOther.measure.reset();
+                        transOther.setTransformation(matrix);
+
+                        ImagePlus result=transOther.getTransformed();
+
+                        transOther = null;
+                        System.gc();
+                        System.gc();
+                        
+                        result.setTitle("Transformed "+toTransform.getTitle());
+                        result.show();
+                    }
+                }
+                
 		return matrix;
 	}
 

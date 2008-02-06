@@ -8,19 +8,14 @@ import ij.gui.*;
 import ij.plugin.*;
 import ij.plugin.filter.*;
 
-import ij.measure.Calibration;
 
-import java.awt.Color;
 import java.io.*;
 
 import math3d.Point3d;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.Comparator;
 
-import vib.FastMatrix;
 import vib.transforms.OrderedTransformations;
 import vib.transforms.FastMatrixTransform;
 import vib.transforms.BooksteinTransform;
@@ -29,8 +24,6 @@ import landmarks.NamedPoint;
 import landmarks.NamedPointSet;
 
 public class Bookstein_FromMarkers extends RegistrationAlgorithm implements PlugIn {
-
-        OrderedTransformations transformation;
 
         static int test_column_x;
         static int test_column_y;
@@ -89,6 +82,8 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
 
                 ArrayList<String> commonPointNames = points0.namesSharedWith(points1);
 
+		System.out.println("found "+commonPointNames.size()+" points in common.");
+		
                 Point3d[] domainPoints=new Point3d[commonPointNames.size()];
                 Point3d[] templatePoints=new Point3d[commonPointNames.size()];
 

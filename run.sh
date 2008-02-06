@@ -12,7 +12,6 @@ Cygwin*)
 esac
 
 MEM=256m
-env|grep HOST
 case `hostname` in
 VIB|Leonhard)
 	MEM=1000m

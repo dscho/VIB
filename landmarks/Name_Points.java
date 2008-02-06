@@ -1275,13 +1275,15 @@ public class Name_Points implements PlugIn {
 		  templatePoints = NamedPointSet.forImage(templateImageFilename);
 		  }
 		*/
-		
-		points = new NamedPointSet();
-		for (int i = 0; i < defaultPointNames.length; ++i)
-			points.add(new NamedPoint(defaultPointNames[i]));
-		
-		if( applet == null )
-			loadAtStart();
+
+		if( applet == null ) {
+			boolean foundExistingPointsFile = loadAtStart();		
+			if( ! foundExistingPointsFile ) {
+				points = new NamedPointSet();
+				for (int i = 0; i < defaultPointNames.length; ++i)
+					points.add(new NamedPoint(defaultPointNames[i]));
+			}
+		}
 		
 		boolean loadedTemplate = false;
 		
@@ -1297,12 +1299,16 @@ public class Name_Points implements PlugIn {
 		
 	}
 	
-	public void loadAtStart() {
+	public boolean loadAtStart() {
 		
 		NamedPointSet newNamedPoints = NamedPointSet.forImage(imp);
+
+		if( points == null ) {
+			points=new NamedPointSet();
+		}
 		
 		if(newNamedPoints==null)
-			return;
+			return false;
 		
 		ListIterator i;
 		for (i = newNamedPoints.listIterator();i.hasNext();) {
@@ -1323,6 +1329,7 @@ public class Name_Points implements PlugIn {
 				points.add(current);
 		}
 		
+		return true;
 	}
 	
 	public void loadFromString(String fileContents) {
@@ -1330,6 +1337,10 @@ public class Name_Points implements PlugIn {
 		NamedPointSet newNamedPoints = NamedPointSet.fromString(fileContents);
 		
 		dialog.resetAll();
+
+		if (points == null) {
+			points = new NamedPointSet();
+		}
 		
 		ListIterator i;
 		for (i = newNamedPoints.listIterator();i.hasNext();) {
@@ -1381,7 +1392,7 @@ public class Name_Points implements PlugIn {
 			return false;
 		}
 		
-		this.templateImage = channels[0];
+		this.templateImage = channels[1];
 		this.templatePoints = templatePointSet;
 		
 		return true;
