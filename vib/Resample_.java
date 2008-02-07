@@ -48,7 +48,7 @@ public class Resample_ implements PlugInFilter {
 		public int get() {
 			int result = 0;
 			for (int i = 1; i <= max; i++)
-				if (histo[i] > 0 * histo[result])
+				if (histo[i] > histo[result])
 					result = i;
 			return result;
 		}
