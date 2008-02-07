@@ -16,6 +16,7 @@ public class InterpolatedImage {
 	private float[][] pixelsFloat;
 	private short[][] pixelsShort;
 	Interpolate interpol;
+	int type;
 
 	public InterpolatedImage(ImagePlus image) {
 		this.image = image;
@@ -23,25 +24,26 @@ public class InterpolatedImage {
 		d = stack.getSize();
 		h = stack.getHeight();
 		w = stack.getWidth();
+		type = image.getType();
 
-		if (image.getType() == ImagePlus.GRAY8 ||
-				image.getType() == ImagePlus.COLOR_256) {
+		if (type == ImagePlus.GRAY8 ||
+				type == ImagePlus.COLOR_256) {
 			pixels = new byte[d][];
 			for (int i = 0; i < d; i++)
 				pixels[i] = (byte[])stack.getPixels(i+1);
 
-			if (image.getType() == ImagePlus.GRAY8 &&
+			if (type == ImagePlus.GRAY8 &&
 					!image.getProcessor().isColorLut())
 				interpol = new AverageByte();
 			else
 				interpol = new NearestNeighbourByte();
-		} else if (image.getType() == ImagePlus.GRAY32) {
+		} else if (type == ImagePlus.GRAY32) {
 			pixelsFloat = new float[d][];
 			for (int i = 0; i < d; i++)
 				pixelsFloat[i] = (float[])stack.getPixels(i+1);
 
 			interpol = new AverageFloat();
-		} else if (image.getType() == ImagePlus.GRAY16) {
+		} else if (type == ImagePlus.GRAY16) {
 			pixelsShort = new short[d][];
 			for (int i = 0; i < d; i++)
 				pixelsShort[i] = (short[])stack.getPixels(i+1);
@@ -77,18 +79,37 @@ public class InterpolatedImage {
 			int x1, int y1, int z1) {
 		Calibration calib = image.getCalibration();
 		long x, y, z, total;
+		double xD, yD, zD, totalD;
 
 		x = y = z = total = 0;
+		xD = yD = zD = totalD = 0;
 		for (int k = z0; k < z1; k++)
 			for (int j = y0; j < y1; j++)
-				for (int i = x0; i < x1; i++) {	
-					int val = getNoInterpol(i, j, k);
-					x += i * val;
-					y += j * val;
-					z += k * val;
-					total += val;
+				for (int i = x0; i < x1; i++) {
+					if (type==ImagePlus.GRAY32) {
+						double val=getNoInterpolFloat(i,j,k);
+						xD += i * val;
+						yD += j * val;
+						zD += k * val;
+					} else {
+						int val = -1;
+						if (type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
+							val = getNoInterpol(i, j, k);
+						else if (type==ImagePlus.GRAY16)
+							val = getNoInterpolShort(i, j, k);
+						x += i * val;
+						y += j * val;
+						z += k * val;
+						total += val;
+					}
 				}
-		return new Point3d(
+		if (type==ImagePlus.GRAY32)
+			return new Point3d(
+				calib.xOrigin + calib.pixelWidth * xD / totalD,
+				calib.yOrigin + calib.pixelHeight * yD / totalD,
+				calib.zOrigin + calib.pixelDepth * zD / totalD);				
+		else
+			return new Point3d(
 				calib.xOrigin + calib.pixelWidth * x / total,
 				calib.yOrigin + calib.pixelHeight * y / total,
 				calib.zOrigin + calib.pixelDepth * z / total);
@@ -96,6 +117,8 @@ public class InterpolatedImage {
 
 	/* as getCenterOfGravity(), but count only the pixels with this value */
 	Point3d getCenterOfGravity(int value) {
+		if (!(type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256))
+			throw new RuntimeException("InterpolatedImage.getCenterOfGravity(int) only makes sense with 8 bit images. (Probably.)");
 		Calibration calib = image.getCalibration();
 		long x, y, z, total;
 
@@ -390,12 +413,12 @@ public class InterpolatedImage {
 		}
 	}
 	
-	public float getNoCheckShort(int x, int y, int z) {
+	public short getNoCheckShort(int x, int y, int z) {
 		/* no check; we know exactly that it is inside */
 		return pixelsShort[z][x + w * y];
 	}
 	
-	public float getNoInterpolShort(int x, int y, int z) {
+	public short getNoInterpolShort(int x, int y, int z) {
 		if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d)
 			return 0;
 		return getNoCheckShort(x, y, z);
@@ -408,7 +431,7 @@ public class InterpolatedImage {
 	}
 	
 	public InterpolatedImage cloneDimensionsOnly() {
-		return cloneDimensionsOnly(image, image.getType());
+		return cloneDimensionsOnly(image, type);
 	}
 
 	public static InterpolatedImage cloneDimensionsOnly(ImagePlus ip,
@@ -434,17 +457,17 @@ public class InterpolatedImage {
 		ImageStack stack = new ImageStack(result.w, result.h, null);
 		for (int i = 0; i < result.d; i++)
 			switch (type) {
-				case ImagePlus.GRAY8:
-				case ImagePlus.COLOR_256:
-					result.pixels[i] =
-						new byte[result.w * result.h];
-					stack.addSlice("", result.pixels[i]);
-					break;
-				case ImagePlus.GRAY32:
-					result.pixelsFloat[i] =
-						new float[result.w * result.h];
-					stack.addSlice("", result.pixelsFloat[i]);
-					break;
+			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
+				result.pixels[i] =
+					new byte[result.w * result.h];
+				stack.addSlice("", result.pixels[i]);
+				break;
+			case ImagePlus.GRAY32:
+				result.pixelsFloat[i] =
+					new float[result.w * result.h];
+				stack.addSlice("", result.pixelsFloat[i]);
+				break;
 			case ImagePlus.GRAY16:
 				result.pixelsShort[i] =
 					new short[result.w * result.h];
@@ -460,7 +483,7 @@ public class InterpolatedImage {
 	public InterpolatedImage cloneImage() {
 		InterpolatedImage res = cloneDimensionsOnly();
 		for (int k = 0; k < d; k++)
-			switch (image.getType()) {
+			switch (type) {
 				case ImagePlus.GRAY8:
 				case ImagePlus.COLOR_256:
 					System.arraycopy(pixels[k], 0,

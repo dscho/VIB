@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package vib;
 
 import ij.IJ;
@@ -32,10 +34,27 @@ public class TransformedImage {
 
 		x0 = y0 = z0 = 0;
 		x1 = this.orig.w; y1 = this.orig.h; z1 = this.orig.d;
+		
+		// Insist that both images are of the same bit depth,
+		// anyway:
+
+		if( orig.getType() != transform.getType() )
+			throw new RuntimeException("TransformedImage needs two images of the same bit depth.");
+
+                imageType = orig.getType();
+		switch(imageType) {
+		case ImagePlus.GRAY8:
+		case ImagePlus.COLOR_256:
+		case ImagePlus.GRAY16:
+			break;
+		default:
+			throw new RuntimeException("Not yet implemented! (Bit depths != 8 or 16 in TransformedImage.)");
+		}
 	}
+        int imageType = -1;
         
         public ImagePlus getTemplate() {
-            return orig.getImage();
+		return orig.getImage();
         }
 
 	public void setTransformation(FastMatrix matrix) {
@@ -49,7 +68,7 @@ public class TransformedImage {
 		if (measure instanceof distance.MutualInformation) {
 			resOrig = Resample_.resampleMinEnt(orig.image, factor);
 			resTran = Resample_.resampleMinEnt(transform.image,
-					factor);
+							   factor);
 		} else {
 			resOrig = Resample_.resample(orig.image, factor);
 			resTran = Resample_.resample(transform.image, factor);
@@ -133,7 +152,7 @@ public class TransformedImage {
         }
 
         public Iterator iterator(boolean showProgress,
-                        int x0, int y0, int z0, int x1, int y1, int z1) {
+				 int x0, int y0, int z0, int x1, int y1, int z1) {
                 return new Iterator(showProgress, x0, y0, z0, x1, y1, z1);
         }
 
@@ -144,9 +163,18 @@ public class TransformedImage {
 		measure.reset();
 		Iterator iter = new Iterator(false, x0, y0, z0, x1, y1, z1);
 		while (iter.next() != null) {
-			float v1 = orig.getNoInterpol(iter.i, iter.j, iter.k);
+			float v1 = -1;
+			switch(imageType) {
+			case ImagePlus.GRAY8:
+                        case ImagePlus.COLOR_256:
+				v1 = orig.getNoInterpol(iter.i, iter.j, iter.k);
+                                break;
+			case ImagePlus.GRAY16:
+				v1 = orig.getNoInterpolShort(iter.i, iter.j, iter.k);
+                                break;
+                        }
 			float v2 = (float)transform.interpol.get(iter.x,
-					iter.y, iter.z);
+								 iter.y, iter.z);
 			measure.add(v1, v2);
 		}
 		return measure.distance();
@@ -156,30 +184,72 @@ public class TransformedImage {
 		InterpolatedImage result = orig.cloneDimensionsOnly();
 
 		Iterator iter = iterator();
-		while (iter.next() != null)
-			result.set(iter.i, iter.j, iter.k,
-					transform.getNoInterpol((int)iter.x,
-						(int)iter.y, (int)iter.z));
-
+		switch(imageType) {
+		case ImagePlus.GRAY8:
+		case ImagePlus.COLOR_256:
+			while (iter.next() != null)
+				result.set(iter.i, iter.j, iter.k,
+					   transform.getNoInterpol((int)iter.x,
+								   (int)iter.y, (int)iter.z));
+                        break;
+		case ImagePlus.GRAY16:
+			while (iter.next() != null)
+				result.setShort(iter.i, iter.j, iter.k,
+					   transform.getNoInterpolShort((int)iter.x,
+									(int)iter.y, (int)iter.z));
+                        break;
+                }
 		result.image.setTitle("transformed");
 		return result.image;
 	}
 
 	public ImagePlus getDifferenceImage() {
+
+		int typeToCreate = -1;
+		switch(imageType) {
+		case ImagePlus.GRAY8:
+		case ImagePlus.COLOR_256:
+			typeToCreate = ImagePlus.GRAY8;
+			break;
+		case ImagePlus.GRAY16:
+			typeToCreate = ImagePlus.GRAY16;
+			break;
+		}
+
+		// FIXME: typeToCreate should depend on the measure
+		// used as well as (possibly) the source image's bit
+		// depth.
+
 		InterpolatedImage result =
 			InterpolatedImage.cloneDimensionsOnly(orig.image,
-					//ImagePlus.GRAY32);
-			ImagePlus.GRAY8);
+							      typeToCreate);
 
 		Iterator iter = iterator(false, x0, y0, z0, x1, y1, z1);
 		while (iter.next() != null) {
 			measure.reset();
-			measure.add(orig.getNoInterpol(iter.i, iter.j, iter.k),
-					transform.getNoInterpol((int)iter.x,
-						(int)iter.y, (int)iter.z));
-			//result.setFloat(iter.i, iter.j, iter.k,
-			result.set(iter.i, iter.j, iter.k,
-					(byte)(int)measure.distance());
+			switch(imageType) {
+			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
+				measure.add(orig.getNoInterpol(iter.i, iter.j, iter.k),
+					    transform.getNoInterpol((int)iter.x,
+								    (int)iter.y, (int)iter.z));
+				break;
+			case ImagePlus.GRAY16:
+				measure.add(orig.getNoInterpolShort(iter.i, iter.j, iter.k),
+					    transform.getNoInterpolShort((int)iter.x,
+									 (int)iter.y, (int)iter.z));
+				break;
+			}
+			switch(typeToCreate) {
+			case ImagePlus.GRAY8:
+				result.set(iter.i, iter.j, iter.k,
+					   (byte)(int)measure.distance());
+				break;
+			case ImagePlus.GRAY16:
+				result.set(iter.i, iter.j, iter.k,
+					   (short)measure.distance());
+				break;
+			}
 		}
 
 		result.image.setTitle("difference");
@@ -187,7 +257,7 @@ public class TransformedImage {
 	}
 
 	public void narrowBBox(int x0, int x1, int y0, int y1, int z0, int z1) {
-System.err.println("bbox: " + x0 + " " + x1 + " " + y0 + " " + y1 + " " + z0 + " " + z1);
+		System.err.println("bbox: " + x0 + " " + x1 + " " + y0 + " " + y1 + " " + z0 + " " + z1);
 		if (x0 < 0)
 			x0 = 0;
 		else if (x0 >= orig.w)
@@ -254,14 +324,14 @@ System.err.println("bbox: " + x0 + " " + x1 + " " + y0 + " " + y1 + " " + z0 + "
 	float getTransformed(double x, double y, double z) {
 		matrix.apply(x, y, z);
 		return (float)transform.interpol.get(
-				matrix.x, matrix.y, matrix.z);
+			matrix.x, matrix.y, matrix.z);
 	}
 
 	float getTransformedNoInterpol(double x, double y, double z) {
 		matrix.apply(x, y, z);
 		return (float)transform.getNoInterpol(
-				(int)Math.round(matrix.x),
-				(int)Math.round(matrix.y),
-				(int)Math.round(matrix.z));
+			(int)Math.round(matrix.x),
+			(int)Math.round(matrix.y),
+			(int)Math.round(matrix.z));
 	}
 }

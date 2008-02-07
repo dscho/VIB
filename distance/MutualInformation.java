@@ -1,10 +1,18 @@
 package distance;
 
 public class MutualInformation implements PixelPairs {
-	final private int maximum = 256;
+	private int maximum;
 	private int realMaximum = 0;
 	private long joint[];
 	private int count;
+
+    public MutualInformation(int maximumValue) {
+        maximum = maximumValue;
+    }
+
+    public MutualInformation() {
+        this(256);
+    }
 
 	public void reset() {
 		joint = new long[maximum * maximum];
