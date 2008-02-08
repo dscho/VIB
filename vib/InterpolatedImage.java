@@ -91,6 +91,7 @@ public class InterpolatedImage {
 						xD += i * val;
 						yD += j * val;
 						zD += k * val;
+						totalD += val;
 					} else {
 						int val = -1;
 						if (type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
@@ -103,16 +104,32 @@ public class InterpolatedImage {
 						total += val;
 					}
 				}
-		if (type==ImagePlus.GRAY32)
+		/* If there are no non-zero values in the region at
+		   all, make the centre of gravity the midpoint of the
+		   region. */
+		if (type==ImagePlus.GRAY32) {
+			if( totalD == 0 ) {
+				xD = (x0 + x1) / 2;
+				yD = (y0 + y1) / 2;
+				zD = (z0 + z1) / 2;
+				totalD = 1;
+			}
 			return new Point3d(
 				calib.xOrigin + calib.pixelWidth * xD / totalD,
 				calib.yOrigin + calib.pixelHeight * yD / totalD,
 				calib.zOrigin + calib.pixelDepth * zD / totalD);				
-		else
+		} else {
+			if( total == 0 ) {
+				x = (x0 + x1) / 2;
+				y = (y0 + y1) / 2;
+				z = (z0 + z1) / 2;
+				total = 1;
+			}
 			return new Point3d(
 				calib.xOrigin + calib.pixelWidth * x / total,
 				calib.yOrigin + calib.pixelHeight * y / total,
 				calib.zOrigin + calib.pixelDepth * z / total);
+		}
 	}
 
 	/* as getCenterOfGravity(), but count only the pixels with this value */
