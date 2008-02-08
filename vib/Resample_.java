@@ -1,5 +1,3 @@
-/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
-
 package vib;
 
 import amira.AmiraParameters;
@@ -35,10 +33,8 @@ public class Resample_ implements PlugInFilter {
 	}
 
 	public static class MaxLikelihood implements Accumulator {
-		int[] histo = new int[1<<16];
+		int[] histo = new int[256];
 		int max = 255;
-		int highest = -1;
-		int indexOfHighest = -1;
 		public void reset() {
 			for (int i = 0; i <= max; i++)
 				histo[i] = 0;
@@ -48,13 +44,13 @@ public class Resample_ implements PlugInFilter {
 			histo[value]++;
 			if (max < value)
 				max = value;
-			if (histo[value] > highest) {
-				highest = histo[value];
-				indexOfHighest = value;
-			}
 		}
 		public int get() {
-			return indexOfHighest;
+			int result = 0;
+			for (int i = 1; i <= max; i++)
+				if (histo[i] > 0 * histo[result])
+					result = i;
+			return result;
 		}
 		public String toString() {
 			String result = "";
@@ -80,22 +76,12 @@ public class Resample_ implements PlugInFilter {
 		}
 
 		public MinEntropy(InterpolatedImage ii) {
-			int type = ii.image.getType();
-			if(type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
-				histogram = new int[256];
-			else if(type==ImagePlus.GRAY16)
-				histogram = new int[1<<16];
-			else {
-				IJ.error("MinEntropy only works on 8bit or 16bit gray images.");
-				return;
-			}
+			histogram = new int[256];
 			InterpolatedImage.Iterator iter = ii.iterator();
-			if(type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
-				while (iter.next() != null)
-					histogram[ii.getNoInterpol(iter.i, iter.j, iter.k)]++;
-			else if (type==ImagePlus.GRAY16)
-				while (iter.next() != null)
-					histogram[ii.getNoInterpolShort(iter.i, iter.j, iter.k)]++;
+			while (iter.next() != null) {
+				histogram[ii.getNoInterpol(iter.i,
+						iter.j, iter.k)]++;
+			}
 		}
 
 		int currentValue = -1;
@@ -172,7 +158,6 @@ public class Resample_ implements PlugInFilter {
 
 	public static ImagePlus resample(ImagePlus image, int factorX, int factorY,
 			int factorZ, Accumulator accu) {
-		int type = image.getType();
 		ImageStack stack=image.getStack();
 		int w=image.getWidth(),h=image.getHeight(),d=stack.getSize();
 
@@ -181,61 +166,27 @@ public class Resample_ implements PlugInFilter {
 
 		for(int z=0;z<d;z+=factorZ) {
 			int kfactor=(z+factorZ<d?factorZ:d-z);
+			byte[][] slices = new byte[kfactor][];
+			for(int k=0;k<kfactor;k++)
+				slices[k]=(byte[])stack.getProcessor(z+k+1).getPixels();
 
-			byte[][] slices = null;
-			short[][] slicesShort = null;
-
-			if(type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256) {
-				slices = new byte[kfactor][];
-				for(int k=0;k<kfactor;k++)
-					slices[k]=(byte[])stack.getProcessor(z+k+1).getPixels();
-			} else if (type==ImagePlus.GRAY16) {
-				slicesShort = new short[kfactor][];
-				for(int k=0;k<kfactor;k++)
-					slicesShort[k]=(short[])stack.getProcessor(z+k+1).getPixels();
-			} else {
-				IJ.error("Resample only currently works on 8 bit and 16 bit images.");
-				return null;
-			}
-
-			byte[] newSlice = null;
-			short[] newSliceShort = null;
-
-			int pointsInNewSlice = (1+(w-1)/factorX)*(1+(h-1)/factorY);
-
-			if(type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
-				newSlice = new byte[pointsInNewSlice];
-			else if(type==ImagePlus.GRAY16)
-				newSliceShort = new short[pointsInNewSlice];
-
+			byte[] newSlice = new byte[(1+(w-1)/factorX)
+				*(1+(h-1)/factorY)];
 			for(int y=0;y<h;y+=factorY) {
 				for(int x=0;x<w;x+=factorX) {
 					int ifactor=(x+factorX<w?factorX:w-x);
 					int jfactor=(y+factorY<h?factorY:h-y);
 					accu.reset();
-					if(type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256) {
-						for(int i=0;i<ifactor;i++)
-							for(int j=0;j<jfactor;j++)
-								for(int k=0;k<kfactor;k++)
-									accu.add(getPixel(slices[k],x+i+w*(y+j)));
-						newSlice[(x/factorX)+(w/factorX)*(y/factorY)]=
-							(byte)accu.get();
-					} else if (type==ImagePlus.GRAY16) {
-						for(int i=0;i<ifactor;i++)
-							for(int j=0;j<jfactor;j++)
-								for(int k=0;k<kfactor;k++)
-									accu.add(slicesShort[k][x+i+w*(y+j)]);
-						newSliceShort[(x/factorX)+(w/factorX)*(y/factorY)]=
-							(short)accu.get();
-					}
+					for(int i=0;i<ifactor;i++)
+						for(int j=0;j<jfactor;j++)
+							for(int k=0;k<kfactor;k++)
+								accu.add(getPixel(slices[k],x+i+w*(y+j)));
+					newSlice[(x/factorX)+(w/factorX)*(y/factorY)]=
+									(byte)accu.get();
 				}
 				IJ.showProgress(z*h+y+1, h*d);
 			}
-			if(type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
-				result.addSlice(null,newSlice);
-			else if(type==ImagePlus.GRAY16)
-				result.addSlice(null,newSliceShort);				
-			
+			result.addSlice(null,newSlice);
 		}
 
 		ImagePlus res = new ImagePlus(image.getTitle()+" resampled",
@@ -257,7 +208,8 @@ public class Resample_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
-		// TODO: handle 32-bit
-		return DOES_8G | DOES_8C | DOES_16 | NO_CHANGES;
+		// TODO: handle 16-bit and 32-bit
+		return DOES_8G | DOES_8C | NO_CHANGES;
 	}
 }
+
