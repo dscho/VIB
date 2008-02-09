@@ -35,19 +35,27 @@ public class Resample_ implements PlugInFilter {
 	}
 
 	public static class MaxLikelihood implements Accumulator {
-		int[] histo = new int[1<<16];
-		int max = 255;
-		int highest = -1;
+		int[] histo;
+		int[] empty;
+		int max;
 		int indexOfHighest = -1;
+		int highest = -1;
+		MaxLikelihood(int max) {
+			this.max = max;
+			histo = new int[max+1];
+			empty = new int[max+1];
+		}
+		MaxLikelihood() {
+			this(255);
+		}
 		public void reset() {
-			for (int i = 0; i <= max; i++)
-				histo[i] = 0;
+			highest = -1;
+			indexOfHighest = -1;
+			System.arraycopy(empty,0,histo,0,max+1);
 			max = 0;
 		}
 		public void add(int value) {
 			histo[value]++;
-			if (max < value)
-				max = value;
 			if (histo[value] > highest) {
 				highest = histo[value];
 				indexOfHighest = value;
@@ -148,10 +156,14 @@ public class Resample_ implements PlugInFilter {
 
 	public static ImagePlus resample(ImagePlus image, int factorX, 
 					int factorY, int factorZ) {
-		Accumulator accu;
-		if (image.getProcessor().isColorLut())
-			accu = new MaxLikelihood();
-		else
+		Accumulator accu = null;
+		if (image.getProcessor().isColorLut()) {
+			int type = image.getType();
+			if (type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
+				accu = new MaxLikelihood(255);
+			else if (type==ImagePlus.GRAY16)
+				accu = new MaxLikelihood((1<<16)-1);
+		} else
 			accu = new Averager();
 
 		return resample(image, factorX, factorY, factorZ, accu);
