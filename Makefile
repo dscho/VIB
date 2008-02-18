@@ -1,3 +1,5 @@
+.PHONY : show test
+
 JAVAS=$(shell find * -name \*.java | grep -v ^tempdir)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
@@ -34,6 +36,14 @@ all: $(CLASSES)
 
 show:
 	echo $(JAVAS)
+
+JUNIT4JAR=/usr/share/java/junit4.jar
+
+TESTCLASSES=distance.TestMutualInformation \
+	distance.TestEuclidean
+
+test :
+	java -classpath .:/usr/share/java/junit4.jar org.junit.runner.JUnitCore $(TESTCLASSES)
 
 %.class: %.java
 	javac -O $(JAVACOPTS) "$<"
