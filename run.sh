@@ -25,6 +25,9 @@ racer)
 rudi)
 	MEM=1000m
 	;;
+rioja|cognac.brookfield.local)
+	MEM=1024m
+	;;
 esac
 
 # Profiling stuff (see http://jiprof.sourceforge.net/)

@@ -29,8 +29,9 @@ ifeq ($(wildcard $(PLUGINSHOME)/../ImageJ/ij.jar),)
 else
 	IJ_JAR=../ImageJ/ij.jar
 endif
-JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(JUNIT4JAR)
-JAVACOPTSCOMPAT= -source 1.3 -target 1.3
+
+JAVACOPTSCOMPAT= -source 1.5 -target 1.5
+JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(JUNIT4JAR) $(JAVACOPTSCOMPAT)
 
 all: $(CLASSES)
 

@@ -197,7 +197,7 @@ public class MeshExporter {
 		return new String[]{sb_obj.toString(), sb_mtl.toString()};
 	}
 
-	/** A Material, but avoiding name colisions. */
+	/** A Material, but avoiding name colisions. Not thread-safe. */
 	static private int mat_index = 1;
 	static private class Mtl {
 		float alpha = 1;
@@ -213,6 +213,7 @@ public class MeshExporter {
 			this.G = f[1];
 			this.B = f[2];
 			name = "mat_" + mat_index;
+			mat_index++;
 		}
 		Mtl(float alpha, float R, float G, float B) {
 			this.alpha = alpha;
