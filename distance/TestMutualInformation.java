@@ -24,12 +24,12 @@ public class TestMutualInformation extends BaseOfTests {
 		addMacKayExample(exampleMeasure);
 	    
 		float mi = exampleMeasure.mutualInformation();
-		assertEquals( mi, 0.375 );
+		assertEquals( 0.375, mi, 0.0000001 );
 
 		exampleMeasure.reset();
 		addMacKayExample(exampleMeasure);
 		float miAfterReset = exampleMeasure.mutualInformation();
-		assertEquals( miAfterReset, 0.375 );
+		assertEquals( 0.375, miAfterReset, 0.0000001 );
 	}
 
 	@Test
@@ -43,13 +43,13 @@ public class TestMutualInformation extends BaseOfTests {
 		float mi = exampleMeasure.mutualInformation();
 
 		float h1 = exampleMeasure.getEntropy1();
-		assertEquals( h1, 1.75 );
+		assertEquals( 1.75, h1, 0.0000001 );
 
 		float h2 = exampleMeasure.getEntropy2();
-		assertEquals( h2, 2 );
+		assertEquals( 2, h2, 0.0000001 );
 
 		float h12 = exampleMeasure.getJointEntropy();
-		assertEquals( h12, 3.375 );
+		assertEquals( 3.375, h12, 0.0000001 );
 	}
 
 	@Test
@@ -65,15 +65,15 @@ public class TestMutualInformation extends BaseOfTests {
 		   the 8 bit case still works properly... */
 
 		for( int i = 0; i < 256 * 256; ++i ) {
-			assertEquals( exampleMeasure.joint[i], 1 );
+			assertEquals( 1, exampleMeasure.joint[i], 0.0000001 );
 		}
 
 		float mi = exampleMeasure.mutualInformation();
 
-		assertEquals( 8,  exampleMeasure.getEntropy1() );
-		assertEquals( 8,  exampleMeasure.getEntropy2() );
-		assertEquals( 16, exampleMeasure.getJointEntropy() );
+		assertEquals( 8, exampleMeasure.getEntropy1(), 0.0000001 );
+		assertEquals( 8, exampleMeasure.getEntropy2(), 0.0000001 );
+		assertEquals( 16, exampleMeasure.getJointEntropy(), 0.0000001 );
 
-		assertEquals( 0, mi );
+		assertEquals( 0, mi, 0.0000001 );
 	}
 }

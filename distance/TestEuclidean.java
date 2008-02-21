@@ -19,6 +19,6 @@ public class TestEuclidean extends BaseOfTests {
 		e.reset();
 		addMacKayExample(e);
 		float distance = e.distance();
-		assertEquals(distance,1.820027);
+		assertEquals(1.82002747232013,distance,0.0000001);
 	}
 }

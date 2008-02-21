@@ -29,7 +29,7 @@ ifeq ($(wildcard $(PLUGINSHOME)/../ImageJ/ij.jar),)
 else
 	IJ_JAR=../ImageJ/ij.jar
 endif
-JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).
+JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(JUNIT4JAR)
 JAVACOPTSCOMPAT= -source 1.3 -target 1.3
 
 all: $(CLASSES)
@@ -37,13 +37,13 @@ all: $(CLASSES)
 show:
 	echo $(JAVAS)
 
-JUNIT4JAR=/usr/share/java/junit4.jar
+JUNIT4JAR=$(shell pwd)/junit-4.4.jar
 
 TESTCLASSES=distance.TestMutualInformation \
 	distance.TestEuclidean
 
 test :
-	java -classpath .:/usr/share/java/junit4.jar org.junit.runner.JUnitCore $(TESTCLASSES)
+	java -classpath .$(CPSEP)$(JUNIT4JAR) org.junit.runner.JUnitCore $(TESTCLASSES)
 
 %.class: %.java
 	javac -O $(JAVACOPTS) "$<"
