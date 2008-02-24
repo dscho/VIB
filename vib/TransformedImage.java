@@ -305,16 +305,16 @@ public class TransformedImage {
 
 		Iterator iter = iterator(false, x0, y0, z0, x1, y1, z1);
 		while (iter.next() != null) {
-			measure.reset();
+			differenceMeasure.reset();
 			switch(imageType) {
 			case ImagePlus.GRAY8:
 			case ImagePlus.COLOR_256:
-				measure.add(orig.getNoInterpol(iter.i, iter.j, iter.k),
+				differenceMeasure.add(orig.getNoInterpol(iter.i, iter.j, iter.k),
 					    transform.getNoInterpol((int)iter.x,
 								    (int)iter.y, (int)iter.z));
 				break;
 			case ImagePlus.GRAY16:
-				measure.add(orig.getNoInterpolShort(iter.i, iter.j, iter.k),
+				differenceMeasure.add(orig.getNoInterpolShort(iter.i, iter.j, iter.k),
 					    transform.getNoInterpolShort((int)iter.x,
 									 (int)iter.y, (int)iter.z));
 				break;
@@ -323,11 +323,11 @@ public class TransformedImage {
 			case ImagePlus.GRAY8:
 			case ImagePlus.COLOR_256:
 				result.set(iter.i, iter.j, iter.k,
-					   (byte)(int)measure.distance());
+					   (byte)(int)differenceMeasure.distance());
 				break;
 			case ImagePlus.GRAY16:
 				result.setShort(iter.i, iter.j, iter.k,
-						(short)measure.distance());
+						(short)differenceMeasure.distance());
 				break;
 			}
 		}

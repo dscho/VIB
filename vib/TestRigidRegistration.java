@@ -10,12 +10,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.*;
 
 import util.BatchOpener;
-import distance.Euclidean;
 import distance.MutualInformation;
 import distance.TwoValues;
 import ij.ImagePlus;
 import ij.ImageJ;
 import ij.io.FileSaver;
+import java.io.File;
 
 public class TestRigidRegistration {
 
@@ -50,7 +50,7 @@ public class TestRigidRegistration {
 			centralComplex_Labels_c005BA );
 	
 		int materials [] = { fanShapedBody, protocerebralBridge };
-		float bestScores [] = { 14, 55555555 };
+		float bestScores [] = { 15.5f, 55555555f };
 
 		for( int i = 0; i < materials.length; ++i ) {
 
@@ -101,23 +101,28 @@ public class TestRigidRegistration {
 				false,      // fast but inaccurate
 				null );     // other images to transform
 			
-			String outputTransformed = "test-images/output/testRegistrationMaterials-"+material+"-transformed.tif";
-			String outputDifference = "test-images/output/testRegistrationMaterials-"+material+"-difference.tif";
-			
-			// This should be able to get the distance down to less than 14:
-			assertTrue( ti.getDistance() <= bestScore );
-			
-			boolean saved;
+                        // Make sure the output directory exists:
+                        
+                        File outputDirectory = new File("test-images" + File.separator + "output");
+                        outputDirectory.mkdir();
+                        
+			String outputTransformed = outputDirectory.getPath()+File.separator+"testRegistrationMaterials-"+material+"-transformed.tif";
+			String outputDifference = outputDirectory.getPath()+File.separator+"testRegistrationMaterials-"+material+"-difference.tif";
+
+                        boolean saved;
 			
 			saved = new FileSaver(ti.getTransformed()).saveAsTiffStack(outputTransformed);
 			assertTrue(saved);
 			
 			saved = new FileSaver(ti.getDifferenceImage()).saveAsTiffStack(outputDifference);
 			assertTrue(saved);
-			
-			// Now MutualInformation:
-			
-			
+
+                        float distance = ti.getDistance();
+                        
+			// This should be able to get the distance down to less than 14:
+			assertTrue(
+                                "For material "+material+", distance ("+distance+"), more than what we expect ("+bestScore+")",
+                                distance <= bestScore );
 		}
 
 		centralComplex_Labels_71yAAeastmost_ImagePlus.close();
@@ -136,7 +141,7 @@ public class TestRigidRegistration {
 		ImagePlus midDetail_ImagePlus    = BatchOpener.openFirstChannel( midDetail );
 		ImagePlus brightDetail_ImagePlus = BatchOpener.openFirstChannel( brightDetail );
 
-		float [] bestScores = { -1.20f, -5.0f };
+		float [] bestScores = { -1.20f, -1.20f };
 
 		for( int timeThrough = 0; timeThrough < 2; ++timeThrough ) {
 
@@ -164,7 +169,7 @@ public class TestRigidRegistration {
 				template,
 				toTransform );
 			
-			ti.measure = new MutualInformation(0,4095,1024);
+			ti.measure = new MutualInformation(0,4095,256);
 			
 			FastMatrix matrix = plugin.rigidRegistration(
 				ti,
@@ -181,23 +186,31 @@ public class TestRigidRegistration {
 				false,      // show difference image
 				false,      // fast but inaccurate
 				null );     // other images to transform
-			
-			String outputTransformed = "test-images/output/testRegistration12BitGray-"+timeThrough+"-transformed.tif";
-			String outputDifference = "test-images/output/testRegistration12BitGray-"+timeThrough+"-difference.tif";
+
+                        // Make sure the output directory exists:
+                        
+                        File outputDirectory = new File("test-images" + File.separator + "output");
+                        outputDirectory.mkdir();
+                        
+			String outputTransformed = outputDirectory.getPath()+File.separator+"testRegistration12BitGray-"+timeThrough+"-transformed.tif";
+			String outputDifference = outputDirectory.getPath()+File.separator+"testRegistration12BitGray-"+timeThrough+"-difference.tif";
 			
 			System.out.println("distance was: "+ti.getDistance());
 
-			// This should be able to get the distance down to less than 14:
-			assertTrue( ti.getDistance() <= bestScores[timeThrough] );
-			
 			boolean saved;
 			
 			saved = new FileSaver(ti.getTransformed()).saveAsTiffStack(outputTransformed);
-			assertTrue(saved);
+			assertTrue("Saving to: "+outputTransformed+" failed.", saved);
 			
 			saved = new FileSaver(ti.getDifferenceImage()).saveAsTiffStack(outputDifference);
-			assertTrue(saved);
+			assertTrue("Saving to: "+outputDifference+" failed.", saved);
 
+                        float distance = ti.getDistance();
+                        
+			// This should be able to get the distance down to less than 14:
+			assertTrue(
+                                "Distance ("+distance+"), more than what we expect ("+bestScores[timeThrough]+")",
+                                distance <= bestScores[timeThrough] );                        
 		}
 
 		darkDetail_ImagePlus.close();
