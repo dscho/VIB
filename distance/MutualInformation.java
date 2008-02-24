@@ -32,16 +32,16 @@ package distance;
 */
 
 public class MutualInformation implements PixelPairs {
-        private int minimum;
-        private int maximum;
-	private int width;
+        private float minimum;
+        private float maximum;
+	private float width;
 	long joint[];
 	private int count;
         private int bins;
 	
 	// So that this is as efficient as possible, 
 
-	public MutualInformation(int minimumValue, int maximumValue, int bins) {
+	public MutualInformation(float minimumValue, float maximumValue, int bins) {
 		this.minimum = minimumValue;
 		this.maximum = maximumValue;
 		this.width = maximumValue - minimumValue;
@@ -59,6 +59,7 @@ public class MutualInformation implements PixelPairs {
 	}
 
 	public void add(float v1, float v2) {
+		/*
 		if( v1 < minimum )
 			throw new RuntimeException("v1 less than minimum");
 		if( v1 > maximum )
@@ -67,6 +68,7 @@ public class MutualInformation implements PixelPairs {
 			throw new RuntimeException("v2 less than minimum");
 		if( v2 > maximum )
 			throw new RuntimeException("v2 greater than maximum");
+		*/
 		int i1 = (int)Math.floor((v1 - minimum) * bins / width);
 		int i2 = (int)Math.floor((v2 - minimum) * bins / width);
 		if( i1 >= bins )
@@ -121,7 +123,8 @@ public class MutualInformation implements PixelPairs {
 	}
 
 	public float distance() {
-		return -mutualInformation();
+		float result = -mutualInformation();
+		return result;
 	}
 
 	public void printJointMatrix() {
