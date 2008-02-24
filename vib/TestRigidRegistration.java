@@ -136,7 +136,7 @@ public class TestRigidRegistration {
 		ImagePlus midDetail_ImagePlus    = BatchOpener.openFirstChannel( midDetail );
 		ImagePlus brightDetail_ImagePlus = BatchOpener.openFirstChannel( brightDetail );
 
-		float [] bestScores = { -1.20, -5 };
+		float [] bestScores = { -1.20f, -5.0f };
 
 		for( int timeThrough = 0; timeThrough < 2; ++timeThrough ) {
 
