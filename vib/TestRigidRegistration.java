@@ -2,6 +2,7 @@
 
 package vib;
 
+import distance.Euclidean;
 import org.junit.Test;
 import org.junit.Before;
 import org.junit.After;
@@ -34,12 +35,98 @@ public class TestRigidRegistration {
 		imageJ.quit();
 	}
 
+	@Test
+	public void testRegistration8BitGray() {
+
+		String canton = "test-images"+File.separator+"CantonF41c-reduced.tif";
+		String other  = "test-images"+File.separator+"tidied-mhl-62yxUAS-lacZ0-reduced.tif";
+
+		float bestScoreMI = -0.3f;
+                float bestScoreEuclidean = 25.0f;
+                
+                ImagePlus template = BatchOpener.openFirstChannel(canton);
+                ImagePlus toTransform = BatchOpener.openFirstChannel(other);
+                        
+		for( int timeThrough = 0; timeThrough < 2; ++timeThrough ) {
+
+			assertTrue( template != null );
+			assertTrue( toTransform != null );
+			
+			plugin = new RigidRegistration_();
+			plugin.setup( "", toTransform );
+			
+			int level = RigidRegistration_.guessLevelFromWidth(
+				template.getWidth() );
+			
+			TransformedImage ti = new TransformedImage(
+				template,
+				toTransform );
+
+                        String run = null;
+                        float bestScore = Float.MIN_VALUE;
+                                                
+			if( timeThrough == 0 ) {
+                            run = "eu";
+                            ti.measure = new Euclidean();
+                            bestScore = 100;
+			} else if( timeThrough == 1 ) {
+                            run = "mi";
+                            ti.measure = new MutualInformation();
+                            bestScore = 100;
+			}
+			                        
+			
+			FastMatrix matrix = plugin.rigidRegistration(
+				ti,
+				"",         // material b box
+				"",         // initial
+				-1,         // material 1
+				-1,         // material 2
+				false,      // no optimization
+				level,      // level
+				level > 2 ? 2 : level, // stop level
+				1.0,        // tolerance
+				1,          // number of initial positions
+				false,      // show transformed
+				false,      // show difference image
+				false,      // fast but inaccurate
+				null );     // other images to transform
+
+                        // Make sure the output directory exists:
+                        
+                        File outputDirectory = new File("test-images" + File.separator + "output");
+                        outputDirectory.mkdir();
+                        
+			String outputTransformed = outputDirectory.getPath()+File.separator+"testRegistration8BitGray-"+run+"-transformed.tif";
+			String outputDifference = outputDirectory.getPath()+File.separator+"testRegistration8BitGray-"+run+"-difference.tif";
+			
+			boolean saved;
+			
+			saved = new FileSaver(ti.getTransformed()).saveAsTiffStack(outputTransformed);
+			assertTrue("Saving to: "+outputTransformed+" failed.", saved);
+			
+			saved = new FileSaver(ti.getDifferenceImage()).saveAsTiffStack(outputDifference);
+			assertTrue("Saving to: "+outputDifference+" failed.", saved);
+
+                        float distance = ti.getDistance();
+                        
+                        
+			// This should be able to get the distance down to less than 14:
+			assertTrue(
+                                "On run: "+run+" distance ("+distance+"), more than what we expect ("+bestScore+")",
+                                distance <= bestScore );
+		}
+
+                template.close();
+                toTransform.close();
+        }        
+        
 	static final int fanShapedBody = 11;
 	static final int protocerebralBridge = 12;
 
-	String centralComplex_Labels_71yAAeastmost = "test-images/71yAAeastmost.labels";
-	String centralComplex_Labels_c005BA = "test-images/c005BA.labels";
-
+	String centralComplex_Labels_71yAAeastmost = "test-images"+File.separator+"71yAAeastmost.labels";
+	String centralComplex_Labels_c005BA = "test-images"+File.separator+"c005BA.labels";
+        
 	@Test
 	public void testRegistrationMaterials() {
 
@@ -133,9 +220,9 @@ public class TestRigidRegistration {
 	@Test
 	public void testRegistration12BitGray() {
 
-		String darkDetail =   "test-images/181y-12bit-aaarrg-dark-detail-reduced.tif";
-		String midDetail =    "test-images/181y-12bit-aaarrg-mid-detail-reduced.tif";
-		String brightDetail = "test-images/181y-12bit-aaarrg-bright-reduced.tif";
+		String darkDetail =   "test-images"+File.separator+"181y-12bit-aaarrg-dark-detail-reduced.tif";
+		String midDetail =    "test-images"+File.separator+"181y-12bit-aaarrg-mid-detail-reduced.tif";
+		String brightDetail = "test-images"+File.separator+"181y-12bit-aaarrg-bright-reduced.tif";
 
 		ImagePlus darkDetail_ImagePlus   = BatchOpener.openFirstChannel( darkDetail );
 		ImagePlus midDetail_ImagePlus    = BatchOpener.openFirstChannel( midDetail );
@@ -195,8 +282,6 @@ public class TestRigidRegistration {
 			String outputTransformed = outputDirectory.getPath()+File.separator+"testRegistration12BitGray-"+timeThrough+"-transformed.tif";
 			String outputDifference = outputDirectory.getPath()+File.separator+"testRegistration12BitGray-"+timeThrough+"-difference.tif";
 			
-			System.out.println("distance was: "+ti.getDistance());
-
 			boolean saved;
 			
 			saved = new FileSaver(ti.getTransformed()).saveAsTiffStack(outputTransformed);
@@ -209,7 +294,7 @@ public class TestRigidRegistration {
                         
 			// This should be able to get the distance down to less than 14:
 			assertTrue(
-                                "Distance ("+distance+"), more than what we expect ("+bestScores[timeThrough]+")",
+                                "On time through "+timeThrough+" distance ("+distance+"), more than what we expect ("+bestScores[timeThrough]+")",
                                 distance <= bestScores[timeThrough] );                        
 		}
 
@@ -217,6 +302,6 @@ public class TestRigidRegistration {
 		midDetail_ImagePlus.close();
 		brightDetail_ImagePlus.close();
 	}
-
+        
 }
 
