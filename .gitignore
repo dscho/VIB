@@ -2,4 +2,5 @@
 *.class
 CVS
 *~
+nbproject
 test-images/output
