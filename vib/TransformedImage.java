@@ -295,9 +295,12 @@ public class TransformedImage {
 
 		PixelPairs differenceMeasure = null;
 
-		if( measure instanceof distance.MutualInformation ) {
-			// Using the MutualInformation metric for
-			// difference images is impossibly slow...
+		if( measure instanceof distance.MutualInformation ||
+			measure instanceof distance.Correlation ) {
+			/* Using the MutualInformation metric for
+			   difference images is impossibly slow, and
+			   the correlation between two points is
+			   always NaN. */
 			differenceMeasure = new distance.Euclidean();
 		} else {
 			differenceMeasure = measure;

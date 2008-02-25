@@ -33,6 +33,8 @@ public class BaseOfTests {
      
              So I(X;Y) is 0.375
 
+	     (The R code for checking these is included in the comment at the bottom.)
+
         */
 
 	public void addMacKayExample(PixelPairs measure) {		
@@ -90,3 +92,51 @@ public class BaseOfTests {
 				measure.add(i,j);
 	}
 }
+
+
+/*
+
+xv <- c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4)
+
+yv <- c(1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
+        1, 1, 2, 2, 2, 2, 3, 3, 1, 2, 3, 3, 1, 2, 3, 3)
+
+diff <- xv - yv
+
+euclideanDistance <- sqrt( sum( (diff * diff) / length(xv) ) )
+
+x <- c(c(  1/8, 1/16, 1/32, 1/32 ),
+       c( 1/16,  1/8, 1/32, 1/32 ),
+       c( 1/16, 1/16, 1/16, 1/16 ),
+       c(  1/4,    0,    0,    0 ) )
+
+h <- function (p) {
+  sum( p * log2( 1 / p ) )
+}
+
+m <- t(matrix( x, 4, 4 ))
+
+nonzero <- x [ x > 0 ]
+
+hxy <- h(nonzero)
+
+px <- c( sum(m[,1]), sum(m[,2]), sum(m[,3]), sum(m[,4]) )
+py <- c( sum(m[1,]), sum(m[2,]), sum(m[3,]), sum(m[4,]) )
+
+hx <- h(px)
+
+hy <- h(py)
+
+pxgiveny <- c(m[1,] / py[1],
+              m[2,] / py[2],
+              m[3,] / py[3],
+              m[4,] / py[4])
+
+hxgiveny <- sum( as.numeric(x[x>0]) * log2(1/pxgiveny[x>0]) )
+
+mi <- hx + hy - hxy
+
+correlation <- cor(xv,yv)
+
+ */

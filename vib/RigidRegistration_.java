@@ -93,7 +93,7 @@ public class RigidRegistration_ implements PlugInFilter {
 				WindowManager.getCurrentImage().getTitle());
 			String[] methods = {
 				"Euclidean", "MutualInfo", "Threshold55",
-				"Threshold155" };
+				"Threshold155", "Correlation" };
 			gd.addChoice("measure", methods, "Euclidean");
 
                         // Add a list of images of the same size to also
@@ -184,6 +184,9 @@ public class RigidRegistration_ implements PlugInFilter {
 			else if (measureIndex == 3)
 				trans.measure =
 					new distance.Thresholded(155);
+			else if (measureIndex == 4)
+				trans.measure =
+					new distance.Correlation();
 			else
 				trans.measure =
 					new distance.Euclidean();

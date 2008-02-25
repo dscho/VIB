@@ -42,6 +42,7 @@ JUNIT4JAR=$(shell pwd)/junit-4.4.jar
 
 TESTCLASSES=distance.TestMutualInformation \
 	distance.TestEuclidean \
+	distance.TestCorrelation \
 	vib.TestRigidRegistration
 
 TESTMEM=512m

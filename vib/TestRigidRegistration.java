@@ -11,11 +11,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.*;
 
 import util.BatchOpener;
+
 import distance.MutualInformation;
 import distance.TwoValues;
+import distance.Correlation;
+import distance.Euclidean;
+
 import ij.ImagePlus;
 import ij.ImageJ;
 import ij.io.FileSaver;
+
 import java.io.File;
 
 public class TestRigidRegistration {
@@ -47,7 +52,7 @@ public class TestRigidRegistration {
                 ImagePlus template = BatchOpener.openFirstChannel(canton);
                 ImagePlus toTransform = BatchOpener.openFirstChannel(other);
                         
-		for( int timeThrough = 0; timeThrough < 2; ++timeThrough ) {
+		for( int timeThrough = 0; timeThrough < 3; ++timeThrough ) {
 
 			assertTrue( template != null );
 			assertTrue( toTransform != null );
@@ -73,8 +78,11 @@ public class TestRigidRegistration {
                             run = "mi";
                             ti.measure = new MutualInformation();
                             bestScore = 100;
+			} else if( timeThrough == 2 ) {
+                            run = "co";
+                            ti.measure = new Correlation();
+                            bestScore = 100;
 			}
-			                        
 			
 			FastMatrix matrix = plugin.rigidRegistration(
 				ti,
@@ -110,7 +118,8 @@ public class TestRigidRegistration {
 
                         float distance = ti.getDistance();
                         
-                        
+			System.out.println("Distance was: "+distance);
+       
 			// This should be able to get the distance down to less than 14:
 			assertTrue(
                                 "On run: "+run+" distance ("+distance+"), more than what we expect ("+bestScore+")",
@@ -228,74 +237,97 @@ public class TestRigidRegistration {
 		ImagePlus midDetail_ImagePlus    = BatchOpener.openFirstChannel( midDetail );
 		ImagePlus brightDetail_ImagePlus = BatchOpener.openFirstChannel( brightDetail );
 
-		float [] bestScores = { -1.20f, -1.20f };
-
 		for( int timeThrough = 0; timeThrough < 2; ++timeThrough ) {
 
 			ImagePlus template    = null;
 			ImagePlus toTransform = null;
 
+			float [] bestScores = new float[3];
+
 			if( timeThrough == 0 ) {
 				template = midDetail_ImagePlus;
 				toTransform = darkDetail_ImagePlus;
+				bestScores[0] = -10.0f; // euclidean
+				bestScores[1] = -10.0f; // mutual information
+				bestScores[2] = -10.0f; // correlation
 			} else if( timeThrough == 1 ) {
 				template = midDetail_ImagePlus;
 				toTransform = brightDetail_ImagePlus;
+				bestScores[0] = -10.0f; // euclidean
+				bestScores[1] = -10.0f; // mutual information
+				bestScores[2] = -10.0f; // correlation
 			}
 			
 			assertTrue( template != null );
 			assertTrue( toTransform != null );
-			
-			plugin = new RigidRegistration_();
-			plugin.setup( "", toTransform );
-			
-			int level = RigidRegistration_.guessLevelFromWidth(
-				template.getWidth() );
-			
-			TransformedImage ti = new TransformedImage(
-				template,
-				toTransform );
-			
-			ti.measure = new MutualInformation(0,4095,256);
-			
-			FastMatrix matrix = plugin.rigidRegistration(
-				ti,
-				"",         // material b box
-				"",         // initial
-				-1,         // material 1
-				-1,         // material 2
-				false,      // no optimization
-				level,      // level
-				level > 2 ? 2 : level, // stop level
-				1.0,        // tolerance
-				1,          // number of initial positions
-				false,      // show transformed
-				false,      // show difference image
-				false,      // fast but inaccurate
-				null );     // other images to transform
 
-                        // Make sure the output directory exists:
-                        
-                        File outputDirectory = new File("test-images" + File.separator + "output");
-                        outputDirectory.mkdir();
-                        
-			String outputTransformed = outputDirectory.getPath()+File.separator+"testRegistration12BitGray-"+timeThrough+"-transformed.tif";
-			String outputDifference = outputDirectory.getPath()+File.separator+"testRegistration12BitGray-"+timeThrough+"-difference.tif";
-			
-			boolean saved;
-			
-			saved = new FileSaver(ti.getTransformed()).saveAsTiffStack(outputTransformed);
-			assertTrue("Saving to: "+outputTransformed+" failed.", saved);
-			
-			saved = new FileSaver(ti.getDifferenceImage()).saveAsTiffStack(outputDifference);
-			assertTrue("Saving to: "+outputDifference+" failed.", saved);
+			for( int measureIndex = 0; measureIndex < 3; ++measureIndex ) {
+				
+				plugin = new RigidRegistration_();
+				plugin.setup( "", toTransform );
+				
+				int level = RigidRegistration_.guessLevelFromWidth(
+					template.getWidth() );
+				
+				TransformedImage ti = new TransformedImage(
+					template,
+					toTransform );
 
-                        float distance = ti.getDistance();
-                        
-			// This should be able to get the distance down to less than 14:
-			assertTrue(
-                                "On time through "+timeThrough+" distance ("+distance+"), more than what we expect ("+bestScores[timeThrough]+")",
-                                distance <= bestScores[timeThrough] );                        
+				String measureName = null;
+
+				if( measureIndex == 0 ) {
+					measureName = "eu";
+					ti.measure = new Euclidean();
+				} else if( measureIndex == 1 ) {
+					measureName = "mi";
+					ti.measure = new MutualInformation(0,4095,256);
+				} else if( measureIndex == 2 ) {
+					measureName = "co";
+					ti.measure = new Correlation();
+				}
+				
+				FastMatrix matrix = plugin.rigidRegistration(
+					ti,
+					"",         // material b box
+					"",         // initial
+					-1,         // material 1
+					-1,         // material 2
+					false,      // no optimization
+					level,      // level
+					level > 2 ? 2 : level, // stop level
+					1.0,        // tolerance
+					1,          // number of initial positions
+					false,      // show transformed
+					false,      // show difference image
+					false,      // fast but inaccurate
+					null );     // other images to transform
+				
+				// Make sure the output directory exists:
+				
+				File outputDirectory = new File("test-images" + File.separator + "output");
+				outputDirectory.mkdir();
+				
+				String outputTransformed = outputDirectory.getPath()+File.separator+"testRegistration12BitGray-"+timeThrough+"-"+measureName+"-transformed.tif";
+				String outputDifference = outputDirectory.getPath()+File.separator+"testRegistration12BitGray-"+timeThrough+"-"+measureName+"-difference.tif";
+				
+				boolean saved;
+				
+				saved = new FileSaver(ti.getTransformed()).saveAsTiffStack(outputTransformed);
+				assertTrue("Saving to: "+outputTransformed+" failed.", saved);
+				
+				saved = new FileSaver(ti.getDifferenceImage()).saveAsTiffStack(outputDifference);
+				assertTrue("Saving to: "+outputDifference+" failed.", saved);
+				
+				float distance = ti.getDistance();
+
+				System.out.println("distance on timeThrough "+timeThrough+" (measure: "+measureName+"): "+distance);
+
+				// Blah
+				assertTrue(
+					"On time through "+timeThrough+" distance ("+distance+"), more than what we expect ("+bestScores[measureIndex]+")",
+					distance <= bestScores[measureIndex] );
+				
+			}
 		}
 
 		darkDetail_ImagePlus.close();
@@ -304,4 +336,3 @@ public class TestRigidRegistration {
 	}
         
 }
-

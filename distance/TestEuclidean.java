@@ -1,6 +1,6 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
-/* Some very basic unit tests for the distance.MutualInformation class */
+/* Some very basic unit tests for the distance.Euclidean class */
 
 package distance;
 
