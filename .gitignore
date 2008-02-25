@@ -2,5 +2,4 @@
 *.class
 CVS
 *~
-build.xml
 test-images/output
