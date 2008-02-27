@@ -57,6 +57,75 @@ public class TransformedImage {
 		return orig.getImage();
         }
 
+	/* We need to know the range of values in both images for
+	 * setting up the MutualInformation measure. */
+
+	public float [] getValuesRange() {
+
+		int origStackSize      = orig.image.getStackSize();
+		int transformStackSize = transform.image.getStackSize();
+
+		ImageStack origStack      = orig.image.getStack();
+		ImageStack transformStack = transform.image.getStack();
+
+		int origBitDepth      = orig.image.getBitDepth();
+		int transformBitDepth = transform.image.getBitDepth();
+
+		float minValue = Float.MAX_VALUE;
+		float maxValue = Float.MIN_VALUE;
+
+		int z;
+		for( z = 0; z < origStackSize; ++z ) {
+			if( 8 == origBitDepth) {
+				byte [] pixels = (byte[])origStack.getPixels(z+1);
+				for( int i = 0; i < pixels.length; ++i ) {
+					int value = pixels[i] & 0xFF;
+					if( value > maxValue )
+						maxValue = value;
+					if( value < minValue )
+						minValue = value;
+				}
+			} else if( 16 == origBitDepth ) {
+				short [] pixels = (short[])origStack.getPixels(z+1);
+				for( int i = 0; i < pixels.length; ++i ) {
+					short value = pixels[i];
+					if( value > maxValue )
+						maxValue = value;
+					if( value < minValue )
+						minValue = value;
+				}
+			}
+		}
+		for( z = 0; z < transformStackSize; ++z ) {
+			if( 8 == transformBitDepth ) {
+				byte [] pixels = (byte[])transformStack.getPixels(z+1);
+				for( int i = 0; i < pixels.length; ++i ) {
+					int value = pixels[i] & 0xFF;
+					if( value > maxValue )
+						maxValue = value;
+					if( value < minValue )
+						minValue = value;
+				}
+			} else if( 16 == transformBitDepth ) {
+				short [] pixels = (short[])transformStack.getPixels(z+1);
+				for( int i = 0; i < pixels.length; ++i ) {
+					short value = pixels[i];
+					if( value > maxValue )
+						maxValue = value;
+					if( value < minValue )
+						minValue = value;
+				}
+			}
+		}
+
+		float [] result = new float[2];
+
+		result[0] = minValue;
+		result[1] = maxValue;
+
+		return result;
+	}
+
 	public void setTransformation(FastMatrix matrix) {
 		transformation = matrix.inverse();
 		this.matrix = toTransform.times(transformation.times(fromOrig));
@@ -224,30 +293,44 @@ public class TransformedImage {
 			InterpolatedImage.cloneDimensionsOnly(orig.image,
 							      typeToCreate);
 
+		PixelPairs differenceMeasure = null;
+
+		if( measure instanceof distance.MutualInformation ||
+			measure instanceof distance.Correlation ) {
+			/* Using the MutualInformation metric for
+			   difference images is impossibly slow, and
+			   the correlation between two points is
+			   always NaN. */
+			differenceMeasure = new distance.Euclidean();
+		} else {
+			differenceMeasure = measure;
+		}
+
 		Iterator iter = iterator(false, x0, y0, z0, x1, y1, z1);
 		while (iter.next() != null) {
-			measure.reset();
+			differenceMeasure.reset();
 			switch(imageType) {
 			case ImagePlus.GRAY8:
 			case ImagePlus.COLOR_256:
-				measure.add(orig.getNoInterpol(iter.i, iter.j, iter.k),
+				differenceMeasure.add(orig.getNoInterpol(iter.i, iter.j, iter.k),
 					    transform.getNoInterpol((int)iter.x,
 								    (int)iter.y, (int)iter.z));
 				break;
 			case ImagePlus.GRAY16:
-				measure.add(orig.getNoInterpolShort(iter.i, iter.j, iter.k),
+				differenceMeasure.add(orig.getNoInterpolShort(iter.i, iter.j, iter.k),
 					    transform.getNoInterpolShort((int)iter.x,
 									 (int)iter.y, (int)iter.z));
 				break;
 			}
 			switch(typeToCreate) {
 			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
 				result.set(iter.i, iter.j, iter.k,
-					   (byte)(int)measure.distance());
+					   (byte)(int)differenceMeasure.distance());
 				break;
 			case ImagePlus.GRAY16:
-				result.set(iter.i, iter.j, iter.k,
-					   (short)measure.distance());
+				result.setShort(iter.i, iter.j, iter.k,
+						(short)differenceMeasure.distance());
 				break;
 			}
 		}

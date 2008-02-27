@@ -93,7 +93,7 @@ public class RigidRegistration_ implements PlugInFilter {
 				WindowManager.getCurrentImage().getTitle());
 			String[] methods = {
 				"Euclidean", "MutualInfo", "Threshold55",
-				"Threshold155" };
+				"Threshold155", "Correlation" };
 			gd.addChoice("measure", methods, "Euclidean");
 
                         // Add a list of images of the same size to also
@@ -130,6 +130,40 @@ public class RigidRegistration_ implements PlugInFilter {
 		int mat2 = (isLabels ? gd.getNextChoiceIndex() : -1);
 		TransformedImage trans = new TransformedImage(templ, image);
                 ArrayList<ImagePlus> alsoTransform = new ArrayList<ImagePlus>();
+
+		int templType = templ.getType();
+		int imageType = image.getType();
+
+		int templBitDepth = templ.getBitDepth();
+		int imageBitDepth = image.getBitDepth();
+
+		ImageStack templStack = templ.getStack();
+		ImageStack imageStack = image.getStack();
+
+		if( templBitDepth != imageBitDepth ) {
+			IJ.error("Images must both be of the same bit depth");
+			return;			
+		}
+
+		float minValue = Float.MAX_VALUE;
+		float maxValue = Float.MIN_VALUE;
+
+		// If the type of the image is 8 bit, then we don't
+		// need to look at minimum and maximum values:
+
+		if( templBitDepth == 8 ) {
+			// That's fine...
+		} else if( templBitDepth == 16 ) {
+			float [] valuesRange = trans.getValuesRange();
+			// Find the range of values - this might well
+			// just be a 12 bit image....
+			minValue = valuesRange[0];
+			maxValue = valuesRange[1];
+		} else {
+			IJ.error("Unsupported bit depth: "+templBitDepth);
+			return;
+		}
+
 		if (isLabels) {
 			trans.measure = new distance.TwoValues(mat1, mat2);
 			if(verbose)
@@ -137,15 +171,22 @@ public class RigidRegistration_ implements PlugInFilter {
 					+ mat2);
 		} else {
 			int measureIndex = gd.getNextChoiceIndex();
-			if (measureIndex == 1)
-				trans.measure =
-					new distance.MutualInformation();
-			else if (measureIndex == 2)
+			if (measureIndex == 1) {
+				if( templBitDepth == 8 )
+					trans.measure =
+						new distance.MutualInformation();
+				else if( templBitDepth == 16 )
+					trans.measure =
+						new distance.MutualInformation(minValue,maxValue,256);
+			} else if (measureIndex == 2)
 				trans.measure =
 					new distance.Thresholded(55);
 			else if (measureIndex == 3)
 				trans.measure =
 					new distance.Thresholded(155);
+			else if (measureIndex == 4)
+				trans.measure =
+					new distance.Correlation();
 			else
 				trans.measure =
 					new distance.Euclidean();
@@ -205,6 +246,23 @@ public class RigidRegistration_ implements PlugInFilter {
 			boolean showDifferenceImage, 
 			boolean fastButInaccurate,
                         ArrayList<ImagePlus> alsoTransform ) {
+
+/*
+		System.out.println("        materialBBox: "+materialBBox);
+		System.out.println("             initial: "+initial);
+		System.out.println("                mat1: "+mat1);
+		System.out.println("                mat2: "+mat2);
+		System.out.println("      noOptimization: "+noOptimization);
+		System.out.println("               level: "+level);
+		System.out.println("           stopLevel: "+stopLevel);
+		System.out.println("           tolerance: "+tolerance);
+		System.out.println("   nInitialPositions: "+nInitialPositions);
+		System.out.println("     showTransformed: "+showTransformed);
+		System.out.println(" showDifferenceImage: "+showDifferenceImage);
+		System.out.println("   fastButInaccurate: "+fastButInaccurate);
+		System.out.println("       alsoTransform: "+alsoTransform);
+*/
+
 		if (mat1 >= 0)
 			trans.narrowSearchToMaterial(mat1, 10);
 
@@ -235,7 +293,6 @@ public class RigidRegistration_ implements PlugInFilter {
 					m = FastMatrix.translate(p.x, p.y, p.z)
 						.times(m);
 				}
-
 				m.guessEulerParameters(params, center);
 			} catch(Exception e) {
 				StringTokenizer t =
@@ -249,8 +306,8 @@ public class RigidRegistration_ implements PlugInFilter {
 		FastMatrix matrix;
 		if (!noOptimization) {
 			Optimizer opt = fastButInaccurate 
-			? new FastOptimizer(trans, level, stopLevel, tolerance)
-			: new Optimizer(trans, level, stopLevel, tolerance);
+				? new FastOptimizer(trans, level, stopLevel, tolerance, verbose)
+				: new Optimizer(trans, level, stopLevel, tolerance, verbose);
 			opt.eulerParameters = params;
 
 			if(opt.eulerParameters == null){
@@ -281,10 +338,13 @@ public class RigidRegistration_ implements PlugInFilter {
 
 
 				matrix = results[bestIndex];
-				if(verbose)
+				if(verbose) {
 					System.out.println("winner was " + 
 							(bestIndex+1) + 
-							" with " + matrix);
+							" with matrix" + matrix);
+					System.out.println("... and score: "+badnees[bestIndex]);
+				}
+				
 
 			}else{
 				matrix = opt.doRegister(level - stopLevel);
@@ -327,7 +387,6 @@ public class RigidRegistration_ implements PlugInFilter {
                         i.hasNext(); ) {
                         
                         ImagePlus toTransform=i.next();
-                        // System.out.println("Going to also transform "+toTransform.getTitle());
                         TransformedImage transOther=new TransformedImage(
                                 template,
                                 toTransform);
@@ -443,7 +502,7 @@ public class RigidRegistration_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
-		return DOES_8G | DOES_8C | NO_CHANGES;
+		return DOES_8G | DOES_8C | DOES_16 | NO_CHANGES;
 	}
 
 	static class Optimizer extends RegistrationOptimizer {
@@ -452,8 +511,9 @@ public class RigidRegistration_ implements PlugInFilter {
 		double tolerance;
 
 		public Optimizer(TransformedImage trans,
-				int startLevel, int stopLevel,
-				double tol) {
+				 int startLevel, int stopLevel,
+				 double tol,boolean verbose) {
+			this.verbose = verbose;
 			if (stopLevel < 2)
 				t = trans;
 			else
@@ -524,8 +584,8 @@ public class RigidRegistration_ implements PlugInFilter {
 		
 		public FastOptimizer(TransformedImage trans,
 				int startLevel, int stopLevel,
-				double tol) {
-			super(trans, startLevel, stopLevel, tol);
+				double tol, boolean verbose) {
+			super(trans, startLevel, stopLevel, tol, verbose);
 			current = new Point3d();
 		}
 

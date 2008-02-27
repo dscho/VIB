@@ -233,8 +233,10 @@ public class Register_Same_Subject implements PlugIn {
 						TransformedImage ti = new TransformedImage(
 							templateImagePlus,
 							channels[channelForRegistration]);
+
+						float [] valueRange = ti.getValuesRange();
 						
-						ti.measure = new distance.MutualInformation(4096);
+						ti.measure = new distance.MutualInformation(valueRange[0],valueRange[1],256);
 						
 						RigidRegistration_ registrar = new RigidRegistration_();
 						registrar.setup("", channels[channelForRegistration]);
@@ -294,7 +296,7 @@ public class Register_Same_Subject implements PlugIn {
 						
 						// So we do have to map it...
 						
-						PixelPairs measure = new MutualInformation(4096);
+						PixelPairs measure = new MutualInformation(0,4095,256);
 						
 						ImagePlus toTransform = channels[c];
 						TransformedImage transOther = new TransformedImage(
