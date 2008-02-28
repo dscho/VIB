@@ -28,11 +28,9 @@ end
 fileA=File.expand_path(fileA)
 fileB=File.expand_path(fileB)
 
-port=(1024+rand(2**13)).to_s
-
 Dir.chdir( vib_directory ) {
 
-	result = system( "java", "-Xmx#{memory}", "-Dplugins.dir=.", "-jar", "../ImageJ/ij.jar", "-port#{port}", fileA, fileB, "-eval", "run('Overlay Registered','');" )
+	result = system( "java", "-Xmx#{memory}", "-Dplugins.dir=.", "-jar", "../ImageJ/ij.jar", "-port0", fileA, fileB, "-eval", "run('Overlay Registered','');" )
 	unless result
 		puts "Running ImageJ failed."
 	end
