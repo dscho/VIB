@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package process3d;
 
 import java.util.Arrays;
@@ -5,6 +7,7 @@ import java.awt.image.ColorModel;
 
 import ij.process.FloatProcessor;
 import ij.process.ByteProcessor;
+import ij.process.ShortProcessor;
 import ij.process.ImageProcessor;
 
 import ij.ImagePlus;
@@ -32,7 +35,7 @@ public class MinMaxMedian {
 	private static int w, h, d;
 	private static int diameter = 3;
 	private static Slide[] slices_in, slices_out;
-	private static boolean isByte, isFloat;
+	private static boolean isByte, isShort, isFloat;
 
 	/** 
 	 * Main method which iterates through the stack and calls 
@@ -40,12 +43,14 @@ public class MinMaxMedian {
 	 */
 	public static ImagePlus convolve(ImagePlus image, int method) {
 		
-		if(method < 0 || method > 3) {
-			IJ.error("Neither MIN nor MAX nor MEDIAN chosen");
+		if(method < 0 || method >= 3) {
+			IJ.error("Neither MINIMUM nor MAXIMUM nor MEDIAN chosen");
 			return null;
 		}
+
 		// Determine dimensions of the image
-		w = image.getWidth(); h = image.getHeight();
+		w = image.getWidth();
+		h = image.getHeight();
 		d = image.getStackSize();
 		
 		// Adjust minimum and maximum indices (because of filter size)
@@ -56,10 +61,11 @@ public class MinMaxMedian {
 	
 		// determine image type
 		isByte = image.getProcessor().getPixels() instanceof byte[];
+		isShort = image.getProcessor().getPixels() instanceof short[];
 		isFloat = image.getProcessor().getPixels() instanceof float[];
 		ColorModel cm = image.getProcessor().getColorModel();
-		if(!isFloat && !isByte) {
-			IJ.error("Float or byte image expected");
+		if(!isFloat && !isByte && !isShort) {
+			IJ.error("Float, byte or short image expected");
 			return null;
 		}
 
@@ -70,6 +76,10 @@ public class MinMaxMedian {
 			if(isByte)
 				slices_in[i] = 
 					new ByteSlide((byte[])image.getStack()
+					.getProcessor(i+1).getPixels(), cm);
+			else if(isShort)
+				slices_in[i] =
+					new ShortSlide((short[])image.getStack()
 					.getProcessor(i+1).getPixels(), cm);
 			else
 				slices_in[i] = 
@@ -85,7 +95,7 @@ public class MinMaxMedian {
 			for(int y = min; y < max_y; y++) {
 				for(int x = min; x < max_x; x++) {
 					slices_out[z].setValue(x, y, 
-					  slices_out[z].convolvePoint(z, y, x));
+							       slices_out[z].convolvePoint(z, y, x, method));
 				}
 			}
 		}
@@ -101,7 +111,7 @@ public class MinMaxMedian {
 	}
 	
 	/**
-	 * Abstract class which warpes either a byte or float array.
+	 * Abstract class which warps a byte, short or float array.
 	 */
 	private abstract static class Slide {
 		protected ColorModel cm;
@@ -120,8 +130,8 @@ public class MinMaxMedian {
 		/** Returns an empty slide of this type */
 		abstract Slide getEmptySlide();
 		/** Convolve the specified point */
-		abstract Object convolvePoint(int z, int y, int x);
-	}	
+		abstract Object convolvePoint(int z, int y, int x, int method);
+	}
 
 	/**
 	 * Class which warps a float array representing one slide.
@@ -150,12 +160,12 @@ public class MinMaxMedian {
 		}
 		static int size = diameter*diameter*diameter;
 		static float[] values = new float[size];
-		Float convolvePoint(int z, int y, int x) {
+		Float convolvePoint(int z, int y, int x, int method) {
 			int index = 0;
 			int r = diameter/2;
-			for(int k=-r/2; k<=+r/2; k++) {
-				for(int j=-r/2; j<=+r/2; j++) {
-					for(int i=-r/2; i<=+r/2; i++) {
+			for(int k=-r; k<=+r; k++) {
+				for(int j=-r; j<=+r; j++) {
+					for(int i=-r; i<=+r; i++) {
 						values[index++] = 
 							(Float)slices_in[z+k].
 							getValue(x+i,y+j);
@@ -164,9 +174,57 @@ public class MinMaxMedian {
 			}
 			Arrays.sort(values);
 			if(method == MAXIMUM)
-				return values[0];
-			if(method == MINIMUM)
 				return values[size-1];
+			if(method == MINIMUM)
+				return values[0];
+			return values[size/2];
+		}
+	}
+
+	/**
+	 * Class which warps a short array representing one slide.
+	 */
+	private static class ShortSlide extends Slide {
+		short[] slide;
+		ShortSlide(short[] slide, ColorModel cm) {
+			super(cm);
+			this.slide = slide;
+		}
+		void setValue(int x, int y, Object value) {
+			Short v = (Short)value;
+			slide[y*w+x] = v;
+		}
+		Short getValue(int x, int y) {
+			return slide[y*w+x];
+		}
+		ImageProcessor getEmptyProcessor() {
+			return new ShortProcessor(w, h, new short[w*h], cm);
+		}
+		ImageProcessor getProcessor() {
+			return new ShortProcessor(w, h, slide, cm);
+		}
+		Slide getEmptySlide() {
+			return new ShortSlide(new short[w*h], cm);
+		}
+		static int size = diameter*diameter*diameter;
+		static short[] values = new short[size];
+		Short convolvePoint(int z, int y, int x, int method) {
+			int index = 0;
+			int r = diameter/2;
+			for(int k=-r; k<=+r; k++) {
+				for(int j=-r; j<=+r; j++) {
+					for(int i=-r; i<=+r; i++) {
+						values[index++] =
+							(Short)slices_in[z+k].
+							getValue(x+i,y+j);
+					}
+				}
+			}
+			Arrays.sort(values);
+			if(method == MAXIMUM)
+				return values[size-1];
+			if(method == MINIMUM)
+				return values[0];
 			return values[size/2];
 		}
 	}
@@ -198,7 +256,7 @@ public class MinMaxMedian {
 		}
 		static int size = diameter * diameter * diameter;
 		static int[] values = new int[size];
-		Byte convolvePoint(int z, int y, int x) {
+		Byte convolvePoint(int z, int y, int x, int method) {
 			int index = 0;
 			int r = diameter/2;
 			for(int k=-r; k<=+r; k++) {
@@ -212,9 +270,9 @@ public class MinMaxMedian {
 			}
 			Arrays.sort(values);
 			if(method == MAXIMUM)
-				return (byte)values[0];
-			if(method == MINIMUM)
 				return (byte)values[size-1];
+			if(method == MINIMUM)
+				return (byte)values[0];
 			return (byte)values[size/2];
 		}
 	}
