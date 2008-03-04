@@ -9,6 +9,25 @@ package vib;
  *   (refactor center determination)
  */
 
+/*
+    A note on what the levels mean in this plugin:
+
+     level (the start level) > stopLevel
+     
+ level = 4 implies eighth size i.e. width * ( 2 ** (1-N) ) where N = 4
+ ...
+ level = 2 implies half size   i.e. width * ( 2 ** (1-N) ) where N = 2
+
+    Other points:
+
+      * doRegister(int level) actually takes a level parameter
+        which is startLevel - level.]
+
+      * The guessed start level is the level you'd get if you
+        keep halfing the size while the width is still greater than
+	20 pixels.
+ */
+
 import amira.AmiraParameters;
 
 import distance.*;
