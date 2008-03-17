@@ -8,20 +8,29 @@ Usage: compare-stacks [OPTION] <fileA> <fileB>"
 
  -t <SUBSTRING>, --title-matches=<SUBSTRING>
                     Only use images whose titles match <SUBSTRING>
+ -c --close-others
+                    Close all other images that might be open, so
+                    we're just left with the overlay
 EOF
-
+end
+  
 options = GetoptLong.new(
-  [ "--title-matches", "-t", GetoptLong::REQUIRED_ARGUMENT ]
+  [ "--title-matches", "-t", GetoptLong::REQUIRED_ARGUMENT ],
+  [ "--close-others",  "-c", GetoptLong::NO_ARGUMENT ]
 )
 
 substring = ""
+close_others = false
 
 begin
 	options.each do |opt,arg|
-	case opt
-	when "--title-matches"
-		substring = arg
-	end
+          case opt
+          when "--title-matches"
+                  substring = arg
+          when "--close-others"
+                  close_others = true
+          end
+        end
 rescue
 	puts "Bad command line opion: #{$!}\n"
 	usage
@@ -56,9 +65,24 @@ end
 fileA=File.expand_path(fileA)
 fileB=File.expand_path(fileB)
 
+close_string = ""
+if close_others
+  close_string = " close=1"
+end
+
 Dir.chdir( vib_directory ) {
 
-	result = system( "java", "-Xmx#{memory}", "-Dplugins.dir=.", "-jar", "../ImageJ/ij.jar", "-port0", fileA, fileB, "-eval", "run('Overlay Registered','substring=#{substring}');" )
+        command = [ "java",
+                    "-Xmx#{memory}",
+                    "-Dplugins.dir=.",
+                    "-jar", "../ImageJ/ij.jar",
+                    "-port0",
+                    fileA, fileB,
+                    "-eval", "run('Overlay Registered','substring=#{substring}#{close_string}');" ]
+
+        puts "Running: "+command.join(' ')
+  
+	result = system(*command)
 	unless result
 		puts "Running ImageJ failed."
 	end

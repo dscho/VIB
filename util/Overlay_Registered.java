@@ -7,29 +7,61 @@ import ij.process.*;
 import ij.gui.*;
 import ij.plugin.*;
 import ij.plugin.filter.*;
+import vib.TransformedImage;
 
 public class Overlay_Registered implements PlugIn {
 	
 	public void run(String ignored) {
+
+                String titleSubstring = null;
+                boolean closeAllOthers = false;
+                
+                String macroOptions = Macro.getOptions();
+		if (macroOptions != null) {
+                        titleSubstring = Macro.getValue(macroOptions, "substring", null);
+                        if( null != Macro.getValue(macroOptions,"close",null) ) {
+                            closeAllOthers = true;
+                        }
+                }
 		
+                if (titleSubstring == null)
+                        titleSubstring = "";
+                
 		int[] wList = WindowManager.getIDList();
 		if (wList == null) {
 			IJ.error("No images are open.");
 			return;
 		}
 
-		String[] titles = new String[wList.length + 1];
+                String [] matchingTitles=new String[wList.length];
+                ImagePlus [] matchingImagePlus=new ImagePlus[wList.length];
+                ImagePlus [] allImages=new ImagePlus[wList.length];
+                
+                int totalMatchingTitles = 0;
 		for (int i = 0; i < wList.length; i++) {
 			ImagePlus imp = WindowManager.getImage(wList[i]);
-			titles[i] = imp != null ? imp.getTitle() : "";
+                        String title = (imp == null) ? "" : imp.getTitle();
+                        if(title.indexOf(titleSubstring) >= 0) {
+                            matchingTitles[totalMatchingTitles] = title;
+                            matchingImagePlus[totalMatchingTitles] = imp;
+                            ++totalMatchingTitles;
+                        }
+                        allImages[i] = imp;
 		}
-
-		String none = "*None*";
-		titles[wList.length] = none;
+                
+                if( totalMatchingTitles < 2 ) {
+                    IJ.error("There are only "+totalMatchingTitles+" matching images; need at least 2.");
+                    return;
+                }
+                
+                String [] onlyMatchingTitles = new String[totalMatchingTitles];
+                System.arraycopy(matchingTitles,0,onlyMatchingTitles,0,totalMatchingTitles);
+                ImagePlus [] onlyMatchingImagePlus = new ImagePlus[totalMatchingTitles];
+                System.arraycopy(matchingImagePlus, 0, onlyMatchingImagePlus, 0, totalMatchingTitles);
 
 		GenericDialog gd = new GenericDialog("Overlay Transformed");
-		gd.addChoice("A:", titles, titles[0]);
-		gd.addChoice("B:", titles, titles[1]);
+		gd.addChoice("A:", onlyMatchingTitles, onlyMatchingTitles[0]);
+		gd.addChoice("B:", onlyMatchingTitles, onlyMatchingTitles[1]);
 		gd.addCheckbox("Keep source images", true);
 		gd.showDialog();
 		if (gd.wasCanceled()) {
@@ -42,9 +74,21 @@ public class Overlay_Registered implements PlugIn {
 
 		ImagePlus [] sourceImages = new ImagePlus[2];
 		
-		sourceImages[0] = WindowManager.getImage(wList[index[0]]);
-		sourceImages[1] = WindowManager.getImage(wList[index[1]]);
+		sourceImages[0] = onlyMatchingImagePlus[index[0]];
+		sourceImages[1] = onlyMatchingImagePlus[index[1]];
 		
+                float[] valueRange;
+                {
+                    TransformedImage ti = new TransformedImage(
+                        sourceImages[0],
+                        sourceImages[1]);
+
+                    valueRange = ti.getValuesRange();
+                }
+                
+                sourceImages[0].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+                sourceImages[1].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+                
 		int width = sourceImages[0].getWidth();
 		int height = sourceImages[0].getHeight();
 		int depth = sourceImages[0].getStackSize();
@@ -87,6 +131,10 @@ public class Overlay_Registered implements PlugIn {
 		ImagePlus rgbResult = new ImagePlus("Merged",merged);
 		rgbResult.show();
 
+                if(closeAllOthers) {
+                    for( int i=0; i < allImages.length; ++i ) {
+                        allImages[i].close();
+                    }
+                }
 	}
-
 }
