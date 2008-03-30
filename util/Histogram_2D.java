@@ -27,28 +27,52 @@ public class Histogram_2D implements PlugIn {
 	int bins;
 	long totalValues;
 	long[][] counts = new long[bins][bins];
-	long maxCountAllowedPerBin;
 	float minValue;
 	float maxValue;
 	float rangeWidth;
-		
+
+	// Use these to keep statistics on the image:
+	boolean keepStatistics = false;
+	boolean correlationCalculated = false;
+	float statsMinValue;
+	float statsMaxValue;
+	float sumX;
+	float sumY;
+	float sumXY;
+	float sumXX;
+	long statsValues;
+	float fittedGradient;
+	float fittedYIntercept;
+	
+	public void collectStatisticsFor(float statsMinValue, float statsMaxValue) {
+		this.statsMinValue = statsMinValue;
+		this.statsMaxValue = statsMaxValue;
+		sumX = 0;
+		sumY = 0;
+		sumXX = 0;
+		sumXY = 0;
+		statsValues = 0;
+		keepStatistics = true;
+		fittedGradient = 0;
+		fittedYIntercept = 0;
+	}
+	       
 	public void start2DHistogram(
-	    String axisLabelA,
-	    String axisLableB,
 	    float minValue,
 	    float maxValue,
-	    int bins,
-	    long maxCountAllowedPerBin ) {
+	    int bins ) {
 		
 		this.bins = bins;
 		this.totalValues = 0;
 		this.counts = new long[bins][bins];
-		this.maxCountAllowedPerBin = maxCountAllowedPerBin;		
 		this.minValue = minValue;
 		this.maxValue = maxValue;
 		this.rangeWidth = maxValue - minValue;
-	}
 		
+		keepStatistics = false;
+		correlationCalculated = false;
+	}
+
 	public void addImagePlusPair(
 	    ImagePlus imageA,
 	    ImagePlus imageB ) {
@@ -121,6 +145,18 @@ public class Histogram_2D implements PlugIn {
 						valueA = pixelsAShorts[y * width + x];
 						valueB = pixelsBShorts[y * width + x];
 					}
+
+					if( keepStatistics &&
+					    (valueA >= statsMinValue) && 
+					    (valueB >= statsMinValue) &&
+					    (valueA <= statsMaxValue) && 
+					    (valueB <= statsMaxValue) ) {
+						sumX += valueA;
+						sumY += valueB;
+						sumXX += valueA * valueA;
+						sumXY += valueA * valueB;
+						++ statsValues;
+					}
 					
 					int i1 = (int)Math.floor((valueA - minValue) * bins / rangeWidth);
 					int i2 = (int)Math.floor((valueB - minValue) * bins / rangeWidth);
@@ -134,6 +170,14 @@ public class Histogram_2D implements PlugIn {
 				}
 			}
 		}
+	}
+
+	public void calculateCorrelation( ) {
+		float a = (statsValues * sumXY - sumX * sumY) / (statsValues * sumXX - sumX * sumX);
+		float b = (sumY - a * sumX) / statsValues;
+		fittedGradient = a;
+		fittedYIntercept = b;
+		correlationCalculated = true;
 	}
 	
 	public ImagePlus [] getHistograms( ) {
@@ -158,15 +202,6 @@ public class Histogram_2D implements PlugIn {
 
 			for( int avalue = 0; avalue < bins; ++avalue )
 				for( int bvalue = 0; bvalue < bins; ++bvalue ) {
-
-					/*
-					long count = counts[avalue][bvalue];
-
-					if( maxCountAllowedPerBin >= 0 && count > maxCountAllowedPerBin )
-						count = maxCountAllowedPerBin;
-					*/
-					
-					// floatValues[((bins-1)-bvalue)*bins+avalue] = (float)p[avalue][bvalue];
 					floatValues[((bins-1)-bvalue)*bins+avalue] = (float)Math.log(p[avalue][bvalue]);
 				}
 
@@ -350,8 +385,7 @@ public class Histogram_2D implements PlugIn {
 				int newY= yLabelTopLeftY + labelWidth - x;
 				newFloats[newY*newWidth+newX]=labelFloats[y*labelWidth+x];
 			}
-		
-		
+				
 		/* Now draw a bar at the side showing the value range. */
 		
 		int barWidth = 30;
@@ -407,89 +441,52 @@ public class Histogram_2D implements PlugIn {
 		    newWidth / 2 - titleFM.stringWidth(title) / 2,
 		    topBorder / 2 + titleFM.getHeight() / 2 );
 		
+		/* If a line fit has been calculated, draw that over
+		 * the image... */
+
+		if( correlationCalculated ) {
+			
+			// Draw the fitted line onto the histogram (as
+			// a dotted line)...
+
+			newFP.drawPixel( 10, 10 );
+
+			if( fittedGradient <= 1 ) {
+
+				for( int xBin=0; xBin<bins; ++xBin ) {
+					float realX = minValue + ( (xBin+0.5f) / bins ) * rangeWidth;
+					System.out.println("xBin "+xBin+" mapped to "+realX);
+					float realY = fittedGradient * realX + fittedYIntercept;
+					int yBin = (int)Math.floor((realY - minValue) * bins / rangeWidth);
+					System.out.println("bin: ("+xBin+","+yBin+")");
+					if( yBin >= 0 && yBin < bins ) {
+						newFP.setValue( (xBin % 2) == 0 ? minValue : maxValue );
+						newFP.drawPixel( leftBorder+xBin, topBorder+oldHeight-yBin );
+					}
+				}
+
+			} else {
+
+				for( int yBin=0; yBin<bins; ++yBin ) {
+					float realY = minValue + ( (yBin+0.5f) / bins ) * rangeWidth;
+					System.out.println("yBin "+yBin+" mapped to "+realY);
+					float realX = (realY - fittedYIntercept) / fittedGradient;
+					int xBin = (int)Math.floor((realX - minValue) * bins / rangeWidth);
+					System.out.println("bin: ("+xBin+","+yBin+")");
+					if( xBin >= 0 && xBin < bins ) {
+						newFP.setValue( (yBin % 2) == 0 ? minValue : maxValue );
+						newFP.drawPixel( leftBorder+xBin, topBorder+oldHeight-yBin );
+					}
+				}
+
+			}
+
+		}
+
 		newImagePlus.updateAndRepaintWindow();
 		
 		return null;
-	}
-	
-	
-		/*
-		double onlyWithSelfInformationOver = 19;
-
-		System.out.println("Now "+entries.length+" in entries");
-		
-		for( int i = 0; i < entries.length; ++i ) {
-			
-			System.out.println("Creating mask for "+i);
-		
-			File currentFile = entries[i];
-			
-			if( ! currentFile.getName().endsWith(".lsm") )
-				continue;
-
-			ImagePlus [] channels = BatchOpener.open(currentFile.getAbsolutePath());			
-			
-			ImageStack stackA = channels[0].getStack();
-			ImageStack stackB = channels[1].getStack();
-			
-			int depth = channels[0].getStackSize();
-			int width = channels[0].getWidth();
-			int height = channels[0].getHeight();
-
-			ImageStack maskStack=new ImageStack(width,height);
-			ImageStack selfStack=new ImageStack(width,height);
-			
-			for( int z = 0; z < depth; ++z  ) {				
-				
-				byte [] pixelsA = (byte [])stackA.getPixels(z+1);
-				byte [] pixelsB = (byte [])stackB.getPixels(z+1);
-				
-				byte [] maskPixels = new byte[width*height];
-				
-				float [] selfPixels = new float[width*height];
-				
-				for( int y = 0; y < height; ++y ) {
-					for( int x = 0; x < width; ++x ) {
-						
-						int valueA = pixelsA[y*width+x] &0xFF;
-						int valueB = pixelsB[y*width+x] &0xFF;
-						
-						++ counts[valueA][valueB];
-						++ totalValues;
-						
-						selfPixels[y*width+x] = (float)selfInformation[valueA][valueB];
-						
-						if( selfInformation[valueA][valueB] > onlyWithSelfInformationOver ) {
-							maskPixels[y*width+x] = (byte)255;
-						}
-					}
-				}
-				
-				ByteProcessor bp=new ByteProcessor(width,height);
-				bp.setPixels(maskPixels);
-				maskStack.addSlice("",bp);
-
-				FloatProcessor fp=new FloatProcessor(width,height);
-				fp.setPixels(selfPixels);
-				selfStack.addSlice("", fp);
-				
-			}
-			
-			channels[0].show();
-			channels[1].show();
-
-			ImagePlus maskImagePlus = new ImagePlus("mask",maskStack);
-			maskImagePlus.show();
-
-			ImagePlus selfImagePlus = new ImagePlus("self",selfStack);
-			selfImagePlus.show();			
-			
-			break;
-
-		}
-		
-		
-		*/
+	}      	
 		
 	public void run(String ignored) {
                 
@@ -574,12 +571,9 @@ public class Histogram_2D implements PlugIn {
 		ImagePlus [] imagesB = { sourceImages[1] };
 		
 		start2DHistogram(
-			"Values in " + sourceImages[0].getTitle(),
-			"Values in " + sourceImages[1].getTitle(),
 			valueRange[0],
 			valueRange[1],
-			256,
-			-1 );
+			256 );
 		
 		addImagePlusPair(sourceImages[0],sourceImages[1]);
 		
