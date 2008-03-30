@@ -12,6 +12,8 @@ public class Overlay_Registered implements PlugIn {
 	
 	public void run(String ignored) {
 		
+		System.out.println("Thread in plugin is: "+Thread.currentThread());
+		
 		int[] wList = WindowManager.getIDList();
 		if (wList == null) {
 			IJ.error("No images are open.");
@@ -86,6 +88,26 @@ public class Overlay_Registered implements PlugIn {
 		
 		ImagePlus rgbResult = new ImagePlus("Merged",merged);
 		rgbResult.show();
+
+		ModelessQuestions q=new ModelessQuestions("Rate This Registration",rgbResult);
+
+		q.addTextField("I dunno", 20, "Your message:" );
+		
+		q.addTextField("Well", 10, "Something");
+
+		q.addLabel("Just a label.");
+
+		q.addCompletingButton("ok","Done");
+		q.addCompletingButton("unhappy","Rubbish!");
+
+		for( int i = 0; i <= 10; ++i ) {
+			q.addRadio("rating",""+i);
+		}
+
+		q.waitForAnswers();
+
+		IJ.error("Finished waiting for answers!");
+
 
 	}
 
