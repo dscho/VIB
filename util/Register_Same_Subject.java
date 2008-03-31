@@ -72,52 +72,53 @@ public class Register_Same_Subject implements PlugIn {
 		}
 		
 		String[][] filenames = {
-			{"181y-12bit-aaarrg-dark-detail.lsm",
-			 "181y-12bit-aaarrg-mid-detail.lsm",
+                        {"181y-12bit-aaarrg-dark-detail.lsm", // in register!
+			 "181y-12bit-aaarrg-mid-detail.lsm",  // misregistered (slight xy) with:
 			 "181y-12bit-aaarrg.lsm"
 			},
-			{"210yxdscam-lacz-FM-dark-info.lsm",
+			{"210yxdscam-lacz-FM-dark-info.lsm",  // misregistered (big z) with:
 			 "210yxdscam-lacz-FM-bright-info.lsm"
-			},
-			{"227yxdscam-lacz-FH-dark-info.lsm",
+			}, // fixed by registration
+			{"227yxdscam-lacz-FH-dark-info.lsm",  // misregistered (slight xy) with:
 			 "227yxdscam-lacz-FH-bright-info.lsm"
-			},
-			{"227yxdscam-lacz-FI-dark-info.lsm",
+			}, // fixed by registration
+			{"227yxdscam-lacz-FI-dark-info.lsm",  // misregistered (slight xy) with:
 			 "227yxdscam-lacz-FI-bright-info.lsm"
-			},
-			{"23yxdscam-lacz-FN-dark-info.lsm",
+			}, // fixed by registration
+			{"23yxdscam-lacz-FN-dark-info.lsm",   // misregistered (slight xy) with:
 			 "23yxdscam-lacz-FN-bright-info.lsm"
-			},
-			{"52yxdscam-lacz-FK-dark-info.lsm",
+			}, // fixed by registration
+			{"52yxdscam-lacz-FK-dark-info.lsm",   // misregistered (slight xy) and big z:
 			 "52yxdscam-lacz-FK-light-info.lsm"
-			},
-			{"71y-lacZ-dscam-FB-dark-info.lsm",
-			 "71y-lacZ-dscam-FB-mid-info.lsm",
+			}, // a couple of pixels off after registration
+			{"71y-lacZ-dscam-FB-dark-info.lsm",   // misregistered (slight xy) with:
+			 "71y-lacZ-dscam-FB-mid-info.lsm",    // misregistered (slight xy) with:
 			 "71y-lacZ-dscam-FB-bright-info.lsm"
-			},
-			{"71y-lacZ-dscam-FC-dark-info.lsm",
-			 "71y-lacZ-dscam-FC-mid-info.lsm",
+			}, // a couple of pixels off after registration
+                           // off by a pixel after registration
+			{"71y-lacZ-dscam-FC-dark-info.lsm",   // in register already!
+			 "71y-lacZ-dscam-FC-mid-info.lsm",    // in register already!
 			 "71y-lacZ-dscam-FC-bright-info.lsm"
-			},
-			{"C61xdscam-lacz-FF-dark-info.lsm",
+			}, // still in register
+			{"C61xdscam-lacz-FF-dark-info.lsm",   // misregistered (slight x,y,z)
 			 "C61xdscam-lacz-FF-light-info.lsm"
-			},
-			{"C61xdscam-lacz-FG-dark-info.lsm",
-			 "C61xdscam-lacz-FG-mid-info.lsm",
+			}, // fixed by registration (i think, just off at the very top)
+			{"C61xdscam-lacz-FG-dark-info.lsm",   // in register already!
+			 "C61xdscam-lacz-FG-mid-info.lsm",    // in register already!
 			 "C61xdscam-lacz-FG-bright-info.lsm"
 			},
-			{"c159bxdscam-lacz-FD-dark-info.lsm",
+			{"c159bxdscam-lacz-FD-dark-info.lsm",  // misregistered (slight xy) witH:
 			 "c159bxdscam-lacz-FD-bright-info.lsm"
-			},
-			{"c159bxdscam-lacz-FE-dark-info.lsm",
+			}, // mostly fixed by registration?
+			{"c159bxdscam-lacz-FE-dark-info.lsm",  // misregistered (slight xy) with:
 			 "c159bxdscam-lacz-FE-light-info.lsm"
-			},
-			{"c255xdscam-lacz-FJ-dark-info.lsm",
+			}, // fixed by registration
+                        {"c255xdscam-lacz-FJ-dark-info.lsm",   // misregistered (slight x,y,z) with:
 			 "c255xdscam-lacz-FJ-light-info.lsm"
-			},
-			{"c259xdscam-lacz-FL-dark-info.lsm",
+			}, // fixed by registration
+			{"c259xdscam-lacz-FL-dark-info.lsm",   // misregistered (slight x,y,z) with:
 			 "c259xdscam-lacz-FL-bright-info.lsm"
-			}
+			} // fixed by registration
 		};
 		
 		for (int subjectIndex = 0; subjectIndex < filenames.length; ++subjectIndex) {
@@ -254,7 +255,7 @@ public class Register_Same_Subject implements PlugIn {
 							false, // no optimization
 							level, // level
 							level > 2 ? 2 : level, // stop level
-							1.0, // tolerance
+							0.1, // tolerance
 							1, // number of initial positions
 							false, // show transformed
 							false, // show difference image
