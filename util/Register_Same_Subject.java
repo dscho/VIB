@@ -47,9 +47,257 @@ public class Register_Same_Subject implements PlugIn {
 		return lastPrefix;
 	}
 	
-	public void run(String arg0) {
 		
-		int channelForRegistration = 0;
+	int channelForRegistration = 0;
+	
+	public void processSubjectImages( String [] filenamesForSubject, String baseDirectory ) {
+						
+		String prefix = findCommonPrefix(filenamesForSubject);
+		System.out.println("Got common prefix: " + prefix);
+
+		// Register against the middle image:
+		int templateIndex = filenamesForSubject.length / 2;
+
+		ImagePlus templateImagePlus = null;
+		File templateFile=null;
+		// Just load the template image in this block:
+		{
+			String templateFilename = baseDirectory + filenamesForSubject[templateIndex];
+			templateFile = new File(templateFilename);
+			try {
+				templateImagePlus = BatchOpener.openParticularChannel(
+				    templateFilename,
+				    channelForRegistration);
+				if (templateImagePlus == null) {
+					IJ.error("File not found: " + templateFilename);
+					return;
+				}
+			} catch (NoSuchChannelException e) {
+				IJ.error("Zero-indexed channel " + templateIndex +
+				    " not found in: " + templateFilename);
+				return;
+			}
+		}
+
+		// Make sure that the output directory exists:
+		
+		String outputDirectory = baseDirectory + "registered" + File.separator;
+		File outputDirectoryFile = new File(outputDirectory);
+		outputDirectoryFile.mkdir();
+		if (!(outputDirectoryFile.exists() && outputDirectoryFile.isDirectory())) {
+			IJ.error("'" + baseDirectory + "' wasn't created properly");
+			return;
+		}
+
+		// Now register them one-by-one, or just write out the template:
+		
+		String registeredFormatString = outputDirectory + "%simage%d-channel%d.tif";
+		String transformationFormatString = outputDirectory + "%s%d-TO-%d.txt";
+
+		for (int filenameIndex = 0;
+		    filenameIndex < filenamesForSubject.length;
+		    ++filenameIndex) {
+
+			
+			
+			String filename = baseDirectory + filenamesForSubject[filenameIndex];
+			File file = new File(filename);
+			
+			if (filenameIndex == templateIndex) {
+				// Just write them out again:
+				ImagePlus[] channels = BatchOpener.open(filename);
+				for (int c = 0; c < channels.length; ++c) {
+
+					String outputFilename = String.format(
+					    registeredFormatString,
+					    prefix, filenameIndex, c);
+
+					System.out.println("Saving to: " + outputFilename);
+					if (new File(outputFilename).exists()) {
+						channels[c].close();
+						continue;
+					}
+
+					boolean saved = new FileSaver(channels[c]).saveAsTiffStack(outputFilename);
+					if (!saved) {
+						IJ.error("Failed to save: '" + outputFilename + "'");
+						return;
+					}
+
+					channels[c].close();
+				}
+
+			} else {
+
+				// We actually have to do some registration:
+				ImagePlus[] channels = BatchOpener.open(filename);
+
+				// Does the transformation already exist?
+				String transformationFilename = String.format(
+				    transformationFormatString,
+				    prefix,
+				    filenameIndex,
+				    templateIndex);
+
+				File transformationFile = new File(transformationFilename);
+				FastMatrix matrix = null;
+
+				if (transformationFile.exists()) {
+
+					// Load it...
+					BufferedReader br = null;
+					try {
+						br = new BufferedReader(new FileReader(transformationFilename));
+						String firstLine = br.readLine();
+						matrix = FastMatrix.parseMatrix(firstLine);
+						System.out.println("Parsed: " + firstLine);
+						System.out.println("    to: " + matrix.toString());
+					} catch (FileNotFoundException e) {
+						IJ.error("BUG: File not found for: " + transformationFilename);
+						return;
+					} catch (IOException e) {
+						IJ.error("IOException when reading from: " + transformationFilename);
+						return;
+					}
+
+				} else {
+
+					// Generate the transformation anew and write it to disk:
+
+					System.out.println("templateImagePlus is: " + templateImagePlus);
+					System.out.println("toTransform is: " + channels[channelForRegistration]);
+
+					TransformedImage ti = new TransformedImage(
+					    templateImagePlus,
+					    channels[channelForRegistration]);
+
+					float[] valueRange = ti.getValuesRange();
+
+					ti.measure = new distance.MutualInformation(valueRange[0], valueRange[1], 256);
+
+					RigidRegistration_ registrar = new RigidRegistration_();
+					registrar.setup("", channels[channelForRegistration]);
+
+					int level = RigidRegistration_.guessLevelFromWidth(templateImagePlus.getWidth());
+
+					System.out.println("Registering...");
+
+					matrix = registrar.rigidRegistration(
+					    ti,
+					    "", // material b box
+					    "", // initial
+					    -1, // material 1
+					    -1, // material 2
+					    false, // no optimization
+					    level, // level
+					    level > 2 ? 2 : level, // stop level
+					    0.1, // tolerance
+					    1, // number of initial positions
+					    false, // show transformed
+					    false, // show difference image
+					    false, // fast but inaccurate
+					    null);
+
+					/*                                                
+					double [][] matrixArrays = 
+					{ {  1,  0,  0,   0 },
+					{  0,  1,  1,   0 },
+					{  0,  0, -1,  20 } };
+					matrix = new FastMatrix(matrixArrays);
+					 */
+					// We've just calculated the transformation now, haven't
+					// applied it.  Write it to disk first:
+
+					try {
+						PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(transformationFilename), "UTF-8"));
+						pw.print(matrix.toString());
+						pw.close();
+					} catch (FileNotFoundException e) {
+						IJ.error("Can't find file " + transformationFilename);
+					} catch (IOException e) {
+						IJ.error("Can't write to file " + transformationFilename);
+					}
+
+				}
+				
+				// Transform each channel:
+				
+				for (int c = 0; c < channels.length; ++c) {
+
+					String outputFilename = String.format(
+					    registeredFormatString,
+					    prefix, filenameIndex, c);
+
+					if (new File(outputFilename).exists()) {
+						channels[c].close();
+						continue;
+					}
+
+					// So we do have to map it...
+
+					PixelPairs measure = new MutualInformation(0, 4095, 256);
+
+					ImagePlus toTransform = channels[c];
+					TransformedImage transOther = new TransformedImage(
+					    templateImagePlus,
+					    toTransform);
+					transOther.measure = measure;
+					transOther.setTransformation(matrix);
+
+					ImagePlus result = transOther.getTransformed();
+
+					boolean saved = new FileSaver(result).saveAsTiffStack(outputFilename);
+					if (!saved) {
+						IJ.error("Failed to save: '" + outputFilename + "'");
+						return;
+					}
+
+					result.close();
+					channels[c].close();
+				}
+
+				/* Now some analysis.  These two images
+				   are different and we construct a histogram
+				   between the two. */
+
+				// Load channel data for the current file and the template:
+				
+				ChannelDataLSM templateChannelData [] =
+				    ChannelDataLSM.getChannelsData(templateFile);
+				ChannelDataLSM currentChannelData [] =
+				    ChannelDataLSM.getChannelsData(file);
+				
+				for (int c = 0; c < channels.length; ++c) {
+
+					String currentChannelFilename = String.format(
+					    registeredFormatString,
+					    prefix, filenameIndex, c);
+				
+					String templateChannelFilename = String.format(
+					    registeredFormatString,
+					    prefix, templateIndex, c);
+					
+					ImagePlus currentChannel =
+					    BatchOpener.openFirstChannel(currentChannelFilename);
+					ImagePlus templateChannel =
+					    BatchOpener.openFirstChannel(templateChannelFilename);
+					
+					
+
+				}
+
+				
+
+
+				System.gc();
+			}
+
+		}
+		templateImagePlus.close();		
+		
+	}
+	
+	public void run(String arg0) {
 		
 		String baseDirectory = null;
 		String macroOptions = Macro.getOptions();
@@ -122,207 +370,11 @@ public class Register_Same_Subject implements PlugIn {
 		};
 		
 		for (int subjectIndex = 0; subjectIndex < filenames.length; ++subjectIndex) {
-			String[] filenamesForSubject = filenames[subjectIndex];
-			String prefix = findCommonPrefix(filenamesForSubject);
-			System.out.println("Got common prefix: " + prefix);
 			
-			// Register against the middle image:
-			int templateIndex = filenamesForSubject.length / 2;
+			String[] filenamesForSubject = filenames[subjectIndex];			
+			processSubjectImages( filenamesForSubject, baseDirectory );
 			
-			ImagePlus templateImagePlus = null;
-			{
-				String templateFilename = baseDirectory + filenamesForSubject[templateIndex];
-				try {
-					templateImagePlus = BatchOpener.openParticularChannel(
-						templateFilename,
-						channelForRegistration);
-					if( templateImagePlus == null ) {
-						IJ.error("File not found: "+templateFilename);
-						return;
-					}
-				} catch (NoSuchChannelException e) {
-					IJ.error("Zero-indexed channel " + templateIndex +
-						 " not found in: " + templateFilename);
-					return;
-				}
-			}
-			
-			// Now register them one-by-one, or just write out the template:
-			String outputDirectory = baseDirectory + "registered" + File.separator;
-			File outputDirectoryFile = new File(outputDirectory);
-			outputDirectoryFile.mkdir();
-			if (!(outputDirectoryFile.exists() && outputDirectoryFile.isDirectory())) {
-				IJ.error("'" + baseDirectory + "' wasn't created properly");
-				return;
-			}
-			
-			String registeredFormatString = outputDirectory + "%simage%d-channel%d.tif";
-			String transformationFormatString = outputDirectory + "%s%d-TO-%d.txt";
-			
-			for (int filenameIndex = 0;
-			     filenameIndex < filenamesForSubject.length;
-			     ++filenameIndex) {
-				
-				String filename = baseDirectory + filenamesForSubject[filenameIndex];
-				
-				if (filenameIndex == templateIndex) {
-					// Just write them out again:
-					ImagePlus[] channels = BatchOpener.open(filename);
-					for (int c = 0; c < channels.length; ++c) {
-						
-						String outputFilename = String.format(
-							registeredFormatString,
-							prefix, filenameIndex, c);
-						
-						System.out.println("Saving to: " + outputFilename);
-						if (new File(outputFilename).exists()) {
-							channels[c].close();
-							continue;
-						}
-						
-						boolean saved = new FileSaver(channels[c]).saveAsTiffStack(outputFilename);
-						if (!saved) {
-							IJ.error("Failed to save: '" + outputFilename + "'");
-							return;
-						}
-						
-						channels[c].close();
-					}
-					
-				} else {
-					
-					// We actually have to do some registration:
-					
-					ImagePlus[] channels = BatchOpener.open(filename);
-					
-					// Does the transformation already exist?
-					
-					String transformationFilename = String.format(
-						transformationFormatString,
-						prefix,
-						filenameIndex,
-						templateIndex);
-					
-					File transformationFile = new File(transformationFilename);
-					FastMatrix matrix = null;
-					
-					if (transformationFile.exists()) {
-						
-						// Load it...
-						BufferedReader br = null;
-						try {
-							br = new BufferedReader(new FileReader(transformationFilename));
-							String firstLine = br.readLine();
-							matrix = FastMatrix.parseMatrix(firstLine);
-							System.out.println("Parsed: " + firstLine);
-							System.out.println("    to: " + matrix.toString());
-						} catch (FileNotFoundException e) {
-							IJ.error("BUG: File not found for: " + transformationFilename);
-							return;
-						} catch (IOException e) {
-							IJ.error("IOException when reading from: " + transformationFilename);
-							return;
-						}
-						
-					} else {
-						
-						// Generate the transformation anew and write it to disk:
-						
-						System.out.println("templateImagePlus is: "+templateImagePlus);
-						System.out.println("toTransform is: "+channels[channelForRegistration]);
-						
-						TransformedImage ti = new TransformedImage(
-							templateImagePlus,
-							channels[channelForRegistration]);
 
-						float [] valueRange = ti.getValuesRange();
-						
-						ti.measure = new distance.MutualInformation(valueRange[0],valueRange[1],256);
-						
-						RigidRegistration_ registrar = new RigidRegistration_();
-						registrar.setup("", channels[channelForRegistration]);
-						
-						int level = RigidRegistration_.guessLevelFromWidth(templateImagePlus.getWidth());
-						
-						System.out.println("Registering...");
-						
-						matrix = registrar.rigidRegistration(
-							ti,
-							"", // material b box
-							"", // initial
-							-1, // material 1
-							-1, // material 2
-							false, // no optimization
-							level, // level
-							level > 2 ? 2 : level, // stop level
-							0.1, // tolerance
-							1, // number of initial positions
-							false, // show transformed
-							false, // show difference image
-							false, // fast but inaccurate
-							null);
-
- /*                                                
-                                                double [][] matrixArrays = 
-                                                { {  1,  0,  0,   0 },
-                                                  {  0,  1,  1,   0 },
-                                                  {  0,  0, -1,  20 } };
-						matrix = new FastMatrix(matrixArrays);
-  */						
-						// We've just calculated the transformation now, haven't
-						// applied it.  Write it to disk first:
-						
-						try {
-							PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(transformationFilename), "UTF-8"));
-							pw.print(matrix.toString());
-                                                        pw.close();
-						} catch (FileNotFoundException e) {
-							IJ.error("Can't find file " + transformationFilename);
-						} catch (IOException e) {
-							IJ.error("Can't write to file " + transformationFilename);
-						}
-						
-					}
-					
-					for (int c = 0; c < channels.length; ++c) {
-						
-						String outputFilename = String.format(
-							registeredFormatString,
-							prefix, filenameIndex, c);
-						
-						if (new File(outputFilename).exists()) {
-							channels[c].close();
-							continue;
-						}
-						
-						// So we do have to map it...
-						
-						PixelPairs measure = new MutualInformation(0,4095,256);
-						
-						ImagePlus toTransform = channels[c];
-						TransformedImage transOther = new TransformedImage(
-							templateImagePlus,
-							toTransform);
-						transOther.measure = measure;
-						transOther.setTransformation(matrix);
-						
-						ImagePlus result = transOther.getTransformed();
-						
-						boolean saved = new FileSaver(result).saveAsTiffStack(outputFilename);
-						if (!saved) {
-							IJ.error("Failed to save: '" + outputFilename + "'");
-							return;
-						}
-						
-                                                result.close();
-						channels[c].close();
-					}
-					
-                                        System.gc();
-                                }
-				
-			}
-                        templateImagePlus.close();
 		}
 	}
 }
