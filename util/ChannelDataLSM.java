@@ -51,16 +51,18 @@ public class ChannelDataLSM {
 			return null;
 		}
 
+		boolean verbose = true;
+		
 		// Go through the scan info:
 		Recording r = (Recording) cz.scanInfo.recordings.get(0);
 
 		Track[] tracks = r.tracks;
 		for (int ti = 0; ti < tracks.length; ++ti) {
-			System.out.println("Track " + ti);
+			if (verbose) System.out.println("Track " + ti);
 			Track t = tracks[ti];
 
 			long trackAcquire = ((Long) t.records.get("ACQUIRE")).longValue();
-			System.out.println("ACQUIRE for track " + ti + " is: " + trackAcquire);
+			if (verbose) System.out.println("ACQUIRE for track " + ti + " is: " + trackAcquire);
 			if (trackAcquire == 0) {
 				continue;
 			}
@@ -72,7 +74,7 @@ public class ChannelDataLSM {
 
 			for (int ii = 0; ii < t.illuminationChannels.length; ++ii) {
 				IlluminationChannel ic = t.illuminationChannels[ii];
-				System.out.println("  IlluminationChannel " + ii);
+				if (verbose) System.out.println("  IlluminationChannel " + ii);
 				Long acquireIllumination = (Long) ic.records.get("ACQUIRE");
 				if (acquireIllumination == 0) {
 					continue;
@@ -81,18 +83,18 @@ public class ChannelDataLSM {
 				laser.wavelength = (Double) ic.records.get("WAVELENGTH");
 				laser.power = (Double) ic.records.get("POWER");
 				lasers.add(laser);
-				System.out.println("    WAVELENGTH: " + laser.wavelength);
-				System.out.println("    POWER: " + laser.power);
+				if (verbose) System.out.println("    WAVELENGTH: " + laser.wavelength);
+				if (verbose) System.out.println("    POWER: " + laser.power);
 			}
 
 			/* Now consider any detection channel where acquire is
 			 * not 0 (always -1)? */
 
 			for (int ci = 0; ci < t.detectionChannels.length; ++ci) {
-				System.out.println("  Detection Channel " + ci);
+				if (verbose) System.out.println("  Detection Channel " + ci);
 				DetectionChannel c = t.detectionChannels[ci];
 				long detectorAcquire = ((Long) c.records.get("ACQUIRE")).longValue();
-				System.out.println("  ACQUIRE for channel " + ci + " is: " + detectorAcquire);
+				if (verbose) System.out.println("  ACQUIRE for channel " + ci + " is: " + detectorAcquire);
 				if (detectorAcquire == 0) {
 					continue;
 				}
@@ -104,7 +106,7 @@ public class ChannelDataLSM {
 				/*
 				for( Iterator<String> i = c.records.keySet().iterator(); i.hasNext(); ) {
 				String key = i.next();
-				System.out.println("      Key: "+key);
+				if (verbose) System.out.println("      Key: "+key);
 				}
 				 */
 				String[] keys = {
@@ -119,10 +121,10 @@ public class ChannelDataLSM {
 					Object value = c.records.get(keys[k]);
 					if (value instanceof Double) {
 						Double d = (Double) value;
-						System.out.println("      " + keys[k] + " (Double) => " + value);
+						if (verbose) System.out.println("      " + keys[k] + " (Double) => " + value);
 					} else if (value instanceof String) {
 						String s = (String) value;
-						System.out.println("      " + keys[k] + " (String) => " + value);
+						if (verbose) System.out.println("      " + keys[k] + " (String) => " + value);
 					}
 				}
 			}
