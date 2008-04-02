@@ -9,16 +9,9 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
 import ij.plugin.PlugIn;
-import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
-import ij.process.ImageProcessor;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.geom.AffineTransform;
-import java.io.File;
 import vib.TransformedImage;
 
 public class Histogram_2D implements PlugIn {
@@ -173,6 +166,9 @@ public class Histogram_2D implements PlugIn {
 	}
 
 	public void calculateCorrelation( ) {
+		if( ! keepStatistics ) {
+			throw new RuntimeException("calculateCorrelation() was called without collectStatisticsFor() having been called.");
+		}
 		float a = (statsValues * sumXY - sumX * sumY) / (statsValues * sumXX - sumX * sumX);
 		float b = (sumY - a * sumX) / statsValues;
 		fittedGradient = a;
@@ -485,7 +481,7 @@ public class Histogram_2D implements PlugIn {
 
 		newImagePlus.updateAndRepaintWindow();
 		
-		return null;
+		return newImagePlus;
 	}      	
 		
 	public void run(String ignored) {
