@@ -18,8 +18,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.io.UnsupportedEncodingException;
 import vib.FastMatrix;
 import vib.RigidRegistration_;
 import vib.TransformedImage;
@@ -50,7 +49,7 @@ public class Register_Same_Subject implements PlugIn {
 		
 	int channelForRegistration = 0;
 	
-	public void processSubjectImages( String [] filenamesForSubject, String baseDirectory ) {
+	public void processSubjectImages( String [] filenamesForSubject, String baseDirectory ) throws FileNotFoundException, UnsupportedEncodingException, IOException {
 						
 		String prefix = findCommonPrefix(filenamesForSubject);
 		System.out.println("Got common prefix: " + prefix);
@@ -93,13 +92,13 @@ public class Register_Same_Subject implements PlugIn {
 		
 		String registeredFormatString = outputDirectory + "%simage%d-channel%d.tif";
 		String transformationFormatString = outputDirectory + "%s%d-TO-%d.txt";
-
+		String histogramFormatString = outputDirectory + "%schannel%d-%d-VS-%d-histogram.png";
+		String detectorFormatString = outputDirectory + "%schannel%d-%d-VS-%d-detectors.csv";
+		
 		for (int filenameIndex = 0;
 		    filenameIndex < filenamesForSubject.length;
 		    ++filenameIndex) {
 
-			
-			
 			String filename = baseDirectory + filenamesForSubject[filenameIndex];
 			File file = new File(filename);
 			
@@ -260,34 +259,148 @@ public class Register_Same_Subject implements PlugIn {
 				   are different and we construct a histogram
 				   between the two. */
 
-				// Load channel data for the current file and the template:
+				File fileForDarkerRegions;
+				int indexForDarkerRegions;
+				File fileForBrighterRegions;
+				int indexForBrighterRegions;
 				
-				ChannelDataLSM templateChannelData [] =
-				    ChannelDataLSM.getChannelsData(templateFile);
-				ChannelDataLSM currentChannelData [] =
-				    ChannelDataLSM.getChannelsData(file);
+				// The indices are ordered such that lower indices
+				// have better detail for dark regions:
+				if( templateIndex < filenameIndex ) {
+					fileForDarkerRegions = templateFile;
+					indexForDarkerRegions = templateIndex;
+					fileForBrighterRegions = file;
+					indexForBrighterRegions = filenameIndex;
+				} else {
+					fileForDarkerRegions = file;
+					indexForDarkerRegions = filenameIndex;
+					fileForBrighterRegions = templateFile;
+					indexForBrighterRegions = templateIndex;
+				}
+				
+				ChannelDataLSM darkDetailChannelData [] =
+				    ChannelDataLSM.getChannelsData(fileForDarkerRegions);
+				ChannelDataLSM brightDetailChannelData [] =
+				    ChannelDataLSM.getChannelsData(fileForBrighterRegions);
 				
 				for (int c = 0; c < channels.length; ++c) {
 
-					String currentChannelFilename = String.format(
+					String dChannelFilename = String.format(
 					    registeredFormatString,
-					    prefix, filenameIndex, c);
+					    prefix, indexForDarkerRegions, c);
 				
-					String templateChannelFilename = String.format(
+					String bChannelFilename = String.format(
 					    registeredFormatString,
-					    prefix, templateIndex, c);
+					    prefix, indexForBrighterRegions, c);
 					
-					ImagePlus currentChannel =
-					    BatchOpener.openFirstChannel(currentChannelFilename);
-					ImagePlus templateChannel =
-					    BatchOpener.openFirstChannel(templateChannelFilename);
+					ImagePlus dChannel =
+					    BatchOpener.openFirstChannel(dChannelFilename);
+					ImagePlus bChannel =
+					    BatchOpener.openFirstChannel(bChannelFilename);
 					
-					
+					TransformedImage ti = new TransformedImage(
+					    dChannel,
+					    bChannel);
 
+					float [] valueRange = ti.getValuesRange();
+
+					// The maximum value that a voxel might have
+					float vMax = -1;
+					if( valueRange[1] < 256 ) {
+						// Probably 8 bit:
+						vMax = 255;
+					} else if( valueRange[1] < 4096 ) {
+						// Probably 12 bit:
+						vMax = 4095;
+					} else {
+						IJ.error("Can't handle this image type; only 8 bit or 12 bit images so far.");
+						return;
+					}
+					
+					Histogram_2D histogram=new Histogram_2D();
+					
+					histogram.start2DHistogram(
+					    valueRange[0],
+					    valueRange[1],
+					    256);
+
+					float valueRangeWidth = valueRange[1] - valueRange[0];
+					
+					histogram.collectStatisticsFor(
+					    valueRange[0] + (valueRangeWidth / 128),
+					    valueRange[1] - (valueRangeWidth / 128));
+
+					histogram.addImagePlusPair(dChannel, bChannel);
+
+					histogram.calculateCorrelation();
+					System.out.println("##### Got correlation gradient: "+histogram.fittedGradient);
+					System.out.println("##### Got correlation Y intercept: "+histogram.fittedYIntercept);
+					
+					ImagePlus[] results = histogram.getHistograms();
+
+					float a = histogram.fittedGradient;
+					float b = histogram.fittedYIntercept;
+					
+					float m = -b / (a * vMax);
+					float n = (vMax - b) / (a * vMax);
+					
+					// These values we've calculated suggest
+					// gradients and y intercepts for each image:
+					float dYintercept = 0;
+					float dGradient = vMax;
+					
+					float bYintercept = (m * vMax) / (m - n);
+					float bGradient = vMax / (n - m);
+					
+					ImagePlus framed=histogram.frame2DHistogram(
+					    "2D Histogram of Values",
+					    results[1],
+					    dChannel.getTitle(),
+					    valueRange[0], valueRange[1],
+					    bChannel.getTitle(),
+					    valueRange[0], valueRange[1] );
+			
+					String histogramFilename =
+					    String.format(
+						histogramFormatString,
+						prefix,
+						c,
+						indexForDarkerRegions,
+						indexForBrighterRegions );
+
+					boolean saved = new FileSaver(framed).saveAsPng(histogramFilename);
+					if( ! saved ) {
+						throw new IOException("Failed to save PNG file to: "+histogramFilename);
+					}
+						
+					String detectorFilename =
+					    String.format(
+					    detectorFormatString,
+					    prefix,
+					    c,
+					    indexForDarkerRegions,
+					    indexForBrighterRegions );
+										
+					PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(detectorFilename),"UTF-8"));
+					
+					pw.println("YIntercept\tGradient\tDetectorGain\tAmplifierOffset");
+					pw.print(""+dYintercept);
+					pw.print("\t"+dGradient);
+					pw.print("\t"+darkDetailChannelData[c].detectorGain);
+					pw.println("\t"+darkDetailChannelData[c].amplifierOffset);
+					pw.print(""+bYintercept);
+					pw.print("\t"+bGradient);
+					pw.print("\t"+brightDetailChannelData[c].detectorGain);					
+					pw.println("\t"+brightDetailChannelData[c].amplifierOffset);
+					pw.close();
+					
+					for( int r = 0; r < results.length; ++r ) {
+						results[r].close();
+					}
+					framed.close();
+					dChannel.close();
+					bChannel.close();
 				}
-
-				
-
 
 				System.gc();
 			}
@@ -371,9 +484,14 @@ public class Register_Same_Subject implements PlugIn {
 		
 		for (int subjectIndex = 0; subjectIndex < filenames.length; ++subjectIndex) {
 			
-			String[] filenamesForSubject = filenames[subjectIndex];			
-			processSubjectImages( filenamesForSubject, baseDirectory );
-			
+			String[] filenamesForSubject = filenames[subjectIndex];
+			try {
+				processSubjectImages( filenamesForSubject, baseDirectory );
+			} catch( IOException e ) {
+				IJ.error("Got an IOException while processing images: "+e);
+				System.out.println("IOException: "+e);
+				e.printStackTrace();
+			}
 
 		}
 	}
