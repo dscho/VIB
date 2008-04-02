@@ -45,6 +45,7 @@ import vib.TransformedImage;
 	 }
 }
 
+
 class FluorescenceOptimizer implements MultivariateFunction {
 	
 	int n;
@@ -77,7 +78,7 @@ class FluorescenceOptimizer implements MultivariateFunction {
 		this.valuesInImages = valuesInImages;
 	}
 
-	public float evaluate(double fluorescent) {
+	public double evaluate(double argument[]) {
 		float total = 0;
 		for( int i = 0; i < n; ++i ) {
 			int value = imagers[i].map(argument[0]);
@@ -88,30 +89,31 @@ class FluorescenceOptimizer implements MultivariateFunction {
 	}
 
 	public double optimize(float startFluorescence) {
-		
-		float xCurrent = startFluorescence;
-		float xNext = startFluorescence + 0.01;
+		return -1;
+		// FIXME
+	}
 
-		float fCurrent = evaluate(xCurrent);
-		float fNext = evaluate(xNext);
+	public int getNumArguments() {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
 
-		while( true ) {
+	public double getLowerBound(int n) {
+		return lowerFluorescenceBound;
+	}
 
-			System.out.println("Current is "+xCurrent+" => "+fCurrent);
-			System.out.println("Next is "+xNext+" => "+fNext);
+	public double getUpperBound(int n) {
+		return upperFluorescenceBound;
+	}
 
-			float gradient = (fNext - fCurrent) / (xNext - xCurrent);
-			float improvedGuess = xNext - fNext * gradient;
+	void setLowerBound(float min) {
+		lowerFluorescenceBound = min;
+	}
 
-			xCurrent = xNext;
-			xNext = improvedGuess;
-
-			fCurrent = fNext;
-			fNext = evaluate(improvedGuess);
-		}
+	void setUpperBound(float max) {
+		upperFluorescenceBound = max;
+	}
 
 }
-
 public class Exposure_Blend_Two_Stacks implements PlugIn {
 
 	/** Takes an RGB ImagePlus and converts it to a 8-bit grey
