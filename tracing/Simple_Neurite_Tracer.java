@@ -78,11 +78,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
         }
 	
         /* Just for convenience, keep casted references to the
-           superclass's TracerCanvas objects */
+           superclass's InteractiveTracerCanvas objects */
 	
-        TracerCanvas xy_tracer_canvas;
-        TracerCanvas xz_tracer_canvas;
-        TracerCanvas zy_tracer_canvas;
+        InteractiveTracerCanvas xy_tracer_canvas;
+        InteractiveTracerCanvas xz_tracer_canvas;
+        InteractiveTracerCanvas zy_tracer_canvas;
 	
         public ImagePlus getImagePlus() {
                 return xy;
@@ -95,8 +95,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
         /* This override the method in ThreePanes... */
 	
 	@Override
-        public TracerCanvas createCanvas( ImagePlus imagePlus, int plane ) {
-                return new TracerCanvas( imagePlus, this, plane );
+        public InteractiveTracerCanvas createCanvas( ImagePlus imagePlus, int plane ) {
+                return new InteractiveTracerCanvas( imagePlus, this, plane );
         }
 	
         public void cancelSearch( ) {
@@ -998,9 +998,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			
                         initialize(currentImage);
 			
-                        xy_tracer_canvas = (TracerCanvas)xy_canvas;
-                        xz_tracer_canvas = (TracerCanvas)xz_canvas;
-                        zy_tracer_canvas = (TracerCanvas)zy_canvas;
+                        xy_tracer_canvas = (InteractiveTracerCanvas)xy_canvas;
+                        xz_tracer_canvas = (InteractiveTracerCanvas)xz_canvas;
+                        zy_tracer_canvas = (InteractiveTracerCanvas)zy_canvas;
 			
                         // toastKeyListeners( IJ.getInstance(), "IJ.getInstance()" );
 			
