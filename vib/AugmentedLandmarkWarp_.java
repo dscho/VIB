@@ -145,7 +145,7 @@ public class AugmentedLandmarkWarp_ implements PlugInFilter {
 			transCoord(iter.i, iter.j, iter.k);
 			ii.set(iter.i, iter.j, iter.k, (int)model.interpol.get(x, y, z));
 		}
-		new AmiraParameters(model.image).setParameters(ii.image);
+		new AmiraParameters(model.image).setParameters(ii.image, false);
 		ii.image.updateAndDraw();
 	}
 
