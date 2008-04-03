@@ -1,3 +1,6 @@
+package process3d;
+
+import vib.Resample_;
 import vib.PointList;
 import vib.BenesNamedPoint;
 
@@ -30,6 +33,8 @@ public class IFT_ implements PlugInFilter {
 	private int[] C;
 	private boolean[] flag;
 
+	private int res = 1;
+
 	public void run(ImageProcessor ip) {
 		int[] wIDs = WindowManager.getIDList();
 		if(wIDs == null){
@@ -61,7 +66,8 @@ public class IFT_ implements PlugInFilter {
 		w = image.getWidth();
 		h = image.getHeight();
 		d = image.getStackSize();
-		markers = PointList.load(image);
+		while(w/res >= 256)
+			res++;
 		data = new byte[d][];
 		for(int z = 0; z < d; z++) {
 			data[z] = (byte[])image.getStack()
@@ -73,17 +79,19 @@ public class IFT_ implements PlugInFilter {
 		for(int i = 0; i < C.length; i++)
 			C[i] = 255;
 		queue = new PriorityQueue();
-		byte m = 1;
-		for(int z = 0; z < seeds.getStackSize(); z++) {
+		for(int z = 0; z < seeds.getStackSize(); z+= res) {
 			byte[] b = (byte[])seeds.getStack().getPixels(z+1);
-			for(int i = 0; i < b.length; i++) {
-				if(b[i] == 0)
-					continue;
-				int index = z*b.length + i;
-				int cost = 0;
-				C[index] = cost;
-				result[z][i] = b[i];
-				queue.add(index, cost);
+			for(int y = 0; y < h; y+=res) {
+				for(int x = 0; x < w; x+=res) {
+					int i = y*w+x;
+					if(b[i] == 0)
+						continue;
+					int index = z*b.length + i;
+					int cost = 0;
+					C[index] = cost;
+					result[z][i] = b[i];
+					queue.add(index, cost);
+				}
 			}
 		}
 	}
@@ -122,10 +130,11 @@ public class IFT_ implements PlugInFilter {
 	public void propagate() {
 		int wh = w * h;
 		int counter = 0;
+		IntArray nei = new IntArray(6);
 		while(!queue.isEmpty()) {
 			int v = queue.poll();
 			flag[v] = true;
-			IntArray nei = getNeighbours(v);
+			nei = getNeighbours(v, nei);
 			for(int i = 0; i < nei.size(); i++) {
 				int p = nei.get(i);
 				int pCost = C[p];
@@ -141,9 +150,44 @@ public class IFT_ implements PlugInFilter {
 				}
 			}
 			counter++;
-			if(counter % 100 == 0)
+			if(counter % 100 == 0 && resultIm != null)
 				resultIm.updateAndDraw();
 		}
+		interpolate();
+	}
+
+	public void interp(ImagePlus imp) {
+		vib.InterpolatedImage ii = new vib.InterpolatedImage(imp);
+		ImageStack tmp = new ImageStack(2*w, 2*h);
+		for(int z = 0; z < 2*d; z++) {
+			byte[] p = new byte[4 * w * h];
+			for(int y = 0; y < 2*h; y++)
+				for(int x = 0; x < 2*w; x++)
+					p[(int)(y * 2*w + x)] = 
+						(byte)ii.interpol.get(
+						x / 2.0, y/ 2.0, z/2.0);
+			tmp.addSlice("", new ByteProcessor(2*w, 2*h, p, null));
+		}
+		new ImagePlus("interpolated", tmp).show();
+	}
+
+	public void interpolate() {
+		for(int z = 0; z < d-res; z++) {
+			for(int y = 0; y < h-res; y++) {
+				for(int x = 0; x < w-res; x++) {
+					int i = y*w+x;
+					if(result[z][i] == 0)
+						result[z][i] = get(x, y, z);
+				}
+			}
+		}
+	}
+
+	public byte get(int x, int y, int z) {
+		int xi = x % res < res/2 ? x / res * res : x / res * res + res;
+		int yi = y % res < res/2 ? y / res * res : y / res * res + res;
+		int zi = z % res < res/2 ? z / res * res : z / res * res + res;
+		return result[zi][yi * w + xi];
 	}
 
 	public ImagePlus createResult() {
@@ -152,7 +196,9 @@ public class IFT_ implements PlugInFilter {
 			stack.addSlice("", 
 				new ByteProcessor(w, h, result[z], null));
 		}
-		return new ImagePlus("Result", stack);
+		ImagePlus ret = new ImagePlus("Result", stack);
+		ret.setCalibration(image.getCalibration());
+		return ret;
 	}
 
  	public int weight(int n1, int n2) {
@@ -169,28 +215,28 @@ public class IFT_ implements PlugInFilter {
 		return DOES_8G;
 	}
 
-	public IntArray getNeighbours(int index) {
-		IntArray l = new IntArray(6);
+	public IntArray getNeighbours(int index, IntArray l) {
+		l.removeAll();
 		int wh = w*h;
 		int z = index / (wh);
 		int s = index % (wh);
 		int x = s % w, y = s / w;
-		if(z != 0 && !flag[(z-1) * wh + s])
-			l.add((z-1) * wh + s);
-		if(z != d-1 && !flag[(z+1) * wh + s])
-			l.add((z+1) * wh + s);
-		if(x != 0 && !flag[z * wh + s-1])
-			l.add(z * wh + s-1);
-		if(x != w-1 && !flag[z * wh + s+1])
-			l.add(z * wh + s+1);
-		if(y != 0 && !flag[z * wh + (y-1)*w+x])
-			l.add(z * wh + (y-1)*w+x);
-		if(y != h-1 && !flag[z * wh + (y+1)*w+x])
-			l.add(z * wh + (y+1)*w+x);
+		if(z > res && !flag[(z-res) * wh + s])
+			l.add((z-res) * wh + s);
+		if(z < d-res && !flag[(z+res) * wh + s])
+			l.add((z+res) * wh + s);
+		if(x > res && !flag[z * wh + s-res])
+			l.add(z * wh + s-res);
+		if(x < w-res && !flag[z * wh + s+res])
+			l.add(z * wh + s+res);
+		if(y > res && !flag[z * wh + (y-res)*w+x])
+			l.add(z * wh + (y-res)*w+x);
+		if(y < h-res && !flag[z * wh + (y+res)*w+x])
+			l.add(z * wh + (y+res)*w+x);
 		return l;
 	}
 
-	private class PriorityQueue {
+	private static class PriorityQueue {
 		private IntArray[] arr = new IntArray[256];
 
 		public PriorityQueue() {}
@@ -228,7 +274,7 @@ public class IFT_ implements PlugInFilter {
 		}
 	}
 
-	private class IntArray {
+	private static class IntArray {
 		private int[] array;
 		private int size = 0;
 		private int initCap;
@@ -286,6 +332,10 @@ public class IFT_ implements PlugInFilter {
 		public void set(int index, int value) {
 			if(index >= 0 && index < size)
 				array[index] = value;
+		}
+
+		public void removeAll() {
+			size = 0;
 		}
 	}
 }
