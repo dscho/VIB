@@ -59,6 +59,8 @@ public class Smooth_ implements PlugInFilter {
 		ImageStack stack = Convolve_3d.
 					convolve(image,H_x,H_y,H_z).getStack();
 		
+		if(image.getType() == ImagePlus.GRAY32)
+			return new ImagePlus("Smoothed", stack);
 		// convert the result to a byte image
 		ImageStack stack2 = new ImageStack(
 				stack.getWidth(), stack.getHeight());
@@ -120,6 +122,6 @@ public class Smooth_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus img) {
 		this.image = img;
-		return DOES_8G | NO_CHANGES;
+		return DOES_8G | DOES_32 | NO_CHANGES;
 	}
 }
