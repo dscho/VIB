@@ -1,3 +1,5 @@
+package process3d;
+
 import ij.text.TextWindow;
 import ij.gui.GenericDialog;
 import ij.WindowManager;
@@ -12,6 +14,7 @@ import ij.process.ColorProcessor;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Map;
@@ -21,15 +24,13 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 
 	private ImagePlus image;
 	private ImagePlus result;
-	private ImagePlus intensityImage;
 	private int[] classes;
 	private int[] sizes;
 	private int[] intensities;
 
 
 	private int w,h,z;
-	private byte FG = (byte)255;
-	private byte BG = (byte)0;
+	private int threshold = 100;
 	private boolean showStatus = true;
 
 	public Particle_Analyzer_3D() {}
@@ -41,40 +42,110 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 
 	public void run(ImageProcessor ip) {
 		GenericDialog gd = new GenericDialog("Particle Analyzer 3D");
-		int[] imageIDs = WindowManager.getIDList();
-		String[] windows = new String[imageIDs.length+1];
-		windows[0] = "none";
-		for(int i = 1; i < windows.length; i++) {
-			windows[i] = WindowManager
-					.getImage(imageIDs[i-1]).getTitle();
-		}
-		gd.addChoice("Image containing intensity values:", 
-						windows, windows[0]);
+		gd.addNumericField("Threshold [0..255]", threshold, 0);
+		gd.addCheckbox("Show_result_table", true);
+		gd.addCheckbox("Show_result_chart", true);
 		gd.showDialog();
-		String title = gd.getNextChoice();
-		if(!title.equals("none"))
-			intensityImage = WindowManager.getImage(title);
+		if(gd.wasCanceled())
+			return;
+		threshold = (int)gd.getNextNumber();
 		this.w = image.getWidth();
 		this.h = image.getHeight();
 		this.z = image.getStackSize();
 		this.showStatus = true;
+
 		this.result = classify(image);
-		if(intensityImage != null) {
-			calculateIntensities(intensityImage);
-		}
+		calculateIntensities(image);
 		calculateSizes();
-		result.show();
-		showResultWindow();
-		if(intensityImage != null)
+ 		sortResults();
+		keepNLargest(3);
+		getResultAsByteImage().show();
+		if(gd.getNextBoolean())
+			showResultWindow();
+		if(gd.getNextBoolean())
 			showChart();
+	}
+
+	public ImagePlus getResultAsByteImage() {
+		ImageStack stack = new ImageStack(w, h);
+		for(int d = 0; d < z; d++) {
+			int[] p = (int[])result.getStack().getPixels(d+1);
+			byte[] b = new byte[w*h];
+			for(int i = 0; i < b.length; i++) {
+				if(p[i] == -1)
+					b[i] = (byte)255;
+				else
+					b[i] = (byte)p[i];
+			}
+			stack.addSlice("", new ByteProcessor(w, h, b, null));
+		}
+		ImagePlus res = new ImagePlus("Classified", stack);
+		res.setCalibration(image.getCalibration());
+		return res;
+	}
+
+	public void keepNLargest(int n) {
+		int[] sizes_tmp = new int[n];
+		int[] intensities_tmp = new int[n];
+		int[] classes_tmp = new int[n];
+		System.arraycopy(sizes, 0, sizes_tmp, 0, n);
+		System.arraycopy(intensities, 0, intensities_tmp, 0, n);
+		System.arraycopy(classes, 0, classes_tmp, 0, n);
+		for(int z = 0; z < result.getStackSize(); z++) {
+			ImageProcessor ip = result.getStack().getProcessor(z+1);
+			for(int i = 0; i < w*h; i++) {
+				if(ip.get(i) >= n)
+					ip.set(i, -1);
+			}
+		}
+		sizes = sizes_tmp;
+		intensities = intensities_tmp;
+		classes = classes_tmp;
+	}
+
+	public void sortResults() {
+		Cl[] cls = new Cl[classes.length];
+		for(int i = 0; i < cls.length; i++) {
+			cls[i] = new Cl(classes[i], sizes[i], intensities[i]);
+		}
+		Arrays.sort(cls);
+		for(int z = 0; z < result.getStackSize(); z++) {
+			ImageProcessor ip = result.getStack().getProcessor(z+1);
+			for(int i = 0; i < w * h; i++) {
+				if(ip.get(i) == -1)
+					continue;
+				for(int c = 0; c < cls.length; c++) {
+					if(ip.get(i) == cls[c].cl) {
+						ip.set(i, c);
+						break;
+					}
+				}
+			}
+		}
+		for(int c = 0; c < classes.length; c++) {
+			Cl cl = cls[c];
+			sizes[c] = cl.size;
+			intensities[c] = cl.inten;
+		}
+	}
+
+	private class Cl implements Comparable {
+		int cl, size, inten;
+		Cl(int cl, int size, int inten) {
+			this.cl = cl; this.size = size; this.inten = inten;
+		}
+
+		public int compareTo(Object o) {
+			// sort descending
+			return ((Cl)o).size - this.size;
+		}
 	}
 
 	public void showResultWindow() {
 		StringBuffer buf = new StringBuffer();
 		for(int i = 0; i < classes.length; i++) {
 			buf.append(classes[i] + "\t" + sizes[i]);
-			if(intensityImage != null)
-				buf.append("\t" + intensities[i]);
+			buf.append("\t" + intensities[i]);
 			buf.append("\n");
 		}
 		String headings = "Class\tsize\tintensity";
@@ -103,17 +174,14 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 	/**
 	 * Constructor
 	 */
-	public Particle_Analyzer_3D(ImagePlus image, byte fg, byte bg, boolean sS){
-		this.image = image;
+	public Particle_Analyzer_3D(ImagePlus imp, int th, boolean showStatus) {
+		this.image = imp;
 		this.w = image.getWidth();
 		this.h = image.getHeight();
 		this.z = image.getStackSize();
+		this.showStatus = showStatus;
+		this.threshold = th;
 		this.result = classify(image);
-		this.showStatus = sS;
-	}
-
-	public Particle_Analyzer_3D(ImagePlus image, boolean showStatus){
-		this(image, (byte)255, (byte)0, showStatus);
 	}
 
 	/**
@@ -164,13 +232,15 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 				getPixels();
 			byte[] new_pixels = new byte[result_pixels.length];
 			for(int i=0;i<result_pixels.length;i++){
-				new_pixels[i] = result_pixels[i] == classlabel ? FG : BG;
+				new_pixels[i] = result_pixels[i] == classlabel ? (byte)255 : (byte)0;
 			}
 			stack.addSlice("", new ByteProcessor(w,h,new_pixels,null));
 		}
 		if(label == null || label.trim().equals(""))
 			label = "Class " + classlabel;
-		return new ImagePlus(label, stack);
+		ImagePlus tmp = new ImagePlus(label, stack);
+		tmp.setCalibration(result.getCalibration());
+		return tmp;
 	}
 
 	/**
@@ -241,7 +311,9 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 			resStack.addSlice("",new ColorProcessor(w,h,classes));
 		}
 		correctMergedClasses(mergedClasses, resStack);
-		return new ImagePlus("Classified", resStack);
+		ImagePlus tmp = new ImagePlus("Classified", resStack);
+		tmp.setCalibration(image.getCalibration());
+		return tmp;
 	}
 		
 	private void correctMergedClasses(MergedClasses mergedClasses, ImageStack resStack){
@@ -267,7 +339,7 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 		}
 	}
 
-	private void calculateSizes(){
+	public void calculateSizes(){
 		if(showStatus)
 			IJ.showStatus("calculate class sizes...");
 		ImageStack resStack = result.getStack();
@@ -284,7 +356,7 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 		}
 	}
 
-	private void calculateIntensities(ImagePlus intImp){
+	public void calculateIntensities(ImagePlus intImp){
 		if(showStatus)
 			IJ.showStatus("calculate class intensities...");
 		intensities = new int[classes.length];
@@ -315,9 +387,7 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 			
 	private int classifyPixel(MergedClasses mergedClasses, byte cur, 
 			int upper_c, int left_c, int before_c){
-		if(cur != BG && cur != FG)
-			IJ.error("Image is not binary. Abort.");
-		if(cur == BG)
+		if(((int)(cur & 0xff)) < threshold) // bg
 			return -1;
 		boolean connected = (upper_c != -1 || left_c != -1 || before_c != -1);
 		int classl = -1;
