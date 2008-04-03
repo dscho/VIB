@@ -33,8 +33,6 @@ public class IFT_ implements PlugInFilter {
 	private int[] C;
 	private boolean[] flag;
 
-	private int res = 1;
-
 	public void run(ImageProcessor ip) {
 		int[] wIDs = WindowManager.getIDList();
 		if(wIDs == null){
@@ -66,8 +64,6 @@ public class IFT_ implements PlugInFilter {
 		w = image.getWidth();
 		h = image.getHeight();
 		d = image.getStackSize();
-		while(w/res >= 256)
-			res++;
 		data = new byte[d][];
 		for(int z = 0; z < d; z++) {
 			data[z] = (byte[])image.getStack()
@@ -79,10 +75,10 @@ public class IFT_ implements PlugInFilter {
 		for(int i = 0; i < C.length; i++)
 			C[i] = 255;
 		queue = new PriorityQueue();
-		for(int z = 0; z < seeds.getStackSize(); z+= res) {
+		for(int z = 0; z < seeds.getStackSize(); z++) {
 			byte[] b = (byte[])seeds.getStack().getPixels(z+1);
-			for(int y = 0; y < h; y+=res) {
-				for(int x = 0; x < w; x+=res) {
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
 					int i = y*w+x;
 					if(b[i] == 0)
 						continue;
@@ -153,41 +149,6 @@ public class IFT_ implements PlugInFilter {
 			if(counter % 100 == 0 && resultIm != null)
 				resultIm.updateAndDraw();
 		}
-		interpolate();
-	}
-
-	public void interp(ImagePlus imp) {
-		vib.InterpolatedImage ii = new vib.InterpolatedImage(imp);
-		ImageStack tmp = new ImageStack(2*w, 2*h);
-		for(int z = 0; z < 2*d; z++) {
-			byte[] p = new byte[4 * w * h];
-			for(int y = 0; y < 2*h; y++)
-				for(int x = 0; x < 2*w; x++)
-					p[(int)(y * 2*w + x)] = 
-						(byte)ii.interpol.get(
-						x / 2.0, y/ 2.0, z/2.0);
-			tmp.addSlice("", new ByteProcessor(2*w, 2*h, p, null));
-		}
-		new ImagePlus("interpolated", tmp).show();
-	}
-
-	public void interpolate() {
-		for(int z = 0; z < d-res; z++) {
-			for(int y = 0; y < h-res; y++) {
-				for(int x = 0; x < w-res; x++) {
-					int i = y*w+x;
-					if(result[z][i] == 0)
-						result[z][i] = get(x, y, z);
-				}
-			}
-		}
-	}
-
-	public byte get(int x, int y, int z) {
-		int xi = x % res < res/2 ? x / res * res : x / res * res + res;
-		int yi = y % res < res/2 ? y / res * res : y / res * res + res;
-		int zi = z % res < res/2 ? z / res * res : z / res * res + res;
-		return result[zi][yi * w + xi];
 	}
 
 	public ImagePlus createResult() {
@@ -221,18 +182,18 @@ public class IFT_ implements PlugInFilter {
 		int z = index / (wh);
 		int s = index % (wh);
 		int x = s % w, y = s / w;
-		if(z > res && !flag[(z-res) * wh + s])
-			l.add((z-res) * wh + s);
-		if(z < d-res && !flag[(z+res) * wh + s])
-			l.add((z+res) * wh + s);
-		if(x > res && !flag[z * wh + s-res])
-			l.add(z * wh + s-res);
-		if(x < w-res && !flag[z * wh + s+res])
-			l.add(z * wh + s+res);
-		if(y > res && !flag[z * wh + (y-res)*w+x])
-			l.add(z * wh + (y-res)*w+x);
-		if(y < h-res && !flag[z * wh + (y+res)*w+x])
-			l.add(z * wh + (y+res)*w+x);
+		if(z > 1 && !flag[(z-1) * wh + s])
+			l.add((z-1) * wh + s);
+		if(z < d-1 && !flag[(z+1) * wh + s])
+			l.add((z+1) * wh + s);
+		if(x > 1 && !flag[z * wh + s-1])
+			l.add(z * wh + s-1);
+		if(x < w-1 && !flag[z * wh + s+1])
+			l.add(z * wh + s+1);
+		if(y > 1 && !flag[z * wh + (y-1)*w+x])
+			l.add(z * wh + (y-1)*w+x);
+		if(y < h-1 && !flag[z * wh + (y+1)*w+x])
+			l.add(z * wh + (y+1)*w+x);
 		return l;
 	}
 
