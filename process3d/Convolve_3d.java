@@ -81,7 +81,7 @@ public class Convolve_3d {
 // 			for(int y = min_y; y < max_y; y++) {
 // 				for(int x = min_x; x < max_x; x++) {
 		for(int z = 0; z < d; z++) {
-			IJ.showProgress(z, max_z);
+			IJ.showProgress(z, d);
 			for(int y = 0; y < h; y++) {
 				for(int x = 0; x < w; x++) {
 					slices_out[z][y*w+x] = 
@@ -100,7 +100,7 @@ public class Convolve_3d {
 		result.setCalibration(image.getCalibration());
 		return result;
 	}
-	
+
 	private static float convolvePoint(int z, int y, int x) {
 		float sum = 0f; 
 		for(int k=-r_z/2; k<=+r_z/2; k++) {
