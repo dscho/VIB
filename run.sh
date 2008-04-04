@@ -12,7 +12,6 @@ Cygwin*)
 esac
 
 MEM=256m
-env|grep HOST
 case `hostname` in
 VIB|Leonhard)
 	MEM=1000m
@@ -25,6 +24,9 @@ racer)
 	;;
 rudi)
 	MEM=1000m
+	;;
+rioja|cognac.brookfield.local)
+	MEM=1024m
 	;;
 esac
 

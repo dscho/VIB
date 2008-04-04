@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package vib;
 
 import pal.math.*;
@@ -48,7 +50,7 @@ public abstract class RegistrationOptimizer {
 		//StochasticOSearch CG = new StochasticOSearch();
 		//GridSearch CG = new GridSearch();
 		//CG.conjugateGradientStyle = 1;
-		if (IJ.getInstance() != null)
+		if (IJ.getInstance() != null && verbose)
 			CG.prin = 1; // debug
 		//CG.step = 1;
 		//CG.step = 0.1;
@@ -58,6 +60,13 @@ public abstract class RegistrationOptimizer {
 		if (eulerParameters == null) {
 			eulerParameters = searchInitialEulerParams()[0];
 		}
+
+		/*
+		System.out.println("Registering starting with Euler parameters:");
+		for( int i = 0; i < eulerParameters.length; ++i ) {
+			System.out.println("  "+eulerParameters[i]);
+		}
+		*/
 
 		/* MHL added ... */
 		double [] originalEulerParameters = (double [])eulerParameters.clone();		
@@ -113,10 +122,8 @@ public abstract class RegistrationOptimizer {
 	//results[0] is a 9 dim matrix representing the best EulerParameter
 	//result[1] is the 2nd best etc, upto [23]
 	protected double[][] searchInitialEulerParams() {
-
 		if (cachedInitialGuesses != null)
 			return cachedInitialGuesses;
-
 		double[][] p = new double[24][9];
 
 		angleMax = Math.PI / 4 ;

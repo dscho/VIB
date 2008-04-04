@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package process3d;
 
 import ij.ImagePlus;
@@ -42,6 +44,8 @@ public class Smooth_ implements PlugInFilter {
 	public static ImagePlus smooth(ImagePlus image, boolean useGaussian, 
 					float sigma, boolean useCalibration) {
 
+		int type = image.getType();
+
 		Calibration calib = image.getCalibration();
 
 		float pixelW = !useCalibration ? 1.0f
@@ -61,17 +65,27 @@ public class Smooth_ implements PlugInFilter {
 		
 		if(image.getType() == ImagePlus.GRAY32)
 			return new ImagePlus("Smoothed", stack);
-		// convert the result to a byte image
+		// convert the result to an image that matches the type of the
+		// original (currently 8 bit or 16 bit)
+
 		ImageStack stack2 = new ImageStack(
 				stack.getWidth(), stack.getHeight());
 		for(int z = 0; z < stack.getSize(); z++) {
 			float[] f = (float[])stack.
 					getProcessor(z+1).getPixels();
-			byte[] b = new byte[f.length];
-			for(int i = 0; i < b.length; i++) {
-				b[i] = (byte)Math.round(f[i]);
+			if (type == ImagePlus.GRAY8) {
+				byte[] b = new byte[f.length];
+				for(int i = 0; i < b.length; i++) {
+					b[i] = (byte)Math.round(f[i]);
+				}
+				stack2.addSlice("",b);
+			} else if (type == ImagePlus.GRAY16)  {
+				short[] s = new short[f.length];
+				for(int i = 0; i < s.length; i++) {
+					s[i] = (short)Math.round(f[i]);
+				}
+				stack2.addSlice("",s);
 			}
-			stack2.addSlice("",b);
 		}
 		ImagePlus result = new ImagePlus("Smoothed", stack2);
 		result.setCalibration(image.getCalibration());
@@ -122,6 +136,6 @@ public class Smooth_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus img) {
 		this.image = img;
-		return DOES_8G | DOES_32 | NO_CHANGES;
+		return DOES_8G | DOES_16 | DOES_32 | NO_CHANGES;
 	}
 }

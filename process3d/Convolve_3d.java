@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package process3d;
 
 import ij.process.FloatProcessor;
@@ -43,7 +45,7 @@ public class Convolve_3d {
 	private static int w, h, d;
 	private static int r_x, r_y, r_z;
 	private static Object[] slices_in;
-	private static boolean isByte, isFloat;
+	private static boolean isByte, isShort, isFloat;
 	private static float[][][] H;
 
 	public static ImagePlus convolve(ImagePlus image, float[][][] kernel) {
@@ -73,6 +75,7 @@ public class Convolve_3d {
 
 		// determine image type
 		isByte = slices_in[0] instanceof byte[];
+		isShort = slices_in[0] instanceof short[];
 		isFloat = slices_in[0] instanceof float[];
 
 		// convolve
@@ -124,6 +127,8 @@ public class Convolve_3d {
 		int index = y * w + x;
 		if(isByte)
 			return ((byte[])slices_in[z])[index] & 0xff;
+		else if(isShort)
+			return ((short[])slices_in[z])[index];
 		else if(isFloat)
 			return ((float[])slices_in[z])[index];
 		IJ.error("Neither byte nor float image");

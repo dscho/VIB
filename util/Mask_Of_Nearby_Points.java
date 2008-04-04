@@ -1,5 +1,26 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
+/* Copyright 2007 Mark Longair */
+
+/*
+    This file is part of the ImageJ plugin "Mask Of Nearby Points".
+
+    The ImageJ plugin "Mask Of Nearby Points" is free software; you
+    can redistribute it and/or modify it under the terms of the GNU
+    General Public License as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version.
+
+    The ImageJ plugin "Mask Of Nearby Points" is distributed in the
+    hope that it will be useful, but WITHOUT ANY WARRANTY; without
+    even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+    PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package util;
 
 import ij.IJ;
@@ -13,6 +34,8 @@ import ij.process.FloatProcessor;
 
 public class Mask_Of_Nearby_Points implements PlugIn {
 	
+	public static final String PLUGIN_VERSION = "1.1";
+
 	public void run(String ignored) {
 		
 		ImagePlus imagePlus = IJ.getImage();
@@ -41,9 +64,10 @@ public class Mask_Of_Nearby_Points implements PlugIn {
 		
 		double defaultDistance = c.pixelWidth * 3;
 		
-		GenericDialog gd = new GenericDialog("Mask Of Nearby Points Options");
+		GenericDialog gd = new GenericDialog("Mask Of Nearby Points (version: "+PLUGIN_VERSION+")");
 		
 		gd.addNumericField("Add to mask points within distance ("+c.getUnits()+")", defaultDistance, 4);
+		gd.addMessage("(The default distance is 3 times the separation of voxels.)");
 		gd.addNumericField("... of points with value at least: ", 128, 0);
 		
 		gd.showDialog();

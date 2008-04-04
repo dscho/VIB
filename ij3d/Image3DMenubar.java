@@ -52,6 +52,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem exportObj;
 	private MenuItem exportDXF;
 	private MenuItem smoothMesh;
+	private MenuItem scalebar;
 	private MenuItem smoothAllMeshes;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
@@ -67,6 +68,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String START_RECORD = "startRecord";
 	public static final String STOP_RECORD = "stopRecord";
 	public static final String RESET_VIEW = "resetView";
+	public static final String SCALEBAR = "scalebar";
 	public static final String CLOSE = "close";
 
 	public static final String SET_COLOR = "setColor"; 
@@ -152,6 +154,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		stopAnimation = new MenuItem("Stop animation");
 		stopAnimation.addActionListener(this);
 		view.add(stopAnimation);
+
+		view.addSeparator();
+
+		scalebar = new MenuItem("Scalebar");
+		scalebar.addActionListener(this);
+		view.add(scalebar);
 
 		view.addSeparator();
 
@@ -266,6 +274,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}	
 			changeColor(selected);
 			univ.clearSelection();
+		}
+
+		if(e.getSource() == scalebar) {
+			editScalebar();
 		}
 
 		if(e.getSource() == channels) {
@@ -542,6 +554,27 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(UNLOCK);
 		}
 
+	}
+
+	public void editScalebar() {
+		Scalebar sc = univ.getScalebar();
+		final GenericDialog gd = new GenericDialog("Edit scalebar...");
+		gd.addNumericField("x position", sc.getX(), 2);
+		gd.addNumericField("y position", sc.getY(), 2);
+		gd.addNumericField("length", sc.getLength(), 2);
+		gd.addStringField("Units", sc.getUnit(), 5);
+		gd.addChoice("Color", ColorTable.colorNames, 
+				ColorTable.getColorName(sc.getColor()));
+		gd.addCheckbox("show", sc.isVisible());
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		sc.setPosition((float)gd.getNextNumber(), 
+				(float)gd.getNextNumber());
+		sc.setLength((float)gd.getNextNumber());
+		sc.setUnit(gd.getNextString());
+		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
+		sc.setVisible(gd.getNextBoolean());
 	}
 
 	public void changeTransparency(final Content selected) {

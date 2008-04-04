@@ -45,14 +45,18 @@ public class CoordinateSystem extends BranchGroup {
 		pa.setBackFaceNormalFlip(true);
 		textAppear.setPolygonAttributes(pa);
  
-		Transform3D translate = new Transform3D();
+		try {
+			Transform3D translate = new Transform3D();
 
-		translate.setTranslation(new Vector3f(length, -length/4, 0.0f));
-		addText("x", translate, textAppear);
-		translate.setTranslation(new Vector3f(-length/4, length, 0.0f));
-		addText("y", translate, textAppear);
-		translate.setTranslation(new Vector3f(-length/4, -length/4, length));
-		addText("z", translate, textAppear);
+			translate.setTranslation(new Vector3f(length, -length/4, 0.0f));
+			addText("x", translate, textAppear);
+			translate.setTranslation(new Vector3f(-length/4, length, 0.0f));
+			addText("y", translate, textAppear);
+			translate.setTranslation(new Vector3f(-length/4, -length/4, length));
+			addText("z", translate, textAppear);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void addText(String s,Transform3D translate,Appearance textAppear) {
@@ -67,7 +71,7 @@ public class CoordinateSystem extends BranchGroup {
 		textGeom.setAlignment(Text3D.ALIGN_CENTER);
 		//Shape3D textShape = new Shape3D();
 		// GJ: this allows slightly better alignment of text wrt viewer
-        OrientedShape3D textShape = new OrientedShape3D();
+        	OrientedShape3D textShape = new OrientedShape3D();
 		textShape.setGeometry(textGeom);
 		textShape.setAppearance(textAppear);
 		// GJ: this allows slightly better alignment of text wrt viewer

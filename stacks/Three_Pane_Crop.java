@@ -29,7 +29,7 @@ import ij.process.ByteProcessor;
 
 public class Three_Pane_Crop implements PlugIn {
 
-	public static final String PLUGIN_VERSION = "1.0";
+	public static final String PLUGIN_VERSION = "1.2";
 	
 	ThreePaneCrop threePaneCrop;
 	
