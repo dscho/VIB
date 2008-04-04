@@ -78,13 +78,13 @@ public class Volume implements VolRendConstants {
 		// the min and max coords are for the usable area of the texture,
 		// which is has a half-texel boundary.  Otherwise the boundary
 		// gets sampled, leading to artifacts with a texture color table.
-		minCoord.x = 0.5f * xSpace;
-		minCoord.y = 0.5f * ySpace;
-		minCoord.z = 0.5f * zSpace;
-
-		maxCoord.x = (xDim - 0.5f) * xSpace;
-		maxCoord.y = (yDim - 0.5f) * ySpace;
-		maxCoord.z = (zDim - 0.5f) * zSpace;
+// 		minCoord.x = 0.5f * xSpace;
+// 		minCoord.y = 0.5f * ySpace;
+// 		minCoord.z = 0.5f * zSpace;
+// 
+// 		maxCoord.x = (xDim - 0.5f) * xSpace;
+// 		maxCoord.y = (yDim - 0.5f) * ySpace;
+// 		maxCoord.z = (zDim - 0.5f) * zSpace;
 
 
 		// TODO: how to set here, but not clobber value from restore()?
