@@ -23,6 +23,50 @@ public class Orthoslice extends VolumeRenderer {
 		this.z = img.getStackSize()/2;
 	}
 
+	protected void loadAxis(int axis) {
+		OrderedGroup frontGroup = null;
+		OrderedGroup backGroup = null;
+
+		frontGroup = 
+		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][FRONT]);
+		backGroup = 
+		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][BACK]);
+
+		int i = z;
+		switch(axis) {
+			case X_AXIS: i = x; break;
+			case Y_AXIS: i = y; break;
+			case Z_AXIS: i = z; break;
+		}
+
+		GeometryArray quadArray = 
+			geomCreator.getQuad(axis, i);
+		Appearance a = appCreator.getAppearance(
+			axis, i, color, transparency);
+		Shape3D frontShape = new Shape3D(quadArray, a);
+
+		frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
+
+		BranchGroup frontShapeGroup = new BranchGroup();
+		frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+		frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
+		frontShapeGroup.addChild(frontShape);
+		frontGroup.addChild(frontShapeGroup);
+
+		Shape3D backShape = new Shape3D(quadArray, a);
+		backShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
+
+		BranchGroup backShapeGroup = new BranchGroup();
+		backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+		backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
+		backShapeGroup.addChild(backShape);
+		backGroup.insertChild(backShapeGroup, 0);
+	} 
+
+	public void eyePtChanged(View view) {
+		axisSwitch.setWhichChild(Switch.CHILD_ALL);
+	}
+
 	public void setSlices(int x, int y, int z) {
 		if(this.x != x) {
 			this.x = x;
@@ -40,7 +84,7 @@ public class Orthoslice extends VolumeRenderer {
 		Group g = (Group)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 
-			System.out.println("more than one child");
+			System.out.println(num + " children, expected only 1");
 		Shape3D shape = (Shape3D)
 			((Group)g.getChild(num-1)).getChild(0);
 
@@ -57,7 +101,7 @@ public class Orthoslice extends VolumeRenderer {
 		Group g = (Group)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 
-			System.out.println("more than one child");
+			System.out.println(num + " children, expected only 1");
 		Shape3D shape = (Shape3D)
 			((Group)g.getChild(num-1)).getChild(0);
 
@@ -74,7 +118,7 @@ public class Orthoslice extends VolumeRenderer {
 		Group g = (Group)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 
-			System.out.println("more than one child");
+			System.out.println(num + " children, expected only 1");
 		Shape3D shape = (Shape3D)
 			((Group)g.getChild(num-1)).getChild(0);
 

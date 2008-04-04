@@ -11,8 +11,8 @@ import ij.ImagePlus;
 
 public class VolumeRenderer extends Renderer implements VolRendConstants {
 
-	private float transparency;
-	private Color3f color;
+	protected float transparency;
+	protected Color3f color;
 
 	private int curAxis = Z_AXIS;
 	private int curDir = FRONT;
@@ -178,7 +178,7 @@ public class VolumeRenderer extends Renderer implements VolRendConstants {
 		loadAxis(X_AXIS);
 	}
 
-	private void loadAxis(int axis) {
+	protected void loadAxis(int axis) {
 		int rSize = 0;		// number of tex maps to create
 		OrderedGroup frontGroup = null;
 		OrderedGroup backGroup = null;
