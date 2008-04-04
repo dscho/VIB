@@ -151,8 +151,8 @@ public class VolumeRenderer extends Renderer implements VolRendConstants {
 	}
 
 	public void setColorModel(IndexColorModel cmodel) {
-//		appCreator.setColorModel(cmodel);
-//		fullReload();
+		appCreator.setColorModel(cmodel);
+		fullReload();
 	}
 
 	public void setColor(Color3f color) {
