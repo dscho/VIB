@@ -39,6 +39,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem fill;
 	private MenuItem slices;
 	private MenuItem delete;
+	private MenuItem windowSize;
 	private MenuItem resetView;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
@@ -70,6 +71,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String RESET_VIEW = "resetView";
 	public static final String SCALEBAR = "scalebar";
 	public static final String CLOSE = "close";
+	public static final String WINDOW_SIZE = "windowSize";
 
 	public static final String SET_COLOR = "setColor"; 
 	public static final String SET_TRANSPARENCY = "setTransparency";
@@ -125,6 +127,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public Menu createViewMenu() {
 		// Viewer
 		Menu view = new Menu("View");
+
+		windowSize = new MenuItem("Set window size");
+		windowSize.addActionListener(this);
+		view.add(windowSize);
 
 		resetView = new MenuItem("Reset view");
 		resetView.addActionListener(this);
@@ -347,6 +353,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			record(RESET_VIEW);
 			univ.resetView();
 		}
+
+		if(e.getSource() == windowSize) {
+			setWindowSize();
+		}
 		
 		if(e.getSource() == startRecord) {
 			record(START_RECORD);
@@ -554,6 +564,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(UNLOCK);
 		}
 
+	}
+
+	public void setWindowSize() {
+		final GenericDialog gd = new GenericDialog("Edit scalebar...");
+		Dimension d = univ.getSize();
+		if(d == null)
+			return;
+		gd.addNumericField("width", d.width, 0);
+		gd.addNumericField("height", d.height, 0);
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
 	}
 
 	public void editScalebar() {
