@@ -15,7 +15,9 @@ public class BoundingBox extends Shape3D {
 		this(min, max, new Color3f(1, 0, 0));
 	}
 	
-	public BoundingBox(Point3f min, Point3f max, Color3f color) {
+	public BoundingBox(Point3f minp, Point3f maxp, Color3f color) {
+		min = minp;
+		max = maxp;
 		
 		min.x -= 0; min.y -= 0; min.z -= 0;
 		max.x += 0; max.y += 0; max.z += 0;
@@ -84,6 +86,12 @@ public class BoundingBox extends Shape3D {
 		a.setColoringAttributes(ca);
 
 		setAppearance(a);
+	}
+
+	public String toString() {
+		return "[BoundingBox (" 
+			+ min.x + ", " + min.y + ", " + min.z + ") - ("
+			+ max.x + ", " + max.y + ", " + max.z + ")]";
 	}
 } 
 

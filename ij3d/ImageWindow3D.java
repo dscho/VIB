@@ -63,6 +63,17 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		WindowManager.setCurrentWindow(this);
 
 		add(canvas3D);
+		/*
+		 * Fixes a problem occurring on some machines: It happened
+		 * from time to time that the window has a size of zero or
+		 * at least very very small. Circumvent this behaviour by
+		 * the following lines from Albert Cardonna:
+		 */
+		Rectangle box = canvas3D.getBounds();
+		int min_width = box.width < 512 ? 512 : box.width;
+		int min_height = box.height < 512 ? 512 : box.height;
+		this.setMinimumSize(new Dimension(min_width, min_height));
+
 		pack();
 
 		ImageJ ij = IJ.getInstance();

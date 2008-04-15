@@ -107,6 +107,7 @@ public class AmiraParameters {
 
 	private static Pattern parameterKeyPattern;
 	private static Pattern parameterStringValuePattern;
+	private static Pattern parameterStringValuePattern2;
 	private static Pattern parameterGroupValuePattern;
 	private static Pattern parameterGroupEndPattern;
 	private static Pattern colorPattern;
@@ -118,6 +119,7 @@ public class AmiraParameters {
 		if(parameterKeyPattern==null) {
 			parameterKeyPattern=Pattern.compile("\\A[ \t\n]*([-A-Za-z0-9_]+)[ \t]*(.*)\\z",Pattern.DOTALL);
 			parameterStringValuePattern=Pattern.compile("\\A([^\n]*?)([,}]?)\n(.*)\\z",Pattern.DOTALL);
+			parameterStringValuePattern2=Pattern.compile("\\A\"([^\"]*?)(\")\n(.*)\\z",Pattern.DOTALL);
 			parameterGroupValuePattern=Pattern.compile("\\A\\{(.*)\\z",Pattern.DOTALL);
 			parameterGroupEndPattern=Pattern.compile("\\A[ \t\n]*}(.*)\\z",Pattern.DOTALL);
 			colorPattern=Pattern.compile("^([0-9]*(\\.[0-9]*e?-?[0-9]*)?)[ \t]+([0-9]*(\\.[0-9]*e?-?[0-9]*)?)[ \t]+([0-9]*(\\.[0-9]*e?-?[0-9]*)?)");
@@ -150,7 +152,9 @@ public class AmiraParameters {
 				while(parseParameters(subMap,key.equals("Materials")));
 				return true;
 			}
-			Matcher m2=parameterStringValuePattern.matcher(line);
+			Matcher m2=parameterStringValuePattern2.matcher(line);
+			if (!m2.matches())
+				m2=parameterStringValuePattern.matcher(line);
 			if(m2.matches()) {
 				String value=m2.group(1);
 				String end=m2.group(2);

@@ -70,6 +70,8 @@ public class Gradient_ implements PlugInFilter {
 				x_[i]*x_[i] + y_[i]*y_[i] + z_[i]*z_[i]);
 			}
 		}
-		return new ImagePlus("Gradient", grad);
+		ImagePlus ret = new ImagePlus("Gradient", grad);
+		ret.setCalibration(c);
+		return ret;
 	}
 }
