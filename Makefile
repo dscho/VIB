@@ -122,6 +122,17 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	amira/AmiraParameters.java amira/AmiraTable.java \
 	math3d/Point3d.java math3d/Transform_IO.java ImageJ_3D_Viewer.java
 
+ImageJ_3D_Viewer.pdf: viewer_paper/paper.tex viewer_paper/bibliography.bib
+	cd viewer_paper; \
+	latex paper && \
+	bibtex paper && \
+	latex paper && \
+	latex paper && \
+	dvips paper.dvi && \
+	ps2pdf paper.ps && \
+	mv paper.pdf ../ImageJ_3D_Viewer.pdf; \
+	rm paper.aux paper.bbl paper.blg paper.log paper.dvi paper.ps
+
 Install_Java3D.jar: SOURCES=Install_Java3D.java
 
 Three_Pane_Crop.jar: SOURCES=stacks/PaneOwner.java \
