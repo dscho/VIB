@@ -67,11 +67,11 @@ The resulting list of triangles are displayed, taking into account attributes li
 
 \subsection{Volume rendering}
 Another method to visualise a set of 2D slices is volume rendering.
-The general idea is to put the 2D slices one behind another. To avoid that the top slice obscure slices below, each voxel (volume element) is assigned a transparency value, which is dependent on its intensity value: Brighter voxels are more opaque, darker ones are more transparent.
+The general idea is to put the 2D slices one behind another. To avoid that the top slice obscures slices below, each voxel (volume element) is assigned a transparency value, which is dependent on its intensity value: Brighter voxels are more opaque, darker ones are more transparent.
 In Java 3D, this technique can be implemented using textures: Each slice has a rectangular geometry, which defines the border of its texture. The texture itself is given by the set of 2D slices. (A tutorial about volume rendering in Java 3D can be found at \cite{volrend}.)
 Figure \ref{fig:volume}c shows a volume rendering. To display coloured stacks, the transparency value of each voxel is calculated from the mean intensity of the red, green and blue colour component.
 
-To separate different channels in a double staining, our software allows to select the colour channels to be displayed (figures \ref{fig:volume}a and \ref{fig:volume}b. Additionally, it provides the functionality to edit volumes via virtual scissors (figure \ref{fig:volume}d).
+To separate different channels in a double staining, our software allows to select the colour channels to be displayed (figures \ref{fig:volume}a and \ref{fig:volume}b). Additionally, it provides the functionality to edit volumes via virtual scissors (figure \ref{fig:volume}d).
 
 \subsection{Orthoslices}
 The example of an orthoslice representation can be seen in figure \ref{fig:orthoslices}.
