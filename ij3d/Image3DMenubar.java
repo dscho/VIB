@@ -9,6 +9,7 @@ import math3d.Transform_IO;
 import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
+import java.util.Iterator;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
@@ -60,10 +61,13 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private CheckboxMenuItem lock;
 
 	private Menu selectedMenu;
+	private Menu selectSubMenu;
 	private Menu viewMenu;
 	private Menu contentsMenu;
 	private Menu fileMenu;
 
+	// These strings are the names of the stataic methods in
+	// ImageJ3DViewer.
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
 	public static final String START_RECORD = "startRecord";
@@ -93,6 +97,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String DELETE = "delete";
 
 	public static final String SMOOTH = "smooth";
+
+	private SelectionListener selListener = new SelectionListener();
 
 	public Image3DMenubar(Image3DUniverse univ) {
 		super();
@@ -193,6 +199,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		universe.addSeparator();
 
+		selectSubMenu = createSelectSubMenu();
+		universe.add(selectSubMenu);
+
+		universe.addSeparator();
+
 		delete = new MenuItem("Delete");
 		delete.setEnabled(false);
 		delete.addActionListener(this);
@@ -205,6 +216,18 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		universe.add(smoothAllMeshes);
 
 		return universe;
+	}
+
+	public Menu createSelectSubMenu() {
+		Menu select = new Menu("Select");
+		if(univ == null)
+			return select;
+		for(Iterator it = univ.contents(); it.hasNext();) {
+			String name = ((Content)it.next()).getName();
+			MenuItem mi = new MenuItem(name);
+			mi.addActionListener(selListener);
+		}
+		return select;
 	}
 
 	public Menu createSelectedMenu() {
@@ -269,6 +292,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		content.add(saveTransform);
 
 		return content;
+	}
+
+	private class SelectionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			String name = e.getActionCommand();
+			Content c = univ.getContent(name);
+			if(c != null)
+				univ.select(c);
+		}
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -857,11 +889,29 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	// Universe Listener interface
 	public void transformationStarted() {}
 	public void transformationFinished() {}
-	public void contentAdded(Content c) {}
-	public void contentRemoved(Content c) {}
 	public void canvasResized() {}
 	public void transformationUpdated() {}
 	public void contentChanged(Content c) {}
+
+	public void contentAdded(Content c) {
+		if(c == null)
+			return;
+		MenuItem item = new MenuItem(c.getName());
+		item.addActionListener(selListener);
+		selectSubMenu.add(item);
+	}
+
+	public void contentRemoved(Content c) {
+		if(c == null)
+			return;
+		for(int i = 0; i < selectSubMenu.getItemCount(); i++) {
+			MenuItem item = selectSubMenu.getItem(i);
+			if(item.getLabel().equals(c.getName())) {
+				selectSubMenu.remove(i);
+				return;
+			}
+		}
+	}
 
 	public void contentSelected(Content c) {
 		delete.setEnabled(c != null);
