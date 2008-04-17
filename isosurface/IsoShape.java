@@ -69,8 +69,10 @@ public final class IsoShape extends Shape3D {
 		if(mesh == null) return;
 		min.x = min.y = min.z = Float.MAX_VALUE;
 		max.x = max.y = max.z = Float.MIN_VALUE;
+		center.x = center.y = center.z = 0;
 		
-		for(int i = 0; i < mesh.size(); i++) {
+		int n = mesh.size();
+		for(int i = 0; i < n; i++) {
 			Point3f p = (Point3f)mesh.get(i);
 			if(p.x < min.x) min.x = p.x;
 			if(p.y < min.y) min.y = p.y;
@@ -78,10 +80,13 @@ public final class IsoShape extends Shape3D {
 			if(p.x > max.x) max.x = p.x;
 			if(p.y > max.y) max.y = p.y;
 			if(p.z > max.z) max.z = p.z;
+			center.x += p.x;
+			center.y += p.y;
+			center.z += p.z;
 		}
-		center.x = (max.x-min.x)/2;
-		center.y = (max.y-min.y)/2;
-		center.z = (max.z-min.z/2);
+		center.x /= n;
+		center.y /= n;
+		center.z /= n;
 	}
 
 	public void setColor(Color3f color) {
