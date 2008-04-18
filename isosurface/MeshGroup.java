@@ -104,6 +104,12 @@ public class MeshGroup extends Content {
 		}
 	}
 
+	public float getVolume() {
+		if(shape == null)
+			return -1;
+		return shape.getVolume();
+	}
+
 	public void colorUpdated(Color3f oldColor, Color3f newColor) {
 		if(newColor == null){
 			int val = getImage().getProcessor().

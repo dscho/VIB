@@ -3,6 +3,7 @@ package ij3d;
 import ij.gui.GenericDialog;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.text.TextWindow;
 
 import math3d.Transform_IO;
 
@@ -40,6 +41,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem fill;
 	private MenuItem slices;
 	private MenuItem delete;
+	private MenuItem properties;
 	private MenuItem windowSize;
 	private MenuItem resetView;
 	private MenuItem startRecord;
@@ -271,6 +273,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		content.addSeparator();
 
+		properties = new MenuItem("Properties");
+		properties.addActionListener(this);
+		content.add(properties);
+
+		content.addSeparator();
+
 		lock = new CheckboxMenuItem("Lock");
 		lock.addItemListener(this);
 		content.add(lock);
@@ -488,6 +496,27 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				univ.fireTransformationFinished();
 			}
 			record(SET_TRANSFORM, affine2string(t));
+		}
+
+		if(e.getSource() == properties) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			TextWindow tw = new TextWindow(c.getName(), 
+				" \tx\ty\tz",
+				"min\t" + (float)c.minPoint.x + "\t"
+					+ (float)c.minPoint.y + "\t"
+					+ (float)c.minPoint.z + "\n" +
+				"max\t" + (float)c.maxPoint.x + "\t"
+					+ (float)c.maxPoint.y + "\t"
+					+ (float)c.maxPoint.z + "\n" +
+				"cog\t" + (float)c.centerPoint.x + "\t"
+					+ (float)c.centerPoint.y + "\t"
+					+ (float)c.centerPoint.z + "\n\n" +
+				"volume\t" + c.getVolume(),
+				512, 512);
 		}
 
 		if(e.getSource() == applyTransform) {

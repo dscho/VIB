@@ -37,6 +37,7 @@ public class OrthoGroup extends Content {
 	private Renderer renderer;
 	private TransformGroup tg;
 	private int[] slices;
+	private float volume;
 
 	public OrthoGroup(String name, Color3f color, ImagePlus image, 
 		boolean[] channels, int resamplingF) {
@@ -76,12 +77,13 @@ public class OrthoGroup extends Content {
 		maxPoint.y = 0;
 		maxPoint.z = 0;
 
-		long count = 0;
+		long vol = 0;
 		for(int zi = 0; zi < d; zi++) {
 			float z = zi * (float)c.pixelDepth;
 			byte[] p = (byte[])imp.getStack().getPixels(zi+1);
 			for(int i = 0; i < p.length; i++) {
 				if(p[i] == 0) continue;
+				vol += (p[i] & 0xff);
 				float x = (i % w) * (float)c.pixelWidth;
 				float y = (i / w) * (float)c.pixelHeight;
 				if(x < minPoint.x) minPoint.x = x;
@@ -90,15 +92,18 @@ public class OrthoGroup extends Content {
 				if(x > maxPoint.x) maxPoint.x = x;
 				if(y > maxPoint.y) maxPoint.y = y;
 				if(z > maxPoint.z) maxPoint.z = z;
-				centerPoint.x += x;
-				centerPoint.y += y;
-				centerPoint.z += z;
-				count++;
+				centerPoint.x += (p[i] & 0xff) * x;
+				centerPoint.y += (p[i] & 0xff) * y;
+				centerPoint.z += (p[i] & 0xff) * z;
 			}
 		}
-		centerPoint.x /= count;
-		centerPoint.y /= count;
-		centerPoint.z /= count;
+		centerPoint.x /= vol;
+		centerPoint.y /= vol;
+		centerPoint.z /= vol;
+
+		volume = (float)(vol * c.pixelWidth
+				* c.pixelHeight
+				* c.pixelDepth);
 		
 		createBoundingBox();
 		showBoundingBox(false);
@@ -116,6 +121,10 @@ public class OrthoGroup extends Content {
 // 		createBoundingBox();
 // 		showBoundingBox(false);
 // 	}
+
+	public float getVolume() {
+		return volume;
+	}
 		
 	public static OrthoGroup addContent(Image3DUniverse univ, 
 							ImagePlus grey) {
