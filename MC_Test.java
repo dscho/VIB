@@ -1,7 +1,6 @@
 import javax.vecmath.*;
 import javax.media.j3d.*;
 import com.sun.j3d.utils.geometry.Sphere;
-import com.sun.j3d.utils.geometry.Box;
 
 import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
@@ -10,19 +9,13 @@ import ij.ImageStack;
 import ij.plugin.PlugIn;
 import ij.gui.GenericDialog;
 
-import ij3d.ImageWindow3D;
 import ij3d.Image3DUniverse;
-import ij3d.Image3DMenubar;
+import marchingcubes.MCCube;
 
-import isosurface.MeshGroup;
-import voltex.VoltexGroup;
+import java.util.List;
 
-import java.awt.Dimension;
-import java.awt.MenuBar;
-import java.awt.Menu;
 import java.awt.Color;
 import java.awt.Scrollbar;
-
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 
@@ -44,7 +37,7 @@ public class MC_Test implements PlugIn {
 		initialRot.rotY(Math.PI/4);
 		tmp.rotX(-Math.PI/4);
 		initialRot.mul(tmp);
-		univ.getGlobalRotate().setTransform(initialRot);
+// 		univ.getGlobalRotate().setTransform(initialRot);
 		univ.show();
 		displayCase(univ, defaultNo);
 
@@ -65,24 +58,22 @@ public class MC_Test implements PlugIn {
 
 	public void displayCase(Image3DUniverse univ, int caseNo) {
 		System.out.println("Case no " + caseNo);
-		int threshold = 65;
+		int threshold = 120;
 		BranchGroup scene = univ.getScene();
 		for(int i = scene.numChildren()-1; i >= 1 ; i--) {
 			scene.removeChild(i);
 		}
 		
 		createCase(caseNo);
-		univ.addMesh(image, RED, "Case" + caseNo, threshold, 
-			new boolean[]{true, false, false}, 1 );
+		List l = MCCube.getTriangles(image, threshold);
+		univ.addMesh(l, RED, "case" + caseNo, threshold);
 		for(int z = 0; z < data.length; z++) {
 			for(int y = 0; y < 2; y++) {
 				for(int x = 0; x < 2; x++) {
 					if(((int)data[z][y*2+x]&0xff)>=threshold) {
-						addVertex(univ, RED, x-1f, 
-							y-1f, z-1f);
+						addVertex(univ, RED, x, y, z);
 					} else {
-						addVertex(univ, GREY, x-1f, 
-							y-1f, z-1f);
+						addVertex(univ, GREY, x, y, z);
 					}
 				}
 			}
@@ -131,14 +122,14 @@ public class MC_Test implements PlugIn {
 		QuadArray qa = new QuadArray(24,
 				QuadArray.COORDINATES);
 		Point3f[] p = new Point3f[8];
-		p[0] = new Point3f(0f, -1f, -1f);
-		p[1] = new Point3f(0f, 0f, -1f);
-		p[2] = new Point3f(0f, 0f, 0f);
-		p[3] = new Point3f(0f, -1f, 0f);
-		p[4] = new Point3f(-1f, -1f, -1f);
-		p[5] = new Point3f(-1f, 0f, -1f);
-		p[6] = new Point3f(-1f, 0f, 0f);
-		p[7] = new Point3f(-1f, -1f, 0f);
+		p[0] = new Point3f(+1f, 0f, 0f);
+		p[1] = new Point3f(+1f, +1f, 0f);
+		p[2] = new Point3f(+1f, +1f, +1f);
+		p[3] = new Point3f(+1f, 0f, +1f);
+		p[4] = new Point3f(0f, 0f, 0f);
+		p[5] = new Point3f(0f, +1f, 0f);
+		p[6] = new Point3f(0f, +1f, +1f);
+		p[7] = new Point3f(0f, 0f, +1f);
 
 		Point3f[] coords = new Point3f[24];
 		coords[0] = p[0];

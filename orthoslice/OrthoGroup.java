@@ -37,6 +37,7 @@ public class OrthoGroup extends Content {
 	private Renderer renderer;
 	private TransformGroup tg;
 	private int[] slices;
+	private float volume;
 
 	public OrthoGroup(String name, Color3f color, ImagePlus image, 
 		boolean[] channels, int resamplingF) {
@@ -63,15 +64,66 @@ public class OrthoGroup extends Content {
 
 	public void calculateMinMaxCenterPoint() {
 		ImagePlus imp = getImage();
+		int w = imp.getWidth(), h = imp.getHeight();
+		int d = imp.getStackSize();
 		Calibration c = imp.getCalibration();
 		minPoint = new Point3f();
-		maxPoint = new Point3f((float)(imp.getWidth()*c.pixelWidth),
-				(float)(imp.getHeight()*c.pixelHeight),
-				(float)(imp.getStackSize()*c.pixelDepth));
-		centerPoint = new Point3f(maxPoint.x/2, maxPoint.y/2, 
-				maxPoint.z/2);
+		maxPoint = new Point3f();
+		centerPoint = new Point3f();
+		minPoint.x = w * (float)c.pixelHeight;
+		minPoint.y = h * (float)c.pixelHeight;
+		minPoint.z = d * (float)c.pixelDepth;
+		maxPoint.x = 0;
+		maxPoint.y = 0;
+		maxPoint.z = 0;
+
+		long vol = 0;
+		for(int zi = 0; zi < d; zi++) {
+			float z = zi * (float)c.pixelDepth;
+			byte[] p = (byte[])imp.getStack().getPixels(zi+1);
+			for(int i = 0; i < p.length; i++) {
+				if(p[i] == 0) continue;
+				vol += (p[i] & 0xff);
+				float x = (i % w) * (float)c.pixelWidth;
+				float y = (i / w) * (float)c.pixelHeight;
+				if(x < minPoint.x) minPoint.x = x;
+				if(y < minPoint.y) minPoint.y = y;
+				if(z < minPoint.z) minPoint.z = z;
+				if(x > maxPoint.x) maxPoint.x = x;
+				if(y > maxPoint.y) maxPoint.y = y;
+				if(z > maxPoint.z) maxPoint.z = z;
+				centerPoint.x += (p[i] & 0xff) * x;
+				centerPoint.y += (p[i] & 0xff) * y;
+				centerPoint.z += (p[i] & 0xff) * z;
+			}
+		}
+		centerPoint.x /= vol;
+		centerPoint.y /= vol;
+		centerPoint.z /= vol;
+
+		volume = (float)(vol * c.pixelWidth
+				* c.pixelHeight
+				* c.pixelDepth);
+		
 		createBoundingBox();
 		showBoundingBox(false);
+	}
+
+// 	public void calculateMinMaxCenterPoint() {
+// 		ImagePlus imp = getImage();
+// 		Calibration c = imp.getCalibration();
+// 		minPoint = new Point3f();
+// 		maxPoint = new Point3f((float)(imp.getWidth()*c.pixelWidth),
+// 				(float)(imp.getHeight()*c.pixelHeight),
+// 				(float)(imp.getStackSize()*c.pixelDepth));
+// 		centerPoint = new Point3f(maxPoint.x/2, maxPoint.y/2, 
+// 				maxPoint.z/2);
+// 		createBoundingBox();
+// 		showBoundingBox(false);
+// 	}
+
+	public float getVolume() {
+		return volume;
 	}
 		
 	public static OrthoGroup addContent(Image3DUniverse univ, 

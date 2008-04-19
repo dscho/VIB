@@ -43,6 +43,7 @@ public class ImageJ3DViewer implements PlugInFilter {
 		
 		try {
 			univ = new Image3DUniverse(512, 512);
+			univ.show();
 			String type = gd.getNextChoice();
 			if(type.equals("Surface"))
 				MeshGroup.addContent(univ, image);
@@ -51,7 +52,6 @@ public class ImageJ3DViewer implements PlugInFilter {
 			else if(type.equals("Orthoslice"))
 				OrthoGroup.addContent(univ, image);
 
-			univ.show();
 		} catch(Exception e) {
 			StringBuffer buf = new StringBuffer();
 			StackTraceElement[] st = e.getStackTrace();

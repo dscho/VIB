@@ -3,12 +3,14 @@ package ij3d;
 import ij.gui.GenericDialog;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.text.TextWindow;
 
 import math3d.Transform_IO;
 
 import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
+import java.util.Iterator;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
@@ -39,6 +41,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem fill;
 	private MenuItem slices;
 	private MenuItem delete;
+	private MenuItem properties;
+	private MenuItem windowSize;
 	private MenuItem resetView;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
@@ -59,10 +63,13 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private CheckboxMenuItem lock;
 
 	private Menu selectedMenu;
+	private Menu selectSubMenu;
 	private Menu viewMenu;
 	private Menu contentsMenu;
 	private Menu fileMenu;
 
+	// These strings are the names of the stataic methods in
+	// ImageJ3DViewer.
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
 	public static final String START_RECORD = "startRecord";
@@ -70,6 +77,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String RESET_VIEW = "resetView";
 	public static final String SCALEBAR = "scalebar";
 	public static final String CLOSE = "close";
+	public static final String WINDOW_SIZE = "windowSize";
 
 	public static final String SET_COLOR = "setColor"; 
 	public static final String SET_TRANSPARENCY = "setTransparency";
@@ -91,6 +99,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String DELETE = "delete";
 
 	public static final String SMOOTH = "smooth";
+
+	private SelectionListener selListener = new SelectionListener();
 
 	public Image3DMenubar(Image3DUniverse univ) {
 		super();
@@ -125,6 +135,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public Menu createViewMenu() {
 		// Viewer
 		Menu view = new Menu("View");
+
+		windowSize = new MenuItem("Set window size");
+		windowSize.addActionListener(this);
+		view.add(windowSize);
 
 		resetView = new MenuItem("Reset view");
 		resetView.addActionListener(this);
@@ -187,6 +201,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		universe.addSeparator();
 
+		selectSubMenu = createSelectSubMenu();
+		universe.add(selectSubMenu);
+
+		universe.addSeparator();
+
 		delete = new MenuItem("Delete");
 		delete.setEnabled(false);
 		delete.addActionListener(this);
@@ -199,6 +218,18 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		universe.add(smoothAllMeshes);
 
 		return universe;
+	}
+
+	public Menu createSelectSubMenu() {
+		Menu select = new Menu("Select");
+		if(univ == null)
+			return select;
+		for(Iterator it = univ.contents(); it.hasNext();) {
+			String name = ((Content)it.next()).getName();
+			MenuItem mi = new MenuItem(name);
+			mi.addActionListener(selListener);
+		}
+		return select;
 	}
 
 	public Menu createSelectedMenu() {
@@ -242,6 +273,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		content.addSeparator();
 
+		properties = new MenuItem("Properties");
+		properties.addActionListener(this);
+		content.add(properties);
+
+		content.addSeparator();
+
 		lock = new CheckboxMenuItem("Lock");
 		lock.addItemListener(this);
 		content.add(lock);
@@ -263,6 +300,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		content.add(saveTransform);
 
 		return content;
+	}
+
+	private class SelectionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			String name = e.getActionCommand();
+			Content c = univ.getContent(name);
+			if(c != null)
+				univ.select(c);
+		}
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -346,6 +392,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(e.getSource() == resetView) {
 			record(RESET_VIEW);
 			univ.resetView();
+		}
+
+		if(e.getSource() == windowSize) {
+			setWindowSize();
 		}
 		
 		if(e.getSource() == startRecord) {
@@ -446,6 +496,27 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				univ.fireTransformationFinished();
 			}
 			record(SET_TRANSFORM, affine2string(t));
+		}
+
+		if(e.getSource() == properties) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			TextWindow tw = new TextWindow(c.getName(), 
+				" \tx\ty\tz",
+				"min\t" + (float)c.minPoint.x + "\t"
+					+ (float)c.minPoint.y + "\t"
+					+ (float)c.minPoint.z + "\n" +
+				"max\t" + (float)c.maxPoint.x + "\t"
+					+ (float)c.maxPoint.y + "\t"
+					+ (float)c.maxPoint.z + "\n" +
+				"cog\t" + (float)c.centerPoint.x + "\t"
+					+ (float)c.centerPoint.y + "\t"
+					+ (float)c.centerPoint.z + "\n\n" +
+				"volume\t" + c.getVolume(),
+				512, 512);
 		}
 
 		if(e.getSource() == applyTransform) {
@@ -554,6 +625,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(UNLOCK);
 		}
 
+	}
+
+	public void setWindowSize() {
+		final GenericDialog gd = new GenericDialog("Edit scalebar...");
+		Dimension d = univ.getSize();
+		if(d == null)
+			return;
+		gd.addNumericField("width", d.width, 0);
+		gd.addNumericField("height", d.height, 0);
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
 	}
 
 	public void editScalebar() {
@@ -834,11 +918,29 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	// Universe Listener interface
 	public void transformationStarted() {}
 	public void transformationFinished() {}
-	public void contentAdded(Content c) {}
-	public void contentRemoved(Content c) {}
 	public void canvasResized() {}
 	public void transformationUpdated() {}
 	public void contentChanged(Content c) {}
+
+	public void contentAdded(Content c) {
+		if(c == null)
+			return;
+		MenuItem item = new MenuItem(c.getName());
+		item.addActionListener(selListener);
+		selectSubMenu.add(item);
+	}
+
+	public void contentRemoved(Content c) {
+		if(c == null)
+			return;
+		for(int i = 0; i < selectSubMenu.getItemCount(); i++) {
+			MenuItem item = selectSubMenu.getItem(i);
+			if(item.getLabel().equals(c.getName())) {
+				selectSubMenu.remove(i);
+				return;
+			}
+		}
+	}
 
 	public void contentSelected(Content c) {
 		delete.setEnabled(c != null);

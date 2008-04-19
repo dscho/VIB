@@ -237,6 +237,7 @@ public abstract class Content extends BranchGroup {
 
 	public abstract void eyePtChanged(View view);
 	public abstract void calculateMinMaxCenterPoint();
+	public abstract float getVolume();
 	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
 	public abstract void channelsUpdated(boolean[] channels);
 	public abstract void transparencyUpdated(float transparency);

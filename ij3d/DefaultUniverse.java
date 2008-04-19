@@ -17,6 +17,7 @@ import voltex.VoltexGroup;
 import marchingcubes.MCTriangulator;
 
 import java.awt.Panel;
+import java.awt.Dimension;
 import java.awt.BorderLayout;
 import java.awt.Frame;
 import java.awt.event.*;
@@ -188,6 +189,17 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public void show() {
 		win = new ImageWindow3D("ImageJ 3D Viewer", this);
+	}
+
+	public Dimension getSize() {
+		if(win != null)
+			return win.getSize();
+		return null;
+	}
+
+	public void setSize(int w, int h) {
+		if(win != null)
+			win.setSize(w, h);
 	}
 
 	public void close() {
