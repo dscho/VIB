@@ -34,7 +34,7 @@ public class MouseBehavior extends Behavior {
 
 	public MouseBehavior(DefaultUniverse univ) {
 		this.univ = univ;
-		mouseEvents = new WakeupOnAWTEvent[4];
+		mouseEvents = new WakeupOnAWTEvent[5];
 	}
 
 	public void initialize() {
@@ -42,6 +42,7 @@ public class MouseBehavior extends Behavior {
 		mouseEvents[1]= new WakeupOnAWTEvent(MouseEvent.MOUSE_PRESSED);
 		mouseEvents[2]= new WakeupOnAWTEvent(MouseEvent.MOUSE_RELEASED);
 		mouseEvents[3]= new WakeupOnAWTEvent(MouseEvent.MOUSE_WHEEL);
+		mouseEvents[4]= new WakeupOnAWTEvent(AWTEvent.KEY_EVENT_MASK);
 		wakeupCriterion = new WakeupOr(mouseEvents);
 		this.wakeupOn(wakeupCriterion);
 	}
@@ -63,16 +64,40 @@ public class MouseBehavior extends Behavior {
 		}
 		WakeupOnAWTEvent wakeup;
 		AWTEvent[] events;
-		MouseEvent evt;
+		AWTEvent evt;
 		while(criteria.hasMoreElements()) {
 			wakeup = (WakeupOnAWTEvent)criteria.nextElement();
-			events = wakeup.getAWTEvent();
+			events = (AWTEvent[])wakeup.getAWTEvent();
 			if(events.length > 0) {
-				evt = (MouseEvent) events[events.length -1];
-				doProcess(evt);
+				evt = events[events.length -1];
+				if(evt instanceof MouseEvent)
+					doProcess((MouseEvent)evt);
+				if(evt instanceof KeyEvent)
+					doProcess((KeyEvent)evt);
 			}
 		}
 		wakeupOn(wakeupCriterion);
+	}
+
+	public void doProcess(KeyEvent e) {
+		Content c = univ.getSelected();
+		int code = e.getKeyCode();
+		int mast = e.getModifiersEx();
+		if(e.isShiftDown()) {
+			switch(code) {
+				case KeyEvent.VK_RIGHT:translate(c, 2, 0);break;
+				case KeyEvent.VK_LEFT:translate(c, -2, 0);break;
+				case KeyEvent.VK_UP: translate(c, 0, -2); break;
+				case KeyEvent.VK_DOWN: translate(c, 0, 2); break;
+			}
+		} else {
+			switch(code) {
+				case KeyEvent.VK_RIGHT: rotate(c, 2, 0); break;
+				case KeyEvent.VK_LEFT: rotate(c, -2, 0); break;
+				case KeyEvent.VK_UP: rotate(c, 0, -2); break;
+				case KeyEvent.VK_DOWN: rotate(c, 0, 2); break;
+			}
+		}
 	}
 
 	public void doProcess(MouseEvent e) {
@@ -108,6 +133,12 @@ public class MouseBehavior extends Behavior {
 	public void rotate(Content c, MouseEvent e) {
 		int x = e.getX(), y = e.getY();
 		int dx = x - x_last, dy = y - y_last;
+		rotate(c, dx, dy);
+		x_last = x;
+		y_last = y;
+	}
+
+	public void rotate(Content c, int dx, int dy) {
 		float x_angle = 0.03f * dy;
 		float y_angle = 0.03f * dx;
 		transformX.rotX(x_angle);
@@ -149,15 +180,17 @@ public class MouseBehavior extends Behavior {
 
 		tg.setTransform(currentXform);
 		transformChanged(MouseBehaviorCallback.ROTATE, currentXform);
-		
-		x_last = x;
-		y_last = y;
 	}
 
 	public void translate(Content c, MouseEvent e) {
 		int x = e.getX(), y = e.getY();
 		int dx = x - x_last, dy = y - y_last;
+		translate(c, dx, dy);
+		x_last = x;
+		y_last = y;
+	}
 
+	public void translate(Content c, int dx, int dy) {
 		transl.x = dx * 1f;
 		transl.y = -dy * 1f;
 		transl.z = 0;	
@@ -177,9 +210,6 @@ public class MouseBehavior extends Behavior {
 
 		tg.setTransform(currentXform);
 		transformChanged(MouseBehaviorCallback.TRANSLATE, currentXform);
-		
-		x_last = x;
-		y_last = y;
 	}
 
 	public void wheel_zoom(Content c, MouseEvent e) {
@@ -187,6 +217,10 @@ public class MouseBehavior extends Behavior {
 		int units = 0;
 		if(we.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL)
 			units = we.getUnitsToScroll();
+		wheel_zoom(c, units);
+	}
+
+	public void wheel_zoom(Content c, int units) {
 		double factor = 0.9;
 		if(units != 0) {
 			
@@ -204,19 +238,24 @@ public class MouseBehavior extends Behavior {
 			transformChanged(
 				MouseBehaviorCallback.TRANSLATE, currentXform);
 		}	
-
 	}
-
 
 	public void zoom(Content c, MouseEvent e) {
 		int y = e.getY();
+		int dy = y - y_last;
+
+		x_last = e.getX();
+		y_last = y;
+	}
+
+	public void zoom(Content c, int dy) {
 		double factor = 0.9f;
-		double dy = (double)(y - y_last);
-		dy = dy < 0 ? -1d : 1d;
-		dy *= factor;
-		if(dy != 0) {
+		double ddy = dy < 0 ? -1d : 1d;
+		ddy *= factor;
+		if(ddy != 0) {
 			transformX.setIdentity();
-			double scale = dy > 0 ? 1f/Math.abs(dy) : Math.abs(dy);
+			double scale = ddy > 0 ? 1f/Math.abs(ddy)
+						: Math.abs(ddy);
 
 			transformX.setScale(scale);
 			TransformGroup tg = univ.getGlobalScale();
@@ -227,8 +266,6 @@ public class MouseBehavior extends Behavior {
 			transformChanged(
 				MouseBehaviorCallback.TRANSLATE, currentXform);
 		}	
-		x_last = e.getX();
-		y_last = y;
 	}
 
 	public void zoom_old(Content c, MouseEvent e) {
