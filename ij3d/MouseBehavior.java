@@ -80,22 +80,30 @@ public class MouseBehavior extends Behavior {
 	}
 
 	public void doProcess(KeyEvent e) {
+		int id = e.getID();
+		if(id != KeyEvent.KEY_RELEASED)
+			return;
 		Content c = univ.getSelected();
 		int code = e.getKeyCode();
 		int mast = e.getModifiersEx();
 		if(e.isShiftDown()) {
 			switch(code) {
-				case KeyEvent.VK_RIGHT:translate(c, 2, 0);break;
-				case KeyEvent.VK_LEFT:translate(c, -2, 0);break;
-				case KeyEvent.VK_UP: translate(c, 0, -2); break;
-				case KeyEvent.VK_DOWN: translate(c, 0, 2); break;
+				case KeyEvent.VK_RIGHT:translate(c, 5, 0);break;
+				case KeyEvent.VK_LEFT:translate(c, -5, 0);break;
+				case KeyEvent.VK_UP: translate(c, 0, -5);break;
+				case KeyEvent.VK_DOWN: translate(c, 0, 5);break;
+			}
+		} else if(e.isAltDown()) {
+			switch(code) {
+				case KeyEvent.VK_UP: zoom(c, 1); break;
+				case KeyEvent.VK_DOWN: zoom(c, -1); break;
 			}
 		} else {
 			switch(code) {
-				case KeyEvent.VK_RIGHT: rotate(c, 2, 0); break;
-				case KeyEvent.VK_LEFT: rotate(c, -2, 0); break;
-				case KeyEvent.VK_UP: rotate(c, 0, -2); break;
-				case KeyEvent.VK_DOWN: rotate(c, 0, 2); break;
+				case KeyEvent.VK_RIGHT: rotate(c, 5, 0); break;
+				case KeyEvent.VK_LEFT: rotate(c, -5, 0); break;
+				case KeyEvent.VK_UP: rotate(c, 0, -5); break;
+				case KeyEvent.VK_DOWN: rotate(c, 0, 5); break;
 			}
 		}
 	}
