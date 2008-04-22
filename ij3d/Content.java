@@ -28,6 +28,7 @@ public abstract class Content extends BranchGroup {
 	int resamplingF = 1;
 	protected int threshold = 0;
 	private boolean locked = false;
+	private boolean visible = true;
 
 	private Switch bbSwitch;
 	private BitSet whichChild = new BitSet(2);
@@ -40,6 +41,7 @@ public abstract class Content extends BranchGroup {
 
 	public static final int BB = 0;
 	public static final int CS = 1;
+	public static final int CO = 2;
 
 	public Content() {
 		// create BranchGroup for this image
@@ -79,6 +81,14 @@ public abstract class Content extends BranchGroup {
 		this.resamplingF = resamplingF;
 		calculateMinMaxCenterPoint();
 	}
+
+	public void addContentChild(BranchGroup bg) {
+		bbSwitch.addChild(bg);
+		whichChild.set(BB, false);
+		whichChild.set(CS, true);
+		whichChild.set(CO, true);
+		bbSwitch.setChildMask(whichChild);
+	}
 	
 	public void createBoundingBox() {
 		while(bbSwitch.numChildren() > 0)
@@ -92,6 +102,12 @@ public abstract class Content extends BranchGroup {
 		// initially show the bounding box, but not the coordinate system
 		whichChild.set(BB, false);
 		whichChild.set(CS, true);
+		bbSwitch.setChildMask(whichChild);
+	}
+
+	public void setVisible(boolean b) {
+		visible = b;
+		whichChild.set(CO, b);
 		bbSwitch.setChildMask(whichChild);
 	}
 
@@ -229,6 +245,10 @@ public abstract class Content extends BranchGroup {
 
 	public boolean isLocked() {
 		return locked;
+	}
+
+	public boolean isVisible() {
+		return visible;
 	}
 
 	public boolean hasCoord() {

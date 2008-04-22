@@ -61,6 +61,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
 	private CheckboxMenuItem lock;
+	private CheckboxMenuItem show;
 
 	private Menu selectedMenu;
 	private Menu selectSubMenu;
@@ -271,6 +272,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		coordinateSystem.addItemListener(this);
 		content.add(coordinateSystem);
 
+		show = new CheckboxMenuItem("Show content");
+		show.setState(true);
+		show.addItemListener(this);
+		content.add(show);
+		
 		content.addSeparator();
 
 		properties = new MenuItem("Properties");
@@ -610,6 +616,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			boolean b = coordinateSystem.getState();
 			univ.getSelected().showCoordinateSystem(b);
 			record(SET_CS, Boolean.toString(b));
+		}
+
+		if(e.getSource() == show) {
+			if(univ.getSelected() == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			boolean b = show.getState();
+			univ.getSelected().setVisible(b);
 		}
 
 		if(e.getSource() == lock) {
@@ -957,6 +972,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		coordinateSystem.setState(c.hasCoord());
 		lock.setState(c.isLocked());
+		show.setState(c.isVisible());
 	}
 
 	private boolean containsSelectedMenu() {
