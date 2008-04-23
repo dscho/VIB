@@ -93,7 +93,7 @@ public abstract class Content extends BranchGroup {
 		calculateMinMaxCenterPoint();
 	}
 
-	public void addContentChild(BranchGroup bg) {
+	public void addContentChild(Node bg) {
 		bbSwitch.addChild(bg);
 		whichChild.set(BB, selected);
 		whichChild.set(CS, coordVisible);

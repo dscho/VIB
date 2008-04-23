@@ -41,7 +41,7 @@ public class MeshGroup extends Content {
 		}
 		shape = new IsoShape(mesh, color, thresh, getTransparency());
 		calculateMinMaxCenterPoint();
-		getLocalRotate().addChild(shape);
+		addContentChild(shape);
 		compile();
 	}
 
@@ -59,7 +59,7 @@ public class MeshGroup extends Content {
 		}
 		shape = new IsoShape(mesh, color, threshold, getTransparency());
 		calculateMinMaxCenterPoint();
-		getLocalRotate().addChild(shape);
+		addContentChild(shape);
 		compile();
 	}
 		
