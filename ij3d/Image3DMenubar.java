@@ -58,6 +58,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem smoothMesh;
 	private MenuItem scalebar;
 	private MenuItem smoothAllMeshes;
+	private MenuItem pl_load;
+	private MenuItem pl_save;
+	private CheckboxMenuItem pl_show;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
 	private CheckboxMenuItem lock;
@@ -233,6 +236,25 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return select;
 	}
 
+	public Menu createPLSubMenu() {
+		Menu pl = new Menu("Point list");
+		if(univ == null)
+			return pl;
+		pl_load = new MenuItem("Load Point List");
+		pl_load.addActionListener(this);
+		pl.add(pl_load);
+
+		pl_save = new MenuItem("Save Point List");
+		pl_save.addActionListener(this);
+		pl.add(pl_save);
+
+		pl_show = new CheckboxMenuItem("Show Point List");
+		pl_show.addItemListener(this);
+		pl.add(pl_show);
+
+		return pl;
+	}
+
 	public Menu createSelectedMenu() {
 		// Contents
 		Menu content = new Menu("Content");
@@ -282,6 +304,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		properties = new MenuItem("Properties");
 		properties.addActionListener(this);
 		content.add(properties);
+
+		content.addSeparator();
+
+		content.add(createPLSubMenu());
 
 		content.addSeparator();
 
@@ -561,6 +587,22 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(SAVE_TRANSFORM, affine2string(matrix));
 		}
 
+		if (e.getSource() == pl_load) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.loadPointList();
+		}
+		if (e.getSource() == pl_save) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.savePointList();
+		}
 		if (e.getSource() == exportDXF) {
 			MeshExporter.saveAsDXF(univ.getContents());
 		}
@@ -640,6 +682,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(UNLOCK);
 		}
 
+		if (e.getSource() == pl_show) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.showPointList(pl_show.getState());
+		}
 	}
 
 	public void setWindowSize() {
@@ -973,6 +1023,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		coordinateSystem.setState(c.hasCoord());
 		lock.setState(c.isLocked());
 		show.setState(c.isVisible());
+		pl_show.setState(c.isPLVisible());
 	}
 
 	private boolean containsSelectedMenu() {
@@ -1037,6 +1088,5 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 		return m;
 	}
-
 }
 

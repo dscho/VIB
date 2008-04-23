@@ -1,8 +1,13 @@
 package ij3d;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ByteProcessor;
+import ij.io.FileInfo;
+import ij.io.OpenDialog;
+
+import vib.BenesNamedPoint;
 
 import java.awt.image.IndexColorModel;
 
@@ -17,6 +22,7 @@ import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Point3f;
+import javax.vecmath.Point3d;
 
 public abstract class Content extends BranchGroup {
 
@@ -27,21 +33,26 @@ public abstract class Content extends BranchGroup {
 	float transparency = 0f;
 	int resamplingF = 1;
 	protected int threshold = 0;
+
 	private boolean locked = false;
 	private boolean visible = true;
+	private boolean coordVisible = true;
+	protected boolean selected = false;
+	private boolean showPL = true;
 
 	private Switch bbSwitch;
 	private BitSet whichChild = new BitSet(2);
 	
-	protected boolean selected;
 	protected Point3f centerPoint, minPoint, maxPoint;
+	private PointListShape pointlist = null;
 	
 	protected TransformGroup localRotate;
 	protected TransformGroup localTranslate;
 
 	public static final int BB = 0;
 	public static final int CS = 1;
-	public static final int CO = 2;
+	public static final int PL = 2;
+	public static final int CO = 3;
 
 	public Content() {
 		// create BranchGroup for this image
@@ -84,9 +95,10 @@ public abstract class Content extends BranchGroup {
 
 	public void addContentChild(BranchGroup bg) {
 		bbSwitch.addChild(bg);
-		whichChild.set(BB, false);
-		whichChild.set(CS, true);
-		whichChild.set(CO, true);
+		whichChild.set(BB, selected);
+		whichChild.set(CS, coordVisible);
+		whichChild.set(CO, visible);
+		whichChild.set(PL, showPL);
 		bbSwitch.setChildMask(whichChild);
 	}
 	
@@ -95,13 +107,20 @@ public abstract class Content extends BranchGroup {
 			bbSwitch.removeChild(0);
 			
 		BoundingBox b = new BoundingBox(minPoint, maxPoint);
+		b.setPickable(false);
 		bbSwitch.addChild(b);
 		float cl = (float)Math.abs(maxPoint.x - minPoint.x) / 5f;
 		CoordinateSystem cs = new CoordinateSystem(cl, new Color3f(0, 1, 0));
+		cs.setPickable(false);
 		bbSwitch.addChild(cs);
+		pointlist = new PointListShape();
+		pointlist.setPickable(false);
+		bbSwitch.addChild(pointlist);
 		// initially show the bounding box, but not the coordinate system
-		whichChild.set(BB, false);
-		whichChild.set(CS, true);
+		whichChild.set(BB, selected);
+		whichChild.set(CS, coordVisible);
+		whichChild.set(CO, visible);
+		whichChild.set(PL, showPL);
 		bbSwitch.setChildMask(whichChild);
 	}
 
@@ -114,6 +133,54 @@ public abstract class Content extends BranchGroup {
 	public void showBoundingBox(boolean b) {
 		whichChild.set(BB, b);
 		bbSwitch.setChildMask(whichChild);
+	}
+
+	public void showPointList(boolean b) {
+		if(pointlist != null) {
+			whichChild.set(PL, b);
+			showPL = b;
+		}
+		bbSwitch.setChildMask(whichChild);
+	}
+
+	public void loadPointList() {
+		pointlist.setColor(color);
+		pointlist.load(image);
+	}
+
+	public void savePointList() {
+		String dir = OpenDialog.getDefaultDirectory();
+		String name = this.name;
+		if(image != null) {
+			FileInfo fi = image.getFileInfo();
+			dir = fi.directory;
+			name = fi.fileName;
+		}
+		name += ".points";
+		pointlist.save(dir, name);
+	}
+
+	public void addPointListPoint(Point3d p) {
+		String name = IJ.getString(
+				"Name for point", "point" + pointlist.size());
+		if(!name.equals(""))
+			pointlist.addPoint(name, p.x, p.y, p.z);
+	}
+	
+	public void setListPointPos(int i, Point3d pos) {
+		pointlist.setPos(i, pos);
+	}
+
+	public BenesNamedPoint getPointListPointAt(Point3d p) {
+		return pointlist.getPoint(p);
+	}
+
+	public int getPointListPointIndexAt(Point3d p) {
+		return pointlist.getIndex(p);
+	}
+
+	public void deletePointListPoint(int i) {
+		pointlist.delete(i);
 	}
 
 	public void showCoordinateSystem(boolean b) {
@@ -195,6 +262,7 @@ public abstract class Content extends BranchGroup {
 			return;
 		Color3f oldColor = this.color;
 		this.color = color;
+ 		pointlist.setColor(color);
 		colorUpdated(oldColor, color);
 	}
 
@@ -252,7 +320,11 @@ public abstract class Content extends BranchGroup {
 	}
 
 	public boolean hasCoord() {
-		return bbSwitch.getChildMask().get(CS);
+		return coordVisible;
+	}
+
+	public boolean isPLVisible() {
+		return showPL;
 	}
 
 	public abstract void eyePtChanged(View view);

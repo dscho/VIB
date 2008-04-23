@@ -1,5 +1,11 @@
 package ij3d;
 
+import vib.BenesNamedPoint;
+
+import com.sun.j3d.utils.pickfast.PickCanvas;
+import javax.media.j3d.PickInfo;
+import com.sun.j3d.utils.pickfast.PickIntersection;
+
 import java.awt.event.*;
 import java.awt.*;
 
@@ -7,6 +13,7 @@ import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
+import ij.IJ;
 import ij.gui.Toolbar;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -26,6 +33,9 @@ public class MouseBehavior extends Behavior {
 	public static final int TRANSLATE_MASK = MouseEvent.BUTTON1_DOWN_MASK |
 						InputEvent.SHIFT_DOWN_MASK;
 	public static final int ZOOM_MASK = MouseEvent.BUTTON1_DOWN_MASK;
+	public static final int PICK_POINT_MASK = MouseEvent.BUTTON1_DOWN_MASK;
+	public static final int DELETE_POINT_MASK = InputEvent.SHIFT_DOWN_MASK |
+						MouseEvent.BUTTON1_DOWN_MASK;
 
 	private Transform3D currentXform = new Transform3D();
 	private Transform3D transformX = new Transform3D(); 
@@ -58,7 +68,8 @@ public class MouseBehavior extends Behavior {
 
 	public void processStimulus(Enumeration criteria) {
 		toolID = Toolbar.getToolId();
-		if(toolID != Toolbar.HAND && toolID != Toolbar.MAGNIFIER) {
+		if(toolID != Toolbar.HAND && toolID != Toolbar.MAGNIFIER &&
+				toolID != Toolbar.POINT) {
 			wakeupOn (wakeupCriterion);
 			return;
 		}
@@ -115,6 +126,14 @@ public class MouseBehavior extends Behavior {
 		if(id == MouseEvent.MOUSE_PRESSED) {
 			x_last = e.getX();
 			y_last = e.getY();
+			if(toolID == Toolbar.POINT) { 
+				if(mask == PICK_POINT_MASK) {
+					pickPoint(c, e);
+				} else if(mask == DELETE_POINT_MASK) {
+					deletePoint(c, e);
+				}
+				((ImageCanvas3D)univ.getCanvas()).killRoi();
+			}
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
 			if(toolID == Toolbar.MAGNIFIER && mask == ZOOM_MASK)
 				zoom(c, e);
@@ -125,8 +144,15 @@ public class MouseBehavior extends Behavior {
 					case TRANSLATE_MASK: translate(c, e); 
 					break;
 				}
+			} else if(toolID == Toolbar.POINT) {
+				if(mask == PICK_POINT_MASK)
+					movePoint(c, e);
 			}
-		} 
+		} else if(id == MouseEvent.MOUSE_RELEASED) {
+			if(toolID == Toolbar.POINT) {
+				movingIndex = -1;
+			}
+		}
 		if(id == MouseEvent.MOUSE_WHEEL) {
 			wheel_zoom(c, e);
 		}
@@ -296,6 +322,70 @@ public class MouseBehavior extends Behavior {
 		x_last = e.getX();
 		y_last = y;
 	}
+
+	public void deletePoint(Content c, MouseEvent e) {
+		if(c == null) {
+			IJ.error("Selection required");
+			return;
+		}
+		Point3d p3d = getPickPoint(c, e);
+		if(p3d == null)
+			return;
+		int ind = c.getPointListPointIndexAt(p3d);
+		if(ind != -1) {
+			c.deletePointListPoint(ind);
+		}
+	}
+
+	int movingIndex = -1;
+	public void movePoint(Content c, MouseEvent e) {
+		if(c == null) {
+			IJ.error("Selection required");
+			return;
+		}
+		Point3d p3d = getPickPoint(c, e);
+		if(p3d == null)
+			return;
+		if(movingIndex == -1)
+			movingIndex = c.getPointListPointIndexAt(p3d);
+		if(movingIndex != -1) {
+			c.setListPointPos(movingIndex, p3d);
+		}
+	}
+
+	public void pickPoint(Content c, MouseEvent e) {
+		if(c == null) {
+			IJ.error("Selection required");
+			return;
+		}
+		Point3d p3d = getPickPoint(c, e);
+		if(p3d == null)
+			return;
+		BenesNamedPoint bnp = c.getPointListPointAt(p3d);
+		if(bnp == null) {
+			c.addPointListPoint(p3d);
+		}
+	}
+
+	private Point3d getPickPoint(Content c, MouseEvent e) {
+		int x = e.getX(), y = e.getY();
+		PickCanvas pickCanvas = new PickCanvas(
+					univ.getCanvas(), univ.getScene()); 
+		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
+		pickCanvas.setFlags(
+			PickInfo.NODE | PickInfo.CLOSEST_INTERSECTION_POINT);
+		pickCanvas.setTolerance(3.0f); 
+		pickCanvas.setShapeLocation(x, y); 
+		PickInfo result = null;
+		try {
+			result = pickCanvas.pickClosest();
+			if(result == null) 
+				return null;
+			Point3d p3d = result.getClosestIntersectionPoint();
+			return p3d;
+		} catch(Exception ex) {
+			return null;
+		}
+	}
 }
-	
 
