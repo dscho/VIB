@@ -12,7 +12,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 /** This class contains methods I would like to see incorporated into
-   HandleExtraFileTypes.  The main features are:
+    HandleExtraFileTypes, or elsewhere.  The main features are:
 
      * An open method that returns an array of ImagePlus objects,
        one per channel, without calling show() on any of them.
@@ -20,15 +20,49 @@ import java.util.Arrays;
      * Files are identified as particular types by their content,
        (magic numbers, etc.) never by their file extension.
 
-     * The method doesn't rely on plugins being present, instead it
-       uses reflection to check whether the required classes are
-       available.  This is a bit ugly, but means that this could be
-       incorporated into the main ImageJ source code without the
-       plugins also needing to be included at compile time.
- 
+     * The method doesn't rely on plugins being present at compile
+       time - instead it uses reflection to check whether the required
+       classes are available.  This is a bit ugly, but means that this
+       could be incorporated into the main ImageJ source code more
+       easily.
+
+    The types of file that should be coped with properly at the
+    moment are listed below:
+
+      Tested file types:
+
+        - Zeiss LSM files (using LSM_Toolbox rather than LSM_Reader)
+        - Leica SP files (using the Leica_SP_Reader plugin)
+        - Ordinary TIFF files (using the default ImageJ opener)
+        - AmiraMesh files (using the AmiraMeshReader plugin)
+
+      Untested file types (please send me example files!):
+
+        - Biorad PIC files (using the Biorad_Reader plugin)
+        - IPLab files (using the IPLab_Reader plugin)
+        - Packard InstantImager format (.img) files
+        - Gatan Digital Micrograph DM3 handler (DM3_Reader plugin)
+
+    Mark Longair <mark-imagej@longair.net>
+
  */
 
 public class BatchOpener {
+
+
+	public static class NoSuchChannelException extends Exception {
+
+		NoSuchChannelException(String message) {
+			super(message);
+		}
+	}
+
+	public static class ImageLoaderException extends Exception {
+
+		ImageLoaderException(String message) {
+			super(message);
+		}
+	}
 
 	/**
 	 * Returns an ImagePlus corresponding to the first (and possibly only)
@@ -67,7 +101,7 @@ public class BatchOpener {
 		}
 		return channels[i];
 	}
-		
+
 	/**
 	 * Returns an array of ImagePlus objects corresponding to all of the
 	 * channels in the image file.  If the file cannot be
@@ -76,10 +110,43 @@ public class BatchOpener {
 	 * @param path   the path of the image file to open
 	 */
 	public static ImagePlus[] open(String path) {
-		
+		ChannelsAndLoader cal;
+		try {
+			cal=openToChannelsAndLoader(path);
+		} catch( ImageLoaderException e ) {
+			return null;
+		}
+		return cal.channels;
+	}
+
+	/** A helper class to return the array of ImagePlus as well as an
+            indication of the file loader that was used. */
+	public static class ChannelsAndLoader {
+		public ChannelsAndLoader( ImagePlus [] channels, String loaderUsed ) {
+			this.channels = channels;
+			this.loaderUsed = loaderUsed;
+		}
+		public ImagePlus [] channels;
+		public String loaderUsed;
+	}
+
+	/**
+	 * Returns an object with (a) references to the array of ImagePlus
+	 * objects corresponding to all of the channels in the image
+	 * file and (b) a string indicating which loader was used.
+	 *
+	 * If the file cannot be found or there is any other
+	 * error in opening, null is returned.
+	 *
+	 * @param path        the path of the image file to open
+	 */
+	public static ChannelsAndLoader openToChannelsAndLoader(String path) throws ImageLoaderException {
+
+		String loaderUsed = null;
+
 		/* Read a few bytes from the beginning of the file into a
 		   buffer to look for magic numbers and so on: */
-		
+
 		InputStream is;
 		byte[] buf = new byte[132];
 		try {
@@ -90,82 +157,80 @@ public class BatchOpener {
 			// Couldn't open the file for reading
 			return null;
 		}
-		
-		// FIXME: deal with gzipped files sensibly...
-		byte[] gzipped_magic = {(byte) 0x1f, (byte) 0x8b};
-		
+
 		File file = new File(path);
 		String name = file.getName();
 		String nameLowerCase = name.toLowerCase();
+
 		String directory = file.getParent();
-		
+
 		// Test if this is a TIFF-based file of some kind:
 		byte[] tiffMagicIntel = {73, 73, 42, 0};
 		byte[] tiffMagicMotorola = {77, 77, 0, 42};
-		
+
 		byte[] firstFour = new byte[4];
 		System.arraycopy(buf, 0, firstFour, 0, 4);
-		
+
 		boolean tiffLittleEndian = Arrays.equals(tiffMagicIntel, firstFour);
 		boolean tiffBigEndian = Arrays.equals(tiffMagicMotorola, firstFour);
-		
+
 		if (tiffLittleEndian || tiffBigEndian) {
-			
+
 			RandomAccessFile in = null;
-			
+
 			try {
 				in = new RandomAccessFile(path, "r");
 			} catch (IOException e) {
 				return null;
 			}
-			
+
 			if (in == null) {
-				IJ.error("Can (no longer!) open the file '" + path + "'");
+				// throw new RuntimeException("Can (no longer!) open the file '" + path + "'");
 				return null;
 			}
-			
+
 			boolean isLSM;
 			try {
 				isLSM = findLSMTag(in, tiffLittleEndian);
 			} catch (IOException e) {
 				return null;
 			}
-			
+
 			if (isLSM) {
-				
+
 				try {
 					in.close();
 				} catch( IOException e ) {
-					IJ.error("Couldn't close the LSM file.");
+					// throw new RuntimeException("Couldn't close the LSM file.");
 					return null;
 				}
-				
+
+				loaderUsed = "LSM_Toolbox";
+
 				// Zeiss Confocal LSM 510 image file (.lsm) handler
 				// Insist on LSM_Toolbox for this rather than LSM_Reader,
 				// which doesn't have an appropriate open method.
 				// http://imagejdocu.tudor.lu/Members/ppirrotte/lsmtoolbox
 				ClassLoader loader = IJ.getClassLoader();
-				if (loader == null) {
-					IJ.error("IJ.getClassLoader() failed (!)");
-					return null;
-				}
-				
+				if (loader == null)
+					throw new RuntimeException("IJ.getClassLoader() failed (!)");
+
 				try {
-					
+
 					/* This unfortunate ugliness is because at
 					   compile time we can't be sure that the
 					   LSM_Toolbox jar is in the classpath. */
-					
+
 					Class<?> c = loader.loadClass("org.imagearchive.lsm.toolbox.Reader");
 					Object newInstance = c.newInstance();
-					
+
 					/* This version of open doesn't show() them... */
 					Class [] parameterTypes = { String.class,
 								    String.class,
 								    Boolean.TYPE,
 								    Boolean.TYPE,
 								    Boolean.TYPE };
-					
+
 					Method m = c.getMethod( "open", parameterTypes );
 					Object [] parameters = new Object[5];
 					parameters[0] = file.getParent();
@@ -173,38 +238,41 @@ public class BatchOpener {
 					parameters[2] = false;
 					parameters[3] = false;
 					parameters[4] = false;
-					
+
 					ImagePlus [] result = (ImagePlus [])m.invoke(newInstance,parameters);
-					return result;
-					
+					return new ChannelsAndLoader(result,loaderUsed);
+
 				} catch (IllegalArgumentException e) {
-					IJ.error("There was an illegal argument when trying to invoke the LSM_Toolbox reader: " + e);
+					throw new ImageLoaderException("There was an illegal argument when trying to invoke the LSM_Toolbox reader: " + e);
 				} catch (InvocationTargetException e) {
 					Throwable realException = e.getTargetException();
-					IJ.error("There was an exception thrown by the LSM_Toolbox plugin: " + realException);
+					throw new ImageLoaderException("There was an exception thrown by the LSM_Toolbox plugin: " + realException);
 				} catch (ClassNotFoundException e) {
-					IJ.error("The LSM_Toolbox plugin was not found: " + e);
+					throw new ImageLoaderException("The LSM_Toolbox plugin was not found: " + e);
 				} catch (InstantiationException e) {
-					IJ.error("Failed to instantiate the LSM toolbox reader: " + e);
+					throw new ImageLoaderException("Failed to instantiate the LSM_Toolbox reader: " + e);
 				} catch ( IllegalAccessException e ) {
-					IJ.error("IllegalAccessException when trying to create an instance of the reader: "+e);
+					throw new ImageLoaderException("IllegalAccessException when trying to create an instance of the LSM_Toolbox reader: "+e);
 				} catch (NoSuchMethodException e) {
-					IJ.error("There was a NoSuchMethodException when trying to invoke the LSM_Toolbox reader: " + e);
+					throw new ImageLoaderException("There was a NoSuchMethodException when trying to invoke the LSM_Toolbox reader: " + e);
 				} catch (SecurityException e) {
-					IJ.error("There was a SecurityException when trying to invoke the LSM_Toolbox reader: " + e);
+					throw new ImageLoaderException("There was a SecurityException when trying to invoke the LSM_Toolbox reader: " + e);
 				}
-				
-				return null;
+
+				/* Unreachable...  But we can't put
+				   "assert false;" here, because it
+				   warns that the statement is
+				   unreachable.  sigh... */
 			}
-			
+
 			/* Now test to see if this is a Leica TIFF, which
 			   unfortunately seems to involve seeking to near the
 			   end of the file.  This code is copied from
 			   HandleExtraFileTypes */
-			
+
 			byte[] leicaBytes = new byte[44];
 			long seekTo = -1;
-			
+
 			try {
 				seekTo = in.length() - 1658;
 				in.seek(seekTo);
@@ -213,59 +281,61 @@ public class BatchOpener {
 				IJ.error("Couldn't seek to "+seekTo+" in "+path);
 				return null;
 			}
-			
+
 			String leicaString = new String(leicaBytes);
-			
-			if (leicaString.equals("Leica Lasertechnik GmbH, " + 
+
+			if (leicaString.equals("Leica Lasertechnik GmbH, " +
 					       "Heidelberg, Germany")) {
-				
+
 				try {
 					in.close();
 				} catch( IOException e ) {
 					IJ.error("Couldn't close the Leica TIFF file.");
 					return null;
 				}
-				
+
 				/* Then this is a Leica TIFF file.  Look for the VIB
 				   Leica_SP_Reader plugin, which allows us to get an
 				   ImagePlus for each channel. */
-				
+
 				ClassLoader loader = IJ.getClassLoader();
 				if (loader == null) {
 					IJ.error("IJ.getClassLoader() failed (!)");
 					return null;
 				}
-				
+
 				try {
-					
+
+					loaderUsed = "Leica_SP_Reader";
+
 					/* This unfortunate ugliness is because at
 					   compile time we can't be sure that
-					   zeiss.Leica_SP_Reader is in the classpath. */
-					
+					   leica.Leica_SP_Reader is in the classpath. */
+
 					Class<?> c = loader.loadClass("leica.Leica_SP_Reader");
 					Object newInstance = c.newInstance();
-					
+
 					Class [] parameterTypes = { String.class };
 					Object [] parameters = new Object[1];
 					parameters[0] = path;
 					Method m = c.getMethod( "run", parameterTypes );
 					m.invoke(newInstance,parameters);
-                    
+
 					/* That should have loaded the file or
 					   thrown an IOException. */
-					
+
 					parameterTypes = new Class[0];
 					parameters = new Object[0];
 					m = c.getMethod("getNumberOfChannels", parameterTypes);
 					Integer n=(Integer)m.invoke(newInstance,parameters);
-					
+
 					if( n < 1 ) {
 						IJ.error("Error: got "+n+" channels from "+path+" with the Leica SP Reader");
 						return null;
 					}
-					
+
 					ImagePlus [] result = new ImagePlus[n];
-					
+
 					for( int i = 0; i < n; ++i ) {
 						parameterTypes = new Class[1];
 						parameterTypes[0] = Integer.TYPE;
@@ -274,9 +344,9 @@ public class BatchOpener {
 						m = c.getMethod("getImage", parameterTypes);
 						result[i] = (ImagePlus)m.invoke(newInstance,parameters);
 					}
-					
-					return result;
-					
+
+					return new ChannelsAndLoader(result,loaderUsed);
+
 				} catch (IllegalArgumentException e) {
 					IJ.error("There was an illegal argument when trying to invoke a method on the Leica SP Reader plugin: " + e);
 				} catch (InvocationTargetException e) {
@@ -293,7 +363,7 @@ public class BatchOpener {
 				} catch (SecurityException e) {
 					IJ.error("There was a SecurityException when trying to invoke a method of the Leica SP Reader plugin: " + e);
 				}
-				
+
 				return null;
 			}
 
@@ -303,21 +373,26 @@ public class BatchOpener {
 				IJ.error("Couldn't close the file.");
 				return null;
 			}
-			
+
 			// Use the default opener:
+			loaderUsed = "ImageJ TIFF";
 			ImagePlus[] i = new ImagePlus[1];
 			i[0] = IJ.openImage(path);
-			return i;
-			
+			return new ChannelsAndLoader(i,loaderUsed);
+
 		}
-        
+
 		ImagePlus imp;
-        
+
 		// MHL: the code below is essentially the same as in
-		// HandleExtraFileTypes.  I've just dropped those types
-		// that open and show the images themselves, since they're
-		// probably not useful for non-GUI use...
-        
+		// HandleExtraFileTypes.  I've just dropped those
+		// types that open and show the images themselves,
+		// since they're probably not useful for non-GUI use.
+		// I've also dropped any tests that are based on file
+		// extensions, which are generally much less
+		// trustworthy than the magic numbers at the beginning
+		// of the file.
+
 		// GJ: added Biorad PIC confocal file handler
 		// Note that the Biorad_Reader plugin extends the ImagePlus class,
 		// which is why the IJ.runPlugIn() call below returns an ImagePlus object.
@@ -327,6 +402,7 @@ public class BatchOpener {
 		if (buf[54] == 57 && buf[55] == 48) {
 			// Ok we've identified the file type
 			// Now load it using the relevant plugin
+			loaderUsed = "Biorad_Reader";
 			imp = (ImagePlus) IJ.runPlugIn("Biorad_Reader", path);
 			if (imp == null) {
 				return null;
@@ -336,35 +412,34 @@ public class BatchOpener {
 			}
 			ImagePlus[] i = new ImagePlus[1];
 			i[0] = IJ.openImage(path);
-			return i;
+			return new ChannelsAndLoader(i,loaderUsed);
 		}
-        
+
 		// GJ: added Gatan Digital Micrograph DM3 handler
 		// Note that the DM3_Reader plugin extends the ImagePlus class,
 		// which is why the IJ.runPlugIn() call below returns an ImagePlus object.
 		// ----------------------------------------------
-		// Check if the file ends in .DM3 or .dm3
-		if (name.endsWith(".dm3")) {
-			// These make an int value of 3 which is the DM3 version number
-			if (buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 3) {
-				// Ok we've identified the file type - now load it
-				imp = (ImagePlus) IJ.runPlugIn("DM3_Reader", path);
-				if (imp == null) {
-					return null;
-				}
-				if (imp != null && imp.getWidth() == 0) {
-					return null;
-				}
-				ImagePlus[] i = new ImagePlus[1];
-				i[0] = IJ.openImage(path);
-				return i;
+		// These make an int value of 3 which is the DM3 version number
+		if (buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 3) {
+			// Ok we've identified the file type - now load it
+			loaderUsed = "DM3_Reader";
+			imp = (ImagePlus) IJ.runPlugIn("DM3_Reader", path);
+			if (imp == null) {
+				return null;
 			}
+			if (imp != null && imp.getWidth() == 0) {
+				return null;
+			}
+			ImagePlus[] i = new ImagePlus[1];
+			i[0] = IJ.openImage(path);
+			return new ChannelsAndLoader(i,loaderUsed);
 		}
-        
+
 		// IPLab file handler
 		// Note that the IPLab_Reader plugin extends the ImagePlus class.
 		// Little-endian IPLab files start with "iiii" or "mmmm".
 		if ((buf[0] == 105 && buf[1] == 105 && buf[2] == 105 && buf[3] == 105) || (buf[0] == 109 && buf[1] == 109 && buf[2] == 109 && buf[3] == 109)) {
+			loaderUsed = "IPLab_Reader";
 			imp = (ImagePlus) IJ.runPlugIn("IPLab_Reader", path);
 			if (imp == null) {
 				return null;
@@ -374,13 +449,14 @@ public class BatchOpener {
 			}
 			ImagePlus[] i = new ImagePlus[1];
 			i[0] = IJ.openImage(path);
-			return i;
+			return new ChannelsAndLoader(i,loaderUsed);
 		}
-        
+
 		// Packard InstantImager format (.img) handler -> check HERE before Analyze check below!
 		// Note that the InstantImager_Reader plugin extends the ImagePlus class.
 		// Check extension and signature bytes KAJ_
-		if (name.endsWith(".img") && buf[0] == 75 && buf[1] == 65 && buf[2] == 74 && buf[3] == 0) {
+		if (buf[0] == 75 && buf[1] == 65 && buf[2] == 74 && buf[3] == 0) {
+			loaderUsed = "InstantImager_Reader";
 			imp = (ImagePlus) IJ.runPlugIn("InstantImager_Reader", path);
 			if (imp == null) {
 				return null;
@@ -390,26 +466,46 @@ public class BatchOpener {
 			}
 			ImagePlus[] i = new ImagePlus[1];
 			i[0] = IJ.openImage(path);
-			return i;
+			return new ChannelsAndLoader(i,loaderUsed);
 		}
-        
+
 		// Amira file handler
 		if (buf[0] == 0x23 && buf[1] == 0x20 && buf[2] == 0x41 &&
 		    buf[3] == 0x6d && buf[4] == 0x69 && buf[5] == 0x72 &&
 		    buf[6] == 0x61 && buf[7] == 0x4d && buf[8] == 0x65 &&
 		    buf[9] == 0x73 && buf[10] == 0x68 && buf[11] == 0x20) {
+			loaderUsed = "AmiraMeshReader_";
 			ImagePlus[] i = new ImagePlus[1];
 			imp = (ImagePlus) IJ.runPlugIn("AmiraMeshReader_", path);
 			if (imp == null) {
 				return null;
 			}
 			i[0] = imp;
-			return i;
+			return new ChannelsAndLoader(i,loaderUsed);
 		}
+
+		// Packard InstantImager format (.img) handler -> check HERE before Analyze check below!
+		// Note that the InstantImager_Reader plugin extends the ImagePlus class.
+		// Check extension and signature bytes KAJ_
+		if (buf[0] == 75 && buf[1] == 65 && buf[2] == 74 && buf[3] == 0) {
+			loaderUsed = "InstantImager_Reader";
+			imp = (ImagePlus) IJ.runPlugIn("InstantImager_Reader", path);
+			if (imp == null) {
+				return null;
+			}
+			if (imp != null && imp.getWidth() == 0) {
+				return null;
+			}
+			ImagePlus[] i = new ImagePlus[1];
+			i[0] = IJ.openImage(path);
+			return new ChannelsAndLoader(i,loaderUsed);
+		}
+
+		// [FIXME: add detection of more file types here]
 
 		return null;
 	}
-		
+
 	private static boolean findLSMTag(RandomAccessFile in, boolean littleEndian) throws IOException {
 		return findTag(34412, in, littleEndian);
 	}
@@ -492,12 +588,5 @@ public class BatchOpener {
 			value = getInt(in, littleEndian);
 		}
 		return value;
-	}
-}
-
-class NoSuchChannelException extends Exception {
-
-	NoSuchChannelException(String message) {
-		super(message);
 	}
 }
