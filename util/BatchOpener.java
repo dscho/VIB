@@ -12,7 +12,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 /** This class contains methods I would like to see incorporated into
-   HandleExtraFileTypes.  The main features are:
+    HandleExtraFileTypes, or elsewhere.  The main features are:
 
      * An open method that returns an array of ImagePlus objects,
        one per channel, without calling show() on any of them.
@@ -20,12 +20,31 @@ import java.util.Arrays;
      * Files are identified as particular types by their content,
        (magic numbers, etc.) never by their file extension.
 
-     * The method doesn't rely on plugins being present, instead it
-       uses reflection to check whether the required classes are
-       available.  This is a bit ugly, but means that this could be
-       incorporated into the main ImageJ source code without the
-       plugins also needing to be included at compile time.
- 
+     * The method doesn't rely on plugins being present at compile
+       time - instead it uses reflection to check whether the required
+       classes are available.  This is a bit ugly, but means that this
+       could be incorporated into the main ImageJ source code more
+       easily.
+
+    The types of file that should be coped with properly at the
+    moment are listed below:
+
+      Tested file types:
+
+        - Zeiss LSM files (using LSM_Toolbox rather than LSM_Reader)
+        - Leica SP files (using the Leica_SP_Reader plugin)
+        - Ordinary TIFF files (using the default ImageJ opener)
+        - AmiraMesh files (using the AmiraMeshReader plugin)
+
+      Untested file types (please send me example files!):
+
+        - Biorad PIC files (using the Biorad_Reader plugin)
+        - IPLab files (using the IPLab_Reader plugin)
+        - Packard InstantImager format (.img) files
+        - Gatan Digital Micrograph DM3 handler (DM3_Reader plugin)
+
+    Mark Longair <mark-imagej@longair.net>
+
  */
 
 public class BatchOpener {
@@ -90,9 +109,6 @@ public class BatchOpener {
 			// Couldn't open the file for reading
 			return null;
 		}
-		
-		// FIXME: deal with gzipped files sensibly...
-		byte[] gzipped_magic = {(byte) 0x1f, (byte) 0x8b};
 		
 		File file = new File(path);
 		String name = file.getName();
@@ -240,7 +256,7 @@ public class BatchOpener {
 					
 					/* This unfortunate ugliness is because at
 					   compile time we can't be sure that
-					   zeiss.Leica_SP_Reader is in the classpath. */
+					   leica.Leica_SP_Reader is in the classpath. */
 					
 					Class<?> c = loader.loadClass("leica.Leica_SP_Reader");
 					Object newInstance = c.newInstance();
@@ -314,9 +330,13 @@ public class BatchOpener {
 		ImagePlus imp;
         
 		// MHL: the code below is essentially the same as in
-		// HandleExtraFileTypes.  I've just dropped those types
-		// that open and show the images themselves, since they're
-		// probably not useful for non-GUI use...
+		// HandleExtraFileTypes.  I've just dropped those
+		// types that open and show the images themselves,
+		// since they're probably not useful for non-GUI use.
+		// I've also dropped any tests that are based on file
+		// extensions, which are generally much less
+		// trustworthy than the magic numbers at the beginning
+		// of the file.
         
 		// GJ: added Biorad PIC confocal file handler
 		// Note that the Biorad_Reader plugin extends the ImagePlus class,
@@ -343,29 +363,10 @@ public class BatchOpener {
 		// Note that the DM3_Reader plugin extends the ImagePlus class,
 		// which is why the IJ.runPlugIn() call below returns an ImagePlus object.
 		// ----------------------------------------------
-		// Check if the file ends in .DM3 or .dm3
-		if (name.endsWith(".dm3")) {
-			// These make an int value of 3 which is the DM3 version number
-			if (buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 3) {
-				// Ok we've identified the file type - now load it
-				imp = (ImagePlus) IJ.runPlugIn("DM3_Reader", path);
-				if (imp == null) {
-					return null;
-				}
-				if (imp != null && imp.getWidth() == 0) {
-					return null;
-				}
-				ImagePlus[] i = new ImagePlus[1];
-				i[0] = IJ.openImage(path);
-				return i;
-			}
-		}
-        
-		// IPLab file handler
-		// Note that the IPLab_Reader plugin extends the ImagePlus class.
-		// Little-endian IPLab files start with "iiii" or "mmmm".
-		if ((buf[0] == 105 && buf[1] == 105 && buf[2] == 105 && buf[3] == 105) || (buf[0] == 109 && buf[1] == 109 && buf[2] == 109 && buf[3] == 109)) {
-			imp = (ImagePlus) IJ.runPlugIn("IPLab_Reader", path);
+		// These make an int value of 3 which is the DM3 version number
+		if (buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 3) {
+			// Ok we've identified the file type - now load it
+			imp = (ImagePlus) IJ.runPlugIn("DM3_Reader", path);
 			if (imp == null) {
 				return null;
 			}
@@ -377,11 +378,11 @@ public class BatchOpener {
 			return i;
 		}
         
-		// Packard InstantImager format (.img) handler -> check HERE before Analyze check below!
-		// Note that the InstantImager_Reader plugin extends the ImagePlus class.
-		// Check extension and signature bytes KAJ_
-		if (name.endsWith(".img") && buf[0] == 75 && buf[1] == 65 && buf[2] == 74 && buf[3] == 0) {
-			imp = (ImagePlus) IJ.runPlugIn("InstantImager_Reader", path);
+		// IPLab file handler
+		// Note that the IPLab_Reader plugin extends the ImagePlus class.
+		// Little-endian IPLab files start with "iiii" or "mmmm".
+		if ((buf[0] == 105 && buf[1] == 105 && buf[2] == 105 && buf[3] == 105) || (buf[0] == 109 && buf[1] == 109 && buf[2] == 109 && buf[3] == 109)) {
+			imp = (ImagePlus) IJ.runPlugIn("IPLab_Reader", path);
 			if (imp == null) {
 				return null;
 			}
@@ -406,6 +407,24 @@ public class BatchOpener {
 			i[0] = imp;
 			return i;
 		}
+
+		// Packard InstantImager format (.img) handler -> check HERE before Analyze check below!
+		// Note that the InstantImager_Reader plugin extends the ImagePlus class.
+		// Check extension and signature bytes KAJ_
+		if (buf[0] == 75 && buf[1] == 65 && buf[2] == 74 && buf[3] == 0) {
+			imp = (ImagePlus) IJ.runPlugIn("InstantImager_Reader", path);
+			if (imp == null) {
+				return null;
+			}
+			if (imp != null && imp.getWidth() == 0) {
+				return null;
+			}
+			ImagePlus[] i = new ImagePlus[1];
+			i[0] = IJ.openImage(path);
+			return i;
+		}
+ 
+		// [FIXME: add detection of more file types here]
 
 		return null;
 	}
