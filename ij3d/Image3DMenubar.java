@@ -58,6 +58,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem smoothMesh;
 	private MenuItem scalebar;
 	private MenuItem smoothAllMeshes;
+	private MenuItem displayAsVolume;
+	private MenuItem displayAsOrtho;
+	private MenuItem displayAsSurface;
 	private MenuItem pl_load;
 	private MenuItem pl_save;
 	private CheckboxMenuItem pl_show;
@@ -255,6 +258,87 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return pl;
 	}
 
+	public Menu createTransformSubMenu() {
+		Menu transform = new Menu("Transformation");
+
+		lock = new CheckboxMenuItem("Lock");
+		lock.addItemListener(this);
+		transform.add(lock);
+		
+		setTransform = new MenuItem("Set Transform");
+		setTransform.addActionListener(this);
+		transform.add(setTransform);
+
+		resetTransform = new MenuItem("Reset Transform");
+		resetTransform.addActionListener(this);
+		transform.add(resetTransform);
+
+		applyTransform = new MenuItem("Apply Transform");
+		applyTransform.addActionListener(this);
+		transform.add(applyTransform);
+
+		saveTransform = new MenuItem("Save Transform");
+		saveTransform.addActionListener(this);
+		transform.add(saveTransform);
+
+		return transform;
+	}
+
+	public Menu createHideSubMenu() {
+		Menu hide = new Menu("Hide/Show");
+
+		show = new CheckboxMenuItem("Show content");
+		show.setState(true);
+		show.addItemListener(this);
+		hide.add(show);
+
+		coordinateSystem = new CheckboxMenuItem(
+					"Show coordinate system", true);
+		coordinateSystem.addItemListener(this);
+		hide.add(coordinateSystem);
+
+		return hide;
+	}
+
+	public Menu createAttributesSubMenu() {
+		Menu attributes = new Menu("Attributes");
+
+		channels = new MenuItem("Change channels");
+		channels.addActionListener(this);
+		attributes.add(channels);
+
+		color = new MenuItem("Change color");
+		color.addActionListener(this);
+		attributes.add(color);
+
+		transparency = new MenuItem("Change transparency");
+		transparency.addActionListener(this);
+		attributes.add(transparency);
+
+		threshold = new MenuItem("Adjust threshold");
+		threshold.addActionListener(this);
+		attributes.add(threshold);
+		return attributes;
+	}
+
+	public Menu createDisplayAsSubMenu() {
+		Menu display = new Menu("Display as");
+
+		displayAsVolume = new MenuItem("Volume");
+		displayAsVolume.addActionListener(this);
+		display.add(displayAsVolume);
+
+		displayAsOrtho = new MenuItem("Orthoslice");
+		displayAsOrtho.addActionListener(this);
+		display.add(displayAsOrtho);
+
+		displayAsSurface = new MenuItem("Surface");
+		displayAsSurface.addActionListener(this);
+		display.add(displayAsSurface);
+
+		return display;
+	}
+
 	public Menu createSelectedMenu() {
 		// Contents
 		Menu content = new Menu("Content");
@@ -267,69 +351,23 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		fill.addActionListener(this);
 		content.add(fill);
 
-		content.addSeparator();
-		
-		channels = new MenuItem("Change channels");
-		channels.addActionListener(this);
-		content.add(channels);
-
 		smoothMesh = new MenuItem("Smooth mesh");
 		smoothMesh.addActionListener(this);
 		content.add(smoothMesh);
 
-		color = new MenuItem("Change color");
-		color.addActionListener(this);
-		content.add(color);
-
-		transparency = new MenuItem("Change transparency");
-		transparency.addActionListener(this);
-		content.add(transparency);
-
-		threshold = new MenuItem("Adjust threshold");
-		threshold.addActionListener(this);
-		content.add(threshold);
+		content.addSeparator();
 		
-		coordinateSystem = new CheckboxMenuItem(
-					"Show coordinate system", true);
-		coordinateSystem.addItemListener(this);
-		content.add(coordinateSystem);
+		content.add(createDisplayAsSubMenu());
+		content.add(createAttributesSubMenu());
+		content.add(createHideSubMenu());
+		content.add(createPLSubMenu());
+		content.add(createTransformSubMenu());
 
-		show = new CheckboxMenuItem("Show content");
-		show.setState(true);
-		show.addItemListener(this);
-		content.add(show);
-		
 		content.addSeparator();
 
 		properties = new MenuItem("Properties");
 		properties.addActionListener(this);
 		content.add(properties);
-
-		content.addSeparator();
-
-		content.add(createPLSubMenu());
-
-		content.addSeparator();
-
-		lock = new CheckboxMenuItem("Lock");
-		lock.addItemListener(this);
-		content.add(lock);
-		
-		setTransform = new MenuItem("Set Transform");
-		setTransform.addActionListener(this);
-		content.add(setTransform);
-
-		resetTransform = new MenuItem("Reset Transform");
-		resetTransform.addActionListener(this);
-		content.add(resetTransform);
-
-		applyTransform = new MenuItem("Apply Transform");
-		applyTransform.addActionListener(this);
-		content.add(applyTransform);
-
-		saveTransform = new MenuItem("Save Transform");
-		saveTransform.addActionListener(this);
-		content.add(saveTransform);
 
 		return content;
 	}
