@@ -21,6 +21,7 @@ public class PointListShape extends BranchGroup {
 	public PointListShape() {
 		setCapability(ALLOW_CHILDREN_EXTEND);
 		setCapability(ALLOW_CHILDREN_WRITE);
+		setCapability(ALLOW_DETACH);
 		points = new PointList();
 		initGeom();
 		initAppearance();
@@ -29,6 +30,7 @@ public class PointListShape extends BranchGroup {
 	public PointListShape(PointList points) {
 		setCapability(ALLOW_CHILDREN_EXTEND);
 		setCapability(ALLOW_CHILDREN_WRITE);
+		setCapability(ALLOW_DETACH);
 		this.points = points;
 		initAppearance();
 	}
@@ -36,6 +38,7 @@ public class PointListShape extends BranchGroup {
 	public PointListShape(ImagePlus image) {
 		setCapability(ALLOW_CHILDREN_EXTEND);
 		setCapability(ALLOW_CHILDREN_WRITE);
+		setCapability(ALLOW_DETACH);
 		points = PointList.load(image);
 		initGeom();
 		initAppearance();
@@ -44,6 +47,7 @@ public class PointListShape extends BranchGroup {
 	public PointListShape(String dir, String file, boolean showDialog) {
 		setCapability(ALLOW_CHILDREN_EXTEND);
 		setCapability(ALLOW_CHILDREN_WRITE);
+		setCapability(ALLOW_DETACH);
 		points = PointList.load(dir, file, showDialog);
 		initGeom();
 		initAppearance();

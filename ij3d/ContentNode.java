@@ -28,6 +28,11 @@ public abstract class ContentNode extends BranchGroup {
 
 	protected Point3f min, max, center;
 
+	public ContentNode() {
+		super();
+		setCapability(BranchGroup.ALLOW_DETACH);
+	}
+
 	public abstract void channelsUpdated();
 
 	public abstract void thresholdUpdated();
@@ -42,5 +47,4 @@ public abstract class ContentNode extends BranchGroup {
 
 	public abstract float getVolume();
 }
-
 

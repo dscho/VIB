@@ -42,7 +42,7 @@ public class OrthoGroup extends ContentNode {
 	private Content c;
 
 	public OrthoGroup(Content c) {
-		
+		super();
 		this.c = c;
 		float scale = c.getImage().getWidth() * 
 			(float)c.getImage().getCalibration().pixelWidth;

@@ -36,6 +36,7 @@ public class MeshGroup extends ContentNode {
 
 
 	public MeshGroup (Content c) {
+		super();
 		this.c = c;
 		Color3f color = c.getColor();
 		List mesh = triangulator.getTriangles(c.getImage(), 
@@ -53,6 +54,7 @@ public class MeshGroup extends ContentNode {
 	}
 
 	public MeshGroup(Content c, List mesh) {
+		super();
 		this.c = c;
 		Color3f color = c.getColor();
 		int thresh = c.getThreshold();

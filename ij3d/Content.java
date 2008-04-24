@@ -90,6 +90,8 @@ public class Content extends BranchGroup {
 		bbSwitch.setWhichChild(Switch.CHILD_MASK);
 		bbSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
 		bbSwitch.setCapability(Switch.ALLOW_SWITCH_WRITE);
+		bbSwitch.setCapability(Switch.ALLOW_CHILDREN_WRITE);
+		bbSwitch.setCapability(Switch.ALLOW_CHILDREN_EXTEND);
 		localRotate.addChild(bbSwitch);
 	}
 

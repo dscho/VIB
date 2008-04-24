@@ -469,6 +469,37 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.clearSelection();
 		}
 
+		if(e.getSource() == displayAsVolume) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.displayAs(Content.VOLUME);
+			univ.clearSelection();
+		}
+
+		if(e.getSource() == displayAsOrtho) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.displayAs(Content.ORTHO);
+			univ.clearSelection();
+		}
+
+		if(e.getSource() == displayAsSurface) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.displayAs(Content.SURFACE);
+			univ.clearSelection();
+		}
+
+
 		if(e.getSource() == slices) {
 			Content c = univ.getSelected();
 			if(c == null || c.getType() != Content.ORTHO) {
@@ -1032,6 +1063,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		lock.setState(c.isLocked());
 		show.setState(c.isVisible());
 		pl_show.setState(c.isPLVisible());
+
+		displayAsVolume.setEnabled(c.getType() != Content.VOLUME);
+		displayAsOrtho.setEnabled(c.getType() != Content.ORTHO);
+		displayAsSurface.setEnabled(c.getType() != Content.SURFACE);
 	}
 
 	private boolean containsSelectedMenu() {

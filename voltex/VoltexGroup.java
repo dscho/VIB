@@ -40,6 +40,7 @@ public class VoltexGroup extends ContentNode {
 	private Content c;
 
 	public VoltexGroup(Content c) {
+		super();
 		this.c = c;
 		float scale = c.getImage().getWidth() * 
 			(float)c.getImage().getCalibration().pixelWidth;
