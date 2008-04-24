@@ -7,6 +7,7 @@ import ij.process.ByteProcessor;
 import ij.io.FileInfo;
 import ij.io.OpenDialog;
 
+import vib.PointList;
 import vib.BenesNamedPoint;
 import isosurface.IsoShape;
 import isosurface.MeshGroup;
@@ -247,6 +248,10 @@ public class Content extends BranchGroup {
 	
 	public void setListPointPos(int i, Point3d pos) {
 		pointlist.setPos(i, pos);
+	}
+
+	public PointList getPointList() {
+		return pointlist.getPointList();
 	}
 
 	public BenesNamedPoint getPointListPointAt(Point3d p) {

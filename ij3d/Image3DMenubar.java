@@ -12,6 +12,13 @@ import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
 import java.util.Iterator;
+import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
+
+import vib.PointList;
+import vib.BenesNamedPoint;
+import vib.FastMatrix;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
@@ -61,6 +68,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem displayAsOrtho;
 	private MenuItem displayAsSurface;
 	private MenuItem pl_load;
+	private MenuItem regist;
 	private MenuItem pl_save;
 	private CheckboxMenuItem pl_show;
 	private CheckboxMenuItem perspective;
@@ -207,6 +215,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		universe.add(selectSubMenu);
 
 		universe.addSeparator();
+
+		regist = new MenuItem("Register");
+		regist.addActionListener(this);
+		universe.add(regist);
 
 		smoothAllMeshes = new MenuItem("Smooth all meshes");
 		smoothAllMeshes.addActionListener(this);
@@ -427,6 +439,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				return;
 			}
 			univ.removeContent(c.name);
+		}
+
+		if(e.getSource() == regist) {
+			regist();
 		}
 	
 		if(e.getSource() == resetView) {
@@ -1215,6 +1231,67 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return univ.addContent(image, color, 
 				name, threshold, channels, resf, type);
 
+	}
+
+	public void regist() {
+		Collection contents = univ.getContents();
+		if(contents.size() < 2) {
+			IJ.error("At least two bodies are required for " +
+				" registration");
+			return;
+		}
+		String[] conts = new String[contents.size()];
+		int i = 0;
+		for(Iterator it = contents.iterator(); it.hasNext();)
+			conts[i++] = ((Content)it.next()).getName();
+		GenericDialog gd = new GenericDialog("Registration");
+		gd.addChoice("template", conts, conts[0]);
+		gd.addChoice("model", conts, conts[1]);
+		gd.addCheckbox("allow scaling", true);
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		Content templ = univ.getContent(gd.getNextChoice());
+		Content model = univ.getContent(gd.getNextChoice());
+		boolean scaling = gd.getNextBoolean();
+		PointList tpoints = templ.getPointList();
+		PointList mpoints = model.getPointList();
+		if(tpoints.size() < 2 || mpoints.size() < 2) {
+			IJ.error("At least two points are required in each "
+				+ "of the point lists");
+		}
+		List sett = new ArrayList();
+		List setm = new ArrayList();
+		for(i = 0; i < tpoints.size(); i++) {
+			BenesNamedPoint pt = tpoints.get(i);
+			BenesNamedPoint pm = mpoints.get(pt.getName());
+			if(pm != null) {
+				sett.add(pt);
+				setm.add(pm);
+			}
+		}
+		if(sett.size() < 2) {
+			IJ.error("At least two points with the same name "
+				+ "must exist in both bodies");
+			return;
+		}
+		IJ.write("Points used for registration");
+		for(i = 0; i < sett.size(); i++) {
+			BenesNamedPoint p = (BenesNamedPoint)sett.get(i);
+			IJ.write(p.getName() + "    " + (float)p.x + "    "
+				+ (float)p.y + "    " + (float)p.z);
+		}
+		BenesNamedPoint[] sm = new BenesNamedPoint[setm.size()];
+		BenesNamedPoint[] st = new BenesNamedPoint[sett.size()];
+		FastMatrix fm = FastMatrix.bestRigid(
+			(BenesNamedPoint[])setm.toArray(sm),
+			(BenesNamedPoint[])sett.toArray(st));
+
+		// reset the transformation of the template
+		// and set the transformation of the model.
+		Transform3D t3d = new Transform3D(fm.rowwise16());
+		templ.setTransform(new Transform3D());
+		model.setTransform(t3d);
 	}
 }
 

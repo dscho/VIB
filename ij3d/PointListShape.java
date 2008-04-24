@@ -91,6 +91,10 @@ public class PointListShape extends BranchGroup {
 		return points.get(ind);
 	}
 
+	public PointList getPointList() {
+		return points;
+	}
+
 	public void addPoint(String name, double x, double y, double z) {
 		points.add(new BenesNamedPoint(name, x, y, z));
 		addPointToGeometry(new Point3f((float)x, (float)y, (float)z),
