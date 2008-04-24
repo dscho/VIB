@@ -1132,6 +1132,18 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return m;
 	}
 
+	private static final int getAutoThreshold(ImagePlus imp) {
+		int[] histo = new int[256];
+		int d = imp.getStackSize();
+		for(int z = 0; z < d; z++) {
+			byte[] p = (byte[])imp.getStack().getPixels(z+1);
+			for(int i = 0; i < p.length; i++) {
+				histo[(int)(p[i]&0xff)]++;
+			}
+		}
+		return imp.getProcessor().getAutoThreshold(histo);
+	}
+
 	public Content addContent(ImagePlus image, int type) {
 		// setup default values
 		int img_count = WindowManager.getImageCount();
@@ -1168,6 +1180,18 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				new String[] {"red", "green", "blue"}, 
 				new boolean[]{true, true, true});
 
+
+		// automatically set threshold if surface is selected
+		final TextField tf = (TextField)gd.getNumericFields().get(0);
+		final Choice ch = (Choice)gd.getChoices().get(1);
+		ch.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				if(ch.getSelectedIndex() == Content.SURFACE)
+					tf.setText(Integer.toString(50));
+				else
+					tf.setText(Integer.toString(0));
+			}
+		});
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return null;
