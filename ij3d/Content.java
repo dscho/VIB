@@ -8,53 +8,69 @@ import ij.io.FileInfo;
 import ij.io.OpenDialog;
 
 import vib.BenesNamedPoint;
+import isosurface.IsoShape;
+import isosurface.MeshGroup;
+import voltex.VoltexGroup;
+import orthoslice.OrthoGroup;
 
 import java.awt.image.IndexColorModel;
-
 import java.util.BitSet;
+import java.util.List;
 
-import isosurface.IsoShape;
-import javax.media.j3d.*;
-import javax.vecmath.Color3f;
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
 import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 
+import javax.media.j3d.*;
+import javax.vecmath.Color3f;
 import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
 
-public abstract class Content extends BranchGroup {
+public class Content extends BranchGroup {
 
-	String name;
-	Color3f color;
+	// attributes
+	protected String name;
+	protected Color3f color = null;
 	protected ImagePlus image;
-	boolean[] channels = new boolean[]{true, true, true};
-	float transparency = 0f;
-	int resamplingF = 1;
+	protected boolean[] channels = new boolean[] {true, true, true};
+	protected float transparency = 0f;
+	protected int resamplingF = 1;
 	protected int threshold = 0;
+	protected int type = VOLUME;
 
+	// visibility flags
 	private boolean locked = false;
 	private boolean visible = true;
 	private boolean coordVisible = true;
 	protected boolean selected = false;
 	private boolean showPL = true;
 
+	// entries
+	private ContentNode contentNode = null;
+	private BoundingBox bb = null;
+	private CoordinateSystem cs = null; 
+	private PointListShape pointlist = null;
+
+	// scene graph entries
 	private Switch bbSwitch;
 	private BitSet whichChild = new BitSet(2);
-	
-	protected Point3f centerPoint, minPoint, maxPoint;
-	private PointListShape pointlist = null;
-	
+
 	protected TransformGroup localRotate;
 	protected TransformGroup localTranslate;
+	
 
-	public static final int BB = 0;
-	public static final int CS = 1;
-	public static final int PL = 2;
-	public static final int CO = 3;
+	// global constants
+	public static final int CO = 0;
+	public static final int BB = 1;
+	public static final int CS = 2;
+	public static final int PL = 3;
 
-	public Content() {
+	public static final int VOLUME = 0;
+	public static final int ORTHO = 1;
+	public static final int SURFACE = 2;
+	
+	public Content(String name) {
 		// create BranchGroup for this image
 		this.name = name;
 		setCapability(BranchGroup.ALLOW_DETACH);
@@ -77,52 +93,96 @@ public abstract class Content extends BranchGroup {
 		localRotate.addChild(bbSwitch);
 	}
 
-	public Content(String name, Color3f color) {
-		this();
-		this.name = name;
-		this.color = color;
-	}
+	public void displayAs(int type) {
+		if(image == null)
+			return;
+		// remove everything if possible
+		bbSwitch.removeAllChildren();
 
-	public Content(String name, Color3f color, ImagePlus image, boolean[] 
-		channels, int resamplingF) {
-		
-		this(name, color);
-		this.image = image;
-		this.channels = channels;
-		this.resamplingF = resamplingF;
-		calculateMinMaxCenterPoint();
-	}
+		// create content node and add it to the switch
+		switch(type) {
+			case VOLUME: contentNode = new VoltexGroup(this); break;
+			case ORTHO: contentNode = new OrthoGroup(this); break;
+			case SURFACE: contentNode = new MeshGroup(this); break;
+		}
+		bbSwitch.addChild(contentNode);
 
-	public void addContentChild(Node bg) {
-		bbSwitch.addChild(bg);
-		whichChild.set(BB, selected);
-		whichChild.set(CS, coordVisible);
-		whichChild.set(CO, visible);
-		whichChild.set(PL, showPL);
-		bbSwitch.setChildMask(whichChild);
-	}
-	
-	public void createBoundingBox() {
-		while(bbSwitch.numChildren() > 0)
-			bbSwitch.removeChild(0);
-			
-		BoundingBox b = new BoundingBox(minPoint, maxPoint);
+		// create the bounding box and add it to the switch
+		BoundingBox b = new BoundingBox(
+				contentNode.min, contentNode.max);
 		b.setPickable(false);
 		bbSwitch.addChild(b);
-		float cl = (float)Math.abs(maxPoint.x - minPoint.x) / 5f;
-		CoordinateSystem cs = new CoordinateSystem(cl, new Color3f(0, 1, 0));
+
+		// create coordinate system and add it to the switch
+		float cl = (float)Math.abs(contentNode.max.x 
+					- contentNode.min.x) / 5f;
+		CoordinateSystem cs = new CoordinateSystem(
+						cl, new Color3f(0, 1, 0));
 		cs.setPickable(false);
 		bbSwitch.addChild(cs);
+
+		// create point list and add it to the switch
 		pointlist = new PointListShape();
 		pointlist.setPickable(false);
 		bbSwitch.addChild(pointlist);
-		// initially show the bounding box, but not the coordinate system
+
+
+		// initialize child mask of the switch
 		whichChild.set(BB, selected);
 		whichChild.set(CS, coordVisible);
 		whichChild.set(CO, visible);
 		whichChild.set(PL, showPL);
 		bbSwitch.setChildMask(whichChild);
+
+		// update type
+		this.type = type;
 	}
+	
+	public void displayMesh(List mesh) {
+		// remove everything if possible
+		bbSwitch.removeAllChildren();
+
+		// create content node and add it to the switch
+		contentNode = new MeshGroup(this, mesh);
+		bbSwitch.addChild(contentNode);
+
+		// create the bounding box and add it to the switch
+		BoundingBox b = new BoundingBox(
+				contentNode.min, contentNode.max);
+		b.setPickable(false);
+		bbSwitch.addChild(b);
+
+		// create coordinate system and add it to the switch
+		float cl = (float)Math.abs(contentNode.max.x 
+					- contentNode.min.x) / 5f;
+		CoordinateSystem cs = new CoordinateSystem(
+						cl, new Color3f(0, 1, 0));
+		cs.setPickable(false);
+		bbSwitch.addChild(cs);
+
+		// create point list and add it to the switch
+		pointlist = new PointListShape();
+		pointlist.setPickable(false);
+		bbSwitch.addChild(pointlist);
+
+
+		// initialize child mask of the switch
+		whichChild.set(BB, selected);
+		whichChild.set(CS, coordVisible);
+		whichChild.set(CO, visible);
+		whichChild.set(PL, showPL);
+		bbSwitch.setChildMask(whichChild);
+
+		// update type
+		this.type = SURFACE;
+	}
+	
+
+
+	/* ************************************************************
+	 * setters - visibility flags
+	 *
+	 * ***********************************************************/
 
 	public void setVisible(boolean b) {
 		visible = b;
@@ -134,6 +194,22 @@ public abstract class Content extends BranchGroup {
 		whichChild.set(BB, b);
 		bbSwitch.setChildMask(whichChild);
 	}
+
+
+	public void showCoordinateSystem(boolean b) {
+		whichChild.set(CS, b);
+		bbSwitch.setChildMask(whichChild);
+	}
+	
+	public void setSelected(boolean selected) {
+		this.selected = selected;
+		showBoundingBox(selected);
+	}
+
+	/* ************************************************************
+	 * point list
+	 * 
+	 * ***********************************************************/
 
 	public void showPointList(boolean b) {
 		if(pointlist != null) {
@@ -183,16 +259,10 @@ public abstract class Content extends BranchGroup {
 		pointlist.delete(i);
 	}
 
-	public void showCoordinateSystem(boolean b) {
-		whichChild.set(CS, b);
-		bbSwitch.setChildMask(whichChild);
-	}
-	
-	public void setSelected(boolean selected) {
-		this.selected = selected;
-		showBoundingBox(selected);
-	}
-
+	/* ************************************************************
+	 * setters - transform
+	 *
+	 **************************************************************/
 	public void toggleLock() {
 		locked = !locked;
 	}
@@ -214,7 +284,7 @@ public abstract class Content extends BranchGroup {
 
 	public void setTransform(Transform3D transform) {
 		Transform3D t = new Transform3D();
-		Point3f c = centerPoint;
+		Point3f c = contentNode.center;
 		
 		Matrix3f m = new Matrix3f();
 		transform.getRotationScale(m);
@@ -236,6 +306,11 @@ public abstract class Content extends BranchGroup {
 		localTranslate.setTransform(t);
 	}
 
+	/* ************************************************************
+	 * setters - attributes
+	 *
+	 * ***********************************************************/
+
 	public void setChannels(boolean[] channels) {
 		boolean channelsChanged = channels[0] != this.channels[0] || 
 				channels[1] != this.channels[1] || 
@@ -243,13 +318,13 @@ public abstract class Content extends BranchGroup {
 		if(!channelsChanged)
 			return;
 		this.channels = channels;
-		channelsUpdated(channels);
+		contentNode.channelsUpdated();
 	}
 
 	public void setThreshold(int th) {
 		if(th != threshold) {
 			this.threshold = th;
-			thresholdUpdated(threshold);
+			contentNode.thresholdUpdated();
 		}
 	}
 
@@ -263,7 +338,7 @@ public abstract class Content extends BranchGroup {
 		Color3f oldColor = this.color;
 		this.color = color;
  		pointlist.setColor(color);
-		colorUpdated(oldColor, color);
+		contentNode.colorUpdated();
 	}
 
 	public void setTransparency(float transparency) {
@@ -272,11 +347,27 @@ public abstract class Content extends BranchGroup {
 		if(Math.abs(transparency - this.transparency) < 0.01)
 			return;
 		this.transparency = transparency;
-		transparencyUpdated(transparency);
+		contentNode.transparencyUpdated();
 	}
 
+	public void eyePtChanged(View view) {
+		contentNode.eyePtChanged(view);
+	}
+
+	/* *************************************************************
+	 * getters
+	 *
+	 **************************************************************/
 	public String getName() {
 		return name;
+	}
+
+	public int getType() {
+		return type;
+	}
+
+	public ContentNode getContent() {
+		return contentNode;
 	}
 
 	public ImagePlus getImage() {
@@ -327,14 +418,6 @@ public abstract class Content extends BranchGroup {
 		return showPL;
 	}
 
-	public abstract void eyePtChanged(View view);
-	public abstract void calculateMinMaxCenterPoint();
-	public abstract float getVolume();
-	public abstract void colorUpdated(Color3f oldColor, Color3f newColor);
-	public abstract void channelsUpdated(boolean[] channels);
-	public abstract void transparencyUpdated(float transparency);
-	public abstract void thresholdUpdated(int t);
-	public abstract void flush();
 }
 
 

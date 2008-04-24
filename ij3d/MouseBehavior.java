@@ -182,7 +182,7 @@ public class MouseBehavior extends Behavior {
 				univ.getGlobalRotate() : c.getLocalRotate();
 		Point3f center = (c==null || c.isLocked()) ?  
 				((Image3DUniverse)univ).getGlobalCenterPoint() :
-				c.centerPoint;
+				c.getContent().center;
 		tg.getTransform(currentXform);
 
 		univ.getGlobalRotate().getTransform(globalRotate);

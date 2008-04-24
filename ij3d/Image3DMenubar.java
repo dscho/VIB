@@ -2,6 +2,7 @@ package ij3d;
 
 import ij.gui.GenericDialog;
 import ij.IJ;
+import ij.WindowManager;
 import ij.ImagePlus;
 import ij.text.TextWindow;
 
@@ -31,9 +32,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	private Image3DUniverse univ;
 
-	private MenuItem mesh;
-	private MenuItem voltex;
-	private MenuItem ortho;
+	private MenuItem add;
 	private MenuItem color;
 	private MenuItem channels;
 	private MenuItem transparency;
@@ -100,9 +99,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String SAVE_TRANSFORM = "saveTransform";
 	public static final String RESET_TRANSFORM = "resetTransform";
 
-	public static final String ADD_VOLUME = "addVolume";
-	public static final String ADD_MESH = "addMesh";
-	public static final String ADD_ORTHO = "addOrthoslice";
+	// TODO
+	public static final String ADD = "add";
 	public static final String DELETE = "delete";
 
 	public static final String SMOOTH = "smooth";
@@ -194,29 +192,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public Menu createContentsMenu() {
 		// Universe
 		Menu universe = new Menu("Contents");
-		voltex = new MenuItem("Add volume");
-		voltex.addActionListener(this);
-		universe.add(voltex);
-
-		mesh = new MenuItem("Add mesh");
-		mesh.addActionListener(this);
-		universe.add(mesh);
-
-		ortho = new MenuItem("Add Orthoslice");
-		ortho.addActionListener(this);
-		universe.add(ortho);
-
-		universe.addSeparator();
-
-		selectSubMenu = createSelectSubMenu();
-		universe.add(selectSubMenu);
-
-		universe.addSeparator();
+		add = new MenuItem("Add content");
+		add.addActionListener(this);
+		universe.add(add);
 
 		delete = new MenuItem("Delete");
 		delete.setEnabled(false);
 		delete.addActionListener(this);
 		universe.add(delete);
+
+		universe.addSeparator();
+
+		selectSubMenu = createSelectSubMenu();
+		universe.add(selectSubMenu);
 
 		universe.addSeparator();
 
@@ -416,37 +404,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.clearSelection();
 		}
 
-		if(e.getSource() == voltex) {
-			Content c = VoltexGroup.addContent(univ, null);
-			String[] arg = new String[] {c.image.getTitle(), 
-				ColorTable.getColorName(c.color), 
-				c.name, Boolean.toString(c.channels[0]), 
-				Boolean.toString(c.channels[1]), Boolean.
-				toString(c.channels[2]), Integer.toString(
-				c.resamplingF)};
-			record(ADD_VOLUME, arg);
-		}
-		
-		if(e.getSource() == mesh) {
-			Content c = MeshGroup.addContent(univ, null);
-			String[] arg = new String[] {c.image.getTitle(), 
-				ColorTable.getColorName(c.color), 
-				c.name, Integer.toString(c.threshold), 
+		if(e.getSource() == add) {
+			Content c = addContent(null, -1);
+			String[] arg = new String[] {
+				c.image.getTitle(), 
+				ColorTable.getColorName(c.color),
+				c.name, 
+				Integer.toString(c.threshold),
 				Boolean.toString(c.channels[0]), 
-				Boolean.toString(c.channels[1]), Boolean.
-				toString(c.channels[2]), Integer.toString(
-				c.resamplingF)};
-			record(ADD_MESH, arg);
-		}
-
-		if(e.getSource() == ortho) {
-			Content c = OrthoGroup.addContent(univ, null);
-			String[] arg = new String[] {c.image.getTitle(), 
-				ColorTable.getColorName(c.color), 
-				c.name, Boolean.toString(c.channels[0]), 
-				Boolean.toString(c.channels[1]), Boolean.
-				toString(c.channels[2]), Integer.toString(
-				c.resamplingF)};
+				Boolean.toString(c.channels[1]),
+				Boolean.toString(c.channels[2]),
+				Integer.toString(c.resamplingF),
+				Integer.toString(c.type)};
+			record(ADD, arg);
 		}
 
 		if(e.getSource() == delete) {
@@ -501,7 +471,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == slices) {
 			Content c = univ.getSelected();
-			if(c == null || !(c instanceof OrthoGroup)) {
+			if(c == null || c.getType() != Content.ORTHO) {
 				IJ.error("Orthoslices must be selected");
 				return;
 			}
@@ -515,10 +485,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				IJ.error("Selection required");
 				return;
 			}
-			if(c instanceof VoltexGroup) {
+			if(c.getType() == Content.VOLUME) {
 				new Thread(new Runnable() {
 					public void run() {
-						((VoltexGroup)c).
+						((VoltexGroup)c.getContent()).
 						fillRoiBlack(univ, (byte)0);
 						univ.fireContentChanged(c);
 						record(FILL_SELECTION);
@@ -576,16 +546,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}
 			TextWindow tw = new TextWindow(c.getName(), 
 				" \tx\ty\tz",
-				"min\t" + (float)c.minPoint.x + "\t"
-					+ (float)c.minPoint.y + "\t"
-					+ (float)c.minPoint.z + "\n" +
-				"max\t" + (float)c.maxPoint.x + "\t"
-					+ (float)c.maxPoint.y + "\t"
-					+ (float)c.maxPoint.z + "\n" +
-				"cog\t" + (float)c.centerPoint.x + "\t"
-					+ (float)c.centerPoint.y + "\t"
-					+ (float)c.centerPoint.z + "\n\n" +
-				"volume\t" + c.getVolume(),
+				"min\t" + (float)c.getContent().min.x + "\t"
+					+ (float)c.getContent().min.y + "\t"
+					+ (float)c.getContent().min.z + "\n" +
+				"max\t" + (float)c.getContent().max.x + "\t"
+					+ (float)c.getContent().max.y + "\t"
+					+ (float)c.getContent().max.z + "\n" +
+				"cog\t" + (float)c.getContent().center.x + "\t"
+					+ (float)c.getContent().center.y + "\t"
+					+ (float)c.getContent().center.z + "\n\n" +
+				"volume\t" + c.getContent().getVolume(),
 				512, 512);
 		}
 
@@ -798,7 +768,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	public void adjustThreshold(final Content selected) {
 		final int oldTr = (int)(selected.getThreshold());
-		if(selected instanceof MeshGroup) {
+		if(selected.getType() == Content.SURFACE) {
 			int th = (int)Math.round(
 				IJ.getNumber("Threshold [0..255]", oldTr));
 			th = Math.max(0, th);
@@ -839,7 +809,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	public void adjustSlices(final Content selected) {
 		final GenericDialog gd = new GenericDialog("Adjust slices...");
-		final OrthoGroup os = (OrthoGroup)selected;
+		final OrthoGroup os = (OrthoGroup)selected.getContent();
 		final int[] oldvalues = os.getSlices();
 		ImagePlus imp = selected.image;
 		int w = imp.getWidth() / selected.getResamplingFactor();
@@ -1055,8 +1025,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(!containsSelectedMenu())
 			add(selectedMenu);
 		
-		slices.setEnabled(c instanceof OrthoGroup);
-		fill.setEnabled(c instanceof VoltexGroup);
+		slices.setEnabled(c.getType() == Content.ORTHO);
+		fill.setEnabled(c.getType() == Content.VOLUME);
 
 		coordinateSystem.setState(c.hasCoord());
 		lock.setState(c.isLocked());
@@ -1125,6 +1095,67 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			m[i] = Float.parseFloat(s[i]);
 		}
 		return m;
+	}
+
+	public Content addContent(ImagePlus image, int type) {
+		// setup default values
+		int img_count = WindowManager.getImageCount();
+		Vector windows = new Vector();
+		String[] images;
+		for(int i=1; i<=img_count; i++) {
+			int id = WindowManager.getNthImageID(i);
+			ImagePlus imp = WindowManager.getImage(id);
+			if(imp != null){
+				 windows.add(imp.getTitle());
+			}
+		}
+		if(windows.size() == 0)
+			IJ.error("No images open");
+		images = (String[])windows.toArray(new String[]{});
+		String name = image == null ? images[0] : image.getTitle();
+		String[] types = new String[] {
+				"Volume", "Orthoslice", "Surface"};
+		type = type < 0 ? 0 : type;
+		int threshold = type == Content.SURFACE ? 50 : 0;
+		int resf = 2;
+
+		// create dialog
+		GenericDialog gd = new GenericDialog("Add ...");
+		gd.addChoice("Image", images, name);
+		gd.addStringField("Name", name, 10);
+		gd.addChoice("Display as", types, types[type]);
+		gd.addChoice("Color", ColorTable.colorNames, 
+						ColorTable.colorNames[0]);
+		gd.addNumericField("Threshold", threshold, 0);
+		gd.addNumericField("Resampling factor", resf, 0);
+		gd.addMessage("Channels");
+		gd.addCheckboxGroup(1, 3, 
+				new String[] {"red", "green", "blue"}, 
+				new boolean[]{true, true, true});
+
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return null;
+			
+		image = WindowManager.getImage(gd.getNextChoice());
+		name = gd.getNextString();
+		type = gd.getNextChoiceIndex();
+		Color3f color = ColorTable.getColor(gd.getNextChoice());
+		threshold = (int)gd.getNextNumber();
+		resf = (int)gd.getNextNumber();
+		boolean[] channels = new boolean[] {gd.getNextBoolean(), 
+						gd.getNextBoolean(), 
+						gd.getNextBoolean()};
+
+		if(univ.contains(name)) {
+			IJ.error("Could not add new content. A content with " +
+				"name \"" + name + "\" exists already.");
+			return null;
+		}
+
+		return univ.addContent(image, color, 
+				name, threshold, channels, resf, type);
+
 	}
 }
 
