@@ -66,6 +66,11 @@ public class ImageCanvas3D extends Canvas3D {
 		addMouseMotionListener(roiImageCanvas);
 	}
 
+	public void killRoi() {
+		roiImagePlus.killRoi();
+		render();
+	}
+
 	private boolean isSelectionTool() {
 		 int tool = Toolbar.getToolId();
 		 return tool == Toolbar.RECTANGLE || tool == Toolbar.OVAL 

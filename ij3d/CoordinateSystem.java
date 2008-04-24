@@ -29,6 +29,7 @@ public class CoordinateSystem extends BranchGroup {
 	public CoordinateSystem(float length, Color3f color) {
 		this.length = length;
 		this.color = color;
+		setCapability(BranchGroup.ALLOW_DETACH);
 
 		Shape3D lines = new Shape3D();
 		lines.setGeometry(createGeometry());

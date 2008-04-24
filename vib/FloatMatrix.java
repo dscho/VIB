@@ -892,6 +892,14 @@ public class FloatMatrix {
 		}
 		return result;
 	}
+
+	public float[] rowwise16() {
+		return new float[] {
+			a00, a01, a02, a03,
+			a10, a11, a12, a13,
+			a20, a21, a22, a23,
+			0, 0, 0, 1};
+	}
 	
 	/*
 	 * parses both uniform 4x4 matrices (column by column), and

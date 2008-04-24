@@ -55,6 +55,10 @@ public class BenesNamedPoint extends Point3d {
 			return null;
 		}
 	}
+
+	public String getName() {
+		return name;
+	}
 	
 	public static String escape(String s) {
 		String result = s.replaceAll("\\\\","\\\\\\\\");
