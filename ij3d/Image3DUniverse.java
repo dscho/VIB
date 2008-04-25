@@ -88,15 +88,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				"call", "ImageJ_3D_Viewer.select", c.name);
 	}
 
-	public void transformChanged(int type, TransformGroup tg) {
-		super.transformChanged(type, tg);
-		Iterator it = contents.values().iterator();
-		while(it.hasNext()) {
-			((Content)it.next()).eyePtChanged(
-				canvas.getView());		
-		}
-	}
-
 	public void show() {
 		this.show(true);
 	}

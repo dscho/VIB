@@ -375,7 +375,6 @@ public class Content extends BranchGroup implements UniverseListener {
 	 *
 	 *************************************************************/
 	public void transformationStarted(View view) {}
-	public void transformationFinished(View view) {}
 	public void contentAdded(Content c) {}
 	public void contentRemoved(Content c) {}
 	public void canvasResized() {}
@@ -384,6 +383,8 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void transformationUpdated(View view) {
 		eyePtChanged(view);
+	}
+	public void transformationFinished(View view) {
 	}
 
 	public void eyePtChanged(View view) {
