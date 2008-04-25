@@ -854,6 +854,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.showDialog();
 	}
 
+	private Thread updatingThread = null;
+	private boolean stopUpdating = false;
+
 	public void adjustSlices(final Content selected) {
 		final GenericDialog gd = new GenericDialog("Adjust slices...");
 		final OrthoGroup os = (OrthoGroup)selected.getContent();
@@ -873,11 +876,26 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		AdjustmentListener listener = new AdjustmentListener() {
 			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setSlices(
-					xSlider.getValue(), 
-					ySlider.getValue(), 
-					zSlider.getValue());
-				univ.fireContentChanged(selected);
+				stopUpdating = true;
+				try {
+					if(updatingThread != null)
+						updatingThread.join();
+				} catch(InterruptedException exx) {
+					exx.printStackTrace();
+				}
+				
+				updatingThread = new Thread(new Runnable() {
+					public void run() {
+						stopUpdating = false;
+						os.setSlices(
+							xSlider.getValue(), 
+							ySlider.getValue(), 
+							zSlider.getValue());
+						univ.fireContentChanged(
+							selected);
+					}
+				});
+				updatingThread.start();
 			}
 		};
 		xSlider.addAdjustmentListener(listener);
