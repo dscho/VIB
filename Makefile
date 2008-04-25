@@ -118,9 +118,11 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard marchingcubes/*.java) $(wildcard isosurface/*.java) \
 	$(wildcard orthoslice/*.java) \
 	$(wildcard javax/media/j3d/*.java) \
+	$(wildcard math3d/*.java) \
 	vib/Resample_.java vib/InterpolatedImage.java \
+	vib/PointList.java vib/BenesNamedPoint.java \
 	amira/AmiraParameters.java amira/AmiraTable.java \
-	math3d/Point3d.java math3d/Transform_IO.java ImageJ_3D_Viewer.java
+	vib/FastMatrix.java vib/FloatMatrix.java ImageJ_3D_Viewer.java
 
 ImageJ_3D_Viewer.pdf: viewer_paper/paper.tex viewer_paper/bibliography.bib
 	cd viewer_paper; \
