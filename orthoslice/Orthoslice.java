@@ -80,7 +80,7 @@ public class Orthoslice extends VolumeRenderer {
 		}
 	}
 
-	private void setYSlice(int y) {
+	public void setYSlice(int y) {
 		Group g = (Group)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 
@@ -97,7 +97,7 @@ public class Orthoslice extends VolumeRenderer {
 		shape.getAppearance().setTexCoordGeneration(tg);
 	}
 
-	private void setZSlice(int z) {
+	public void setZSlice(int z) {
 		Group g = (Group)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 
@@ -114,7 +114,7 @@ public class Orthoslice extends VolumeRenderer {
 		shape.getAppearance().setTexCoordGeneration(tg);
 	}
 
-	private void setXSlice(int x) {
+	public void setXSlice(int x) {
 		Group g = (Group)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 

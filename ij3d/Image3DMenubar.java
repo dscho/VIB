@@ -874,33 +874,37 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		final Scrollbar ySlider = (Scrollbar)gd.getSliders().get(1);
 		final Scrollbar zSlider = (Scrollbar)gd.getSliders().get(2);
 
-		AdjustmentListener listener = new AdjustmentListener() {
+// 		AdjustmentListener listener = new AdjustmentListener() {
+// 			public void adjustmentValueChanged(AdjustmentEvent e) {
+// 				os.setSlices(
+// 					xSlider.getValue(), 
+// 					ySlider.getValue(), 
+// 					zSlider.getValue());
+// 				univ.fireContentChanged(
+// 					selected);
+// 			}
+// 		};
+		xSlider.addAdjustmentListener(new AdjustmentListener() {
 			public void adjustmentValueChanged(AdjustmentEvent e) {
-				stopUpdating = true;
-				try {
-					if(updatingThread != null)
-						updatingThread.join();
-				} catch(InterruptedException exx) {
-					exx.printStackTrace();
-				}
-				
-				updatingThread = new Thread(new Runnable() {
-					public void run() {
-						stopUpdating = false;
-						os.setSlices(
-							xSlider.getValue(), 
-							ySlider.getValue(), 
-							zSlider.getValue());
-						univ.fireContentChanged(
-							selected);
-					}
-				});
-				updatingThread.start();
+				os.setXSlice(xSlider.getValue()); 
+				univ.fireContentChanged(selected);
 			}
-		};
-		xSlider.addAdjustmentListener(listener);
-		ySlider.addAdjustmentListener(listener);
-		zSlider.addAdjustmentListener(listener);
+		});
+
+		ySlider.addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				os.setYSlice(ySlider.getValue()); 
+				univ.fireContentChanged(selected);
+			}
+		});
+
+		zSlider.addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				os.setZSlice(zSlider.getValue()); 
+				univ.fireContentChanged(selected);
+			}
+		});
+
 
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {

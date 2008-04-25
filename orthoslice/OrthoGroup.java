@@ -151,6 +151,18 @@ public class OrthoGroup extends ContentNode {
 		renderer.setTransparency(c.getTransparency());
 	}
 
+	public void setXSlice(int x) {
+		((Orthoslice)renderer).setXSlice(x);
+	}
+
+	public void setYSlice(int y) {
+		((Orthoslice)renderer).setYSlice(y);
+	}
+
+	public void setZSlice(int z) {
+		((Orthoslice)renderer).setZSlice(z);
+	}
+
 	public void setSlices(int x, int y, int z) {
 		((Orthoslice)renderer).setSlices(x, y, z);
 	}
