@@ -92,10 +92,11 @@ public class PointListDialog extends Dialog
 	public void updatePointsPanel(){
 		panel.removeAll();
 		c = new GridBagConstraints();
+		int i = 0;
 		if(points.size() == 0)
 			addEmptyRow();
 		for (BenesNamedPoint p : (Iterable<BenesNamedPoint>)points) {
-			addRow(p);
+			addRow(p, i++);
 		}
 		this.pack();
 	}
@@ -108,16 +109,20 @@ public class PointListDialog extends Dialog
 		panel.add(l, c);
 	}
 
-	private void addRow(final BenesNamedPoint p){
+	private Color grey = Color.LIGHT_GRAY;
+	private void addRow(final BenesNamedPoint p, int row){
 		if(!p.isSet())
 			return;
 		c.gridx = 0;
 		c.gridy = GridBagConstraints.RELATIVE;
+		c.fill = GridBagConstraints.BOTH;
 		c.anchor = GridBagConstraints.LINE_START;			
 		final Label label = new Label(p.getName() + "   ");
 		label.setName(p.getName());
 		label.setFont(new Font("Verdana", Font.BOLD, 12));
 		label.setForeground(Color.BLUE);
+		if(row % 2 == 1)
+			label.setBackground(grey);
 		label.addMouseListener(new MouseAdapter(){
 			public void mousePressed(MouseEvent e){
 				if(e.isPopupTrigger()){
@@ -138,8 +143,12 @@ public class PointListDialog extends Dialog
 		
 		c.anchor = GridBagConstraints.LINE_START;
 		c.gridx = 1;
+		c.fill = GridBagConstraints.BOTH;
 		Label coordinateLabel = new Label(df.format(p.x) + "    " + 
 			df.format(p.y) + "    " + df.format(p.z));
+		coordinateLabel.setFont(new Font("Verdana", Font.PLAIN, 12));
+		if(row % 2 == 1)
+			coordinateLabel.setBackground(grey);
 		panel.add(coordinateLabel,c);
 	}
 	
