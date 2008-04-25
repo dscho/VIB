@@ -1036,10 +1036,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	// Universe Listener interface
-	public void transformationStarted() {}
-	public void transformationFinished() {}
+	public void transformationStarted(View view) {}
+	public void transformationFinished(View view) {}
 	public void canvasResized() {}
-	public void transformationUpdated() {}
+	public void transformationUpdated(View view) {}
 	public void contentChanged(Content c) {}
 
 	public void contentAdded(Content c) {

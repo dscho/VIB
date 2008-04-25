@@ -1,6 +1,7 @@
 package ij3d;
 
 import com.sun.j3d.utils.universe.SimpleUniverse;
+import javax.media.j3d.View;
 
 import ij.IJ;
 import ij.ImageJ;
@@ -223,10 +224,10 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	/*
 	 * The UniverseListener interface
 	 */
-	public void transformationStarted() {}
-	public void transformationUpdated() {}
+	public void transformationStarted(View view) {}
+	public void transformationUpdated(View view) {}
 	public void contentSelected(Content c) {}
-	public void transformationFinished() {
+	public void transformationFinished(View view) {
 		updateImagePlus();
 	}
 

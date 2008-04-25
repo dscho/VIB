@@ -222,21 +222,21 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public void fireTransformationStarted() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationStarted();
+			l.transformationStarted(getCanvas().getView());
 		}
 	}
 
 	public void fireTransformationUpdated() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationUpdated();
+			l.transformationUpdated(getCanvas().getView());
 		}
 	}
 
 	public void fireTransformationFinished() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationFinished();
+			l.transformationFinished(getCanvas().getView());
 		}
 	}
 

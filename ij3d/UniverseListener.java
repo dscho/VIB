@@ -1,10 +1,12 @@
 package ij3d;
 
+import javax.media.j3d.View;
+
 public interface UniverseListener {
 
-	public void transformationStarted();
-	public void transformationUpdated();
-	public void transformationFinished();
+	public void transformationStarted(View view);
+	public void transformationUpdated(View view);
+	public void transformationFinished(View view);
 
 	public void contentAdded(Content c);
 	public void contentRemoved(Content c);

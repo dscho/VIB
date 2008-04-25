@@ -28,7 +28,7 @@ import javax.vecmath.Matrix3f;
 import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
 
-public class Content extends BranchGroup {
+public class Content extends BranchGroup implements UniverseListener {
 
 	// attributes
 	protected String name;
@@ -368,6 +368,22 @@ public class Content extends BranchGroup {
 			return;
 		this.transparency = transparency;
 		contentNode.transparencyUpdated();
+	}
+
+	/* ************************************************************
+	 * Universe Listener interface
+	 *
+	 *************************************************************/
+	public void transformationStarted(View view) {}
+	public void transformationFinished(View view) {}
+	public void contentAdded(Content c) {}
+	public void contentRemoved(Content c) {}
+	public void canvasResized() {}
+	public void contentSelected(Content c) {}
+	public void contentChanged(Content c) {}
+
+	public void transformationUpdated(View view) {
+		eyePtChanged(view);
 	}
 
 	public void eyePtChanged(View view) {
