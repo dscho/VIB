@@ -244,7 +244,7 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void addPointListPoint(Point3d p) {
 		int size = pointlist.size();
-		int point = 0;
+		int point = 1;
 		if(size != 0) {
 			String lastp = pointlist.getPointList().
 						get(size-1).getName();
