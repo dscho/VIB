@@ -45,7 +45,7 @@ public class Content extends BranchGroup {
 	private boolean visible = true;
 	private boolean coordVisible = true;
 	protected boolean selected = false;
-	private boolean showPL = true;
+	private boolean showPL = false;
 
 	// entries
 	private ContentNode contentNode = null;
@@ -125,7 +125,9 @@ public class Content extends BranchGroup {
 		bbSwitch.addChild(cs);
 
 		// create point list and add it to the switch
-		pointlist = new PointListShape();
+		// only create the point list when it does not exist already
+		if(pointlist == null)
+			pointlist = new PointListShape();
 		pointlist.setPickable(false);
 		bbSwitch.addChild(pointlist);
 
@@ -220,6 +222,7 @@ public class Content extends BranchGroup {
 			showPL = b;
 		}
 		bbSwitch.setChildMask(whichChild);
+		pointlist.showDialog(b);
 	}
 
 	public void loadPointList() {
@@ -240,10 +243,20 @@ public class Content extends BranchGroup {
 	}
 
 	public void addPointListPoint(Point3d p) {
-		String name = IJ.getString(
-				"Name for point", "point" + pointlist.size());
-		if(!name.equals(""))
-			pointlist.addPoint(name, p.x, p.y, p.z);
+		int size = pointlist.size();
+		int point = 0;
+		if(size != 0) {
+			String lastp = pointlist.getPointList().
+						get(size-1).getName();
+			try {
+				point = Integer.parseInt(lastp.substring(
+					5, lastp.length())) + 1;
+			} catch(Exception e) {
+				point = size;
+			}
+		}
+		String name = "point" + point;
+		pointlist.addPoint(name, p.x, p.y, p.z);
 	}
 	
 	public void setListPointPos(int i, Point3d pos) {

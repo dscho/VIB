@@ -11,10 +11,13 @@ import com.sun.j3d.utils.behaviors.mouse.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-public class PointListShape extends BranchGroup {
+public class PointListShape extends BranchGroup 
+			implements PointList.PointListListener{
 
+	private PointListDialog pld;
 	private PointList points;
 	private Color3f color = new Color3f(1, 1, 0);
+	private Color3f highlightColor = new Color3f(0, 1, 0);
 	private Appearance appearance;
 	private float radius = 10;
 
@@ -23,8 +26,10 @@ public class PointListShape extends BranchGroup {
 		setCapability(ALLOW_CHILDREN_WRITE);
 		setCapability(ALLOW_DETACH);
 		points = new PointList();
+		points.addPointListListener(this);
+		pld = new PointListDialog(points);
 		initGeom();
-		initAppearance();
+		initAppearance(color);
 	}
 	
 	public PointListShape(PointList points) {
@@ -32,7 +37,9 @@ public class PointListShape extends BranchGroup {
 		setCapability(ALLOW_CHILDREN_WRITE);
 		setCapability(ALLOW_DETACH);
 		this.points = points;
-		initAppearance();
+		points.addPointListListener(this);
+		pld = new PointListDialog(points);
+		initAppearance(color);
 	}
 
 	public PointListShape(ImagePlus image) {
@@ -40,8 +47,10 @@ public class PointListShape extends BranchGroup {
 		setCapability(ALLOW_CHILDREN_WRITE);
 		setCapability(ALLOW_DETACH);
 		points = PointList.load(image);
+		points.addPointListListener(this);
+		pld = new PointListDialog(points);
 		initGeom();
-		initAppearance();
+		initAppearance(color);
 	}
 
 	public PointListShape(String dir, String file, boolean showDialog) {
@@ -49,12 +58,22 @@ public class PointListShape extends BranchGroup {
 		setCapability(ALLOW_CHILDREN_WRITE);
 		setCapability(ALLOW_DETACH);
 		points = PointList.load(dir, file, showDialog);
+		points.addPointListListener(this);
+		pld = new PointListDialog(points);
 		initGeom();
-		initAppearance();
+		initAppearance(color);
+	}
+
+	public void showDialog(boolean b) {
+		pld.setVisible(b);
 	}
 
 	public void load(ImagePlus image) {
+		while(points.size() > 0)
+			points.remove(0);
 		points = PointList.load(image);
+		points.addPointListListener(this);
+		pld = new PointListDialog(points);
 		initGeom();
 	}
 
@@ -68,6 +87,14 @@ public class PointListShape extends BranchGroup {
 
 	public void save(String dir, String name) {
 		points.save(dir, name);
+	}
+
+	public int getIndex(BenesNamedPoint p) {
+		for(int i = 0; i < points.size(); i++) {
+			if(points.get(i).getName().equals(p.getName()))
+				return i;
+		}
+		return -1;
 	}
 
 	public int getIndex(Point3d p) {
@@ -97,31 +124,33 @@ public class PointListShape extends BranchGroup {
 
 	public void addPoint(String name, double x, double y, double z) {
 		points.add(new BenesNamedPoint(name, x, y, z));
-		addPointToGeometry(new Point3f((float)x, (float)y, (float)z),
-				name);
+		// the listener gets informed about that and updates the
+		// geometry automatically - see added() below
 	}
 
 	public void delete(int i) {
 		BenesNamedPoint bnp = points.get(i);
 		points.remove(bnp);
-		deletePointFromGeometry(i);
+		// the listener gets informed about that and updates the
+		// geometry automatically - see removed() below
+	}
+
+	public void delete(BenesNamedPoint bnp) {
+		points.remove(bnp);
+		// the listener gets informed about that and updates the
+		// geometry automatically - see removed() below
 	}
 
 	public void setPos(int i, Point3d pos) {
 		BenesNamedPoint bnp = points.get(i);
-		bnp.x = pos.x; bnp.y = pos.y; bnp.z = pos.z;
-		BranchGroup bg = (BranchGroup)getChild(i);
-		TransformGroup tg = (TransformGroup)bg.getChild(0);
-		v3f.x = (float)pos.x;
-		v3f.y = (float)pos.y;
-		v3f.z = (float)pos.z;
-		t3d.set(v3f);
-		tg.setTransform(t3d);
+		points.placePoint(bnp, pos.x, pos.y, pos.z);
+		// the listener gets informed about that and updates the
+		// geometry automatically - see moved() below
 	}
 
 	public void setColor(Color3f c) {
 		color = c == null ? new Color3f(1, 1, 0) : c;
-		initAppearance();
+		initAppearance(color);
 		for(int i = 0; i < numChildren(); i++) {
 			BranchGroup bg = (BranchGroup)getChild(i);
 			TransformGroup tg = (TransformGroup)bg.getChild(0);
@@ -130,6 +159,47 @@ public class PointListShape extends BranchGroup {
 		}
 	}
 
+
+	// listener interface
+	public void added(int i) {
+		BenesNamedPoint p = points.get(i);
+		Point3f p3f = new Point3f((float)p.x, (float)p.y, (float)p.z);
+		addPointToGeometry(p3f, p.getName());
+	}
+
+	public void removed(int i) {
+		if(i >= 0)
+			deletePointFromGeometry(i);
+	}
+
+	public void renamed(int i) {
+		// do nothing
+	}
+
+	public void moved(int i) {
+		BenesNamedPoint p = points.get(i);
+		if(i >= 0 && i < points.size())
+			updatePositionInGeometry(i, new Point3d(p.x, p.y, p.z));
+	}
+
+	public void highlighted(final int i) {
+		new Thread(new Runnable() {
+			public void run() {
+				BranchGroup bg = (BranchGroup)getChild(i);
+				TransformGroup tg = (TransformGroup)bg.getChild(0);
+				Sphere s = (Sphere)tg.getChild(0);
+				initAppearance(highlightColor);
+				s.setAppearance(appearance);
+				try {
+					Thread.currentThread().sleep(2000);
+				} catch(Exception e) {}
+				initAppearance(color);
+				s.setAppearance(appearance);
+			}
+		}).start();
+	}
+
+	// private methods responsible for updating the universe
 	private Transform3D t3d = new Transform3D();
 	private Vector3f v3f = new Vector3f();
 
@@ -155,7 +225,16 @@ public class PointListShape extends BranchGroup {
 		bg.addChild(tg);
 		addChild(bg);
 	}
-
+	
+	private void updatePositionInGeometry(int i, Point3d pos) {
+		BranchGroup bg = (BranchGroup)getChild(i);
+		TransformGroup tg = (TransformGroup)bg.getChild(0);
+		v3f.x = (float)pos.x;
+		v3f.y = (float)pos.y;
+		v3f.z = (float)pos.z;
+		t3d.set(v3f);
+		tg.setTransform(t3d);
+	}
 	private void initGeom() {
 		for(int i = 0; i < points.size(); i++) {
 			BenesNamedPoint po = points.get(i);
@@ -165,7 +244,7 @@ public class PointListShape extends BranchGroup {
 		}
 	}
 	
-	private void initAppearance() {
+	private void initAppearance(Color3f color) {
 		appearance = new Appearance();
 		ColoringAttributes colorAttrib = new ColoringAttributes();
 		colorAttrib.setShadeModel(ColoringAttributes.SHADE_GOURAUD);

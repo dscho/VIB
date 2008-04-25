@@ -1230,7 +1230,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		return univ.addContent(image, color, 
 				name, threshold, channels, resf, type);
-
 	}
 
 	public void regist() {
