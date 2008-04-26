@@ -113,6 +113,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	public static final String SMOOTH = "smooth";
 
+	private List openDialogs = new ArrayList();
+
 	private SelectionListener selListener = new SelectionListener();
 
 	public Image3DMenubar(Image3DUniverse univ) {
@@ -748,13 +750,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	public void setWindowSize() {
-		final GenericDialog gd = new GenericDialog("Edit scalebar...");
+		final GenericDialog gd = new GenericDialog("Window size...");
 		Dimension d = univ.getSize();
 		if(d == null)
 			return;
 		gd.addNumericField("width", d.width, 0);
 		gd.addNumericField("height", d.height, 0);
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
 		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
@@ -770,7 +774,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addChoice("Color", ColorTable.colorNames, 
 				ColorTable.getColorName(sc.getColor()));
 		gd.addCheckbox("show", sc.isVisible());
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
 		sc.setPosition((float)gd.getNextNumber(), 
@@ -797,6 +803,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					float newTr = (float)oldTr / 100f;
 					selected.setTransparency(newTr);
@@ -809,6 +816,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 		
 	}
@@ -840,6 +848,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					selected.setThreshold(oldTr);
 					univ.fireContentChanged(selected);
@@ -851,6 +860,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 	}
 
@@ -909,6 +919,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					os.setSlices(
 						oldvalues[0], 
@@ -924,6 +935,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 	}
 
@@ -976,6 +988,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					selected.setColor(oldC);
 					univ.fireContentChanged(selected);
@@ -991,6 +1004,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 		
 	}
@@ -1001,7 +1015,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addCheckboxGroup(1, 3, 
 				new String[] {"red", "green", "blue"}, 
 				selected.getChannels());
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
 			
@@ -1063,6 +1079,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void canvasResized() {}
 	public void transformationUpdated(View view) {}
 	public void contentChanged(Content c) {}
+
+	public void universeClosed() {
+		closeAllDialogs();
+	}
 
 	public void contentAdded(Content c) {
 		if(c == null)
@@ -1144,7 +1164,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		});
 		p.add(b);
 		gd.addPanel(p);
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return null;
 
@@ -1230,7 +1252,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					tf.setText(Integer.toString(0));
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return null;
 			
@@ -1269,7 +1293,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addChoice("template", conts, conts[0]);
 		gd.addChoice("model", conts, conts[1]);
 		gd.addCheckbox("allow scaling", true);
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
 		Content templ = univ.getContent(gd.getNextChoice());
@@ -1313,6 +1339,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		Transform3D t3d = new Transform3D(fm.rowwise16());
 		templ.setTransform(new Transform3D());
 		model.setTransform(t3d);
+	}
+
+	public void closeAllDialogs() {
+		while(openDialogs.size() > 0) {
+			GenericDialog gd = (GenericDialog)openDialogs.get(0);
+			gd.dispose();
+			openDialogs.remove(gd);
+		}
 	}
 }
 

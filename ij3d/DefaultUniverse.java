@@ -211,6 +211,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		}
 	}
 
+	public ImageWindow3D getWindow() {
+		return win;
+	}
+
 	public void addUniverseListener(UniverseListener l) {
 		listeners.add(l);
 	}

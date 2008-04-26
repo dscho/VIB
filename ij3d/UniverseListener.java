@@ -13,4 +13,5 @@ public interface UniverseListener {
 	public void contentChanged(Content c);
 	public void contentSelected(Content c);
 	public void canvasResized();
+	public void universeClosed();
 }

@@ -381,6 +381,10 @@ public class Content extends BranchGroup implements UniverseListener {
 	public void contentSelected(Content c) {}
 	public void contentChanged(Content c) {}
 
+	public void universeClosed() {
+		pointlist.showDialog(false);
+	}
+
 	public void transformationUpdated(View view) {
 		eyePtChanged(view);
 	}
