@@ -192,6 +192,10 @@ public class Content extends BranchGroup implements UniverseListener {
 	public void setVisible(boolean b) {
 		visible = b;
 		whichChild.set(CO, b);
+		whichChild.set(CS, b);
+		// only if hiding, hide the point list
+		if(!b)
+			whichChild.set(PL, b);
 		bbSwitch.setChildMask(whichChild);
 	}
 
