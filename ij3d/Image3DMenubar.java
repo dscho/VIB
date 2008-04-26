@@ -548,7 +548,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == close) {
 			univ.close();
-			ImageJ3DViewer.freeUniverse();
 			record(CLOSE);
 		}
 

@@ -204,6 +204,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public void close() {
 		if(win != null) {
+			fireUniverseClosed();
 			while(!listeners.isEmpty())
 				listeners.remove(0);
 			win.close();
@@ -221,6 +222,13 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public void removeUniverseListener(UniverseListener l) {
 		listeners.remove(l);
+	}
+
+	public void fireUniverseClosed() {
+		for(int i = 0; i < listeners.size(); i++) {
+			UniverseListener l = (UniverseListener)listeners.get(i);
+			l.universeClosed();
+		}
 	}
 
 	public void fireTransformationStarted() {

@@ -221,6 +221,11 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 			WindowManager.setCurrentWindow(this);
 	}
 
+	public void windowClosing(WindowEvent e) {
+		super.windowClosing(e);
+		universe.close();
+	}
+
 	/*
 	 * The UniverseListener interface
 	 */
