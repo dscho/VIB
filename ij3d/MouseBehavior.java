@@ -29,10 +29,13 @@ public class MouseBehavior extends Behavior {
 	private int x_last = 0, y_last = 0;
 	private MouseBehaviorCallback callback;
 
-	public static final int ROTATE_MASK = MouseEvent.BUTTON1_DOWN_MASK;
-	public static final int TRANSLATE_MASK = MouseEvent.BUTTON1_DOWN_MASK |
-						InputEvent.SHIFT_DOWN_MASK;
-	public static final int ZOOM_MASK = MouseEvent.BUTTON1_DOWN_MASK;
+	public static final int B1 = MouseEvent.BUTTON1_DOWN_MASK;
+	public static final int B2 = MouseEvent.BUTTON2_DOWN_MASK;
+	public static final int B3 = MouseEvent.BUTTON3_DOWN_MASK;
+
+	public static final int SHIFT = InputEvent.SHIFT_DOWN_MASK;
+	public static final int CTRL  = InputEvent.CTRL_DOWN_MASK;
+
 	public static final int PICK_POINT_MASK = MouseEvent.BUTTON1_DOWN_MASK;
 	public static final int DELETE_POINT_MASK = InputEvent.SHIFT_DOWN_MASK |
 						MouseEvent.BUTTON1_DOWN_MASK;
@@ -45,6 +48,40 @@ public class MouseBehavior extends Behavior {
 	public MouseBehavior(DefaultUniverse univ) {
 		this.univ = univ;
 		mouseEvents = new WakeupOnAWTEvent[5];
+	}
+
+	private boolean shouldRotate(int mask, int toolID) {
+		int onmask = B2, onmask2 = B1;
+		int offmask = SHIFT | CTRL;
+		boolean b0 = (mask & (onmask | offmask)) == onmask;
+		boolean b1 = (toolID == Toolbar.HAND 
+				&& (mask & (onmask2|offmask)) == onmask2);
+		return b0 || b1;
+	}
+
+	private boolean shouldTranslate(int mask, int toolID) {
+		int onmask = B2 | SHIFT, onmask2 = B1 | SHIFT;
+		int offmask = CTRL;
+		return (mask & (onmask | offmask)) == onmask ||
+			(toolID == Toolbar.HAND 
+				&& (mask & (onmask2|offmask)) == onmask2);
+	}
+
+	private boolean shouldZoom(int mask, int toolID) {
+		if(toolID != Toolbar.MAGNIFIER)
+			return false;
+		int onmask = B1;
+		int offmask = SHIFT | CTRL;
+		boolean b = (mask & (onmask | offmask)) == onmask;
+		return (mask & (onmask | offmask)) == onmask;
+	}
+
+	private boolean shouldMovePoint(int mask, int toolID) {
+		if(toolID != Toolbar.POINT)
+			return false;
+		int onmask = B1;
+		int offmask = SHIFT | CTRL;
+		return (mask & (onmask | offmask)) == onmask;
 	}
 
 	public void initialize() {
@@ -137,19 +174,14 @@ public class MouseBehavior extends Behavior {
 				((ImageCanvas3D)univ.getCanvas()).killRoi();
 			}
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
-			if(toolID == Toolbar.MAGNIFIER && mask == ZOOM_MASK)
+			if(shouldTranslate(mask, toolID))
+				translate(c, e);
+			else if(shouldRotate(mask, toolID))
+				rotate(c, e);
+			else if(shouldZoom(mask, toolID))
 				zoom(c, e);
-			else if(toolID == Toolbar.HAND) {
-				switch(mask) {
-					case ROTATE_MASK: rotate(c, e); 
-					break;
-					case TRANSLATE_MASK: translate(c, e); 
-					break;
-				}
-			} else if(toolID == Toolbar.POINT) {
-				if(mask == PICK_POINT_MASK)
-					movePoint(c, e);
-			}
+			else if(shouldMovePoint(mask, toolID))
+				movePoint(c, e);
 		} else if(id == MouseEvent.MOUSE_RELEASED) {
 			if(toolID == Toolbar.POINT) {
 				movingIndex = -1;
@@ -279,6 +311,7 @@ public class MouseBehavior extends Behavior {
 	public void zoom(Content c, MouseEvent e) {
 		int y = e.getY();
 		int dy = y - y_last;
+		zoom(c, dy);
 
 		x_last = e.getX();
 		y_last = y;
