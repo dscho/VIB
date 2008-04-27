@@ -7,6 +7,7 @@ import java.awt.Color;
 import java.awt.Dialog;
 import java.awt.Frame;
 import java.awt.Panel;
+import java.awt.BorderLayout;
 import java.awt.ScrollPane;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
@@ -67,6 +68,17 @@ public class PointListDialog extends Dialog {
 				return true;
 		}
 		return false;
+	}
+
+	public void addPanel(Panel p) {
+		add(p, BorderLayout.SOUTH);
+	}
+
+	private void print() {
+		Component[] c = panel.getComponents();
+		for(int i = 0; i < c.length; i++) {
+			System.out.println(c[i].getName());
+		}
 	}
 
 	public void update() {
