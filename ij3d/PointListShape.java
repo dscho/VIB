@@ -1,5 +1,6 @@
 package ij3d;
 
+import ij.IJ;
 import ij.measure.Calibration;
 import ij.ImagePlus;
 import vib.PointList;
@@ -14,58 +15,35 @@ import javax.vecmath.*;
 public class PointListShape extends BranchGroup 
 			implements PointList.PointListListener{
 
-	private PointListDialog pld;
+	private PointListPanel pld;
 	private PointList points;
 	private Color3f color = new Color3f(1, 1, 0);
 	private Color3f highlightColor = new Color3f(0, 1, 0);
 	private Appearance appearance;
 	private float radius = 10;
+	private String name = "";
 
-	public PointListShape() {
-		setCapability(ALLOW_CHILDREN_EXTEND);
-		setCapability(ALLOW_CHILDREN_WRITE);
-		setCapability(ALLOW_DETACH);
-		points = new PointList();
-		points.addPointListListener(this);
-		pld = new PointListDialog(points);
-		initGeom();
-		initAppearance(color);
+	public PointListShape(String name) {
+		this(name, new PointList());
 	}
 	
-	public PointListShape(PointList points) {
+	public PointListShape(String name, ImagePlus image) {
+		this(name, PointList.load(image));
+	}
+
+	public PointListShape(String name, PointList points) {
+		this.name = name;
 		setCapability(ALLOW_CHILDREN_EXTEND);
 		setCapability(ALLOW_CHILDREN_WRITE);
 		setCapability(ALLOW_DETACH);
 		this.points = points;
 		points.addPointListListener(this);
-		pld = new PointListDialog(points);
+		pld = new PointListPanel(name, points);
 		initAppearance(color);
 	}
 
-	public PointListShape(ImagePlus image) {
-		setCapability(ALLOW_CHILDREN_EXTEND);
-		setCapability(ALLOW_CHILDREN_WRITE);
-		setCapability(ALLOW_DETACH);
-		points = PointList.load(image);
-		points.addPointListListener(this);
-		pld = new PointListDialog(points);
-		initGeom();
-		initAppearance(color);
-	}
-
-	public PointListShape(String dir, String file, boolean showDialog) {
-		setCapability(ALLOW_CHILDREN_EXTEND);
-		setCapability(ALLOW_CHILDREN_WRITE);
-		setCapability(ALLOW_DETACH);
-		points = PointList.load(dir, file, showDialog);
-		points.addPointListListener(this);
-		pld = new PointListDialog(points);
-		initGeom();
-		initAppearance(color);
-	}
-
-	public void showDialog(boolean b) {
-		pld.setVisible(b);
+	public PointListPanel getPanel() {
+		return pld;
 	}
 
 	public void load(ImagePlus image) {
@@ -73,7 +51,7 @@ public class PointListShape extends BranchGroup
 			points.remove(0);
 		points = PointList.load(image);
 		points.addPointListListener(this);
-		pld = new PointListDialog(points);
+		pld = new PointListPanel(name, points);
 		initGeom();
 	}
 
@@ -180,6 +158,9 @@ public class PointListShape extends BranchGroup
 		BenesNamedPoint p = points.get(i);
 		if(i >= 0 && i < points.size())
 			updatePositionInGeometry(i, new Point3d(p.x, p.y, p.z));
+	}
+
+	public void reordered() {
 	}
 
 	public void highlighted(final int i) {

@@ -723,6 +723,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}
 			boolean b = show.getState();
 			univ.getSelected().setVisible(b);
+			if(!b)
+				univ.clearSelection();
 		}
 
 		if(e.getSource() == lock) {
