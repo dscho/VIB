@@ -1,12 +1,16 @@
 package ij3d;
 
 import ij.gui.GenericDialog;
+import ij.gui.MultiLineLabel;
 import ij.IJ;
 import ij.WindowManager;
 import ij.ImagePlus;
 import ij.text.TextWindow;
+import ij.gui.Toolbar;
 
 import math3d.Transform_IO;
+
+import java.text.DecimalFormat;
 
 import java.awt.event.*;
 import java.awt.*;
@@ -723,6 +727,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}
 			boolean b = show.getState();
 			univ.getSelected().setVisible(b);
+			if(!b)
+				univ.clearSelection();
 		}
 
 		if(e.getSource() == lock) {
@@ -1278,6 +1284,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	public void regist() {
+		new Thread(new Runnable() {
+			public void run() {
+				register();
+			}
+		}).start();
+	}
+
+	public void register() {
+		// Select the contents used for registration
+		DecimalFormat df = new DecimalFormat("00.000");
 		Collection contents = univ.getContents();
 		if(contents.size() < 2) {
 			IJ.error("At least two bodies are required for " +
@@ -1297,9 +1313,64 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
-		Content templ = univ.getContent(gd.getNextChoice());
-		Content model = univ.getContent(gd.getNextChoice());
+		final Content templ = univ.getContent(gd.getNextChoice());
+		final Content model = univ.getContent(gd.getNextChoice());
 		boolean scaling = gd.getNextBoolean();
+
+		// Select the landmarks of the template
+		model.setVisible(false);
+		templ.displayAs(Content.ORTHO);
+		templ.setColor(new Color3f(1, 0, 0));
+		Toolbar.getInstance().setTool(Toolbar.POINT);
+		univ.select(templ);
+
+		boolean cont = IJ.showMessageWithCancel("Select landmarks",
+			"Pick the points in " + templ.getName() + " which\n" +
+			"are used for registration \n" +
+			"Click OK when you are finished");
+		if(!cont) return;
+
+		Panel p = new Panel(new FlowLayout());
+		Button b = new Button("OK");
+		p.add(b);
+		b.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				synchronized(templ) {
+					templ.notify();
+				}
+			}
+		});
+		univ.pld.addPanel(p);
+		synchronized(templ) {
+			try {
+				templ.wait();
+			} catch(Exception e) {}
+		}
+		templ.setVisible(false);
+
+
+		// select the landmarks of the model
+		model.setVisible(true);
+		model.displayAs(Content.ORTHO);
+		model.setColor(new Color3f(0, 1, 0));
+		Toolbar.getInstance().setTool(Toolbar.POINT);
+		univ.select(model);
+
+		cont = IJ.showMessageWithCancel("Select landmarks",
+			"Pick the points in " + model.getName() + " which\n" +
+			"are used for registration \n" +
+			"Click OK when you are finished");
+		if(!cont) return;
+
+		synchronized(templ) {
+			try {
+				templ.wait();
+			} catch(Exception e) {}
+		}
+		model.setVisible(false);
+
+
+		// select the landmarks common to template and model
 		PointList tpoints = templ.getPointList();
 		PointList mpoints = model.getPointList();
 		if(tpoints.size() < 2 || mpoints.size() < 2) {
@@ -1321,12 +1392,21 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				+ "must exist in both bodies");
 			return;
 		}
-		IJ.write("Points used for registration");
+
+		// Display common landmarks
+		String message = "Points used for registration\n \n";
 		for(i = 0; i < sett.size(); i++) {
-			BenesNamedPoint p = (BenesNamedPoint)sett.get(i);
-			IJ.write(p.getName() + "    " + (float)p.x + "    "
-				+ (float)p.y + "    " + (float)p.z);
+			BenesNamedPoint bnp = (BenesNamedPoint)sett.get(i);
+			message += (bnp.getName() + "    "
+				+ df.format(bnp.x) + "    "
+				+ df.format(bnp.y) + "    "
+				+ df.format(bnp.z) + "\n");
 		}
+		cont = IJ.showMessageWithCancel("Points used for registration",
+			message);
+		if(!cont) return;
+
+		// calculate best rigid
 		BenesNamedPoint[] sm = new BenesNamedPoint[setm.size()];
 		BenesNamedPoint[] st = new BenesNamedPoint[sett.size()];
 		FastMatrix fm = FastMatrix.bestRigid(
@@ -1338,6 +1418,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		Transform3D t3d = new Transform3D(fm.rowwise16());
 		templ.setTransform(new Transform3D());
 		model.setTransform(t3d);
+
+		templ.setVisible(true);
+		model.setVisible(true);
+
+		univ.clearSelection();
+		Toolbar.getInstance().setTool(Toolbar.HAND);
 	}
 
 	public void closeAllDialogs() {

@@ -59,7 +59,10 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	protected TransformGroup localRotate;
 	protected TransformGroup localTranslate;
-	
+
+	// reference to the point list dialog
+	private PointListDialog plw;
+
 
 	// global constants
 	public static final int CO = 0;
@@ -127,7 +130,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		// create point list and add it to the switch
 		// only create the point list when it does not exist already
 		if(pointlist == null)
-			pointlist = new PointListShape();
+			pointlist = new PointListShape(name);
 		pointlist.setPickable(false);
 		bbSwitch.addChild(pointlist);
 
@@ -166,7 +169,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(cs);
 
 		// create point list and add it to the switch
-		pointlist = new PointListShape();
+		pointlist = new PointListShape(name);
 		pointlist.setPickable(false);
 		bbSwitch.addChild(pointlist);
 
@@ -192,6 +195,10 @@ public class Content extends BranchGroup implements UniverseListener {
 	public void setVisible(boolean b) {
 		visible = b;
 		whichChild.set(CO, b);
+		whichChild.set(CS, b);
+		// only if hiding, hide the point list
+		if(!b)
+			showPointList(false);
 		bbSwitch.setChildMask(whichChild);
 	}
 
@@ -216,13 +223,21 @@ public class Content extends BranchGroup implements UniverseListener {
 	 * 
 	 * ***********************************************************/
 
+	public void setPointListDialog(PointListDialog p) {
+		this.plw = p;
+	}
+
 	public void showPointList(boolean b) {
-		if(pointlist != null) {
-			whichChild.set(PL, b);
-			showPL = b;
-		}
+		if(pointlist == null) 
+			return;
+
+		whichChild.set(PL, b);
+		showPL = b;
 		bbSwitch.setChildMask(whichChild);
-		pointlist.showDialog(b);
+		if(b && plw != null)
+			plw.addPointList(name, pointlist.getPanel());
+		else if(!b && plw != null)
+			plw.removePointList(pointlist.getPanel());
 	}
 
 	public void loadPointList() {
@@ -257,6 +272,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		}
 		String name = "point" + point;
 		pointlist.addPoint(name, p.x, p.y, p.z);
+		plw.update();
 	}
 	
 	public void setListPointPos(int i, Point3d pos) {
@@ -277,6 +293,7 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void deletePointListPoint(int i) {
 		pointlist.delete(i);
+		plw.update();
 	}
 
 	/* ************************************************************
@@ -376,13 +393,17 @@ public class Content extends BranchGroup implements UniverseListener {
 	 *************************************************************/
 	public void transformationStarted(View view) {}
 	public void contentAdded(Content c) {}
-	public void contentRemoved(Content c) {}
+	public void contentRemoved(Content c) {
+		if(plw != null && this == c)
+			plw.removePointList(pointlist.getPanel());
+	}
 	public void canvasResized() {}
 	public void contentSelected(Content c) {}
 	public void contentChanged(Content c) {}
 
 	public void universeClosed() {
-		pointlist.showDialog(false);
+		if(plw != null)
+			plw.removePointList(pointlist.getPanel());
 	}
 
 	public void transformationUpdated(View view) {

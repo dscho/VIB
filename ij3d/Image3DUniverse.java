@@ -44,9 +44,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private Point3f globalMax = new Point3f();
 	private Point3f globalCenter = new Point3f();
 
+	PointListDialog pld;
+
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
+		pld = new PointListDialog(win);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -146,6 +149,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.threshold = thresh;
 		content.channels = channels;
 		content.resamplingF = resf;
+		content.setPointListDialog(pld);
 		content.displayAs(type);
 		scene.addChild(content);
 		contents.put(name, content);
@@ -209,6 +213,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.color = color;
 		content.threshold = threshold;
 		content.displayMesh(mesh);
+		content.setPointListDialog(pld);
 		scene.addChild(content);
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
