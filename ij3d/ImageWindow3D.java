@@ -1,6 +1,7 @@
 package ij3d;
 
 import com.sun.j3d.utils.universe.SimpleUniverse;
+import javax.media.j3d.View;
 
 import ij.IJ;
 import ij.ImageJ;
@@ -194,9 +195,12 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 			universe.getViewer().getView()
 				.removeCanvas3D(offScreenCanvas3D);
 			offScreenCanvas3D = null;
-			new MessageDialog(this, "Java3D error",
-				"Off-screen rendering not supported by this\n"
-				 + "setup. Falling back to screen capturing");
+// 			new MessageDialog(this, "Java3D error",
+// 				"Off-screen rendering not supported by this\n"
+// 				 + "setup. Falling back to screen capturing");
+			System.err.println("Java3D error: " +
+ 				"Off-screen rendering not supported by this\n" +
+				"setup. Falling back to screen capturing");
 			return getNewImagePlus();
 		}
 
@@ -220,13 +224,19 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 			WindowManager.setCurrentWindow(this);
 	}
 
+	public void windowClosing(WindowEvent e) {
+		super.windowClosing(e);
+		universe.close();
+	}
+
 	/*
 	 * The UniverseListener interface
 	 */
-	public void transformationStarted() {}
-	public void transformationUpdated() {}
+	public void universeClosed() {}
+	public void transformationStarted(View view) {}
+	public void transformationUpdated(View view) {}
 	public void contentSelected(Content c) {}
-	public void transformationFinished() {
+	public void transformationFinished(View view) {
 		updateImagePlus();
 	}
 

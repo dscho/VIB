@@ -88,20 +88,6 @@ public class ImageJ3DViewer implements PlugInFilter {
 		}
 	}
 
-	public static void freeUniverse(){
-		System.out.println("Setting univ = null;");
-		univ = null;
-		Thread.currentThread().getThreadGroup().destroy();
-		fillMemory();
-	}
-
-	private static void fillMemory() {
-		java.util.Vector f = new java.util.Vector(1024);
-		for(int i = 0; i < 1024; i++) {
-			f.add(new byte[1024*1024]);
-		}
-	}
-
 	public static void select(String name) {
 		if(univ != null) univ.select(
 			(Content)univ.getContent(name));

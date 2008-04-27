@@ -1,12 +1,16 @@
 package ij3d;
 
 import ij.gui.GenericDialog;
+import ij.gui.MultiLineLabel;
 import ij.IJ;
 import ij.WindowManager;
 import ij.ImagePlus;
 import ij.text.TextWindow;
+import ij.gui.Toolbar;
 
 import math3d.Transform_IO;
+
+import java.text.DecimalFormat;
 
 import java.awt.event.*;
 import java.awt.*;
@@ -112,6 +116,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String DELETE = "delete";
 
 	public static final String SMOOTH = "smooth";
+
+	private List openDialogs = new ArrayList();
 
 	private SelectionListener selListener = new SelectionListener();
 
@@ -546,7 +552,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == close) {
 			univ.close();
-			ImageJ3DViewer.freeUniverse();
 			record(CLOSE);
 		}
 
@@ -722,6 +727,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}
 			boolean b = show.getState();
 			univ.getSelected().setVisible(b);
+			if(!b)
+				univ.clearSelection();
 		}
 
 		if(e.getSource() == lock) {
@@ -748,13 +755,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	public void setWindowSize() {
-		final GenericDialog gd = new GenericDialog("Edit scalebar...");
+		final GenericDialog gd = new GenericDialog("Window size...");
 		Dimension d = univ.getSize();
 		if(d == null)
 			return;
 		gd.addNumericField("width", d.width, 0);
 		gd.addNumericField("height", d.height, 0);
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
 		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
@@ -770,7 +779,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addChoice("Color", ColorTable.colorNames, 
 				ColorTable.getColorName(sc.getColor()));
 		gd.addCheckbox("show", sc.isVisible());
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
 		sc.setPosition((float)gd.getNextNumber(), 
@@ -797,6 +808,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					float newTr = (float)oldTr / 100f;
 					selected.setTransparency(newTr);
@@ -809,6 +821,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 		
 	}
@@ -840,6 +853,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					selected.setThreshold(oldTr);
 					univ.fireContentChanged(selected);
@@ -851,8 +865,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 	}
+
+	private Thread updatingThread = null;
+	private boolean stopUpdating = false;
 
 	public void adjustSlices(final Content selected) {
 		final GenericDialog gd = new GenericDialog("Adjust slices...");
@@ -871,22 +889,42 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		final Scrollbar ySlider = (Scrollbar)gd.getSliders().get(1);
 		final Scrollbar zSlider = (Scrollbar)gd.getSliders().get(2);
 
-		AdjustmentListener listener = new AdjustmentListener() {
+// 		AdjustmentListener listener = new AdjustmentListener() {
+// 			public void adjustmentValueChanged(AdjustmentEvent e) {
+// 				os.setSlices(
+// 					xSlider.getValue(), 
+// 					ySlider.getValue(), 
+// 					zSlider.getValue());
+// 				univ.fireContentChanged(
+// 					selected);
+// 			}
+// 		};
+		xSlider.addAdjustmentListener(new AdjustmentListener() {
 			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setSlices(
-					xSlider.getValue(), 
-					ySlider.getValue(), 
-					zSlider.getValue());
+				os.setXSlice(xSlider.getValue()); 
 				univ.fireContentChanged(selected);
 			}
-		};
-		xSlider.addAdjustmentListener(listener);
-		ySlider.addAdjustmentListener(listener);
-		zSlider.addAdjustmentListener(listener);
+		});
+
+		ySlider.addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				os.setYSlice(ySlider.getValue()); 
+				univ.fireContentChanged(selected);
+			}
+		});
+
+		zSlider.addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				os.setZSlice(zSlider.getValue()); 
+				univ.fireContentChanged(selected);
+			}
+		});
+
 
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					os.setSlices(
 						oldvalues[0], 
@@ -902,6 +940,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 	}
 
@@ -954,6 +993,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					selected.setColor(oldC);
 					univ.fireContentChanged(selected);
@@ -969,6 +1009,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 		
 	}
@@ -979,7 +1020,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addCheckboxGroup(1, 3, 
 				new String[] {"red", "green", "blue"}, 
 				selected.getChannels());
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
 			
@@ -1036,11 +1079,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	// Universe Listener interface
-	public void transformationStarted() {}
-	public void transformationFinished() {}
+	public void transformationStarted(View view) {}
+	public void transformationFinished(View view) {}
 	public void canvasResized() {}
-	public void transformationUpdated() {}
+	public void transformationUpdated(View view) {}
 	public void contentChanged(Content c) {}
+
+	public void universeClosed() {
+		closeAllDialogs();
+	}
 
 	public void contentAdded(Content c) {
 		if(c == null)
@@ -1122,7 +1169,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		});
 		p.add(b);
 		gd.addPanel(p);
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return null;
 
@@ -1208,7 +1257,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					tf.setText(Integer.toString(0));
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return null;
 			
@@ -1230,10 +1281,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		return univ.addContent(image, color, 
 				name, threshold, channels, resf, type);
-
 	}
 
 	public void regist() {
+		new Thread(new Runnable() {
+			public void run() {
+				register();
+			}
+		}).start();
+	}
+
+	public void register() {
+		// Select the contents used for registration
+		DecimalFormat df = new DecimalFormat("00.000");
 		Collection contents = univ.getContents();
 		if(contents.size() < 2) {
 			IJ.error("At least two bodies are required for " +
@@ -1248,12 +1308,69 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addChoice("template", conts, conts[0]);
 		gd.addChoice("model", conts, conts[1]);
 		gd.addCheckbox("allow scaling", true);
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
-		Content templ = univ.getContent(gd.getNextChoice());
-		Content model = univ.getContent(gd.getNextChoice());
+		final Content templ = univ.getContent(gd.getNextChoice());
+		final Content model = univ.getContent(gd.getNextChoice());
 		boolean scaling = gd.getNextBoolean();
+
+		// Select the landmarks of the template
+		model.setVisible(false);
+		templ.displayAs(Content.ORTHO);
+		templ.setColor(new Color3f(1, 0, 0));
+		Toolbar.getInstance().setTool(Toolbar.POINT);
+		univ.select(templ);
+
+		boolean cont = IJ.showMessageWithCancel("Select landmarks",
+			"Pick the points in " + templ.getName() + " which\n" +
+			"are used for registration \n" +
+			"Click OK when you are finished");
+		if(!cont) return;
+
+		Panel p = new Panel(new FlowLayout());
+		Button b = new Button("OK");
+		p.add(b);
+		b.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				synchronized(templ) {
+					templ.notify();
+				}
+			}
+		});
+		univ.pld.addPanel(p);
+		synchronized(templ) {
+			try {
+				templ.wait();
+			} catch(Exception e) {}
+		}
+		templ.setVisible(false);
+
+
+		// select the landmarks of the model
+		model.setVisible(true);
+		model.displayAs(Content.ORTHO);
+		model.setColor(new Color3f(0, 1, 0));
+		Toolbar.getInstance().setTool(Toolbar.POINT);
+		univ.select(model);
+
+		cont = IJ.showMessageWithCancel("Select landmarks",
+			"Pick the points in " + model.getName() + " which\n" +
+			"are used for registration \n" +
+			"Click OK when you are finished");
+		if(!cont) return;
+
+		synchronized(templ) {
+			try {
+				templ.wait();
+			} catch(Exception e) {}
+		}
+		model.setVisible(false);
+
+
+		// select the landmarks common to template and model
 		PointList tpoints = templ.getPointList();
 		PointList mpoints = model.getPointList();
 		if(tpoints.size() < 2 || mpoints.size() < 2) {
@@ -1275,12 +1392,21 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				+ "must exist in both bodies");
 			return;
 		}
-		IJ.write("Points used for registration");
+
+		// Display common landmarks
+		String message = "Points used for registration\n \n";
 		for(i = 0; i < sett.size(); i++) {
-			BenesNamedPoint p = (BenesNamedPoint)sett.get(i);
-			IJ.write(p.getName() + "    " + (float)p.x + "    "
-				+ (float)p.y + "    " + (float)p.z);
+			BenesNamedPoint bnp = (BenesNamedPoint)sett.get(i);
+			message += (bnp.getName() + "    "
+				+ df.format(bnp.x) + "    "
+				+ df.format(bnp.y) + "    "
+				+ df.format(bnp.z) + "\n");
 		}
+		cont = IJ.showMessageWithCancel("Points used for registration",
+			message);
+		if(!cont) return;
+
+		// calculate best rigid
 		BenesNamedPoint[] sm = new BenesNamedPoint[setm.size()];
 		BenesNamedPoint[] st = new BenesNamedPoint[sett.size()];
 		FastMatrix fm = FastMatrix.bestRigid(
@@ -1292,6 +1418,20 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		Transform3D t3d = new Transform3D(fm.rowwise16());
 		templ.setTransform(new Transform3D());
 		model.setTransform(t3d);
+
+		templ.setVisible(true);
+		model.setVisible(true);
+
+		univ.clearSelection();
+		Toolbar.getInstance().setTool(Toolbar.HAND);
+	}
+
+	public void closeAllDialogs() {
+		while(openDialogs.size() > 0) {
+			GenericDialog gd = (GenericDialog)openDialogs.get(0);
+			gd.dispose();
+			openDialogs.remove(gd);
+		}
 	}
 }
 

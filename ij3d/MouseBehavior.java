@@ -127,6 +127,8 @@ public class MouseBehavior extends Behavior {
 			x_last = e.getX();
 			y_last = e.getY();
 			if(toolID == Toolbar.POINT) { 
+				if(c != null)
+					c.showPointList(true);
 				if(mask == PICK_POINT_MASK) {
 					pickPoint(c, e);
 				} else if(mask == DELETE_POINT_MASK) {

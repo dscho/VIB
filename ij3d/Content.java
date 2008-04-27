@@ -28,7 +28,7 @@ import javax.vecmath.Matrix3f;
 import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
 
-public class Content extends BranchGroup {
+public class Content extends BranchGroup implements UniverseListener {
 
 	// attributes
 	protected String name;
@@ -45,7 +45,7 @@ public class Content extends BranchGroup {
 	private boolean visible = true;
 	private boolean coordVisible = true;
 	protected boolean selected = false;
-	private boolean showPL = true;
+	private boolean showPL = false;
 
 	// entries
 	private ContentNode contentNode = null;
@@ -59,7 +59,10 @@ public class Content extends BranchGroup {
 
 	protected TransformGroup localRotate;
 	protected TransformGroup localTranslate;
-	
+
+	// reference to the point list dialog
+	private PointListDialog plw;
+
 
 	// global constants
 	public static final int CO = 0;
@@ -125,7 +128,9 @@ public class Content extends BranchGroup {
 		bbSwitch.addChild(cs);
 
 		// create point list and add it to the switch
-		pointlist = new PointListShape();
+		// only create the point list when it does not exist already
+		if(pointlist == null)
+			pointlist = new PointListShape(name);
 		pointlist.setPickable(false);
 		bbSwitch.addChild(pointlist);
 
@@ -164,7 +169,7 @@ public class Content extends BranchGroup {
 		bbSwitch.addChild(cs);
 
 		// create point list and add it to the switch
-		pointlist = new PointListShape();
+		pointlist = new PointListShape(name);
 		pointlist.setPickable(false);
 		bbSwitch.addChild(pointlist);
 
@@ -190,6 +195,10 @@ public class Content extends BranchGroup {
 	public void setVisible(boolean b) {
 		visible = b;
 		whichChild.set(CO, b);
+		whichChild.set(CS, b);
+		// only if hiding, hide the point list
+		if(!b)
+			showPointList(false);
 		bbSwitch.setChildMask(whichChild);
 	}
 
@@ -214,12 +223,21 @@ public class Content extends BranchGroup {
 	 * 
 	 * ***********************************************************/
 
+	public void setPointListDialog(PointListDialog p) {
+		this.plw = p;
+	}
+
 	public void showPointList(boolean b) {
-		if(pointlist != null) {
-			whichChild.set(PL, b);
-			showPL = b;
-		}
+		if(pointlist == null) 
+			return;
+
+		whichChild.set(PL, b);
+		showPL = b;
 		bbSwitch.setChildMask(whichChild);
+		if(b && plw != null)
+			plw.addPointList(name, pointlist.getPanel());
+		else if(!b && plw != null)
+			plw.removePointList(pointlist.getPanel());
 	}
 
 	public void loadPointList() {
@@ -240,10 +258,21 @@ public class Content extends BranchGroup {
 	}
 
 	public void addPointListPoint(Point3d p) {
-		String name = IJ.getString(
-				"Name for point", "point" + pointlist.size());
-		if(!name.equals(""))
-			pointlist.addPoint(name, p.x, p.y, p.z);
+		int size = pointlist.size();
+		int point = 1;
+		if(size != 0) {
+			String lastp = pointlist.getPointList().
+						get(size-1).getName();
+			try {
+				point = Integer.parseInt(lastp.substring(
+					5, lastp.length())) + 1;
+			} catch(Exception e) {
+				point = size;
+			}
+		}
+		String name = "point" + point;
+		pointlist.addPoint(name, p.x, p.y, p.z);
+		plw.update();
 	}
 	
 	public void setListPointPos(int i, Point3d pos) {
@@ -264,6 +293,7 @@ public class Content extends BranchGroup {
 
 	public void deletePointListPoint(int i) {
 		pointlist.delete(i);
+		plw.update();
 	}
 
 	/* ************************************************************
@@ -355,6 +385,31 @@ public class Content extends BranchGroup {
 			return;
 		this.transparency = transparency;
 		contentNode.transparencyUpdated();
+	}
+
+	/* ************************************************************
+	 * Universe Listener interface
+	 *
+	 *************************************************************/
+	public void transformationStarted(View view) {}
+	public void contentAdded(Content c) {}
+	public void contentRemoved(Content c) {
+		if(plw != null && this == c)
+			plw.removePointList(pointlist.getPanel());
+	}
+	public void canvasResized() {}
+	public void contentSelected(Content c) {}
+	public void contentChanged(Content c) {}
+
+	public void universeClosed() {
+		if(plw != null)
+			plw.removePointList(pointlist.getPanel());
+	}
+
+	public void transformationUpdated(View view) {
+		eyePtChanged(view);
+	}
+	public void transformationFinished(View view) {
 	}
 
 	public void eyePtChanged(View view) {

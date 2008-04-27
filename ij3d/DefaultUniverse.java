@@ -204,11 +204,16 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public void close() {
 		if(win != null) {
+			fireUniverseClosed();
 			while(!listeners.isEmpty())
 				listeners.remove(0);
 			win.close();
 			win = null;
 		}
+	}
+
+	public ImageWindow3D getWindow() {
+		return win;
 	}
 
 	public void addUniverseListener(UniverseListener l) {
@@ -219,24 +224,31 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		listeners.remove(l);
 	}
 
+	public void fireUniverseClosed() {
+		for(int i = 0; i < listeners.size(); i++) {
+			UniverseListener l = (UniverseListener)listeners.get(i);
+			l.universeClosed();
+		}
+	}
+
 	public void fireTransformationStarted() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationStarted();
+			l.transformationStarted(getCanvas().getView());
 		}
 	}
 
 	public void fireTransformationUpdated() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationUpdated();
+			l.transformationUpdated(getCanvas().getView());
 		}
 	}
 
 	public void fireTransformationFinished() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationFinished();
+			l.transformationFinished(getCanvas().getView());
 		}
 	}
 
