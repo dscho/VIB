@@ -99,6 +99,7 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		univ.setMenubar(mb);
 		univ.clearSelection();
 		univ.setStatus("");
+		univ.pld.removeExtraPanel();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
 	}
 
