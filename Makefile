@@ -71,7 +71,7 @@ FibonacciHeapInt.java: FibonacciHeap.java Makefile
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java), $(JAVAS))) vib/segment/icons/*.png
 
-VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java oldsegmenters/*.java client/*.java util/Bookstein_FromMarkers.java), $(JAVAS))) vib/segment/icons/*.png
+VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java tracing/*.java oldsegmenters/*.java client/*.java util/Bookstein_FromMarkers.java), $(JAVAS))) vib/segment/icons/*.png
 
 Segmentation_Editor_compat.jar: SOURCES=amira/*.java \
 	vib/InterpolatedImage.java math3d/Point3d.java \
