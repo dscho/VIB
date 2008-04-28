@@ -82,7 +82,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 		String st = c != null ? c.name : "none";
 		IJ.showStatus("selected: " + st);
-//		canvas.setStatus("selected: " + st);
 
 		fireContentSelected(c);
 
@@ -107,6 +106,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		super.close();
 		removeAllContents();
 		contents = null;
+	}
+
+	public void setStatus(String text) {
+		win.getStatusLabel().setText("  " + text);
 	}
 
 	public Image3DMenubar getMenuBar() {

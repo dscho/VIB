@@ -1322,11 +1322,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		Toolbar.getInstance().setTool(Toolbar.POINT);
 		univ.select(templ);
 
-		boolean cont = IJ.showMessageWithCancel("Select landmarks",
-			"Pick the points in " + templ.getName() + " which\n" +
-			"are used for registration \n" +
-			"Click OK when you are finished");
-		if(!cont) return;
+		univ.setStatus("Select landmarks in " + templ.getName() +
+				" and click OK");
 
 		Panel p = new Panel(new FlowLayout());
 		Button b = new Button("OK");
@@ -1354,11 +1351,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		Toolbar.getInstance().setTool(Toolbar.POINT);
 		univ.select(model);
 
-		cont = IJ.showMessageWithCancel("Select landmarks",
-			"Pick the points in " + model.getName() + " which\n" +
-			"are used for registration \n" +
-			"Click OK when you are finished");
-		if(!cont) return;
+		univ.setStatus("Select landmarks in " + model.getName() +
+				" and click OK");
 
 		synchronized(templ) {
 			try {
@@ -1366,6 +1360,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			} catch(Exception e) {}
 		}
 		model.setVisible(false);
+		univ.setStatus("");
 
 
 		// select the landmarks common to template and model
@@ -1388,6 +1383,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(sett.size() < 2) {
 			IJ.error("At least two points with the same name "
 				+ "must exist in both bodies");
+			univ.setStatus("");
 			return;
 		}
 
@@ -1400,8 +1396,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				+ df.format(bnp.y) + "    "
 				+ df.format(bnp.z) + "\n");
 		}
-		cont = IJ.showMessageWithCancel("Points used for registration",
-			message);
+		boolean cont = IJ.showMessageWithCancel(
+			"Points used for registration", message);
 		if(!cont) return;
 
 		// calculate best rigid
