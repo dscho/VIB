@@ -59,8 +59,9 @@ public class LocalRigidRegistration_ implements PlugInFilter{
 					1,     //nInitialPositions, 
 					true,  //showTransformed, 
 					true,  //showDifferenceImage
-					false  //fastButInaccurate
-					);
+					false, //fastButInaccurate
+					null   //alsoTransform
+                                        );
 
 			// Retrieve landmark sets and look for agreements
 			PointList pl_image = PointList.load(image);
@@ -99,7 +100,8 @@ public class LocalRigidRegistration_ implements PlugInFilter{
 						1,      //nInitialPositions, 
 						false,  //showTransformed, 
 						false,  //showDifferenceImage
-						false   //fastButInaccurate
+						false,  //fastButInaccurate
+                                                null    //alsoTransform
 						);
 			}
 			

@@ -12,9 +12,9 @@ import util.FileAndChannel;
 
 public abstract class RegistrationAlgorithm {
 	
-	boolean keepSourceImages;
-	ImagePlus[] sourceImages;
-	OrderedTransformations transformation;
+	public boolean keepSourceImages;
+	public ImagePlus[] sourceImages;
+	public OrderedTransformations transformation;
 	
 	public ImagePlus getTemplate() {
 		return sourceImages[0];

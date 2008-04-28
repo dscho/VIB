@@ -14,10 +14,14 @@ import java.util.Map;
 
 public class MeshEditor {
 
-	/** If the Content instance wraps a mesh, smooth it by the fraction K (0, 1). */
+	/** 
+	 * If the Content instance wraps a mesh, smooth it by the 
+	 * fraction K (0, 1). 
+	 */
 	static public void smooth(final Content c, final float K) {
-		if (null == c || !(c instanceof MeshGroup)) return;
-		final MeshGroup mg = (MeshGroup)c;
+		if (null == c || c.getType() != Content.SURFACE)
+			return;
+		final MeshGroup mg = (MeshGroup)c.getContent();
 		final List triangles = mg.shape.getMesh();
 		if (0 != triangles.size() % 3) {
 			System.out.println("MeshEditor.smooth: need a list of points multiple of 3.");

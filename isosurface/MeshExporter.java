@@ -1,6 +1,8 @@
 /** Albert Cardona and Bene Schmid 20070614 at Janelia Farms*/
 package isosurface;
 
+import ij3d.Content;
+
 import ij.IJ;
 import ij.io.SaveDialog;
 import ij.gui.YesNoCancelDialog;
@@ -24,26 +26,32 @@ public class MeshExporter {
 	private MeshExporter() {}
 
 	/** Accepts a collection of MeshGroup objects. */
-	static public void saveAsWaveFront(final Collection meshgroups) {
-		if (null == meshgroups || 0 == meshgroups.size()) return;
-		SaveDialog sd = new SaveDialog("Save WaveFront", "untitled", ".obj");
+	static public void saveAsWaveFront(final Collection contents) {
+		if (null == contents || 0 == contents.size())
+			return;
+		SaveDialog sd = new SaveDialog(
+				"Save WaveFront", "untitled", ".obj");
 		String dir = sd.getDirectory();
-		if (null == dir) return;
+		if (null == dir)
+			return;
 		String obj_filename = sd.getFileName();
-		if (!obj_filename.toLowerCase().endsWith(".obj")) obj_filename += ".obj";
+		if (!obj_filename.toLowerCase().endsWith(".obj"))
+			obj_filename += ".obj";
 
 		File obj_file = new File(dir + "/" + obj_filename);
 		// check if file exists
-		if (!IJ.isMacOSX()) {
-			if (obj_file.exists()) {
-				YesNoCancelDialog yn = new YesNoCancelDialog(IJ.getInstance(), "Overwrite?", "File  " + obj_filename + " exists!\nOverwrite?");
-				if (!yn.yesPressed()) return;
-			}
+		if (!IJ.isMacOSX() && obj_file.exists()) {
+			YesNoCancelDialog yn = new YesNoCancelDialog(
+				IJ.getInstance(),
+				"Overwrite?",
+				"File  "+obj_filename+" exists!\nOverwrite?");
+			if (!yn.yesPressed()) return;
 		}
 
-		String mtl_filename = obj_filename.substring(0, obj_filename.lastIndexOf('.')) + ".mtl";
+		String mtl_filename = obj_filename.substring(
+			0, obj_filename.lastIndexOf('.')) + ".mtl";
 		// generate file content
-		String[] data = createWaveFront(meshgroups, mtl_filename);
+		String[] data = createWaveFront(contents, mtl_filename);
 		//
 		saveToFile(obj_file, data[0]);
 		saveToFile(new File(dir + "/" + mtl_filename), data[1]);
@@ -69,15 +77,15 @@ public class MeshExporter {
 		saveToFile(new File(dir + "/" + dxf_filename), createDXF(meshgroups));
 	}
 
-	static public String createDXF(final Collection meshgroups) {
+	static public String createDXF(final Collection contents) {
 		StringBuffer sb_data = new StringBuffer("0\nSECTION\n2\nENTITIES\n");   //header of file
-		for (Iterator it = meshgroups.iterator(); it.hasNext(); ) {
-			Object ob = it.next();
-			if (!(ob instanceof MeshGroup)) continue;
-			final MeshGroup mg = (MeshGroup)ob;
+		for (Iterator it = contents.iterator(); it.hasNext(); ) {
+			Content ob = (Content)it.next();
+			if (ob.getType() != Content.SURFACE) continue;
+			final MeshGroup mg = (MeshGroup)ob.getContent();
 			List triangles = mg.shape.getMesh();
-			String title = mg.getName().replaceAll(" ", "_").replaceAll("#", "--");
-			Mtl mat = new Mtl(1 - mg.getTransparency(), mg.shape.color);
+			String title = ob.getName().replaceAll(" ", "_").replaceAll("#", "--");
+			Mtl mat = new Mtl(1 - ob.getTransparency(), mg.shape.color);
 			writeTrianglesDXF(sb_data, triangles, title, "" + mat.getAsSingle());
 		}
 		sb_data.append("0\nENDSEC\n0\nEOF\n");         //TRAILER of the file
@@ -124,7 +132,7 @@ public class MeshExporter {
 	 * - the contents of the .obj file with mesh data
 	 * - the contents of the .mtl file with material data
 	 */
-	static public String[] createWaveFront(Collection meshgroups, String mtl_filename) {
+	static public String[] createWaveFront(Collection contents, String mtl_filename) {
 		final StringBuffer sb_obj = new StringBuffer("# OBJ File\n");
 		sb_obj.append("mtllib ").append(mtl_filename).append('\n');
 
@@ -133,13 +141,16 @@ public class MeshExporter {
 		int j = 1; // Vert indices in .obj files are global, not reset for every object.
 				// starting at '1' because vert indices start at one.
 
-		for (Iterator it = meshgroups.iterator(); it.hasNext(); ) {
-			Object mob = it.next();
-			if (!(mob instanceof MeshGroup)) continue;
-			final MeshGroup mg = (MeshGroup)mob;
+		for (Iterator it = contents.iterator(); it.hasNext(); ) {
+			Content mob = (Content)it.next();
+			if (mob.getType() != Content.SURFACE)
+				continue;
+			final MeshGroup mg = (MeshGroup)mob.getContent();
+
 			List triangles = mg.shape.getMesh();
 			// make material, and see whether it exists already
-			Mtl mat = new Mtl(1 - mg.getTransparency(), mg.shape.color);
+			Mtl mat = new Mtl(1 - mob.getTransparency(),
+						mg.shape.color);
 			Object mat2 = ht_mat.get(mat);
 			if (null != mat2) mat = (Mtl)mat2; // recycling
 			else ht_mat.put(mat, mat); // !@#$% Can't get the object in a HashSet easily
@@ -197,7 +208,7 @@ public class MeshExporter {
 		return new String[]{sb_obj.toString(), sb_mtl.toString()};
 	}
 
-	/** A Material, but avoiding name colisions. */
+	/** A Material, but avoiding name colisions. Not thread-safe. */
 	static private int mat_index = 1;
 	static private class Mtl {
 		float alpha = 1;
@@ -213,6 +224,7 @@ public class MeshExporter {
 			this.G = f[1];
 			this.B = f[2];
 			name = "mat_" + mat_index;
+			mat_index++;
 		}
 		Mtl(float alpha, float R, float G, float B) {
 			this.alpha = alpha;

@@ -23,6 +23,7 @@ import java.util.LinkedList;
 public class Flood_Fill implements PlugIn {
 	
 	private static boolean debug = false;
+	private static int tol = 10;
 
 	public static final String MACRO_CMD =
 		"var leftClick=16, alt=9;\n" +
@@ -40,7 +41,7 @@ public class Flood_Fill implements PlugIn {
 		MacroInstaller installer = new MacroInstaller();
         	installer.install(MACRO_CMD);
 	}
-	
+
 	public synchronized static void fill(String x, String y, String z) {
 		fill(Integer.parseInt(x),
 				Integer.parseInt(y),
@@ -65,13 +66,17 @@ public class Flood_Fill implements PlugIn {
 			b[z] = (byte[])imp.getStack().
 					getProcessor(z+1).getPixels();
 		}
+		Point pt = (Point)seedpoints.get(0);
+		byte colorToFill = b[pt.z][pt.y * w + pt.x];
 
 		LinkedList queue = new LinkedList();
 		queue.addAll(seedpoints);
 		while(!queue.isEmpty()) {
 			IJ.showProgress(1, queue.size());
 			Point p = (Point)queue.removeLast();
-			if(b[p.z][p.y*w+p.x] != (byte)255) {
+			int by = (int)(b[p.z][p.z*w+p.x]);
+
+			if(Math.abs((int)(colorToFill&0xff)-by) > tol) {
 				continue;
 			}
 			b[p.z][p.y*w+p.x] = color;

@@ -9,6 +9,8 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.ComponentListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -22,8 +24,9 @@ import java.awt.Point;
 import java.awt.Color;
 import java.awt.Font;
 
-import java.util.List;
-import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+
 
 import ij.process.ByteProcessor;
 import ij.gui.Toolbar;
@@ -35,6 +38,7 @@ public class ImageCanvas3D extends Canvas3D {
 
 	private RoiImagePlus roiImagePlus;
 	private ImageCanvas roiImageCanvas;
+	private Set<Integer> keysDown = new HashSet<Integer>();
 
 	private class RoiImagePlus extends ImagePlus {
 		public RoiImagePlus(String title, ByteProcessor ip) {
@@ -64,6 +68,11 @@ public class ImageCanvas3D extends Canvas3D {
 		addListeners();
 		addMouseListener(roiImageCanvas);
 		addMouseMotionListener(roiImageCanvas);
+	}
+
+	public void killRoi() {
+		roiImagePlus.killRoi();
+		render();
 	}
 
 	private boolean isSelectionTool() {
@@ -105,10 +114,25 @@ public class ImageCanvas3D extends Canvas3D {
 				render();
 			}
 		});
+		addKeyListener(new KeyListener() {
+			public void keyPressed(KeyEvent e) {
+				keysDown.add(e.getKeyCode());
+			}
+
+			public void keyReleased(KeyEvent e) {
+				keysDown.remove(e.getKeyCode());
+			}
+
+			public void keyTyped(KeyEvent e) {}
+		});
 	} 
 
 	public Roi getRoi() {
 		return roiImagePlus.getRoi();
+	}
+
+	public boolean isKeyDown(int keyCode) {
+		return keysDown.contains(keyCode);
 	}
 
 	public void render() {

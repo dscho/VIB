@@ -1,6 +1,9 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package distance;
 
 public class Euclidean implements PixelPairs {
+
 	private float sum;
 	private long count;
 	private static boolean verbose = !true;
@@ -26,4 +29,3 @@ public class Euclidean implements PixelPairs {
 		return (float)Math.sqrt(sum/count);
 	}
 }
-

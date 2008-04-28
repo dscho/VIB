@@ -61,7 +61,7 @@ public class Quantile_Based_Normalization implements PlugIn, ActionListener, Ite
 	   mean in such a proportion that the mean will be a close to
 	   correct as we can get it. */
 	
-	public static final String PLUGIN_VERSION = "1.1";
+	public static final String PLUGIN_VERSION = "1.2";
 	
 	class Replacements {
 		

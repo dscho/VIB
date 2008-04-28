@@ -1,17 +1,32 @@
 package ij3d;
 
 import ij.gui.GenericDialog;
+import ij.gui.MultiLineLabel;
 import ij.IJ;
+import ij.WindowManager;
 import ij.ImagePlus;
+import ij.text.TextWindow;
+import ij.gui.Toolbar;
 
 import math3d.Transform_IO;
+
+import java.text.DecimalFormat;
 
 import java.awt.event.*;
 import java.awt.*;
 import java.util.Vector;
+import java.util.Iterator;
+import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
+
+import vib.PointList;
+import vib.BenesNamedPoint;
+import vib.FastMatrix;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
+import voltex.Renderer;
 import isosurface.MeshGroup;
 import isosurface.MeshExporter;
 import isosurface.MeshEditor;
@@ -29,9 +44,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	private Image3DUniverse univ;
 
-	private MenuItem mesh;
-	private MenuItem voltex;
-	private MenuItem ortho;
+	private MenuItem add;
 	private MenuItem color;
 	private MenuItem channels;
 	private MenuItem transparency;
@@ -39,6 +52,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem fill;
 	private MenuItem slices;
 	private MenuItem delete;
+	private MenuItem properties;
+	private MenuItem windowSize;
 	private MenuItem resetView;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
@@ -52,22 +67,36 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem exportObj;
 	private MenuItem exportDXF;
 	private MenuItem smoothMesh;
+	private MenuItem scalebar;
 	private MenuItem smoothAllMeshes;
+	private MenuItem displayAsVolume;
+	private MenuItem displayAsOrtho;
+	private MenuItem displayAsSurface;
+	private MenuItem pl_load;
+	private MenuItem regist;
+	private MenuItem pl_save;
+	private CheckboxMenuItem pl_show;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
 	private CheckboxMenuItem lock;
+	private CheckboxMenuItem show;
 
 	private Menu selectedMenu;
+	private Menu selectSubMenu;
 	private Menu viewMenu;
 	private Menu contentsMenu;
 	private Menu fileMenu;
 
+	// These strings are the names of the stataic methods in
+	// ImageJ3DViewer.
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
 	public static final String START_RECORD = "startRecord";
 	public static final String STOP_RECORD = "stopRecord";
 	public static final String RESET_VIEW = "resetView";
+	public static final String SCALEBAR = "scalebar";
 	public static final String CLOSE = "close";
+	public static final String WINDOW_SIZE = "windowSize";
 
 	public static final String SET_COLOR = "setColor"; 
 	public static final String SET_TRANSPARENCY = "setTransparency";
@@ -83,12 +112,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public static final String SAVE_TRANSFORM = "saveTransform";
 	public static final String RESET_TRANSFORM = "resetTransform";
 
-	public static final String ADD_VOLUME = "addVolume";
-	public static final String ADD_MESH = "addMesh";
-	public static final String ADD_ORTHO = "addOrthoslice";
+	// TODO
+	public static final String ADD = "add";
 	public static final String DELETE = "delete";
 
 	public static final String SMOOTH = "smooth";
+
+	private List openDialogs = new ArrayList();
+
+	private SelectionListener selListener = new SelectionListener();
 
 	public Image3DMenubar(Image3DUniverse univ) {
 		super();
@@ -124,6 +156,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		// Viewer
 		Menu view = new Menu("View");
 
+		windowSize = new MenuItem("Set window size");
+		windowSize.addActionListener(this);
+		view.add(windowSize);
+
 		resetView = new MenuItem("Reset view");
 		resetView.addActionListener(this);
 		view.add(resetView);
@@ -155,6 +191,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		view.addSeparator();
 
+		scalebar = new MenuItem("Scalebar");
+		scalebar.addActionListener(this);
+		view.add(scalebar);
+
+		view.addSeparator();
+
 		close = new MenuItem("Close");
 		close.addActionListener(this);
 		view.add(close);
@@ -165,19 +207,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public Menu createContentsMenu() {
 		// Universe
 		Menu universe = new Menu("Contents");
-		voltex = new MenuItem("Add volume");
-		voltex.addActionListener(this);
-		universe.add(voltex);
-
-		mesh = new MenuItem("Add mesh");
-		mesh.addActionListener(this);
-		universe.add(mesh);
-
-		ortho = new MenuItem("Add Orthoslice");
-		ortho.addActionListener(this);
-		universe.add(ortho);
-
-		universe.addSeparator();
+		add = new MenuItem("Add content");
+		add.addActionListener(this);
+		universe.add(add);
 
 		delete = new MenuItem("Delete");
 		delete.setEnabled(false);
@@ -186,11 +218,132 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		universe.addSeparator();
 
+		selectSubMenu = createSelectSubMenu();
+		universe.add(selectSubMenu);
+
+		universe.addSeparator();
+
+		regist = new MenuItem("Register");
+		regist.addActionListener(this);
+		universe.add(regist);
+
 		smoothAllMeshes = new MenuItem("Smooth all meshes");
 		smoothAllMeshes.addActionListener(this);
 		universe.add(smoothAllMeshes);
 
 		return universe;
+	}
+
+	public Menu createSelectSubMenu() {
+		Menu select = new Menu("Select");
+		if(univ == null)
+			return select;
+		for(Iterator it = univ.contents(); it.hasNext();) {
+			String name = ((Content)it.next()).getName();
+			MenuItem mi = new MenuItem(name);
+			mi.addActionListener(selListener);
+		}
+		return select;
+	}
+
+	public Menu createPLSubMenu() {
+		Menu pl = new Menu("Point list");
+		if(univ == null)
+			return pl;
+		pl_load = new MenuItem("Load Point List");
+		pl_load.addActionListener(this);
+		pl.add(pl_load);
+
+		pl_save = new MenuItem("Save Point List");
+		pl_save.addActionListener(this);
+		pl.add(pl_save);
+
+		pl_show = new CheckboxMenuItem("Show Point List");
+		pl_show.addItemListener(this);
+		pl.add(pl_show);
+
+		return pl;
+	}
+
+	public Menu createTransformSubMenu() {
+		Menu transform = new Menu("Transformation");
+
+		lock = new CheckboxMenuItem("Lock");
+		lock.addItemListener(this);
+		transform.add(lock);
+		
+		setTransform = new MenuItem("Set Transform");
+		setTransform.addActionListener(this);
+		transform.add(setTransform);
+
+		resetTransform = new MenuItem("Reset Transform");
+		resetTransform.addActionListener(this);
+		transform.add(resetTransform);
+
+		applyTransform = new MenuItem("Apply Transform");
+		applyTransform.addActionListener(this);
+		transform.add(applyTransform);
+
+		saveTransform = new MenuItem("Save Transform");
+		saveTransform.addActionListener(this);
+		transform.add(saveTransform);
+
+		return transform;
+	}
+
+	public Menu createHideSubMenu() {
+		Menu hide = new Menu("Hide/Show");
+
+		show = new CheckboxMenuItem("Show content");
+		show.setState(true);
+		show.addItemListener(this);
+		hide.add(show);
+
+		coordinateSystem = new CheckboxMenuItem(
+					"Show coordinate system", true);
+		coordinateSystem.addItemListener(this);
+		hide.add(coordinateSystem);
+
+		return hide;
+	}
+
+	public Menu createAttributesSubMenu() {
+		Menu attributes = new Menu("Attributes");
+
+		channels = new MenuItem("Change channels");
+		channels.addActionListener(this);
+		attributes.add(channels);
+
+		color = new MenuItem("Change color");
+		color.addActionListener(this);
+		attributes.add(color);
+
+		transparency = new MenuItem("Change transparency");
+		transparency.addActionListener(this);
+		attributes.add(transparency);
+
+		threshold = new MenuItem("Adjust threshold");
+		threshold.addActionListener(this);
+		attributes.add(threshold);
+		return attributes;
+	}
+
+	public Menu createDisplayAsSubMenu() {
+		Menu display = new Menu("Display as");
+
+		displayAsVolume = new MenuItem("Volume");
+		displayAsVolume.addActionListener(this);
+		display.add(displayAsVolume);
+
+		displayAsOrtho = new MenuItem("Orthoslice");
+		displayAsOrtho.addActionListener(this);
+		display.add(displayAsOrtho);
+
+		displayAsSurface = new MenuItem("Surface");
+		displayAsSurface.addActionListener(this);
+		display.add(displayAsSurface);
+
+		return display;
 	}
 
 	public Menu createSelectedMenu() {
@@ -205,56 +358,34 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		fill.addActionListener(this);
 		content.add(fill);
 
-		content.addSeparator();
-		
-		channels = new MenuItem("Change channels");
-		channels.addActionListener(this);
-		content.add(channels);
-
 		smoothMesh = new MenuItem("Smooth mesh");
 		smoothMesh.addActionListener(this);
 		content.add(smoothMesh);
 
-		color = new MenuItem("Change color");
-		color.addActionListener(this);
-		content.add(color);
-
-		transparency = new MenuItem("Change transparency");
-		transparency.addActionListener(this);
-		content.add(transparency);
-
-		threshold = new MenuItem("Adjust threshold");
-		threshold.addActionListener(this);
-		content.add(threshold);
+		content.addSeparator();
 		
-		coordinateSystem = new CheckboxMenuItem(
-					"Show coordinate system", true);
-		coordinateSystem.addItemListener(this);
-		content.add(coordinateSystem);
+		content.add(createDisplayAsSubMenu());
+		content.add(createAttributesSubMenu());
+		content.add(createHideSubMenu());
+		content.add(createPLSubMenu());
+		content.add(createTransformSubMenu());
 
 		content.addSeparator();
 
-		lock = new CheckboxMenuItem("Lock");
-		lock.addItemListener(this);
-		content.add(lock);
-		
-		setTransform = new MenuItem("Set Transform");
-		setTransform.addActionListener(this);
-		content.add(setTransform);
-
-		resetTransform = new MenuItem("Reset Transform");
-		resetTransform.addActionListener(this);
-		content.add(resetTransform);
-
-		applyTransform = new MenuItem("Apply Transform");
-		applyTransform.addActionListener(this);
-		content.add(applyTransform);
-
-		saveTransform = new MenuItem("Save Transform");
-		saveTransform.addActionListener(this);
-		content.add(saveTransform);
+		properties = new MenuItem("Properties");
+		properties.addActionListener(this);
+		content.add(properties);
 
 		return content;
+	}
+
+	private class SelectionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			String name = e.getActionCommand();
+			Content c = univ.getContent(name);
+			if(c != null)
+				univ.select(c);
+		}
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -266,6 +397,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}	
 			changeColor(selected);
 			univ.clearSelection();
+		}
+
+		if(e.getSource() == scalebar) {
+			editScalebar();
 		}
 
 		if(e.getSource() == channels) {
@@ -288,37 +423,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.clearSelection();
 		}
 
-		if(e.getSource() == voltex) {
-			Content c = VoltexGroup.addContent(univ, null);
-			String[] arg = new String[] {c.image.getTitle(), 
-				ColorTable.getColorName(c.color), 
-				c.name, Boolean.toString(c.channels[0]), 
-				Boolean.toString(c.channels[1]), Boolean.
-				toString(c.channels[2]), Integer.toString(
-				c.resamplingF)};
-			record(ADD_VOLUME, arg);
-		}
-		
-		if(e.getSource() == mesh) {
-			Content c = MeshGroup.addContent(univ, null);
-			String[] arg = new String[] {c.image.getTitle(), 
-				ColorTable.getColorName(c.color), 
-				c.name, Integer.toString(c.threshold), 
+		if(e.getSource() == add) {
+			Content c = addContent(null, -1);
+			String[] arg = new String[] {
+				c.image.getTitle(), 
+				ColorTable.getColorName(c.color),
+				c.name, 
+				Integer.toString(c.threshold),
 				Boolean.toString(c.channels[0]), 
-				Boolean.toString(c.channels[1]), Boolean.
-				toString(c.channels[2]), Integer.toString(
-				c.resamplingF)};
-			record(ADD_MESH, arg);
-		}
-
-		if(e.getSource() == ortho) {
-			Content c = OrthoGroup.addContent(univ, null);
-			String[] arg = new String[] {c.image.getTitle(), 
-				ColorTable.getColorName(c.color), 
-				c.name, Boolean.toString(c.channels[0]), 
-				Boolean.toString(c.channels[1]), Boolean.
-				toString(c.channels[2]), Integer.toString(
-				c.resamplingF)};
+				Boolean.toString(c.channels[1]),
+				Boolean.toString(c.channels[2]),
+				Integer.toString(c.resamplingF),
+				Integer.toString(c.type)};
+			record(ADD, arg);
 		}
 
 		if(e.getSource() == delete) {
@@ -330,10 +447,27 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}
 			univ.removeContent(c.name);
 		}
+
+		if(e.getSource() == regist) {
+			// Select the contents used for registration
+			Collection contents = univ.getContents();
+			if(contents.size() < 2) {
+				IJ.error("At least two bodies are " +
+					"required for registration");
+				return;
+			}
+			RegistrationMenubar rm = univ.getRegistrationMenubar();
+			univ.setMenubar(rm);
+			rm.register();
+		}
 	
 		if(e.getSource() == resetView) {
 			record(RESET_VIEW);
 			univ.resetView();
+		}
+
+		if(e.getSource() == windowSize) {
+			setWindowSize();
 		}
 		
 		if(e.getSource() == startRecord) {
@@ -367,9 +501,40 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			univ.clearSelection();
 		}
 
+		if(e.getSource() == displayAsVolume) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.displayAs(Content.VOLUME);
+			univ.clearSelection();
+		}
+
+		if(e.getSource() == displayAsOrtho) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.displayAs(Content.ORTHO);
+			univ.clearSelection();
+		}
+
+		if(e.getSource() == displayAsSurface) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.displayAs(Content.SURFACE);
+			univ.clearSelection();
+		}
+
+
 		if(e.getSource() == slices) {
 			Content c = univ.getSelected();
-			if(c == null || !(c instanceof OrthoGroup)) {
+			if(c == null || c.getType() != Content.ORTHO) {
 				IJ.error("Orthoslices must be selected");
 				return;
 			}
@@ -383,10 +548,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				IJ.error("Selection required");
 				return;
 			}
-			if(c instanceof VoltexGroup) {
+			if(c.getType() == Content.VOLUME) {
 				new Thread(new Runnable() {
 					public void run() {
-						((VoltexGroup)c).
+						((VoltexGroup)c.getContent()).
 						fillRoiBlack(univ, (byte)0);
 						univ.fireContentChanged(c);
 						record(FILL_SELECTION);
@@ -397,7 +562,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == close) {
 			univ.close();
-			ImageJ3DViewer.freeUniverse();
 			record(CLOSE);
 		}
 
@@ -436,6 +600,27 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			record(SET_TRANSFORM, affine2string(t));
 		}
 
+		if(e.getSource() == properties) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			TextWindow tw = new TextWindow(c.getName(), 
+				" \tx\ty\tz",
+				"min\t" + (float)c.getContent().min.x + "\t"
+					+ (float)c.getContent().min.y + "\t"
+					+ (float)c.getContent().min.z + "\n" +
+				"max\t" + (float)c.getContent().max.x + "\t"
+					+ (float)c.getContent().max.y + "\t"
+					+ (float)c.getContent().max.z + "\n" +
+				"cog\t" + (float)c.getContent().center.x + "\t"
+					+ (float)c.getContent().center.y + "\t"
+					+ (float)c.getContent().center.z + "\n\n" +
+				"volume\t" + c.getContent().getVolume(),
+				512, 512);
+		}
+
 		if(e.getSource() == applyTransform) {
 			Content c = univ.getSelected();
 			if(c == null) {
@@ -472,6 +657,22 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(SAVE_TRANSFORM, affine2string(matrix));
 		}
 
+		if (e.getSource() == pl_load) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.loadPointList();
+		}
+		if (e.getSource() == pl_save) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.savePointList();
+		}
 		if (e.getSource() == exportDXF) {
 			MeshExporter.saveAsDXF(univ.getContents());
 		}
@@ -529,6 +730,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			record(SET_CS, Boolean.toString(b));
 		}
 
+		if(e.getSource() == show) {
+			if(univ.getSelected() == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			boolean b = show.getState();
+			univ.getSelected().setVisible(b);
+			if(!b)
+				univ.clearSelection();
+		}
+
 		if(e.getSource() == lock) {
 			Content selected = univ.getSelected();
 			if(selected == null) {
@@ -542,6 +754,52 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(UNLOCK);
 		}
 
+		if (e.getSource() == pl_show) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.showPointList(pl_show.getState());
+		}
+	}
+
+	public void setWindowSize() {
+		final GenericDialog gd = new GenericDialog("Window size...");
+		Dimension d = univ.getSize();
+		if(d == null)
+			return;
+		gd.addNumericField("width", d.width, 0);
+		gd.addNumericField("height", d.height, 0);
+		openDialogs.add(gd);
+		gd.showDialog();
+		openDialogs.remove(gd);
+		if(gd.wasCanceled())
+			return;
+		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
+	}
+
+	public void editScalebar() {
+		Scalebar sc = univ.getScalebar();
+		final GenericDialog gd = new GenericDialog("Edit scalebar...");
+		gd.addNumericField("x position", sc.getX(), 2);
+		gd.addNumericField("y position", sc.getY(), 2);
+		gd.addNumericField("length", sc.getLength(), 2);
+		gd.addStringField("Units", sc.getUnit(), 5);
+		gd.addChoice("Color", ColorTable.colorNames, 
+				ColorTable.getColorName(sc.getColor()));
+		gd.addCheckbox("show", sc.isVisible());
+		openDialogs.add(gd);
+		gd.showDialog();
+		openDialogs.remove(gd);
+		if(gd.wasCanceled())
+			return;
+		sc.setPosition((float)gd.getNextNumber(), 
+				(float)gd.getNextNumber());
+		sc.setLength((float)gd.getNextNumber());
+		sc.setUnit(gd.getNextString());
+		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
+		sc.setVisible(gd.getNextBoolean());
 	}
 
 	public void changeTransparency(final Content selected) {
@@ -560,6 +818,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					float newTr = (float)oldTr / 100f;
 					selected.setTransparency(newTr);
@@ -572,13 +831,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 		
 	}
 
 	public void adjustThreshold(final Content selected) {
 		final int oldTr = (int)(selected.getThreshold());
-		if(selected instanceof MeshGroup) {
+		if(selected.getType() == Content.SURFACE) {
 			int th = (int)Math.round(
 				IJ.getNumber("Threshold [0..255]", oldTr));
 			th = Math.max(0, th);
@@ -603,6 +863,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					selected.setThreshold(oldTr);
 					univ.fireContentChanged(selected);
@@ -614,57 +875,79 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 	}
 
+	private Thread updatingThread = null;
+	private boolean stopUpdating = false;
+
 	public void adjustSlices(final Content selected) {
 		final GenericDialog gd = new GenericDialog("Adjust slices...");
-		final OrthoGroup os = (OrthoGroup)selected;
+		final OrthoGroup os = (OrthoGroup)selected.getContent();
 		final int[] oldvalues = os.getSlices();
+		final boolean[] visible = os.getVisible();
 		ImagePlus imp = selected.image;
 		int w = imp.getWidth() / selected.getResamplingFactor();
 		int h = imp.getHeight() / selected.getResamplingFactor();
 		int d = imp.getStackSize() / selected.getResamplingFactor();
 
-		gd.addSlider("x", 0, w-1, oldvalues[0]);
-		gd.addSlider("y", 0, h-1, oldvalues[1]);
-		gd.addSlider("z", 0, d-1, oldvalues[2]);
+		gd.addCheckbox("Show_yz plane", visible[0]);
+		gd.addSlider("x coordinate", 0, w-1, oldvalues[0]);
+		gd.addCheckbox("Show_xz plane", visible[1]);
+		gd.addSlider("y coordinate", 0, h-1, oldvalues[1]);
+		gd.addCheckbox("Show_xy plane", visible[2]);
+		gd.addSlider("z coordinate", 0, d-1, oldvalues[2]);
 
-		final Scrollbar xSlider = (Scrollbar)gd.getSliders().get(0);
-		final Scrollbar ySlider = (Scrollbar)gd.getSliders().get(1);
-		final Scrollbar zSlider = (Scrollbar)gd.getSliders().get(2);
+		gd.addMessage(  "You can use the x, y and z key plus\n" +
+				"the arrow keys to adjust slices in\n" +
+				"x, y and z direction respectively.\n \n" +
+				"x, y, z + SPACE switches planes on\n" +
+				"and off");
 
-		AdjustmentListener listener = new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setSlices(
-					xSlider.getValue(), 
-					ySlider.getValue(), 
-					zSlider.getValue());
-				univ.fireContentChanged(selected);
-			}
-		};
-		xSlider.addAdjustmentListener(listener);
-		ySlider.addAdjustmentListener(listener);
-		zSlider.addAdjustmentListener(listener);
+		final int[] dirs = new int[] {Renderer.X_AXIS, 
+				Renderer.Y_AXIS, Renderer.Z_AXIS};
+		final Scrollbar[] sl = new Scrollbar[3]; 
+		final Checkbox[] cb = new Checkbox[3];
+
+		for(int k = 0; k < 3; k++) {
+			final int i = k;
+			sl[i] = (Scrollbar)gd.getSliders().get(i);
+			sl[i].addAdjustmentListener(new AdjustmentListener() {
+				public void adjustmentValueChanged(
+							AdjustmentEvent e) {
+					os.setSlice(dirs[i], sl[i].getValue());
+					univ.fireContentChanged(selected);
+				}
+			});
+
+			cb[i] = (Checkbox)gd.getCheckboxes().get(i);
+			cb[i].addItemListener(new ItemListener() {
+				public void itemStateChanged(ItemEvent e) {
+					os.setVisible(dirs[i], cb[i].getState());
+				}
+			});
+		}
 
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
-					os.setSlices(
-						oldvalues[0], 
-						oldvalues[1], 
-						oldvalues[2]);
+					os.setSlices(oldvalues);
+					os.setVisible(visible);
 					univ.fireContentChanged(selected);
 					return;
 				} else {
-					record(SET_SLICES, 
-					Integer.toString(xSlider.getValue()), 
-					Integer.toString(ySlider.getValue()),
-					Integer.toString(zSlider.getValue()));
+					record(SET_SLICES,
+					Integer.toString(sl[0].getValue()), 
+					Integer.toString(sl[1].getValue()),
+					Integer.toString(sl[2].getValue()));
+					return;
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 	}
 
@@ -717,6 +1000,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
 					selected.setColor(oldC);
 					univ.fireContentChanged(selected);
@@ -732,6 +1016,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				}
 			}
 		});
+		openDialogs.add(gd);
 		gd.showDialog();
 		
 	}
@@ -742,7 +1027,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addCheckboxGroup(1, 3, 
 				new String[] {"red", "green", "blue"}, 
 				selected.getChannels());
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
 			
@@ -799,13 +1086,35 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	}
 
 	// Universe Listener interface
-	public void transformationStarted() {}
-	public void transformationFinished() {}
-	public void contentAdded(Content c) {}
-	public void contentRemoved(Content c) {}
+	public void transformationStarted(View view) {}
+	public void transformationFinished(View view) {}
 	public void canvasResized() {}
-	public void transformationUpdated() {}
+	public void transformationUpdated(View view) {}
 	public void contentChanged(Content c) {}
+
+	public void universeClosed() {
+		closeAllDialogs();
+	}
+
+	public void contentAdded(Content c) {
+		if(c == null)
+			return;
+		MenuItem item = new MenuItem(c.getName());
+		item.addActionListener(selListener);
+		selectSubMenu.add(item);
+	}
+
+	public void contentRemoved(Content c) {
+		if(c == null)
+			return;
+		for(int i = 0; i < selectSubMenu.getItemCount(); i++) {
+			MenuItem item = selectSubMenu.getItem(i);
+			if(item.getLabel().equals(c.getName())) {
+				selectSubMenu.remove(i);
+				return;
+			}
+		}
+	}
 
 	public void contentSelected(Content c) {
 		delete.setEnabled(c != null);
@@ -817,11 +1126,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(!containsSelectedMenu())
 			add(selectedMenu);
 		
-		slices.setEnabled(c instanceof OrthoGroup);
-		fill.setEnabled(c instanceof VoltexGroup);
+		slices.setEnabled(c.getType() == Content.ORTHO);
+		fill.setEnabled(c.getType() == Content.VOLUME);
 
 		coordinateSystem.setState(c.hasCoord());
 		lock.setState(c.isLocked());
+		show.setState(c.isVisible());
+		pl_show.setState(c.isPLVisible());
+
+		displayAsVolume.setEnabled(c.getType() != Content.VOLUME);
+		displayAsOrtho.setEnabled(c.getType() != Content.ORTHO);
+		displayAsSurface.setEnabled(c.getType() != Content.SURFACE);
 	}
 
 	private boolean containsSelectedMenu() {
@@ -861,7 +1176,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		});
 		p.add(b);
 		gd.addPanel(p);
+		openDialogs.add(gd);
 		gd.showDialog();
+		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return null;
 
@@ -887,5 +1204,98 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return m;
 	}
 
+	private static final int getAutoThreshold(ImagePlus imp) {
+		int[] histo = new int[256];
+		int d = imp.getStackSize();
+		for(int z = 0; z < d; z++) {
+			byte[] p = (byte[])imp.getStack().getPixels(z+1);
+			for(int i = 0; i < p.length; i++) {
+				histo[(int)(p[i]&0xff)]++;
+			}
+		}
+		return imp.getProcessor().getAutoThreshold(histo);
+	}
+
+	public Content addContent(ImagePlus image, int type) {
+		// setup default values
+		int img_count = WindowManager.getImageCount();
+		Vector windows = new Vector();
+		String[] images;
+		for(int i=1; i<=img_count; i++) {
+			int id = WindowManager.getNthImageID(i);
+			ImagePlus imp = WindowManager.getImage(id);
+			if(imp != null){
+				 windows.add(imp.getTitle());
+			}
+		}
+		if(windows.size() == 0)
+			IJ.error("No images open");
+		images = (String[])windows.toArray(new String[]{});
+		String name = image == null ? images[0] : image.getTitle();
+		String[] types = new String[] {
+				"Volume", "Orthoslice", "Surface"};
+		type = type < 0 ? 0 : type;
+		int threshold = type == Content.SURFACE ? 50 : 0;
+		int resf = 2;
+
+		// create dialog
+		GenericDialog gd = new GenericDialog("Add ...");
+		gd.addChoice("Image", images, name);
+		gd.addStringField("Name", name, 10);
+		gd.addChoice("Display as", types, types[type]);
+		gd.addChoice("Color", ColorTable.colorNames, 
+						ColorTable.colorNames[0]);
+		gd.addNumericField("Threshold", threshold, 0);
+		gd.addNumericField("Resampling factor", resf, 0);
+		gd.addMessage("Channels");
+		gd.addCheckboxGroup(1, 3, 
+				new String[] {"red", "green", "blue"}, 
+				new boolean[]{true, true, true});
+
+
+		// automatically set threshold if surface is selected
+		final TextField tf = (TextField)gd.getNumericFields().get(0);
+		final Choice ch = (Choice)gd.getChoices().get(1);
+		ch.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				if(ch.getSelectedIndex() == Content.SURFACE)
+					tf.setText(Integer.toString(50));
+				else
+					tf.setText(Integer.toString(0));
+			}
+		});
+		openDialogs.add(gd);
+		gd.showDialog();
+		openDialogs.remove(gd);
+		if(gd.wasCanceled())
+			return null;
+			
+		image = WindowManager.getImage(gd.getNextChoice());
+		name = gd.getNextString();
+		type = gd.getNextChoiceIndex();
+		Color3f color = ColorTable.getColor(gd.getNextChoice());
+		threshold = (int)gd.getNextNumber();
+		resf = (int)gd.getNextNumber();
+		boolean[] channels = new boolean[] {gd.getNextBoolean(), 
+						gd.getNextBoolean(), 
+						gd.getNextBoolean()};
+
+		if(univ.contains(name)) {
+			IJ.error("Could not add new content. A content with " +
+				"name \"" + name + "\" exists already.");
+			return null;
+		}
+
+		return univ.addContent(image, color, 
+				name, threshold, channels, resf, type);
+	}
+
+	public void closeAllDialogs() {
+		while(openDialogs.size() > 0) {
+			GenericDialog gd = (GenericDialog)openDialogs.get(0);
+			gd.dispose();
+			openDialogs.remove(gd);
+		}
+	}
 }
 

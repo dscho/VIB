@@ -34,7 +34,7 @@ import ij.process.FloatProcessor;
 
 public class Mask_Of_Nearby_Points implements PlugIn {
 	
-	public static final String PLUGIN_VERSION = "1.0";
+	public static final String PLUGIN_VERSION = "1.1";
 
 	public void run(String ignored) {
 		

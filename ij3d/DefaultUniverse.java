@@ -17,6 +17,7 @@ import voltex.VoltexGroup;
 import marchingcubes.MCTriangulator;
 
 import java.awt.Panel;
+import java.awt.Dimension;
 import java.awt.BorderLayout;
 import java.awt.Frame;
 import java.awt.event.*;
@@ -50,6 +51,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	protected BranchGroup root;
 	protected BranchGroup scene;
+	protected Scalebar scalebar;
 	protected TransformGroup centerTG;
 	protected TransformGroup translateTG;
 	protected TransformGroup rotationsTG;
@@ -80,6 +82,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		return centerTG;
 	}
 
+	public Scalebar getScalebar() {
+		return scalebar;
+	}
+
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height));
 		getViewingPlatform().setNominalViewingTransform();
@@ -95,6 +101,9 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
 		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 		root.addChild(scaleTG);
+
+		scalebar = new Scalebar();
+		scaleTG.addChild(scalebar);
 
 		rotationsTG = new TransformGroup();
 		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
@@ -182,13 +191,29 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		win = new ImageWindow3D("ImageJ 3D Viewer", this);
 	}
 
+	public Dimension getSize() {
+		if(win != null)
+			return win.getSize();
+		return null;
+	}
+
+	public void setSize(int w, int h) {
+		if(win != null)
+			win.setSize(w, h);
+	}
+
 	public void close() {
 		if(win != null) {
+			fireUniverseClosed();
 			while(!listeners.isEmpty())
 				listeners.remove(0);
 			win.close();
 			win = null;
 		}
+	}
+
+	public ImageWindow3D getWindow() {
+		return win;
 	}
 
 	public void addUniverseListener(UniverseListener l) {
@@ -199,24 +224,31 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		listeners.remove(l);
 	}
 
+	public void fireUniverseClosed() {
+		for(int i = 0; i < listeners.size(); i++) {
+			UniverseListener l = (UniverseListener)listeners.get(i);
+			l.universeClosed();
+		}
+	}
+
 	public void fireTransformationStarted() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationStarted();
+			l.transformationStarted(getCanvas().getView());
 		}
 	}
 
 	public void fireTransformationUpdated() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationUpdated();
+			l.transformationUpdated(getCanvas().getView());
 		}
 	}
 
 	public void fireTransformationFinished() {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.transformationFinished();
+			l.transformationFinished(getCanvas().getView());
 		}
 	}
 
