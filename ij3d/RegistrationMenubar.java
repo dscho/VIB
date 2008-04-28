@@ -39,16 +39,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Collection;
 
 public class RegistrationMenubar extends MenuBar implements ActionListener, 
-					 		ItemListener,
 							UniverseListener {
 
 	private Image3DUniverse univ;
 	
+	private Menu register;
 	private MenuItem exit;
 
-	private Menu register;
-
 	private List openDialogs = new ArrayList();
+
+	private Content templ, model;
 
 
 	public RegistrationMenubar(Image3DUniverse univ) {
@@ -57,58 +57,87 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 
 		univ.addUniverseListener(this);
 
-		register = createRegisterMenu();
-		this.add(register);
-
-	}
-
-	public Menu createRegisterMenu() {
-		Menu reg = new Menu("Register");
+		register = new Menu("Register");
 
 		exit = new MenuItem("Exit registration");
 		exit.addActionListener(this);
-		reg.add(exit);
+		register.add(exit);
 
-		return reg;
+		this.add(register);
+
 	}
 
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == exit) {
 			exitRegistration();
+		} else if(e.getActionCommand().equals("LS_TEMPLATE")) {
+			// select landmarks of the template
+			selectLandmarkSet(templ, "LS_MODEL");
+		} else if(e.getActionCommand().equals("LS_MODEL")) {
+			// select the landmarks of the model
+			selectLandmarkSet(model, "REGISTER");
+		} else if(e.getActionCommand().equals("REGISTER")) {
+			// do registration
+			doRegistration(templ, model);
 		}
 	}
 
-	public void itemStateChanged(ItemEvent e) {
-	}
 
-	// Universe Listener interface
-	public void transformationStarted(View view) {}
-	public void transformationFinished(View view) {}
-	public void canvasResized() {}
-	public void transformationUpdated(View view) {}
-	public void contentChanged(Content c) {}
-	public void universeClosed() {}
-	public void contentAdded(Content c) {}
-
-	public void contentRemoved(Content c) {} 
-	public void contentSelected(Content c) {}
-
+	// usually called from the main menu bar.
 	public void register() {
 		new Thread(new Runnable() {
 			public void run() {
-				regist();
+				initRegistration();
 			}
 		}).start();
 	}
 
 	public void exitRegistration() {
+		templ.showPointList(false);
+		model.showPointList(false);
 		MenuBar mb = univ.getMenuBar();
 		univ.setMenubar(mb);
+		univ.clearSelection();
+		univ.setStatus("");
+		Toolbar.getInstance().setTool(Toolbar.HAND);
 	}
 
-	public void regist() {
+	private void hideAll() {
+		for(Iterator it = univ.contents(); it.hasNext();)
+			((Content)it.next()).setVisible(false);
+	}
+
+
+	private void selectLandmarkSet(final Content content, 
+						String actionCommand) {
+		hideAll();
+		content.setVisible(true);
+		content.displayAs(Content.ORTHO);
+		content.showPointList(true);
+		Toolbar.getInstance().setTool(Toolbar.POINT);
+		univ.select(content);
+
+		univ.setStatus("Select landmarks in " + content.getName() +
+				" and click OK");
+
+		Panel p = new Panel(new FlowLayout());
+		Button b = new Button("OK");
+		b.setActionCommand(actionCommand);
+		b.addActionListener(this);
+		p.add(b);
+
+		if(actionCommand.equals("REGISTER")) {
+			b = new Button("Back to template");
+			b.setActionCommand("LS_TEMPLATE");
+			b.addActionListener(this);
+			p.add(b);
+		}
+
+		univ.pld.addPanel(p);
+	}
+
+	public void initRegistration() {
 		// Select the contents used for registration
-		DecimalFormat df = new DecimalFormat("00.000");
 		Collection contents = univ.getContents();
 		if(contents.size() < 2) {
 			IJ.error("At least two bodies are required for " +
@@ -128,58 +157,20 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		openDialogs.remove(gd);
 		if(gd.wasCanceled())
 			return;
-		final Content templ = univ.getContent(gd.getNextChoice());
-		final Content model = univ.getContent(gd.getNextChoice());
+		templ = univ.getContent(gd.getNextChoice());
+		model = univ.getContent(gd.getNextChoice());
 		boolean scaling = gd.getNextBoolean();
 
 		// Select the landmarks of the template
-		model.setVisible(false);
-		templ.displayAs(Content.ORTHO);
-		templ.setColor(new Color3f(1, 0, 0));
-		Toolbar.getInstance().setTool(Toolbar.POINT);
-		univ.select(templ);
-
-		univ.setStatus("Select landmarks in " + templ.getName() +
-				" and click OK");
-
-		Panel p = new Panel(new FlowLayout());
-		Button b = new Button("OK");
-		p.add(b);
-		b.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				synchronized(templ) {
-					templ.notify();
-				}
-			}
-		});
-		univ.pld.addPanel(p);
-		synchronized(templ) {
-			try {
-				templ.wait();
-			} catch(Exception e) {}
-		}
-		templ.setVisible(false);
+		selectLandmarkSet(templ, "LS_MODEL");
+	}
+	
 
 
-		// select the landmarks of the model
-		model.setVisible(true);
-		model.displayAs(Content.ORTHO);
-		model.setColor(new Color3f(0, 1, 0));
-		Toolbar.getInstance().setTool(Toolbar.POINT);
-		univ.select(model);
 
-		univ.setStatus("Select landmarks in " + model.getName() +
-				" and click OK");
+	public void doRegistration(Content templ, Content model) {
 
-		synchronized(templ) {
-			try {
-				templ.wait();
-			} catch(Exception e) {}
-		}
-		model.setVisible(false);
 		univ.setStatus("");
-
-
 		// select the landmarks common to template and model
 		PointList tpoints = templ.getPointList();
 		PointList mpoints = model.getPointList();
@@ -189,7 +180,7 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		}
 		List sett = new ArrayList();
 		List setm = new ArrayList();
-		for(i = 0; i < tpoints.size(); i++) {
+		for(int i = 0; i < tpoints.size(); i++) {
 			BenesNamedPoint pt = tpoints.get(i);
 			BenesNamedPoint pm = mpoints.get(pt.getName());
 			if(pm != null) {
@@ -205,8 +196,9 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		}
 
 		// Display common landmarks
+		DecimalFormat df = new DecimalFormat("00.000");
 		String message = "Points used for registration\n \n";
-		for(i = 0; i < sett.size(); i++) {
+		for(int i = 0; i < sett.size(); i++) {
 			BenesNamedPoint bnp = (BenesNamedPoint)sett.get(i);
 			message += (bnp.getName() + "    "
 				+ df.format(bnp.x) + "    "
@@ -244,5 +236,20 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 			openDialogs.remove(gd);
 		}
 	}
+
+
+
+	
+	// Universe Listener interface
+	public void transformationStarted(View view) {}
+	public void transformationFinished(View view) {}
+	public void canvasResized() {}
+	public void transformationUpdated(View view) {}
+	public void contentChanged(Content c) {}
+	public void universeClosed() {}
+	public void contentAdded(Content c) {}
+
+	public void contentRemoved(Content c) {} 
+	public void contentSelected(Content c) {}
 }
 

@@ -18,6 +18,7 @@ public class PointListDialog extends Dialog {
 	GridBagLayout gridbag;
 	ScrollPane scroll;
 	Panel panel;
+	Panel extraPanel;
 
 	public PointListDialog(Frame owner) {
 		super(owner, "Point list");
@@ -71,7 +72,11 @@ public class PointListDialog extends Dialog {
 	}
 
 	public void addPanel(Panel p) {
+		if(extraPanel != null)
+			remove(extraPanel);
+		extraPanel = p;
 		add(p, BorderLayout.SOUTH);
+		update();
 	}
 
 	private void print() {
