@@ -1,13 +1,5 @@
 package voltex;
 
-import java.awt.*;
-import java.awt.image.*;
-import java.awt.color.ColorSpace;
-import javax.media.j3d.*;
-import javax.vecmath.*;
-import java.io.*;
-import com.sun.j3d.utils.behaviors.mouse.*;
-
 abstract public interface VolRendConstants {
 
     static final int 	X_AXIS = 0;

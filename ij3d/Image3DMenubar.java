@@ -26,6 +26,7 @@ import vib.FastMatrix;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
+import voltex.Renderer;
 import isosurface.MeshGroup;
 import isosurface.MeshExporter;
 import isosurface.MeshEditor;
@@ -876,67 +877,64 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		final GenericDialog gd = new GenericDialog("Adjust slices...");
 		final OrthoGroup os = (OrthoGroup)selected.getContent();
 		final int[] oldvalues = os.getSlices();
+		final boolean[] visible = os.getVisible();
 		ImagePlus imp = selected.image;
 		int w = imp.getWidth() / selected.getResamplingFactor();
 		int h = imp.getHeight() / selected.getResamplingFactor();
 		int d = imp.getStackSize() / selected.getResamplingFactor();
 
-		gd.addSlider("x", 0, w-1, oldvalues[0]);
-		gd.addSlider("y", 0, h-1, oldvalues[1]);
-		gd.addSlider("z", 0, d-1, oldvalues[2]);
+		gd.addCheckbox("Show_yz plane", visible[0]);
+		gd.addSlider("x coordinate", 0, w-1, oldvalues[0]);
+		gd.addCheckbox("Show_xz plane", visible[1]);
+		gd.addSlider("y coordinate", 0, h-1, oldvalues[1]);
+		gd.addCheckbox("Show_xy plane", visible[2]);
+		gd.addSlider("z coordinate", 0, d-1, oldvalues[2]);
 
-		final Scrollbar xSlider = (Scrollbar)gd.getSliders().get(0);
-		final Scrollbar ySlider = (Scrollbar)gd.getSliders().get(1);
-		final Scrollbar zSlider = (Scrollbar)gd.getSliders().get(2);
+		gd.addMessage(  "You can use the x, y and z key plus\n" +
+				"the arrow keys to adjust slices in\n" +
+				"x, y and z direction respectively.\n \n" +
+				"x, y, z + SPACE switches planes on\n" +
+				"and off");
 
-// 		AdjustmentListener listener = new AdjustmentListener() {
-// 			public void adjustmentValueChanged(AdjustmentEvent e) {
-// 				os.setSlices(
-// 					xSlider.getValue(), 
-// 					ySlider.getValue(), 
-// 					zSlider.getValue());
-// 				univ.fireContentChanged(
-// 					selected);
-// 			}
-// 		};
-		xSlider.addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setXSlice(xSlider.getValue()); 
-				univ.fireContentChanged(selected);
-			}
-		});
+		final int[] dirs = new int[] {Renderer.X_AXIS, 
+				Renderer.Y_AXIS, Renderer.Z_AXIS};
+		final Scrollbar[] sl = new Scrollbar[3]; 
+		final Checkbox[] cb = new Checkbox[3];
 
-		ySlider.addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setYSlice(ySlider.getValue()); 
-				univ.fireContentChanged(selected);
-			}
-		});
+		for(int k = 0; k < 3; k++) {
+			final int i = k;
+			sl[i] = (Scrollbar)gd.getSliders().get(i);
+			sl[i].addAdjustmentListener(new AdjustmentListener() {
+				public void adjustmentValueChanged(
+							AdjustmentEvent e) {
+					os.setSlice(dirs[i], sl[i].getValue());
+					univ.fireContentChanged(selected);
+				}
+			});
 
-		zSlider.addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setZSlice(zSlider.getValue()); 
-				univ.fireContentChanged(selected);
-			}
-		});
-
+			cb[i] = (Checkbox)gd.getCheckboxes().get(i);
+			cb[i].addItemListener(new ItemListener() {
+				public void itemStateChanged(ItemEvent e) {
+					os.setVisible(dirs[i], cb[i].getState());
+				}
+			});
+		}
 
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
 				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
-					os.setSlices(
-						oldvalues[0], 
-						oldvalues[1], 
-						oldvalues[2]);
+					os.setSlices(oldvalues);
+					os.setVisible(visible);
 					univ.fireContentChanged(selected);
 					return;
 				} else {
-					record(SET_SLICES, 
-					Integer.toString(xSlider.getValue()), 
-					Integer.toString(ySlider.getValue()),
-					Integer.toString(zSlider.getValue()));
+					record(SET_SLICES,
+					Integer.toString(sl[0].getValue()), 
+					Integer.toString(sl[1].getValue()),
+					Integer.toString(sl[2].getValue()));
+					return;
 				}
 			}
 		});

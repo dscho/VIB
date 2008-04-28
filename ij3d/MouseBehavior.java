@@ -18,6 +18,7 @@ import ij.gui.Toolbar;
 import java.util.Enumeration;
 import java.util.Iterator;
 
+import voltex.Renderer;
 import orthoslice.OrthoGroup;
 
 public class MouseBehavior extends Behavior {
@@ -141,9 +142,13 @@ public class MouseBehavior extends Behavior {
 		Content c = univ.getSelected();
 		int code = e.getKeyCode();
 		int mast = e.getModifiersEx();
-		boolean xdown = ic3d.isKeyDown(KeyEvent.VK_X); 
-		boolean ydown = ic3d.isKeyDown(KeyEvent.VK_Y);
-		boolean zdown = ic3d.isKeyDown(KeyEvent.VK_Z);
+		int axis = -1;
+		if(ic3d.isKeyDown(KeyEvent.VK_X))
+			axis = Renderer.X_AXIS;
+		else if(ic3d.isKeyDown(KeyEvent.VK_Y))
+			axis = Renderer.Y_AXIS;
+		else if(ic3d.isKeyDown(KeyEvent.VK_Z))
+			axis = Renderer.Z_AXIS;
 		if(e.isShiftDown()) {
 			switch(code) {
 				case KeyEvent.VK_RIGHT:translate(c, 5, 0);break;
@@ -156,33 +161,17 @@ public class MouseBehavior extends Behavior {
 				case KeyEvent.VK_UP: zoom(c, 1); break;
 				case KeyEvent.VK_DOWN: zoom(c, -1); break;
 			}
-		} else if(c.getType() == Content.ORTHO && (
-					ic3d.isKeyDown(KeyEvent.VK_X) ||
-					ic3d.isKeyDown(KeyEvent.VK_Y) ||
-					ic3d.isKeyDown(KeyEvent.VK_Z))) {
-
+		} else if(c.getType() == Content.ORTHO && axis != -1) {
 			OrthoGroup og = (OrthoGroup)c.getContent();
-			if(xdown) {
-				switch(code) {
+			switch(code) {
 				case KeyEvent.VK_RIGHT:
-				case KeyEvent.VK_UP: og.increaseX(); break;
+				case KeyEvent.VK_UP: og.increase(axis); break;
 				case KeyEvent.VK_LEFT:
-				case KeyEvent.VK_DOWN: og.decreaseX(); break;
-				}
-			} else if(ydown) {
-				switch(code) {
-				case KeyEvent.VK_RIGHT:
-				case KeyEvent.VK_UP: og.increaseY(); break;
-				case KeyEvent.VK_LEFT:
-				case KeyEvent.VK_DOWN: og.decreaseY(); break;
-				}
-			} else if(zdown) {
-				switch(code) {
-				case KeyEvent.VK_RIGHT:
-				case KeyEvent.VK_UP: og.increaseZ(); break;
-				case KeyEvent.VK_LEFT:
-				case KeyEvent.VK_DOWN: og.decreaseZ(); break;
-				}
+				case KeyEvent.VK_DOWN: og.decrease(axis); break;
+				case KeyEvent.VK_SPACE:
+					boolean b = og.isVisible(axis);
+					og.setVisible(axis, !b);
+					break;
 			}
 		} else {
 			switch(code) {

@@ -8,23 +8,29 @@ import javax.vecmath.*;
 import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import ij.ImagePlus;
+import java.util.BitSet;
 
 import voltex.VolumeRenderer;
 
 public class Orthoslice extends VolumeRenderer {
 
-	private int x, y, z;
-	private int w, h, d;
+	int[] slices = new int[3];
+	int[] dimensions = new int[3];
+	boolean[] visible = new boolean[3];
+	BitSet whichChild = new BitSet(6);
 
 	public Orthoslice(ImagePlus img, IndexColorModel cmodel, 
 					Color3f color, float tr) {
 		super(img, cmodel, color, tr);
-		this.w = img.getWidth();
-		this.h = img.getHeight();
-		this.d = img.getStackSize();
-		this.x = w / 2;
-		this.y = h / 2;
-		this.z = d / 2;
+		dimensions[0] = img.getWidth();
+		dimensions[1] = img.getHeight();
+		dimensions[2] = img.getStackSize();
+		for(int i = 0; i < 3; i++) {
+			slices[i] = dimensions[i] / 2;
+			visible[i] = true;
+			whichChild.set(i, true);
+			whichChild.set(i+3, true);
+		}
 	}
 
 	protected void loadAxis(int axis) {
@@ -36,12 +42,7 @@ public class Orthoslice extends VolumeRenderer {
 		backGroup = 
 		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][BACK]);
 
-		int i = z;
-		switch(axis) {
-			case X_AXIS: i = x; break;
-			case Y_AXIS: i = y; break;
-			case Z_AXIS: i = z; break;
-		}
+		int i = slices[axis];
 
 		GeometryArray quadArray = 
 			geomCreator.getQuad(axis, i);
@@ -65,102 +66,75 @@ public class Orthoslice extends VolumeRenderer {
 		backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 		backShapeGroup.addChild(backShape);
 		backGroup.insertChild(backShapeGroup, 0);
+
 	} 
 
 	public void eyePtChanged(View view) {
-		axisSwitch.setWhichChild(Switch.CHILD_ALL);
+		axisSwitch.setWhichChild(Switch.CHILD_MASK);
+		axisSwitch.setChildMask(whichChild);
 	}
 
-	public void setSlices(int x, int y, int z) {
-		if(this.x != x)
-			setXSlice(x);
-		else if(this.y != y)
-			setYSlice(y);
-		else if(this.z != z)
-			setZSlice(z);
+	public void setSlices(int[] v) {
+		for(int i = 0; i < 3; i++)
+			if(slices[i] != v[i])
+				setSlice(i, v[i]);
 	}
 
-	public void decreaseX() {
-		setXSlice(x-1);
+	public int[] getSlices() {
+		return slices;
 	}
 
-	public void decreaseY() {
-		setYSlice(y-1);
+	public int getSlice(int axis) {
+		return slices[axis];
 	}
 
-	public void decreaseZ() {
-		setZSlice(z-1);
+	public boolean isVisible(int axis) {
+		return visible[axis];
 	}
 
-	public void increaseX() {
-		setXSlice(x+1);
+	public boolean[] getVisible() {
+		return visible;
 	}
 
-	public void increaseY() {
-		setYSlice(y+1);
+	public void setVisible(int axis, boolean b) {
+		if(visible[axis] != b) {
+			visible[axis] = b;
+			whichChild.set(axisIndex[axis][FRONT], b);
+			whichChild.set(axisIndex[axis][BACK], b);
+			axisSwitch.setChildMask(whichChild);
+		}
 	}
 
-	public void increaseZ() {
-		setZSlice(z+1);
+	public void setVisible(boolean[] b) {
+		for(int i = 0; i < b.length; i++)
+			setVisible(i, b[i]);
 	}
 
-	public void setYSlice(int y) {
-		if(y >= h || y < 0)
+	public void decrease(int axis) {
+		setSlice(axis, slices[axis]-1);
+	}
+
+	public void increase(int axis) {
+		setSlice(axis, slices[axis]+1);
+	}
+
+	public void setSlice(int axis, int v) {
+		if(v >= dimensions[axis] || v < 0)
 			return;
-		this.y = y;
-		Group g = (Group)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
+		slices[axis] = v;
+		Group g = (Group)axisSwitch.getChild(axisIndex[axis][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 
 			System.out.println(num + " children, expected only 1");
 		Shape3D shape = (Shape3D)
 			((Group)g.getChild(num-1)).getChild(0);
 
-		double[] quadCoords = geomCreator.getQuadCoords(Y_AXIS, y);
+		double[] quadCoords = geomCreator.getQuadCoords(axis, v);
 		((QuadArray)shape.getGeometry()).setCoordinates(0, quadCoords);
 
-		Texture2D tex = appCreator.getTexture(Y_AXIS, y);
+		Texture2D tex = appCreator.getTexture(axis, v);
 		shape.getAppearance().setTexture(tex);
-		TexCoordGeneration tg = appCreator.getTg(Y_AXIS, y);
-		shape.getAppearance().setTexCoordGeneration(tg);
-	}
-
-	public void setZSlice(int z) {
-		if(z >= d || z < 0)
-			return;
-		this.z = z;
-		Group g = (Group)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
-		int num = g.numChildren();
-		if(num > 1) 
-			System.out.println(num + " children, expected only 1");
-		Shape3D shape = (Shape3D)
-			((Group)g.getChild(num-1)).getChild(0);
-
-		double[] quadCoords = geomCreator.getQuadCoords(Z_AXIS, z);
-		((QuadArray)shape.getGeometry()).setCoordinates(0, quadCoords);
-
-		Texture2D tex = appCreator.getTexture(Z_AXIS, z);
-		shape.getAppearance().setTexture(tex);
-		TexCoordGeneration tg = appCreator.getTg(Z_AXIS, z);
-		shape.getAppearance().setTexCoordGeneration(tg);
-	}
-
-	public void setXSlice(int x) {
-		if(x >= w || x < 0)
-			return;
-		this.x = x;
-		Group g = (Group)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
-		int num = g.numChildren();
-		if(num > 1) 
-			System.out.println(num + " children, expected only 1");
-		Shape3D shape = (Shape3D)
-			((Group)g.getChild(num-1)).getChild(0);
-
-		double[] quadCoords = geomCreator.getQuadCoords(X_AXIS, x);
-		((QuadArray)shape.getGeometry()).setCoordinates(0, quadCoords);
-
-		Texture2D tex = appCreator.getTexture(X_AXIS, x);
-		shape.getAppearance().setTexture(tex);
-		TexCoordGeneration tg = appCreator.getTg(X_AXIS, x);
+		TexCoordGeneration tg = appCreator.getTg(axis, v);
 		shape.getAppearance().setTexCoordGeneration(tg);
 	}
 }
