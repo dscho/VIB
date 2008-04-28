@@ -1,0 +1,18 @@
+TODO for the ImageJ 3D Viewer
+===========================================================
+
+* Make the 3D viewer a plugin instead of pluginfilter
+* convert automatically to 8-bit color if it's an RGB
+* center the window
+* in the image selection combobox, don't show the 3d viewer window
+* Catch exception when dublicate content name
+* Automatically update name when selection a image to add
+* load images/textures/surfaces in an extra thread
+* bug when renaming a point
+* slices: x/y/z + scroll
+* possibility to scale a point
+* scale point up for highlighting
+* After registering, show points of template and model
+* remove extra panel after registration
+* lock template and model after registration
+* run the slide update methods in the menubar in an extra thread
