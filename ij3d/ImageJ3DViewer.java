@@ -151,7 +151,8 @@ public class ImageJ3DViewer implements PlugInFilter {
 
 			OrthoGroup vg = (OrthoGroup)univ.
 						getSelected().getContent();
-			vg.setSlices(getInt(x), getInt(y), getInt(z));
+			vg.setSlices(new int[] {
+				getInt(x), getInt(y), getInt(z)});
 		}
 	}
 
