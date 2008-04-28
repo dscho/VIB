@@ -161,7 +161,7 @@ public class MouseBehavior extends Behavior {
 				case KeyEvent.VK_UP: zoom(c, 1); break;
 				case KeyEvent.VK_DOWN: zoom(c, -1); break;
 			}
-		} else if(c.getType() == Content.ORTHO && axis != -1) {
+		} else if(c != null && c.getType() == Content.ORTHO && axis != -1) {
 			OrthoGroup og = (OrthoGroup)c.getContent();
 			switch(code) {
 				case KeyEvent.VK_RIGHT:
