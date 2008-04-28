@@ -223,7 +223,9 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		model.setTransform(t3d);
 
 		templ.setVisible(true);
+		templ.showPointList(true);
 		model.setVisible(true);
+		model.showPointList(true);
 
 		univ.clearSelection();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
