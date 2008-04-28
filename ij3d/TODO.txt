@@ -1,7 +1,6 @@
 TODO for the ImageJ 3D Viewer
 ===========================================================
 
-* Make the 3D viewer a plugin instead of pluginfilter
 * convert automatically to 8-bit color if it's an RGB
 * center the window
 * in the image selection combobox, don't show the 3d viewer window
