@@ -69,7 +69,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		WindowManager.setCurrentWindow(this);
 
 		add(canvas3D);
-		status.setText("  lkj");
+		status.setText("");
 		status.setForeground(Color.WHITE);
 		status.setBackground(Color.BLACK);
 		status.setFont(new Font("Verdana", Font.PLAIN, 20));
