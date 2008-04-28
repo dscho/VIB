@@ -7,6 +7,7 @@ import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import ij.IJ;
 import ij.WindowManager;
+import ij.gui.GUI;
 
 import ij3d.ImageWindow3D;
 import ij3d.Content;
@@ -35,6 +36,7 @@ public class ImageJ3DViewer implements PlugIn {
 		try {
 			univ = new Image3DUniverse(512, 512);
 			univ.show();
+			GUI.center(univ.getWindow());
 			int type = -1;
 			Image3DMenubar menu = univ.getMenuBar();
 			if(image != null)
