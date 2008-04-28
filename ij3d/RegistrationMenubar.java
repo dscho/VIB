@@ -225,11 +225,16 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 
 		templ.setVisible(true);
 		templ.showPointList(true);
+		templ.setLocked(true);
 		model.setVisible(true);
 		model.showPointList(true);
+		model.setLocked(true);
 
 		univ.clearSelection();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
+
+		IJ.showMessage("Contents are locked to prevent\n" +
+			"accidental transformations");
 	}
 
 	public void closeAllDialogs() {

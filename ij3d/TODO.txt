@@ -6,6 +6,5 @@ TODO for the ImageJ 3D Viewer
 * slices: x/y/z + scroll
 * possibility to scale a point
 * scale point up for highlighting
-* lock template and model after registration
 * run the slide update methods in the menubar in an extra thread
 * Show "Adjust slices" in registration mode
