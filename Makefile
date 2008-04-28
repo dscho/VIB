@@ -47,6 +47,37 @@ TESTCLASSES=distance.TestMutualInformation \
 
 TESTMEM=512m
 
+TRACERSOURCES=stacks/ThreePanes.java \
+	stacks/ThreePanesCanvas.java \
+	stacks/PaneOwner.java \
+	tracing/SearchNode.java \
+	tracing/SearchProgressCallback.java \
+	tracing/SearchThread.java \
+	tracing/TracerThread.java \
+	tracing/Path.java \
+	tracing/PathAndFillManager.java \
+	tracing/PathAndFillListener.java \
+	tracing/Simple_Neurite_Tracer.java \
+	tracing/NeuriteTracerResultsDialog.java \
+	tracing/PointInImage.java \
+	tracing/TracerCanvas.java \
+	tracing/Fill.java \
+	tracing/FillerThread.java \
+	tracing/FillerProgressCallback.java \
+	tracing/NormalPlaneCanvas.java \
+	$(wildcard pal/math/*.java) \
+	features/ComputeCurvatures.java \
+	features/GaussianGenerationCallback.java \
+	client/ArchiveClient.java \
+	util/Arrow.java \
+	util/ArrowDisplayer.java \
+	tracing/README tracing/COPYING \
+	math3d/JacobiDouble.java \
+	math3d/FastMatrixN.java \
+	amira/AmiraParameters.java \
+	amira/AmiraMeshDecoder.java \
+	amira/AmiraTable.java
+
 test :
 	java -Xmx$(TESTMEM) -classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR) org.junit.runner.JUnitCore $(TESTCLASSES)
 
@@ -71,7 +102,7 @@ FibonacciHeapInt.java: FibonacciHeap.java Makefile
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java), $(JAVAS))) vib/segment/icons/*.png
 
-VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java util/Bookstein_FromMarkers.java), $(JAVAS))) vib/segment/icons/*.png
+VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java tracing/*.java oldsegmenters/*.java client/*.java util/Bookstein_FromMarkers.java), $(JAVAS))) vib/segment/icons/*.png $(TRACERSOURCES)
 
 Segmentation_Editor_compat.jar: SOURCES=amira/*.java \
 	vib/InterpolatedImage.java math3d/Point3d.java \
@@ -158,36 +189,7 @@ Find_Connected_Regions.jar: SOURCES=util/Find_Connected_Regions.java \
 Mask_Of_Nearby_Points.jar: SOURCES=util/Mask_Of_Nearby_Points.java \
 	util/COPYING
 
-Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
-	stacks/ThreePanesCanvas.java \
-	stacks/PaneOwner.java \
-	tracing/SearchNode.java \
-	tracing/SearchProgressCallback.java \
-	tracing/SearchThread.java \
-	tracing/TracerThread.java \
-	tracing/Path.java \
-	tracing/PathAndFillManager.java \
-	tracing/PathAndFillListener.java \
-	tracing/Simple_Neurite_Tracer.java \
-	tracing/NeuriteTracerResultsDialog.java \
-	tracing/PointInImage.java \
-	tracing/TracerCanvas.java \
-	tracing/Fill.java \
-	tracing/FillerThread.java \
-	tracing/FillerProgressCallback.java \
-	tracing/NormalPlaneCanvas.java \
-	$(wildcard pal/math/*.java) \
-	features/ComputeCurvatures.java \
-	features/GaussianGenerationCallback.java \
-	client/ArchiveClient.java \
-	util/Arrow.java \
-	util/ArrowDisplayer.java \
-	tracing/README tracing/COPYING \
-	math3d/JacobiDouble.java \
-	math3d/FastMatrixN.java \
-	amira/AmiraParameters.java \
-	amira/AmiraMeshDecoder.java \
-	amira/AmiraTable.java
+Simple_Neurite_Tracer.jar: SOURCES=$(TRACERSOURCES)
 
 ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	marchingcubes/MCTriangulator.java \
