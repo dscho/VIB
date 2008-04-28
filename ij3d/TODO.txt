@@ -1,7 +1,6 @@
 TODO for the ImageJ 3D Viewer
 ===========================================================
 
-* in the image selection combobox, don't show the 3d viewer window
 * Catch exception when dublicate content name
 * Automatically update name when selection a image to add
 * load images/textures/surfaces in an extra thread

@@ -1225,12 +1225,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		for(int i=1; i<=img_count; i++) {
 			int id = WindowManager.getNthImageID(i);
 			ImagePlus imp = WindowManager.getImage(id);
-			if(imp != null){
+			if(imp != null && !imp.getTitle().equals("3d")){
 				 windows.add(imp.getTitle());
 			}
 		}
-		if(windows.size() == 0)
+		if(windows.size() == 0) {
 			IJ.error("No images open");
+			return null;
+		}
 		images = (String[])windows.toArray(new String[]{});
 		String name = image == null ? images[0] : image.getTitle();
 		String[] types = new String[] {
