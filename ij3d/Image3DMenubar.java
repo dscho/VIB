@@ -1259,14 +1259,21 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 
 		// automatically set threshold if surface is selected
-		final TextField tf = (TextField)gd.getNumericFields().get(0);
-		final Choice ch = (Choice)gd.getChoices().get(1);
-		ch.addItemListener(new ItemListener() {
+		final TextField th = (TextField)gd.getNumericFields().get(0);
+		final Choice di = (Choice)gd.getChoices().get(1);
+		di.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
-				if(ch.getSelectedIndex() == Content.SURFACE)
-					tf.setText(Integer.toString(50));
+				if(di.getSelectedIndex() == Content.SURFACE)
+					th.setText(Integer.toString(50));
 				else
-					tf.setText(Integer.toString(0));
+					th.setText(Integer.toString(0));
+			}
+		});
+		final Choice im = (Choice)gd.getChoices().get(0);
+		final TextField na = (TextField)gd.getStringFields().get(0);
+		im.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				na.setText(im.getSelectedItem());
 			}
 		});
 		openDialogs.add(gd);
