@@ -14,13 +14,17 @@ import voltex.VolumeRenderer;
 public class Orthoslice extends VolumeRenderer {
 
 	private int x, y, z;
+	private int w, h, d;
 
 	public Orthoslice(ImagePlus img, IndexColorModel cmodel, 
 					Color3f color, float tr) {
 		super(img, cmodel, color, tr);
-		this.x = img.getWidth()/2;
-		this.y = img.getHeight()/2;
-		this.z = img.getStackSize()/2;
+		this.w = img.getWidth();
+		this.h = img.getHeight();
+		this.d = img.getStackSize();
+		this.x = w / 2;
+		this.y = h / 2;
+		this.z = d / 2;
 	}
 
 	protected void loadAxis(int axis) {
@@ -68,19 +72,42 @@ public class Orthoslice extends VolumeRenderer {
 	}
 
 	public void setSlices(int x, int y, int z) {
-		if(this.x != x) {
-			this.x = x;
+		if(this.x != x)
 			setXSlice(x);
-		} else if(this.y != y) {
-			this.y = y;
+		else if(this.y != y)
 			setYSlice(y);
-		} else if(this.z != z) {
-			this.z = z;
+		else if(this.z != z)
 			setZSlice(z);
-		}
+	}
+
+	public void decreaseX() {
+		setXSlice(x-1);
+	}
+
+	public void decreaseY() {
+		setYSlice(y-1);
+	}
+
+	public void decreaseZ() {
+		setZSlice(z-1);
+	}
+
+	public void increaseX() {
+		setXSlice(x+1);
+	}
+
+	public void increaseY() {
+		setYSlice(y+1);
+	}
+
+	public void increaseZ() {
+		setZSlice(z+1);
 	}
 
 	public void setYSlice(int y) {
+		if(y >= h || y < 0)
+			return;
+		this.y = y;
 		Group g = (Group)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 
@@ -98,6 +125,9 @@ public class Orthoslice extends VolumeRenderer {
 	}
 
 	public void setZSlice(int z) {
+		if(z >= d || z < 0)
+			return;
+		this.z = z;
 		Group g = (Group)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 
@@ -115,6 +145,9 @@ public class Orthoslice extends VolumeRenderer {
 	}
 
 	public void setXSlice(int x) {
+		if(x >= w || x < 0)
+			return;
+		this.x = x;
 		Group g = (Group)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
 		int num = g.numChildren();
 		if(num > 1) 

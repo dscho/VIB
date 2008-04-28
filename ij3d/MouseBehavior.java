@@ -18,9 +18,12 @@ import ij.gui.Toolbar;
 import java.util.Enumeration;
 import java.util.Iterator;
 
+import orthoslice.OrthoGroup;
+
 public class MouseBehavior extends Behavior {
 
 	private DefaultUniverse univ;
+	private ImageCanvas3D ic3d;
 
 	private WakeupOnAWTEvent[] mouseEvents;
 	private WakeupCondition wakeupCriterion;
@@ -40,6 +43,7 @@ public class MouseBehavior extends Behavior {
 	public static final int DELETE_POINT_MASK = InputEvent.SHIFT_DOWN_MASK |
 						MouseEvent.BUTTON1_DOWN_MASK;
 
+
 	private Transform3D currentXform = new Transform3D();
 	private Transform3D transformX = new Transform3D(); 
 	private Transform3D transformY = new Transform3D();
@@ -47,6 +51,7 @@ public class MouseBehavior extends Behavior {
 
 	public MouseBehavior(DefaultUniverse univ) {
 		this.univ = univ;
+		this.ic3d = (ImageCanvas3D)univ.getCanvas();
 		mouseEvents = new WakeupOnAWTEvent[5];
 	}
 
@@ -129,11 +134,16 @@ public class MouseBehavior extends Behavior {
 
 	public void doProcess(KeyEvent e) {
 		int id = e.getID();
-		if(id != KeyEvent.KEY_RELEASED)
+
+		if(id == KeyEvent.KEY_RELEASED)
 			return;
+
 		Content c = univ.getSelected();
 		int code = e.getKeyCode();
 		int mast = e.getModifiersEx();
+		boolean xdown = ic3d.isKeyDown(KeyEvent.VK_X); 
+		boolean ydown = ic3d.isKeyDown(KeyEvent.VK_Y);
+		boolean zdown = ic3d.isKeyDown(KeyEvent.VK_Z);
 		if(e.isShiftDown()) {
 			switch(code) {
 				case KeyEvent.VK_RIGHT:translate(c, 5, 0);break;
@@ -145,6 +155,34 @@ public class MouseBehavior extends Behavior {
 			switch(code) {
 				case KeyEvent.VK_UP: zoom(c, 1); break;
 				case KeyEvent.VK_DOWN: zoom(c, -1); break;
+			}
+		} else if(c.getType() == Content.ORTHO && (
+					ic3d.isKeyDown(KeyEvent.VK_X) ||
+					ic3d.isKeyDown(KeyEvent.VK_Y) ||
+					ic3d.isKeyDown(KeyEvent.VK_Z))) {
+
+			OrthoGroup og = (OrthoGroup)c.getContent();
+			if(xdown) {
+				switch(code) {
+				case KeyEvent.VK_RIGHT:
+				case KeyEvent.VK_UP: og.increaseX(); break;
+				case KeyEvent.VK_LEFT:
+				case KeyEvent.VK_DOWN: og.decreaseX(); break;
+				}
+			} else if(ydown) {
+				switch(code) {
+				case KeyEvent.VK_RIGHT:
+				case KeyEvent.VK_UP: og.increaseY(); break;
+				case KeyEvent.VK_LEFT:
+				case KeyEvent.VK_DOWN: og.decreaseY(); break;
+				}
+			} else if(zdown) {
+				switch(code) {
+				case KeyEvent.VK_RIGHT:
+				case KeyEvent.VK_UP: og.increaseZ(); break;
+				case KeyEvent.VK_LEFT:
+				case KeyEvent.VK_DOWN: og.decreaseZ(); break;
+				}
 			}
 		} else {
 			switch(code) {

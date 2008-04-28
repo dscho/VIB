@@ -163,6 +163,30 @@ public class OrthoGroup extends ContentNode {
 		((Orthoslice)renderer).setZSlice(z);
 	}
 
+	public void decreaseX() {
+		((Orthoslice)renderer).decreaseX();
+	}
+
+	public void decreaseY() {
+		((Orthoslice)renderer).decreaseY();
+	}
+
+	public void decreaseZ() {
+		((Orthoslice)renderer).decreaseZ();
+	}
+
+	public void increaseX() {
+		((Orthoslice)renderer).increaseX();
+	}
+
+	public void increaseY() {
+		((Orthoslice)renderer).increaseY();
+	}
+
+	public void increaseZ() {
+		((Orthoslice)renderer).increaseZ();
+	}
+
 	public void setSlices(int x, int y, int z) {
 		((Orthoslice)renderer).setSlices(x, y, z);
 	}
