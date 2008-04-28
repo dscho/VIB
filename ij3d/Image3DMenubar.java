@@ -426,6 +426,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == add) {
 			Content c = addContent(null, -1);
+			if(c == null)
+				return;
 			String[] arg = new String[] {
 				c.image.getTitle(), 
 				ColorTable.getColorName(c.color),
