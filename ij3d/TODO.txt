@@ -3,7 +3,6 @@ TODO for the ImageJ 3D Viewer
 
 * load images/textures/surfaces in an extra thread
 * bug when renaming a point
-* slices: x/y/z + scroll
 * possibility to scale a point
 * scale point up for highlighting
 * run the slide update methods in the menubar in an extra thread

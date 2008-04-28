@@ -215,7 +215,26 @@ public class MouseBehavior extends Behavior {
 			}
 		}
 		if(id == MouseEvent.MOUSE_WHEEL) {
-			wheel_zoom(c, e);
+			int axis = -1;
+			if(ic3d.isKeyDown(KeyEvent.VK_X))
+				axis = Renderer.X_AXIS;
+			else if(ic3d.isKeyDown(KeyEvent.VK_Y))
+				axis = Renderer.Y_AXIS;
+			else if(ic3d.isKeyDown(KeyEvent.VK_Z))
+				axis = Renderer.Z_AXIS;
+			if(c.getType() == Content.ORTHO && axis != -1) {
+				OrthoGroup og = (OrthoGroup)c.getContent();
+				MouseWheelEvent we = (MouseWheelEvent)e;
+				int units = 0;
+				if(we.getScrollType() == 
+					MouseWheelEvent.WHEEL_UNIT_SCROLL)
+					units = we.getUnitsToScroll();
+				if(units > 0) og.increase(axis);
+				else if(units < 0) og.decrease(axis);
+					
+			} else {
+				wheel_zoom(c, e);
+			}
 		}
 	}
 
