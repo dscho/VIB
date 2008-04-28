@@ -7,6 +7,7 @@ import ij.WindowManager;
 import ij.ImagePlus;
 import ij.text.TextWindow;
 import ij.gui.Toolbar;
+import ij.process.StackConverter;
 
 import math3d.Transform_IO;
 
@@ -1284,6 +1285,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			IJ.error("Could not add new content. A content with " +
 				"name \"" + name + "\" exists already.");
 			return null;
+		}
+
+		if(image.getType() != ImagePlus.COLOR_256 && 
+			image.getType() != ImagePlus.GRAY8) {
+
+			boolean b = IJ.showMessageWithCancel("Convert...", 
+				"8-bit image required. Convert?");
+			if(b) {
+				new StackConverter(image).
+					convertToIndexedColor(256);
+			}
 		}
 
 		return univ.addContent(image, color, 
