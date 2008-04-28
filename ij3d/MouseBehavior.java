@@ -222,7 +222,8 @@ public class MouseBehavior extends Behavior {
 				axis = Renderer.Y_AXIS;
 			else if(ic3d.isKeyDown(KeyEvent.VK_Z))
 				axis = Renderer.Z_AXIS;
-			if(c.getType() == Content.ORTHO && axis != -1) {
+			if(c != null && c.getType() == Content.ORTHO 
+								&& axis != -1) {
 				OrthoGroup og = (OrthoGroup)c.getContent();
 				MouseWheelEvent we = (MouseWheelEvent)e;
 				int units = 0;
