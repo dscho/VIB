@@ -25,11 +25,19 @@ public class Moving_Least_Squares implements PlugIn {
 	final public static int SIMILARITY = 1;
 	final public static int RIGID = 2;
 
+	private void need2Images() {
+		IJ.showMessage("Need 2 images with a point roi in each,\nwith equal number of points in each roi.");
+	}
+
 	public void run(String arg) {
-		
+
 		// Find all images that have a PointRoi in them
-		ArrayList all = new ArrayList();
 		int[] ids = WindowManager.getIDList();
+		if (null == ids) {
+			need2Images();
+			return;
+		}
+		ArrayList all = new ArrayList();
 		for (int i=0; i<ids.length; i++) {
 			ImagePlus imp = WindowManager.getImage(ids[i]);
 			Roi roi = imp.getRoi();
@@ -37,7 +45,7 @@ public class Moving_Least_Squares implements PlugIn {
 				all.add(imp);
 		}
 		if (all.size() < 2) {
-			IJ.showMessage("Need 2 images with a point roi in each,\nwith equal number of points in each roi.");
+			need2Images();
 			return;
 		}
 
