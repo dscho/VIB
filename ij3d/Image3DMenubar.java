@@ -425,20 +425,24 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == add) {
-			Content c = addContent(null, -1);
-			if(c == null)
-				return;
-			String[] arg = new String[] {
-				c.image.getTitle(), 
-				ColorTable.getColorName(c.color),
-				c.name, 
-				Integer.toString(c.threshold),
-				Boolean.toString(c.channels[0]), 
-				Boolean.toString(c.channels[1]),
-				Boolean.toString(c.channels[2]),
-				Integer.toString(c.resamplingF),
-				Integer.toString(c.type)};
-			record(ADD, arg);
+			new Thread(new Runnable() {
+				public void run() {
+					Content c = addContent(null, -1);
+					if(c == null)
+						return;
+					String[] arg = new String[] {
+						c.image.getTitle(), ColorTable.
+							getColorName(c.color),
+						c.name, 
+						Integer.toString(c.threshold),
+						Boolean.toString(c.channels[0]), 
+						Boolean.toString(c.channels[1]),
+						Boolean.toString(c.channels[2]),
+						Integer.toString(c.resamplingF),
+						Integer.toString(c.type)};
+					record(ADD, arg);
+				}
+			}).start();
 		}
 
 		if(e.getSource() == delete) {
