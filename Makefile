@@ -265,11 +265,20 @@ clean-jars:
 	mkdir tempdir
 	(cd tempdir && jar xvf ../$< && find . -name \*.class -exec rm {} \; && sh ../compile1.3.sh && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
-%.jar:
+ifeq ($(TARGET_JAR),)
+%.jar: $(JAVAS) Makefile
+	@$(MAKE) TARGET_JAR=$@ SOURCES="$(SOURCES)" $@
+else
+$(TARGET_JAR): $(SOURCES)
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
-	tar cvf - $(SOURCES) $(EXTRAS) | (cd tempdir; tar xvf -)
-	(cd tempdir && javac $(JAVACOPTS) $(filter %.java,$(SOURCES)) && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
+	tar cvf - $(SOURCES) $(EXTRAS) | \
+		(cd tempdir; tar xvf -)
+	(cd tempdir && \
+		javac $(JAVACOPTS) $(filter %.java,$(SOURCES)) && \
+		jar cvf ../$@ $$(find . -type f)) && \
+	rm -rf tempdir
+endif
 
 # Unpack the jar, remove the source files and jar it up again :)
 
