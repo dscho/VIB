@@ -4,66 +4,75 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.Line;
 import ij.gui.Roi;
-import ij.plugin.filter.PlugInFilter;
+import ij.plugin.PlugIn;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
+import java.util.ArrayList;
+import java.util.Iterator;
 
-public class Align_Image implements PlugInFilter {
-	ImagePlus image;
+/** Select two images with a Line ROI in each, and rotate/translate/scale one
+ * to the other.
+ * Stacks are not explicitly supported, but a macro can easily use this plugin
+ * for the purpose by iterating over all slices.
+ */
+public class Align_Image implements PlugIn {
 
-	public void run(ImageProcessor ip) {
-		Roi roi = image.getRoi();
-		if (!(roi instanceof Line)) {
-			IJ.error("Need a line selection!");
-			return;
+	private boolean isSupported(int type) {
+		switch (type) {
+			case ImagePlus.GRAY8:
+			case ImagePlus.GRAY16:
+			case ImagePlus.GRAY32:
+				return true;
 		}
-		Line line1 = (Line)roi;
+		return false;
+	}
 
+	public void run(String arg) {
+
+		// Find all images that have a LineRoi in them
 		int[] ids = WindowManager.getIDList();
-		String[] titles = new String[ids.length];
-		int j = 0;
-		for (int i = 0; i < ids.length; i++) {
-			ImagePlus other = WindowManager.getImage(ids[i]);
-			if (other == image)
-				continue;
-			Roi other_roi = other.getRoi();
-			if (!(other_roi instanceof Line))
-				continue;
-			ids[j] = ids[i];
-			titles[j] = other.getTitle();
-			j++;
+		if (null == ids) return; // no images open
+		ArrayList all = new ArrayList();
+		for (int i=0; i<ids.length; i++) {
+			ImagePlus imp = WindowManager.getImage(ids[i]);
+			Roi roi = imp.getRoi();
+			int type = imp.getType();
+			if (null != roi && roi instanceof Line && isSupported(imp.getType()))
+				all.add(imp);
 		}
-		
-		if (j < 1) {
-			IJ.error("Need another image with line selection!");
+		if (all.size() < 2) {
+			IJ.showMessage("Need 2 images with a line roi in each.\n" +
+				       "Images must be 8, 16 or 32-bit.");
 			return;
 		}
 
-		int id;
-		if (j == 1)
-			id = ids[0];
-		else {
-			if (j < ids.length) {
-				String[] temp = new String[j];
-				System.arraycopy(titles, 0, temp, 0, j);
-				titles = temp;
-			}
+		// create choice arrays
+		String[] titles = new String[all.size()];
+		int k=0;
+		for (Iterator it = all.iterator(); it.hasNext(); )
+			titles[k++] = ((ImagePlus)it.next()).getTitle();
 
-			GenericDialog gd = new GenericDialog("Align Images");
-			gd.addChoice("template", titles, titles[0]);
-			gd.showDialog();
-			if (gd.wasCanceled())
-				return;
-			id = ids[gd.getNextChoiceIndex()];
-		}
+		GenericDialog gd = new GenericDialog("Align Images");
+		String current = WindowManager.getCurrentImage().getTitle();
+		gd.addChoice("source", titles, current.equals(titles[0]) ?
+				titles[1] : titles[0]);
+		gd.addChoice("target", titles, current);
+		gd.showDialog();
+		if (gd.wasCanceled())
+			return;
 
-		ImagePlus templ = WindowManager.getImage(id);
-		int w = templ.getWidth(), h = templ.getHeight();
+		ImagePlus source = WindowManager.getImage(ids[gd.getNextChoiceIndex()]);
+		Line line1 = (Line)source.getRoi();
+
+		ImagePlus target = WindowManager.getImage(ids[gd.getNextChoiceIndex()]);
+		Line line2 = (Line)target.getRoi();
+
+		int w = source.getWidth(), h = source.getHeight();
 		ImageProcessor result = new FloatProcessor(w, h);
 		float[] pixels = (float[])result.getPixels();
-		Interpolator inter = new BilinearInterpolator(ip);
 
-		Line line2 = (Line)templ.getRoi();
+		ImageProcessor ip = source.getProcessor();
+		Interpolator inter = new BilinearInterpolator(ip);
 
 		/* the linear mapping to map line1 onto line2 */
 		float a00, a01, a02, a10, a11, a12;
@@ -79,7 +88,7 @@ public class Align_Image implements PlugInFilter {
 		a02 = line1.x1 - a00 * line2.x1 - a01 * line2.y1;
 		a12 = line1.y1 - a10 * line2.x1 - a11 * line2.y1;
 
-		for (j = 0; j < h; j++) {
+		for (int j = 0; j < h; j++) {
 			for (int i = 0; i < w; i++) {
 				float x = i * a00 + j * a01 + a02;
 				float y = i * a10 + j * a11 + a12;
@@ -89,16 +98,22 @@ public class Align_Image implements PlugInFilter {
 		}
 
 		result.setMinAndMax(ip.getMin(), ip.getMax());
-		ImagePlus res = new ImagePlus("aligned " + image.getTitle(),
+
+		// convert back
+		switch (source.getType()) {
+			case ImagePlus.GRAY8:
+				result = result.convertToByte(false);
+				break;
+			case ImagePlus.GRAY16:
+				result = result.convertToShort(false);
+				break;
+		}
+
+		ImagePlus res = new ImagePlus("aligned " + target.getTitle(),
 			result);
-		res.setCalibration(templ.getCalibration());
+		res.setCalibration(source.getCalibration());
 		res.setRoi(line2);
 		res.show();
-	}
-
-	public int setup(String arg, ImagePlus imp) {
-		image = imp;
-		return DOES_8G | DOES_16 | DOES_32 | NO_CHANGES;
 	}
 
 	static abstract class Interpolator {
