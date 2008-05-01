@@ -7,6 +7,7 @@ import ij.WindowManager;
 import ij.ImagePlus;
 import ij.text.TextWindow;
 import ij.gui.Toolbar;
+import ij.process.StackConverter;
 
 import math3d.Transform_IO;
 
@@ -26,6 +27,7 @@ import vib.FastMatrix;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
+import voltex.Renderer;
 import isosurface.MeshGroup;
 import isosurface.MeshExporter;
 import isosurface.MeshEditor;
@@ -423,18 +425,24 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == add) {
-			Content c = addContent(null, -1);
-			String[] arg = new String[] {
-				c.image.getTitle(), 
-				ColorTable.getColorName(c.color),
-				c.name, 
-				Integer.toString(c.threshold),
-				Boolean.toString(c.channels[0]), 
-				Boolean.toString(c.channels[1]),
-				Boolean.toString(c.channels[2]),
-				Integer.toString(c.resamplingF),
-				Integer.toString(c.type)};
-			record(ADD, arg);
+			new Thread(new Runnable() {
+				public void run() {
+					Content c = addContent(null, -1);
+					if(c == null)
+						return;
+					String[] arg = new String[] {
+						c.image.getTitle(), ColorTable.
+							getColorName(c.color),
+						c.name, 
+						Integer.toString(c.threshold),
+						Boolean.toString(c.channels[0]), 
+						Boolean.toString(c.channels[1]),
+						Boolean.toString(c.channels[2]),
+						Integer.toString(c.resamplingF),
+						Integer.toString(c.type)};
+					record(ADD, arg);
+				}
+			}).start();
 		}
 
 		if(e.getSource() == delete) {
@@ -448,7 +456,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == regist) {
-			regist();
+			// Select the contents used for registration
+			Collection contents = univ.getContents();
+			if(contents.size() < 2) {
+				IJ.error("At least two bodies are " +
+					"required for registration");
+				return;
+			}
+			RegistrationMenubar rm = univ.getRegistrationMenubar();
+			univ.setMenubar(rm);
+			rm.register();
 		}
 	
 		if(e.getSource() == resetView) {
@@ -876,67 +893,64 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		final GenericDialog gd = new GenericDialog("Adjust slices...");
 		final OrthoGroup os = (OrthoGroup)selected.getContent();
 		final int[] oldvalues = os.getSlices();
+		final boolean[] visible = os.getVisible();
 		ImagePlus imp = selected.image;
 		int w = imp.getWidth() / selected.getResamplingFactor();
 		int h = imp.getHeight() / selected.getResamplingFactor();
 		int d = imp.getStackSize() / selected.getResamplingFactor();
 
-		gd.addSlider("x", 0, w-1, oldvalues[0]);
-		gd.addSlider("y", 0, h-1, oldvalues[1]);
-		gd.addSlider("z", 0, d-1, oldvalues[2]);
+		gd.addCheckbox("Show_yz plane", visible[0]);
+		gd.addSlider("x coordinate", 0, w-1, oldvalues[0]);
+		gd.addCheckbox("Show_xz plane", visible[1]);
+		gd.addSlider("y coordinate", 0, h-1, oldvalues[1]);
+		gd.addCheckbox("Show_xy plane", visible[2]);
+		gd.addSlider("z coordinate", 0, d-1, oldvalues[2]);
 
-		final Scrollbar xSlider = (Scrollbar)gd.getSliders().get(0);
-		final Scrollbar ySlider = (Scrollbar)gd.getSliders().get(1);
-		final Scrollbar zSlider = (Scrollbar)gd.getSliders().get(2);
+		gd.addMessage(  "You can use the x, y and z key plus\n" +
+				"the arrow keys to adjust slices in\n" +
+				"x, y and z direction respectively.\n \n" +
+				"x, y, z + SPACE switches planes on\n" +
+				"and off");
 
-// 		AdjustmentListener listener = new AdjustmentListener() {
-// 			public void adjustmentValueChanged(AdjustmentEvent e) {
-// 				os.setSlices(
-// 					xSlider.getValue(), 
-// 					ySlider.getValue(), 
-// 					zSlider.getValue());
-// 				univ.fireContentChanged(
-// 					selected);
-// 			}
-// 		};
-		xSlider.addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setXSlice(xSlider.getValue()); 
-				univ.fireContentChanged(selected);
-			}
-		});
+		final int[] dirs = new int[] {Renderer.X_AXIS, 
+				Renderer.Y_AXIS, Renderer.Z_AXIS};
+		final Scrollbar[] sl = new Scrollbar[3]; 
+		final Checkbox[] cb = new Checkbox[3];
 
-		ySlider.addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setYSlice(ySlider.getValue()); 
-				univ.fireContentChanged(selected);
-			}
-		});
+		for(int k = 0; k < 3; k++) {
+			final int i = k;
+			sl[i] = (Scrollbar)gd.getSliders().get(i);
+			sl[i].addAdjustmentListener(new AdjustmentListener() {
+				public void adjustmentValueChanged(
+							AdjustmentEvent e) {
+					os.setSlice(dirs[i], sl[i].getValue());
+					univ.fireContentChanged(selected);
+				}
+			});
 
-		zSlider.addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				os.setZSlice(zSlider.getValue()); 
-				univ.fireContentChanged(selected);
-			}
-		});
-
+			cb[i] = (Checkbox)gd.getCheckboxes().get(i);
+			cb[i].addItemListener(new ItemListener() {
+				public void itemStateChanged(ItemEvent e) {
+					os.setVisible(dirs[i], cb[i].getState());
+				}
+			});
+		}
 
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
 				openDialogs.remove(gd);
 				if(gd.wasCanceled()) {
-					os.setSlices(
-						oldvalues[0], 
-						oldvalues[1], 
-						oldvalues[2]);
+					os.setSlices(oldvalues);
+					os.setVisible(visible);
 					univ.fireContentChanged(selected);
 					return;
 				} else {
-					record(SET_SLICES, 
-					Integer.toString(xSlider.getValue()), 
-					Integer.toString(ySlider.getValue()),
-					Integer.toString(zSlider.getValue()));
+					record(SET_SLICES,
+					Integer.toString(sl[0].getValue()), 
+					Integer.toString(sl[1].getValue()),
+					Integer.toString(sl[2].getValue()));
+					return;
 				}
 			}
 		});
@@ -1217,12 +1231,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		for(int i=1; i<=img_count; i++) {
 			int id = WindowManager.getNthImageID(i);
 			ImagePlus imp = WindowManager.getImage(id);
-			if(imp != null){
+			if(imp != null && !imp.getTitle().equals("3d")){
 				 windows.add(imp.getTitle());
 			}
 		}
-		if(windows.size() == 0)
+		if(windows.size() == 0) {
 			IJ.error("No images open");
+			return null;
+		}
 		images = (String[])windows.toArray(new String[]{});
 		String name = image == null ? images[0] : image.getTitle();
 		String[] types = new String[] {
@@ -1247,14 +1263,21 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 
 		// automatically set threshold if surface is selected
-		final TextField tf = (TextField)gd.getNumericFields().get(0);
-		final Choice ch = (Choice)gd.getChoices().get(1);
-		ch.addItemListener(new ItemListener() {
+		final TextField th = (TextField)gd.getNumericFields().get(0);
+		final Choice di = (Choice)gd.getChoices().get(1);
+		di.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
-				if(ch.getSelectedIndex() == Content.SURFACE)
-					tf.setText(Integer.toString(50));
+				if(di.getSelectedIndex() == Content.SURFACE)
+					th.setText(Integer.toString(50));
 				else
-					tf.setText(Integer.toString(0));
+					th.setText(Integer.toString(0));
+			}
+		});
+		final Choice im = (Choice)gd.getChoices().get(0);
+		final TextField na = (TextField)gd.getStringFields().get(0);
+		im.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				na.setText(im.getSelectedItem());
 			}
 		});
 		openDialogs.add(gd);
@@ -1279,151 +1302,19 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			return null;
 		}
 
+		if(image.getType() != ImagePlus.COLOR_256 && 
+			image.getType() != ImagePlus.GRAY8) {
+
+			boolean b = IJ.showMessageWithCancel("Convert...", 
+				"8-bit image required. Convert?");
+			if(b) {
+				new StackConverter(image).
+					convertToIndexedColor(256);
+			}
+		}
+
 		return univ.addContent(image, color, 
 				name, threshold, channels, resf, type);
-	}
-
-	public void regist() {
-		new Thread(new Runnable() {
-			public void run() {
-				register();
-			}
-		}).start();
-	}
-
-	public void register() {
-		// Select the contents used for registration
-		DecimalFormat df = new DecimalFormat("00.000");
-		Collection contents = univ.getContents();
-		if(contents.size() < 2) {
-			IJ.error("At least two bodies are required for " +
-				" registration");
-			return;
-		}
-		String[] conts = new String[contents.size()];
-		int i = 0;
-		for(Iterator it = contents.iterator(); it.hasNext();)
-			conts[i++] = ((Content)it.next()).getName();
-		GenericDialog gd = new GenericDialog("Registration");
-		gd.addChoice("template", conts, conts[0]);
-		gd.addChoice("model", conts, conts[1]);
-		gd.addCheckbox("allow scaling", true);
-		openDialogs.add(gd);
-		gd.showDialog();
-		openDialogs.remove(gd);
-		if(gd.wasCanceled())
-			return;
-		final Content templ = univ.getContent(gd.getNextChoice());
-		final Content model = univ.getContent(gd.getNextChoice());
-		boolean scaling = gd.getNextBoolean();
-
-		// Select the landmarks of the template
-		model.setVisible(false);
-		templ.displayAs(Content.ORTHO);
-		templ.setColor(new Color3f(1, 0, 0));
-		Toolbar.getInstance().setTool(Toolbar.POINT);
-		univ.select(templ);
-
-		boolean cont = IJ.showMessageWithCancel("Select landmarks",
-			"Pick the points in " + templ.getName() + " which\n" +
-			"are used for registration \n" +
-			"Click OK when you are finished");
-		if(!cont) return;
-
-		Panel p = new Panel(new FlowLayout());
-		Button b = new Button("OK");
-		p.add(b);
-		b.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				synchronized(templ) {
-					templ.notify();
-				}
-			}
-		});
-		univ.pld.addPanel(p);
-		synchronized(templ) {
-			try {
-				templ.wait();
-			} catch(Exception e) {}
-		}
-		templ.setVisible(false);
-
-
-		// select the landmarks of the model
-		model.setVisible(true);
-		model.displayAs(Content.ORTHO);
-		model.setColor(new Color3f(0, 1, 0));
-		Toolbar.getInstance().setTool(Toolbar.POINT);
-		univ.select(model);
-
-		cont = IJ.showMessageWithCancel("Select landmarks",
-			"Pick the points in " + model.getName() + " which\n" +
-			"are used for registration \n" +
-			"Click OK when you are finished");
-		if(!cont) return;
-
-		synchronized(templ) {
-			try {
-				templ.wait();
-			} catch(Exception e) {}
-		}
-		model.setVisible(false);
-
-
-		// select the landmarks common to template and model
-		PointList tpoints = templ.getPointList();
-		PointList mpoints = model.getPointList();
-		if(tpoints.size() < 2 || mpoints.size() < 2) {
-			IJ.error("At least two points are required in each "
-				+ "of the point lists");
-		}
-		List sett = new ArrayList();
-		List setm = new ArrayList();
-		for(i = 0; i < tpoints.size(); i++) {
-			BenesNamedPoint pt = tpoints.get(i);
-			BenesNamedPoint pm = mpoints.get(pt.getName());
-			if(pm != null) {
-				sett.add(pt);
-				setm.add(pm);
-			}
-		}
-		if(sett.size() < 2) {
-			IJ.error("At least two points with the same name "
-				+ "must exist in both bodies");
-			return;
-		}
-
-		// Display common landmarks
-		String message = "Points used for registration\n \n";
-		for(i = 0; i < sett.size(); i++) {
-			BenesNamedPoint bnp = (BenesNamedPoint)sett.get(i);
-			message += (bnp.getName() + "    "
-				+ df.format(bnp.x) + "    "
-				+ df.format(bnp.y) + "    "
-				+ df.format(bnp.z) + "\n");
-		}
-		cont = IJ.showMessageWithCancel("Points used for registration",
-			message);
-		if(!cont) return;
-
-		// calculate best rigid
-		BenesNamedPoint[] sm = new BenesNamedPoint[setm.size()];
-		BenesNamedPoint[] st = new BenesNamedPoint[sett.size()];
-		FastMatrix fm = FastMatrix.bestRigid(
-			(BenesNamedPoint[])setm.toArray(sm),
-			(BenesNamedPoint[])sett.toArray(st));
-
-		// reset the transformation of the template
-		// and set the transformation of the model.
-		Transform3D t3d = new Transform3D(fm.rowwise16());
-		templ.setTransform(new Transform3D());
-		model.setTransform(t3d);
-
-		templ.setVisible(true);
-		model.setVisible(true);
-
-		univ.clearSelection();
-		Toolbar.getInstance().setTool(Toolbar.HAND);
 	}
 
 	public void closeAllDialogs() {

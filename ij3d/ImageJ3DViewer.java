@@ -2,11 +2,12 @@ package ij3d;
 
 import ij.process.ImageProcessor;
 import ij.ImagePlus;
-import ij.plugin.filter.PlugInFilter;
+import ij.plugin.PlugIn;
 import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import ij.IJ;
 import ij.WindowManager;
+import ij.gui.GUI;
 
 import ij3d.ImageWindow3D;
 import ij3d.Content;
@@ -26,19 +27,20 @@ import javax.media.j3d.Transform3D;
 import javax.vecmath.Vector3f;
 import javax.vecmath.Color3f;
 
-public class ImageJ3DViewer implements PlugInFilter {
+public class ImageJ3DViewer implements PlugIn {
 
-	private ImagePlus image;
 	private static Image3DUniverse univ;
 
-
-	public void run(ImageProcessor ip) {
+	public void run(String arg) {
+		ImagePlus image = WindowManager.getCurrentImage();
 		try {
 			univ = new Image3DUniverse(512, 512);
 			univ.show();
+			GUI.center(univ.getWindow());
 			int type = -1;
 			Image3DMenubar menu = univ.getMenuBar();
-			menu.addContent(image, type);
+			if(image != null)
+				menu.addContent(image, type);
 
 		} catch(Exception e) {
 			StringBuffer buf = new StringBuffer();
@@ -151,7 +153,8 @@ public class ImageJ3DViewer implements PlugInFilter {
 
 			OrthoGroup vg = (OrthoGroup)univ.
 						getSelected().getContent();
-			vg.setSlices(getInt(x), getInt(y), getInt(z));
+			vg.setSlices(new int[] {
+				getInt(x), getInt(y), getInt(z)});
 		}
 	}
 
@@ -266,10 +269,5 @@ public class ImageJ3DViewer implements PlugInFilter {
 
 	private static boolean getBoolean(String s) {
 		return new Boolean(s).booleanValue();
-	}
-
-	public int setup(String arg, ImagePlus img) {
-		this.image = img;
-		return DOES_8C | DOES_8G;
 	}
 }

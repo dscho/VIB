@@ -9,7 +9,7 @@ import java.io.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import ij.ImagePlus;
 
-public class VolumeRenderer extends Renderer implements VolRendConstants {
+public class VolumeRenderer extends Renderer {
 
 	protected float transparency;
 	protected Color3f color;

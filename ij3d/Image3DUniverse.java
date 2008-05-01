@@ -38,6 +38,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private Content selected;
 	private Hashtable contents = new Hashtable();
 	private Image3DMenubar menubar;
+	private RegistrationMenubar registrationMenubar;
 	private ImageCanvas3D canvas;
 
 	private Point3f globalMin = new Point3f();
@@ -82,7 +83,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 		String st = c != null ? c.name : "none";
 		IJ.showStatus("selected: " + st);
-//		canvas.setStatus("selected: " + st);
 
 		fireContentSelected(c);
 
@@ -92,15 +92,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void show() {
-		this.show(true);
+		super.show();
+		menubar = new Image3DMenubar(this);
+		registrationMenubar = new RegistrationMenubar(this);
+		setMenubar(menubar);
 	}
 
-	public void show(boolean withMenuBar) {
-		super.show();
-		if(withMenuBar) {
-			menubar = new Image3DMenubar(this);
-			win.setMenuBar(menubar);
-		}
+	public void setMenubar(MenuBar mb) {
+		win.setMenuBar(mb);
 	}
 
 	public void close() {
@@ -109,8 +108,16 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		contents = null;
 	}
 
+	public void setStatus(String text) {
+		win.getStatusLabel().setText("  " + text);
+	}
+
 	public Image3DMenubar getMenuBar() {
 		return menubar;
+	}
+
+	public RegistrationMenubar getRegistrationMenubar() {
+		return registrationMenubar;
 	}
 
 	public void recalculateGlobalMinMax(Content c) {

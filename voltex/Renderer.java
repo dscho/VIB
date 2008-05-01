@@ -10,7 +10,7 @@ import java.io.*;
 import java.text.NumberFormat;
 import com.sun.j3d.utils.behaviors.mouse.*;
 
-abstract public class Renderer {
+abstract public class Renderer implements VolRendConstants {
 
 	protected ImagePlus image;
 	protected Volume volume;

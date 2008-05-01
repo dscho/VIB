@@ -33,27 +33,25 @@ public class PointList implements Iterable<BenesNamedPoint>{
 		
 	public void add(BenesNamedPoint point){
 		points.add(point);
-		fireAdded(points.size() - 1);
+		fireAdded(point);
 	}
 	
 	public void remove(BenesNamedPoint point){
-		for(int i = 0; i < points.size(); i++) {
-			if(point == points.get(i)) {
-				remove(i);
-			}
-		}
+		int i = indexOf(point);
+		remove(i);
 	}
 
 	public void remove(int i) {
 		if(i >= 0 && i < size()) {
+			BenesNamedPoint p = points.get(i);
 			points.remove(i);
-			fireRemoved(i);
+			fireRemoved(p);
 		}
 	}
 	
 	public void rename(BenesNamedPoint point, String name){
 		point.name = name;
-		fireRenamed(points.indexOf(point));
+		fireRenamed(point);
 	}
 
 	public void up(BenesNamedPoint point) {
@@ -72,12 +70,8 @@ public class PointList implements Iterable<BenesNamedPoint>{
 		fireReordered();
 	}
 
-	public void highlight(int i) {
-		fireHighlighted(i);
-	}
-
 	public void highlight(BenesNamedPoint p) {
-		fireHighlighted(points.indexOf(p));
+		fireHighlighted(p);
 	}
 
 	public void placePoint(BenesNamedPoint point, 
@@ -85,11 +79,15 @@ public class PointList implements Iterable<BenesNamedPoint>{
 		point.x = x;
 		point.y = y;
 		point.z = z;
-		fireMoved(points.indexOf(point));
+		fireMoved(point);
 	}
 	
 	public BenesNamedPoint get(int index){
 		return points.get(index);
+	}
+
+	public int indexOf(BenesNamedPoint p) {
+		return points.indexOf(p);
 	}
 	
 	public BenesNamedPoint[] toArray(){
@@ -243,29 +241,29 @@ public class PointList implements Iterable<BenesNamedPoint>{
 		listeners.remove(pll);
 	}
 
-	private void fireAdded(int i) {
+	private void fireAdded(BenesNamedPoint p) {
 		for(PointListListener l : listeners)
-			l.added(i);
+			l.added(p);
 	}
 
-	private void fireRemoved(int i) {
+	private void fireRemoved(BenesNamedPoint p) {
 		for(PointListListener l : listeners)
-			l.removed(i);
+			l.removed(p);
 	}
 
-	private void fireRenamed(int i) {
+	private void fireRenamed(BenesNamedPoint p) {
 		for(PointListListener l : listeners)
-			l.renamed(i);
+			l.renamed(p);
 	}
 
-	private void fireMoved(int i) {
+	private void fireMoved(BenesNamedPoint p) {
 		for(PointListListener l : listeners)
-			l.moved(i);
+			l.moved(p);
 	}
 
-	private void fireHighlighted(int i) {
+	private void fireHighlighted(BenesNamedPoint p) {
 		for(PointListListener l : listeners)
-			l.highlighted(i);
+			l.highlighted(p);
 	}
 
 	private void fireReordered() {
@@ -275,11 +273,11 @@ public class PointList implements Iterable<BenesNamedPoint>{
 
 
 	public interface PointListListener {
-		public void added(int i);
-		public void removed(int i);
-		public void renamed(int i);
-		public void moved(int i);
-		public void highlighted(int i);
+		public void added(BenesNamedPoint p);
+		public void removed(BenesNamedPoint p);
+		public void renamed(BenesNamedPoint p);
+		public void moved(BenesNamedPoint p);
+		public void highlighted(BenesNamedPoint p);
 		public void reordered();
 	}
 }

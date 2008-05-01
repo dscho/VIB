@@ -210,27 +210,26 @@ public class PointListPanel extends Panel
 	}
 
 	// PointListListener interface
-	public void added(int i) {
+	public void added(BenesNamedPoint p) {
 		updatePointsPanel();
 	}
 
-	public void removed(int i) {
+	public void removed(BenesNamedPoint p) {
 		updatePointsPanel();
 	}
 
-	public void renamed(int i) {
+	public void renamed(BenesNamedPoint p) {
 		updatePointsPanel();
 	}
 
-	public void highlighted(int i) {
+	public void highlighted(BenesNamedPoint p) {
 	}
 
 	public void reordered() {
 		updatePointsPanel();
 	}
 
-	public void moved(int index) {
-		BenesNamedPoint p = points.get(index);
+	public void moved(BenesNamedPoint p) {
 		Component[] c = getComponents();
 		boolean found = false;
 		for(int i = 0; i < c.length; i++) {

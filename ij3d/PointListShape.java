@@ -40,6 +40,7 @@ public class PointListShape extends BranchGroup
 		points.addPointListListener(this);
 		pld = new PointListPanel(name, points);
 		initAppearance(color);
+		initGeom();
 	}
 
 	public PointListPanel getPanel() {
@@ -68,11 +69,7 @@ public class PointListShape extends BranchGroup
 	}
 
 	public int getIndex(BenesNamedPoint p) {
-		for(int i = 0; i < points.size(); i++) {
-			if(points.get(i).getName().equals(p.getName()))
-				return i;
-		}
-		return -1;
+		return points.indexOf(p);
 	}
 
 	public int getIndex(Point3d p) {
@@ -139,74 +136,94 @@ public class PointListShape extends BranchGroup
 
 
 	// listener interface
-	public void added(int i) {
-		BenesNamedPoint p = points.get(i);
+	public void added(BenesNamedPoint p) {
 		Point3f p3f = new Point3f((float)p.x, (float)p.y, (float)p.z);
 		addPointToGeometry(p3f, p.getName());
 	}
 
-	public void removed(int i) {
-		if(i >= 0)
-			deletePointFromGeometry(i);
+	public void removed(BenesNamedPoint p) {
+		deletePointFromGeometry(p.getName());
 	}
 
-	public void renamed(int i) {
-		// do nothing
+	public void renamed(BenesNamedPoint p) {
+		int i = points.indexOf(p);
+		getChild(i).setName(points.get(i).getName());
 	}
 
-	public void moved(int i) {
-		BenesNamedPoint p = points.get(i);
+	public void moved(BenesNamedPoint p) {
+		int i = points.indexOf(p);
 		if(i >= 0 && i < points.size())
 			updatePositionInGeometry(i, new Point3d(p.x, p.y, p.z));
 	}
 
 	public void reordered() {
+		initGeom();
 	}
 
-	public void highlighted(final int i) {
-		new Thread(new Runnable() {
-			public void run() {
-				BranchGroup bg = (BranchGroup)getChild(i);
-				TransformGroup tg = (TransformGroup)bg.getChild(0);
-				Sphere s = (Sphere)tg.getChild(0);
-				initAppearance(highlightColor);
-				s.setAppearance(appearance);
-				try {
-					Thread.currentThread().sleep(2000);
-				} catch(Exception e) {}
-				initAppearance(color);
-				s.setAppearance(appearance);
-			}
-		}).start();
+	public void highlighted(final BenesNamedPoint p) {
+		final int i = points.indexOf(p);
+		BranchGroup bg = (BranchGroup)getChild(i);
+		TransformGroup tg = (TransformGroup)bg.getChild(0);
+		ScaleInterpolator si = (ScaleInterpolator)tg.getChild(1);
+		final Alpha a = si.getAlpha();
+		a.resume();
+		try {
+			Thread.currentThread().sleep(600);
+		} catch(Exception e) { }
+		a.pause();
 	}
 
 	// private methods responsible for updating the universe
 	private Transform3D t3d = new Transform3D();
 	private Vector3f v3f = new Vector3f();
 
-	private void deletePointFromGeometry(int i) {
-		((BranchGroup)getChild(i)).detach();
+	private void deletePointFromGeometry(String name) {
+		for(int i = 0; i < numChildren(); i++) {
+			BranchGroup bg = (BranchGroup)getChild(i);
+			if(bg.getName().equals(name)) {
+				bg.detach();
+				return;
+			}
+		}
 	}
 
 	private void addPointToGeometry(Point3f p, String name) {
 		v3f.x = p.x; v3f.y = p.y; v3f.z = p.z;
+
+		BranchGroup bg = new BranchGroup();
+		bg.setName(name);
+		bg.setCapability(BranchGroup.ALLOW_DETACH);
+
 		t3d.set(v3f);
 		TransformGroup tg = new TransformGroup(t3d);
 		tg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		bg.addChild(tg);
+
+		TransformGroup sig = new TransformGroup();
+		sig.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+		tg.addChild(sig);
+
+		Alpha alpha = new Alpha();
+		alpha.setStartTime(System.currentTimeMillis());
+		alpha.setMode(Alpha.DECREASING_ENABLE|Alpha.INCREASING_ENABLE);
+		alpha.setIncreasingAlphaDuration(300);
+		alpha.setDecreasingAlphaDuration(300);
+		alpha.pause();
+		ScaleInterpolator si = new ScaleInterpolator(alpha, sig);
+		si.setMaximumScale(5);
+		si.setMinimumScale(0.5f);
+		si.setSchedulingBounds(new BoundingSphere());
+		tg.addChild(si);
 
 		Sphere sphere = new Sphere(radius);
 		sphere.getShape().setCapability(Shape3D.ALLOW_APPEARANCE_WRITE);
 		sphere.setCapability(Sphere.ENABLE_APPEARANCE_MODIFY);
 		sphere.setAppearance(appearance);
-		tg.addChild(sphere);
+		sig.addChild(sphere);
 
-		BranchGroup bg = new BranchGroup();
-		bg.setName(name);
-		bg.setCapability(BranchGroup.ALLOW_DETACH);
-		bg.addChild(tg);
 		addChild(bg);
 	}
-	
+
 	private void updatePositionInGeometry(int i, Point3d pos) {
 		BranchGroup bg = (BranchGroup)getChild(i);
 		TransformGroup tg = (TransformGroup)bg.getChild(0);
@@ -216,7 +233,9 @@ public class PointListShape extends BranchGroup
 		t3d.set(v3f);
 		tg.setTransform(t3d);
 	}
+
 	private void initGeom() {
+		removeAllChildren();
 		for(int i = 0; i < points.size(); i++) {
 			BenesNamedPoint po = points.get(i);
 			Point3f p3f = new Point3f(
@@ -224,7 +243,7 @@ public class PointListShape extends BranchGroup
 			addPointToGeometry(p3f, po.getName());
 		}
 	}
-	
+
 	private void initAppearance(Color3f color) {
 		appearance = new Appearance();
 		ColoringAttributes colorAttrib = new ColoringAttributes();

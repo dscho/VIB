@@ -30,13 +30,15 @@ import ij3d.ImageCanvas3D;
 import ij3d.Image3DUniverse;
 import ij3d.ColorTable;
 
+import voltex.VolRendConstants;
+
 import vib.Resample_;
 import voltex.*;
 
 public class OrthoGroup extends ContentNode {
 
 	private Renderer renderer;
-	private int[] slices;
+	private Orthoslice ortho;
 	private float volume;
 	private Color3f oldColor;
 	private Content c;
@@ -56,8 +58,7 @@ public class OrthoGroup extends ContentNode {
 			: Resample_.resample(c.getImage(), c.getResamplingFactor());
 		renderer = new Orthoslice(imp, cmodel, 
 				c.getColor(), c.getTransparency());
-		slices = new int[] {imp.getWidth()/2, imp.getHeight()/2,
-					imp.getStackSize()/2};
+		ortho = (Orthoslice)renderer;
 		renderer.fullReload();
 		oldColor = c.getColor();
 		addChild(renderer.getVolumeNode());
@@ -151,24 +152,40 @@ public class OrthoGroup extends ContentNode {
 		renderer.setTransparency(c.getTransparency());
 	}
 
-	public void setXSlice(int x) {
-		((Orthoslice)renderer).setXSlice(x);
+	public void setSlice(int axis, int v) {
+		ortho.setSlice(axis, v);
 	}
 
-	public void setYSlice(int y) {
-		((Orthoslice)renderer).setYSlice(y);
+	public void decrease(int axis) {
+		ortho.decrease(axis);
 	}
 
-	public void setZSlice(int z) {
-		((Orthoslice)renderer).setZSlice(z);
+	public void increase(int axis) {
+		ortho.increase(axis);
 	}
 
-	public void setSlices(int x, int y, int z) {
-		((Orthoslice)renderer).setSlices(x, y, z);
+	public void setSlices(int[] v) {
+		ortho.setSlices(v);
 	}
 
 	public int[] getSlices() {
-		return slices;
+		return ortho.getSlices();
+	}
+
+	public boolean[] getVisible() {
+		return ortho.getVisible();
+	}
+
+	public boolean isVisible(int i) {
+		return ortho.isVisible(i);
+	}
+
+	public void setVisible(boolean[] b) {
+		ortho.setVisible(b);
+	}
+
+	public void setVisible(int axis, boolean b) {
+		ortho.setVisible(axis, b);
 	}
 }
 

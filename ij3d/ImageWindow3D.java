@@ -15,6 +15,10 @@ import ij.process.ColorProcessor;
 import ij.macro.Interpreter;
 
 import java.awt.AWTException;
+import java.awt.Label;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
@@ -47,6 +51,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 							KeyListener {
 	DefaultUniverse universe;
 	ImageCanvas3D canvas3D;
+	Label status = new Label("");
 	private boolean noOffScreen = false;
 
 	public ImageWindow3D(String title, DefaultUniverse universe) {
@@ -64,6 +69,11 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		WindowManager.setCurrentWindow(this);
 
 		add(canvas3D);
+		status.setText("");
+		status.setForeground(Color.WHITE);
+		status.setBackground(Color.BLACK);
+		status.setFont(new Font("Verdana", Font.PLAIN, 20));
+		add(status, BorderLayout.SOUTH);
 		/*
 		 * Fixes a problem occurring on some machines: It happened
 		 * from time to time that the window has a size of zero or
@@ -209,6 +219,10 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		ImagePlus result = new ImagePlus("3d", cp);
 		result.setRoi(canvas3D.getRoi());
 		return result;
+	}
+
+	public Label getStatusLabel() {
+		return status;
 	}
 
 	/**

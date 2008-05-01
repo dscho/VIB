@@ -1,0 +1,7 @@
+TODO for the ImageJ 3D Viewer
+===========================================================
+
+* Check the bug, when trying to toggle planes in orthoslice view on and off.
+* load images/textures/surfaces in an extra thread
+* possibility to scale a point
+* run the slide update methods in the menubar in an extra thread
