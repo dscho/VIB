@@ -479,7 +479,5 @@ public class Content extends BranchGroup implements UniverseListener {
 	public boolean isPLVisible() {
 		return showPL;
 	}
-
 }
-
 

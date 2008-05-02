@@ -50,7 +50,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
-		pld = new PointListDialog(win);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -96,6 +95,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		menubar = new Image3DMenubar(this);
 		registrationMenubar = new RegistrationMenubar(this);
 		setMenubar(menubar);
+		pld = new PointListDialog(win);
 	}
 
 	public void setMenubar(MenuBar mb) {
