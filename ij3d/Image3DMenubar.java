@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 import vib.PointList;
 import vib.BenesNamedPoint;
@@ -76,6 +77,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem pl_load;
 	private MenuItem regist;
 	private MenuItem pl_save;
+	private MenuItem j3dproperties;
 	private CheckboxMenuItem pl_show;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
@@ -87,6 +89,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private Menu viewMenu;
 	private Menu contentsMenu;
 	private Menu fileMenu;
+	private Menu helpMenu;
 
 	// These strings are the names of the stataic methods in
 	// ImageJ3DViewer.
@@ -137,6 +140,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		contentsMenu = createContentsMenu();
 		this.add(contentsMenu);
 		selectedMenu = createSelectedMenu();
+		helpMenu = createHelpMenu();
+		this.add(helpMenu);
+		this.setHelpMenu(helpMenu);
 	}
 
 	public Menu createFileMenu() {
@@ -151,6 +157,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		file.add(exportDXF);
 
 		return file;
+	}
+
+	public Menu createHelpMenu() {
+		Menu help = new Menu("Help");
+		j3dproperties = new MenuItem("Java 3D Properties");
+		j3dproperties.addActionListener(this);
+		help.add(j3dproperties);
+		return help;
 	}
 
 	public Menu createViewMenu() {
@@ -715,6 +729,25 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					}
 				};
 				thread[i].start();
+			}
+		}
+
+		if(e.getSource() == j3dproperties) {
+			TextWindow tw = new TextWindow("Java 3D Properties", 
+				"Key\tValue", "", 512, 512);
+			Map props = univ.getProperties();
+			tw.append("Java 3D properties\n \n");
+			for(Iterator it = props.entrySet().iterator();
+							it.hasNext();) {
+				Map.Entry me = (Map.Entry)it.next();
+				tw.append(me.getKey() + "\t" + me.getValue());
+			}
+			props = univ.getCanvas().queryProperties();
+			tw.append(" \nRendering properties\n \n");
+			for(Iterator it = props.entrySet().iterator();
+							it.hasNext();) {
+				Map.Entry me = (Map.Entry)it.next();
+				tw.append(me.getKey() + "\t" + me.getValue());
 			}
 		}
 	}
