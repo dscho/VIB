@@ -3,7 +3,7 @@
 JAVAS=$(shell find * -name \*.java | grep -v ^tempdir)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
-JAVA3DS=$(wildcard marchingcubes/*.java voltex/*.java ij3d/*.java isosurface/*.java orthoslice/*.java ImageJ_3D_Viewer.java MC_Test.java Test_Java3D.java)
+JAVA3DS=$(wildcard util/Meshes_From_Label_File.java marchingcubes/*.java voltex/*.java ij3d/*.java isosurface/*.java orthoslice/*.java ImageJ_3D_Viewer.java MC_Test.java Test_Java3D.java)
 FILTEROUT=$(JAVA3DS)
 ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
@@ -265,11 +265,20 @@ clean-jars:
 	mkdir tempdir
 	(cd tempdir && jar xvf ../$< && find . -name \*.class -exec rm {} \; && sh ../compile1.3.sh && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
-%.jar:
+ifeq ($(TARGET_JAR),)
+%.jar: $(JAVAS) Makefile
+	@$(MAKE) TARGET_JAR=$@ SOURCES="$(SOURCES)" $@
+else
+$(TARGET_JAR): $(SOURCES)
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
-	tar cvf - $(SOURCES) $(EXTRAS) | (cd tempdir; tar xvf -)
-	(cd tempdir && javac $(JAVACOPTS) $(filter %.java,$(SOURCES)) && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
+	tar cvf - $(SOURCES) $(EXTRAS) | \
+		(cd tempdir; tar xvf -)
+	(cd tempdir && \
+		javac $(JAVACOPTS) $(filter %.java,$(SOURCES)) && \
+		jar cvf ../$@ $$(find . -type f)) && \
+	rm -rf tempdir
+endif
 
 # Unpack the jar, remove the source files and jar it up again :)
 
