@@ -520,6 +520,8 @@ public class Name_Points implements PlugIn {
 		ColorProcessor emptyCP = new ColorProcessor(100,100);
 		emptyCP.setRGB( new byte[100*100], new byte[100*100], new byte[100*100] );
 		emptyStack.addSlice("",emptyCP);
+		// grrr, add two slices so that the scrollbar gets created:
+		emptyStack.addSlice("",emptyCP);
 
 		ImagePlus progressImagePlus = new ImagePlus( "Fine-Tuning Progress", emptyStack );
 		ProgressCanvas progressCanvas = new ProgressCanvas( progressImagePlus );
@@ -1392,7 +1394,7 @@ public class Name_Points implements PlugIn {
 			return false;
 		}
 		
-		this.templateImage = channels[1];
+		this.templateImage = channels[0];
 		this.templatePoints = templatePointSet;
 		
 		return true;
