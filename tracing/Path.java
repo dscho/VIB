@@ -193,6 +193,11 @@ public class Path implements Cloneable {
 	
 	void add( Path other ) {
 		
+		if( other == null ) {
+			IJ.log("BUG: Trying to add null Path" );
+			return;
+		}
+
 		if( maxPoints < (points + other.points) ) {
 			expandTo( points + other.points );
 		}

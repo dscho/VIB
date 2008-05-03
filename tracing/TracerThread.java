@@ -78,7 +78,9 @@ public class TracerThread extends SearchThread {
 		return minimum_cost;
 	}
 
+	
 	float [][] tubeness;
+	boolean useHessian;
 
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
@@ -93,7 +95,8 @@ public class TracerThread extends SearchThread {
 			     int goal_z,
 			     boolean reciprocal,
 			     ComputeCurvatures hessian,
-			     float [][] tubeness ) {
+			     float [][] tubeness,
+			     boolean useHessian ) {
 		
 		super( imagePlus,
 		       true, // bidirectional
@@ -109,6 +112,8 @@ public class TracerThread extends SearchThread {
 		minimum_cost_per_unit_distance = minimumCostPerUnitDistance();
 		
 		this.tubeness = tubeness;
+
+		this.useHessian = useHessian;
 
                 this.start_x = start_x;
                 this.start_y = start_y;
@@ -158,12 +163,57 @@ public class TracerThread extends SearchThread {
 	
 	@Override
         protected double costMovingTo( int new_x, int new_y, int new_z ) {
-		
+
 		int value_at_new_point = slices_data[new_z][new_y*width+new_x] & 0xFF;
 		
                 double cost;
-		
-                if( hessian == null ) {
+
+		if( useHessian ) {
+			
+			if( tubeness == null ) {
+
+				double [] hessianEigenValues = new double[3];
+			
+				hessian.hessianEigenvaluesAtPoint( new_x, new_y, new_z,
+								   true, hessianEigenValues, true );
+			
+				/* FIXME: there's lots of literature on how to
+				   pick this rule (see Sato et al,
+				   "Three-dimensional multi-scale line filter
+				   for segmentation and visualization of
+				   curvilinear structures in medical images".
+				   The rule I'm using here probably isn't optimal. */
+			
+				double e0 = hessianEigenValues[0];
+				double e1 = hessianEigenValues[1];
+				double e2 = hessianEigenValues[2];
+			
+				if( (hessianEigenValues[1] < 0) && (hessianEigenValues[2] < 0) ) {
+				
+					double measure = Math.sqrt( hessianEigenValues[1] * hessianEigenValues[2] );
+				
+					if( measure == 0 ) // This should never happen in practice...
+						measure = 0.2;
+				
+					cost = 1 / measure;
+				
+				} else {
+				
+					cost = 1 / 0.2;
+				
+				}
+
+			} else {
+
+				// Then this saves a lot of time:
+				float measure = tubeness[new_z][new_y*width+new_x];
+				if( measure == 0 )
+					measure = 0.2f;
+				cost = 1 / measure;
+
+			}
+
+		} else {
 			
                         if( reciprocal ) {
                                 cost = 1 / RECIPROCAL_FUDGE;
@@ -173,48 +223,7 @@ public class TracerThread extends SearchThread {
                                 cost = 256 - value_at_new_point;
                         }
 			
-                } else {
-			
-			if( tubeness != null ) {
-				// Then this saves a lot of time:
-				float measure = tubeness[new_z][new_y*width+new_x];
-				if( measure == 0 )
-					measure = 0.2f;
-				cost = 1 / measure;
-			}
-
-                        double [] hessianEigenValues = new double[3];
-			
-                        hessian.hessianEigenvaluesAtPoint( new_x, new_y, new_z,
-                                                           true, hessianEigenValues, true );
-			
-                        /* FIXME: there's lots of literature on how to
-                           pick this rule (see Sato et al,
-                           "Three-dimensional multi-scale line filter
-                           for segmentation and visualization of
-                           curvilinear structures in medical images".
-                           The rule I'm using here probably isn't optimal. */
-			
-                        double e0 = hessianEigenValues[0];
-                        double e1 = hessianEigenValues[1];
-                        double e2 = hessianEigenValues[2];
-			
-                        if( (hessianEigenValues[1] < 0) && (hessianEigenValues[2] < 0) ) {
-				
-                                double measure = Math.sqrt( hessianEigenValues[1] * hessianEigenValues[2] );
-				
-                                if( measure == 0 ) // This should never happen in practice...
-                                        measure = 0.2;
-				
-                                cost = 1 / measure;
-				
-                        } else {
-				
-                                cost = 1 / 0.2;
-				
-                        }
-			
-                }
+		}
 		
                 return cost;
         }

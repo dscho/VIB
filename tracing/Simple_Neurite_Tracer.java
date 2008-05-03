@@ -658,7 +658,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			z_end,
 			true, // reciprocal
 			(hessianEnabled ? hessian : null),
-			tubeness );
+			tubeness,
+			hessianEnabled );
 		
 		currentSearchThread.addProgressListener( this );
 		
@@ -955,9 +956,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				String tubesFileName=beforeExtension+".tubes.tif";
 				ImagePlus tubenessImage = null;
 				File tubesFile=new File(file_info.directory,tubesFileName);
+				System.out.println("Testing for the existence of "+tubesFile.getAbsolutePath());
 				if( tubesFile.exists() ) {
 					IJ.showStatus("Loading tubes file.");
 					tubenessImage=BatchOpener.openFirstChannel(tubesFile.getAbsolutePath());
+					System.out.println("Loaded the tubeness file");
 					if( tubenessImage == null ) {
 						IJ.error("Failed to load tubes image from "+tubesFile.getAbsolutePath()+" although it existed");
 						return;
@@ -1318,13 +1321,14 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
         public synchronized void enableHessian( boolean enable ) {
                 if( enable ) {
-                        if( hessian == null && tubeness != null ) {
+                        if( hessian == null && tubeness == null ) {
+                                resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
+				resultsDialog.preprocess.setEnabled(false);
                                 hessian = new ComputeCurvatures( xy, 1.0, this );
                                 new Thread(hessian).start();
-                                hessianEnabled = false;
-                        } else {
-                                hessianEnabled = true;
-                        }
+			}
+			System.out.println("Setting hessianEnabled to true");
+			hessianEnabled = true;
                 } else {
                         hessianEnabled = false;
                 }
