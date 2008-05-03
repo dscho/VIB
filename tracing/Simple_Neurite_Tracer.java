@@ -657,7 +657,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			y_end,
 			z_end,
 			true, // reciprocal
-			(hessianEnabled ? hessian : null) );
+			(hessianEnabled ? hessian : null),
+			tubeness );
 		
 		currentSearchThread.addProgressListener( this );
 		
@@ -1317,7 +1318,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
         public synchronized void enableHessian( boolean enable ) {
                 if( enable ) {
-                        if( hessian == null ) {
+                        if( hessian == null && tubeness != null ) {
                                 hessian = new ComputeCurvatures( xy, 1.0, this );
                                 new Thread(hessian).start();
                                 hessianEnabled = false;

@@ -85,7 +85,7 @@ public class Albert_Test implements PlugIn {
                 // interval is up, so don't set it too high.
 		long reportEveryMilliseconds = 3000;
 		
-		TracerThread tracer = new TracerThread(imagePlus, timeoutSeconds, reportEveryMilliseconds, start_x, start_y, start_z, goal_x, goal_y, goal_z, reciprocal, hessian );
+		TracerThread tracer = new TracerThread(imagePlus, timeoutSeconds, reportEveryMilliseconds, start_x, start_y, start_z, goal_x, goal_y, goal_z, reciprocal, hessian, null );
 		
 		System.out.println("Running tracer...");
 		tracer.run();

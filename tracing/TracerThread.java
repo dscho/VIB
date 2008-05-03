@@ -77,8 +77,9 @@ public class TracerThread extends SearchThread {
 		
 		return minimum_cost;
 	}
-	
-	
+
+	float [][] tubeness;
+
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
         public TracerThread( ImagePlus imagePlus,
@@ -91,7 +92,8 @@ public class TracerThread extends SearchThread {
 			     int goal_y,
 			     int goal_z,
 			     boolean reciprocal,
-			     ComputeCurvatures hessian ) {
+			     ComputeCurvatures hessian,
+			     float [][] tubeness ) {
 		
 		super( imagePlus,
 		       true, // bidirectional
@@ -106,6 +108,8 @@ public class TracerThread extends SearchThread {
 		// need to do this again since it needs to know if hessian is set...
 		minimum_cost_per_unit_distance = minimumCostPerUnitDistance();
 		
+		this.tubeness = tubeness;
+
                 this.start_x = start_x;
                 this.start_y = start_y;
                 this.start_z = start_z;
@@ -171,6 +175,14 @@ public class TracerThread extends SearchThread {
 			
                 } else {
 			
+			if( tubeness != null ) {
+				// Then this saves a lot of time:
+				float measure = tubeness[new_z][new_y*width+new_x];
+				if( measure == 0 )
+					measure = 0.2f;
+				cost = 1 / measure;
+			}
+
                         double [] hessianEigenValues = new double[3];
 			
                         hessian.hessianEigenvaluesAtPoint( new_x, new_y, new_z,
