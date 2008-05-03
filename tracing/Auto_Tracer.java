@@ -113,13 +113,21 @@ public class Auto_Tracer implements PlugIn {
 			}
 		}
 		
-		// Now get the most tubelike point:
-		Point p=mostTubelikePoints.poll();
+		while(true) {
+
+			// Now get the most tubelike point:
+			Point p=mostTubelikePoints.poll();
 		
-		System.out.println("Got point "+p);
+			System.out.println("Got point "+p);
 		
-		AutoSearchThread ast=new AutoSearchThread(tubenessImage);
+			AutoSearchThread ast=new AutoSearchThread( image, /* original image */
+								   tubenessImage, /* the "tubeness" filtered image */
+								   p, /* the point to start the search from */
+								   mostTubelikePoints );
 		
+
+		}
+
 		
 	}
 	
@@ -132,11 +140,9 @@ public class Auto_Tracer implements PlugIn {
 		}
 		
 		autoTrace(image);
+
 		
-		
+
+				
 	}
-
-
-
-
 }

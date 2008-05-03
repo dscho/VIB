@@ -119,8 +119,8 @@ public abstract class SearchThread extends Thread {
 	
 	protected double minimum_cost_per_unit_distance;
 	
-	byte [][] slices_data;
-	
+	byte [][] slices_data;	
+
 	ImagePlus imagePlus;
 	
         double x_spacing;

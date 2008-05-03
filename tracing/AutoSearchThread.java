@@ -25,17 +25,28 @@ package tracing;
 
 import ij.ImagePlus;
 
+import java.util.PriorityQueue;
+
 public class AutoSearchThread extends SearchThread {
 
-	public AutoSearchThread(ImagePlus image) {
-	    super(
-		image,  // Image to trace
-		false,  // bidirectional
-		false,  // definedGoal
-		false,  // startPaused
-		0,      // timeoutSeconds
-		1000 ); // reportEveryMilliseconds
+	float [][] tub
+
+	public AutoSearchThread(ImagePlus image,
+				ImagePlus tubeness,
+				Auto_Tracer.Point startPoint,
+				PriorityQueue<Auto_Tracer.Point> mostTubelikePoints ) {
+		super(
+			image,  // Image to trace
+			false,  // bidirectional
+			false,  // definedGoal
+			false,  // startPaused
+			0,      // timeoutSeconds
+			1000 ); // reportEveryMilliseconds
+		
+		
+		
 	}
+	
 	
 	
 	
