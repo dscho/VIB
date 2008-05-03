@@ -47,6 +47,7 @@ import stacks.ThreePanes;
 
 import util.Arrow;
 import util.ArrowDisplayer;
+import util.BatchOpener;
 
 import features.GaussianGenerationCallback;
 import features.ComputeCurvatures;
@@ -211,7 +212,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
         float   setupTimeoutValue = 0.0f;
 	
         /* For the original file info - needed for loading the
-           corresponding labels file. */
+           corresponding labels file and checking if a "tubes.tif"
+           file was already there... */
 	
         public FileInfo file_info;
 	
@@ -944,6 +946,36 @@ public class Simple_Neurite_Tracer extends ThreePanes
                         // Turn it grey, since I find that helpful...
 			
                         IJ.runMacro("run(\"Grays\");");
+
+			{
+				String originalFileName=file_info.fileName;
+				int lastDot=originalFileName.lastIndexOf(".");
+				String beforeExtension=originalFileName.substring(0, lastDot);
+				String tubesFileName=beforeExtension+".tubes.tif";
+				ImagePlus tubenessImage = null;
+				File tubesFile=new File(file_info.directory,tubesFileName);
+				if( tubesFile.exists() ) {
+					IJ.showStatus("Loading tubes file.");
+					tubenessImage=BatchOpener.openFirstChannel(tubesFile.getAbsolutePath());
+					if( tubenessImage == null ) {
+						IJ.error("Failed to load tubes image from "+tubesFile.getAbsolutePath()+" although it existed");
+						return;
+					}
+					if( tubenessImage.getType() != ImagePlus.GRAY32 ) {
+						IJ.error("The tubeness file must be a 32 bit float image - "+tubesFile.getAbsolutePath()+" was not.");
+						return;
+					}
+					int width = tubenessImage.getWidth();
+					int height = tubenessImage.getHeight();
+					int depth = tubenessImage.getStackSize();
+					ImageStack tubenessStack = tubenessImage.getStack();
+					tubeness = new float[depth][];
+					for( int z = 0; z < depth; ++z ) {
+						FloatProcessor fp = (FloatProcessor)tubenessStack.getProcessor( z + 1 );
+						tubeness[z] = (float[])fp.getPixels();
+					}
+				}
+			}
 			
 			single_pane = false;
 			
@@ -1279,6 +1311,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
         boolean hessianEnabled = false;
         ComputeCurvatures hessian = null;
 	
+	// Even better, we might have a "tubeness" file already there:
+
+	float [][] tubeness;
+
         public synchronized void enableHessian( boolean enable ) {
                 if( enable ) {
                         if( hessian == null ) {
