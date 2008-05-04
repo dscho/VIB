@@ -33,10 +33,13 @@ public class AutoSearchThread extends SearchThread {
 	float [][] tubeValues;
 	float tubenessThreshold;
 
-	SinglePathsGraph thisPathGraph;
 	SinglePathsGraph previousPathGraph;
 
 	ArrayList<AutoPoint> destinations = new ArrayList(512);
+
+	public ArrayList<AutoPoint> getDestinations() {
+		return destinations;
+	}
 
 	int start_x, start_y, start_z;
 
@@ -60,7 +63,6 @@ public class AutoSearchThread extends SearchThread {
 		this.tubenessThreshold = tubenessThreshold;
 
 		this.previousPathGraph = previousPathGraph;
-		this.thisPathGraph = new SinglePathsGraph(width,height,depth);
 
 		this.start_x = startPoint.x;
 		this.start_y = startPoint.y;
@@ -106,5 +108,8 @@ public class AutoSearchThread extends SearchThread {
 		return 0;
         }
 
+	Path getPathBack( int from_x, int from_y, int from_z ) {
+		return nodes_as_image[from_z][from_y*width+from_x].asPath();
+	}
 
 }

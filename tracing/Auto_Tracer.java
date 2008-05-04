@@ -31,6 +31,8 @@ import ij.plugin.PlugIn;
 import java.io.File;
 import java.util.PriorityQueue;
 import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.Iterator;
 import util.BatchOpener;
 
 import java.awt.Color;
@@ -141,14 +143,16 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 		while( mostTubelikePoints.size() > 0 ) {
 
-			// Now get the most tubelike point:
-			AutoPoint p=mostTubelikePoints.poll();
+			System.out.println("=== Priority queue now has: "+mostTubelikePoints.size());
 
-			System.out.println("Got point "+p);
+			// Now get the most tubelike point:
+			AutoPoint startPoint=mostTubelikePoints.poll();
+
+			System.out.println("Got point "+startPoint);
 			
 			ast = new AutoSearchThread( image, /* original image */
 						    tubeValues, /* the "tubeness" filtered image */
-						    p, /* the point to start the search from */
+						    startPoint, /* the point to start the search from */
 						    tubenessThreshold,
 						    completePaths );
 
@@ -167,23 +171,115 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 				ast.join();
 			} catch( InterruptedException e ) { }
 
-			
-			SinglePathsGraph recentGraph = ast.thisPathGraph;
-
-			/* 
-			   Now start the pruning...
-
-			 */
-
-			// Now remove all the points genuinely found in this search:
-
-			
-
-			// And merge the new graph into the ones so far:
+			boolean verbose = false;
 		      
+			// Now start the pruning:
+
+			ArrayList<AutoPoint> destinations = ast.getDestinations();
+			if ( verbose ) System.out.print("  === Destinations: "+destinations.size()+" ");
+			if ( verbose ) System.out.flush();
 			
+			int [] pa = new int[3];
 
+			for( Iterator<AutoPoint> it = destinations.iterator(); it.hasNext(); ) {
+				
+				if ( verbose ) System.out.print("    ");
 
+				AutoPoint d = it.next();
+				Path path = ast.getPathBack(d.x,d.y,d.z);
+
+				float [] rollingTubeness = new float[rollingLength];
+				int nextRollingAt = 0;
+				int slotsFilled = 0;
+
+				int lastIndex = path.size() - 1;
+				
+				for( int i = 0; i < path.size(); ++i  ) {
+
+					if ( verbose ) System.out.print(".");
+					if ( verbose ) System.out.flush();
+
+					path.getPoint(i,pa);
+				
+					float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
+
+					rollingTubeness[nextRollingAt] = tubenessThere;
+					
+					if( slotsFilled < nextRollingAt + 1 )
+						slotsFilled = nextRollingAt + 1;
+
+					// Now calculate the mean...
+
+					float mean = 0;
+					for( int s = 0; s < slotsFilled; ++s ) {
+						mean += rollingTubeness[s];
+					}
+					mean /= slotsFilled;
+					
+					if( mean < minimumRollingMean ) {
+						lastIndex = (i + 1) - slotsFilled;
+						break;
+					}
+	
+					if( nextRollingAt == rollingLength - 1 )
+						nextRollingAt = 0;
+					else
+						++ nextRollingAt;
+				}
+
+				AutoPoint current = null;
+				AutoPoint last = null;
+
+				ArrayList<AutoPoint> destinationsToPrune = new ArrayList<AutoPoint>();
+
+				for( int i = 0; i <= lastIndex; ++i ) {
+
+					if ( verbose ) System.out.print("#");
+					if ( verbose ) System.out.flush();
+
+					// If the tubeness is above threshold, add this to the list to prune:
+
+					path.getPoint(i,pa);
+
+					float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
+
+					current = new AutoPoint(pa[0],pa[1],pa[2]);
+
+					if( tubenessThere > tubenessThreshold ) {
+						current.overThreshold = true;
+						destinationsToPrune.add(current);
+					}
+					
+					// Also set the predecessor, if it's not the first element:
+					
+					if( last != null )
+						current.addPredecessor( last );
+					
+					// And add it to the full graph:
+
+					completePaths.addPoint( current );
+					
+					last = current;
+				}
+
+				// Now remove all the points genuinely found in this search:
+
+				for( Iterator<AutoPoint> itRemove = destinationsToPrune.iterator();
+				     itRemove.hasNext(); ) {
+
+					AutoPoint toRemove = itRemove.next();
+
+					if ( verbose ) System.out.flush();
+
+					if( mostTubelikePoints.remove( toRemove ) ) {
+						if ( verbose ) System.out.print("-");
+					} else {
+						if ( verbose ) System.out.print("x");
+					}
+				}
+
+				System.out.println("");
+			}
 		}
 	}
 
@@ -195,6 +291,9 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	// int maxNodes = 4000;
 	int maxSeconds = 10;
 	float tubenessThreshold = 34.0f;
+	float minimumRollingMean = 28.0f;
+	int rollingLength = 4;
+
 
 	/* This is a (hopefully accurate) description of the algorithm
 	 * we're using here for automatic tracing.  The following
@@ -205,7 +304,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
         [B] Max time for each search
         [C] Max iterations for each search
         [D] Minimum mean tubeness along path segment
-        [E] Lenth of path segment used to calculate "mean tubeness"
+        [E] Length of path segment used to calculate "mean tubeness"
  
              - The image is preprocessed to find a "tubeness" value
                for each point in the image.  This gives a score to
@@ -305,10 +404,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
                 repaintAllPanes();
 		// Also check whether we're over the requested number
 		// of iterations or time:
-		System.out.println("pointsInSearch "+(inOpen+inClosed)+" (will compare to maxNodes: "+maxNodes);
 		long currentTime = System.currentTimeMillis();
 		long timeSinceStarted = currentTime - timeStarted;
-		System.out.println("miliseconds since start: "+timeSinceStarted+" ( maxSeconds is: "+maxSeconds+")");
 		if( (inOpen + inClosed) > maxNodes || (timeSinceStarted / 1000) > maxSeconds ) {
 			System.out.println("### Requesting stop...");
 			ast.requestStop();

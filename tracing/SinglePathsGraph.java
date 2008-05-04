@@ -24,21 +24,32 @@ package tracing;
 import java.util.Hashtable;
 
 public class SinglePathsGraph {
-
-    int width, height, depth;
-
-    public SinglePathsGraph( int width, int height, int depth ) {
-        this.width = width;
-        this.height = height;
-        this.depth = depth;
-    }
-
-    // For fast lookup from positions:
-    Hashtable<Integer,AutoPoint> fromPosition=new Hashtable<Integer,AutoPoint>();
-
-    public AutoPoint get( int x, int y, int z ) {
-        int k = x + y * width + z * width * height;
-        return fromPosition.get(k);
-    }
-
+	
+	int width, height, depth;
+	
+	public SinglePathsGraph( int width, int height, int depth ) {
+		this.width = width;
+		this.height = height;
+		this.depth = depth;
+	}
+	
+	// For fast lookup from positions:
+	Hashtable<Integer,AutoPoint> fromPosition=new Hashtable<Integer,AutoPoint>();
+	
+	public AutoPoint get( int x, int y, int z ) {
+		int k = x + y * width + z * width * height;
+		return fromPosition.get(k);
+	}
+	
+	public void addPoint( AutoPoint p ) {
+		int k = p.x + p.y * width + p.z * width * height;
+		AutoPoint existingPoint=fromPosition.get( k );
+		if( existingPoint == null ) {
+			fromPosition.put(k,p);
+		} else {
+			// "merge" this point with the exisiting one -
+			// i.e. just add the predecessors:
+			existingPoint.addPredecessors(p.predecessors);
+		}
+	}	
 }

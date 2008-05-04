@@ -26,18 +26,49 @@ public class AutoPoint {
 	public int y;
 	public int z;
 	public boolean overThreshold = false;
+	public AutoPoint [] predecessors;
 	public AutoPoint(int x,int y,int z) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
+		this.predecessors = null;
 	}
 	@Override
-		public String toString() {
+	public String toString() {
 		return "("+x+","+y+","+z+")";
 	}
 	@Override
-		public boolean equals(Object o) {
+	public boolean equals(Object o) {
 		AutoPoint op=(AutoPoint)o;
-		return (this.x == op.x) && (this.y == op.y) && (this.z == op.z);
+		// System.out.println("Testing equality between "+this+" and "+op);
+		boolean result = (this.x == op.x) && (this.y == op.y) && (this.z == op.z);
+		return result;
+	}
+	public void addPredecessor(AutoPoint p) {
+		if( predecessors == null ) {
+			predecessors = new AutoPoint[1];
+			predecessors[0] = p;
+		} else {
+			for( int i = 0; i < predecessors.length; ++i )
+				if( p.equals( predecessors[i] ) )
+					return;
+			AutoPoint [] n = new AutoPoint[predecessors.length+1];
+			System.arraycopy(predecessors,0,n,0,predecessors.length);
+			n[predecessors.length] = p;
+			predecessors = n;
+		}
+	}
+	public void addPredecessors(AutoPoint [] newPredecessors) {
+		if( newPredecessors == null )
+			return;
+		if( predecessors == null ) {
+			predecessors = new AutoPoint[newPredecessors.length];
+			System.arraycopy(newPredecessors,0,predecessors,0,newPredecessors.length);
+		} else {
+			AutoPoint [] n = new AutoPoint[predecessors.length+newPredecessors.length];
+			System.arraycopy(predecessors,0,n,0,predecessors.length);
+			System.arraycopy(newPredecessors,0,n,predecessors.length,newPredecessors.length);
+			predecessors = n;
+		}
 	}
 }
