@@ -33,14 +33,9 @@ import java.util.*;
 import stacks.ThreePanesCanvas;
 import stacks.ThreePanes;
 
-import util.Arrow;
-
-public class InteractiveTracerCanvas extends ThreePanesCanvas implements KeyListener {
+public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener {
 	
         static final boolean verbose = Simple_Neurite_Tracer.verbose;
-	
-	private int maxArrows = 4;
-	private Arrow[] arrows = new Arrow[maxArrows];
 	
 	boolean fillTransparent = false;
 	
@@ -50,34 +45,19 @@ public class InteractiveTracerCanvas extends ThreePanesCanvas implements KeyList
 		this.fillTransparent = transparent;
 	}
 	
-	public void setArrow( int i, Arrow a ) {
-		arrows[i] = a;
-	}
-	
-	public Arrow getArrow( int i ) {
-		return arrows[i];
-	}
-	
-	public void unsetArrows( ) {
-		for( int i = 0; i < maxArrows; ++i )
-			arrows[i] = null;
-	}
-	
 	// -------------------------------------------------------------
 	
 	private Simple_Neurite_Tracer tracerPlugin;
 	
-	InteractiveTracerCanvas( ImagePlus imp, Simple_Neurite_Tracer plugin, int plane ) {
-		super(imp,plugin,plane);
+	InteractiveTracerCanvas( ImagePlus imp, Simple_Neurite_Tracer plugin, int plane, PathAndFillManager pathAndFillManager ) {
+		super(imp,plugin,plane,pathAndFillManager);
 		tracerPlugin = plugin;
-		pathAndFillManager = plugin.getPathAndFillManager();
 		// Simple_Neurite_Tracer.toastKeyListeners( IJ.getInstance(), "InteractiveTracerCanvas constructor" );
 		// addKeyListener( this );
 	}
 	
 	private Path unconfirmedSegment;
 	private Path currentPath;
-	private PathAndFillManager pathAndFillManager;
 	private boolean lastPathUnfinished;
 	
 	public void setPathUnfinished( boolean unfinished ) {
@@ -138,9 +118,6 @@ public class InteractiveTracerCanvas extends ThreePanesCanvas implements KeyList
 		
 		e.consume();
 	}
-	
-	boolean just_near_slices = false;
-	int eitherSide;
 	
 	public void keyReleased(KeyEvent e) {}
 	
@@ -287,72 +264,16 @@ public class InteractiveTracerCanvas extends ThreePanesCanvas implements KeyList
 		
                 if( tracerPlugin.loading )
                     return;
-	    
-		for( int i = maxArrows - 1; i >= 0; --i ) {
-			// for( int i = 0; i < maxArrows; ++i ) {
-			
-			Arrow a = arrows[i];
-			if( a == null )
-				continue;
-			
-			g.setColor(a.c);
-			
-			if( plane == ThreePanes.XY_PLANE ) {
-				g.drawLine( (int)( a.start_x ),
-					    (int)( a.start_y ),
-					    (int)( a.start_x + a.length * a.vx ),
-					    (int)( a.start_y + a.length * a.vy ) );
-			} else if( plane == ThreePanes.XZ_PLANE ) {
-				g.drawLine( (int)( a.start_x ),
-					    (int)( a.start_z ),
-					    (int)( a.start_x + a.length * a.vx ),
-					    (int)( a.start_z + a.length * a.vz ) );
-			} else if( plane == ThreePanes.ZY_PLANE ) {
-				g.drawLine( (int)( a.start_z ),
-					    (int)( a.start_y ),
-					    (int)( a.start_z + a.length * a.vz ),
-					    (int)( a.start_y + a.length * a.vy ) );
-			}
+
+		FillerThread filler = tracerPlugin.filler;
+		if( filler != null ) {
+			filler.setDrawingColors( fillTransparent ? transparentGreen : Color.GREEN,
+						 fillTransparent ? transparentGreen : Color.GREEN );
+			filler.setDrawingThreshold( filler.getThreshold() );
 		}
-		
-		int current_z = -1;
-		
-		if( plane == ThreePanes.XY_PLANE ) {
-			current_z = imp.getCurrentSlice() - 1;
-		}
-		
-		synchronized(tracerPlugin.nonsense) {
-			
-			TracerThread tracer = tracerPlugin.currentSearchThread;
-			if( tracer != null ) {
-				tracer.drawProgressOnSlice( plane, imp.getCurrentSlice(), Color.CYAN, null, this, g, -1.0f );
-			}
-			
-			FillerThread filler = tracerPlugin.filler;
-			if( filler != null ) {
-				Color c = fillTransparent ? transparentGreen : Color.GREEN;
-				filler.drawProgressOnSlice( plane, imp.getCurrentSlice(), c, c, this, g, filler.getThreshold() );
-			}
-		}		
-		
-		for( int i = 0; i < pathAndFillManager.size(); ++i ) {
-			
-			Path p = pathAndFillManager.getPath(i);
-			if( p == null )
-				continue;
-			
-			Color color = Color.MAGENTA;
-			if( pathAndFillManager.isSelected(i) ) {
-				color = Color.GREEN;
-			}
-			
-			if( just_near_slices ) {
-				p.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );
-			} else
-				p.drawPathAsPoints( this, g, color, plane );
-			
-		}
-		
+
+		super.drawOverlay(g);
+
 		if( unconfirmedSegment != null ) {
 			unconfirmedSegment.drawPathAsPoints( this, g, Color.BLUE, plane );
 		}
@@ -361,12 +282,10 @@ public class InteractiveTracerCanvas extends ThreePanesCanvas implements KeyList
 		
 		if( currentPathFromTracer != null ) {
 			if( just_near_slices )
-				currentPathFromTracer.drawPathAsPoints( this, g, Color.RED, plane, current_z, eitherSide );
+				currentPathFromTracer.drawPathAsPoints( this, g, Color.RED, plane, imp.getCurrentSlice() - 1, eitherSide );
 			else
 				currentPathFromTracer.drawPathAsPoints( this, g, Color.RED, plane );
 		}
-		
-		super.drawOverlay(g);
 		
 	}
 	

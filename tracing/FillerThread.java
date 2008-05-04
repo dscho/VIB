@@ -25,7 +25,9 @@ package tracing;
 
 import ij.*;
 import ij.process.*;
+import ij.gui.ImageCanvas;
 
+import java.awt.*;
 import java.util.*;
 
 public class FillerThread extends SearchThread {
@@ -39,18 +41,8 @@ public class FillerThread extends SearchThread {
 	
         boolean reciprocal;
 	
-        float threshold;
-	
         double reciprocal_fudge = 0.5;
-	
-        public void setThreshold( double threshold ) {
-                this.threshold = (float)threshold;
-        }
-	
-	public float getThreshold( ) {
-		return threshold;
-	}
-	
+
         public float getDistanceAtPoint( int x, int y, int z ) {
 		
                 SearchNode [] slice = nodes_as_image[z];
@@ -213,6 +205,16 @@ public class FillerThread extends SearchThread {
 		return result;
 		
 	}
+
+	float threshold;
+
+        public void setThreshold( double threshold ) {
+                this.threshold = (float)threshold;
+        }
+
+	public float getThreshold( ) {
+		return threshold;
+	}
 	
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
@@ -326,6 +328,16 @@ public class FillerThread extends SearchThread {
 		
 	}
 	
-	
+
+	@Override
+	void drawProgressOnSlice( int plane,
+				  int currentSliceInPlane,
+				  ImageCanvas canvas,
+				  Graphics g )  {
+		
+		super.drawProgressOnSlice(plane,currentSliceInPlane,canvas,g);
+
+	}
+
 	
 }

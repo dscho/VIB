@@ -28,9 +28,8 @@ import stacks.PaneOwner;
 
 public class AutoTracerCanvas extends TracerCanvas {
 
-	public AutoTracerCanvas( ImagePlus imagePlus, PaneOwner owner, int plane ) {
-		super( imagePlus, owner, plane, null );
+	public AutoTracerCanvas( ImagePlus imagePlus, PaneOwner owner, int plane, PathAndFillManager pathAndFillManager ) {
+		super( imagePlus, owner, plane, pathAndFillManager );
 	}
-
 
 }

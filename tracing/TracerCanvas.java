@@ -132,22 +132,24 @@ public class TracerCanvas extends ThreePanesCanvas {
 				i.next().drawProgressOnSlice( plane, current_z, this, g );
 		}
 
-		for( int i = 0; i < pathAndFillManager.size(); ++i ) {
+		if( pathAndFillManager != null ) {
+			for( int i = 0; i < pathAndFillManager.size(); ++i ) {
 			
-			Path p = pathAndFillManager.getPath(i);
-			if( p == null )
-				continue;
+				Path p = pathAndFillManager.getPath(i);
+				if( p == null )
+					continue;
 			
-			Color color = Color.MAGENTA;
-			if( pathAndFillManager.isSelected(i) ) {
-				color = Color.GREEN;
+				Color color = Color.MAGENTA;
+				if( pathAndFillManager.isSelected(i) ) {
+					color = Color.GREEN;
+				}
+			
+				if( just_near_slices ) {
+					p.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );
+				} else
+					p.drawPathAsPoints( this, g, color, plane );
+			
 			}
-			
-			if( just_near_slices ) {
-				p.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );
-			} else
-				p.drawPathAsPoints( this, g, color, plane );
-			
 		}
 
 		super.drawOverlay(g);

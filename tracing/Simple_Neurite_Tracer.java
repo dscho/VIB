@@ -92,11 +92,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
                 // Everything's set up in the run method...
         }
 	
-        /* This override the method in ThreePanes... */
+        /* This overrides the method in ThreePanes... */
 	
 	@Override
         public InteractiveTracerCanvas createCanvas( ImagePlus imagePlus, int plane ) {
-                return new InteractiveTracerCanvas( imagePlus, this, plane );
+                return new InteractiveTracerCanvas( imagePlus, this, plane, pathAndFillManager );
         }
 	
         public void cancelSearch( ) {
@@ -176,16 +176,16 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				
 				resultsDialog.changeState(NeuriteTracerResultsDialog.PARTIAL_PATH);
 			}
-			
-			
+		
 			// Indicate in the dialog that we've finished...
 			
 			currentSearchThread = null;
 			
-			repaintAllPanes();
-			
                 }
-		
+
+		removeThreadToDraw( source );
+		repaintAllPanes();
+
         }
 	
 	public void pointsInSearch( SearchThread source, int inOpen, int inClosed ) {
@@ -580,6 +580,22 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
         }
 	
+	void addThreadToDraw( SearchThread s ) {
+		xy_tracer_canvas.addSearchThread(s);
+		if( ! single_pane ) {
+			zy_tracer_canvas.addSearchThread(s);
+			xz_tracer_canvas.addSearchThread(s);
+		}
+	}
+	
+	void removeThreadToDraw( SearchThread s ) {
+		xy_tracer_canvas.removeSearchThread(s);
+		if( ! single_pane ) {
+			zy_tracer_canvas.removeSearchThread(s);
+			xz_tracer_canvas.removeSearchThread(s);
+		}
+	}
+
         int [] selectedPaths = null;
 	
         /* Create a new 8 bit ImagePlus of the same dimensions as this
@@ -660,6 +676,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			(hessianEnabled ? hessian : null),
 			tubeness,
 			hessianEnabled );
+
+		addThreadToDraw( currentSearchThread );
+
+		currentSearchThread.setDrawingColors( Color.CYAN, null );
+		currentSearchThread.setDrawingThreshold( -1 );
 		
 		currentSearchThread.addProgressListener( this );
 		
@@ -1077,6 +1098,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		filler.addProgressListener(this);
 		filler.addProgressListener(resultsDialog);
 		
+		addThreadToDraw(filler);
+
 		filler.start();
 		
                 resultsDialog.changeState(NeuriteTracerResultsDialog.FILLING_PATHS);
@@ -1095,7 +1118,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
                                            true, // reciprocal
                                            0.03f, // Initial threshold to display
                                            5000 ); // reportEveryMilliseconds
-		
+
+		addThreadToDraw(filler);
+
 		filler.addProgressListener( this );
 		filler.addProgressListener( resultsDialog );
 		

@@ -40,7 +40,7 @@ import java.awt.Graphics;
 
 public abstract class SearchThread extends Thread {
 	
-	static final boolean verbose = Simple_Neurite_Tracer.verbose;
+	boolean verbose = Simple_Neurite_Tracer.verbose;
 	
 	public static final byte OPEN_FROM_START   = 1;
 	public static final byte CLOSED_FROM_START = 2;
@@ -106,6 +106,19 @@ public abstract class SearchThread extends Thread {
 	
 	protected boolean atGoal( int x, int y, int z ) {
 		return false;
+	}
+
+	Color openColor;
+	Color closedColor;
+	float drawingThreshold;
+
+	void setDrawingColors( Color openColor, Color closedColor ) {
+		this.openColor = openColor;
+		this.closedColor = closedColor;
+	}
+
+	void setDrawingThreshold( float threshold ) {
+		this.drawingThreshold = threshold;
 	}
 	
 	/* If you need to force the distance between two points to
@@ -188,8 +201,13 @@ public abstract class SearchThread extends Thread {
 			reportThreadStatus();
 			if (verbose) System.out.println("... leaving synchronized");
 		}
-		if (verbose) System.out.println("requestStop finished");
+		if (verbose) System.out.println("requestStop finished (threadStatus now "+threadStatus+")");
         }
+
+	/** Override this method if you want to find out when a point
+	 * was first discovered:
+	 */
+	protected void addingNode( SearchNode n ) { }
 	
 	public void reportThreadStatus( ) {
 		for( Iterator<SearchProgressCallback> j = progressListeners.iterator(); j.hasNext(); ) {
@@ -535,6 +553,7 @@ public abstract class SearchThread extends Thread {
 									newNode.searchStatus = OPEN_FROM_GOAL;
 									open_from_goal.add( newNode );
 								}
+								addingNode( newNode );
 								nodes_as_image[new_z][new_y*width+new_x] = newNode;
 								
 							} else {
@@ -692,11 +711,8 @@ public abstract class SearchThread extends Thread {
 	
 	void drawProgressOnSlice( int plane,
 				  int currentSliceInPlane,
-				  Color openColor,
-				  Color closedColor,
 				  ImageCanvas canvas,
-				  Graphics g,
-				  float threshold ){
+				  Graphics g ){
 		
 		for( int i = 0; i < 2; ++i ) {
 			
@@ -713,7 +729,7 @@ public abstract class SearchThread extends Thread {
 			g.setColor(c);
 			
 			if( plane == ThreePanes.XY_PLANE ) {
-				int z = currentSliceInPlane - 1;
+				int z = currentSliceInPlane;
 				for( int y = 0; y < height; ++y )
 					for( int x = 0; x < width; ++x ) {
 						SearchNode [] slice = nodes_as_image[z];
@@ -723,8 +739,9 @@ public abstract class SearchThread extends Thread {
 						if( n == null )
 							continue;
 						byte status = n.searchStatus;
-						if( (threshold >= 0) && (n.g > threshold) )
+						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) ) {
 							continue;
+						}
 						if( status == start_status || status == goal_status ) {
 							int sx = canvas.screenX(x);
 							int sx_pixel_size = canvas.screenX(x+1) - sx;
@@ -736,7 +753,7 @@ public abstract class SearchThread extends Thread {
 						}
 					}
 			} else if( plane == ThreePanes.XZ_PLANE ) {
-				int y = currentSliceInPlane - 1;
+				int y = currentSliceInPlane;
 				for( int z = 0; z < depth; ++ z )
 					for( int x = 0; x < width; ++x ) {
 						SearchNode [] slice = nodes_as_image[z];
@@ -746,7 +763,7 @@ public abstract class SearchThread extends Thread {
 						if( n == null )
 							continue;
 						byte status = n.searchStatus;
-						if( (threshold >= 0) && (n.g > threshold) )
+						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status ) {
 							int sx = canvas.screenX(x);
@@ -759,7 +776,7 @@ public abstract class SearchThread extends Thread {
 						}
 					}
 			} else if( plane == ThreePanes.ZY_PLANE ) {
-				int x = currentSliceInPlane - 1;
+				int x = currentSliceInPlane;
 				for( int y = 0; y < height; ++y )
 					for( int z = 0; z < depth; ++z ) {
 						SearchNode [] slice = nodes_as_image[z];
@@ -769,7 +786,7 @@ public abstract class SearchThread extends Thread {
 						if( n == null )
 							continue;
 						byte status = n.searchStatus;
-						if( (threshold >= 0) && (n.g > threshold) )
+						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status ) {
 							int sx = canvas.screenX(z);
@@ -787,7 +804,7 @@ public abstract class SearchThread extends Thread {
 	
 	// Add a node, ignoring requests to add duplicate nodes...
 	
-	public void addNode( SearchNode n  ) {
+	public void addNode( SearchNode n ) {
 		
 		if( nodes_as_image[n.z] == null ) {
 			nodes_as_image[n.z] = new SearchNode[width*height];
