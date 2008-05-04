@@ -28,6 +28,9 @@ rudi)
 rioja|cognac.brookfield.local)
 	MEM=1024m
 	;;
+claret)
+	MEM=350m
+	;;
 esac
 
 # Profiling stuff (see http://jiprof.sourceforge.net/)
