@@ -52,6 +52,10 @@ public class InterpolatedImage {
 		}
 	}
 
+	public int getWidth() { return w; }
+	public int getHeight() { return h; }
+	public int getDepth() { return d; }
+
 	protected InterpolatedImage() {
 	}
 
