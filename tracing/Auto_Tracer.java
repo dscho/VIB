@@ -4,17 +4,17 @@
 
 /*
   This file is part of the ImageJ plugin "Auto Tracer".
-  
+
   The ImageJ plugin "Auto Tracer" is free software; you can
   redistribute it and/or modify it under the terms of the GNU General
   Public License as published by the Free Software Foundation; either
   version 3 of the License, or (at your option) any later version.
-  
+
   The ImageJ plugin "Auto Tracer" is distributed in the hope that it
   will be useful, but WITHOUT ANY WARRANTY; without even the implied
   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
   See the GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -29,6 +29,7 @@ import ij.io.FileInfo;
 import ij.io.FileSaver;
 import ij.plugin.PlugIn;
 import ij.measure.Calibration;
+import ij.gui.GenericDialog;
 import java.io.*;
 import java.util.PriorityQueue;
 import java.util.Comparator;
@@ -68,6 +69,50 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
                 return new AutoTracerCanvas( imagePlus, this, plane, null );
         }
 
+	static class AutoTracerParameters {
+		float tubenessThreshold;
+		float minimumRollingMean;
+	}
+
+	AutoTracerParameters loadParameters(String filename) {
+		float tubenessThreshold = Float.MIN_VALUE;
+		float minimumRollingMean = Float.MIN_VALUE;
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(filename));
+			String lastLine;
+			while( null != (lastLine = br.readLine()) ) {
+				lastLine = lastLine.trim();
+				if( lastLine.length() == 0 )
+					continue;
+				if( lastLine.length() < 4 )
+					return null;
+				if( lastLine.startsWith("t: ") ) {
+					String rest=lastLine.substring(3);
+					System.out.println("   For tubenessThreshold got string: '"+rest+"'");
+					try {
+						tubenessThreshold = Float.parseFloat(rest);
+					} catch( NumberFormatException e ) {
+						return null;
+					}
+				} else if( lastLine.startsWith("m: ") ) {
+					String rest=lastLine.substring(3);
+					System.out.println("   For minimumRollingMean got string: '"+rest+"'");
+					try {
+						minimumRollingMean = Float.parseFloat(rest);
+					} catch( NumberFormatException e ) {
+						return null;
+					}
+				}
+			}
+		} catch( IOException e ) {
+			return null;
+		}
+		AutoTracerParameters p=new AutoTracerParameters();
+		p.tubenessThreshold = tubenessThreshold;
+		p.minimumRollingMean = minimumRollingMean;
+		return p;
+	}
+
 	public class TubenessComparator implements Comparator<AutoPoint> {
 
 		int width, height, depth;
@@ -93,9 +138,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 		FileInfo originalFileInfo = image.getOriginalFileInfo();
 		String originalFileName=originalFileInfo.fileName;
+		System.out.println("originalFileName is "+originalFileName);
 		int lastDot=originalFileName.lastIndexOf(".");
 		String beforeExtension=originalFileName.substring(0, lastDot);
 		String tubesFileName=beforeExtension+".tubes.tif";
+		String thresholdsFileName=beforeExtension+".thresholds";
 		ImagePlus tubenessImage = null;
 		File tubesFile=new File(originalFileInfo.directory,tubesFileName);
 		if( tubesFile.exists() ) {
@@ -120,6 +167,43 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			IJ.error("The dimensions of the image and the tube image didn't match.");
 			return;
 		}
+
+		// If there is a file with the thresholds that we'd
+		// otherwise query for, load that and use them:
+		File thresholdsFile=new File(originalFileInfo.directory,thresholdsFileName);
+		System.out.println("Testing for the existence of: "+thresholdsFile.getAbsolutePath());
+		if( thresholdsFile.exists() ) {
+			AutoTracerParameters p = loadParameters(thresholdsFile.getAbsolutePath());
+			if( p == null ) {
+				throw new RuntimeException("The thresholds file '"+thresholdsFile.getAbsolutePath()+"' was corrupted somehow.");
+			}
+			tubenessThreshold = p.tubenessThreshold;
+			minimumRollingMean = p.minimumRollingMean;
+		} else {
+			// Pop up a GenericDialog to ask:
+			GenericDialog gd = new GenericDialog("Auto Tracer");
+			gd.addNumericField( "Tubeness threshold for destinations", tubenessThreshold, 2 );
+			gd.addNumericField( "Minimum rolling mean tubeness", minimumRollingMean, 2 );
+			gd.addMessage( "(For help about these options, please go to: http://fruitfly.inf.ed.ac.uk/auto-tracer/ )" );
+			gd.showDialog();
+			if(gd.wasCanceled())
+				return;
+			tubenessThreshold = (float)gd.getNextNumber();
+			minimumRollingMean = (float)gd.getNextNumber();
+			if( tubenessThreshold < 0 ) {
+				throw new RuntimeException("Tubeness threshold for destinations must be positive");
+			}
+			if( minimumRollingMean < 0 ) {
+				throw new RuntimeException("Minimum rolling mean tubeness must be positive");
+			}
+			if( minimumRollingMean > tubenessThreshold ) {
+				throw new RuntimeException("It doesn't make sense for tubeness threshold for destinations to be less than the minimum rolling mean tubeness.");
+			}
+		}
+
+		System.out.println("Now using tubenessThreshold: "+tubenessThreshold);
+		System.out.println("     and minimumRollingMean: "+minimumRollingMean);
+
 		width=image.getWidth();
 		height=image.getHeight();
 		depth=image.getStackSize();
@@ -128,7 +212,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		for(int z=0;z<depth;++z) {
 			tubeValues[z]=(float[])tubeStack.getPixels(z+1);
 		}
-	
+
 		mostTubelikePoints=new PriorityQueue<AutoPoint>(512,new TubenessComparator(width,height,depth,tubeValues));
 
 		// Add all of those points to the priority queue....
@@ -165,7 +249,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 				startPoint.y = 155;
 				startPoint.z = 37;
 			}
-			
+
 			ast = new AutoSearchThread( image, /* original image */
 						    tubeValues, /* the "tubeness" filtered image */
 						    startPoint, /* the point to start the search from */
@@ -194,11 +278,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			ArrayList<AutoPoint> destinations = ast.getDestinations();
 			if ( verbose ) System.out.print("  === Destinations: "+destinations.size()+" ");
 			if ( verbose ) System.out.flush();
-			
+
 			int [] pa = new int[3];
 
 			for( Iterator<AutoPoint> it = destinations.iterator(); it.hasNext(); ) {
-				
+
 				if ( verbose ) System.out.print("    ");
 
 				AutoPoint d = it.next();
@@ -209,7 +293,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 				int slotsFilled = 0;
 
 				int lastIndex = path.size() - 1;
-				
+
 				if( minimumPointsOnPath >= 0 && path.size() < minimumPointsOnPath ) {
 
 					lastIndex = -1;
@@ -220,29 +304,29 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 						if ( verbose ) System.out.print(".");
 						if ( verbose ) System.out.flush();
-						
+
 						path.getPoint(i,pa);
-						
+
 						float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
-						
+
 						rollingTubeness[nextRollingAt] = tubenessThere;
-						
+
 						if( slotsFilled < nextRollingAt + 1 )
 							slotsFilled = nextRollingAt + 1;
-						
+
 						// Now calculate the mean...
-						
+
 						float mean = 0;
 						for( int s = 0; s < slotsFilled; ++s ) {
 							mean += rollingTubeness[s];
 						}
 						mean /= slotsFilled;
-						
+
 						if( mean < minimumRollingMean ) {
 							lastIndex = (i + 1) - slotsFilled;
 							break;
 						}
-						
+
 						if( nextRollingAt == rollingLength - 1 )
 							nextRollingAt = 0;
 						else
@@ -271,11 +355,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 					if( tubenessThere > tubenessThreshold ) {
 						destinationsToPrune.add(current);
 					}
-					
+
 					// And add it to the full graph:
 
 					completePaths.addPoint( current, last );
-					
+
 					last = current;
 				}
 
@@ -300,12 +384,12 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 			ast = null;
 			System.gc();
-			
+
 			++loopsDone;
 		}
-		
+
 		String outputFilename = "/home/mark/test.obj";
-		
+
 		try {
 			completePaths.writeWavefrontObj(outputFilename);
 		} catch( IOException e ) {
@@ -339,7 +423,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
         [C] Max iterations for each search
         [D] Minimum mean tubeness along path segment
         [E] Length of path segment used to calculate "mean tubeness"
- 
+
              - The image is preprocessed to find a "tubeness" value
                for each point in the image.  This gives a score to
                each point according to how tube-like the local shape
@@ -412,7 +496,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		long width = image.getWidth();
 		long height = image.getHeight();
 		long depth = image.getStackSize();
-		
+
 		long pointsInImage = width * height * depth;
 		if( pointsInImage >= Integer.MAX_VALUE ) {
 			IJ.error("This plugin currently only works with images with less that "+Integer.MAX_VALUE+" points.");
@@ -433,7 +517,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	// (Comments repeated from the interface file.)
 
 	/* How many points have we considered? */
-	
+
 	public void pointsInSearch( SearchThread source, int inOpen, int inClosed ) {
                 repaintAllPanes();
 		// Also check whether we're over the requested number
@@ -445,25 +529,25 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			ast.requestStop();
 		}
 	}
-	
+
 	/* Once finished is called, you should be able to get the
 	 * result from whatever means you've implemented,
 	 * e.g. TracerThreed.getResult() */
-	
+
 	public void finished( SearchThread source, boolean success ) {
 		long currentTime = System.currentTimeMillis();
 		long secondsSinceStarted = (currentTime - timeStarted) / 1000;
 		// Just log how many nodes were explored in that time:
 		System.out.println("  "+(source.open_from_start.size()+source.closed_from_start.size())+" nodes in "+secondsSinceStarted+" seconds");
 	}
-	
+
 	/* This reports the current status of the thread, which may be:
-	   
+
 	   SearchThread.RUNNING
 	   SearchThread.PAUSED
 	   SearchThread.STOPPING
 	*/
-	
+
 	public void threadStatus( SearchThread source, int currentStatus ) {
 
 	}
