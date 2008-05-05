@@ -156,5 +156,45 @@ public class TracerCanvas extends ThreePanesCanvas {
 
 	}
 
+	/* Keep another Graphics for double-buffering... */
+	
+	private int backBufferWidth;
+	private int backBufferHeight;
+	
+	private Graphics backBufferGraphics;
+	private Image backBufferImage;
+	
+	private void resetBackBuffer() {
+		
+		if(backBufferGraphics!=null){
+			backBufferGraphics.dispose();
+			backBufferGraphics=null;
+		}
+		
+		if(backBufferImage!=null){
+			backBufferImage.flush();
+			backBufferImage=null;
+		}
+		
+		backBufferWidth=getSize().width;
+		backBufferHeight=getSize().height;
+		
+		backBufferImage=createImage(backBufferWidth,backBufferHeight);
+	        backBufferGraphics=backBufferImage.getGraphics();
+	}
+	
+	@Override
+	public void paint(Graphics g) {
+		
+		if(backBufferWidth!=getSize().width ||
+		   backBufferHeight!=getSize().height ||
+		   backBufferImage==null ||
+		   backBufferGraphics==null)
+			resetBackBuffer();
+		
+		super.paint(backBufferGraphics);
+		drawOverlay(backBufferGraphics);
+		g.drawImage(backBufferImage,0,0,this);
+	}
 
 }
