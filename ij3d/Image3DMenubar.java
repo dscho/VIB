@@ -617,8 +617,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			if(t != null) {
 				c.setTransform(new Transform3D(t));
 				univ.fireTransformationFinished();
+				record(SET_TRANSFORM, affine2string(t));
 			}
-			record(SET_TRANSFORM, affine2string(t));
 		}
 
 		if(e.getSource() == properties) {
@@ -657,8 +657,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			if(t != null) {
 				c.applyTransform(new Transform3D(t));
 				univ.fireTransformationFinished();
+				record(APPLY_TRANSFORM, affine2string(t));
 			}
-			record(APPLY_TRANSFORM, affine2string(t));
 		}
 
 		if(e.getSource() == saveTransform) {
