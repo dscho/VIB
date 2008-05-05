@@ -86,6 +86,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 	}
 
+	boolean verbose = false;
+
 	public void autoTrace( ImagePlus image ) {
 
 		FileInfo originalFileInfo = image.getOriginalFileInfo();
@@ -141,8 +143,14 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 		SinglePathsGraph completePaths = new SinglePathsGraph(width,height,depth);
 
+		int maxLoops = 4;
+		int loopsDone = 0;
+
 		while( mostTubelikePoints.size() > 0 ) {
 
+			if( maxLoops >= 0 && loopsDone > maxLoops )
+				break;
+			
 			System.out.println("=== Priority queue now has: "+mostTubelikePoints.size());
 
 			// Now get the most tubelike point:
@@ -171,8 +179,6 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 				ast.join();
 			} catch( InterruptedException e ) { }
 
-			boolean verbose = false;
-		      
 			// Now start the pruning:
 
 			ArrayList<AutoPoint> destinations = ast.getDestinations();
@@ -278,9 +284,12 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 					}
 				}
 
-				System.out.println("");
+				if (verbose) System.out.println("");
 			}
+		
+			++loopsDone;
 		}
+
 	}
 
 	AutoSearchThread ast;
@@ -407,7 +416,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		long currentTime = System.currentTimeMillis();
 		long timeSinceStarted = currentTime - timeStarted;
 		if( (inOpen + inClosed) > maxNodes || (timeSinceStarted / 1000) > maxSeconds ) {
-			System.out.println("### Requesting stop...");
+			if ( verbose ) System.out.println("### Requesting stop...");
 			ast.requestStop();
 		}
 	}
