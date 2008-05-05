@@ -91,11 +91,9 @@ public class AutoSearchThread extends SearchThread {
 	protected void addingNode( SearchNode n ) {
 		if( tubeValues[n.z][n.y*width+n.x] > tubenessThreshold ) {
 			AutoPoint p=new AutoPoint(n.x,n.y,n.z);
-			p.overThreshold = true;
 			destinations.add(p);
 		} else if( null != previousPathGraph.get(n.x,n.y,n.z) ) {
 			AutoPoint p=new AutoPoint(n.x,n.y,n.z);
-			p.overThreshold = false;
 			destinations.add(p);
 		}
 	}

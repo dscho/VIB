@@ -28,7 +28,8 @@ import ij.ImageStack;
 import ij.io.FileInfo;
 import ij.io.FileSaver;
 import ij.plugin.PlugIn;
-import java.io.File;
+import ij.measure.Calibration;
+import java.io.*;
 import java.util.PriorityQueue;
 import java.util.Comparator;
 import java.util.ArrayList;
@@ -141,22 +142,29 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			}
 		}
 
-		SinglePathsGraph completePaths = new SinglePathsGraph(width,height,depth);
+		Calibration c = image.getCalibration();
+		SinglePathsGraph completePaths = new SinglePathsGraph(width,height,depth,c.pixelWidth,c.pixelHeight,c.pixelDepth);
 
-		int maxLoops = 4;
+		int maxLoops = 400;
 		int loopsDone = 0;
 
 		while( mostTubelikePoints.size() > 0 ) {
 
-			if( maxLoops >= 0 && loopsDone > maxLoops )
+			if( maxLoops >= 0 && loopsDone >= maxLoops )
 				break;
-			
+
 			System.out.println("=== Priority queue now has: "+mostTubelikePoints.size());
 
 			// Now get the most tubelike point:
 			AutoPoint startPoint=mostTubelikePoints.poll();
 
 			System.out.println("Got point "+startPoint);
+
+			if( loopsDone == 0 ) {
+				startPoint.x = 221;
+				startPoint.y = 155;
+				startPoint.z = 37;
+			}
 			
 			ast = new AutoSearchThread( image, /* original image */
 						    tubeValues, /* the "tubeness" filtered image */
@@ -179,6 +187,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 				ast.join();
 			} catch( InterruptedException e ) { }
 
+			canvas.removeSearchThread(ast);
+
 			// Now start the pruning:
 
 			ArrayList<AutoPoint> destinations = ast.getDestinations();
@@ -200,37 +210,44 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 				int lastIndex = path.size() - 1;
 				
-				for( int i = 0; i < path.size(); ++i  ) {
+				if( minimumPointsOnPath >= 0 && path.size() < minimumPointsOnPath ) {
 
-					if ( verbose ) System.out.print(".");
-					if ( verbose ) System.out.flush();
+					lastIndex = -1;
 
-					path.getPoint(i,pa);
-				
-					float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
+				} else {
 
-					rollingTubeness[nextRollingAt] = tubenessThere;
-					
-					if( slotsFilled < nextRollingAt + 1 )
-						slotsFilled = nextRollingAt + 1;
+					for( int i = 0; i < path.size(); ++i  ) {
 
-					// Now calculate the mean...
-
-					float mean = 0;
-					for( int s = 0; s < slotsFilled; ++s ) {
-						mean += rollingTubeness[s];
+						if ( verbose ) System.out.print(".");
+						if ( verbose ) System.out.flush();
+						
+						path.getPoint(i,pa);
+						
+						float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
+						
+						rollingTubeness[nextRollingAt] = tubenessThere;
+						
+						if( slotsFilled < nextRollingAt + 1 )
+							slotsFilled = nextRollingAt + 1;
+						
+						// Now calculate the mean...
+						
+						float mean = 0;
+						for( int s = 0; s < slotsFilled; ++s ) {
+							mean += rollingTubeness[s];
+						}
+						mean /= slotsFilled;
+						
+						if( mean < minimumRollingMean ) {
+							lastIndex = (i + 1) - slotsFilled;
+							break;
+						}
+						
+						if( nextRollingAt == rollingLength - 1 )
+							nextRollingAt = 0;
+						else
+							++ nextRollingAt;
 					}
-					mean /= slotsFilled;
-					
-					if( mean < minimumRollingMean ) {
-						lastIndex = (i + 1) - slotsFilled;
-						break;
-					}
-	
-					if( nextRollingAt == rollingLength - 1 )
-						nextRollingAt = 0;
-					else
-						++ nextRollingAt;
 				}
 
 				AutoPoint current = null;
@@ -252,18 +269,12 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 					current = new AutoPoint(pa[0],pa[1],pa[2]);
 
 					if( tubenessThere > tubenessThreshold ) {
-						current.overThreshold = true;
 						destinationsToPrune.add(current);
 					}
 					
-					// Also set the predecessor, if it's not the first element:
-					
-					if( last != null )
-						current.addPredecessor( last );
-					
 					// And add it to the full graph:
 
-					completePaths.addPoint( current );
+					completePaths.addPoint( current, last );
 					
 					last = current;
 				}
@@ -286,8 +297,20 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 				if (verbose) System.out.println("");
 			}
-		
+
+			ast = null;
+			System.gc();
+			
 			++loopsDone;
+		}
+		
+		String outputFilename = "/home/mark/test.obj";
+		
+		try {
+			completePaths.writeWavefrontObj(outputFilename);
+		} catch( IOException e ) {
+			IJ.error("Writing the Wavefront OBJ file '"+outputFilename+"' failed");
+			return;
 		}
 
 	}
@@ -299,10 +322,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	int maxNodes = 100000;
 	// int maxNodes = 4000;
 	int maxSeconds = 10;
-	float tubenessThreshold = 34.0f;
-	float minimumRollingMean = 28.0f;
+	float tubenessThreshold = 41.0f;
+	float minimumRollingMean = 10.0f;
 	int rollingLength = 4;
 
+	int minimumPointsOnPath = -1;
 
 	/* This is a (hopefully accurate) description of the algorithm
 	 * we're using here for automatic tracing.  The following
