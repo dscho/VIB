@@ -145,7 +145,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		Calibration c = image.getCalibration();
 		SinglePathsGraph completePaths = new SinglePathsGraph(width,height,depth,c.pixelWidth,c.pixelHeight,c.pixelDepth);
 
-		int maxLoops = 400;
+		int maxLoops = 100;
 		int loopsDone = 0;
 
 		while( mostTubelikePoints.size() > 0 ) {
@@ -319,13 +319,14 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 	long timeStarted;
 
-	int maxNodes = 100000;
-	// int maxNodes = 4000;
-	int maxSeconds = 10;
-	float tubenessThreshold = 41.0f;
-	float minimumRollingMean = 10.0f;
+	int maxNodes = 22000; // Takes about 10 seconds to do this on a 1.8GHz Duron
+	int maxSeconds = 120;
+	float tubenessThreshold = 18f;
+	float minimumRollingMean = 5.0f;
 	int rollingLength = 4;
 
+	// If you only want to add paths that have more than a certain
+	// number of points in them, change this...
 	int minimumPointsOnPath = -1;
 
 	/* This is a (hopefully accurate) description of the algorithm
@@ -450,7 +451,10 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	 * e.g. TracerThreed.getResult() */
 	
 	public void finished( SearchThread source, boolean success ) {
-		
+		long currentTime = System.currentTimeMillis();
+		long secondsSinceStarted = (currentTime - timeStarted) / 1000;
+		// Just log how many nodes were explored in that time:
+		System.out.println("  "+(source.open_from_start.size()+source.closed_from_start.size())+" nodes in "+secondsSinceStarted+" seconds");
 	}
 	
 	/* This reports the current status of the thread, which may be:
