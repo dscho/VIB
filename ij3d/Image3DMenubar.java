@@ -688,12 +688,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		if(e.getSource() == exportTransformed) {
-			Content c = univ.getSelected();
+			final Content c = univ.getSelected();
 			if(c == null) {
 				IJ.error("Selection required");
 				return;
 			}
-			exportTransformed(c);
+			new Thread(new Runnable() {
+				public void run() {
+					exportTransformed(c);
+				}
+			}).start();
 		}
 
 		if (e.getSource() == pl_load) {
@@ -839,6 +843,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	public void exportTransformed(Content c) {
 		ImagePlus orig = c.getImage();
+		if(orig == null) {
+			IJ.error("No greyscale image exists for "
+				+ c.getName());
+			return;
+		}
 		Transform3D t1 = new Transform3D();
 		c.getLocalTranslate().getTransform(t1);
 		Transform3D t2 = new Transform3D();
