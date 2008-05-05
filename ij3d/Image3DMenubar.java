@@ -24,6 +24,7 @@ import java.util.Map;
 
 import vib.PointList;
 import vib.BenesNamedPoint;
+import vib.InterpolatedImage;
 import vib.FastMatrix;
 
 import orthoslice.OrthoGroup;
@@ -34,6 +35,7 @@ import isosurface.MeshExporter;
 import isosurface.MeshEditor;
 
 import javax.vecmath.Color3f;
+import javax.vecmath.Matrix4d;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
 
@@ -66,6 +68,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem resetTransform;
 	private MenuItem applyTransform;
 	private MenuItem saveTransform;
+	private MenuItem exportTransformed;
 	private MenuItem exportObj;
 	private MenuItem exportDXF;
 	private MenuItem smoothMesh;
@@ -302,6 +305,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		saveTransform = new MenuItem("Save Transform");
 		saveTransform.addActionListener(this);
 		transform.add(saveTransform);
+
+		transform.addSeparator();
+
+		exportTransformed= new MenuItem("Export transformed image");
+		exportTransformed.addActionListener(this);
+		transform.add(exportTransformed);
 
 		return transform;
 	}
@@ -678,6 +687,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(SAVE_TRANSFORM, affine2string(matrix));
 		}
 
+		if(e.getSource() == exportTransformed) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			exportTransformed(c);
+		}
+
 		if (e.getSource() == pl_load) {
 			Content c = univ.getSelected();
 			if(c == null) {
@@ -817,6 +835,35 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(gd.wasCanceled())
 			return;
 		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
+	}
+
+	public void exportTransformed(Content c) {
+		ImagePlus orig = c.getImage();
+		Transform3D t1 = new Transform3D();
+		c.getLocalTranslate().getTransform(t1);
+		Transform3D t2 = new Transform3D();
+		c.getLocalRotate().getTransform(t2);
+		t1.mul(t2);
+		FastMatrix fc = FastMatrix.fromCalibration(orig);
+		FastMatrix fm = fc.inverse().times(toFastMatrix(t1).inverse()).
+			times(fc);
+		InterpolatedImage in = new InterpolatedImage(orig);
+		InterpolatedImage out = in.cloneDimensionsOnly();
+		int w = orig.getWidth(), h = orig.getHeight();
+		int d = orig.getStackSize();
+
+		for (int k = 0; k < d; k++) {
+			for (int j = 0; j < h; j++) {
+				for(int i = 0; i < w; i++) {
+					fm.apply(i, j, k);
+					out.set(i, j, k, (byte)in.interpol.get(
+							fm.x, fm.y, fm.z));
+				}
+				IJ.showProgress(k + 1, d);
+			}
+		}
+		out.getImage().setTitle(orig.getTitle() + "_transformed");
+		out.getImage().show();
 	}
 
 	public void editScalebar() {
@@ -1225,6 +1272,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		transform = gd.getNextString();
 		float[] m = string2affine(transform);
 		return m;
+	}
+
+	private FastMatrix toFastMatrix(Transform3D t3d) {
+		Matrix4d m = new Matrix4d();
+		t3d.get(m);
+		return new FastMatrix(new double[][] {
+			{m.m00, m.m01, m.m02, m.m03}, 
+			{m.m10, m.m11, m.m12, m.m13},
+			{m.m20, m.m21, m.m22, m.m23}});
 	}
 
 	private String affine2string(float[] matrix) {
