@@ -24,8 +24,8 @@ import java.awt.Point;
 import java.awt.Color;
 import java.awt.Font;
 
-import java.util.Set;
-import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 
 
 import ij.process.ByteProcessor;
@@ -34,16 +34,18 @@ import ij.gui.ImageCanvas;
 import ij.ImagePlus;
 import ij.gui.Roi;
 
-public class ImageCanvas3D extends Canvas3D {
+public class ImageCanvas3D extends Canvas3D implements KeyListener {
 
 	private RoiImagePlus roiImagePlus;
 	private ImageCanvas roiImageCanvas;
-	private Set<Integer> keysDown = new HashSet<Integer>();
+	private Map<Integer, Long> pressed, released; 
 
 	private class RoiImagePlus extends ImagePlus {
 		public RoiImagePlus(String title, ByteProcessor ip) {
 			super();
 			setProcessor(title, ip);
+			pressed = new HashMap<Integer, Long>();
+			released = new HashMap<Integer, Long>();
 		}
 
 		public ImageCanvas getCanvas() {
@@ -63,6 +65,7 @@ public class ImageCanvas3D extends Canvas3D {
 					super.mousePressed(e);
 			}
 		};
+		roiImageCanvas.removeKeyListener(ij.IJ.getInstance());
 		roiImageCanvas.disablePopupMenu(true);
 		
 		addListeners();
@@ -114,25 +117,11 @@ public class ImageCanvas3D extends Canvas3D {
 				render();
 			}
 		});
-		addKeyListener(new KeyListener() {
-			public void keyPressed(KeyEvent e) {
-				keysDown.add(e.getKeyCode());
-			}
-
-			public void keyReleased(KeyEvent e) {
-				keysDown.remove(e.getKeyCode());
-			}
-
-			public void keyTyped(KeyEvent e) {}
-		});
+		addKeyListener(this);
 	} 
 
 	public Roi getRoi() {
 		return roiImagePlus.getRoi();
-	}
-
-	public boolean isKeyDown(int keyCode) {
-		return keysDown.contains(keyCode);
 	}
 
 	public void render() {
@@ -141,46 +130,39 @@ public class ImageCanvas3D extends Canvas3D {
 		startRenderer();
 	}
 
-	private String status = "";
-	private Color color = Color.WHITE;
+	/*
+	 * Needed for the isKeyDown() method. Problem:
+	 * keyPressed() and keyReleased is fired periodically, 
+	 * dependent on the operating system preferences,
+	 * even if the key is hold down.
+	 */
+	public synchronized void keyPressed(KeyEvent e) {
+		long when = e.getWhen();
+		pressed.put(e.getKeyCode(), when);
+	}
 
-//	public void setStatus(String bla) {
-//		status = bla;
-//		color = Color.WHITE;
-//		postRender();
-//		new Thread(new Runnable() {
-//			public void run() {
-//				try {
-//					Thread.currentThread().sleep(2000);
-//					color = Color.LIGHT_GRAY;
-//					postRender();
-//					Thread.currentThread().sleep(200);
-//					color = Color.GRAY;
-//					postRender();
-//					Thread.currentThread().sleep(200);
-//					color = Color.DARK_GRAY;
-//					postRender();
-//					Thread.currentThread().sleep(200);
-//					color = Color.BLACK;
-//					postRender();
-//					status = "";
-//				} catch(Exception e) {}
-//			}
-//		}).start();
-//	}
+	public synchronized void keyReleased(KeyEvent e) {
+		long when = e.getWhen();
+		released.put(e.getKeyCode(), when);
+	}
 
-	Font font = new Font("Helvetica", Font.PLAIN, 20);
+	public synchronized boolean isKeyDown(int keycode) {
+		if(!pressed.containsKey(keycode))
+			return false;
+		if(!released.containsKey(keycode))
+			return true;
+		long p = pressed.get(keycode);
+		long r = released.get(keycode);
+		return p >= r || System.currentTimeMillis() - r < 100;
+	}
+
+	public void keyTyped(KeyEvent e) {}
 
 	public void postRender() {
 		J3DGraphics2D g3d = getGraphics2D();
 		Roi roi = roiImagePlus.getRoi();
 		if(roi != null) {
 			roi.draw(g3d);
-		}
-		if(!status.equals("")) {
-			g3d.setColor(color);
-			g3d.setFont(font);
-			g3d.drawString(status, 20, getHeight()-20);
 		}
 		g3d.flush(true);
 	}

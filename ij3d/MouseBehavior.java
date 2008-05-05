@@ -136,7 +136,7 @@ public class MouseBehavior extends Behavior {
 	public void doProcess(KeyEvent e) {
 		int id = e.getID();
 
-		if(id == KeyEvent.KEY_RELEASED)
+		if(id == KeyEvent.KEY_RELEASED || id == KeyEvent.KEY_TYPED)
 			return;
 
 		Content c = univ.getSelected();
@@ -151,34 +151,32 @@ public class MouseBehavior extends Behavior {
 			axis = Renderer.Z_AXIS;
 		if(e.isShiftDown()) {
 			switch(code) {
-				case KeyEvent.VK_RIGHT:translate(c, 5, 0);break;
-				case KeyEvent.VK_LEFT:translate(c, -5, 0);break;
-				case KeyEvent.VK_UP: translate(c, 0, -5);break;
-				case KeyEvent.VK_DOWN: translate(c, 0, 5);break;
+				case KeyEvent.VK_RIGHT:translate(c,5,0);return;
+				case KeyEvent.VK_LEFT:translate(c,-5,0);return;
+				case KeyEvent.VK_UP: translate(c,0,-5);return;
+				case KeyEvent.VK_DOWN: translate(c,0,5);return;
 			}
 		} else if(e.isAltDown()) {
 			switch(code) {
-				case KeyEvent.VK_UP: zoom(c, 1); break;
-				case KeyEvent.VK_DOWN: zoom(c, -1); break;
+				case KeyEvent.VK_UP: zoom(c, 1); return;
+				case KeyEvent.VK_DOWN: zoom(c, -1); return;
 			}
 		} else if(c != null && c.getType() == Content.ORTHO && axis != -1) {
 			OrthoGroup og = (OrthoGroup)c.getContent();
 			switch(code) {
 				case KeyEvent.VK_RIGHT:
-				case KeyEvent.VK_UP: og.increase(axis); break;
+				case KeyEvent.VK_UP: og.increase(axis); return;
 				case KeyEvent.VK_LEFT:
-				case KeyEvent.VK_DOWN: og.decrease(axis); break;
-				case KeyEvent.VK_SPACE:
-					boolean b = og.isVisible(axis);
-					og.setVisible(axis, !b);
-					break;
+				case KeyEvent.VK_DOWN:og.decrease(axis); return;
+				case KeyEvent.VK_SPACE: og.setVisible(axis,
+					!og.isVisible(axis)); return;
 			}
 		} else {
 			switch(code) {
-				case KeyEvent.VK_RIGHT: rotate(c, 5, 0); break;
-				case KeyEvent.VK_LEFT: rotate(c, -5, 0); break;
-				case KeyEvent.VK_UP: rotate(c, 0, -5); break;
-				case KeyEvent.VK_DOWN: rotate(c, 0, 5); break;
+				case KeyEvent.VK_RIGHT: rotate(c, 5, 0); return;
+				case KeyEvent.VK_LEFT: rotate(c, -5, 0); return;
+				case KeyEvent.VK_UP: rotate(c, 0, -5); return;
+				case KeyEvent.VK_DOWN: rotate(c, 0, 5); return;
 			}
 		}
 	}
