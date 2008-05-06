@@ -286,6 +286,9 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			
 			System.out.println("  Got point "+startPoint+" with tubeness: "+tubeValues[startPoint.z][startPoint.y*width+startPoint.x]);
 
+			// Move to that slice, just for presentation purposes:
+			image.setSlice(startPoint.z+1);
+
 			ast = new AutoSearchThread( image, /* original image */
 						    tubeValues, /* the "tubeness" filtered image */
 						    startPoint, /* the point to start the search from */
