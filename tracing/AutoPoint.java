@@ -41,4 +41,8 @@ public class AutoPoint {
 		boolean result = (this.x == op.x) && (this.y == op.y) && (this.z == op.z);
 		return result;
 	}
+	@Override
+	public int hashCode() {
+		return (int)x + (int)y * (1 << 11) + (int)z * (1 << 22);
+	}
 }
