@@ -403,7 +403,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 					last = current;
 				}
 
-				// Now remove all the points genuinely found in this search:
+				// Now remove all the destinations
+				// genuinely found in this search:
 
 				for( Iterator<AutoPoint> itRemove = destinationsToPrune.iterator();
 				     itRemove.hasNext(); ) {
@@ -423,14 +424,17 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			System.gc();
 
 			/* Check the memory usage, and recreate the
-			 * PriorityQueue if it's going too high: */
+			 * PriorityQueue if it's going too high (and
+			 * every 50 loops in any case).  It's not
+			 * clear how trustworthy these memory
+			 * statistics are, unfortunately. */
 
                 	long freeMem = Runtime.getRuntime().freeMemory();
 		        long totMem = Runtime.getRuntime().totalMemory();
 			int percentUsed = (int)(((totMem-freeMem)*100) / totMem);
 			
 			System.out.println("=== Memory usage: "+percentUsed+"%");
-			if( percentUsed > 95 ) {
+			if( (percentUsed > 95) || ((loopsDone % 50) == 49) ) {
 				recreatePriorityQueue(true);
 				if( mostTubelikePoints.size() == 0 )
 					break;
