@@ -35,6 +35,7 @@ import java.util.PriorityQueue;
 import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.HashSet;
 import util.BatchOpener;
 
 import java.awt.Color;
@@ -48,6 +49,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	int height;
 	int depth;
 
+	HashSet<AutoPoint> skip;		
 	PriorityQueue<AutoPoint> mostTubelikePoints;
 	float [][] tubeValues;
 
@@ -243,7 +245,16 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			// Now get the most tubelike point:
 			AutoPoint startPoint=mostTubelikePoints.poll();
 
-			System.out.println("Got point "+startPoint);
+			if( skip.contains(startPoint) ) {
+				skip.remove(startPoint);
+				continue;
+			}
+			
+			System.out.println("=== Skip size is: "+skip.size());
+			System.out.println("=== Priority queue now has: "+mostTubelikePoints.size());
+			System.out.println("=== Loops done: "+loopsDone);
+			
+			System.out.println("  Got point "+startPoint+" with tubeness: "+tubeValues[startPoint.z][startPoint.y*width+startPoint.x]);
 
 			if( loopsDone == 0 ) {
 				startPoint.x = 221;
@@ -373,11 +384,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 					if ( verbose ) System.out.flush();
 
-					if( mostTubelikePoints.remove( toRemove ) ) {
-						if ( verbose ) System.out.print("-");
-					} else {
-						if ( verbose ) System.out.print("x");
-					}
+					skip.add( toRemove );
 				}
 
 				if (verbose) System.out.println("");
