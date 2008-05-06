@@ -143,6 +143,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		String beforeExtension=originalFileName.substring(0, lastDot);
 		String tubesFileName=beforeExtension+".tubes.tif";
 		String thresholdsFileName=beforeExtension+".thresholds";
+		String outputFileName=beforeExtension+".traces.obj";
 		ImagePlus tubenessImage = null;
 		File tubesFile=new File(originalFileInfo.directory,tubesFileName);
 		if( tubesFile.exists() ) {
@@ -388,12 +389,12 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			++loopsDone;
 		}
 
-		String outputFilename = "/home/mark/test.obj";
+		File outputFile=new File(originalFileInfo.directory,outputFileName);
 
 		try {
-			completePaths.writeWavefrontObj(outputFilename);
+			completePaths.writeWavefrontObj(outputFile.getAbsolutePath());
 		} catch( IOException e ) {
-			IJ.error("Writing the Wavefront OBJ file '"+outputFilename+"' failed");
+			IJ.error("Writing the Wavefront OBJ file '"+outputFile.getAbsolutePath()+"' failed");
 			return;
 		}
 
