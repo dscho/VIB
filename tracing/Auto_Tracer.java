@@ -230,6 +230,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			}
 		}
 
+		totalTimeStarted = System.currentTimeMillis();
+
 		System.out.println("Now using tubenessThreshold: "+tubenessThreshold);
 		System.out.println("     and minimumRollingMean: "+minimumRollingMean);
 
@@ -259,6 +261,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 		while( mostTubelikePoints.size() > 0 ) {
 
+			long currentTime = System.currentTimeMillis();
+			long secondsSinceStart = (currentTime - totalTimeStarted) / 1000;
+			if( secondsSinceStart > totalTimeLimitSeconds )
+				break;
+
 			if( maxLoops >= 0 && loopsDone >= maxLoops )
 				break;
 
@@ -285,7 +292,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 						    tubenessThreshold,
 						    completePaths );
 
-			timeStarted = System.currentTimeMillis();
+			threadTimeStarted = currentTime;
 
 			ast.setDrawingColors( Color.BLUE, Color.CYAN );
 			ast.setDrawingThreshold( -1 );
@@ -443,12 +450,14 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			IJ.error("Writing the Wavefront OBJ file '"+outputFile.getAbsolutePath()+"' failed");
 			return;
 		}
-
 	}
 
 	AutoSearchThread ast;
 
-	long timeStarted;
+	long totalTimeLimitSeconds = 1 * 60;
+	long totalTimeStarted;
+
+	long threadTimeStarted;
 
 	int maxNodes = 22000; // Takes about 10 seconds to do this on a 1.8GHz Duron
 	int maxSeconds = 120;
@@ -582,7 +591,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		// Also check whether we're over the requested number
 		// of iterations or time:
 		long currentTime = System.currentTimeMillis();
-		long timeSinceStarted = currentTime - timeStarted;
+		long timeSinceStarted = currentTime - threadTimeStarted;
 		if( (inOpen + inClosed) > maxNodes || (timeSinceStarted / 1000) > maxSeconds ) {
 			if ( verbose ) System.out.println("### Requesting stop...");
 			ast.requestStop();
@@ -595,9 +604,9 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 	public void finished( SearchThread source, boolean success ) {
 		long currentTime = System.currentTimeMillis();
-		long secondsSinceStarted = (currentTime - timeStarted) / 1000;
+		long secondsSinceThreadStarted = (currentTime - threadTimeStarted) / 1000;
 		// Just log how many nodes were explored in that time:
-		System.out.println("  "+(source.open_from_start.size()+source.closed_from_start.size())+" nodes in "+secondsSinceStarted+" seconds");
+		System.out.println("  "+(source.open_from_start.size()+source.closed_from_start.size())+" nodes in "+secondsSinceThreadStarted+" seconds");
 	}
 
 	/* This reports the current status of the thread, which may be:
