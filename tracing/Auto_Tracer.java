@@ -272,18 +272,6 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			if( maxLoops >= 0 && loopsDone >= maxLoops )
 				break;
 
-                	long freeMem = Runtime.getRuntime().freeMemory();
-		        long totMem = Runtime.getRuntime().totalMemory();
-			int percentUsed = (int)(((totMem-freeMem)*100) / totMem);
-			
-			// This should help the memory usage somewhat:
-			System.out.println("=== Memory usage: "+percentUsed+"%");
-			if( percentUsed > 95 ) {
-				recreatePriorityQueue(true);
-				if( mostTubelikePoints.size() == 0 )
-					break;
-			}
-
 			// Now get the most tubelike point:
 			AutoPoint startPoint=mostTubelikePoints.poll();
 
@@ -428,7 +416,22 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			}
 
 			ast = null;
+
 			System.gc();
+
+			/* Check the memory usage, and recreate the
+			 * PriorityQueue if it's going too high: */
+
+                	long freeMem = Runtime.getRuntime().freeMemory();
+		        long totMem = Runtime.getRuntime().totalMemory();
+			int percentUsed = (int)(((totMem-freeMem)*100) / totMem);
+			
+			System.out.println("=== Memory usage: "+percentUsed+"%");
+			if( percentUsed > 95 ) {
+				recreatePriorityQueue(true);
+				if( mostTubelikePoints.size() == 0 )
+					break;
+			}
 
 			++loopsDone;
 		}
