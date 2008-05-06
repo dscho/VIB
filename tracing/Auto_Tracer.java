@@ -327,6 +327,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			// Now start the pruning:
 
 			ArrayList<AutoPoint> destinations = ast.getDestinations();
+			System.out.println("  === Destinations: "+destinations.size());
 			if ( verbose ) System.out.print("  === Destinations: "+destinations.size()+" ");
 			if ( verbose ) System.out.flush();
 
