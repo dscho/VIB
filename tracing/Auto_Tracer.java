@@ -25,6 +25,7 @@ import features.Tubeness_;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.Macro;
 import ij.io.FileInfo;
 import ij.io.FileSaver;
 import ij.plugin.PlugIn;
@@ -275,7 +276,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			System.out.println("  Got point "+startPoint+" with tubeness: "+tubeValues[startPoint.z][startPoint.y*width+startPoint.x]);
 
 			// Move to that slice, just for presentation purposes:
-			image.setSlice(startPoint.z+1);
+			if( liveDisplay )
+				image.setSlice(startPoint.z+1);
 
 			ast = new AutoSearchThread( image, /* original image */
 						    tubeValues, /* the "tubeness" filtered image */
@@ -290,7 +292,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 			ast.addProgressListener(this);
 
-			canvas.addSearchThread(ast);
+			if( liveDisplay )
+				canvas.addSearchThread(ast);
 
 			ast.start();
 
@@ -298,7 +301,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 				ast.join();
 			} catch( InterruptedException e ) { }
 
-			canvas.removeSearchThread(ast);
+			if( liveDisplay )
+				canvas.removeSearchThread(ast);
 
 			// Now start the pruning:
 
@@ -528,6 +532,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 	 */
 
+	boolean liveDisplay = true;
+
 	public void run(String arg0) {
 
 		ImagePlus image = IJ.getImage();
@@ -544,13 +550,22 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		if( pointsInImage >= Integer.MAX_VALUE ) {
 			IJ.error("This plugin currently only works with images with less that "+Integer.MAX_VALUE+" points.");
 			return;
-		 }
+		}
 
+		String macroOptions = Macro.getOptions();
+		if( macroOptions != null ) {
+			String liveValue=Macro.getValue(macroOptions,"live","");
+			String lower = liveValue.toLowerCase();
+			if( lower.length() > 0 && (lower.equals("no") || lower.equals("f") || lower.equals("false") || lower.equals("n")) )
+				liveDisplay = false;
+		}
+		
 		single_pane = true;
 
-		initialize(image);
-
-		canvas = (AutoTracerCanvas)xy_canvas;
+		if( liveDisplay ) {
+			initialize(image);
+			canvas = (AutoTracerCanvas)xy_canvas;
+		}
 
 		autoTrace(image);
 	}
@@ -562,7 +577,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	/* How many points have we considered? */
 
 	public void pointsInSearch( SearchThread source, int inOpen, int inClosed ) {
-                repaintAllPanes();
+		if( liveDisplay )
+			repaintAllPanes();
 		// Also check whether we're over the requested number
 		// of iterations or time:
 		long currentTime = System.currentTimeMillis();
