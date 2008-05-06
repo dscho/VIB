@@ -278,8 +278,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			
 			// This should help the memory usage somewhat:
 			System.out.println("=== Memory usage: "+percentUsed+"%");
-			if( percentUsed > 95 )
+			if( percentUsed > 95 ) {
 				recreatePriorityQueue(true);
+				if( mostTubelikePoints.size() == 0 )
+					break;
+			}
 
 			// Now get the most tubelike point:
 			AutoPoint startPoint=mostTubelikePoints.poll();
