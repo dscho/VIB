@@ -35,7 +35,7 @@ public class AutoSearchThread extends SearchThread {
 
 	SinglePathsGraph previousPathGraph;
 
-	ArrayList<AutoPoint> destinations = new ArrayList(512);
+	ArrayList<AutoPoint> destinations = new ArrayList<AutoPoint>(512);
 
 	public ArrayList<AutoPoint> getDestinations() {
 		return destinations;
