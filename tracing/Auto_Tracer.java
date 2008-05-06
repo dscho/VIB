@@ -264,7 +264,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		Calibration c = image.getCalibration();
 		SinglePathsGraph completePaths = new SinglePathsGraph(width,height,depth,c.pixelWidth,c.pixelHeight,c.pixelDepth);
 
-		int maxLoops = 100;
+		int maxLoops = -1;
 		int loopsDone = 0;
 
 		while( mostTubelikePoints.size() > 0 ) {
