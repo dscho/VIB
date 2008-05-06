@@ -371,6 +371,8 @@ public class Fit_Sphere implements PlugIn {
 		// Make the last time through be the nc82 channels on their own...		
 		Bins[] lineBins = new Bins[linesPatterns.length+1];
 
+		int totalGoodBrains = 0;
+
 		// for (int i = 0; i <= linesPatterns.length; ++i) {
 		for (int i = 0; i <= linesPatterns.length; ++i) {
 
@@ -413,6 +415,9 @@ public class Fit_Sphere implements PlugIn {
 				}
 				
 				fileGroupArray[i].add(f);
+				++ totalGoodBrains;
+
+
 			}
 		}
 		
@@ -439,8 +444,12 @@ public class Fit_Sphere implements PlugIn {
 					       false,
 					       false);
 		}
-		
-		
+				
+		int brainCounter = 0;
+		Bins [] brainBins = new Bins[totalGoodBrains];
+		String [] brainLines = new String[totalGoodBrains];
+		String [] brainNames = new String[totalGoodBrains];
+
 		for (int i = 0; i <= linesPatterns.length; ++i) {
 
 			File directory=normalizedDirectories[i];
@@ -487,10 +496,16 @@ public class Fit_Sphere implements PlugIn {
                                                             value = (255 * value) / maxValue;                                                          
                                                         }
                                                         lineBins[i].add(value,distance);
+
+							brainBins[brainCounter].add(value,distance);
+							brainLines[brainCounter] = directory.getName();
+							brainNames[brainCounter] = f.getName();
 						}
 					}
 				}
 				gal4Channel.close();
+
+				++ brainCounter;
 			}
 		}
 
@@ -501,53 +516,86 @@ public class Fit_Sphere implements PlugIn {
 
                         for( int i=0; i <= linesPatterns.length; ++i ) {
 
-                            String outputPath;
-			    if( i == linesPatterns.length )
-				    outputPath = outputPathStem+"nc82.tsv";
-			    else
-				    outputPath = outputPathStem+linesPatterns[i]+".tsv";
+				String outputPath;
+				if( i == linesPatterns.length )
+					outputPath = outputPathStem+"nc82.tsv";
+				else
+					outputPath = outputPathStem+linesPatterns[i]+".tsv";
 
-                            PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(new File(outputPath))));
+				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(new File(outputPath))));
 
-                            pw.println("Pattern\t" +
-                                        "Bin\t" +
-                                        "MinimumInBin\t" +
-                                        "MaximumInBin\t" +
-                                        "MidPointOfBin\t" +
-                                        "MeanValueInBin\t" +
-                                        "SDOfValuesInBin\t +" +
-                                        "N");
+				pw.println("Pattern\t" +
+					   "Bin\t" +
+					   "MinimumInBin\t" +
+					   "MaximumInBin\t" +
+					   "MidPointOfBin\t" +
+					   "MeanValueInBin\t" +
+					   "SDOfValuesInBin\t +" +
+					   "N");
+				
+				String lineName;
+				if( i == linesPatterns.length )
+					lineName = "nc82";
+				else
+					lineName = linesPatterns[i].toString();
+				
+				Bins lineBin = lineBins[i];
+				
+				for( int b = 0; b < bins; ++b ) {
+					pw.println("\"" + lineName +"\"\t" +
+						   b + "\t" +
+						   lineBin.getMinimumInBin(b) + "\t" +
+						   lineBin.getMaximumInBin(b) + "\t" +
+						   lineBin.getMidPointOfBin(b) + "\t" +
+						   lineBin.getMean(b) + "\t" +
+						   lineBin.getStandardDeviation(b) + "\t" +
+						   lineBin.getN(b) );
+				}
+				
+				
+				pw.close();
+				
+			}
+			
+			File perBrainSubdirectory = new File(outputPathStem + "per-brain");
+			perBrainSubdirectory.mkdir();
 
-			    String lineName;
-			    if( i == linesPatterns.length )
-				lineName = "nc82";
-			    else
-				lineName = linesPatterns[i].toString();
+			for( int i=0; i <= brainBins.length; ++i ) {
+				    
+				String outputPath = perBrainSubdirectory.getAbsolutePath() + File.separator + brainNames[i] + ".tsv";
+				    
+				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(new File(outputPath))));
+				    
+				pw.println("Pattern\t" +
+					   "Bin\t" +
+					   "MinimumInBin\t" +
+					   "MaximumInBin\t" +
+					   "MidPointOfBin\t" +
+					   "MeanValueInBin\t" +
+					   "SDOfValuesInBin\t +" +
+					   "N");
 
-			    Bins lineBin = lineBins[i];
-
-                            for( int b = 0; b < bins; ++b ) {
-                                pw.println("\"" + lineName +"\"\t" +
-                                            b + "\t" +
-                                            lineBin.getMinimumInBin(b) + "\t" +
-                                            lineBin.getMaximumInBin(b) + "\t" +
-                                            lineBin.getMidPointOfBin(b) + "\t" +
-                                            lineBin.getMean(b) + "\t" +
-                                            lineBin.getStandardDeviation(b) + "\t" +
-                                            lineBin.getN(b) );
-                            }
-
-
-                            pw.close();
-
-                        }
+				Bins brainBin = brainBins[i];
+				    
+				for( int b = 0; b < bins; ++b ) {
+					pw.println("\"" + brainLines[i] +"\"\t" +
+						   b + "\t" +
+						   brainBin.getMinimumInBin(b) + "\t" +
+						   brainBin.getMaximumInBin(b) + "\t" +
+						   brainBin.getMidPointOfBin(b) + "\t" +
+						   brainBin.getMean(b) + "\t" +
+						   brainBin.getStandardDeviation(b) + "\t" +
+						   brainBin.getN(b) );
+				}
+				pw.close();
+			}
 			
 		} catch (IOException e) {
 			IJ.error("There was an exception while writing the data: " + e);
 			return;
 		}
 
-		// FIXME: also generate averaged images...
+                // FIXME: also generate averaged images...
 		
 		
                
