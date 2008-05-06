@@ -306,7 +306,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 			timeStarted = System.currentTimeMillis();
 
-			ast.setDrawingColors( Color.CYAN, Color.CYAN );
+			ast.setDrawingColors( Color.BLUE, Color.CYAN );
 			ast.setDrawingThreshold( -1 );
 
 			ast.addProgressListener(this);
