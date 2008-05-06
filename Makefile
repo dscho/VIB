@@ -58,9 +58,15 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	tracing/PathAndFillManager.java \
 	tracing/PathAndFillListener.java \
 	tracing/Simple_Neurite_Tracer.java \
+	tracing/Auto_Tracer.java \
+	tracing/AutoSearchThread.java \
+	tracing/AutoPoint.java \
+	tracing/SinglePathsGraph.java \
+	tracing/AutoTracerCanvas.java \
 	tracing/NeuriteTracerResultsDialog.java \
 	tracing/PointInImage.java \
 	tracing/TracerCanvas.java \
+	tracing/InteractiveTracerCanvas.java \
 	tracing/Fill.java \
 	tracing/FillerThread.java \
 	tracing/FillerProgressCallback.java \
