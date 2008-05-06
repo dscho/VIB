@@ -39,9 +39,6 @@ public class SinglePathsGraph {
 		this.spacing_x = (float)spacing_x;
 		this.spacing_y = (float)spacing_y;
 		this.spacing_z = (float)spacing_z;
-		this.directedLinksCapacity = 256;
-		this.directedLinksInArray = 0;
-		this.directedLinks = new int[directedLinksCapacity*2];
 	}
 
 	// For fast lookup from positions:
@@ -64,25 +61,16 @@ public class SinglePathsGraph {
 		}
 	}
 
-	// This all turns out to be very memory hungry, so keep track
-	// of the links between points here:
+	/* This all turns out to be very memory hungry, so keep track
+	   of the links between points here, encoded into a long for
+	   each link:
+	 */
 
-	int directedLinksInArray;
-	int directedLinksCapacity;
-
-	int [] directedLinks;
+	HashSet<Long> directedLinks = new HashSet<Long>();
 
 	void addLink( int from_k, int to_k ) {
-		if( directedLinksInArray == directedLinksCapacity ) {
-			int newCapacity = (directedLinksCapacity * 5) / 4;
-			int [] n = new int[newCapacity*2];
-			System.arraycopy(directedLinks,0,n,0,directedLinksInArray*2);
-			directedLinksCapacity = newCapacity;
-			directedLinks = n;
-		}
-		directedLinks[ directedLinksInArray * 2 ] = from_k;
-		directedLinks[ directedLinksInArray * 2 + 1 ] = to_k;
-		++ directedLinksInArray;
+		long toAdd = (from_k << 32) + to_k;
+		directedLinks.add(toAdd);
 	}
 
 	void addLink( int from_x, int from_y, int from_z, int to_x, int to_y, int to_z ) {
@@ -122,12 +110,14 @@ public class SinglePathsGraph {
 			++counter;
 		}
 		
-		for( int i = 0; i < directedLinksInArray; ++i ) {
-			int from_k = directedLinks[i*2];
-			int to_k = directedLinks[i*2+1];
+		for( Iterator<Long> links = directedLinks.iterator();
+		     links.hasNext(); ) {
+			long l = links.next();
+			long from = l >> 32;
+			long to = l & 0xFFFFFFFF;
 			int from_vertex = wavefrontToKey.get(from_k);
 			int to_vertex = wavefrontToKey.get(to_k);
-			pw.println("l "+from_vertex+" "+to_vertex);
+			pw.println("l "+from_vertex+" "+to_vertex);			
 		}
 
 		pw.print("g");
