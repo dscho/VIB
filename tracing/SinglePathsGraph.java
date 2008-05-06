@@ -22,6 +22,7 @@
 package tracing;
 
 import java.util.Hashtable;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.Iterator;
 import java.io.*;
@@ -115,6 +116,8 @@ public class SinglePathsGraph {
 			long l = links.next();
 			long from = l >> 32;
 			long to = l & 0xFFFFFFFF;
+			int from_k = (int)from;
+			int to_k = (int)to;
 			int from_vertex = wavefrontToKey.get(from_k);
 			int to_vertex = wavefrontToKey.get(to_k);
 			pw.println("l "+from_vertex+" "+to_vertex);			
