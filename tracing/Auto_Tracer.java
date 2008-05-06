@@ -49,7 +49,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	int height;
 	int depth;
 
-	HashSet<AutoPoint> skip;		
+	HashSet<AutoPoint> done;		
 	PriorityQueue<AutoPoint> mostTubelikePoints;
 	float [][] tubeValues;
 
@@ -133,7 +133,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 	}
 
-	public void recreatePriorityQueue( boolean checkSkip ) {
+	public void recreatePriorityQueue( boolean checkDone ) {
 	
 		System.out.println("  [Recreating Priority Queue]");
 		mostTubelikePoints=new PriorityQueue<AutoPoint>(512,new TubenessComparator(width,height,depth,tubeValues));
@@ -144,25 +144,14 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 				for(int x=0;x<width;++x) {
 					if( tubeValues[z][y*width+x] > tubenessThreshold ) {
 						AutoPoint p=new AutoPoint(x,y,z);
-						if (checkSkip) {
-							if( skip.contains(p) )
-								skip.remove(p);
-							else
+						if (checkDone) {
+							if( ! done.contains(p) )
 								mostTubelikePoints.add(p);
 						} else
 							mostTubelikePoints.add(p);
 					}
 				}
 			}
-		}
-
-		if( checkSkip ) {
-			if( skip.size() != 0 ) {
-				throw new RuntimeException("The skip HashSet was not empty after recreating (BUG) - had "+skip.size()+" elements");
-			}
-			skip = null;
-			skip = new HashSet<AutoPoint>();
-			System.gc();
 		}
 		System.out.println("  [Done]");
 	}
@@ -252,7 +241,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			tubeValues[z]=(float[])tubeStack.getPixels(z+1);
 		}
 
-		skip = new HashSet<AutoPoint>();
+		done = new HashSet<AutoPoint>();
 
 		recreatePriorityQueue(false);
 		
@@ -275,12 +264,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			// Now get the most tubelike point:
 			AutoPoint startPoint=mostTubelikePoints.poll();
 
-			if( skip.contains(startPoint) ) {
-				skip.remove(startPoint);
+			if( done.contains(startPoint) ) {
 				continue;
 			}
 			
-			System.out.println("=== Skip size is: "+skip.size());
+			System.out.println("=== Done size is: "+done.size());
 			System.out.println("=== Priority queue now has: "+mostTubelikePoints.size());
 			System.out.println("=== Loops done: "+loopsDone);
 			
@@ -413,7 +401,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 					if ( verbose ) System.out.flush();
 
-					skip.add( toRemove );
+					done.add( toRemove );
 				}
 
 				if (verbose) System.out.println("");
