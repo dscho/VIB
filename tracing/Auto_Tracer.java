@@ -127,7 +127,6 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			this.tubeValues = tubeValues;
 		}
 
-		@Override
 		public int compare( AutoPoint a, AutoPoint b ) {
 			return -Float.compare(tubeValues[a.z][a.y*width+a.x],tubeValues[b.z][b.y*width+b.x]);
 		}
