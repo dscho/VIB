@@ -388,7 +388,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 				AutoPoint current = null;
 				AutoPoint last = null;
 
-				ArrayList<AutoPoint> destinationsToPrune = new ArrayList<AutoPoint>();
+				HashSet<AutoPoint> destinationsToPrune = new HashSet<AutoPoint>();
 
 				for( int i = 0; i <= lastIndex; ++i ) {
 
