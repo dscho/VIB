@@ -217,6 +217,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			tubenessThreshold = p.tubenessThreshold;
 			minimumRollingMean = p.minimumRollingMean;
 		} else {
+			if (true)
+				throw new RuntimeException("Tried to create a generic dialog!");
 			// Pop up a GenericDialog to ask:
 			GenericDialog gd = new GenericDialog("Auto Tracer");
 			gd.addNumericField( "Tubeness threshold for destinations", tubenessThreshold, 2 );
