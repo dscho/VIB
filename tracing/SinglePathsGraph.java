@@ -95,6 +95,16 @@ public class SinglePathsGraph {
 
 		PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFilename),"UTF-8"));
 
+		// It's a bit ugly encoding this data in the comments,
+		// but it's a useful enough stop gap measure:
+		pw.println("# width: "+width);
+		pw.println("# height: "+height);
+		pw.println("# depth: "+depth);
+		pw.println("# spacing_x: "+spacing_x);
+		pw.println("# spacing_y: "+spacing_y);
+		pw.println("# spacing_z: "+spacing_z);
+		
+
 		/* First build a map from keys to wavefront indices: */
 
 		Hashtable<Integer,Integer> wavefrontToKey=new Hashtable<Integer,Integer>();
@@ -123,11 +133,6 @@ public class SinglePathsGraph {
 		pw.print("g");
 
 		pw.close();
-
-		
-		
-
-
 	}
 
 
