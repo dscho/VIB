@@ -1,6 +1,7 @@
 import Quick3dApplet.*;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.process.ColorProcessor;
 import ij.plugin.PlugIn;
 import ij.gui.ImageWindow;
 import ij.gui.StackWindow;
@@ -18,14 +19,20 @@ public class ShowAmiraSurface_ implements PlugIn {
 		String dir=od.getDirectory();
 		arg=od.getFileName();
 
-		Image3dCanvas ic = new Image3dCanvas(arg, WIDTH, HEIGHT);
+		ImagePlus imp = new ImagePlus(arg, new ColorProcessor(WIDTH, HEIGHT));
+		Image3dCanvas ic = new Image3dCanvas(imp);
 		ic.r.setViewOffset(new Vec(300, 300, -2500));
 		ic.r.setLightDir(new Vec(0, 0, +1));
 		ic.r.setBackgroundCol(BGCOLOR);
 
 		try {
 			getSurface(dir + arg, ic);
+			new ImageWindow(imp, ic);
+		} catch(RuntimeException rte) {
+			IJ.showMessage("Not an Amira surface.");
+			rte.printStackTrace();
 		} catch(Exception e) {
+			IJ.showMessage("Some error ocurred: " + e + "\nFull trace in the console.");
 			e.printStackTrace();
 			return;
 		}

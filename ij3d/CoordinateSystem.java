@@ -29,6 +29,7 @@ public class CoordinateSystem extends BranchGroup {
 	public CoordinateSystem(float length, Color3f color) {
 		this.length = length;
 		this.color = color;
+		setCapability(BranchGroup.ALLOW_DETACH);
 
 		Shape3D lines = new Shape3D();
 		lines.setGeometry(createGeometry());
@@ -55,7 +56,7 @@ public class CoordinateSystem extends BranchGroup {
 			translate.setTranslation(new Vector3f(-length/4, -length/4, length));
 			addText("z", translate, textAppear);
 		} catch (Exception e) {
-			e.printStackTrace();
+// 			e.printStackTrace();
 		}
 	}
 

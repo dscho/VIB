@@ -76,6 +76,8 @@ public class AppearanceCreator implements VolRendConstants {
 		a.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
 		a.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
 		a.setCapability(Appearance.ALLOW_RENDERING_ATTRIBUTES_READ);
+		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
+		a.setCapability(Appearance.ALLOW_TEXGEN_WRITE);
 
 		TextureAttributes texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);

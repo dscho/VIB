@@ -3,11 +3,13 @@
 JAVAS=$(shell find * -name \*.java | grep -v ^tempdir)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
-JAVA3DS=$(wildcard marchingcubes/*.java voltex/*.java ij3d/*.java isosurface/*.java orthoslice/*.java ImageJ_3D_Viewer.java MC_Test.java Test_Java3D.java)
+JAVA3DS=$(wildcard util/Meshes_From_Label_File.java marchingcubes/*.java voltex/*.java ij3d/*.java isosurface/*.java orthoslice/*.java ImageJ_3D_Viewer.java MC_Test.java Test_Java3D.java)
 FILTEROUT=$(JAVA3DS)
 ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
+	ifneq ($(wildcard $(JAVA_HOME)/Home/lib/ext/j3dcore.jar),)
 		FILTEROUT=
+	endif
 	endif
 else
 	ifneq ($(wildcard /System/Library/Java/Extensions/j3dcore.jar),)
@@ -47,6 +49,37 @@ TESTCLASSES=distance.TestMutualInformation \
 
 TESTMEM=512m
 
+TRACERSOURCES=stacks/ThreePanes.java \
+	stacks/ThreePanesCanvas.java \
+	stacks/PaneOwner.java \
+	tracing/SearchNode.java \
+	tracing/SearchProgressCallback.java \
+	tracing/SearchThread.java \
+	tracing/TracerThread.java \
+	tracing/Path.java \
+	tracing/PathAndFillManager.java \
+	tracing/PathAndFillListener.java \
+	tracing/Simple_Neurite_Tracer.java \
+	tracing/NeuriteTracerResultsDialog.java \
+	tracing/PointInImage.java \
+	tracing/TracerCanvas.java \
+	tracing/Fill.java \
+	tracing/FillerThread.java \
+	tracing/FillerProgressCallback.java \
+	tracing/NormalPlaneCanvas.java \
+	$(wildcard pal/math/*.java) \
+	features/ComputeCurvatures.java \
+	features/GaussianGenerationCallback.java \
+	client/ArchiveClient.java \
+	util/Arrow.java \
+	util/ArrowDisplayer.java \
+	tracing/README tracing/COPYING \
+	math3d/JacobiDouble.java \
+	math3d/FastMatrixN.java \
+	amira/AmiraParameters.java \
+	amira/AmiraMeshDecoder.java \
+	amira/AmiraTable.java
+
 test :
 	java -Xmx$(TESTMEM) -classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR) org.junit.runner.JUnitCore $(TESTCLASSES)
 
@@ -71,7 +104,7 @@ FibonacciHeapInt.java: FibonacciHeap.java Makefile
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java), $(JAVAS))) vib/segment/icons/*.png
 
-VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java util/Bookstein_FromMarkers.java), $(JAVAS))) vib/segment/icons/*.png
+VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java tracing/*.java oldsegmenters/*.java client/*.java util/Bookstein_FromMarkers.java), $(JAVAS))) vib/segment/icons/*.png $(TRACERSOURCES)
 
 Segmentation_Editor_compat.jar: SOURCES=amira/*.java \
 	vib/InterpolatedImage.java math3d/Point3d.java \
@@ -118,9 +151,22 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard marchingcubes/*.java) $(wildcard isosurface/*.java) \
 	$(wildcard orthoslice/*.java) \
 	$(wildcard javax/media/j3d/*.java) \
+	$(wildcard math3d/*.java) \
 	vib/Resample_.java vib/InterpolatedImage.java \
+	vib/PointList.java vib/BenesNamedPoint.java \
 	amira/AmiraParameters.java amira/AmiraTable.java \
-	math3d/Point3d.java math3d/Transform_IO.java ImageJ_3D_Viewer.java
+	vib/FastMatrix.java vib/FloatMatrix.java ImageJ_3D_Viewer.java
+
+ImageJ_3D_Viewer.pdf: viewer_paper/paper.tex viewer_paper/bibliography.bib
+	cd viewer_paper; \
+	latex paper && \
+	bibtex paper && \
+	latex paper && \
+	latex paper && \
+	dvips paper.dvi && \
+	ps2pdf paper.ps && \
+	mv paper.pdf ../ImageJ_3D_Viewer.pdf; \
+	rm paper.aux paper.bbl paper.blg paper.log paper.dvi paper.ps
 
 Install_Java3D.jar: SOURCES=Install_Java3D.java
 
@@ -145,36 +191,7 @@ Find_Connected_Regions.jar: SOURCES=util/Find_Connected_Regions.java \
 Mask_Of_Nearby_Points.jar: SOURCES=util/Mask_Of_Nearby_Points.java \
 	util/COPYING
 
-Simple_Neurite_Tracer.jar: SOURCES=stacks/ThreePanes.java \
-	stacks/ThreePanesCanvas.java \
-	stacks/PaneOwner.java \
-	tracing/SearchNode.java \
-	tracing/SearchProgressCallback.java \
-	tracing/SearchThread.java \
-	tracing/TracerThread.java \
-	tracing/Path.java \
-	tracing/PathAndFillManager.java \
-	tracing/PathAndFillListener.java \
-	tracing/Simple_Neurite_Tracer.java \
-	tracing/NeuriteTracerResultsDialog.java \
-	tracing/PointInImage.java \
-	tracing/TracerCanvas.java \
-	tracing/Fill.java \
-	tracing/FillerThread.java \
-	tracing/FillerProgressCallback.java \
-	tracing/NormalPlaneCanvas.java \
-	$(wildcard pal/math/*.java) \
-	features/ComputeCurvatures.java \
-	features/GaussianGenerationCallback.java \
-	client/ArchiveClient.java \
-	util/Arrow.java \
-	util/ArrowDisplayer.java \
-	tracing/README tracing/COPYING \
-	math3d/JacobiDouble.java \
-	math3d/FastMatrixN.java \
-	amira/AmiraParameters.java \
-	amira/AmiraMeshDecoder.java \
-	amira/AmiraTable.java
+Simple_Neurite_Tracer.jar: SOURCES=$(TRACERSOURCES)
 
 ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	marchingcubes/MCTriangulator.java \
@@ -250,11 +267,20 @@ clean-jars:
 	mkdir tempdir
 	(cd tempdir && jar xvf ../$< && find . -name \*.class -exec rm {} \; && sh ../compile1.3.sh && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
 
-%.jar:
+ifeq ($(TARGET_JAR),)
+%.jar: $(JAVAS) Makefile
+	@$(MAKE) TARGET_JAR=$@ SOURCES="$(SOURCES)" $@
+else
+$(TARGET_JAR): $(SOURCES)
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
-	tar cvf - $(SOURCES) $(EXTRAS) | (cd tempdir; tar xvf -)
-	(cd tempdir && javac $(JAVACOPTS) $(filter %.java,$(SOURCES)) && jar cvf ../$@ $$(find . -type f)) && rm -rf tempdir
+	tar cvf - $(SOURCES) $(EXTRAS) | \
+		(cd tempdir; tar xvf -)
+	(cd tempdir && \
+		javac $(JAVACOPTS) $(filter %.java,$(SOURCES)) && \
+		jar cvf ../$@ $$(find . -type f)) && \
+	rm -rf tempdir
+endif
 
 # Unpack the jar, remove the source files and jar it up again :)
 

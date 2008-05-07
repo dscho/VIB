@@ -25,154 +25,167 @@ import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 
 import ij3d.Content;
+import ij3d.ContentNode;
 import ij3d.ImageCanvas3D;
 import ij3d.Image3DUniverse;
 import ij3d.ColorTable;
 
+import voltex.VolRendConstants;
+
 import vib.Resample_;
 import voltex.*;
 
-public class OrthoGroup extends Content {
+public class OrthoGroup extends ContentNode {
 
 	private Renderer renderer;
-	private TransformGroup tg;
-	private int[] slices;
+	private Orthoslice ortho;
+	private float volume;
+	private Color3f oldColor;
+	private Content c;
 
-	public OrthoGroup(String name, Color3f color, ImagePlus image, 
-		boolean[] channels, int resamplingF) {
-		
-		super(name, color, image, channels, resamplingF);
-		float scale = image.getWidth() * 
-				(float)image.getCalibration().pixelWidth;
+	public OrthoGroup(Content c) {
+		super();
+		this.c = c;
+		float scale = c.getImage().getWidth() * 
+			(float)c.getImage().getCalibration().pixelWidth;
 
-		IndexColorModel cmodel = color == null ? 
-			ColorTable.getOpaqueIndexedColorModel(image, channels) :
-			ColorTable.getOpaqueAverageGrayColorModel(image, channels);
-		ImagePlus imp = resamplingF == 1 ? image 
-				: Resample_.resample(image, resamplingF);
+		IndexColorModel cmodel = c.getColor() == null ? 
+			ColorTable.getOpaqueIndexedColorModel(
+				c.getImage(), c.getChannels()) :
+			ColorTable.getOpaqueAverageGrayColorModel(
+				c.getImage(), c.getChannels());
+		ImagePlus imp = c.getResamplingFactor() == 1 ? c.getImage() 
+			: Resample_.resample(c.getImage(), c.getResamplingFactor());
 		renderer = new Orthoslice(imp, cmodel, 
-				color, getTransparency());
-		slices = new int[] {imp.getWidth()/2, imp.getHeight()/2,
-					imp.getStackSize()/2};
+				c.getColor(), c.getTransparency());
+		ortho = (Orthoslice)renderer;
 		renderer.fullReload();
+		oldColor = c.getColor();
+		addChild(renderer.getVolumeNode());
+		calculateMinMaxCenterPoint();
+	}
 
-		getLocalRotate().addChild(renderer.getVolumeNode());
-
-		compile();
+	public void thresholdUpdated() {
+		renderer.setThreshold(c.getThreshold());
 	}
 
 	public void calculateMinMaxCenterPoint() {
-		ImagePlus imp = getImage();
+		ImagePlus imp = c.getImage();
+		int w = imp.getWidth(), h = imp.getHeight();
+		int d = imp.getStackSize();
 		Calibration c = imp.getCalibration();
-		minPoint = new Point3f();
-		maxPoint = new Point3f((float)(imp.getWidth()*c.pixelWidth),
-				(float)(imp.getHeight()*c.pixelHeight),
-				(float)(imp.getStackSize()*c.pixelDepth));
-		centerPoint = new Point3f(maxPoint.x/2, maxPoint.y/2, 
-				maxPoint.z/2);
-		createBoundingBox();
-		showBoundingBox(false);
-	}
-		
-	public static OrthoGroup addContent(Image3DUniverse univ, 
-							ImagePlus grey) {
-		GenericDialog gd = new GenericDialog("Add grey");
-		int img_count = WindowManager.getImageCount();
-		Vector greyV = new Vector();
-		String[] greys;
-		if(grey == null) {
-			for(int i=1; i<=img_count; i++) {
-				int id = WindowManager.getNthImageID(i);
-				ImagePlus imp = WindowManager.getImage(id);
-				if(imp != null){
-					 greyV.add(imp.getTitle());
-				}
+		min = new Point3f();
+		max = new Point3f();
+		center = new Point3f();
+		min.x = w * (float)c.pixelHeight;
+		min.y = h * (float)c.pixelHeight;
+		min.z = d * (float)c.pixelDepth;
+		max.x = 0;
+		max.y = 0;
+		max.z = 0;
+
+		long vol = 0;
+		for(int zi = 0; zi < d; zi++) {
+			float z = zi * (float)c.pixelDepth;
+			byte[] p = (byte[])imp.getStack().getPixels(zi+1);
+			for(int i = 0; i < p.length; i++) {
+				if(p[i] == 0) continue;
+				vol += (p[i] & 0xff);
+				float x = (i % w) * (float)c.pixelWidth;
+				float y = (i / w) * (float)c.pixelHeight;
+				if(x < min.x) min.x = x;
+				if(y < min.y) min.y = y;
+				if(z < min.z) min.z = z;
+				if(x > max.x) max.x = x;
+				if(y > max.y) max.y = y;
+				if(z > max.z) max.z = z;
+				center.x += (p[i] & 0xff) * x;
+				center.y += (p[i] & 0xff) * y;
+				center.z += (p[i] & 0xff) * z;
 			}
-			if(greyV.size() == 0)
-				IJ.error("No images open");
-			greys = (String[])greyV.toArray(new String[]{});
-			gd.addChoice("Image", greys, greys[0]);
 		}
-		String tmp = grey != null ? grey.getTitle() : "";
-		gd.addStringField("Name", tmp, 10);
-		gd.addChoice("Color", ColorTable.colorNames, 
-						ColorTable.colorNames[0]);
-		gd.addNumericField("Resampling factor", 1, 0);
-		gd.addMessage("Channels");
-		gd.addCheckboxGroup(1, 3, 
-					new String[] {"red", "green", "blue"}, 
-					new boolean[]{true, true, true});
-		gd.showDialog();
-		if(gd.wasCanceled())
-			return null;
-			
-		if(grey == null)
-			grey = WindowManager.getImage(gd.getNextChoice());
-		String name = gd.getNextString();
-		Color3f color = ColorTable.getColor(gd.getNextChoice());
-		int factor = (int)gd.getNextNumber();
-		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
-						gd.getNextBoolean(), 
-						gd.getNextBoolean()};
-		
+		center.x /= vol;
+		center.y /= vol;
+		center.z /= vol;
 
-		if(univ.contains(name)) {
-			IJ.error("Could not add new content. A content with " +
-				"name \"" + name + "\" exists already.");
-			return null;
-		}
+		volume = (float)(vol * c.pixelWidth
+				* c.pixelHeight
+				* c.pixelDepth);
 		
-		return univ.addOrthoslice(grey, color, name, channels, factor);
 	}
 
-	public int[] getSlices() {
-		return slices;
+	public float getVolume() {
+		return volume;
 	}
-
+		
 	public void eyePtChanged(View view) {
 		renderer.eyePtChanged(view);
 	}
 
-	public void thresholdUpdated(int d) {
-		renderer.setThreshold(d);
-	}
-
-	public void channelsUpdated(boolean[] channels) {
-		IndexColorModel cmodel = getColor() == null ?
+	public void channelsUpdated() {
+		IndexColorModel cmodel = c.getColor() == null ?
 			ColorTable.getOpaqueIndexedColorModel(
-				getImage(), channels) :
+				c.getImage(), c.getChannels()) :
 			ColorTable.getOpaqueAverageGrayColorModel(
-				getImage(), channels);
+				c.getImage(), c.getChannels());
 		renderer.setColorModel(cmodel);
 	}
 
-	public void colorUpdated(Color3f oldColor, Color3f newColor) {
+	public void colorUpdated() {
 		// color model only needs update if there is a switch
 		// between null and non-null color
-		if(oldColor == null && newColor != null || 
-			oldColor != null && newColor == null) {
+		if(oldColor == null && c.getColor() != null || 
+			oldColor != null && c.getColor() == null) {
 
-			IndexColorModel cmodel = newColor == null ?
+			IndexColorModel cmodel = c.getColor() == null ?
 				ColorTable.getOpaqueIndexedColorModel(
-					getImage(), getChannels()) :
+					c.getImage(), c.getChannels()) :
 				ColorTable.getOpaqueAverageGrayColorModel(
-					getImage(), getChannels());
+					c.getImage(), c.getChannels());
 			renderer.setColorModel(cmodel);
 		}
-		renderer.setColor(newColor);
+		oldColor = c.getColor();
+		renderer.setColor(c.getColor());
 	}
 
-	public void transparencyUpdated(float transparency) {
-		renderer.setTransparency(transparency);
+	public void transparencyUpdated() {
+		renderer.setTransparency(c.getTransparency());
 	}
 
-	public void setSlices(int x, int y, int z) {
-		((Orthoslice)renderer).setSlices(x, y, z);
+	public void setSlice(int axis, int v) {
+		ortho.setSlice(axis, v);
 	}
 
-	public void flush() {
-		image = null;
-		renderer = null;
+	public void decrease(int axis) {
+		ortho.decrease(axis);
+	}
+
+	public void increase(int axis) {
+		ortho.increase(axis);
+	}
+
+	public void setSlices(int[] v) {
+		ortho.setSlices(v);
+	}
+
+	public int[] getSlices() {
+		return ortho.getSlices();
+	}
+
+	public boolean[] getVisible() {
+		return ortho.getVisible();
+	}
+
+	public boolean isVisible(int i) {
+		return ortho.isVisible(i);
+	}
+
+	public void setVisible(boolean[] b) {
+		ortho.setVisible(b);
+	}
+
+	public void setVisible(int axis, boolean b) {
+		ortho.setVisible(axis, b);
 	}
 }
 

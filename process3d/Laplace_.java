@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package process3d;
 
 import ij.ImagePlus;
@@ -19,7 +21,7 @@ public class Laplace_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus img) {
 		this.image = img;
-		return DOES_8G;
+		return DOES_8G | DOES_16;
 	}
 
 	public void run(ImageProcessor ip) {

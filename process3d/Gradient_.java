@@ -21,7 +21,7 @@ public class Gradient_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus image) {
 		this.image = image;
-		return DOES_8G;
+		return DOES_8G | DOES_16;
 	}
 
 	public void run(ImageProcessor ip) {
@@ -70,6 +70,8 @@ public class Gradient_ implements PlugInFilter {
 				x_[i]*x_[i] + y_[i]*y_[i] + z_[i]*z_[i]);
 			}
 		}
-		return new ImagePlus("Gradient", grad);
+		ImagePlus ret = new ImagePlus("Gradient", grad);
+		ret.setCalibration(c);
+		return ret;
 	}
 }

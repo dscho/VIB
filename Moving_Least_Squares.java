@@ -4,11 +4,13 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
-import ij.plugin.filter.PlugInFilter;
+import ij.plugin.PlugIn;
 import ij.process.ColorProcessor;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import java.awt.Rectangle;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * This plugin implements the algorithms from the paper
@@ -16,96 +18,112 @@ import java.awt.Rectangle;
  * and Warrent J.
  * (http://faculty.cs.tamu.edu/schaefer/research/mls.pdf)
  */
-public class Moving_Least_Squares implements PlugInFilter {
+public class Moving_Least_Squares implements PlugIn {
 	ImagePlus image;
 
 	final public static int AFFINE = 0;
 	final public static int SIMILARITY = 1;
 	final public static int RIGID = 2;
 
-	public void run(ImageProcessor ip) {
-		Roi roi = image.getRoi();
-		if (!(roi instanceof PointRoi)) {
-			IJ.error("Need a point selection!");
-			return;
-		}
-		PointRoi points1 = (PointRoi)roi;
-		int n = points1.getNCoordinates();
+	private void need2Images() {
+		IJ.showMessage("Need 2 images with a point roi in each,\nwith equal number of points in each roi.");
+	}
 
+	public void run(String arg) {
+
+		// Find all images that have a PointRoi in them
 		int[] ids = WindowManager.getIDList();
-		String[] titles = new String[ids.length];
-		int j = 0;
-		for (int i = 0; i < ids.length; i++) {
-			ImagePlus other = WindowManager.getImage(ids[i]);
-			if (other == image)
-				continue;
-			Roi other_roi = other.getRoi();
-			if (!(other_roi instanceof PointRoi))
-				continue;
-			if (((PointRoi)other_roi).getNCoordinates() != n)
-				continue;
-			ids[j] = ids[i];
-			titles[j] = other.getTitle();
-			j++;
+		if (null == ids) {
+			need2Images();
+			return;
 		}
-		
-		if (j < 1) {
-			IJ.error("Need another image with " + n
-					+ "selected points!");
+		ArrayList all = new ArrayList();
+		for (int i=0; i<ids.length; i++) {
+			ImagePlus imp = WindowManager.getImage(ids[i]);
+			Roi roi = imp.getRoi();
+			if (null != roi && roi instanceof PointRoi)
+				all.add(imp);
+		}
+		if (all.size() < 2) {
+			need2Images();
 			return;
 		}
 
-		int id;
-		if (j < ids.length) {
-			String[] temp = new String[j];
-			System.arraycopy(titles, 0, temp, 0, j);
-			titles = temp;
-		}
+		// create choice arrays
+		String[] titles = new String[all.size()];
+		int i=0;
+		for (Iterator it = all.iterator(); it.hasNext(); )
+			titles[i++] = ((ImagePlus)it.next()).getTitle();
 
 		String[] methods = {"Affine", "Similarity", "Rigid"};
 		GenericDialog gd = new GenericDialog("Align Images");
+		String current = WindowManager.getCurrentImage().getTitle();
+		gd.addChoice("source image", titles, current.equals(titles[0]) ? titles[1] : titles[0]);
+		gd.addChoice("target image", titles, current);
 		gd.addChoice("method", methods, methods[2]);
-		gd.addChoice("source", titles, titles[0]);
 		gd.addNumericField("alpha", 1.0, 3);
 		gd.addNumericField("gridSize", 0.0, 3);
 		gd.addCheckbox("forward", true);
+		gd.addCheckbox("merged result", true);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
 
+		ImagePlus source = (ImagePlus)all.get(gd.getNextChoiceIndex());
+		ImagePlus target = (ImagePlus)all.get(gd.getNextChoiceIndex());
 		Method method = getMethod(gd.getNextChoiceIndex());
-		id = ids[gd.getNextChoiceIndex()];
 		method.alpha = (float)gd.getNextNumber();
 		float gridSize = (float)gd.getNextNumber();
 		boolean useForward = gd.getNextBoolean();
+		boolean merge = gd.getNextBoolean();
 
-		ImagePlus source = WindowManager.getImage(id);
-		ImageProcessor p = source.getProcessor();
-		boolean isColor = (p instanceof ColorProcessor);
-		Interpolator inter = isColor ?
-			(Interpolator)new ColorInterpolator(p) :
-			(Interpolator)new BilinearInterpolator(p);
 
-		PointRoi points2 = (PointRoi)source.getRoi();
+		PointRoi points1 = (PointRoi)source.getRoi();
+		PointRoi points2 = (PointRoi)target.getRoi();
+
+		if (points1.getNCoordinates() != points2.getNCoordinates()) {
+			IJ.showMessage("Unequal number of points!");
+			return;
+		}
+
+		// ready
+		ImageProcessor ip = process(source, points1, target, points2, method, gridSize, useForward, merge);
+		if (null != ip) new ImagePlus("warped" + (useForward ? " forward" : ""), ip).show();
+	}
+
+	static public ImageProcessor process(ImagePlus source, PointRoi points1, ImagePlus target, PointRoi points2, Method method, float gridSize, boolean useForward, boolean merge) {
+		if (points1.getNCoordinates() != points2.getNCoordinates()) {
+			IJ.log("Unequal number of points!");
+			return null;
+		}
+
+		Interpolator inter = source.getType() == ImagePlus.COLOR_RGB ?
+			(Interpolator)new ColorInterpolator(source.getProcessor()) :
+			(Interpolator)new BilinearInterpolator(source.getProcessor());
+
+		// store the result in a new ImageProcessor
+		ImageProcessor ip = target.getProcessor().duplicate();
+		if (!merge) {
+			// make the target image pixels be blank
+			ip.setValue(0);
+			ip.setRoi(0, 0, ip.getWidth(), ip.getHeight());
+			ip.fill();
+		}
 
 		if (useForward) {
 			if (gridSize < 1)
 				gridSize = 10;
-			method.setCoordinates(points2, points1);
+			method.setCoordinates(points1, points2);
 			method.warpImageForward(inter, (int)gridSize, ip);
 		} else {
-			method.setCoordinates(points1, points2);
+			method.setCoordinates(points2, points1);
 			int w = ip.getWidth(), h = ip.getHeight();
 			method.warpImage(inter, w, h, ip.getPixels());
 			if (gridSize > 0)
 				method.drawGrid(w, h, gridSize, ip.getPixels());
 		}
-		image.updateAndDraw();
-	}
 
-	public int setup(String arg, ImagePlus imp) {
-		image = imp;
-		return DOES_RGB | DOES_8G | DOES_16 | DOES_32;
+		return ip;
 	}
 
 	public static Method getMethod(int method) {

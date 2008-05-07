@@ -1,89 +1,97 @@
 /*
- *
  */
-
 package features;
 
 import ij.*;
+import ij.measure.Calibration;
 import ij.plugin.*;
 import ij.process.*;
 
 /* For testing the hessianEigenvaluesAtPoint() method, essentially,
  * and experimenting with measures based on those eigenvalues. */
-
 public class Tubeness_ implements PlugIn, GaussianGenerationCallback {
 
-    ImagePlus original;
+	public ImagePlus generateTubenessImage(ImagePlus original) {
+	
+		Calibration calibration=original.getCalibration();
 
-    public void run( String ignored ) {
+		ComputeCurvatures c = new ComputeCurvatures(original, 1.0, this);
+		c.run();
 
-        original = WindowManager.getCurrentImage();
+		int width = original.getWidth();
+		int height = original.getHeight();
+		int depth = original.getStackSize();
 
-        ComputeCurvatures c = new ComputeCurvatures( original, 1.0, this  );
+		System.out.println("w: " + width + ", h: " + height + ", d:" + depth);
 
-        c.run();
+		ImageStack stack = new ImageStack(width, height);
 
-        int width = original.getWidth();
-        int height = original.getHeight();
-        int depth = original.getStackSize();
+		double[] evalues = new double[3];
 
-        System.out.println("w: "+width+", h: "+height+", d:" +depth);
+		for (int z = 0; z < depth; ++z) {
 
-        ImageStack stack = new ImageStack( width, height );
+			System.out.println("Working on slice: " + z);
 
-        double [] evalues = new double[3];
+			float[] slice = new float[width * height];
 
-        for( int z = 0; z < depth; ++z ) {
+			if ((z >= 1) && (z < depth - 1)) {
+				for (int y = 1; y < height - 1; ++y) {
+					for (int x = 1; x < width - 1; ++x) {
 
-            System.out.println( "Working on slice: "+z );
-            
-            float [] slice = new float[ width * height ];
+						c.hessianEigenvaluesAtPoint(x, y, z,
+						    true, // order absolute
+						    evalues,
+						    false);
 
-            if( (z >= 1) && (z < depth - 1) )
-                for( int y = 1; y < height - 1; ++y ) {
-                    for( int x = 1; x < width - 1; ++x ) {
+						int index = y * width + x;
 
-                        c.hessianEigenvaluesAtPoint( x, y, z,
-                                                     true, // order absolute
-                                                     evalues,
-                                                     false );
+						if ((evalues[1] >= 0) || (evalues[2] >= 0)) {
 
-                        int index = y * width + x;
+							// If either of the two principle eigenvalues
+							// is positive then the curvature is in the
+							// wrong direction - towards higher
+							// instensities rather than lower.
 
-                        if( (evalues[1] >= 0) || (evalues[2] >= 0) ) {
+							slice[index] = 0;
 
-                            // If either of the two principle eigenvalues
-                            // is positive then the curvature is in the
-                            // wrong direction - towards higher
-                            // instensities rather than lower.
+						} else {
 
-                            slice[index] = 0;
+							slice[index] = (float) Math.sqrt(evalues[2] * evalues[1]);
 
-                        } else {
-
-                            slice[index] = (float) Math.sqrt( evalues[2] * evalues[1] );
-
-                        }
-                    }
-                }
+						}
+					}
+				}
+			}
 
 
-            FloatProcessor fp = new FloatProcessor( width, height );            
-            fp.setPixels( slice );
-            stack.addSlice( null, fp );
-            IJ.showProgress( z / (double)depth );
+			FloatProcessor fp = new FloatProcessor(width, height);
+			fp.setPixels(slice);
+			stack.addSlice(null, fp);
+			IJ.showProgress(z / (double) depth);
 
-        }
+		}
 
-        IJ.showProgress( 1.0 );
-        
-        ImagePlus imp = new ImagePlus( "tubeness of "+original.getTitle(), stack );
-        imp.show();
-        
-    }
+		IJ.showProgress(1.0);
 
-    public void proportionDone( double d ) {
-        IJ.showProgress( d );
-    }
+		ImagePlus result=new ImagePlus("tubeness of " + original.getTitle(), stack);
+		result.setCalibration(calibration);
+		return result;
+	}
 
+	public void run(String ignored) {
+
+		ImagePlus original = WindowManager.getCurrentImage();
+		if (original == null) {
+			IJ.error("No current image to calculate tubeness of.");
+			return;
+		}
+
+		ImagePlus result = generateTubenessImage(original);
+
+		result.show();
+	}
+
+	public void proportionDone(double d) {
+		IJ.showProgress(d);
+	}
 }

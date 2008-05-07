@@ -7,6 +7,7 @@ import ij.process.*;
 import ij.gui.*;
 import ij.plugin.*;
 import ij.plugin.filter.*;
+import vib.TransformedImage;
 
 import java.util.ArrayList;
 
@@ -58,6 +59,10 @@ public class Overlay_Registered implements PlugIn {
 
 		String mustHaveSubstring = "";
 
+                String titleSubstring = null;
+                boolean closeAllOthers = false;
+                
+                String macroOptions = Macro.getOptions();
 		if (macroOptions != null) {
 			String value = Macro.getValue(macroOptions, "substring", null);
 			if( value != null ) {
@@ -86,6 +91,11 @@ public class Overlay_Registered implements PlugIn {
 		ArrayList<String> matchingTitles = new ArrayList<String>();
 		ArrayList<ImagePlus> matchingImages = new ArrayList<ImagePlus>();
 
+                String [] matchingTitles=new String[wList.length];
+                ImagePlus [] matchingImagePlus=new ImagePlus[wList.length];
+                ImagePlus [] allImages=new ImagePlus[wList.length];
+                
+                int totalMatchingTitles = 0;
 		for (int i = 0; i < wList.length; i++) {
 			ImagePlus imp = WindowManager.getImage(wList[i]);
 			String title = imp != null ? imp.getTitle() : "";
@@ -120,6 +130,18 @@ public class Overlay_Registered implements PlugIn {
 		sourceImages[0] = matchingImages.get(index[0]);
 		sourceImages[1] = matchingImages.get(index[1]);
 		
+                float[] valueRange;
+                {
+                    TransformedImage ti = new TransformedImage(
+                        sourceImages[0],
+                        sourceImages[1]);
+
+                    valueRange = ti.getValuesRange();
+                }
+                
+                sourceImages[0].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+                sourceImages[1].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+                
 		int width = sourceImages[0].getWidth();
 		int height = sourceImages[0].getHeight();
 		int depth = sourceImages[0].getStackSize();
@@ -167,6 +189,29 @@ public class Overlay_Registered implements PlugIn {
 		ImagePlus rgbResult = new ImagePlus("Merged",merged);
 		rgbResult.show();
 
-	}
+		ModelessQuestions q=new ModelessQuestions("Rate This Registration",rgbResult);
 
+		q.addTextField("I dunno", 20, "Your message:" );
+		
+		q.addTextField("Well", 10, "Something");
+
+		q.addLabel("Just a label.");
+
+		q.addCompletingButton("ok","Done");
+		q.addCompletingButton("unhappy","Rubbish!");
+
+		for( int i = 0; i <= 10; ++i ) {
+			q.addRadio("rating",""+i);
+		}
+
+		q.waitForAnswers();
+
+		IJ.error("Finished waiting for answers!");
+
+                if(closeAllOthers) {
+                    for( int i=0; i < allImages.length; ++i ) {
+                        allImages[i].close();
+                    }
+                }
+	}
 }

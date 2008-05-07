@@ -1,3 +1,6 @@
+package process3d;
+
+import vib.Resample_;
 import vib.PointList;
 import vib.BenesNamedPoint;
 
@@ -61,7 +64,6 @@ public class IFT_ implements PlugInFilter {
 		w = image.getWidth();
 		h = image.getHeight();
 		d = image.getStackSize();
-		markers = PointList.load(image);
 		data = new byte[d][];
 		for(int z = 0; z < d; z++) {
 			data[z] = (byte[])image.getStack()
@@ -73,17 +75,19 @@ public class IFT_ implements PlugInFilter {
 		for(int i = 0; i < C.length; i++)
 			C[i] = 255;
 		queue = new PriorityQueue();
-		byte m = 1;
 		for(int z = 0; z < seeds.getStackSize(); z++) {
 			byte[] b = (byte[])seeds.getStack().getPixels(z+1);
-			for(int i = 0; i < b.length; i++) {
-				if(b[i] == 0)
-					continue;
-				int index = z*b.length + i;
-				int cost = 0;
-				C[index] = cost;
-				result[z][i] = b[i];
-				queue.add(index, cost);
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					int i = y*w+x;
+					if(b[i] == 0)
+						continue;
+					int index = z*b.length + i;
+					int cost = 0;
+					C[index] = cost;
+					result[z][i] = b[i];
+					queue.add(index, cost);
+				}
 			}
 		}
 	}
@@ -122,10 +126,11 @@ public class IFT_ implements PlugInFilter {
 	public void propagate() {
 		int wh = w * h;
 		int counter = 0;
+		IntArray nei = new IntArray(6);
 		while(!queue.isEmpty()) {
 			int v = queue.poll();
 			flag[v] = true;
-			IntArray nei = getNeighbours(v);
+			nei = getNeighbours(v, nei);
 			for(int i = 0; i < nei.size(); i++) {
 				int p = nei.get(i);
 				int pCost = C[p];
@@ -141,7 +146,7 @@ public class IFT_ implements PlugInFilter {
 				}
 			}
 			counter++;
-			if(counter % 100 == 0)
+			if(counter % 100 == 0 && resultIm != null)
 				resultIm.updateAndDraw();
 		}
 	}
@@ -152,7 +157,9 @@ public class IFT_ implements PlugInFilter {
 			stack.addSlice("", 
 				new ByteProcessor(w, h, result[z], null));
 		}
-		return new ImagePlus("Result", stack);
+		ImagePlus ret = new ImagePlus("Result", stack);
+		ret.setCalibration(image.getCalibration());
+		return ret;
 	}
 
  	public int weight(int n1, int n2) {
@@ -169,28 +176,28 @@ public class IFT_ implements PlugInFilter {
 		return DOES_8G;
 	}
 
-	public IntArray getNeighbours(int index) {
-		IntArray l = new IntArray(6);
+	public IntArray getNeighbours(int index, IntArray l) {
+		l.removeAll();
 		int wh = w*h;
 		int z = index / (wh);
 		int s = index % (wh);
 		int x = s % w, y = s / w;
-		if(z != 0 && !flag[(z-1) * wh + s])
+		if(z > 1 && !flag[(z-1) * wh + s])
 			l.add((z-1) * wh + s);
-		if(z != d-1 && !flag[(z+1) * wh + s])
+		if(z < d-1 && !flag[(z+1) * wh + s])
 			l.add((z+1) * wh + s);
-		if(x != 0 && !flag[z * wh + s-1])
+		if(x > 1 && !flag[z * wh + s-1])
 			l.add(z * wh + s-1);
-		if(x != w-1 && !flag[z * wh + s+1])
+		if(x < w-1 && !flag[z * wh + s+1])
 			l.add(z * wh + s+1);
-		if(y != 0 && !flag[z * wh + (y-1)*w+x])
+		if(y > 1 && !flag[z * wh + (y-1)*w+x])
 			l.add(z * wh + (y-1)*w+x);
-		if(y != h-1 && !flag[z * wh + (y+1)*w+x])
+		if(y < h-1 && !flag[z * wh + (y+1)*w+x])
 			l.add(z * wh + (y+1)*w+x);
 		return l;
 	}
 
-	private class PriorityQueue {
+	private static class PriorityQueue {
 		private IntArray[] arr = new IntArray[256];
 
 		public PriorityQueue() {}
@@ -228,7 +235,7 @@ public class IFT_ implements PlugInFilter {
 		}
 	}
 
-	private class IntArray {
+	private static class IntArray {
 		private int[] array;
 		private int size = 0;
 		private int initCap;
@@ -286,6 +293,10 @@ public class IFT_ implements PlugInFilter {
 		public void set(int index, int value) {
 			if(index >= 0 && index < size)
 				array[index] = value;
+		}
+
+		public void removeAll() {
+			size = 0;
 		}
 	}
 }

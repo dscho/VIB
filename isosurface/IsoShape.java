@@ -20,6 +20,7 @@ public final class IsoShape extends Shape3D {
 	List mesh = null;
 	private int threshold;
 	private float transparency;
+	private float volume;
 
 	public IsoShape(List mesh, int threshold, float transparency){
 		this.mesh = mesh;
@@ -30,6 +31,7 @@ public final class IsoShape extends Shape3D {
 		this.setCapability(ALLOW_APPEARANCE_READ);
 		this.setCapability(ALLOW_APPEARANCE_WRITE);
 		this.update();
+
 	}
 
 	public IsoShape(List mesh, Color3f color, int threshold, 
@@ -66,10 +68,12 @@ public final class IsoShape extends Shape3D {
 
 	public void calculateMinMaxCenterPoint(Point3f min, 
 				Point3f max, Point3f center) {
-		if(mesh == null) return;
+
+		if(mesh == null)
+			return;
+
 		min.x = min.y = min.z = Float.MAX_VALUE;
 		max.x = max.y = max.z = Float.MIN_VALUE;
-		
 		for(int i = 0; i < mesh.size(); i++) {
 			Point3f p = (Point3f)mesh.get(i);
 			if(p.x < min.x) min.x = p.x;
@@ -79,9 +83,12 @@ public final class IsoShape extends Shape3D {
 			if(p.y > max.y) max.y = p.y;
 			if(p.z > max.z) max.z = p.z;
 		}
-		center.x = (max.x-min.x)/2;
-		center.y = (max.y-min.y)/2;
-		center.z = (max.z-min.z/2);
+		double[][] inertia = new double[3][3];
+		volume = (float)MeshProperties.compute(mesh, center, inertia);
+	}
+
+	public float getVolume() {
+		return volume;
 	}
 
 	public void setColor(Color3f color) {

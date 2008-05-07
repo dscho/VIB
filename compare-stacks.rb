@@ -1,5 +1,68 @@
 #!/usr/bin/ruby -w
 
+require 'getoptlong'
+
+def usage
+	print <<EOF
+Usage: compare-stacks [OPTION] <fileA> <fileB>"
+
+ -t <SUBSTRING>, --title-matches=<SUBSTRING>
+                    Only use images whose titles match <SUBSTRING>
+ -c --close-others
+                    Close all other images that might be open, so
+                    we're just left with the overlay
+EOF
+end
+  
+options = GetoptLong.new(
+  [ "--title-matches", "-t", GetoptLong::REQUIRED_ARGUMENT ],
+  [ "--close-others",  "-c", GetoptLong::NO_ARGUMENT ]
+)
+
+substring = ""
+close_others = false
+
+begin
+	options.each do |opt,arg|
+          case opt
+          when "--title-matches"
+                  substring = arg
+          when "--close-others"
+                  close_others = true
+          end
+        end
+rescue
+	puts "Bad command line opion: #{$!}\n"
+	usage
+	exit
+end
+
+def total_memory
+	total = nil
+	kernel_name = `uname`.chomp
+	case kernel_name
+	when 'Darwin'
+		lines = `vm_stat`.split("\n")
+		total = 0
+		lines.each do |line|
+			if line =~ /Pages (free|active|inactive|wired down):\s+(\d+)/
+				total += Integer($2)
+			end
+		end
+		total = (total * 4096) / (1024 * 1024)
+	when 'Linux'
+		lines = `free -m`
+		if lines =~ /^Mem:\s+(\d+)/
+			total = Integer($1)
+		else
+			raise "Couldn't parse total memory from: free -m"
+		end	
+	else
+		total = 512
+	end
+	total
+end
+		
 # It's a bit painful getting the escaping right for doing
 # this from the shell, so this is a small helper program.
 
@@ -53,7 +116,7 @@ rescue
 end
 
 unless ARGV.length == 2
-	puts "Usage: compare-stacks <fileA> <fileB>"
+	usage
 	exit( -1 )
 end
 

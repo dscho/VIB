@@ -7,7 +7,7 @@ import com.sun.j3d.utils.behaviors.mouse.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-public class BoundingBox extends Shape3D {
+public class BoundingBox extends BranchGroup {
 
 	private Point3f min, max;
 
@@ -15,7 +15,10 @@ public class BoundingBox extends Shape3D {
 		this(min, max, new Color3f(1, 0, 0));
 	}
 	
-	public BoundingBox(Point3f min, Point3f max, Color3f color) {
+	public BoundingBox(Point3f minp, Point3f maxp, Color3f color) {
+		setCapability(BranchGroup.ALLOW_DETACH);
+		min = minp;
+		max = maxp;
 		
 		min.x -= 0; min.y -= 0; min.z -= 0;
 		max.x += 0; max.y += 0; max.z += 0;
@@ -71,7 +74,8 @@ public class BoundingBox extends Shape3D {
 			col[i] = red;
 		ga.setColors(0, col);
 
-		setGeometry(ga);
+		Shape3D shape = new Shape3D();
+		shape.setGeometry(ga);
 
 		Appearance a = new Appearance();
 		PolygonAttributes pa = new PolygonAttributes();
@@ -83,7 +87,15 @@ public class BoundingBox extends Shape3D {
 		ca.setColor(color);
 		a.setColoringAttributes(ca);
 
-		setAppearance(a);
+		shape.setAppearance(a);
+
+		addChild(shape);
+	}
+
+	public String toString() {
+		return "[BoundingBox (" 
+			+ min.x + ", " + min.y + ", " + min.z + ") - ("
+			+ max.x + ", " + max.y + ", " + max.z + ")]";
 	}
 } 
 

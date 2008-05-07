@@ -35,7 +35,7 @@ public class BenesNamedPoint extends Point3d {
 	public void set(double x, double y, double z){
 		this.x = x; this.y = y; this.z = z;
 	}
-	
+
 	public static BenesNamedPoint fromLine(String line){
 		Matcher m_data = p_data.matcher(line);
 		Matcher m_empty = p_empty.matcher(line);
@@ -54,6 +54,14 @@ public class BenesNamedPoint extends Point3d {
 				 line);
 			return null;
 		}
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public boolean isSet() {
+		return set;
 	}
 	
 	public static String escape(String s) {

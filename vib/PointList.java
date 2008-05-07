@@ -24,25 +24,70 @@ import java.util.List;
 public class PointList implements Iterable<BenesNamedPoint>{
 	
 	private List<BenesNamedPoint> points;
+	private List<PointListListener> listeners;
 	
 	public PointList(){
+		listeners = new ArrayList<PointListListener>();
 		points = new ArrayList<BenesNamedPoint>();
 	}
 		
 	public void add(BenesNamedPoint point){
 		points.add(point);
+		fireAdded(point);
 	}
 	
 	public void remove(BenesNamedPoint point){
-		points.remove(point);
+		int i = indexOf(point);
+		remove(i);
+	}
+
+	public void remove(int i) {
+		if(i >= 0 && i < size()) {
+			BenesNamedPoint p = points.get(i);
+			points.remove(i);
+			fireRemoved(p);
+		}
 	}
 	
 	public void rename(BenesNamedPoint point, String name){
 		point.name = name;
+		fireRenamed(point);
+	}
+
+	public void up(BenesNamedPoint point) {
+		int size = points.size();
+		int i = points.indexOf(point);
+		points.remove(i);
+		points.add((i - 1 + size) % size, point);
+		fireReordered();
+	}
+
+	public void down(BenesNamedPoint point) {
+		int i = points.indexOf(point);
+		int size = points.size();
+		points.remove(i);
+		points.add((i + 1) % size, point);
+		fireReordered();
+	}
+
+	public void highlight(BenesNamedPoint p) {
+		fireHighlighted(p);
+	}
+
+	public void placePoint(BenesNamedPoint point, 
+				double x, double y, double z) {
+		point.x = x;
+		point.y = y;
+		point.z = z;
+		fireMoved(point);
 	}
 	
 	public BenesNamedPoint get(int index){
 		return points.get(index);
+	}
+
+	public int indexOf(BenesNamedPoint p) {
+		return points.indexOf(p);
 	}
 	
 	public BenesNamedPoint[] toArray(){
@@ -69,22 +114,24 @@ public class PointList implements Iterable<BenesNamedPoint>{
 	public static PointList load(ImagePlus imp){
 		FileInfo info = imp.getOriginalFileInfo();
 		if(info != null){
-			PointList l =  load(info.directory,info.fileName + ".points",false);
+			PointList l =  load(info.directory,
+					info.fileName + ".points",false);
 			if(l == null){
-				l = load(info.directory,info.fileName + ".points",true);
+				l = load(info.directory,
+					info.fileName + ".points",true);
 			}
 			return l;
 		}
 		return null;
 	}
 	
-	public static PointList load(String dir, String file, boolean showDialog){
+	public static PointList load(String dir, String file, 
+						boolean showDialog){
 
 		String openPath = dir + File.separatorChar + file;
-		if(showDialog){
-			OpenDialog od = new OpenDialog("Open points annotation file",
-					dir,file);
-			
+		if(showDialog) {
+			OpenDialog od = new OpenDialog(
+				"Open points annotation file", dir,file);
 			
 			if(od.getFileName()==null)
 				return null;
@@ -96,10 +143,11 @@ public class PointList implements Iterable<BenesNamedPoint>{
 		PointList list = new PointList();	
 		try {
 			BufferedReader f = new BufferedReader(
-							new FileReader(openPath));
+						new FileReader(openPath));
 			String line;
 			while ((line=f.readLine())!=null) {
-				BenesNamedPoint p = BenesNamedPoint.fromLine(line);
+				BenesNamedPoint p = BenesNamedPoint.
+							fromLine(line);
 				if(p != null)
 					list.add(p);
 			}
@@ -115,16 +163,16 @@ public class PointList implements Iterable<BenesNamedPoint>{
 	public void save(String directory, String fileName ) {
 
 		String suggestedSaveFilename = fileName+".points";
+		SaveDialog sd = new SaveDialog(
+					"Save points annotation file as...",
+				       directory,
+				       suggestedSaveFilename,
+				       ".points");
 
-		SaveDialog sd = new SaveDialog("Save points annotation file as...",
-					       directory,
-					       suggestedSaveFilename,
-					       ".points");
-
-		if(sd.getFileName()==null)
+		if(sd.getFileName() == null)
 			return;
 		
-		String savePath = sd.getDirectory()+sd.getFileName();
+		String savePath = sd.getDirectory() + sd.getFileName();
 		File file = new File(savePath);
 		if ((file != null) && file.exists()) {
 			if (!IJ.showMessageWithCancel(
@@ -137,11 +185,9 @@ public class PointList implements Iterable<BenesNamedPoint>{
 
 		try {
 			PrintStream fos = new PrintStream(savePath);
-			for(BenesNamedPoint p : points){
-				if(p.set) {
+			for(BenesNamedPoint p : points)
+				if(p.set)
 					fos.println(p.toYAML() + "\n");
-				}
-			}
 			fos.close();
 		} catch( IOException e ) {
 			IJ.error("Error saving to: "+savePath+"\n"+e);
@@ -164,7 +210,8 @@ public class PointList implements Iterable<BenesNamedPoint>{
 		return common;
 	}
 	
-	public static PointList pointsInBoth(PointList points0, PointList points1){
+	public static PointList pointsInBoth(
+				PointList points0, PointList points1){
 		
 		PointList common = new PointList();
 		for(BenesNamedPoint point0 : points0){
@@ -182,5 +229,55 @@ public class PointList implements Iterable<BenesNamedPoint>{
 		for(BenesNamedPoint p : points){
 			System.out.println(p.toString());
 		}
+	}
+
+	// listener stuff
+	
+	public void addPointListListener(PointListListener pll) {
+		listeners.add(pll);
+	}
+
+	public void removePointListListener(PointListListener pll) {
+		listeners.remove(pll);
+	}
+
+	private void fireAdded(BenesNamedPoint p) {
+		for(PointListListener l : listeners)
+			l.added(p);
+	}
+
+	private void fireRemoved(BenesNamedPoint p) {
+		for(PointListListener l : listeners)
+			l.removed(p);
+	}
+
+	private void fireRenamed(BenesNamedPoint p) {
+		for(PointListListener l : listeners)
+			l.renamed(p);
+	}
+
+	private void fireMoved(BenesNamedPoint p) {
+		for(PointListListener l : listeners)
+			l.moved(p);
+	}
+
+	private void fireHighlighted(BenesNamedPoint p) {
+		for(PointListListener l : listeners)
+			l.highlighted(p);
+	}
+
+	private void fireReordered() {
+		for(PointListListener l : listeners)
+			l.reordered();
+	}
+
+
+	public interface PointListListener {
+		public void added(BenesNamedPoint p);
+		public void removed(BenesNamedPoint p);
+		public void renamed(BenesNamedPoint p);
+		public void moved(BenesNamedPoint p);
+		public void highlighted(BenesNamedPoint p);
+		public void reordered();
 	}
 }

@@ -67,14 +67,15 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		root.compile();
 		addBranchGraph(root);
 		addUniverseListener(new UniverseListener() {
-			public void transformationStarted() {}
-			public void transformationFinished() {}
+			public void transformationStarted(View view) {}
+			public void transformationFinished(View view) {}
 			public void contentAdded(Content c) {}
 			public void contentRemoved(Content c) {}
 			public void canvasResized() {}
+			public void universeClosed() {}
 			public void contentSelected(Content c) {}
 
-			public void transformationUpdated() {
+			public void transformationUpdated(View view) {
 				somethingChanged();
 			}
 

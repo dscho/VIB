@@ -2,11 +2,12 @@ package ij3d;
 
 import ij.process.ImageProcessor;
 import ij.ImagePlus;
-import ij.plugin.filter.PlugInFilter;
+import ij.plugin.PlugIn;
 import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import ij.IJ;
 import ij.WindowManager;
+import ij.gui.GUI;
 
 import ij3d.ImageWindow3D;
 import ij3d.Content;
@@ -26,32 +27,21 @@ import javax.media.j3d.Transform3D;
 import javax.vecmath.Vector3f;
 import javax.vecmath.Color3f;
 
-public class ImageJ3DViewer implements PlugInFilter {
+public class ImageJ3DViewer implements PlugIn {
 
-	private ImagePlus image;
 	private static Image3DUniverse univ;
 
-
-	public void run(ImageProcessor ip) {
-		GenericDialog gd = new GenericDialog("ImageJ 3D Viewer");
-		gd.addChoice("Surface or Volume: ", 
-			new String[]{"Surface", "Volume", "Orthoslice"},
-			"Volume");
-		gd.showDialog();
-		if(gd.wasCanceled())
-			return;
-		
+	public void run(String arg) {
+		ImagePlus image = WindowManager.getCurrentImage();
 		try {
 			univ = new Image3DUniverse(512, 512);
-			String type = gd.getNextChoice();
-			if(type.equals("Surface"))
-				MeshGroup.addContent(univ, image);
-			else if(type.equals("Volume"))
-				VoltexGroup.addContent(univ, image);
-			else if(type.equals("Orthoslice"))
-				OrthoGroup.addContent(univ, image);
-
 			univ.show();
+			GUI.center(univ.getWindow());
+			int type = -1;
+			Image3DMenubar menu = univ.getMenuBar();
+			if(image != null)
+				menu.addContent(image, type);
+
 		} catch(Exception e) {
 			StringBuffer buf = new StringBuffer();
 			StackTraceElement[] st = e.getStackTrace();
@@ -100,28 +90,15 @@ public class ImageJ3DViewer implements PlugInFilter {
 		}
 	}
 
-	public static void freeUniverse(){
-		System.out.println("Setting univ = null;");
-		univ = null;
-		Thread.currentThread().getThreadGroup().destroy();
-		fillMemory();
-	}
-
-	private static void fillMemory() {
-		java.util.Vector f = new java.util.Vector(1024);
-		for(int i = 0; i < 1024; i++) {
-			f.add(new byte[1024*1024]);
-		}
-	}
-
 	public static void select(String name) {
 		if(univ != null) univ.select(
 			(Content)univ.getContent(name));
 	}
 
 	// Contents menu
-	public static void addMesh(String image, String c, String name,
-		String th, String r, String g, String b, String resamplingF) {
+	public static void add(String image, String c, String name,
+		String th, String r, String g, String b,
+		String resamplingF, String type) {
 
 		ImagePlus grey = WindowManager.getImage(image);
 		Color3f color = ColorTable.getColor(c);
@@ -131,7 +108,9 @@ public class ImageJ3DViewer implements PlugInFilter {
 		boolean[] channels = new boolean[]{getBoolean(r),
 						getBoolean(g), 
 						getBoolean(b)};
-		univ.addMesh(grey, color, name, thresh, channels, factor);
+		int ty = getInt(type);
+		univ.addContent(grey, color, 
+			name, thresh, channels, factor, ty);
 	}
 
 	public static void addVolume(String image, String c, String name,
@@ -144,7 +123,7 @@ public class ImageJ3DViewer implements PlugInFilter {
 		boolean[] channels = new boolean[]{getBoolean(r),
 						getBoolean(g), 
 						getBoolean(b)};
-		univ.addVoltex(grey, color, name, channels, factor);
+		univ.addVoltex(grey, color, name, 0, channels, factor);
 	}
 
 	public static void addOrthoslice(String image, String c, String name,
@@ -157,7 +136,7 @@ public class ImageJ3DViewer implements PlugInFilter {
 		boolean[] channels = new boolean[]{getBoolean(r),
 						getBoolean(g), 
 						getBoolean(b)};
-		univ.addOrthoslice(grey, color, name, channels, factor);
+		univ.addOrthoslice(grey, color, name, 0, channels, factor);
 	}
 
 	public static void delete() {
@@ -170,18 +149,21 @@ public class ImageJ3DViewer implements PlugInFilter {
 	// Individual content's menu
 	public static void setSlices(String x, String y, String z) {
 		if(univ != null && univ.getSelected() != null && 
-			univ.getSelected() instanceof OrthoGroup) {
+			univ.getSelected().getType() == Content.ORTHO) {
 
-			OrthoGroup vg = (OrthoGroup)univ.getSelected();
-			vg.setSlices(getInt(x), getInt(y), getInt(z));
+			OrthoGroup vg = (OrthoGroup)univ.
+						getSelected().getContent();
+			vg.setSlices(new int[] {
+				getInt(x), getInt(y), getInt(z)});
 		}
 	}
 
 	public static void fillSelection() {
 		if(univ != null && univ.getSelected() != null && 
-			univ.getSelected() instanceof VoltexGroup) {
+			univ.getSelected().getType() == Content.VOLUME) {
 
-			VoltexGroup vg = (VoltexGroup)univ.getSelected();
+			VoltexGroup vg = (VoltexGroup)univ.
+						getSelected().getContent();
 			vg.fillRoiBlack(univ, (byte)0);
 		}
 	}
@@ -287,10 +269,5 @@ public class ImageJ3DViewer implements PlugInFilter {
 
 	private static boolean getBoolean(String s) {
 		return new Boolean(s).booleanValue();
-	}
-
-	public int setup(String arg, ImagePlus img) {
-		this.image = img;
-		return DOES_8C | DOES_8G;
 	}
 }
