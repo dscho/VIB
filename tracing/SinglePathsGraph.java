@@ -28,6 +28,16 @@ import java.util.Iterator;
 import java.io.*;
 import java.util.zip.GZIPOutputStream;
 
+import ij.*;
+import ij.plugin.*;
+import ij.gui.*;
+import ij.io.*;
+import ij.process.*;
+
+import java.io.*;
+import java.awt.*;
+import java.util.StringTokenizer;
+
 public class SinglePathsGraph {
 	
 	int width, height, depth;
@@ -128,6 +138,120 @@ public class SinglePathsGraph {
 		pw.close();
 	}
 
+	static public int getNonNegativeIntAfterPrefix( String line, String prefix ) {
+		try {
+			String s=line.substring(prefix.length());
+			return Integer.parseInt(s);
+		} catch( NumberFormatException e ) {
+			return -1;
+		}
+	}
+
+	static public float getNonNegativeFloatAfterPrefix( String line, String prefix ) {
+		try {
+			String s=line.substring(prefix.length());
+			return Float.parseFloat(s);
+		} catch( NumberFormatException e ) {
+			return -1;
+		}
+	}
+
+	static boolean loadWithListener( String inputFilename, TraceLoaderListener listener ) {
+
+		int width = -1, height = -1, depth = -1;
+		float spacing_x = Float.MIN_VALUE;
+		float spacing_y = Float.MIN_VALUE;
+		float spacing_z = Float.MIN_VALUE;
+
+		try {
+			String widthPrefix = "# width: ";
+			String heightPrefix = "# height: ";
+			String depthPrefix = "# depth: ";
+			String spacingXPrefix = "# spacing_x: ";
+			String spacingYPrefix = "# spacing_y: ";
+			String spacingZPrefix = "# spacing_z: ";
+
+			String vertexPrefix = "v ";
+			String linePrefix = "l ";
+			String groupPrefix = "g ";
+
+			int vertexIndex = 1;
+
+			BufferedReader br = new BufferedReader(new FileReader(inputFilename));
+			String lastLine;
+			while( null != (lastLine = br.readLine()) ) {
+				
+				if( lastLine.startsWith(widthPrefix) ) {
+					width = getNonNegativeIntAfterPrefix(lastLine, widthPrefix);
+					listener.gotWidth(width);
+				}
+				if( lastLine.startsWith(heightPrefix) ) {
+					height = getNonNegativeIntAfterPrefix(lastLine, heightPrefix);
+					listener.gotHeight(height);
+				}
+				if( lastLine.startsWith(depthPrefix) ) {
+					depth = getNonNegativeIntAfterPrefix(lastLine, depthPrefix);
+					listener.gotDepth(depth);
+				}
+				if( lastLine.startsWith(spacingXPrefix) ) {
+					spacing_x = getNonNegativeFloatAfterPrefix(lastLine, spacingXPrefix);
+					listener.gotSpacingX(spacing_x);
+				}
+				if( lastLine.startsWith(spacingYPrefix) ) {
+					spacing_y = getNonNegativeFloatAfterPrefix(lastLine, spacingYPrefix);
+					listener.gotSpacingY(spacing_y);
+				}
+				if( lastLine.startsWith(spacingZPrefix) ) {
+					spacing_z = getNonNegativeFloatAfterPrefix(lastLine, spacingZPrefix);
+					listener.gotSpacingZ(spacing_z);
+				}
+
+				if( lastLine.startsWith(vertexPrefix) ) {
+						
+					StringTokenizer tokenizer=new StringTokenizer(lastLine.substring(vertexPrefix.length())," ");
+					
+					float [] vertex = new float[3];
+
+					int i = 0;
+					while( tokenizer.hasMoreTokens() ) {
+						vertex[i] = Float.parseFloat( tokenizer.nextToken() );
+						++i;
+					}
+
+					int x = (int)Math.round(vertex[0]/spacing_x);
+					int y = (int)Math.round(vertex[1]/spacing_y);
+					int z = (int)Math.round(vertex[2]/spacing_z);
+
+					listener.gotVertex( vertexIndex,
+							    vertex[0], vertex[1], vertex[2],
+							    x, y, z );
+
+				}
+
+				if( lastLine.startsWith(linePrefix) ) {
+					StringTokenizer tokenizer=new StringTokenizer(lastLine.substring(linePrefix.length())," ");
+					int [] vertexIndices = new int[2];
+
+					int i = 0;
+					while( tokenizer.hasMoreTokens() ) {
+						vertexIndices[i] = Integer.parseInt( tokenizer.nextToken() );
+						++i;
+					}
+
+					listener.gotLine( vertexIndices[0], vertexIndices[1] );
+				}
+
+				if( lastLine.startsWith(groupPrefix) )
+					; // Do nothing
+			}
+
+		} catch( IOException e ) {
+			IJ.error("IOException loading "+inputFilename+": "+e);
+			return false;
+		}
+
+		return true;
+	}
 
 	void writeXML( String outputFilename ) throws IOException {
 

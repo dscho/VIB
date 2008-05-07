@@ -31,25 +31,69 @@ import java.io.*;
 import java.awt.*;
 import java.util.StringTokenizer;
 
-public class Load_Auto_Traces implements PlugIn {
+public class Load_Auto_Traces implements PlugIn, TraceLoaderListener {
 
-	public int getNonNegativeIntAfterPrefix( String line, String prefix ) {
-		try {
-			String s=line.substring(prefix.length());
-			return Integer.parseInt(s);
-		} catch( NumberFormatException e ) {
-			return -1;
+	int width = -1, height = -1, depth = -1;
+	float spacing_x = Float.MIN_VALUE;
+	float spacing_y = Float.MIN_VALUE;
+	float spacing_z = Float.MIN_VALUE;
+
+	byte [][] values = null;
+	
+	public void gotVertex( int vertexIndex,
+			       float x_scaled, float y_scaled, float z_scaled,
+			       int x_image, int y_image, int z_image ) {
+
+		if( values == null ) {
+			if( width < 0 ||
+			    height < 0 ||
+			    depth < 0 ||
+			    spacing_x == Float.MIN_VALUE ||
+			    spacing_y == Float.MIN_VALUE ||
+			    spacing_z == Float.MIN_VALUE ) {
+
+				throw new RuntimeException("Some metadata was missing from the comments before the first vertex.");
+			}
+			values = new byte[depth][];
+			for( int z = 0; z < depth; ++z )
+				values[z] = new byte[width*height];
 		}
+
+		if( z_image >= depth ) {
+			System.out.println("z_image: "+z_image+" was too large for depth: "+depth);
+			System.out.println("z_scaled was: "+z_scaled);
+		}
+
+		values[z_image][y_image*width+x_image] = (byte)255;
 	}
 
-	public float getNonNegativeFloatAfterPrefix( String line, String prefix ) {
-		try {
-			String s=line.substring(prefix.length());
-			return Float.parseFloat(s);
-		} catch( NumberFormatException e ) {
-			return -1;
-		}
+	public void gotLine( int fromVertexIndex, int toVertexIndex ) {
+		// Do nothing...
 	}
+
+	public void gotWidth( int width ) {
+		this.width = width;
+	}
+
+	public void gotHeight( int height ) {
+		this.height = height;
+	}
+
+	public void gotDepth( int depth ) {
+		this.depth = depth;
+	}
+
+	public void gotSpacingX( float spacing_x ) {
+		this.spacing_x = spacing_x;
+	}
+
+	public void gotSpacingY( float spacing_y ) {
+		this.spacing_y = spacing_y;
+	}
+
+	public void gotSpacingZ( float spacing_z ) {
+		this.spacing_z = spacing_z;
+	}	
 
 	public void run( String ignored ) {
 
@@ -67,111 +111,25 @@ public class Load_Auto_Traces implements PlugIn {
 		
 		System.out.println("Got "+fileName);
 
-		int width = -1, height = -1, depth = -1;
-		float spacing_x = Float.MIN_VALUE;
-		float spacing_y = Float.MIN_VALUE;
-		float spacing_z = Float.MIN_VALUE;
+		boolean success = SinglePathsGraph.loadWithListener( directory + fileName, this );
 
-		try {
-			String widthPrefix = "# width: ";
-			String heightPrefix = "# height: ";
-			String depthPrefix = "# depth: ";
-			String spacingXPrefix = "# spacing_x: ";
-			String spacingYPrefix = "# spacing_y: ";
-			String spacingZPrefix = "# spacing_z: ";
-
-			String vertexPrefix = "v ";
-			String linePrefix = "l ";
-			String groupPrefix = "g ";
-
-			byte [][] values = null;
-
-			BufferedReader br = new BufferedReader(new FileReader(directory + fileName));
-			String lastLine;
-			while( null != (lastLine = br.readLine()) ) {
-				
-				if( lastLine.startsWith(widthPrefix) )
-					width = getNonNegativeIntAfterPrefix(lastLine, widthPrefix);
-				if( lastLine.startsWith(heightPrefix) )
-					height = getNonNegativeIntAfterPrefix(lastLine, heightPrefix);
-				if( lastLine.startsWith(depthPrefix) )
-					depth = getNonNegativeIntAfterPrefix(lastLine, depthPrefix);
-				if( lastLine.startsWith(spacingXPrefix) )
-					spacing_x = getNonNegativeFloatAfterPrefix(lastLine, spacingXPrefix);
-				if( lastLine.startsWith(spacingYPrefix) )
-					spacing_y = getNonNegativeFloatAfterPrefix(lastLine, spacingYPrefix);
-				if( lastLine.startsWith(spacingZPrefix) )
-					spacing_z = getNonNegativeFloatAfterPrefix(lastLine, spacingZPrefix);
-
-				if( lastLine.startsWith(vertexPrefix) ) {
-
-					if( values == null ) {
-						if( width < 0 ||
-						    height < 0 ||
-						    depth < 0 ||
-						    spacing_x == Float.MIN_VALUE ||
-						    spacing_y == Float.MIN_VALUE ||
-						    spacing_z == Float.MIN_VALUE ) {
-				
-							IJ.error("Some metadata was missing from the comments before the first vertex.");
-							return;
-						}
-						values = new byte[depth][];
-						for( int z = 0; z < depth; ++z )
-							values[z] = new byte[width*height];
-					}
-						
-					StringTokenizer tokenizer=new StringTokenizer(lastLine.substring(vertexPrefix.length())," ");
-					
-					float [] vertex = new float[3];
-
-					int i = 0;
-					while( tokenizer.hasMoreTokens() ) {
-						vertex[i] = Float.parseFloat( tokenizer.nextToken() );
-						++i;
-					}
-
-					int x = (int)Math.round(vertex[0]);
-					int y = (int)Math.round(vertex[1]);
-					int z = (int)Math.round(vertex[2]);
-
-					values[z][y*width+x] = (byte)255;
-
-				}
-
-				if( lastLine.startsWith(linePrefix) ) {
-					// Do nothing - in fact we
-					// expect the lines to only
-					// jump from vertex to an
-					// adjacent one, so we don't
-					// really care...
-				}
-
-				if( lastLine.startsWith(groupPrefix) )
-					; // Do nothing
-			}
-			
-			ImageStack stack = new ImageStack(width,height);
-
-			for( int z = 0; z < depth; ++z ) {
-				ByteProcessor bp = new ByteProcessor(width,height);
-				bp.setPixels(values[z]);
-				stack.addSlice("",bp);
-			}
-
-			ImagePlus imagePlus=new ImagePlus(fileName,stack);
-			imagePlus.show();
-
-
-		} catch( IOException e ) {
-			IJ.error("IOException loading "+directory+fileName+": "+e);
+		if( ! success ) {
+			IJ.error( "Loading " + directory + fileName );
 			return;
 		}
 
-		
+		ImageStack stack = new ImageStack(width,height);
+
+		for( int z = 0; z < depth; ++z ) {
+			ByteProcessor bp = new ByteProcessor(width,height);
+			bp.setPixels(values[z]);
+			stack.addSlice("",bp);
+		}
+
+		ImagePlus imagePlus=new ImagePlus(fileName,stack);
+		imagePlus.show();
+
 	}
-
-
 
 }
 
