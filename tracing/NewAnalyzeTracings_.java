@@ -121,7 +121,16 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		int endNeuropilRegion;
 
 		public double length;
-		public ArrayList< NewGraphNode > path;      
+		public ArrayList< NewGraphNode > path;
+
+		public Path toPath() {
+			Path p = new Path(path.size());
+			for( int i = 0; i < path.size(); ++i ) {
+				NewGraphNode n = path.get(i);
+				p.addPoint(n.x,n.y,n.z);
+			}
+			return p;
+		}
 	}
 
 	PathWithLength findPath( NewGraphNode start, int endMaterial ) {
@@ -355,7 +364,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 	byte[][] label_data;
 	String [] materialNames;
 
-      	public Connectivity buildGraph( File tracesObjFile, File labelsFile ) {
+      	public ArrayList<PathWithLength> buildGraph( File tracesObjFile, File labelsFile, File writePathsTo, File writeDotTo ) {
 
 		String tracesObjFileName = tracesObjFile.getAbsolutePath();
 		String labelsFileName = labelsFile.getAbsolutePath();
@@ -432,7 +441,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		int [] blueValues = new int[materials];
 
 		ArrayList<ArrayList<NewGraphNode>> allEdges = new ArrayList<ArrayList<NewGraphNode>>();
-
+		
 		for( int i=0; i < materials; i++ ) {
 			allEdges.add(new ArrayList<NewGraphNode>());
 			double[] c = parameters.getMaterialColor(i);			
@@ -440,6 +449,8 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			greenValues[i] = (int)(255*c[1]);
 			blueValues[i] = (int)(255*c[2]);
 		}
+
+/* Find all the points on the edge of a neuropil regions: */
 
 		for( int a = 0; a < labelIndices.length; ++a ) {
 			int labelIndex = labelIndices[a];
@@ -474,6 +485,14 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			System.out.println("   Found "+neuropilEdgePoints.size()+" points on the edge of the "+labelPrettyString);
 		}
 
+		// We'll store copies of these in a PathAndFillManager
+		// so that we can write out something that will be
+		// loadable by the manual tracer afterwards:
+
+		PathAndFillManager manager=new PathAndFillManager( width, height, depth, spacing_x, spacing_y, spacing_z, null );
+
+		ArrayList<PathWithLength> paths=new ArrayList<PathWithLength>();
+
 		// Now start a search from each of these points trying
 		// to find an end point at one of the edge points from
 		// the other neuropil regions:
@@ -505,19 +524,38 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 						continue;
 					}
 
+					paths.add(route);
+					Path newPath=route.toPath();
+					newPath.setName(materialNames[labelIndex]+" to " +materialNames[endM]);
+					manager.addPath(newPath);
+
+					// Add that path to the fill manager as well:
+					
 					System.out.println("  Found a route!");
 				}
 			}
 		}
-		
 
+		if( writePathsTo != null ) {
+			try {
+				manager.writeXML( writePathsTo.getAbsolutePath(),
+						  null,
+						  true );
+			} catch( IOException e ) {
+				System.out.println("Writing to: "+writePathsTo+" failed");
+			}
+		}
 		
-
-		return null;
+		if( writeDotTo != null ) {
+			
+			
+		}
+		
+		return paths;
 		
 	}
 	
-		public void run( String argument ) {
+	public void run( String argument ) {
 		
 		// String baseDirectory = "/media/WD USB 2/corpus/central-complex/";
 		String baseDirectory = "/home/mark/tmp-corpus/";
@@ -601,10 +639,12 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 				
 				// Load labels and traces.obj ...
 				
-				buildGraph( tracesObjFile, labelsFile );
-				
-				
-				
+				ArrayList<PathWithLength> foundPaths = buildGraph(
+					tracesObjFile,
+					labelsFile,
+					new File( baseDirectory, baseName + ".neuropil-connections.traces"),
+					new File( baseDirectory, baseName + ".dot" ) );
+
 			}
 		}
 	}

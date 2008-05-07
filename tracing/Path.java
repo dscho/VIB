@@ -48,7 +48,15 @@ public class Path implements Cloneable {
 	
 	public static final int PATH_START = 0;
 	public static final int PATH_END = 1;
+
+	// It's sometimes useful to give paths a name, but this will
+	// mostly be null:
+	String name;
 	
+	public void setName(String newName) {
+		this.name = newName;
+	}
+
 	public double getRealLength( double x_spacing, double y_spacing, double z_spacing ) {
 		double totalLength = 0;
 		for( int i = 1; i < points; ++i  ) {
@@ -728,7 +736,10 @@ public class Path implements Cloneable {
 	@Override
         public String toString() {
 		int n = size();
-		String result = "" + n + " points";
+		String result = "";
+		if( name != null )
+			result += "\"" + name + "\" ";
+		result += n + " points";
 		if( n > 0 ) {
 			result += " from " + x_positions[0] + ", " + y_positions[0] + ", " + z_positions[0];
 			result += " to " + x_positions[n-1] + ", " + y_positions[n-1] + ", " + z_positions[n-1];

@@ -89,6 +89,18 @@ public class PathAndFillManager extends DefaultHandler {
 		this.height = plugin.height;
 		this.depth = plugin.depth;
         }
+
+	public PathAndFillManager( int width, int height, int depth, float x_spacing, float y_spacing, float z_spacing, String spacing_units ) {
+		this();
+		this.x_spacing = x_spacing;
+		this.y_spacing = y_spacing;
+		this.z_spacing = z_spacing;
+		this.width = width;
+		this.height = height;
+		this.depth = depth;
+		if( spacing_units == null )
+			this.spacing_units = "unknown";
+	}
 	
 	int width;
 	int height;
