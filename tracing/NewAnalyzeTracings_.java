@@ -124,12 +124,11 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		public ArrayList< NewGraphNode > path;      
 	}
 
-	PathWithLength findPath( NewGraphNode start, NewGraphNode end ) {
+	PathWithLength findPath( NewGraphNode start, int endMaterial ) {
 
 		// System.out.println("Starting path finding:");
 
 		int startMaterial = label_data[start.z][start.y*width+start.x];
-		int endMaterial = label_data[end.z][end.y*width+end.x];
 			
 		// First reset all the search parameters:
 		{
@@ -169,9 +168,11 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			
 			// System.out.println( " Got node "+p.toDotName()+" from the queue" );
 			
-			// Has the route from the start found the goal?
-			
-			if( p.equals( end ) ) {
+			int pointMaterial = label_data[p.z][p.y*width+p.x];
+
+			// Has the route from the start found the goal?			
+
+			if( pointMaterial == endMaterial ) {
 				// System.out.println( "Found the goal! (from start to end)" );
 				ArrayList< NewGraphNode > path = makePath(p);
 				if( path == null )
@@ -190,7 +191,6 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			
 			// Now look at all the neighbours...
 
-
 			// System.out.println("linkedTo "+p.linkedTo.length+" neigbours");
 			for( int i = 0; i < p.linkedTo.length; ++i ) {
 
@@ -198,25 +198,10 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 				float distance = p.distanceTo(neighbour);
 				int neighbourMaterial = label_data[neighbour.z][neighbour.y*width+neighbour.x];
 
-				// Ignore this neighbour if it's:
-				//   - if it's not the exterior material or end material
-				//   - of the original material
-				//   - of the end material and not the goal
+				// Ignore this neighbour if it's it's not of the exterior or end material
 
-				if( neighbourMaterial == 0 ) {
-					// Exterior, fine...
-					// System.out.println("   adding exterior point");
-				} else if( neighbourMaterial == startMaterial ) {
+				if( ! (neighbourMaterial == 0 || neighbourMaterial == endMaterial) )
 					continue;
-				} else if( neighbourMaterial != endMaterial ) {
-					continue;
-				} else {
-					// Must be the end material:
-					if( ! neighbour.equals(end) ) {
-						System.out.println("Found end, but wrong one...");
-						continue;
-					}
-				}
 
 				NewGraphNode newNode = new NewGraphNode();
 				newNode.setFrom( neighbour );
@@ -368,6 +353,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 	}	
 
 	byte[][] label_data;
+	String [] materialNames;
 
       	public Connectivity buildGraph( File tracesObjFile, File labelsFile ) {
 
@@ -433,7 +419,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 
 		AmiraParameters parameters = new AmiraParameters(labels);
 		int materials = parameters.getMaterialCount();
-		String [] materialNames = new String[256];
+		materialNames = new String[256];
 		Hashtable<String,Integer> materialNameToIndex = new Hashtable< String, Integer >();
 		for( int i = 0; i < materials; ++i ) {
 			materialNames[i] = parameters.getMaterialName(i);
@@ -499,42 +485,27 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			System.out.println("Starting searches from "+labelIndex+", name: "+labelPrettyString);
 			
 			ArrayList<NewGraphNode> startPoints = allEdges.get(labelIndex);
-			ArrayList<NewGraphNode> endPoints = new ArrayList<NewGraphNode>();
-			ArrayList<Integer> endPointsMaterials = new ArrayList<Integer>();
 
-			for( int endM = 0; endM < materials; ++endM ) {
-				if( labelIndex == endM )
+			for( int endM = labelIndex + 1; endM < materials; ++endM ) {
+
+				ArrayList<NewGraphNode> potentialEndPoints = allEdges.get(endM);
+				if( potentialEndPoints.size() == 0 )
 					continue;
-				ArrayList<NewGraphNode> edgePoints = allEdges.get(endM);
-				for( Iterator<NewGraphNode> endIterator = edgePoints.iterator();
-				     endIterator.hasNext(); ) {
-					NewGraphNode n = endIterator.next();
-					endPoints.add(n);
-					endPointsMaterials.add(endM);
-				}
-			}
 
-			for( Iterator<NewGraphNode> startIterator = startPoints.iterator();
-			     startIterator.hasNext(); ) {
+				for( Iterator<NewGraphNode> startIterator = startPoints.iterator();
+				     startIterator.hasNext(); ) {
 
-				NewGraphNode startPoint = startIterator.next();
+					NewGraphNode startPoint = startIterator.next();
+					
+					System.out.println("  Starting from point "+startPoint+" ("+labelPrettyString+" looking for material: "+materialNames[endM]);
 
-				System.out.println("  Starting from point "+startPoint+" ("+labelPrettyString);
-
-				for( int ei = 0; ei < endPoints.size(); ++ei ) {
-					for( Iterator<NewGraphNode> endIterator = endPoints.iterator();
-					     endIterator.hasNext(); ) {
-
-						NewGraphNode endPoint = endPoints.get(ei);
-
-						PathWithLength route = findPath( startPoint, endPoint );
-						if( route == null ) {
-							// System.out.println("No route found.");
-							continue;
-						}
-
-						System.out.println("  Found a route!");
+					PathWithLength route = findPath( startPoint, endM );
+					if( route == null ) {
+						// System.out.println("No route found.");
+						continue;
 					}
+
+					System.out.println("  Found a route!");
 				}
 			}
 		}
@@ -546,7 +517,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		
 	}
 	
-	public void run( String argument ) {
+		public void run( String argument ) {
 		
 		// String baseDirectory = "/media/WD USB 2/corpus/central-complex/";
 		String baseDirectory = "/home/mark/tmp-corpus/";
