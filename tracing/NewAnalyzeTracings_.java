@@ -364,6 +364,10 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 	byte[][] label_data;
 	String [] materialNames;
 
+	int [] redValues;
+	int [] greenValues;
+	int [] blueValues;
+
       	public ArrayList<PathWithLength> buildGraph( File tracesObjFile, File labelsFile, File writePathsTo, File writeDotTo ) {
 
 		String tracesObjFileName = tracesObjFile.getAbsolutePath();
@@ -429,16 +433,16 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		AmiraParameters parameters = new AmiraParameters(labels);
 		int materials = parameters.getMaterialCount();
 		materialNames = new String[256];
-		Hashtable<String,Integer> materialNameToIndex = new Hashtable< String, Integer >();
+		materialNameToIndex = new Hashtable< String, Integer >();
 		for( int i = 0; i < materials; ++i ) {
 			materialNames[i] = parameters.getMaterialName(i);
 			materialNameToIndex.put(materialNames[i],new Integer(i));
 			System.out.println("Material: "+i+" is "+materialNames[i]);
 		}
 		
-		int [] redValues = new int[materials];
-		int [] greenValues = new int[materials];
-		int [] blueValues = new int[materials];
+		redValues = new int[materials];
+		greenValues = new int[materials];
+		blueValues = new int[materials];
 
 		ArrayList<ArrayList<NewGraphNode>> allEdges = new ArrayList<ArrayList<NewGraphNode>>();
 		
@@ -524,6 +528,9 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 						continue;
 					}
 
+					route.startNeuropilRegion = labelIndex;
+					route.endNeuropilRegion = endM;
+
 					paths.add(route);
 					Path newPath=route.toPath();
 					newPath.setName(materialNames[labelIndex]+" to " +materialNames[endM]);
@@ -547,12 +554,49 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		}
 		
 		if( writeDotTo != null ) {
-			
-			
+			try {				
+				BufferedWriter out = new BufferedWriter(new FileWriter(writeDotTo.getAbsolutePath(),false));
+				
+				out.write( "graph G {\n" );
+				out.write( "        graph [overlap=scale,splines=true];\n");
+				out.write( "        node [fontname=\"DejaVuSans\",style=filled];\n");
+
+				HashSet<Integer> materialsInGraph = new HashSet<Integer>();
+				for( Iterator<PathWithLength> pathIterator=paths.iterator();
+				     pathIterator.hasNext(); ) {
+
+					PathWithLength p = pathIterator.next();
+					materialsInGraph.add(p.startNeuropilRegion);
+					materialsInGraph.add(p.endNeuropilRegion);
+				}
+
+				for( Iterator<Integer> materialIterator = materialsInGraph.iterator();
+				     materialIterator.hasNext(); ) {
+					int m = materialIterator.next();		
+					String name = materialNames[m];
+					out.write( "        \"" + name + "\" [fillcolor=\"" + colorString(name) + "\"];\n" );
+				}
+				
+				HashSet<String> connectionsDone=new HashSet<String>();
+
+				for( Iterator<PathWithLength> pathIterator=paths.iterator();
+				     pathIterator.hasNext(); ) {
+					PathWithLength p = pathIterator.next();					
+					String dotLine = "        \"" + materialNames[p.startNeuropilRegion] + "\" -- \"" + materialNames[p.endNeuropilRegion] + "\";\n";
+					if( ! connectionsDone.contains(dotLine) ) {
+						out.write(dotLine);
+						connectionsDone.add(dotLine);
+					}
+				}
+				out.write( "}" );				
+				out.close();
+				
+			} catch( IOException ioe ) {
+				IJ.error( "Exception while writing the file" );
+			}
 		}
 		
-		return paths;
-		
+		return paths;		
 	}
 	
 	public void run( String argument ) {
@@ -648,4 +692,45 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			}
 		}
 	}
+
+	public Hashtable< String, Integer > materialNameToIndex;
+	
+	public String colorString( String materialName ) {
+		
+		if( materialName.equals("Exterior") )
+			return "#DDDDDD";
+		else {
+			
+			Integer material_id_integer = materialNameToIndex.get(materialName);
+			int material_id = material_id_integer.intValue();
+			
+			double scaling = 1.4;
+			
+			int r = (int)( redValues[material_id] * scaling );
+			int g = (int)( greenValues[material_id] * scaling );
+			int b = (int)( blueValues[material_id] * scaling );
+			
+			if( r > 255 )
+				r = 255;
+			if( g > 255 )
+				g = 255;
+			if( b > 255 )
+				b = 255;
+			
+			String redValueString = Integer.toHexString(r);
+			if( redValueString.length() <= 1 )
+				redValueString = "0" + redValueString;					
+			
+			String greenValueString = Integer.toHexString(g);
+			if( greenValueString.length() <= 1 )
+				greenValueString = "0" + greenValueString;					
+			
+			String blueValueString = Integer.toHexString(b);
+			if( blueValueString.length() <= 1 )
+				blueValueString = "0" + blueValueString;					
+			
+			return "#" + redValueString + greenValueString + blueValueString;
+		}
+	}
+	
 }
