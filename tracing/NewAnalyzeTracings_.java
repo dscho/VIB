@@ -54,10 +54,31 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		int y = -1;
 		int z = -1;
 		NewGraphNode linkedTo [] = null;
+		@Override
 		public boolean equals(Object other) {
 			NewGraphNode o=(NewGraphNode)other;
 			return x == o.x && y == o.y && z == o.z;
 		}
+		@Override
+		public int hashCode( ) {
+			return x + y * (1 << 11) + z * (1 << 22);
+		}
+		@Override
+		public String toString( ) {
+			return "("+x+","+y+","+z+")";
+		}
+	}
+
+	Path findPath( NewGraphNode startPoint, NewGraphNode endPoint ) {
+		
+
+
+
+
+
+
+
+		return null;
 	}
 
 	public int positionToKey( int x, int y, int z ) {
@@ -212,10 +233,11 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		int [] greenValues = new int[materials];
 		int [] blueValues = new int[materials];
 
+		ArrayList<ArrayList<NewGraphNode>> allEdges = new ArrayList<ArrayList<NewGraphNode>>();
+
 		for( int i=0; i < materials; i++ ) {
-			
-			double[] c = parameters.getMaterialColor(i);
-			
+			allEdges.add(new ArrayList<NewGraphNode>());
+			double[] c = parameters.getMaterialColor(i);			
 			redValues[i] = (int)(255*c[0]);
 			greenValues[i] = (int)(255*c[1]);
 			blueValues[i] = (int)(255*c[2]);
@@ -227,7 +249,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 
 			System.out.println("   Dealing with label index "+labelIndex+", name: "+labelPrettyString);			
 
-			ArrayList<NewGraphNode> neuropilEdgePoints = new ArrayList<NewGraphNode>();
+			ArrayList<NewGraphNode> neuropilEdgePoints = allEdges.get(labelIndex);
 
 			for( int z = 0; z < depth; ++z )
 				for( int y = 0; y < height; ++y )
@@ -250,8 +272,57 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 							}
 						}
 					}
+
 			System.out.println("   Found "+neuropilEdgePoints.size()+" points on the edge of the "+labelPrettyString);
 		}
+
+		// Now start a search from each of these points trying
+		// to find an end point at one of the edge points from
+		// the other neuropil regions:
+
+		for( int a = 0; a < labelIndices.length; ++a ) {
+
+			int labelIndex = labelIndices[a];
+			String labelPrettyString = labelNames[a];
+			System.out.println("Starting searches from "+labelIndex+", name: "+labelPrettyString);
+
+			ArrayList<NewGraphNode> startPoints = allEdges.get(labelIndex);
+			ArrayList<NewGraphNode> endPoints = new ArrayList<NewGraphNode>();
+			ArrayList<Integer> endPointsMaterials = new ArrayList<Integer>();
+
+			for( int endM = 0; endM < materials; ++endM ) {
+				if( labelIndex == endM )
+					continue;
+				ArrayList<NewGraphNode> edgePoints = allEdges.get(endM);
+				for( Iterator<NewGraphNode> endIterator = edgePoints.iterator();
+				     endIterator.hasNext(); ) {
+					NewGraphNode n = endIterator.next();
+					endPoints.add(n);
+					endPointsMaterials.add(endM);
+				}
+			}
+
+			for( Iterator<NewGraphNode> startIterator = startPoints.iterator();
+			     startIterator.hasNext(); ) {
+
+				NewGraphNode startPoint = startIterator.next();
+				
+				System.out.println("  Starting from point "+startPoint+" ("+labelPrettyString);
+
+				for( Iterator<NewGraphNode> endIterator = endPoints.iterator();
+				     endIterator.hasNext(); ) {
+
+					NewGraphNode endPoint = endIterator.next();
+
+					Path route = findPath( startPoint, endPoint );
+					
+
+
+
+
+				}
+			}
+		}		
 
 		return null;
 		
