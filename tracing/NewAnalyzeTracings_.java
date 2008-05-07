@@ -6,7 +6,9 @@ import java.awt.*;
 import java.util.Hashtable;
 import java.util.HashSet;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.PriorityQueue;
 import java.io.*;
 import java.util.Enumeration;
 
@@ -43,7 +45,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 				 10,
 				 12 };
 	
-	class NewGraphNode {
+	class NewGraphNode implements Comparable {
 		public NewGraphNode() { }
 		public NewGraphNode(int x, int y, int z) {
 			this.x = x;
@@ -67,17 +69,225 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		public String toString( ) {
 			return "("+x+","+y+","+z+")";
 		}
+		// These members are only used for the search:
+		float g = Float.MIN_VALUE;
+		float h = Float.MIN_VALUE;
+		NewGraphNode previous = null;
+		public float distanceTo( NewGraphNode o ) {
+			float xdiff = x - o.x;
+			float ydiff = y - o.y;
+			float zdiff = z - o.z;
+			float distSq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
+			return (float) Math.sqrt( distSq );
+		}
+		public void setFrom( NewGraphNode o ) {
+			this.x = o.x;
+			this.y = o.y;
+			this.z = o.z;
+			this.linkedTo = o.linkedTo;
+		}	
+		double f() {
+			return g + h;
+		}	
+		@Override
+		public int compareTo( Object other ) {
+			NewGraphNode n = (NewGraphNode)other;
+			return Double.compare( f(), n.f() );
+		}
 	}
 
-	Path findPath( NewGraphNode startPoint, NewGraphNode endPoint ) {
+	ArrayList< NewGraphNode > makePath( NewGraphNode lastNode ) {       
 		
+		// System.out.println( "Trying to return result" );
+		
+		ArrayList< NewGraphNode > resultReversed = new ArrayList< NewGraphNode >();
+		NewGraphNode p = lastNode;
+		do {
+			resultReversed.add(p);
+			// System.out.println(  "adding "+p.toDotName());
+		} while( null != (p = p.previous) );
+		
+		ArrayList< NewGraphNode > realResult = new ArrayList< NewGraphNode >();
+		
+		for( int i = resultReversed.size() - 1; i >= 0; --i )
+			realResult.add( resultReversed.get(i) );
+		
+		return realResult;
+	}   
+
+	class PathWithLength {
+		
+		int startNeuropilRegion;
+		int endNeuropilRegion;
+
+		public double length;
+		public ArrayList< NewGraphNode > path;      
+	}
+
+	PathWithLength findPath( NewGraphNode start, NewGraphNode end ) {
+
+		// System.out.println("Starting path finding:");
+
+		int startMaterial = label_data[start.z][start.y*width+start.x];
+		int endMaterial = label_data[end.z][end.y*width+end.x];
+			
+		// First reset all the search parameters:
+		{
+			Collection<NewGraphNode> c = positionToNode.values();
+			for( Iterator<NewGraphNode> i = c.iterator();
+			     i.hasNext(); ) {
+
+				NewGraphNode n = i.next();
+				n.g = 0;
+				n.h = 0;
+				n.previous = null;
+			}
+		}
+		
+		PriorityQueue< NewGraphNode > closed_from_start = new PriorityQueue< NewGraphNode >();
+		PriorityQueue< NewGraphNode > open_from_start = new PriorityQueue< NewGraphNode >();
+		
+		Hashtable< NewGraphNode, NewGraphNode > open_from_start_hash = new Hashtable< NewGraphNode, NewGraphNode >();
+		Hashtable< NewGraphNode, NewGraphNode > closed_from_start_hash = new Hashtable< NewGraphNode, NewGraphNode >();
+		
+		start.g = 0;
+		start.h = 0;
+		start.previous = null;
+		
+		// add_node( open_from_start, open_from_start_hash, start );
+		open_from_start.add( start );
+		open_from_start_hash.put( start, start );
+		
+		while( open_from_start.size() > 0 ) {
+			
+			// NewGraphNode p = get_highest_priority( open_from_start, open_from_start_hash );
+			
+			// System.out.println("Before poll: "+open_from_start_hash.size()+"/"+open_from_start.size());
+			NewGraphNode p = open_from_start.poll();
+			open_from_start_hash.remove( p );
+			// System.out.println("After poll: "+open_from_start_hash.size()+"/"+open_from_start.size());
+			
+			// System.out.println( " Got node "+p.toDotName()+" from the queue" );
+			
+			// Has the route from the start found the goal?
+			
+			if( p.equals( end ) ) {
+				// System.out.println( "Found the goal! (from start to end)" );
+				ArrayList< NewGraphNode > path = makePath(p);
+				if( path == null )
+					return null;
+				else {
+					PathWithLength result = new PathWithLength();
+					result.path = path;
+					result.length = p.g;
+					return result;
+				}
+			}
+			
+			// add_node( closed_from_start, closed_from_start_hash, p );
+			closed_from_start.add( p );
+			closed_from_start_hash.put( p, p );
+			
+			// Now look at all the neighbours...
 
 
+			// System.out.println("linkedTo "+p.linkedTo.length+" neigbours");
+			for( int i = 0; i < p.linkedTo.length; ++i ) {
 
+				NewGraphNode neighbour = p.linkedTo[i];
+				float distance = p.distanceTo(neighbour);
+				int neighbourMaterial = label_data[neighbour.z][neighbour.y*width+neighbour.x];
 
+				// Ignore this neighbour if it's:
+				//   - if it's not the exterior material or end material
+				//   - of the original material
+				//   - of the end material and not the goal
 
+				if( neighbourMaterial == 0 ) {
+					// Exterior, fine...
+					// System.out.println("   adding exterior point");
+				} else if( neighbourMaterial == startMaterial ) {
+					continue;
+				} else if( neighbourMaterial != endMaterial ) {
+					continue;
+				} else {
+					// Must be the end material:
+					if( ! neighbour.equals(end) ) {
+						System.out.println("Found end, but wrong one...");
+						continue;
+					}
+				}
 
-
+				NewGraphNode newNode = new NewGraphNode();
+				newNode.setFrom( neighbour );
+				newNode.g = p.g + distance;
+				newNode.h = 0;
+				newNode.previous = p;
+						
+				NewGraphNode foundInClosed = closed_from_start_hash.get(neighbour);
+						
+				NewGraphNode foundInOpen = open_from_start_hash.get(neighbour);
+						
+				// Is there an exisiting route which is
+				// better?  If so, discard this new candidate...
+						
+				if( (foundInClosed != null) && (foundInClosed.f() <= newNode.f()) ) {
+					// System.out.println( "  Found in closed, but no better.");
+					continue;
+				}
+						
+				if( (foundInOpen != null) && (foundInOpen.f() <= newNode.f()) ) {
+					// System.out.println( "  Found in open, but no better.");
+					continue;
+				}
+						
+				if( foundInClosed != null ) {
+							
+					// System.out.println("Found in closed and better");
+							
+					// remove( closed_from_start, closed_from_start_hash, foundInClosed );
+					closed_from_start.remove( foundInClosed );
+					closed_from_start_hash.remove( foundInClosed );
+							
+					foundInClosed.setFrom( newNode );
+							
+					// add_node( open_from_start, open_from_start_hash, foundInClosed );
+					open_from_start.add( foundInClosed );
+					open_from_start_hash.put( foundInClosed, foundInClosed );
+							
+					continue;
+				}
+						
+				if( foundInOpen != null ) {
+							
+					// System.out.println("Found in open and better");
+							
+					// remove( open_from_start, open_from_start_hash, foundInOpen );
+					open_from_start.remove( foundInOpen );
+					open_from_start_hash.remove( foundInOpen );
+							
+					foundInOpen.setFrom( newNode );
+							
+					// add_node( open_from_start, open_from_start_hash, foundInOpen );
+					open_from_start.add( foundInOpen );
+					open_from_start_hash.put( foundInOpen, foundInOpen );
+							
+					continue;
+				}
+						
+				// Otherwise we add a new node:
+						
+				// System.out.println("  Adding new node to open " + newNode.toDotName() );
+						
+				// add_node( open_from_start, open_from_start_hash, newNode );
+				open_from_start.add( newNode );
+				open_from_start_hash.put( newNode, newNode );
+			}
+		}
+		
+		/* If we get to here then we haven't found a route to the
+		   end point. */
+		
 		return null;
 	}
 
@@ -157,6 +367,8 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		this.spacing_z = spacing_z;
 	}	
 
+	byte[][] label_data;
+
       	public Connectivity buildGraph( File tracesObjFile, File labelsFile ) {
 
 		String tracesObjFileName = tracesObjFile.getAbsolutePath();
@@ -215,7 +427,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			throw new RuntimeException("Couldn't open labels file "+labelsFileName);
 		ImageStack labelStack=labels.getStack();
 
-		byte[][] label_data=new byte[depth][];
+		label_data=new byte[depth][];
 		for( int z = 0; z < depth; ++z )
 			label_data[z] = (byte[])labelStack.getPixels( z + 1 );
 
@@ -285,7 +497,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			int labelIndex = labelIndices[a];
 			String labelPrettyString = labelNames[a];
 			System.out.println("Starting searches from "+labelIndex+", name: "+labelPrettyString);
-
+			
 			ArrayList<NewGraphNode> startPoints = allEdges.get(labelIndex);
 			ArrayList<NewGraphNode> endPoints = new ArrayList<NewGraphNode>();
 			ArrayList<Integer> endPointsMaterials = new ArrayList<Integer>();
@@ -306,23 +518,29 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			     startIterator.hasNext(); ) {
 
 				NewGraphNode startPoint = startIterator.next();
-				
+
 				System.out.println("  Starting from point "+startPoint+" ("+labelPrettyString);
 
-				for( Iterator<NewGraphNode> endIterator = endPoints.iterator();
-				     endIterator.hasNext(); ) {
+				for( int ei = 0; ei < endPoints.size(); ++ei ) {
+					for( Iterator<NewGraphNode> endIterator = endPoints.iterator();
+					     endIterator.hasNext(); ) {
 
-					NewGraphNode endPoint = endIterator.next();
+						NewGraphNode endPoint = endPoints.get(ei);
 
-					Path route = findPath( startPoint, endPoint );
-					
+						PathWithLength route = findPath( startPoint, endPoint );
+						if( route == null ) {
+							// System.out.println("No route found.");
+							continue;
+						}
 
-
-
-
+						System.out.println("  Found a route!");
+					}
 				}
 			}
-		}		
+		}
+		
+
+		
 
 		return null;
 		
