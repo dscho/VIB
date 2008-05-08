@@ -37,12 +37,12 @@ import vib.app.FileGroup;
  * @author mark
  */
 public class Fit_Sphere implements PlugIn {
-	
+
 	public void run(String ignored) {
-		
+
 		String averagedNC82Path = "/Users/mark/central-complex-complete-vib-protocol/output_1/71yAAeastmost.tif";
 		String normalizedRootDirectory = "/Users/mark/central-complex-complete-vib-protocol/normalized/";
-		
+
 		int[][][] pointsInShells =
 {{
 { 226, 450, 50 },
@@ -70,7 +70,7 @@ public class Fit_Sphere implements PlugIn {
 }};
 
 
-/*		
+/*
 		int[][][] pointsInShells = { { {249, 365, 43},
 					       {216, 454, 43},
 					       {244, 552, 43},
@@ -87,57 +87,57 @@ public class Fit_Sphere implements PlugIn {
 					       {264, 450, 56},
 					       {297, 566, 56} }
 		};
-*/		
-		
+*/
+
 		/*
 		   These next two points are those that define the angle
 		   swepping through the fan-shaped body that we consider */
-		
+
 		int [] pointInferiorLowZ = { 294 ,466, 43 };
 		int [] pointInferiorHighZ = { 294 ,466, 49 };
-		
+
 		int [] pointSuperiorLowZ = { 234, 484, 42 };
 		int [] pointSuperiorHighZ = { 234, 484, 50 };
 
-		/* We ignore the y co-ordinates of these and 
+		/* We ignore the y co-ordinates of these and
 		   exclude those outside the angle in the XZ
 		   plane. */
-				    
+
 		ImagePlus[] channels = BatchOpener.open(averagedNC82Path);
 		if (channels == null) {
 			IJ.error("Couldn't open: " + averagedNC82Path);
 		}
-		
+
 		ImagePlus imp = channels[0];
-		
+
 		Calibration c = channels[0].getCalibration();
-		
+
 		double x_spacing = c.pixelWidth;
 		double y_spacing = c.pixelHeight;
 		double z_spacing = c.pixelDepth;
-		
+
 		int width = imp.getWidth();
 		int height = imp.getHeight();
 		int depth = imp.getStackSize();
 
 		// Scale the limit points with the calibration...
-		
+
 		double [] pointMaxZDefiningAngle = new double[3];
 		double [] pointMinZDefiningAngle = new double[3];
-				
+
 		pointMaxZDefiningAngle[0] = pointInferiorHighZ[0] * x_spacing;
 		pointMaxZDefiningAngle[1] = pointInferiorHighZ[1] * y_spacing;
 		pointMaxZDefiningAngle[2] = pointInferiorHighZ[2] * z_spacing;
-		
+
 		pointMinZDefiningAngle[0] = pointInferiorLowZ[0] * x_spacing;
 		pointMinZDefiningAngle[1] = pointInferiorLowZ[1] * y_spacing;
 		pointMinZDefiningAngle[2] = pointInferiorLowZ[2] * z_spacing;
 
 		ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
-		
+
 		// optimizer.prin = 2; // Show some debugging information...
 		optimizer.step = 0.5;
-		
+
 		// The values we're optimizing are the radius of the sphere and its centre.
 		double[] startValues = new double[3];
 
@@ -158,18 +158,18 @@ public class Fit_Sphere implements PlugIn {
 		startValues[1] = 0;
 		startValues[2] = 0;
 		 */
-		
+
 		SphereAttempt attempt = new SphereAttempt(2);
-		
+
 		for (int shell = 0; shell < 2; ++shell) {
 			int[][] pointsThisTime = pointsInShells[shell];
 			for (int i = 0; i < pointsThisTime.length; ++i) {
 				attempt.addPointInShell(shell, pointsThisTime[i][0] * x_spacing, pointsThisTime[i][1] * y_spacing, pointsThisTime[i][2] * z_spacing);
 			}
 		}
-		
+
 		optimizer.optimize(attempt, startValues, 2, 2);
-		
+
 		double resultScaled_x = startValues[0];
 		double resultScaled_y = startValues[1];
 		double resultScaled_z = startValues[2];
@@ -179,45 +179,45 @@ public class Fit_Sphere implements PlugIn {
 		double minAngle = Math.atan( (pointMinZDefiningAngle[2] - resultScaled_z) / (resultScaled_x - pointMinZDefiningAngle[0]) );
 
 		System.out.println("maxAngle is "+maxAngle+" (in degrees: "+((maxAngle*180)/Math.PI)+")");
-		System.out.println("minAngle is "+minAngle+" (in degrees: "+((minAngle*180)/Math.PI)+")");		
-		
+		System.out.println("minAngle is "+minAngle+" (in degrees: "+((minAngle*180)/Math.PI)+")");
+
 		// Now work out the radii from this:
 		double[] radii = new double[pointsInShells.length];
-		
+
 		for (int shell = 0; shell < pointsInShells.length; ++shell) {
-			
+
 			double distanceSum = 0;
 			int[][] points = pointsInShells[shell];
 			for (int i = 0; i < points.length; ++i) {
-				
+
 				double x = points[i][0] * x_spacing;
 				double y = points[i][1] * y_spacing;
 				double z = points[i][2] * z_spacing;
-				
+
 				double x_diff = x - resultScaled_x;
 				double y_diff = y - resultScaled_y;
 				double z_diff = z - resultScaled_z;
-				
+
 				double d = Math.sqrt(x_diff * x_diff + y_diff * y_diff + z_diff * z_diff);
-				
+
 				distanceSum += d;
 			}
 			radii[shell] = distanceSum / points.length;
 		}
-		
+
 		double resultUnscaled_x = resultScaled_x / x_spacing;
 		double resultUnscaled_y = resultScaled_y / y_spacing;
 		double resultUnscaled_z = resultScaled_z / z_spacing;
-		
+
 		double result_x = (int) resultUnscaled_x;
 		double result_y = (int) resultUnscaled_y;
 		double result_z = (int) resultUnscaled_z;
-		
+
 		ShellsCanvas testCanvas = new ShellsCanvas(imp, resultScaled_x, resultScaled_y, resultScaled_z);
 		for (int i = 0; i < radii.length; ++i) {
 			testCanvas.addRadius(radii[i]);
 		}
-		
+
 		new StackWindow(imp, testCanvas);
 		imp.show();
 
@@ -234,7 +234,7 @@ public class Fit_Sphere implements PlugIn {
 
 		double maxDistanceSquared = 0;
 		double minDistanceSquared = Double.MAX_VALUE;
-		
+
 		ImagePlus heatmap = heatmapChannels[0];
 		ImageStack heatmapStack = heatmap.getStack();
 		int includeOverAndIncluding = 127;
@@ -243,14 +243,14 @@ public class Fit_Sphere implements PlugIn {
 			boolean[] includeSlice = new boolean[width * height];
 			for (int y = 0; y < height; ++y) {
 				for (int x = 0; x < width; ++x) {
-					
-                                        double x_real = x * x_spacing;
-                                        double y_real = y * y_spacing;
-                                        double z_real = z * z_spacing;
-                                        double x_diff = x_real - resultScaled_x;
-                                        double y_diff = y_real - resultScaled_y;
-                                        double z_diff = z_real - resultScaled_z;
-					
+
+					double x_real = x * x_spacing;
+					double y_real = y * y_spacing;
+					double z_real = z * z_spacing;
+					double x_diff = x_real - resultScaled_x;
+					double y_diff = y_real - resultScaled_y;
+					double z_diff = z_real - resultScaled_z;
+
 					double angle = Math.atan( z_diff / -x_diff );
 					/*
 					if( z == 45 )
@@ -264,7 +264,7 @@ public class Fit_Sphere implements PlugIn {
 						excludedByAngle[z][y*width+x] = (byte)255;
 						continue;
 					}
-					
+
 					int value = pixels[y * width + x] & 0xFF;
 					boolean includeThisOne = (value >= includeOverAndIncluding);
 					includeSlice[y * width + x] = includeThisOne;
@@ -273,10 +273,10 @@ public class Fit_Sphere implements PlugIn {
 						excludedByAngle[z][y*width+x] = (byte)128;
 					    continue;
 					}
-					
-                                        double distanceSquared = x_diff * x_diff + y_diff * y_diff + z_diff * z_diff;
 
-                                        if(distanceSquared > maxDistanceSquared)
+					double distanceSquared = x_diff * x_diff + y_diff * y_diff + z_diff * z_diff;
+
+					if(distanceSquared > maxDistanceSquared)
 					    maxDistanceSquared = distanceSquared;
 					else if(distanceSquared < minDistanceSquared)
 					    minDistanceSquared = distanceSquared;
@@ -295,32 +295,32 @@ public class Fit_Sphere implements PlugIn {
 		}
 		ImagePlus newImagePlus=new ImagePlus("points excluded by angle",newStack );
 		newImagePlus.show();
-		
+
 		if(false)
 			return;
-		
-                boolean rescaleValues = false;
+
+		boolean rescaleValues = false;
 
 		double maxDistance = Math.sqrt(maxDistanceSquared);
 		double minDistance = Math.sqrt(minDistanceSquared);
-		
+
 		System.out.println("All distances between: "+maxDistance+" and "+minDistance);
-		
+
 		/* Load the annotation file with scores for each one... */
-		
+
 		String annotationScoresFilename = "/Users/mark/thesis/annotations-with-scores.csv";
-		
+
 		Hashtable<String,Integer> scoresHash = new Hashtable<String,Integer>();
-		
-                System.out.println("Trying to load: "+annotationScoresFilename);
+
+		System.out.println("Trying to load: "+annotationScoresFilename);
 
 		try {
-			
-                        BufferedReader f = new BufferedReader(
-                                new FileReader(annotationScoresFilename));
-                        String line;
+
+			BufferedReader f = new BufferedReader(
+				new FileReader(annotationScoresFilename));
+			String line;
 			int lineNumber = 0;
-                        while ((line=f.readLine())!=null) {
+			while ((line=f.readLine())!=null) {
 				++ lineNumber;
 				if( lineNumber == 1 )
 					continue;
@@ -338,21 +338,21 @@ public class Fit_Sphere implements PlugIn {
 					}
 					System.out.println("got score "+scoreAsString+" for file "+fileName);
 					scoresHash.put(fileName,new Integer(scoreInt));
-				
+
 				} catch( NumberFormatException e ) {
 					System.out.println("The score '"+scoreAsString+"' wasn't an integer - skipping that one.");
 				}
-				
+
 			}
 
-                } catch( IOException e ) {
-                        IJ.error("Error parsing the file "+annotationScoresFilename+": "+e);
-                        return;
+		} catch( IOException e ) {
+			IJ.error("Error parsing the file "+annotationScoresFilename+": "+e);
+			return;
 		}
-		
+
 		File filesDirectory = new File("/Users/mark/central-complex-complete-vib-protocol/warped_2");
 		File nc82FilesDirectory = new File("/Users/mark/central-complex-complete-vib-protocol/warped_1");
-		
+
 		Pattern[] linesPatterns = new Pattern[6];
 		linesPatterns[0] = Pattern.compile("71y");
 		linesPatterns[1] = Pattern.compile("210y");
@@ -360,15 +360,15 @@ public class Fit_Sphere implements PlugIn {
 		linesPatterns[3] = Pattern.compile("c0*61");
 		linesPatterns[4] = Pattern.compile("760");
 		linesPatterns[5] = Pattern.compile("(876|924)");
-		
-                int bins = 100;
+
+		int bins = 100;
 
 		/* Not implemented yet... */
 		FileGroup [] fileGroupArray = new FileGroup[linesPatterns.length+1];
 		for( int i = 0; i < fileGroupArray.length; ++i )
 			fileGroupArray[i] = new FileGroup("group "+i);
-				
-		// Make the last time through be the nc82 channels on their own...		
+
+		// Make the last time through be the nc82 channels on their own...
 		Bins[] lineBins = new Bins[linesPatterns.length+1];
 
 		int totalGoodBrains = 0;
@@ -383,25 +383,25 @@ public class Fit_Sphere implements PlugIn {
 				pattern = Pattern.compile("^[a-zA-Z0-9][^/]+$");
 			else
 				pattern = linesPatterns[i];
-			
+
 			System.out.println("Finding files matching: /" + pattern+"/");
 
 			File[] files;
-			
+
 			if( i == linesPatterns.length )
 				files = nc82FilesDirectory.listFiles();
 			else
 				files = filesDirectory.listFiles();
-			
+
 			for (int j = 0; j < files.length; ++j) {
 
 				File f = files[j];
 				if (!pattern.matcher(f.getName()).find()) {
 					continue;
 				}
-				
+
 				// Check the score to see if we keep it.
-				
+
 				String nameWithoutExtension = f.getName();
 				int lastDotIndex = nameWithoutExtension.lastIndexOf(".");
 				if( lastDotIndex >= 0 )
@@ -413,18 +413,18 @@ public class Fit_Sphere implements PlugIn {
 					if( score < 6 )
 						continue;
 				}
-				
+
 				fileGroupArray[i].add(f);
 				++ totalGoodBrains;
 
 
 			}
 		}
-		
+
 		File [] normalizedDirectories = new File[linesPatterns.length+1];
-		
+
 		for( int i = 0; i <= linesPatterns.length; ++i ) {
-			
+
 			String normalizedDirectory = normalizedRootDirectory +
 				( i == linesPatterns.length ? "nc82" : linesPatterns[i].toString() ) +
 				File.separator;
@@ -432,9 +432,9 @@ public class Fit_Sphere implements PlugIn {
 			System.out.println("Going to create: "+normalizedDirectory);
 			boolean result = normalizedDirectories[i].mkdir();
 			System.out.println("   result was: "+result);
-			
+
 			// Now actually normalize into those directories:
-			
+
 			Quantile_Based_Normalization qbn = new Quantile_Based_Normalization();
 			qbn.processToDirectory(fileGroupArray[i],
 					       normalizedDirectories[i].getAbsolutePath(),
@@ -444,7 +444,7 @@ public class Fit_Sphere implements PlugIn {
 					       false,
 					       false);
 		}
-				
+
 		int brainCounter = 0;
 		Bins [] brainBins = new Bins[totalGoodBrains];
 		String [] brainLines = new String[totalGoodBrains];
@@ -453,9 +453,9 @@ public class Fit_Sphere implements PlugIn {
 		for (int i = 0; i <= linesPatterns.length; ++i) {
 
 			File directory=normalizedDirectories[i];
-			
+
 			File[] files=directory.listFiles();
-			
+
 			for (int j = 0; j < files.length; ++j) {
 
 				File f = files[j];
@@ -471,11 +471,11 @@ public class Fit_Sphere implements PlugIn {
 				ImagePlus gal4Channel = gal4Channels[0];
 				ImageStack gal4Stack = gal4Channel.getStack();
 
-                                int maxValue = -1;
-                                if( rescaleValues ) {                                
-                                    maxValue = maxValueInImage(gal4Channel, include);
-                                    System.out.println("Rescaling with old maxValue: "+maxValue);
-                                }
+				int maxValue = -1;
+				if( rescaleValues ) {
+				    maxValue = maxValueInImage(gal4Channel, include);
+				    System.out.println("Rescaling with old maxValue: "+maxValue);
+				}
 
 				for (int z = 0; z < depth; ++z) {
 					byte[] pixels = (byte[]) gal4Stack.getPixels(z+1);
@@ -492,10 +492,10 @@ public class Fit_Sphere implements PlugIn {
 							double z_diff = z_real - resultScaled_z;
 							double distance = Math.sqrt(x_diff * x_diff + y_diff * y_diff + z_diff * z_diff);
 							int value = pixels[y * width + x] & 255;
-                                                        if( rescaleValues ) {
-                                                            value = (255 * value) / maxValue;                                                          
-                                                        }
-                                                        lineBins[i].add(value,distance);
+							if( rescaleValues ) {
+							    value = (255 * value) / maxValue;
+							}
+							lineBins[i].add(value,distance);
 
 							brainBins[brainCounter].add(value,distance);
 							brainLines[brainCounter] = directory.getName();
@@ -510,11 +510,11 @@ public class Fit_Sphere implements PlugIn {
 		}
 
 
-                String outputPathStem = "/Users/mark/central-complex-complete-vib-protocol/mhl-output/";
+		String outputPathStem = "/Users/mark/central-complex-complete-vib-protocol/mhl-output/";
 
 		try {
 
-                        for( int i=0; i <= linesPatterns.length; ++i ) {
+			for( int i=0; i <= linesPatterns.length; ++i ) {
 
 				String outputPath;
 				if( i == linesPatterns.length )
@@ -532,15 +532,15 @@ public class Fit_Sphere implements PlugIn {
 					   "MeanValueInBin\t" +
 					   "SDOfValuesInBin\t +" +
 					   "N");
-				
+
 				String lineName;
 				if( i == linesPatterns.length )
 					lineName = "nc82";
 				else
 					lineName = linesPatterns[i].toString();
-				
+
 				Bins lineBin = lineBins[i];
-				
+
 				for( int b = 0; b < bins; ++b ) {
 					pw.println("\"" + lineName +"\"\t" +
 						   b + "\t" +
@@ -551,21 +551,21 @@ public class Fit_Sphere implements PlugIn {
 						   lineBin.getStandardDeviation(b) + "\t" +
 						   lineBin.getN(b) );
 				}
-				
-				
+
+
 				pw.close();
-				
+
 			}
-			
+
 			File perBrainSubdirectory = new File(outputPathStem + "per-brain");
 			perBrainSubdirectory.mkdir();
 
 			for( int i=0; i <= brainBins.length; ++i ) {
-				    
+
 				String outputPath = perBrainSubdirectory.getAbsolutePath() + File.separator + brainNames[i] + ".tsv";
-				    
+
 				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(new File(outputPath))));
-				    
+
 				pw.println("Pattern\t" +
 					   "Bin\t" +
 					   "MinimumInBin\t" +
@@ -576,7 +576,7 @@ public class Fit_Sphere implements PlugIn {
 					   "N");
 
 				Bins brainBin = brainBins[i];
-				    
+
 				for( int b = 0; b < bins; ++b ) {
 					pw.println("\"" + brainLines[i] +"\"\t" +
 						   b + "\t" +
@@ -589,113 +589,113 @@ public class Fit_Sphere implements PlugIn {
 				}
 				pw.close();
 			}
-			
+
 		} catch (IOException e) {
 			IJ.error("There was an exception while writing the data: " + e);
 			return;
 		}
 
-                // FIXME: also generate averaged images...
-		
-		
-               
+		// FIXME: also generate averaged images...
+
+
+
 
 	}
 
-        private int maxValueInImage( ImagePlus imp, boolean [][] includedVoxels ) {
-            
-                int maxValue = 0;
+	private int maxValueInImage( ImagePlus imp, boolean [][] includedVoxels ) {
 
-                ImageStack stack = imp.getStack();
-                int width=imp.getWidth();
-                int height=imp.getHeight();
-                int depth=imp.getStackSize();
-                for (int z = 0; z < depth; ++z) {
-                        byte[] pixels = (byte[]) stack.getPixels(z+1);
-                        for (int y = 0; y < height; ++y) {
-                                for (int x = 0; x < width; ++x) {
-                                        if (!includedVoxels[z][y * width + x]) {
-                                                continue;
-                                        }
-                                        int value = pixels[y*width+x] & 0xFF;
-                                        if( value > maxValue )
-                                            maxValue = value;
-                                }
-                        }
-                }
-                return maxValue;
-        }
+		int maxValue = 0;
+
+		ImageStack stack = imp.getStack();
+		int width=imp.getWidth();
+		int height=imp.getHeight();
+		int depth=imp.getStackSize();
+		for (int z = 0; z < depth; ++z) {
+			byte[] pixels = (byte[]) stack.getPixels(z+1);
+			for (int y = 0; y < height; ++y) {
+				for (int x = 0; x < width; ++x) {
+					if (!includedVoxels[z][y * width + x]) {
+						continue;
+					}
+					int value = pixels[y*width+x] & 0xFF;
+					if( value > maxValue )
+					    maxValue = value;
+				}
+			}
+		}
+		return maxValue;
+	}
 
 
 	class SphereAttempt implements MultivariateFunction {
-		
+
 		ArrayList<ArrayList<double[]>> pointsInShells;
-		
+
 		SphereAttempt(int shells) {
 			pointsInShells = new ArrayList<ArrayList<double[]>>();
 			for (int i = 0; i < shells; ++i) {
 				pointsInShells.add(new ArrayList<double[]>());
 			}
 		}
-		
+
 		public double evaluate(double[] argument) {
-			
+
 			double variancesSummed = 0;
-			
+
 			for (int shell = 0; shell < pointsInShells.size(); ++shell) {
-				
+
 				ArrayList<double[]> points = pointsInShells.get(shell);
-				
+
 				double sumDSquared = 0;
 				double sumD = 0;
 				int n = points.size();
-				
+
 				double centre_x = argument[0];
 				double centre_y = argument[1];
 				double centre_z = argument[2];
-				
+
 				for (Iterator<double[]> i = points.iterator(); i.hasNext();) {
-					
+
 					double[] p = i.next();
-					
+
 					double xdiff = p[0] - centre_x;
 					double ydiff = p[1] - centre_y;
 					double zdiff = p[2] - centre_z;
-					
+
 					double distanceSquared = xdiff * xdiff + ydiff * ydiff + zdiff * zdiff;
-					
+
 					double distance = Math.sqrt(distanceSquared);
-					
+
 					sumDSquared += distanceSquared;
 					sumD += distance;
 				}
-				
+
 				double variance = (sumDSquared / n) - ((sumD * sumD) / (n * n));
-				
+
 				variancesSummed += variance;
 			}
-			
+
 			return variancesSummed;
 		}
-		
+
 		public int getNumArguments() {
 			return 3;
 		}
-		
+
 		public double getLowerBound(int n) {
-		    
-                        // FIXME: for argument n, what's the lower bound?
-                        // Should actually be related to the dimensions
-                        // of the image. 
+
+			// FIXME: for argument n, what's the lower bound?
+			// Should actually be related to the dimensions
+			// of the image.
 			return 0;
 		}
 
 		public double getUpperBound(int n) {
-			
+
 			// FIXME: ditto above
 			return 10000;
-		}		
-		
+		}
+
 		public void addPointInShell(int shell, double x, double y, double z) {
 			if (shell < 0 || shell >= pointsInShells.size()) {
 				IJ.error("There are only " + shell + " (trying to insert into shell " + shell + ")");
@@ -712,9 +712,9 @@ public class Fit_Sphere implements PlugIn {
 }
 
 class ShellsCanvas extends ImageCanvas {
-	
+
 	private ImagePlus imagePlus;
-	
+
 	public ShellsCanvas(ImagePlus imagePlus, double centre_x, double centre_y, double centre_z) {
 		super(imagePlus);
 		this.imagePlus = imagePlus;
@@ -741,44 +741,44 @@ class ShellsCanvas extends ImageCanvas {
 	private int height;
 	private int depth;
 	private ArrayList<Double> radii;
-	
+
 	public void addRadius(double radius) {
 		System.out.println("Added radius: " + radius);
 		radii.add(new Double(radius));
 	}
-	
+
 	@Override
 	public void paint(Graphics g) {
 		super.paint(g);
 		drawOverlay(g);
 	}
-	
+
 	public void drawOverlay(Graphics g) {
 		g.setColor(Color.RED);
 		int real_side = (int) Math.ceil(getMagnification());
 		int z = imp.getCurrentSlice() - 1;
 		for (int shell = 0; shell < radii.size(); ++shell) {
-			
+
 			double radius = radii.get(shell);
-			
+
 			double real_z = z_spacing * z;
 			double z_diff = real_z - centre_z;
-			
+
 			double a = radius * radius - z_diff * z_diff;
 			double a_root = Math.sqrt(a);
-			
+
 			double x_min = (centre_x - a_root) / x_spacing;
 			double x_max = (centre_x + a_root) / x_spacing;
-			
+
 			double y_min = (centre_y - a_root) / y_spacing;
 			double y_max = (centre_y + a_root) / y_spacing;
-			
+
 			int x_min_screen = screenX((int) Math.round(x_min));
 			int x_max_screen = screenX((int) Math.round(x_max));
-			
+
 			int y_min_screen = screenY((int) Math.round(y_min));
 			int y_max_screen = screenY((int) Math.round(y_max));
-			
+
 			g.drawOval(x_min_screen, y_min_screen, x_max_screen - x_min_screen, y_max_screen - y_min_screen);
 		}
 	}
@@ -808,8 +808,8 @@ class Bins {
 
 	public void add(int value, double distance) {
 
-                if( value > 255 )
-                    System.out.println("Warning, adding value > 255: "+value);
+		if( value > 255 )
+		    System.out.println("Warning, adding value > 255: "+value);
 
 		double binDouble = (bins * (distance - minDistance)) / distanceRange;
 
@@ -842,19 +842,19 @@ class Bins {
 		return Math.sqrt(getVariance(bin));
 	}
 
-        public double getMinimumInBin(int bin) {
-            return (bin * distanceRange) / bins;
-        }
+	public double getMinimumInBin(int bin) {
+	    return (bin * distanceRange) / bins;
+	}
 
-        public double getMaximumInBin(int bin) {
-            return ((bin + 1) * distanceRange) / bins;
-        }
+	public double getMaximumInBin(int bin) {
+	    return ((bin + 1) * distanceRange) / bins;
+	}
 
-        public double getMidPointOfBin(int bin) {
-            return (getMaximumInBin(bin) + getMinimumInBin(bin)) / 2;
-        }
+	public double getMidPointOfBin(int bin) {
+	    return (getMaximumInBin(bin) + getMinimumInBin(bin)) / 2;
+	}
 
 	public int getN(int b) {
-            return n[b];
+	    return n[b];
 	}
 }
