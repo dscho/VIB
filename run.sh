@@ -31,6 +31,9 @@ rioja|cognac.brookfield.local)
 claret)
 	MEM=350m
 	;;
+wiggle)
+	MEM=950m
+	;;
 esac
 
 # Profiling stuff (see http://jiprof.sourceforge.net/)
