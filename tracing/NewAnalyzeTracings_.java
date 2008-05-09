@@ -18,6 +18,7 @@ import ij.*;
 import ij.io.*;
 import ij.gui.*;
 import ij.plugin.PlugIn;
+import ij.process.ByteProcessor;
 
 import vib.transforms.OrderedTransformations;
 
@@ -34,16 +35,15 @@ class ImagesFromLine {
 }
 
 public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
-
-	String [] labelNames = { "Ellipsoid Body",
-				 "Fan-Shaped Body",
-				 "Noduli",
-				 "Protocerebral Bridge" };
 		
-	int [] labelIndices =  { 9,
-				 11,
-				 10,
-				 12 };
+	int [] labelIndices =  { 7,     // mushroom_body_r
+				 8,     // mushroom_body_l
+				 9,     // ellipsoid_body
+				 11,    // noduli
+				 10,    // fan_shaped_body
+				 12,    // protocerebral_bridge
+				 15,    // antennal_lobe_r
+				 16 };  // antennal_lobe_l
 	
 	class NewGraphNode implements Comparable {
 		public NewGraphNode() { }
@@ -74,9 +74,9 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		float h = Float.MIN_VALUE;
 		NewGraphNode previous = null;
 		public float distanceTo( NewGraphNode o ) {
-			float xdiff = x - o.x;
-			float ydiff = y - o.y;
-			float zdiff = z - o.z;
+			float xdiff = (x - o.x) * spacing_x;
+			float ydiff = (y - o.y) * spacing_y;
+			float zdiff = (z - o.z) * spacing_y;
 			float distSq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
 			return (float) Math.sqrt( distSq );
 		}
@@ -88,7 +88,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		}	
 		double f() {
 			return g + h;
-		}	
+		}
 		@Override
 		public int compareTo( Object other ) {
 			NewGraphNode n = (NewGraphNode)other;
@@ -205,6 +205,8 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 
 				NewGraphNode neighbour = p.linkedTo[i];
 				float distance = p.distanceTo(neighbour);
+				if( neighbour.z == 118 || (neighbour.y*width + neighbour.x) == 118 )
+					System.out.println("neighbour is: ("+neighbour.x+","+neighbour.y+","+neighbour.z+" and width "+width+" height "+height+" depth "+depth);
 				int neighbourMaterial = label_data[neighbour.z][neighbour.y*width+neighbour.x];
 
 				// Ignore this neighbour if it's it's not of the exterior or end material
@@ -295,7 +297,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 	float spacing_z = Float.MIN_VALUE;
 
 	ArrayList<NewGraphNode> verticesInObjOrder;
-	Hashtable<Integer,NewGraphNode> positionToNode = new Hashtable<Integer,NewGraphNode>();
+	Hashtable<Integer,NewGraphNode> positionToNode;
 	int numberOfVertices = -1;
 	ArrayList<ArrayList<NewGraphNode>> links; 
 	
@@ -311,6 +313,19 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		    spacing_z == Float.MIN_VALUE ) {
 
 			throw new RuntimeException("Some metadata was missing from the comments before the first vertex.");
+		}
+
+		if( z_image >= depth ) {
+			System.out.println("z is too deep:");
+			System.out.println("x_scaled: "+x_scaled);
+			System.out.println("y_scaled: "+y_scaled);
+			System.out.println("z_scaled: "+z_scaled);
+			System.out.println("x_image: "+x_image);
+			System.out.println("y_image: "+y_image);
+			System.out.println("z_image: "+z_image);
+			System.out.println("spacing_x: "+spacing_x);
+			System.out.println("spacing_y: "+spacing_y);
+			System.out.println("spacing_z: "+spacing_z);
 		}
 
 		verticesInObjOrder.add( new NewGraphNode( x_image, y_image, z_image ) );
@@ -362,13 +377,140 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 	}	
 
 	byte[][] label_data;
+	byte[][] registered_label_data;
 	String [] materialNames;
 
 	int [] redValues;
 	int [] greenValues;
 	int [] blueValues;
 
+	int materials;
+	AmiraParameters parameters;
+
+	public byte[][] loadRegisteredLabels( String basename ) {
+		
+		String originalImageFileName = basename + ".lsm";
+
+		ImagePlus labels = BatchOpener.openFirstChannel(standardBrainLabelsFileName);
+
+		ImageStack labelStack=labels.getStack();
+		int templateWidth=labelStack.getWidth();
+		int templateHeight=labelStack.getHeight();
+		int templateDepth=labelStack.getSize();
+		byte[][] new_label_data=new byte[templateDepth][];
+		for( int z = 0; z < templateDepth; ++z )
+			new_label_data[z] = (byte[])labelStack.getPixels( z + 1 );
+		
+		parameters = new AmiraParameters(labels);
+		materials = parameters.getMaterialCount();
+		materialNames = new String[256];
+		materialNameToIndex = new Hashtable< String, Integer >();
+		for( int i = 0; i < materials; ++i ) {
+			materialNames[i] = parameters.getMaterialName(i);
+			materialNameToIndex.put(materialNames[i],new Integer(i));
+			System.out.println("Material: "+i+" is "+materialNames[i]);
+		}
+		
+		redValues = new int[materials];
+		greenValues = new int[materials];
+		blueValues = new int[materials];
+		
+		for( int i=0; i < materials; i++ ) {
+			
+			double[] c = parameters.getMaterialColor(i);
+			
+			redValues[i] = (int)(255*c[0]);
+			greenValues[i] = (int)(255*c[1]);
+			blueValues[i] = (int)(255*c[2]);
+		}
+
+		byte [][] transformed_label_data = null;
+
+		String registeredLabelFileName = basename + ".registered.labels";
+
+		File registeredLabelFile = new File(registeredLabelFileName);
+		if( registeredLabelFile.exists() ) {
+
+			// Then just load it:			
+
+			ImagePlus registeredLabels = BatchOpener.openFirstChannel(registeredLabelFileName);
+			ImageStack tmpStack = registeredLabels.getStack();
+			
+			transformed_label_data = new byte[registeredLabels.getStackSize()][];
+
+			for( int z = 0; z < registeredLabels.getStackSize(); ++z ) {
+				transformed_label_data[z] = (byte[]) tmpStack.getPixels(z+1);
+			}
+
+			labels.close();
+
+		} else {
+
+			// We have to calculate the registration:
+			
+			FileAndChannel fc=new FileAndChannel(originalImageFileName, 0 );
+			FileAndChannel standardBrainFC=new FileAndChannel(standardBrainFileName,0);
+			
+			Bookstein_FromMarkers matcher=new Bookstein_FromMarkers();
+			matcher.loadImages(standardBrainFC,fc);
+			OrderedTransformations transformation=matcher.register();
+		
+			transformed_label_data = new byte[depth][width*height];
+			double [] transformedPoint = new double[3];
+			
+			for( int z = 0; z < depth; ++z ) {
+				System.out.println("doing slice: "+z);
+				for( int y = 0; y < height; ++y ) {
+					for( int x = 0; x < width; ++x ) {
+						
+						transformation.apply(x,y,z,transformedPoint);
+				
+						int x_in_template=(int)transformedPoint[0];
+						int y_in_template=(int)transformedPoint[1];
+						int z_in_template=(int)transformedPoint[2];
+						
+						int label_value = 0;
+
+						if( z_in_template >= 0 && z_in_template < templateDepth &&
+						    y_in_template >= 0 && y_in_template < templateHeight &&
+						    x_in_template >= 0 && x_in_template < templateWidth ) {
+							
+							label_value = new_label_data[z_in_template][y_in_template*templateWidth+x_in_template]&0xFF;
+						}
+
+						transformed_label_data[z][y*width+x] = (byte)label_value;
+				
+						if( label_value >= materials ) {
+							throw new RuntimeException( "A label value of " + label_value + " was found, which is not a valid material (max " + (materials - 1) + ")" );
+						}
+					}
+				}
+			}
+
+			ImageStack stack = new ImageStack(width,height);
+
+			for( int z = 0; z < depth; ++z ) {
+				ByteProcessor bp = new ByteProcessor(width,height);
+				bp.setPixels(transformed_label_data[z]);
+				stack.addSlice("",bp);
+			}
+			
+			ImagePlus t = new ImagePlus("transformed labels",stack);
+			t.getProcessor().setColorModel( labels.getProcessor().getColorModel() );
+			boolean saved=new FileSaver(t).saveAsTiffStack(registeredLabelFileName);
+			if( ! saved ) {
+				throw new RuntimeException("Failed to save registered labels to: "+registeredLabelFileName);
+			}
+		}
+
+		labels.close();
+
+		return transformed_label_data;
+	}
+
       	public ArrayList<PathWithLength> buildGraph( File tracesObjFile, File labelsFile, File writePathsTo, File writeDotTo ) {
+
+		boolean usePointRegisteredLabels = true;
 
 		String tracesObjFileName = tracesObjFile.getAbsolutePath();
 		String labelsFileName = labelsFile.getAbsolutePath();
@@ -387,8 +529,13 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		if( ! success ) {
 			throw new RuntimeException("Failed to load traces");
 		}
-		
+	       
 		System.out.println("Finished loading: "+(verticesInObjOrder.size()-1)+" vertices found");
+
+		System.out.println("  traces width:"+width);
+		System.out.println("  traces height:"+height);
+		System.out.println("  traces depth:"+depth);
+
 
 		long linksBothWays = 0;
 		for( int i = 1; i < verticesInObjOrder.size(); ++i ) {
@@ -404,6 +551,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 
 		System.out.println("And set the links in the NewGraphNodes: "+linksBothWays);
 		
+		positionToNode = new Hashtable<Integer,NewGraphNode>();
 
 		// Now we want to index by position rather than vertex index:
 		boolean first = true;
@@ -419,30 +567,71 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 
 		System.out.println("Added vertices to the hash, now has: "+positionToNode.size()+" entries");
 		
-		/* And now the labels file: */
+		/* And now the real labels file: */
 
 		ImagePlus labels = BatchOpener.openFirstChannel(labelsFileName);
 		if( labels == null )
 			throw new RuntimeException("Couldn't open labels file "+labelsFileName);
 		ImageStack labelStack=labels.getStack();
 
+		System.out.println("label file width:" +labels.getWidth());
+		System.out.println("label file height:" +labels.getHeight());
+		System.out.println("label file depth:" +labels.getStackSize());
+
 		label_data=new byte[depth][];
 		for( int z = 0; z < depth; ++z )
 			label_data[z] = (byte[])labelStack.getPixels( z + 1 );
 
-		AmiraParameters parameters = new AmiraParameters(labels);
-		int materials = parameters.getMaterialCount();
-		materialNames = new String[256];
-		materialNameToIndex = new Hashtable< String, Integer >();
-		for( int i = 0; i < materials; ++i ) {
-			materialNames[i] = parameters.getMaterialName(i);
-			materialNameToIndex.put(materialNames[i],new Integer(i));
-			System.out.println("Material: "+i+" is "+materialNames[i]);
-		}
+
+		if( usePointRegisteredLabels ) {
 		
-		redValues = new int[materials];
-		greenValues = new int[materials];
-		blueValues = new int[materials];
+			/* Now load the registered labels file.  This
+			 * registration will be very approximate, so take this
+			 * with a pinch of salt... */
+
+			String basename = labelsFileName.substring(0,labelsFileName.lastIndexOf("."));
+
+			registered_label_data = loadRegisteredLabels( basename );
+
+			/* For the moment, only include the mushroom
+			   bodies (7 & 8) and the antennal lobes (15 &
+			   16) */
+
+			for( int z = 0; z < depth; ++z ) {
+				for( int y = 0; y < height; ++y ) {
+					for( int x = 0; x < width; ++x ) {
+						
+						// Don't copy over anything if there's a real value here:
+						if( label_data[z][y*width+x] == 0 ) {
+							byte registered_value = registered_label_data[z][y*width+x];
+							if( registered_value == 7 ||
+							    registered_value == 8 ||
+							    registered_value == 15 ||
+							    registered_value == 16 ) {
+								label_data[z][y*width+x] = registered_label_data[z][y*width+x];
+							}
+						}
+					}
+				}
+			}
+
+		} else {
+
+			parameters = new AmiraParameters(labels);
+			materials = parameters.getMaterialCount();
+			materialNames = new String[256];
+			materialNameToIndex = new Hashtable< String, Integer >();
+			for( int i = 0; i < materials; ++i ) {
+				materialNames[i] = parameters.getMaterialName(i);
+				materialNameToIndex.put(materialNames[i],new Integer(i));
+				System.out.println("Material: "+i+" is "+materialNames[i]);
+			}
+		
+			redValues = new int[materials];
+			greenValues = new int[materials];
+			blueValues = new int[materials];
+
+		}
 
 		ArrayList<ArrayList<NewGraphNode>> allEdges = new ArrayList<ArrayList<NewGraphNode>>();
 		
@@ -458,9 +647,9 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 
 		for( int a = 0; a < labelIndices.length; ++a ) {
 			int labelIndex = labelIndices[a];
-			String labelPrettyString = labelNames[a];
+			String labelName = materialNames[labelIndex];
 
-			System.out.println("   Dealing with label index "+labelIndex+", name: "+labelPrettyString);			
+			System.out.println("   Dealing with label index "+labelIndex+", name: "+labelName);			
 
 			ArrayList<NewGraphNode> neuropilEdgePoints = allEdges.get(labelIndex);
 
@@ -486,7 +675,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 						}
 					}
 
-			System.out.println("   Found "+neuropilEdgePoints.size()+" points on the edge of the "+labelPrettyString);
+			System.out.println("   Found "+neuropilEdgePoints.size()+" points on the edge of the "+labelName);
 		}
 
 		// We'll store copies of these in a PathAndFillManager
@@ -504,8 +693,8 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		for( int a = 0; a < labelIndices.length; ++a ) {
 
 			int labelIndex = labelIndices[a];
-			String labelPrettyString = labelNames[a];
-			System.out.println("Starting searches from "+labelIndex+", name: "+labelPrettyString);
+			String labelName = materialNames[labelIndex];
+			System.out.println("Starting searches from "+labelIndex+", name: "+labelName);
 			
 			ArrayList<NewGraphNode> startPoints = allEdges.get(labelIndex);
 
@@ -520,7 +709,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 
 					NewGraphNode startPoint = startIterator.next();
 					
-					System.out.println("  Starting from point "+startPoint+" ("+labelPrettyString+" looking for material: "+materialNames[endM]);
+					System.out.println("  Starting from point "+startPoint+" ("+labelName+" looking for material: "+materialNames[endM]);
 
 					PathWithLength route = findPath( startPoint, endM );
 					if( route == null ) {
@@ -598,11 +787,15 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		
 		return paths;		
 	}
+
+	String standardBrainFileName = "/home/mark/arnim-brain/CantonF41c.grey";
+	String standardBrainLabelsFileName = "/home/mark/arnim-brain/CantonF41c.labels";
 	
 	public void run( String argument ) {
 		
+		String baseDirectory = "/media/WD Passport/corpus/central-complex/";
 		// String baseDirectory = "/media/WD USB 2/corpus/central-complex/";
-		String baseDirectory = "/home/mark/tmp-corpus/";
+		// String baseDirectory = "/home/mark/tmp-corpus/";
 		ArrayList<ImagesFromLine> lines = new ArrayList<ImagesFromLine>();
 		
 		ImagesFromLine linec5 = new ImagesFromLine();
@@ -688,7 +881,6 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 					labelsFile,
 					new File( baseDirectory, baseName + ".neuropil-connections.traces"),
 					new File( baseDirectory, baseName + ".dot" ) );
-
 			}
 		}
 	}
