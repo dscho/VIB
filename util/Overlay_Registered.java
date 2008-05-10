@@ -62,7 +62,6 @@ public class Overlay_Registered implements PlugIn {
                 String titleSubstring = null;
                 boolean closeAllOthers = false;
                 
-                String macroOptions = Macro.getOptions();
 		if (macroOptions != null) {
 			String value = Macro.getValue(macroOptions, "substring", null);
 			if( value != null ) {
@@ -91,7 +90,6 @@ public class Overlay_Registered implements PlugIn {
 		ArrayList<String> matchingTitles = new ArrayList<String>();
 		ArrayList<ImagePlus> matchingImages = new ArrayList<ImagePlus>();
 
-                String [] matchingTitles=new String[wList.length];
                 ImagePlus [] matchingImagePlus=new ImagePlus[wList.length];
                 ImagePlus [] allImages=new ImagePlus[wList.length];
                 
