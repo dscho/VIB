@@ -1,5 +1,5 @@
-/*
- */
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 package features;
 
 import ij.*;
@@ -12,7 +12,7 @@ import ij.process.*;
 public class Tubeness_ implements PlugIn, GaussianGenerationCallback {
 
 	public ImagePlus generateTubenessImage(ImagePlus original) {
-	
+
 		Calibration calibration=original.getCalibration();
 
 		ComputeCurvatures c = new ComputeCurvatures(original, 1.0, this);
@@ -28,46 +28,85 @@ public class Tubeness_ implements PlugIn, GaussianGenerationCallback {
 
 		double[] evalues = new double[3];
 
-		for (int z = 0; z < depth; ++z) {
-
-			System.out.println("Working on slice: " + z);
+		if( depth == 1 ) {
 
 			float[] slice = new float[width * height];
 
-			if ((z >= 1) && (z < depth - 1)) {
-				for (int y = 1; y < height - 1; ++y) {
-					for (int x = 1; x < width - 1; ++x) {
+			for (int y = 1; y < height - 1; ++y) {
+				for (int x = 1; x < width - 1; ++x) {
 
-						c.hessianEigenvaluesAtPoint3D(x, y, z,
-                                                      true, // order absolute
-                                                      evalues,
-                                                      false);
+					c.hessianEigenvaluesAtPoint2D(x, y,
+								      true, // order absolute
+								      evalues,
+								      false);
 
-						int index = y * width + x;
+					int index = y * width + x;
 
-						if ((evalues[1] >= 0) || (evalues[2] >= 0)) {
+					if ((evalues[1] >= 0) || (evalues[0] >= 0)) {
 
-							// If either of the two principle eigenvalues
-							// is positive then the curvature is in the
-							// wrong direction - towards higher
-							// instensities rather than lower.
+						// If either of the two principle eigenvalues
+						// is positive then the curvature is in the
+						// wrong direction - towards higher
+						// instensities rather than lower.
 
-							slice[index] = 0;
+						slice[index] = 0;
 
-						} else {
+					} else {
 
-							slice[index] = (float) Math.sqrt(evalues[2] * evalues[1]);
+						slice[index] = (float) Math.abs(evalues[1]);
 
-						}
 					}
 				}
+				IJ.showProgress(1 / (double) height);
 			}
-
 
 			FloatProcessor fp = new FloatProcessor(width, height);
 			fp.setPixels(slice);
 			stack.addSlice(null, fp);
-			IJ.showProgress(z / (double) depth);
+
+		} else {
+
+			for (int z = 0; z < depth; ++z) {
+
+				System.out.println("Working on slice: " + z);
+
+				float[] slice = new float[width * height];
+
+				if ((z >= 1) && (z < depth - 1)) {
+					for (int y = 1; y < height - 1; ++y) {
+						for (int x = 1; x < width - 1; ++x) {
+
+							c.hessianEigenvaluesAtPoint3D(x, y, z,
+										      true, // order absolute
+										      evalues,
+										      false);
+
+							int index = y * width + x;
+
+							if ((evalues[1] >= 0) || (evalues[2] >= 0)) {
+
+								// If either of the two principle eigenvalues
+								// is positive then the curvature is in the
+								// wrong direction - towards higher
+								// instensities rather than lower.
+
+								slice[index] = 0;
+
+							} else {
+
+								slice[index] = (float) Math.sqrt(evalues[2] * evalues[1]);
+
+							}
+						}
+					}
+				}
+
+				FloatProcessor fp = new FloatProcessor(width, height);
+				fp.setPixels(slice);
+				stack.addSlice(null, fp);
+				IJ.showProgress(z / (double) depth);
+
+			}
 
 		}
 
