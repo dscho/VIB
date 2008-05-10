@@ -26,30 +26,30 @@
  *
  * @author Stephan Preibisch
  * @version 1.0
- * 
+ *
  * Change in this version (Mark Longair):
- * 
+ *
  * - Made the top level plugin a wrapper for this class so that
  *   "features" package so that it can be used by classes in other
  *   packages.
- * 
+ *
  * - Now implements Runnable, with the void run() method creating
  *   the Gaussian and reporting progress via an optional callback.
  *   (If used in this way you need to use the constructor where you
  *   supply an ImagePlus, sigma and an optional callback.
- * 
+ *
  * - Switched to using Johannes's JacobiDouble class instead of the
  *   Jama classes, so we don't introduce an additional dependency.
  *   It's about 15% faster with JacobiDouble, and presumbly that could
  *   be faster again wtih JacobiFloat.
- * 
+ *
  * - Added ordering of the eigenvalues (optionally on absolute
  *   values).
- * 
+ *
  * TODO:
- * 
+ *
  *   Use calibration information.
- * 
+ *
  */
 
 package features;
@@ -300,17 +300,17 @@ public class ComputeCurvatures implements Runnable
     /* Generate the Gaussian based on this.imp and this.sigma */
 
     public void setup( ) {
-        
+
         try {
-            
+
             if( imp == null ) {
                 IJ.error("BUG: imp should not be null - are you using the right constructor?");
                 return;
             }
-            
+
             if( callback != null )
                 callback.proportionDone( 0.0 );
-            
+
             if (imp.getStackSize() > 1)
                 {
                     // IJ.log("3D");
@@ -328,10 +328,10 @@ public class ComputeCurvatures implements Runnable
                     if (data == null)
                         return;
                 }
-            
+
             boolean computeGauss = true;
             boolean showGauss = false;
-            
+
             // IJ.log("Computing Gauss image");
             if (_3D)
                 {
@@ -355,24 +355,24 @@ public class ComputeCurvatures implements Runnable
                     if (showGauss)
                         FloatArrayToImagePlus((FloatArray2D)data, "Gauss image", 0, 255).show();
                 }
-            
+
             if( callback != null )
                 callback.proportionDone( 1.0 );
 
-            
+
         } catch( OutOfMemoryError e ) {
-        
+
             long requiredMiB = ( imp.getWidth() *
                                  imp.getHeight() *
                                  imp.getStackSize() * 4 ) / (1024 * 1024);
-            
+
             IJ.error("Out of memory when calculating the Gaussian " +
                      "convolution of the image (requires " +
                      requiredMiB + "MiB");
-            
+
             if( callback != null )
                 callback.proportionDone( -1 );
-            
+
             return;
         }
 
@@ -398,17 +398,17 @@ public class ComputeCurvatures implements Runnable
                 x = 1;
             if( x == (data3D.width - 1) )
                 x = data3D.width - 2;
-            
+
             if( y == 0 )
                 y = 1;
             if( y == (data3D.height - 1) )
                 y = data3D.height - 2;
-            
+
             if( z == 0 )
                 z = 1;
             if( z == (data3D.depth - 1) )
                 z = data3D.depth - 2;
-            
+
 
         }
 
@@ -420,7 +420,7 @@ public class ComputeCurvatures implements Runnable
         double e0 = eigenValues[0];
         double e1 = eigenValues[1];
         double e2 = eigenValues[2];
-        
+
         double e0c = orderOnAbsoluteSize ? Math.abs( e0 ) : e0;
         double e1c = orderOnAbsoluteSize ? Math.abs( e1 ) : e1;
         double e2c = orderOnAbsoluteSize ? Math.abs( e2 ) : e2;
@@ -455,7 +455,7 @@ public class ComputeCurvatures implements Runnable
                 if( e1c <= e2c ) {
                     result[0] = e1;
                     result[1] = e2;
-                    result[2] = e0;                    
+                    result[2] = e0;
                 } else {
                     result[0] = e2;
                     result[1] = e1;
@@ -568,9 +568,9 @@ public class ComputeCurvatures implements Runnable
      *
      * @author   Stephan Preibisch
      */
-    
+
     public double[] computeEigenValues(double[][] matrix) {
-        
+
         JacobiDouble jc=new JacobiDouble(matrix,50);
         return jc.getEigenValues();
 
@@ -635,7 +635,7 @@ public class ComputeCurvatures implements Runnable
                 ) / 2;
 
         for (int i = 0; i < 2; i++)
-            for (int j = 0; j < 2; i++)
+            for (int j = 0; j < 2; j++)
                 hessianMatrix[i][j] *= (sigma * sigma);
 
         return hessianMatrix;
@@ -814,7 +814,7 @@ public class ComputeCurvatures implements Runnable
             if(callback != null)
                 callback.proportionDone( pointsDone / totalPoints );
         }
-        
+
         // fold in y
         for (int x = 0; x < input.width; x++) {
             if( cancelGeneration )
@@ -842,7 +842,7 @@ public class ComputeCurvatures implements Runnable
                 pointsDone += input.height;
                 if(callback != null)
                     callback.proportionDone( pointsDone / totalPoints );
-                
+
             }
         }
 
@@ -964,7 +964,7 @@ public class ComputeCurvatures implements Runnable
             pointsDone += input.height * input.depth;
             if(callback != null)
                 callback.proportionDone( pointsDone / totalPoints );
-            
+
         }
 
         if( callback != null )
