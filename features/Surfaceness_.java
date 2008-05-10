@@ -19,6 +19,11 @@ public class Surfaceness_ implements PlugIn, GaussianGenerationCallback {
 
         original = WindowManager.getCurrentImage();
 
+        if( original.getStackSize() == 1 ) {
+            IJ.error("It only makes sense to look for Sufaceness of 3D images (stacks)>");
+            return;
+        }
+
         ComputeCurvatures c = new ComputeCurvatures( original, 1.0, this  );
 
         c.run();
