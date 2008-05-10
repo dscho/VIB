@@ -378,15 +378,62 @@ public class ComputeCurvatures implements Runnable
 
     }
 
-    public void hessianEigenvaluesAtPoint( int x,
-                                           int y,
-                                           int z, // zero-indexed
-                                           boolean orderOnAbsoluteSize,
-                                           double [] result, /* should be 3 elements */
-                                           boolean fixUp ) {
-                                                                                                                 
+
+    public void hessianEigenvaluesAtPoint2D( int x,
+                                             int y,
+                                             boolean orderOnAbsoluteSize,
+                                             double [] result, /* should be 2 elements */
+                                             boolean fixUp ) {
+
+        if( _3D ) {
+            IJ.error("hessianEigenvaluesAtPoint2D( x, y, z, ... ) is only for 2D data.");
+            return;
+        }
+
+        FloatArray2D data2D = (FloatArray2D)data;
+
+        if( fixUp ) {
+
+            if( x == 0 )
+                x = 1;
+            if( x == (data2D.width - 1) )
+                x = data2D.width - 2;
+
+            if( y == 0 )
+                y = 1;
+            if( y == (data2D.height - 1) )
+                y = data2D.height - 2;
+        }
+
+        double [][] hessianMatrix = computeHessianMatrix2D(data2D, x, y, sigma);
+        double [] eigenValues = computeEigenValues(hessianMatrix);
+
+        // Don't assume that these are ordered.
+
+        double e0 = eigenValues[0];
+        double e1 = eigenValues[1];
+
+        double e0c = orderOnAbsoluteSize ? Math.abs( e0 ) : e0;
+        double e1c = orderOnAbsoluteSize ? Math.abs( e1 ) : e1;
+
+        if( e0c <= e1c ) {
+            result[0] = e0;
+            result[1] = e1;
+        } else {
+            result[0] = e1;
+            result[1] = e0;
+        }
+    }
+
+    public void hessianEigenvaluesAtPoint3D( int x,
+                                             int y,
+                                             int z, // zero-indexed
+                                             boolean orderOnAbsoluteSize,
+                                             double [] result, /* should be 3 elements */
+                                             boolean fixUp ) {
+
         if( ! _3D ) {
-            IJ.error("hessianEigenvaluesAtPoint( x, y, z, ... ) is only for 3D data.");
+            IJ.error("hessianEigenvaluesAtPoint3D( x, y, z, ... ) is only for 3D data.");
             return;
         }
 

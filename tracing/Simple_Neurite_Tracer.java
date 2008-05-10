@@ -673,6 +673,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			y_end,
 			z_end,
 			true, // reciprocal
+			singleSlice,
 			(hessianEnabled ? hessian : null),
 			tubeness,
 			hessianEnabled );
@@ -908,6 +909,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	
         TextWindow helpTextWindow;
 	
+	boolean singleSlice;
+
         // HessianAnalyzer hessianAnalyzer;
         ArchiveClient archiveClient;
 	
@@ -936,13 +939,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
                                 return;
                         }
 
-			if( (currentImage.getWidth() < 2) ||
-                            (currentImage.getHeight() < 2) ||
-                            (currentImage.getStackSize() < 2) ) {
-                                IJ.error( "There must be at least two sample points in each dimension" );
-                                return;
-                        }
-			
+			if( currentImage.getStackSize() == 1 )
+				singleSlice = true;
+
                         if( currentImage.getType() != ImagePlus.GRAY8 ) {
                                 IJ.error("This plugin only works on 8 bit images at the moment.");
                                 return;
@@ -972,39 +971,44 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			{
 				String originalFileName=file_info.fileName;
-				int lastDot=originalFileName.lastIndexOf(".");
-				String beforeExtension=originalFileName.substring(0, lastDot);
-				String tubesFileName=beforeExtension+".tubes.tif";
-				ImagePlus tubenessImage = null;
-				File tubesFile=new File(file_info.directory,tubesFileName);
-				System.out.println("Testing for the existence of "+tubesFile.getAbsolutePath());
-				if( tubesFile.exists() ) {
-					IJ.showStatus("Loading tubes file.");
-					tubenessImage=BatchOpener.openFirstChannel(tubesFile.getAbsolutePath());
-					System.out.println("Loaded the tubeness file");
-					if( tubenessImage == null ) {
-						IJ.error("Failed to load tubes image from "+tubesFile.getAbsolutePath()+" although it existed");
-						return;
-					}
-					if( tubenessImage.getType() != ImagePlus.GRAY32 ) {
-						IJ.error("The tubeness file must be a 32 bit float image - "+tubesFile.getAbsolutePath()+" was not.");
-						return;
-					}
-					int width = tubenessImage.getWidth();
-					int height = tubenessImage.getHeight();
-					int depth = tubenessImage.getStackSize();
-					ImageStack tubenessStack = tubenessImage.getStack();
-					tubeness = new float[depth][];
-					for( int z = 0; z < depth; ++z ) {
-						FloatProcessor fp = (FloatProcessor)tubenessStack.getProcessor( z + 1 );
-						tubeness[z] = (float[])fp.getPixels();
+				System.out.println("originalFileName was: "+originalFileName);
+				if( originalFileName != null ) {
+					int lastDot=originalFileName.lastIndexOf(".");
+					if( lastDot > 0 ) {
+						String beforeExtension=originalFileName.substring(0, lastDot);
+						String tubesFileName=beforeExtension+".tubes.tif";
+						ImagePlus tubenessImage = null;
+						File tubesFile=new File(file_info.directory,tubesFileName);
+						System.out.println("Testing for the existence of "+tubesFile.getAbsolutePath());
+						if( tubesFile.exists() ) {
+							IJ.showStatus("Loading tubes file.");
+							tubenessImage=BatchOpener.openFirstChannel(tubesFile.getAbsolutePath());
+							System.out.println("Loaded the tubeness file");
+							if( tubenessImage == null ) {
+								IJ.error("Failed to load tubes image from "+tubesFile.getAbsolutePath()+" although it existed");
+								return;
+							}
+							if( tubenessImage.getType() != ImagePlus.GRAY32 ) {
+								IJ.error("The tubeness file must be a 32 bit float image - "+tubesFile.getAbsolutePath()+" was not.");
+								return;
+							}
+							int width = tubenessImage.getWidth();
+							int height = tubenessImage.getHeight();
+							int depth = tubenessImage.getStackSize();
+							ImageStack tubenessStack = tubenessImage.getStack();
+							tubeness = new float[depth][];
+							for( int z = 0; z < depth; ++z ) {
+								FloatProcessor fp = (FloatProcessor)tubenessStack.getProcessor( z + 1 );
+								tubeness[z] = (float[])fp.getPixels();
+							}
+						}
 					}
 				}
 			}
 			
-			single_pane = false;
+			single_pane = true;
 			
-			{
+			if( ! singleSlice ) {
 				GenericDialog gd = new GenericDialog("Simple Neurite Tracer (v" +
 								     PLUGIN_VERSION + ")");
 				gd.addMessage("Tracing: "+currentImage.getTitle());

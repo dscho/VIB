@@ -43,10 +43,10 @@ public class Surfaceness_ implements PlugIn, GaussianGenerationCallback {
                 for( int y = 1; y < height - 1; ++y ) {
                     for( int x = 1; x < width - 1; ++x ) {
 
-                        c.hessianEigenvaluesAtPoint( x, y, z,
-                                                     true, // order absolute
-                                                     evalues,
-                                                     false );
+                        c.hessianEigenvaluesAtPoint3D( x, y, z,
+                                                       true, // order absolute
+                                                       evalues,
+                                                       false );
 
                         int index = y * width + x;
 
