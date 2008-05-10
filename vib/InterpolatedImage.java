@@ -15,7 +15,7 @@ public class InterpolatedImage {
 	private byte[][] pixels;
 	private float[][] pixelsFloat;
 	private short[][] pixelsShort;
-	Interpolate interpol;
+	public Interpolate interpol;
 	int type;
 
 	public InterpolatedImage(ImagePlus image) {
@@ -52,6 +52,10 @@ public class InterpolatedImage {
 		}
 	}
 
+	public int getWidth() { return w; }
+	public int getHeight() { return h; }
+	public int getDepth() { return d; }
+
 	protected InterpolatedImage() {
 	}
 
@@ -59,7 +63,7 @@ public class InterpolatedImage {
 		return image;
 	}
 
-	interface Interpolate {
+	public interface Interpolate {
 		double get(double x, double y, double z);
 	}
 

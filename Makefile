@@ -7,7 +7,9 @@ JAVA3DS=$(wildcard util/Meshes_From_Label_File.java marchingcubes/*.java voltex/
 FILTEROUT=$(JAVA3DS)
 ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
+	ifneq ($(wildcard $(JAVA_HOME)/Home/lib/ext/j3dcore.jar),)
 		FILTEROUT=
+	endif
 	endif
 else
 	ifneq ($(wildcard /System/Library/Java/Extensions/j3dcore.jar),)
