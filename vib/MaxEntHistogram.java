@@ -148,7 +148,7 @@ System.err.println((K-1)+": "+boundaries[K-1]);
 		return result;
 	}
 
-	int[][] get(int[][] histos) {
+	public int[][] get(int[][] histos) {
 		int[][] result = new int[histos.length][boundaries.length];
 		for (int j = 0; j < boundaries.length; j++)
 			for (int i = 0; i < boundaries[j]; i++)
