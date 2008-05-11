@@ -28,6 +28,7 @@ import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import ij.process.ByteProcessor;
+import ij.process.ShortProcessor;
 import ij.process.ColorProcessor;
 import ij.process.FloatProcessor;
 
@@ -462,7 +463,31 @@ public class ThreePaneCrop extends ThreePanes {
 					}
 			}
 			break;
-			
+
+			case ImagePlus.GRAY16:
+			{
+				short [] slice_shorts = (short [])stack.getPixels(z+1);
+
+				for( int x = 0; x < width; ++x )
+					for( int y = 0; y < height; ++y ) {
+
+						short value = slice_shorts[y*width+x];
+
+						if( value > above ) {
+
+							if( x < min_x_above ) min_x_above = x;
+							if( y < min_y_above ) min_y_above = y;
+							if( z < min_z_above ) min_z_above = z;
+
+							if( x > max_x_above ) max_x_above = x;
+							if( y > max_y_above ) max_y_above = y;
+							if( z > max_z_above ) max_z_above = z;
+
+						}
+
+					}
+			}
+
 			case ImagePlus.COLOR_RGB:
 			{
 				int [] slice_ints = (int [])stack.getPixels(z+1);
@@ -521,11 +546,8 @@ public class ThreePaneCrop extends ThreePanes {
 
 					}
 			}
-			
-			
-			
-			
-			
+			break;
+
 			}
 
 
@@ -614,7 +636,31 @@ public class ThreePaneCrop extends ThreePanes {
 				bp.setPixels( new_slice );
 
 				new_stack.addSlice( null, bp );
-				
+
+				IJ.showProgress( (slice - first_slice) / ((last_slice - first_slice) + 1) );
+			}
+			break;
+
+
+		case ImagePlus.GRAY16:
+
+			for( int slice = first_slice; slice <= last_slice; slice ++ ) {
+
+				short [] slice_shorts = (short [])stack.getPixels(slice);
+
+				short [] new_slice = new short[new_width * new_height];
+				for( int y = min_y; y <= max_y; ++y ) {
+					System.arraycopy( slice_shorts, y * original_width + min_x,
+							  new_slice, (y - min_y) * new_width,
+							  new_width );
+				}
+
+				ShortProcessor sp = new ShortProcessor( new_width, new_height );
+
+				sp.setPixels( new_slice );
+
+				new_stack.addSlice( null, sp );
+
 				IJ.showProgress( (slice - first_slice) / ((last_slice - first_slice) + 1) );
 			}
 			break;

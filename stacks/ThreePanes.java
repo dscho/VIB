@@ -26,6 +26,7 @@ package stacks;
 
 import ij.*;
 import ij.process.ByteProcessor;
+import ij.process.ShortProcessor;
 import ij.process.ColorProcessor;
 import ij.process.FloatProcessor;
 import ij.gui.*;
@@ -201,22 +202,11 @@ public class ThreePanes implements PaneOwner {
 		xy = imagePlus;
 
 		type = xy.getType();
-		switch (type) {
-		case ImagePlus.GRAY8:
-		case ImagePlus.COLOR_256:
-		case ImagePlus.COLOR_RGB:
-		case ImagePlus.GRAY32:
-			break;
-		default:
-			IJ.error("This currently only works on 8 bit or RGB images.\n"+
-				"Please email me (mark-imagej@longair.net) if you would like "+
-				 "support for another type.\nThis image is: "+imageTypeToString(type));
-		}			
 
 		bytesPerPixel = xy.getBitDepth() / 8;
 
-		original_xy_canvas = imagePlus.getWindow().getCanvas();		
-		
+		original_xy_canvas = imagePlus.getWindow().getCanvas();
+
 		int width = xy.getWidth();
 		int height = xy.getHeight();
 		int depth = xy.getStackSize();
@@ -224,7 +214,8 @@ public class ThreePanes implements PaneOwner {
 		ImageStack xy_stack=xy.getStack();
 
 		ColorModel cm = null;
-		
+
+		// FIXME: should we save the LUT for other image types?
 		if( type == ImagePlus.COLOR_256 )
 			cm = xy_stack.getColorModel();
 
@@ -251,6 +242,9 @@ public class ThreePanes implements PaneOwner {
 				case ImagePlus.GRAY8:
 				case ImagePlus.COLOR_256:
 					slices_data_b[z] = (byte []) xy_stack.getPixels( z + 1 );
+					break;
+				case ImagePlus.GRAY16:
+					slices_data_s[z] = (short []) xy_stack.getPixels( z + 1 );
 					break;
 				case ImagePlus.COLOR_RGB:
 					slices_data_i[z] = (int []) xy_stack.getPixels( z + 1 );
@@ -292,6 +286,31 @@ public class ThreePanes implements PaneOwner {
 					IJ.showProgress( x_in_original / (double)width );
 				}
 				break;
+
+			case ImagePlus.GRAY16:
+
+				for( int x_in_original = 0; x_in_original < width; ++x_in_original ) {
+
+					short [] sliceShorts = new short[ zy_width * zy_height ];
+
+					for( int z_in_original = 0; z_in_original < depth; ++z_in_original ) {
+						for( int y_in_original = 0; y_in_original < height; ++y_in_original ) {
+
+							int x_in_left = z_in_original;
+							int y_in_left = y_in_original;
+
+							sliceShorts[ y_in_left * zy_width + x_in_left ] =
+								slices_data_s[ z_in_original ][ y_in_original * width + x_in_original ];
+						}
+					}
+
+					ShortProcessor sp = new ShortProcessor( zy_width, zy_height );
+					sp.setPixels( sliceShorts );
+					zy_stack.addSlice( null, sp );
+					IJ.showProgress( x_in_original / (double)width );
+				}
+				break;
+
 
 			case ImagePlus.COLOR_RGB:
 
