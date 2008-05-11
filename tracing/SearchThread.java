@@ -59,8 +59,20 @@ public abstract class SearchThread extends Thread {
 	// image value:
 	
 	protected double costMovingTo( int new_x, int new_y, int new_z ) {
-		
-		int value_at_new_point = slices_data[new_z][new_y*width+new_x] & 0xFF;
+
+		double value_at_new_point = -1;
+		switch(imageType) {
+		case ImagePlus.GRAY8:
+		case ImagePlus.COLOR_256:
+			value_at_new_point = slices_data_b[new_z][new_y*width+new_x] & 0xFF;
+			break;
+		case ImagePlus.GRAY16:
+			value_at_new_point = slices_data_s[new_z][new_y*width+new_x];
+			break;
+		case ImagePlus.GRAY32:
+			value_at_new_point = slices_data_f[new_z][new_y*width+new_x];
+			break;
+		}
 		
 		if( value_at_new_point == 0 )
 			return 2.0;
@@ -132,7 +144,9 @@ public abstract class SearchThread extends Thread {
 	
 	protected double minimum_cost_per_unit_distance;
 	
-	byte [][] slices_data;	
+	byte [][] slices_data_b;
+	short [][] slices_data_s;
+	float [][] slices_data_f;
 
 	ImagePlus imagePlus;
 	
@@ -249,6 +263,8 @@ public abstract class SearchThread extends Thread {
 		}
 		if (verbose) System.out.println("pauseOrUnpause finished");
         }
+
+	int imageType = -1;
 	
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
@@ -264,7 +280,8 @@ public abstract class SearchThread extends Thread {
 		this.bidirectional = bidirectional;
 		this.definedGoal = definedGoal;
 		this.startPaused = startPaused;
-		
+
+		this.imageType = imagePlus.getType();
 		
                 width = imagePlus.getWidth();
                 height = imagePlus.getHeight();
@@ -272,9 +289,23 @@ public abstract class SearchThread extends Thread {
 		
 		{
 			ImageStack s = imagePlus.getStack();
-			slices_data = new byte[depth][];
-			for( int z = 0; z < depth; ++z ) {
-				slices_data[z] = (byte []) s.getPixels( z + 1 );
+			switch(imageType) {
+			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
+				slices_data_b = new byte[depth][];
+				for( int z = 0; z < depth; ++z )
+					slices_data_b[z] = (byte []) s.getPixels( z + 1 );
+				break;
+			case ImagePlus.GRAY16:
+				slices_data_s = new short[depth][];	
+				for( int z = 0; z < depth; ++z )
+					slices_data_s[z] = (short []) s.getPixels( z + 1 );
+				break;
+			case ImagePlus.GRAY32:
+				slices_data_f = new float[depth][];
+				for( int z = 0; z < depth; ++z )
+					slices_data_f[z] = (float []) s.getPixels( z + 1 );	
+				break;
 			}
 		}
 		

@@ -166,8 +166,21 @@ public class TracerThread extends SearchThread {
 
 	@Override
         protected double costMovingTo( int new_x, int new_y, int new_z ) {
+		
+		double value_at_new_point = -1;
 
-		int value_at_new_point = slices_data[new_z][new_y*width+new_x] & 0xFF;
+		switch(imageType) {
+		case ImagePlus.GRAY8:
+		case ImagePlus.COLOR_256:
+			value_at_new_point = slices_data_b[new_z][new_y*width+new_x] & 0xFF;
+			break;
+		case ImagePlus.GRAY16:
+			value_at_new_point = slices_data_s[new_z][new_y*width+new_x];	
+			break;
+		case ImagePlus.GRAY32:
+			value_at_new_point = slices_data_f[new_z][new_y*width+new_x];
+			break;
+		}
 
                 double cost;
 

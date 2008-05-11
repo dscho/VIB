@@ -900,9 +900,13 @@ public class Simple_Neurite_Tracer extends ThreePanes
                 xz.setSlice( y );
 		
         }
+
+	int imageType = -1;
 	
-        byte [][] slices_data;
-	
+        byte [][] slices_data_b;
+        short [][] slices_data_s;
+	float [][] slices_data_f;
+
         NeuriteTracerResultsDialog resultsDialog;
 	
         boolean cancelled = false;
@@ -938,6 +942,14 @@ public class Simple_Neurite_Tracer extends ThreePanes
                                 IJ.error( "There's no current image to trace." );
                                 return;
                         }
+
+			imageType = currentImage.getType();
+			
+			if( imageType == ImagePlus.COLOR_RGB ) {
+				IJ.error("RGB images are not supported at the moment.");
+				return;
+			}
+
 
 			if( currentImage.getStackSize() == 1 )
 				singleSlice = true;
@@ -1043,39 +1055,33 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			
                         {
                                 ImageStack s = xy.getStack();
-                                slices_data = new byte[depth][];
-                                for( int z = 0; z < depth; ++z ) {
-                                        slices_data[z] = (byte []) s.getPixels( z + 1 );
-                                }
+				switch(imageType) {
+				case ImagePlus.GRAY8:
+				case ImagePlus.COLOR_256:
+					slices_data_b = new byte[depth][];
+					for( int z = 0; z < depth; ++z )
+						slices_data_b[z] = (byte []) s.getPixels( z + 1 );
+					break;
+				case ImagePlus.GRAY16:
+					slices_data_s = new short[depth][];	
+					for( int z = 0; z < depth; ++z )
+						slices_data_s[z] = (short []) s.getPixels( z + 1 );
+					break;
+				case ImagePlus.GRAY32:
+					slices_data_f = new float[depth][];
+					for( int z = 0; z < depth; ++z )
+						slices_data_f[z] = (float []) s.getPixels( z + 1 );	
+					break;
+				}
                         }
-			
-                        /*
-			  hessianAnalyzer = new HessianAnalyzer( slices_data,
-			  width,
-			  height,
-			  depth,
-			  x_spacing,
-			  y_spacing,
-			  z_spacing );
-			  
-                        */
-			
-                        // toastKeyListeners( xy_tracer_canvas, "xy_tracer_canvas" );
-                        // toastKeyListeners( xy_window, "xy_window" );
 			
                         xy_tracer_canvas.addKeyListener( xy_tracer_canvas );
                         xy_window.addKeyListener( xy_tracer_canvas );
 			
 			if( ! single_pane ) {
 				
-				// toastKeyListeners( xz_tracer_canvas, "xz_tracer_canvas" );
-				// toastKeyListeners( xz_window, "xz_window" );
-				
 				xz_tracer_canvas.addKeyListener( xz_tracer_canvas );
 				xz_window.addKeyListener( xz_tracer_canvas );
-				
-				// toastKeyListeners( zy_tracer_canvas, "zy_tracer_canvas" );
-				// toastKeyListeners( zy_window, "zy_window" );
 				
 				zy_tracer_canvas.addKeyListener( zy_tracer_canvas );
 				zy_window.addKeyListener( zy_tracer_canvas );
@@ -1222,7 +1228,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			
                 }
 		
-                byte [][] v = slices_data;
+		// FIXME: do other image types too...
+                byte [][] v = slices_data_b;
 		
                 for( int grid_i = 0; grid_i < side; ++grid_i ) {
                         for( int grid_j = 0; grid_j < side; ++grid_j ) {
