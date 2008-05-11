@@ -73,6 +73,7 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	tracing/FillerThread.java \
 	tracing/FillerProgressCallback.java \
 	tracing/NormalPlaneCanvas.java \
+	tracing/TraceLoaderListener.java \
 	$(wildcard pal/math/*.java) \
 	features/ComputeCurvatures.java \
 	features/GaussianGenerationCallback.java \
