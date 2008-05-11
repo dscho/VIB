@@ -942,11 +942,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			if( currentImage.getStackSize() == 1 )
 				singleSlice = true;
 
-                        if( currentImage.getType() != ImagePlus.GRAY8 ) {
-                                IJ.error("This plugin only works on 8 bit images at the moment.");
-                                return;
-                        }
-					
                         width = currentImage.getWidth();
                         height = currentImage.getHeight();
                         depth = currentImage.getStackSize();
