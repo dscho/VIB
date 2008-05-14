@@ -137,6 +137,8 @@ public class FillerThread extends SearchThread {
         ArrayList< Path > sourcePaths;
 	
 	public static FillerThread fromFill( ImagePlus imagePlus,
+					     float stackMin,
+					     float stackMax,
 					     boolean startPaused,
 					     Fill fill ) {
 		
@@ -162,6 +164,8 @@ public class FillerThread extends SearchThread {
 		if (verbose) System.out.println("loading a fill with threshold: " + fill.getThreshold() );
 		
 		FillerThread result = new FillerThread( imagePlus,
+							stackMin,
+							stackMax,
 							startPaused,
 							reciprocal,
 							fill.getThreshold(),
@@ -219,12 +223,16 @@ public class FillerThread extends SearchThread {
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
         public FillerThread( ImagePlus imagePlus,
+			     float stackMin,
+			     float stackMax,
 			     boolean startPaused,
                              boolean reciprocal,
                              double initialThreshold,
 			     long reportEveryMilliseconds ) {
 		
 		super( imagePlus,
+		       stackMin,
+		       stackMax,
 		       false, // bidirectional
 		       false, // definedGoal
 		       startPaused,

@@ -51,6 +51,8 @@ public class AutoSearchThread extends SearchThread {
 		
 		super(
 			image,  // Image to trace
+			-1,     // stackMin (which we don't use at all in the automatic tracer) 
+			-1,     // stackMax (which we don't use at all in the automatic tracer) 
 			false,  // bidirectional
 			false,  // definedGoal
 			false,  // startPaused

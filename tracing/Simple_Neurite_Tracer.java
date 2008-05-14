@@ -387,11 +387,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
                         loadLabelsFile( directory + fileName );
                         return;
                 }
-		
-		
-		
-		
-		
+
 	}
 	
         boolean loading = false;
@@ -663,7 +659,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
                 }
 		
 		currentSearchThread = new TracerThread(
-			xy,		       
+			xy,
+			stackMin,
+			stackMax,
 			0, // timeoutSeconds
 			1000, // reportEveryMilliseconds
 			last_start_point_x,
@@ -917,7 +915,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
         // HessianAnalyzer hessianAnalyzer;
         ArchiveClient archiveClient;
-	
+
+	float stackMax = Float.MIN_VALUE;       
+	float stackMin = Float.MAX_VALUE;
+
         public void run( String ignoredArguments ) {
 		
                 // if (verbose) System.out.println("Macro options are: "+Macro.getOptions());
@@ -949,7 +950,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				IJ.error("RGB images are not supported at the moment.");
 				return;
 			}
-
 
 			if( currentImage.getStackSize() == 1 )
 				singleSlice = true;
@@ -1052,7 +1052,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
                                 return;
 				
                         }
-			
+
                         {
                                 ImageStack s = xy.getStack();
 				switch(imageType) {
@@ -1061,16 +1061,44 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					slices_data_b = new byte[depth][];
 					for( int z = 0; z < depth; ++z )
 						slices_data_b[z] = (byte []) s.getPixels( z + 1 );
+					stackMin = 0;
+					stackMax = 255;
 					break;
 				case ImagePlus.GRAY16:
 					slices_data_s = new short[depth][];	
 					for( int z = 0; z < depth; ++z )
 						slices_data_s[z] = (short []) s.getPixels( z + 1 );
+					IJ.showStatus("Finding stack minimum / maximum");
+					for( int z = 0; z < depth; ++z ) {
+						for( int y = 0; y < height; ++y )
+							for( int x = 0; x < width; ++x ) {
+								short v = slices_data_s[z][y*width+x];
+								if( v < stackMin )
+									stackMin = v;
+								if( v > stackMax )
+									stackMax = v;
+							}
+						IJ.showProgress( z / (float)depth );
+					}
+					IJ.showProgress(1.0);
 					break;
 				case ImagePlus.GRAY32:
 					slices_data_f = new float[depth][];
 					for( int z = 0; z < depth; ++z )
-						slices_data_f[z] = (float []) s.getPixels( z + 1 );	
+						slices_data_f[z] = (float []) s.getPixels( z + 1 );		
+					IJ.showStatus("Finding stack minimum / maximum");
+					for( int z = 0; z < depth; ++z ) {
+						for( int y = 0; y < height; ++y )
+							for( int x = 0; x < width; ++x ) {
+								float v = slices_data_f[z][y*width+x];
+								if( v < stackMin )
+									stackMin = v;
+								if( v > stackMax )
+									stackMax = v;
+							}
+						IJ.showProgress( z / (float)depth );
+					}
+					IJ.showProgress(1.0);
 					break;
 				}
                         }
@@ -1119,6 +1147,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
                 // FIXME: check if one is running already, etc.
 		
                 filler = new FillerThread( xy,
+					   stackMin,
+					   stackMax,
 					   false, // startPaused
                                            true, // reciprocal
                                            0.03f, // Initial threshold to display

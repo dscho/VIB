@@ -56,7 +56,8 @@ public abstract class SearchThread extends Thread {
 	 * at that point then you should do so in this method. */
 	
 	// The default implementation does a simple reciprocal of the
-	// image value:
+	// image value scaled to 0 to 255 if it is not already an 8
+	// bit value:
 	
 	protected double costMovingTo( int new_x, int new_y, int new_z ) {
 
@@ -68,9 +69,11 @@ public abstract class SearchThread extends Thread {
 			break;
 		case ImagePlus.GRAY16:
 			value_at_new_point = slices_data_s[new_z][new_y*width+new_x];
+			value_at_new_point = 255.0 * (value_at_new_point - stackMin) / (stackMax - stackMin);
 			break;
 		case ImagePlus.GRAY32:
 			value_at_new_point = slices_data_f[new_z][new_y*width+new_x];
+			value_at_new_point = 255.0 * (value_at_new_point - stackMin) / (stackMax - stackMin);
 			break;
 		}
 		
@@ -265,10 +268,14 @@ public abstract class SearchThread extends Thread {
         }
 
 	int imageType = -1;
-	
+	float stackMin;
+	float stackMax;
+
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
         public SearchThread( ImagePlus imagePlus,
+			     float stackMin,
+			     float stackMax,
 			     boolean bidirectional,
 			     boolean definedGoal,
 			     boolean startPaused,
@@ -277,6 +284,9 @@ public abstract class SearchThread extends Thread {
 		
                 this.imagePlus = imagePlus;
 		
+		this.stackMin = stackMin;
+		this.stackMax = stackMax;
+
 		this.bidirectional = bidirectional;
 		this.definedGoal = definedGoal;
 		this.startPaused = startPaused;

@@ -340,6 +340,8 @@ public class PathAndFillManager extends DefaultHandler {
 		Fill toReload = allFills.get(index);
 		
 		plugin.startFillerThread( FillerThread.fromFill( plugin.getImagePlus(),
+								 plugin.stackMin,
+								 plugin.stackMax,
 								 true,
 								 toReload ) );
 		

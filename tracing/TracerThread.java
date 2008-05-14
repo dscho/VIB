@@ -87,6 +87,8 @@ public class TracerThread extends SearchThread {
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 
         public TracerThread( ImagePlus imagePlus,
+			     float stackMin,
+			     float stackMax,
 			     int timeoutSeconds,
 			     long reportEveryMilliseconds,
 			     int start_x,
@@ -102,6 +104,8 @@ public class TracerThread extends SearchThread {
 			     boolean useHessian ) {
 
 		super( imagePlus,
+		       stackMin,
+		       stackMax,
 		       true, // bidirectional
 		       true, // definedGoal
 		       false, // startPaused,
@@ -175,11 +179,17 @@ public class TracerThread extends SearchThread {
 			value_at_new_point = slices_data_b[new_z][new_y*width+new_x] & 0xFF;
 			break;
 		case ImagePlus.GRAY16:
-			value_at_new_point = slices_data_s[new_z][new_y*width+new_x];	
+		{
+			value_at_new_point = slices_data_s[new_z][new_y*width+new_x];
+			value_at_new_point = 255.0 * (value_at_new_point - stackMin) / (stackMax - stackMin);
 			break;
+		}
 		case ImagePlus.GRAY32:
+		{
 			value_at_new_point = slices_data_f[new_z][new_y*width+new_x];
+			value_at_new_point = 255.0 * (value_at_new_point - stackMin) / (stackMax - stackMin);
 			break;
+		}
 		}
 
                 double cost;
