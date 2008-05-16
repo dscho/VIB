@@ -244,6 +244,20 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 				currentPathFromTracer.drawPathAsPoints( this, g, Color.RED, plane, imp.getCurrentSlice() - 1, eitherSide );
 			else
 				currentPathFromTracer.drawPathAsPoints( this, g, Color.RED, plane );
+
+			if( lastPathUnfinished ) {
+
+				int x = screenX(tracerPlugin.last_start_point_x);
+				int x_pixel_size = screenX(tracerPlugin.last_start_point_x+1) - x;
+				if( x_pixel_size < 1 ) x_pixel_size = 1;
+				int y = screenY(tracerPlugin.last_start_point_y);
+				int y_pixel_size = screenY(tracerPlugin.last_start_point_y+1) - y;
+				if( y_pixel_size < 1 ) y_pixel_size = 1;
+
+				g.setColor(Color.BLUE);
+				g.fillRect( x - 2 * x_pixel_size, y - 2 * y_pixel_size, x_pixel_size * 5, y_pixel_size * 5 );
+
+			}
 		}
 		
 	}
