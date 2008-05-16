@@ -40,9 +40,11 @@ public class RGB_to_Luminance implements PlugIn {
 			ByteProcessor bp = new ByteProcessor(width,height);
 			bp.setPixels(luminancePixels[z]);
 			luminanceStack.addSlice("", bp);
+			IJ.showProgress( z / (float)depth );
 		}
 		ImagePlus result = new ImagePlus("luminance of "+colourImage.getTitle(),luminanceStack);
 		result.setCalibration(calibration);
+		IJ.showProgress(1.0);
 		return result;
 	}
 
