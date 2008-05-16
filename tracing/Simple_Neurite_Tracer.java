@@ -692,6 +692,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	
 	synchronized public void confirmTemporary( ) {
 		
+		if( temporaryPath == null )
+			// Just ignore the request to confirm a path (there isn't one):
+			return;
+
 		currentPath.add( temporaryPath );
 		
 		PointInImage last = temporaryPath.lastPoint();
