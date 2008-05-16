@@ -116,41 +116,6 @@ class FluorescenceOptimizer implements MultivariateFunction {
 }
 public class Exposure_Blend_Two_Stacks implements PlugIn {
 
-	/** Takes an RGB ImagePlus and converts it to a 8-bit grey
-	    ImagePlus of luminance values. */
-	public ImagePlus RGBToLuminance(ImagePlus colourImage) {
-		if( colourImage.getType() != ImagePlus.COLOR_RGB ) {
-			return null;
-		}
-		int depth = colourImage.getStackSize();
-		int width = colourImage.getWidth();
-		int height = colourImage.getHeight();
-		Calibration calibration = colourImage.getCalibration();
-		ImageStack stack=colourImage.getStack();
-		ImageStack luminanceStack=new ImageStack(width,height);
-		byte [][] luminancePixels = new byte[depth][];
-		for( int z = 0; z < depth; ++z ) {
-			int [] intPixels = (int[])stack.getPixels(z+1);
-			luminancePixels[z] = new byte[width*height];
-			int valuesInSlice = intPixels.length;
-			for( int i = 0; i < valuesInSlice; ++i ) {
-				int iv = intPixels[i];
-				int b = iv & 0xFF;
-				int g = (iv & 0xFF00) >> 8;
-				int r = (iv & 0xFF0000) >> 16;
-				// Using the definition from: http://en.wikipedia.org/wiki/Luminance_%28relative%29
-				int luminance = (int)Math.round( 0.2126 * r + 0.7152 * g + 0.0722 * b );
-				luminancePixels[z][i] = (byte)luminance;
-			}
-			ByteProcessor bp = new ByteProcessor(width,height);
-			bp.setPixels(luminancePixels[z]);
-			luminanceStack.addSlice("", bp);
-		}
-		ImagePlus result = new ImagePlus("luminance of "+colourImage.getTitle(),luminanceStack);
-		result.setCalibration(calibration);
-		return result;
-	}
-
 	public void run(String arg0) {
 
 		/* Make sure image 0 is d and image 1 is b... */
@@ -228,7 +193,7 @@ public class Exposure_Blend_Two_Stacks implements PlugIn {
 
 			if (bitDepth == 24) {
 				for (i = 0; i < imagesToBlend; ++i) {
-					sourceImages[i] = RGBToLuminance(sourceImages[i]);
+					sourceImages[i] = RGB_to_Luminance.convertToLuminance(sourceImages[i]);
 					sourceImages[i].show();
 				}
 				type0 = sourceImages[0].getType();
