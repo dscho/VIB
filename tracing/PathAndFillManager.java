@@ -89,6 +89,18 @@ public class PathAndFillManager extends DefaultHandler {
 		this.height = plugin.height;
 		this.depth = plugin.depth;
         }
+
+	public PathAndFillManager( int width, int height, int depth, float x_spacing, float y_spacing, float z_spacing, String spacing_units ) {
+		this();
+		this.x_spacing = x_spacing;
+		this.y_spacing = y_spacing;
+		this.z_spacing = z_spacing;
+		this.width = width;
+		this.height = height;
+		this.depth = depth;
+		if( spacing_units == null )
+			this.spacing_units = "unknown";
+	}
 	
 	int width;
 	int height;
@@ -157,7 +169,12 @@ public class PathAndFillManager extends DefaultHandler {
                         if( p == null ) {
                                 if (verbose) System.out.println("path was null with i "+i+" out of "+paths );
                         }
-                        String name = "Path (" + i + ")";
+			String name = null;
+			if( p.name != null )
+				name = p.name + " ";
+			else
+				name = "Path ";
+			name += "(" + i + ")";
                         if( p.startJoins != null ) {
                                 name += ", starts on (" + pathToIndex(p.startJoins) + ")";
                         }
@@ -323,6 +340,8 @@ public class PathAndFillManager extends DefaultHandler {
 		Fill toReload = allFills.get(index);
 		
 		plugin.startFillerThread( FillerThread.fromFill( plugin.getImagePlus(),
+								 plugin.stackMin,
+								 plugin.stackMax,
 								 true,
 								 toReload ) );
 		
@@ -432,6 +451,10 @@ public class PathAndFillManager extends DefaultHandler {
 				pw.print(startsString);
 				pw.print(endsString);
 				
+				if( p.name != null ) {
+					pw.print( " name=\""+p.name+"\"" );
+				}
+
 				pw.print(" reallength=\"" +
 					 p.getRealLength(
 						 x_spacing,
@@ -603,6 +626,8 @@ public class PathAndFillManager extends DefaultHandler {
                         String endsonString =  attributes.getValue("endson");
                         String endsindexString =  attributes.getValue("endsindex");
 			
+			String nameString = attributes.getValue("name");
+
                         if( (startsonString == null && startsindexString != null) ||
                             (startsonString != null && startsindexString == null) ) {
 				throw new TracesFileFormatException("If startson is specified for a path, then startsindex must also be specified.");
@@ -647,6 +672,9 @@ public class PathAndFillManager extends DefaultHandler {
                         } catch( NumberFormatException e ) {
 				throw new TracesFileFormatException("There was an invalid attribute in <path/>: "+e);
                         }			
+
+			if( nameString != null )
+				current_path.setName(nameString);
 			
 			startJoins.add( startsOnInteger );
 			endJoins.add( endsOnInteger );

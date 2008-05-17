@@ -977,12 +977,7 @@ class NeuriteTracerResultsDialog
 			
                         if( preprocess.getState() ) {
                                 preGaussianState = currentState;
-                                synchronized (plugin) {
-                                        if( plugin.hessian == null )
-                                                preprocess.setEnabled(false);
-                                        plugin.enableHessian(true);
-                                }
-                                changeState(CALCULATING_GAUSSIAN);
+				plugin.enableHessian(true);
                         } else {
                                 plugin.enableHessian(false);
                                 changeState(preGaussianState);

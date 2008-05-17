@@ -35,6 +35,12 @@ public class Albert_Test implements PlugIn {
 		int width = imagePlus.getWidth();
 		int height = imagePlus.getHeight();
 		int depth = imagePlus.getStackSize();
+
+		if( ! (imagePlus.getType() == ImagePlus.GRAY8 ||
+		       imagePlus.getType() == ImagePlus.COLOR_256) ) {
+			IJ.error("This test only works on 8 bit images");
+			return;
+		}
 		
 		// Just pick a random start and goal point for the moment.
 		Random rng = new Random();
@@ -85,7 +91,7 @@ public class Albert_Test implements PlugIn {
                 // interval is up, so don't set it too high.
 		long reportEveryMilliseconds = 3000;
 		
-		TracerThread tracer = new TracerThread(imagePlus, timeoutSeconds, reportEveryMilliseconds, start_x, start_y, start_z, goal_x, goal_y, goal_z, reciprocal, hessian );
+		TracerThread tracer = new TracerThread(imagePlus, 0, 255, timeoutSeconds, reportEveryMilliseconds, start_x, start_y, start_z, goal_x, goal_y, goal_z, reciprocal, depth == 1, hessian, null, hessian != null );
 		
 		System.out.println("Running tracer...");
 		tracer.run();

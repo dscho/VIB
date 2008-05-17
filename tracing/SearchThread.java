@@ -40,7 +40,7 @@ import java.awt.Graphics;
 
 public abstract class SearchThread extends Thread {
 	
-	static final boolean verbose = Simple_Neurite_Tracer.verbose;
+	boolean verbose = Simple_Neurite_Tracer.verbose;
 	
 	public static final byte OPEN_FROM_START   = 1;
 	public static final byte CLOSED_FROM_START = 2;
@@ -56,11 +56,26 @@ public abstract class SearchThread extends Thread {
 	 * at that point then you should do so in this method. */
 	
 	// The default implementation does a simple reciprocal of the
-	// image value:
+	// image value scaled to 0 to 255 if it is not already an 8
+	// bit value:
 	
 	protected double costMovingTo( int new_x, int new_y, int new_z ) {
-		
-		int value_at_new_point = slices_data[new_z][new_y*width+new_x] & 0xFF;
+
+		double value_at_new_point = -1;
+		switch(imageType) {
+		case ImagePlus.GRAY8:
+		case ImagePlus.COLOR_256:
+			value_at_new_point = slices_data_b[new_z][new_y*width+new_x] & 0xFF;
+			break;
+		case ImagePlus.GRAY16:
+			value_at_new_point = slices_data_s[new_z][new_y*width+new_x];
+			value_at_new_point = 255.0 * (value_at_new_point - stackMin) / (stackMax - stackMin);
+			break;
+		case ImagePlus.GRAY32:
+			value_at_new_point = slices_data_f[new_z][new_y*width+new_x];
+			value_at_new_point = 255.0 * (value_at_new_point - stackMin) / (stackMax - stackMin);
+			break;
+		}
 		
 		if( value_at_new_point == 0 )
 			return 2.0;
@@ -107,6 +122,19 @@ public abstract class SearchThread extends Thread {
 	protected boolean atGoal( int x, int y, int z ) {
 		return false;
 	}
+
+	Color openColor;
+	Color closedColor;
+	float drawingThreshold;
+
+	void setDrawingColors( Color openColor, Color closedColor ) {
+		this.openColor = openColor;
+		this.closedColor = closedColor;
+	}
+
+	void setDrawingThreshold( float threshold ) {
+		this.drawingThreshold = threshold;
+	}
 	
 	/* If you need to force the distance between two points to
 	 * always be greater than some value (e.g. to make your A star
@@ -119,8 +147,10 @@ public abstract class SearchThread extends Thread {
 	
 	protected double minimum_cost_per_unit_distance;
 	
-	byte [][] slices_data;
-	
+	byte [][] slices_data_b;
+	short [][] slices_data_s;
+	float [][] slices_data_f;
+
 	ImagePlus imagePlus;
 	
         double x_spacing;
@@ -188,8 +218,13 @@ public abstract class SearchThread extends Thread {
 			reportThreadStatus();
 			if (verbose) System.out.println("... leaving synchronized");
 		}
-		if (verbose) System.out.println("requestStop finished");
+		if (verbose) System.out.println("requestStop finished (threadStatus now "+threadStatus+")");
         }
+
+	/** Override this method if you want to find out when a point
+	 * was first discovered:
+	 */
+	protected void addingNode( SearchNode n ) { }
 	
 	public void reportThreadStatus( ) {
 		for( Iterator<SearchProgressCallback> j = progressListeners.iterator(); j.hasNext(); ) {
@@ -231,10 +266,16 @@ public abstract class SearchThread extends Thread {
 		}
 		if (verbose) System.out.println("pauseOrUnpause finished");
         }
-	
+
+	int imageType = -1;
+	float stackMin;
+	float stackMax;
+
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
         public SearchThread( ImagePlus imagePlus,
+			     float stackMin,
+			     float stackMax,
 			     boolean bidirectional,
 			     boolean definedGoal,
 			     boolean startPaused,
@@ -243,10 +284,14 @@ public abstract class SearchThread extends Thread {
 		
                 this.imagePlus = imagePlus;
 		
+		this.stackMin = stackMin;
+		this.stackMax = stackMax;
+
 		this.bidirectional = bidirectional;
 		this.definedGoal = definedGoal;
 		this.startPaused = startPaused;
-		
+
+		this.imageType = imagePlus.getType();
 		
                 width = imagePlus.getWidth();
                 height = imagePlus.getHeight();
@@ -254,9 +299,23 @@ public abstract class SearchThread extends Thread {
 		
 		{
 			ImageStack s = imagePlus.getStack();
-			slices_data = new byte[depth][];
-			for( int z = 0; z < depth; ++z ) {
-				slices_data[z] = (byte []) s.getPixels( z + 1 );
+			switch(imageType) {
+			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
+				slices_data_b = new byte[depth][];
+				for( int z = 0; z < depth; ++z )
+					slices_data_b[z] = (byte []) s.getPixels( z + 1 );
+				break;
+			case ImagePlus.GRAY16:
+				slices_data_s = new short[depth][];	
+				for( int z = 0; z < depth; ++z )
+					slices_data_s[z] = (short []) s.getPixels( z + 1 );
+				break;
+			case ImagePlus.GRAY32:
+				slices_data_f = new float[depth][];
+				for( int z = 0; z < depth; ++z )
+					slices_data_f[z] = (float []) s.getPixels( z + 1 );	
+				break;
 			}
 		}
 		
@@ -535,6 +594,7 @@ public abstract class SearchThread extends Thread {
 									newNode.searchStatus = OPEN_FROM_GOAL;
 									open_from_goal.add( newNode );
 								}
+								addingNode( newNode );
 								nodes_as_image[new_z][new_y*width+new_x] = newNode;
 								
 							} else {
@@ -692,11 +752,8 @@ public abstract class SearchThread extends Thread {
 	
 	void drawProgressOnSlice( int plane,
 				  int currentSliceInPlane,
-				  Color openColor,
-				  Color closedColor,
 				  ImageCanvas canvas,
-				  Graphics g,
-				  float threshold ){
+				  Graphics g ){
 		
 		for( int i = 0; i < 2; ++i ) {
 			
@@ -713,7 +770,7 @@ public abstract class SearchThread extends Thread {
 			g.setColor(c);
 			
 			if( plane == ThreePanes.XY_PLANE ) {
-				int z = currentSliceInPlane - 1;
+				int z = currentSliceInPlane;
 				for( int y = 0; y < height; ++y )
 					for( int x = 0; x < width; ++x ) {
 						SearchNode [] slice = nodes_as_image[z];
@@ -723,8 +780,9 @@ public abstract class SearchThread extends Thread {
 						if( n == null )
 							continue;
 						byte status = n.searchStatus;
-						if( (threshold >= 0) && (n.g > threshold) )
+						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) ) {
 							continue;
+						}
 						if( status == start_status || status == goal_status ) {
 							int sx = canvas.screenX(x);
 							int sx_pixel_size = canvas.screenX(x+1) - sx;
@@ -736,7 +794,7 @@ public abstract class SearchThread extends Thread {
 						}
 					}
 			} else if( plane == ThreePanes.XZ_PLANE ) {
-				int y = currentSliceInPlane - 1;
+				int y = currentSliceInPlane;
 				for( int z = 0; z < depth; ++ z )
 					for( int x = 0; x < width; ++x ) {
 						SearchNode [] slice = nodes_as_image[z];
@@ -746,7 +804,7 @@ public abstract class SearchThread extends Thread {
 						if( n == null )
 							continue;
 						byte status = n.searchStatus;
-						if( (threshold >= 0) && (n.g > threshold) )
+						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status ) {
 							int sx = canvas.screenX(x);
@@ -759,7 +817,7 @@ public abstract class SearchThread extends Thread {
 						}
 					}
 			} else if( plane == ThreePanes.ZY_PLANE ) {
-				int x = currentSliceInPlane - 1;
+				int x = currentSliceInPlane;
 				for( int y = 0; y < height; ++y )
 					for( int z = 0; z < depth; ++z ) {
 						SearchNode [] slice = nodes_as_image[z];
@@ -769,7 +827,7 @@ public abstract class SearchThread extends Thread {
 						if( n == null )
 							continue;
 						byte status = n.searchStatus;
-						if( (threshold >= 0) && (n.g > threshold) )
+						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status ) {
 							int sx = canvas.screenX(z);
@@ -787,7 +845,7 @@ public abstract class SearchThread extends Thread {
 	
 	// Add a node, ignoring requests to add duplicate nodes...
 	
-	public void addNode( SearchNode n  ) {
+	public void addNode( SearchNode n ) {
 		
 		if( nodes_as_image[n.z] == null ) {
 			nodes_as_image[n.z] = new SearchNode[width*height];

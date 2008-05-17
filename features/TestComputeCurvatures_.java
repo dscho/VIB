@@ -54,10 +54,10 @@ public class TestComputeCurvatures_ implements PlugIn, GaussianGenerationCallbac
             for( int y = 1; y < (height - 1); ++y ) {
                 for( int x = 1; x < (width - 1); ++x ) {
                     
-                    c.hessianEigenvaluesAtPoint( x, y, z,
-                                                 true, // order absolute
-                                                 evalues,
-                                                 false );
+                    c.hessianEigenvaluesAtPoint3D( x, y, z,
+                                                   true, // order absolute
+                                                   evalues,
+                                                   false );
 
                     int index = (y - 1) * (width - 2) + (x - 1);
                     
