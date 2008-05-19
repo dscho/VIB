@@ -518,11 +518,12 @@ class NeuriteTracerResultsDialog
 			
                         c.gridx = 0;
                         c.gridy = 3;
+                        c.fill = GridBagConstraints.HORIZONTAL;
                         add(pathListPanel,c);
                 }
 		
                 {
-                        c.insets = new Insets( 8, 8, 1, 8 );
+			c.insets = new Insets( 8, 8, 1, 8 );
                         fillList = new List(3);
                         c.gridx = 0;
                         c.gridy = 4;
