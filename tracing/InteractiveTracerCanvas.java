@@ -165,8 +165,32 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 		super.drawOverlay(g);
 
+		int pixel_size = (int)getMagnification();
+		if( pixel_size < 1 )
+			pixel_size = 1;
+
+		int spotExtra = 2 * pixel_size;
+		int spotDiameter = 5 * pixel_size;
+
 		if( unconfirmedSegment != null ) {
 			unconfirmedSegment.drawPathAsPoints( this, g, Color.BLUE, plane );
+
+			if( unconfirmedSegment.endJoins != null ) {
+
+				int n = unconfirmedSegment.size();
+
+				int x = screenX(unconfirmedSegment.x_positions[n-1]);
+				int y = screenY(unconfirmedSegment.y_positions[n-1]);
+
+				int rectX = x - spotExtra;
+				int rectY = y - spotExtra;
+
+				g.setColor(Color.BLUE);
+				g.fillRect( rectX, rectY, spotDiameter, spotDiameter );
+
+				g.setColor(Color.GREEN);
+				g.drawRect( rectX, rectY, spotDiameter, spotDiameter );
+			}
 		}
 
 		Path currentPathFromTracer = tracerPlugin.getCurrentPath();
@@ -179,15 +203,8 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 			if( lastPathUnfinished && currentPath.size() == 0 ) {
 
-				int pixel_size = (int)getMagnification();
-				if( pixel_size < 1 )
-					pixel_size = 1;
-
 				int x = screenX(tracerPlugin.last_start_point_x);
 				int y = screenY(tracerPlugin.last_start_point_y);
-
-				int spotExtra = 2 * pixel_size;
-				int spotDiameter = 5 * pixel_size;
 
 				int rectX = x - spotExtra;
 				int rectY = y - spotExtra;
