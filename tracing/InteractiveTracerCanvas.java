@@ -143,79 +143,11 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 	@Override
 	public void mouseClicked( MouseEvent e ) {
 
-		// IJ.showStatus( "click at " + System.currentTimeMillis() + ": " + e );
-		// IJ.showStatus( "click at (" + e.getX() + "," + e.getY() + ")" );
-
-		if( tracerPlugin.setupLog ) {
-
-			int x = offScreenX(e.getX());
-			int y = offScreenY(e.getY());
-
-			int z = imp.getCurrentSlice() - 1;
-
-			tracerPlugin.setPositionAllPanes( x, y, z );
-
-			/* FIXME: put this back at some point
-
-			   EigenResultsDouble er;
-			   try {
-			   er = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, 1.0f, false );
-			   } catch( Exception exception ) {
-			   IJ.error("Caught an exception while calculating the Hessian: "+exception);
-			   return;
-			   }
-
-			   tracerPlugin.logPosition( x, y, z, er.sortedValues[0], er.sortedValues[1], er.sortedValues[2] );
-
-			*/
-
-		} else if( tracerPlugin.setupEv ) {
-
-			/* FIXME: put this back at some point
-
-			   int x = offScreenX(e.getX());
-			   int y = offScreenX(e.getY());
-			   int z = imp.getCurrentSlice() - 1;
-
-			   EigenResultsDouble er_2_around;
-			   EigenResultsDouble er_1_around;
-
-			   try {
-			   er_2_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 2, 1.0f, false );
-			   er_1_around = tracerPlugin.hessianAnalyzer.analyzeAtPoint( x, y, z, 1, 1.0f, false );
-			   } catch( Exception exception ) {
-			   IJ.error("Caught an exception while calculating the Hessian: "+exception);
-			   return;
-			   }
-
-			   Arrow arrow_1_around = new Arrow( Color.ORANGE, x, y, z,
-			   er_1_around.sortedVectors[0][0],
-			   er_1_around.sortedVectors[0][1],
-			   er_1_around.sortedVectors[0][2],
-			   100 );
-
-			   Arrow arrow_2_around = new Arrow( Color.RED, x, y, z,
-			   er_2_around.sortedVectors[0][0],
-			   er_2_around.sortedVectors[0][1],
-			   er_2_around.sortedVectors[0][2],
-			   100 );
-
-			   tracerPlugin.setArrow( 0, arrow_2_around );
-			   tracerPlugin.setArrow( 1, arrow_1_around );
-
-			*/
-
-		} else if( tracerPlugin.setupTrace ) {
-
+		if( tracerPlugin.setupTrace ) {
 			boolean join = IJ.isMacintosh() ? e.isAltDown() : e.isControlDown();
-
 			tracerPlugin.clickForTrace( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
-
-		} else {
-
+		} else
 			IJ.error( "BUG: No operation chosen" );
-
-		}
 	}
 
 	@Override
