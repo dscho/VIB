@@ -1400,15 +1400,22 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			return null;
 		}
 
-		if(image.getType() != ImagePlus.COLOR_256 && 
-			image.getType() != ImagePlus.GRAY8) {
-
-			boolean b = IJ.showMessageWithCancel("Convert...", 
-				"8-bit image required. Convert?");
-			if(b) {
-				new StackConverter(image).
-					convertToIndexedColor(256);
-			}
+		int imaget = image.getType();
+		switch(imaget) {
+			case ImagePlus.COLOR_RGB:
+				if(IJ.showMessageWithCancel("Convert...", 
+					"8-bit image required. Convert?"))
+					new StackConverter(image).
+						convertToIndexedColor(256);
+				break;
+			case ImagePlus.GRAY16:
+			case ImagePlus.GRAY32:
+				if(IJ.showMessageWithCancel("Convert...", 
+					"8-bit image required. Convert?"))
+					new StackConverter(image).
+						convertToGray8();
+				new StackConverter(image).convertToGray8();
+				break;
 		}
 
 		return univ.addContent(image, color, 
