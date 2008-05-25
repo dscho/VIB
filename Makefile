@@ -78,9 +78,12 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	$(wildcard pal/math/*.java) \
 	features/ComputeCurvatures.java \
 	features/GaussianGenerationCallback.java \
+	features/Tubeness_.java \
 	client/ArchiveClient.java \
 	util/Arrow.java \
 	util/ArrowDisplayer.java \
+	util/BatchOpener.java \
+	util/RGB_to_Luminance.java \
 	tracing/README tracing/COPYING \
 	math3d/JacobiDouble.java \
 	math3d/FastMatrixN.java \
