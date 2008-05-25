@@ -10,14 +10,14 @@ import features.*;
 
 public class Compute_Curvatures implements PlugIn
 {
-    protected ComputeCurvatures hidden;
+	protected ComputeCurvatures hidden;
 
-    public Compute_Curvatures( ) {
-        hidden = new ComputeCurvatures();
-    }
+	public Compute_Curvatures( ) {
+		hidden = new ComputeCurvatures();
+	}
 
-    public void run(String arg) {
-        hidden.runAsPlugIn(arg);
-    }
+	public void run(String arg) {
+		hidden.runAsPlugIn(arg);
+	}
 
 }
