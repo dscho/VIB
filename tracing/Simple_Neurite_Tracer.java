@@ -46,8 +46,6 @@ import client.ArchiveClient;
 
 import stacks.ThreePanes;
 
-import util.Arrow;
-import util.ArrowDisplayer;
 import util.BatchOpener;
 import util.RGB_to_Luminance;
 
@@ -62,9 +60,9 @@ import amira.AmiraParameters;
    all non-branching sequences of adjacent points in the image. */
 
 public class Simple_Neurite_Tracer extends ThreePanes
-	implements PlugIn, SearchProgressCallback, ArrowDisplayer, FillerProgressCallback, GaussianGenerationCallback {
+	implements PlugIn, SearchProgressCallback, FillerProgressCallback, GaussianGenerationCallback {
 	
-	public static final String PLUGIN_VERSION = "1.1.3";
+	public static final String PLUGIN_VERSION = "1.2.1";
 	static final boolean verbose = false;
 	
 	PathAndFillManager pathAndFillManager;
@@ -197,11 +195,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		repaintAllPanes();
 	}
 	
-	String nonsense = "unused"; // FIXME, just for synchronization...
+	String nonsense = "unused"; // FIXME, just for synchronization
 	
 	/* These member variables control what we're actually doing -
 	   whether that's tracing, logging points or displaying values
-	   of the Hessian at particular points. */
+	   of the Hessian at particular points.  Currently we only
+	   support tracing, support for the others has been removed... */
 	
 	boolean setupLog = false;
 	boolean setupEv = false;
@@ -224,25 +223,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	int last_x, last_y, last_z;
 	
 	String logFilename;
-	
-	public void setNewArrow( Arrow a ) {
-		
-		xy_tracer_canvas.unsetArrows( );
-		xy_tracer_canvas.setArrow( 0, a );
-		
-		if( ! single_pane ) {
-			zy_tracer_canvas.unsetArrows( );
-			zy_tracer_canvas.setArrow( 0, a );
-			
-			xz_tracer_canvas.unsetArrows( );
-			xz_tracer_canvas.setArrow( 0, a );
-			
-			zy_tracer_canvas.repaint();
-			xz_tracer_canvas.repaint();
-		}
-		xy_tracer_canvas.repaint();
-		
-	}
 	
 	public void logPosition( int x, int y, int z, double ev1, double ev2, double ev3 ) {
 		
@@ -271,16 +251,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 		
 		repaintAllPanes();
-		
-	}
-	
-	public void setArrow( int i, Arrow a ) {
-		
-		xy_tracer_canvas.setArrow( i, a );
-		if( ! single_pane ) {
-			zy_tracer_canvas.setArrow( i, a );
-			xz_tracer_canvas.setArrow( i, a );
-		}
 		
 	}
 	
@@ -664,7 +634,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			xy,
 			stackMin,
 			stackMax,
-			0, // timeoutSeconds
 			1000, // reportEveryMilliseconds
 			last_start_point_x,
 			last_start_point_y,
