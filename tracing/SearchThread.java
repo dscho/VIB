@@ -49,11 +49,11 @@ public abstract class SearchThread extends Thread {
 	public static final byte FREE              = 5; // Indicates that this node isn't in a list yet...
 
 	/* This calculates the cost of moving to a new point in the
-	 * image.  This does not take into account the distance to
-	 * this new point, only the value at it.  This will be
-	 * post-multiplied by the distance from the last point.  So,
-	 * if you want to take into account the curvature of the image
-	 * at that point then you should do so in this method. */
+	   image.  This does not take into account the distance to
+	   this new point, only the value at it.  This will be
+	   post-multiplied by the distance from the last point.  So,
+	   if you want to take into account the curvature of the image
+	   at that point then you should do so in this method. */
 
 	// The default implementation does a simple reciprocal of the
 	// image value scaled to 0 to 255 if it is not already an 8
@@ -85,7 +85,7 @@ public abstract class SearchThread extends Thread {
 	}
 
 	/* Use this for doing special progress updates, beyond what
-	 * SearchProgressCallback provides. */
+	   SearchProgressCallback provides. */
 
 	protected void reportPointsInSearch( ) {
 		for (Iterator<SearchProgressCallback> j = progressListeners.iterator(); j.hasNext();) {
@@ -96,7 +96,7 @@ public abstract class SearchThread extends Thread {
 
 
 	/* This is a factory method for creating specialized search
-	 * nodes, subclasses of SearchNode: */
+	   nodes, subclasses of SearchNode: */
 
 	protected SearchNode createNewNode( int x, int y, int z, float g, float h,
 					    SearchNode predecessor,
@@ -105,15 +105,13 @@ public abstract class SearchThread extends Thread {
 	}
 
 	/* This is called if the goal has been found in the search.
-	 * If your search has no defined goal, then this will never be
-	 * called, so don't bother to override it. */
+	   If your search has no defined goal, then this will never be
+	   called, so don't bother to override it. */
 
 	protected void foundGoal( Path pathToGoal ) {
 		/* A dummy implementation that does nothing with this
-		 * exciting news. */
+		   exciting news. */
 	}
-
-	/* */
 
 	protected boolean atStart( int x, int y, int z ) {
 		return false;
@@ -137,9 +135,9 @@ public abstract class SearchThread extends Thread {
 	}
 
 	/* If you need to force the distance between two points to
-	 * always be greater than some value (e.g. to make your A star
-	 * heuristic valid or something, then you should override this
-	 * method and return that value. */
+	   always be greater than some value (e.g. to make your A star
+	   heuristic valid or something, then you should override this
+	   method and return that value. */
 
 	protected double minimumCostPerUnitDistance( ) {
 		return 0.0;
@@ -243,7 +241,7 @@ public abstract class SearchThread extends Thread {
 	// Toggles the paused or unpaused status of the thread.
 
 	public void pauseOrUnpause( ) {
-		// Toggle the paused status...
+		// Toggle the paused status:
 		if (verbose) System.out.println("pauseOrUnpause called, about to enter synchronized");
 		synchronized (this) {
 			if (verbose) System.out.println("... entered synchronized");
@@ -259,7 +257,7 @@ public abstract class SearchThread extends Thread {
 				threadStatus = PAUSED;
 				break;
 			default:
-				// Do nothing, we're actually stopping anyway...
+				// Do nothing, we're actually stopping anyway.
 			}
 			reportThreadStatus();
 			if (verbose) System.out.println("... leaving synchronized");
@@ -747,8 +745,8 @@ public abstract class SearchThread extends Thread {
 	}
 
 	/* This draws over the Graphics object the current progress of
-	 * the search at this slice.  If openColor or closedColor are
-	 * null then that means "don't bother to draw that list". */
+	   the search at this slice.  If openColor or closedColor are
+	   null then that means "don't bother to draw that list". */
 
 	void drawProgressOnSlice( int plane,
 				  int currentSliceInPlane,
@@ -757,9 +755,9 @@ public abstract class SearchThread extends Thread {
 
 		for( int i = 0; i < 2; ++i ) {
 
-			// The first time through we draw the nodes in
-			// the open list, the second time through we
-			// draw the nodes in the closed list.
+			/* The first time through we draw the nodes in
+			   the open list, the second time through we
+			   draw the nodes in the closed list. */
 
 			byte start_status = (i == 0) ? OPEN_FROM_START : CLOSED_FROM_START;
 			byte goal_status = (i == 0) ? OPEN_FROM_GOAL : CLOSED_FROM_GOAL;
@@ -825,7 +823,7 @@ public abstract class SearchThread extends Thread {
 		}
 	}
 
-	// Add a node, ignoring requests to add duplicate nodes...
+	// Add a node, ignoring requests to add duplicate nodes:
 
 	public void addNode( SearchNode n ) {
 
@@ -834,7 +832,7 @@ public abstract class SearchThread extends Thread {
 		}
 
 		if( nodes_as_image[n.z][n.y*width+n.x] != null ) {
-			// Then there's already a node there,
+			// Then there's already a node there:
 			return;
 		}
 
