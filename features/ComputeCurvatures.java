@@ -38,17 +38,27 @@
  *   (If used in this way you need to use the constructor where you
  *   supply an ImagePlus, sigma and an optional callback.
  *
- * - Switched to using Johannes's JacobiDouble class instead of the
- *   Jama classes, so we don't introduce an additional dependency.
- *   It's about 15% faster with JacobiDouble, and presumbly that could
- *   be faster again wtih JacobiFloat.
+ * - Switched to using Johannes's JacobiDouble / JacobiFloat classes
+ *   for finding the eigenvalues instead of the Jama classes, so we
+ *   don't introduce an additional dependency.  It's about 15% faster
+ *   with JacobiDouble, but I haven't yet measured any speed gain due
+ *   to using floats rather than doubles.
+ *
+ * - Added options to only generate particular eigenvalue images, and
+ *   some other slight changes to the initial dialog.
+ *
+ * - Added additional methods using floats for calculation (and the
+ *   interface) in case clients only need floats.
  *
  * - Added ordering of the eigenvalues (optionally on absolute
  *   values).
  *
+ * - Added normalisation of the eigenvalues to that the largest has
+ *   size 1 (some papers use methods that require this)
+ *
  * TODO:
  *
- *   Use calibration information.
+ *   Use calibration information...
  *
  */
 
@@ -67,13 +77,14 @@ import ij.process.ShortProcessor;
 import ij.process.FloatProcessor;
 
 import math3d.JacobiDouble;
+import math3d.JacobiFloat;
 
 public class ComputeCurvatures implements Runnable
 {
     private boolean _3D;
     private FloatArray data;
     private double[][] hessianMatrix;
-    private double[] eigenValues;
+    private float[] eigenValues = new float[3];
 
     private FloatArray3D result3D[];
     private FloatArray3D result2D;
@@ -148,23 +159,37 @@ public class ComputeCurvatures implements Runnable
         //
         GenericDialog gd = new GenericDialog("Principle curvature computing");
 
-        gd.addMessage("Options");
-        gd.addMessage("");
-        gd.addMessage("");
-        gd.addCheckbox("Compute a gaussian filtering", true);
-        gd.addMessage("");
+        gd.addMessage("Options:");
+        if (_3D) {
+            gd.addCheckbox("Show Eigenvalue 1 (smallest)",true);
+            gd.addCheckbox("Show Eigenvalue 2",true);
+            gd.addCheckbox("Show Eigenvalue 3 (largest)",true);
+            gd.addMessage("");
+        }
+        gd.addCheckbox("Compute a gaussian convolution", true);
         gd.addMessage("Please define sigma (>= 0.5) for computing.");
         gd.addMessage("(Applies only if you wish to compute the convolution first)");
-        gd.addMessage("");
-        gd.addNumericField("Sigma: ", 0.5f, 0);
+        gd.addNumericField("Sigma: ", 0.5f, 2);
         gd.addCheckbox("Show Gauss Image", false);
+        gd.addCheckbox("Order eigenvalues on absolute values", true);
+        gd.addCheckbox("Normalize eigenvalues", false);
 
         gd.showDialog();
         if (gd.wasCanceled())return;
 
+        boolean [] evaluesToShow = new boolean[3];
+        if (_3D) {
+            evaluesToShow[0] = gd.getNextBoolean();
+            evaluesToShow[1] = gd.getNextBoolean();
+            evaluesToShow[2] = gd.getNextBoolean();
+        }
+
         boolean computeGauss = gd.getNextBoolean();
         sigma = gd.getNextNumber();
         boolean showGauss = gd.getNextBoolean();
+
+        boolean orderOnAbsoluteValues = gd.getNextBoolean();
+        boolean normalizeEigenValues = gd.getNextBoolean();
 
         //
         // compute Gaussian
@@ -197,32 +222,25 @@ public class ComputeCurvatures implements Runnable
             FloatArray3D data3D = (FloatArray3D) data;
 
             result3D = new FloatArray3D[3];
-            result3D[0] = new FloatArray3D(data3D.width, data3D.height, data3D.depth);
-            result3D[1] = new FloatArray3D(data3D.width, data3D.height, data3D.depth);
-            result3D[2] = new FloatArray3D(data3D.width, data3D.height, data3D.depth);
+            for( int i = 0; i < 3; ++i )
+                if (evaluesToShow[i])
+                    result3D[i] = new FloatArray3D(data3D.width, data3D.height, data3D.depth);
 
-            for (int z = 1; z < data3D.depth - 1; z++)
+            IJ.showProgress(0);
+
+            for (int z = 1; z < data3D.depth - 1; z++) {
                 for (int y = 1; y < data3D.height - 1; y++)
                     for (int x = 1; x < data3D.width - 1; x++)
                     {
-                        hessianMatrix = computeHessianMatrix3D(data3D, x, y, z, sigma);
-                        eigenValues = computeEigenValues(hessianMatrix);
+                        if( hessianEigenvaluesAtPoint3D( x, y, z,
+                                                         orderOnAbsoluteValues,
+                                                         eigenValues,
+                                                         normalizeEigenValues,
+                                                         false ) ) {
 
-                        // there were imaginary numbers
-                        if (eigenValues == null)
-                        {
-                            result3D[0].set(0, x, y, z);
-                            result3D[1].set(0, x, y, z);
-                            result3D[2].set(0, x, y, z);
-
-                            if (0 < min) min = 0;
-                            if (0 > max) max = 0;
-                        }
-                        else
-                        {
-                            result3D[0].set((float)eigenValues[0], x, y, z);
-                            result3D[1].set((float)eigenValues[1], x, y, z);
-                            result3D[2].set((float)eigenValues[2], x, y, z);
+                            for( int i = 0; i < 3; ++i)
+                                if (evaluesToShow[i])
+                                    result3D[i].set((float)eigenValues[i], x, y, z);
 
                             if (eigenValues[0] < min) min = eigenValues[0];
                             if (eigenValues[1] < min) min = eigenValues[1];
@@ -230,9 +248,21 @@ public class ComputeCurvatures implements Runnable
                             if (eigenValues[0] > max) max = eigenValues[0];
                             if (eigenValues[1] > max) max = eigenValues[1];
                             if (eigenValues[2] > max) max = eigenValues[2];
-                        }
 
+                        } else {
+
+                            // there were imaginary numbers
+                            for( int i = 0; i < 3; ++i )
+                                if (evaluesToShow[i])
+                                    result3D[i].set(0, x, y, z);
+
+                            if (0 < min) min = 0;
+                            if (0 > max) max = 0;
+                        }
                     }
+                IJ.showProgress(z/(double)data3D.depth);
+            }
+            IJ.showProgress(1.0);
         }
         else
         {
@@ -242,20 +272,12 @@ public class ComputeCurvatures implements Runnable
             for (int y = 1; y < data2D.height - 1; y++)
                 for (int x = 1; x < data2D.width - 1; x++)
                 {
-                    hessianMatrix = computeHessianMatrix2D(data2D, x, y, sigma);
-                    eigenValues = computeEigenValues(hessianMatrix);
+                    if( hessianEigenvaluesAtPoint2D( x, y,
+                                                     orderOnAbsoluteValues,
+                                                     eigenValues,
+                                                     normalizeEigenValues,
+                                                     false ) ) {
 
-                    // there were imaginary numbers
-                    if (eigenValues == null)
-                    {
-                        result2D.set(0, x, y, 0);
-                        result2D.set(0, x, y, 1);
-
-                        if (0 < min) min = 0;
-                        if (0 > max) max = 0;
-                    }
-                    else
-                    {
                         result2D.set((float)eigenValues[0], x, y, 0);
                         result2D.set((float)eigenValues[1], x, y, 1);
 
@@ -263,6 +285,15 @@ public class ComputeCurvatures implements Runnable
                         if (eigenValues[1] < min) min = eigenValues[1];
                         if (eigenValues[0] > max) max = eigenValues[0];
                         if (eigenValues[1] > max) max = eigenValues[1];
+
+                    } else {
+
+                        // there were imaginary numbers
+                        result2D.set(0, x, y, 0);
+                        result2D.set(0, x, y, 1);
+
+                        if (0 < min) min = 0;
+                        if (0 > max) max = 0;
                     }
                 }
         }
@@ -272,8 +303,10 @@ public class ComputeCurvatures implements Runnable
         //
 
         if (_3D)
-            for (int i = 0; i < 3; i++)
-                FloatArrayToStack(result3D[i], "Eigenvalues " + (i+1), (float)min, (float)max).show();
+            for (int i = 0; i < 3; i++) {
+                if (evaluesToShow[i])
+                    FloatArrayToStack(result3D[i], "Eigenvalues " + (i+1), (float)min, (float)max).show();
+            }
         else
             FloatArrayToStack(result2D, "Eigenvalues", (float)min, (float)max).show();
 
@@ -378,16 +411,28 @@ public class ComputeCurvatures implements Runnable
 
     }
 
+    // ------------------------------------------------------------------------
 
-    public void hessianEigenvaluesAtPoint2D( int x,
-                                             int y,
-                                             boolean orderOnAbsoluteSize,
-                                             double [] result, /* should be 2 elements */
-                                             boolean fixUp ) {
+    /* There are four versions of the this function, for calculating
+       the eigenvalues of the Hessian matrix at a particular point in
+       the image.  There are versions for 2D or 3D and using floats of
+       doubles. */
+
+    /* The float version of hessianEigenvaluesAtPoint2D.  Returns
+       false if there was an error or the eigenvalues would be
+       complex, or true if they are real and the values in result can
+       be used. */
+
+    public boolean hessianEigenvaluesAtPoint2D( int x,
+                                                int y,
+                                                boolean orderOnAbsoluteSize,
+                                                float [] result, /* should be 2 elements */
+                                                boolean normalize,
+                                                boolean fixUp ) {
 
         if( _3D ) {
             IJ.error("hessianEigenvaluesAtPoint2D( x, y, z, ... ) is only for 2D data.");
-            return;
+            return false;
         }
 
         FloatArray2D data2D = (FloatArray2D)data;
@@ -405,8 +450,70 @@ public class ComputeCurvatures implements Runnable
                 y = data2D.height - 2;
         }
 
-        double [][] hessianMatrix = computeHessianMatrix2D(data2D, x, y, sigma);
+        float [][] hessianMatrix = computeHessianMatrix2DFloat(data2D, x, y, sigma);
+        float [] eigenValues = computeEigenValues(hessianMatrix);
+        if( eigenValues == null )
+            return false;
+
+        // Don't assume that these are ordered.
+
+        float e0 = eigenValues[0];
+        float e1 = eigenValues[1];
+
+        float e0c = orderOnAbsoluteSize ? Math.abs( e0 ) : e0;
+        float e1c = orderOnAbsoluteSize ? Math.abs( e1 ) : e1;
+
+        if( e0c <= e1c ) {
+            result[0] = e0;
+            result[1] = e1;
+        } else {
+            result[0] = e1;
+            result[1] = e0;
+        }
+        if( normalize ) {
+            float divideBy = Math.abs(result[1]);
+            result[0] /= divideBy;
+            result[1] /= divideBy;
+        }
+        return true;
+    }
+
+    /* The double version of hessianEigenvaluesAtPoint2D.  Returns
+       false if there was an error or the eigenvalues would be
+       complex, or true if they are real and the values in result can
+       be used. */
+
+    public boolean hessianEigenvaluesAtPoint2D( int x,
+                                                int y,
+                                                boolean orderOnAbsoluteSize,
+                                                double [] result, /* should be 2 elements */
+                                                boolean normalize,
+                                                boolean fixUp ) {
+
+        if( _3D ) {
+            IJ.error("hessianEigenvaluesAtPoint2D( x, y, z, ... ) is only for 2D data.");
+            return false;
+        }
+
+        FloatArray2D data2D = (FloatArray2D)data;
+
+        if( fixUp ) {
+
+            if( x == 0 )
+                x = 1;
+            if( x == (data2D.width - 1) )
+                x = data2D.width - 2;
+
+            if( y == 0 )
+                y = 1;
+            if( y == (data2D.height - 1) )
+                y = data2D.height - 2;
+        }
+
+        double [][] hessianMatrix = computeHessianMatrix2DDouble(data2D, x, y, sigma);
         double [] eigenValues = computeEigenValues(hessianMatrix);
+        if( eigenValues == null )
+            return false;
 
         // Don't assume that these are ordered.
 
@@ -423,18 +530,30 @@ public class ComputeCurvatures implements Runnable
             result[0] = e1;
             result[1] = e0;
         }
+        if( normalize ) {
+            double divideBy = Math.abs(result[1]);
+            result[0] /= divideBy;
+            result[1] /= divideBy;
+        }
+        return true;
     }
 
-    public void hessianEigenvaluesAtPoint3D( int x,
-                                             int y,
-                                             int z, // zero-indexed
-                                             boolean orderOnAbsoluteSize,
-                                             double [] result, /* should be 3 elements */
-                                             boolean fixUp ) {
+    /* The float version of hessianEigenvaluesAtPoint3D.  Returns
+       false if there was an error or the eigenvalues would be
+       complex, or true if they are real and the values in result can
+       be used. */
+
+    public boolean hessianEigenvaluesAtPoint3D( int x,
+                                                int y,
+                                                int z, // zero-indexed
+                                                boolean orderOnAbsoluteSize,
+                                                float [] result, /* should be 3 elements */
+                                                boolean normalize,
+                                                boolean fixUp ) {
 
         if( ! _3D ) {
             IJ.error("hessianEigenvaluesAtPoint3D( x, y, z, ... ) is only for 3D data.");
-            return;
+            return false;
         }
 
         FloatArray3D data3D = (FloatArray3D)data;
@@ -459,8 +578,112 @@ public class ComputeCurvatures implements Runnable
 
         }
 
-        double [][] hessianMatrix = computeHessianMatrix3D(data3D, x, y, z, sigma);
+        float [][] hessianMatrix = computeHessianMatrix3DFloat(data3D, x, y, z, sigma);
+        float [] eigenValues = computeEigenValues(hessianMatrix);
+        if( eigenValues == null )
+            return false;
+
+        // Don't assume that these are ordered.
+
+        float e0 = eigenValues[0];
+        float e1 = eigenValues[1];
+        float e2 = eigenValues[2];
+
+        float e0c = orderOnAbsoluteSize ? Math.abs( e0 ) : e0;
+        float e1c = orderOnAbsoluteSize ? Math.abs( e1 ) : e1;
+        float e2c = orderOnAbsoluteSize ? Math.abs( e2 ) : e2;
+
+        /* This should sort a, b and c with the minimum number of
+           comparisons - it's not necessarily faster than Arrays.sort,
+           but we may want to reorder the evectors with them, in which
+           case it would be. */
+
+        if( e0c <= e1c ) {
+            if( e1c <= e2c ) {
+                result[0] = e0;
+                result[1] = e1;
+                result[2] = e2;
+            } else {
+                if( e0c <= e2c ) {
+                    result[0] = e0;
+                    result[1] = e2;
+                    result[2] = e1;
+                } else {
+                    result[0] = e2;
+                    result[1] = e0;
+                    result[2] = e1;
+                }
+            }
+        } else {
+            if( e0c <= e2c ) {
+                result[0] = e1;
+                result[1] = e0;
+                result[2] = e2;
+            } else {
+                if( e1c <= e2c ) {
+                    result[0] = e1;
+                    result[1] = e2;
+                    result[2] = e0;
+                } else {
+                    result[0] = e2;
+                    result[1] = e1;
+                    result[2] = e0;
+                }
+            }
+        }
+        if( normalize ) {
+            float divideBy = Math.abs(result[2]);
+            result[0] /= divideBy;
+            result[1] /= divideBy;
+            result[2] /= divideBy;
+        }
+        return true;
+    }
+
+    /* The double version of hessianEigenvaluesAtPoint3D.  Returns
+       false if there was an error or the eigenvalues would be
+       complex, or true if they are real and the values in result can
+       be used. */
+
+    public boolean hessianEigenvaluesAtPoint3D( int x,
+                                                int y,
+                                                int z, // zero-indexed
+                                                boolean orderOnAbsoluteSize,
+                                                double [] result, /* should be 3 elements */
+                                                boolean normalize,
+                                                boolean fixUp ) {
+
+        if( ! _3D ) {
+            IJ.error("hessianEigenvaluesAtPoint3D( x, y, z, ... ) is only for 3D data.");
+            return false;
+        }
+
+        FloatArray3D data3D = (FloatArray3D)data;
+
+        if( fixUp ) {
+
+            if( x == 0 )
+                x = 1;
+            if( x == (data3D.width - 1) )
+                x = data3D.width - 2;
+
+            if( y == 0 )
+                y = 1;
+            if( y == (data3D.height - 1) )
+                y = data3D.height - 2;
+
+            if( z == 0 )
+                z = 1;
+            if( z == (data3D.depth - 1) )
+                z = data3D.depth - 2;
+
+
+        }
+
+        double [][] hessianMatrix = computeHessianMatrix3DDouble(data3D, x, y, z, sigma);
         double [] eigenValues = computeEigenValues(hessianMatrix);
+        if( eigenValues == null )
+            return false;
 
         // Don't assume that these are ordered.
 
@@ -510,8 +733,16 @@ public class ComputeCurvatures implements Runnable
                 }
             }
         }
-
+        if( normalize ) {
+            double divideBy = Math.abs(result[2]);
+            result[0] /= divideBy;
+            result[1] /= divideBy;
+            result[2] /= divideBy;
+        }
+        return true;
     }
+
+    // ------------------------------------------------------------------------
 
     /**
      * This method converts my FloatArray2D to an ImageJ ImagePlus
@@ -605,8 +836,10 @@ public class ComputeCurvatures implements Runnable
     }
 
     /**
-     * This method computes the Eigenvalues of the Hessian Matrix,
-     * the Eigenvalues correspond to the Principle Curvatures<br>
+     * This method computes the Eigenvalues of the Hessian Matrix, the
+     * Eigenvalues correspond to the Principle Curvatures.  (MHL
+     * modified to use the JacobiDouble class in math3d.)<br>
+     *
      * <br>
      * Note: If the Eigenvalues contain imaginary numbers, this method will return null
      *
@@ -623,29 +856,26 @@ public class ComputeCurvatures implements Runnable
 
     }
 
-/*
-    // The Jama function returns the eigenvalues in strict numerical
-    // order rather than in order of absolute size.
+    /**
+     * This method computes the Eigenvalues of the Hessian Matrix, the
+     * Eigenvalues correspond to the Principle Curvatures.  (MHL
+     * modified to use the JacobiFloat class in math3d.)<br>
+     *
+     * <br>
+     * Note: If the Eigenvalues contain imaginary numbers, this method will return null
+     *
+     * @param float[][] The hessian Matrix
+     * @return float[] The Real Parts of the Eigenvalues or null (if there were imganiary parts)
+     *
+     * @author   Stephan Preibisch
+     */
 
-    public double[] computeEigenValues(double[][] matrix)
-    {
-        Matrix M = new Matrix(matrix);
-        EigenvalueDecomposition E = new EigenvalueDecomposition(M);
+    public float[] computeEigenValues(float[][] matrix) {
 
-        double[] result = E.getImagEigenvalues();
+        JacobiFloat jc=new JacobiFloat(matrix,50);
+        return jc.getEigenValues();
 
-        boolean found = false;
-
-        for (int i = 0; i < result.length; i++)
-            if (result[i] > 0)
-                found = true;
-
-        if (found)
-            return null;
-        else
-            return E.getRealEigenvalues();
     }
-*/
 
     /**
      * This method computes the Hessian Matrix for the 3x3 environment of a certain pixel <br><br>
@@ -661,11 +891,52 @@ public class ComputeCurvatures implements Runnable
      *
      * @author   Stephan Preibisch
      */
-    public double[][] computeHessianMatrix2D(FloatArray2D laPlace, int x, int y, double sigma)
+    public double[][] computeHessianMatrix2DDouble(FloatArray2D laPlace, int x, int y, double sigma)
     {
         double[][] hessianMatrix = new double[2][2]; // zeile, spalte
 
         double temp = 2 * laPlace.get(x, y);
+
+        // xx
+        hessianMatrix[0][0] = laPlace.get(x + 1, y) - temp + laPlace.get(x - 1, y);
+
+        // yy
+        hessianMatrix[1][1] = laPlace.get(x, y + 1) - temp + laPlace.get(x, y - 1);
+
+        // xy
+        hessianMatrix[0][1] = hessianMatrix[1][0] =
+                (
+                        (laPlace.get(x + 1, y + 1) - laPlace.get(x - 1, y + 1)) / 2
+                        -
+                        (laPlace.get(x + 1, y - 1) - laPlace.get(x - 1, y - 1)) / 2
+                ) / 2;
+
+        for (int i = 0; i < 2; i++)
+            for (int j = 0; j < 2; j++)
+                hessianMatrix[i][j] *= (sigma * sigma);
+
+        return hessianMatrix;
+    }
+
+    /**
+     * This method computes the Hessian Matrix for the 3x3 environment of a certain pixel <br><br>
+     *
+     * The 3D Hessian Matrix:<br>
+     * xx xy <br>
+     * yx yy <br>
+     *
+     * @param img The image as FloatArray3D
+     * @param x The x-position of the voxel
+     * @param y The y-position of the voxel
+     * @return float[][] The 2D - Hessian Matrix
+     *
+     * @author   Stephan Preibisch
+     */
+    public float[][] computeHessianMatrix2DFloat(FloatArray2D laPlace, int x, int y, double sigma)
+    {
+        float[][] hessianMatrix = new float[2][2]; // zeile, spalte
+
+        float temp = 2 * laPlace.get(x, y);
 
         // xx
         hessianMatrix[0][0] = laPlace.get(x + 1, y) - temp + laPlace.get(x - 1, y);
@@ -704,11 +975,73 @@ public class ComputeCurvatures implements Runnable
      *
      * @author   Stephan Preibisch
      */
-    public double[][] computeHessianMatrix3D(FloatArray3D img, int x, int y, int z, double sigma)
+    public double[][] computeHessianMatrix3DDouble(FloatArray3D img, int x, int y, int z, double sigma)
     {
         double[][] hessianMatrix = new double[3][3]; // zeile, spalte
 
         double temp = 2 * img.get(x, y, z);
+
+        // xx
+        hessianMatrix[0][0] = img.get(x + 1, y, z) - temp + img.get(x - 1, y, z);
+
+        // yy
+        hessianMatrix[1][1] = img.get(x, y + 1, z) - temp + img.get(x, y - 1, z);
+
+        // zz
+        hessianMatrix[2][2] = img.get(x, y, z + 1) - temp + img.get(x, y, z - 1);
+
+        // xy
+        hessianMatrix[0][1] = hessianMatrix[1][0] =
+                (
+                        (img.get(x + 1, y + 1, z) - img.get(x - 1, y + 1, z)) / 2
+                        -
+                        (img.get(x + 1, y - 1, z) - img.get(x - 1, y - 1, z)) / 2
+                ) / 2;
+
+        // xz
+        hessianMatrix[0][2] = hessianMatrix[2][0] =
+                (
+                        (img.get(x + 1, y, z + 1) - img.get(x - 1, y, z + 1)) / 2
+                        -
+                        (img.get(x + 1, y, z - 1) - img.get(x - 1, y, z - 1)) / 2
+                ) / 2;
+
+        // yz
+        hessianMatrix[1][2] = hessianMatrix[2][1] =
+                (
+                        (img.get(x, y + 1, z + 1) - img.get(x, y - 1, z + 1)) / 2
+                        -
+                        (img.get(x, y + 1, z - 1) - img.get(x, y - 1, z - 1)) / 2
+                ) / 2;
+
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
+                    hessianMatrix[i][j] *= (sigma * sigma);
+
+        return hessianMatrix;
+    }
+
+    /**
+     * This method computes the Hessian Matrix for the 3x3x3 environment of a certain voxel <br><br>
+     *
+     * The 3D Hessian Matrix:<br>
+     * xx xy xz <br>
+     * yx yy yz <br>
+     * zx zy zz <br>
+     *
+     * @param img The image as FloatArray3D
+     * @param x The x-position of the voxel
+     * @param y The y-position of the voxel
+     * @param z The z-position of the voxel
+     * @return float[][] The 3D - Hessian Matrix
+     *
+     * @author   Stephan Preibisch
+     */
+    public float[][] computeHessianMatrix3DFloat(FloatArray3D img, int x, int y, int z, double sigma)
+    {
+        float[][] hessianMatrix = new float[3][3]; // zeile, spalte
+
+        float temp = 2 * img.get(x, y, z);
 
         // xx
         hessianMatrix[0][0] = img.get(x + 1, y, z) - temp + img.get(x - 1, y, z);

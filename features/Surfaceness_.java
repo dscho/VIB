@@ -22,9 +22,9 @@ public class Surfaceness_ implements PlugIn {
                         return;
                 }
 
-		SurfacenessProcessor tp = new SurfacenessProcessor();
+		SurfacenessProcessor sp = new SurfacenessProcessor();
 
-		ImagePlus result = tp.generateImage(original);
+		ImagePlus result = sp.generateImage(original);
 		result.setTitle("surfaceness of " + original.getTitle());
 
 		result.show();

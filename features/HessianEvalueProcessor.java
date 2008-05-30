@@ -15,15 +15,17 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 		IJ.showProgress(d);
 	}
 
-	public abstract double measureFromEvalues2D( double [] evalues );
+	public abstract float measureFromEvalues2D( float [] evalues );
+	public abstract float measureFromEvalues3D( float [] evalues );
 
-	public abstract double measureFromEvalues3D( double [] evalues );
+	protected boolean normalize = false;
+	protected double sigma = 1.0;
 
 	public ImagePlus generateImage(ImagePlus original) {
 
 		Calibration calibration=original.getCalibration();
 
-		ComputeCurvatures c = new ComputeCurvatures(original, 1.0, this);
+		ComputeCurvatures c = new ComputeCurvatures(original, sigma, this);
 		c.run();
 
 		int width = original.getWidth();
@@ -34,7 +36,7 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 
 		ImageStack stack = new ImageStack(width, height);
 
-		double[] evalues = new double[3];
+		float[] evalues = new float[3];
 
 		if( depth == 1 ) {
 
@@ -46,10 +48,10 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 					c.hessianEigenvaluesAtPoint2D(x, y,
 								      true, // order absolute
 								      evalues,
+								      normalize,
 								      false);
 					int index = y * width + x;
-					double v = measureFromEvalues2D(evalues);
-					slice[index] = (float)v;
+					slice[index] = measureFromEvalues2D(evalues);
 				}
 				IJ.showProgress(1 / (double) height);
 			}
@@ -62,8 +64,6 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 
 			for (int z = 0; z < depth; ++z) {
 
-				System.out.println("Working on slice: " + z);
-
 				float[] slice = new float[width * height];
 
 				if ((z >= 1) && (z < depth - 1)) {
@@ -73,10 +73,10 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 							c.hessianEigenvaluesAtPoint3D(x, y, z,
 										      true, // order absolute
 										      evalues,
+										      normalize,
 										      false);
 							int index = y * width + x;
-							double v = measureFromEvalues3D(evalues);
-							slice[index] = (float)v;
+							slice[index] = measureFromEvalues3D(evalues);
 						}
 					}
 				}

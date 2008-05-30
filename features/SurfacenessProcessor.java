@@ -4,11 +4,11 @@ package features;
 
 public class SurfacenessProcessor extends HessianEvalueProcessor {
 
-	public double measureFromEvalues2D( double [] evalues ) {
-		return -1.0;
+	public float measureFromEvalues2D( float [] evalues ) {
+		return -1.0f;
 	}
 
-	public double measureFromEvalues3D( double [] evalues ) {
+	public float measureFromEvalues3D( float [] evalues ) {
 
 		/* If either of the two principle eigenvalues is positive then
 		   the curvature is in the wrong direction - towards higher
@@ -17,6 +17,6 @@ public class SurfacenessProcessor extends HessianEvalueProcessor {
 		if( (evalues[1] >= 0) || (evalues[2] >= 0) )
 			return 0;
 		else
-			return Math.sqrt(Math.abs( evalues[2] / evalues[1] )) - 1;
+			return (float)Math.sqrt(Math.abs( evalues[2] / evalues[1] )) - 1;
 	}
 }

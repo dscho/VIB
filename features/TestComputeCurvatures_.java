@@ -54,10 +54,11 @@ public class TestComputeCurvatures_ implements PlugIn, GaussianGenerationCallbac
             for( int y = 1; y < (height - 1); ++y ) {
                 for( int x = 1; x < (width - 1); ++x ) {
                     
-                    c.hessianEigenvaluesAtPoint3D( x, y, z,
-                                                   true, // order absolute
-                                                   evalues,
-                                                   false );
+                    boolean succeeded = c.hessianEigenvaluesAtPoint3D( x, y, z,
+                                                                       true, // order absolute
+                                                                       evalues,
+                                                                       false,
+                                                                       false );
 
                     int index = (y - 1) * (width - 2) + (x - 1);
                     
@@ -84,11 +85,9 @@ public class TestComputeCurvatures_ implements PlugIn, GaussianGenerationCallbac
                         */
 
                         slice_s[index] = (float) Math.abs( evalues[2] * evalues[1] );
-                        
                         slice_m[index] = (float) Math.sqrt( Math.abs( evalues[2] * evalues[1] ) );
-
                         slice_d[index] = (float) Math.abs( evalues[2] * evalues[1] * evalues[1] );
-                        
+
                     }
                 }
             }
