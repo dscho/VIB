@@ -155,7 +155,7 @@ public class MeshExporter {
 			if (null != mat2) mat = (Mtl)mat2; // recycling
 			else ht_mat.put(mat, mat); // !@#$% Can't get the object in a HashSet easily
 			// make list of vertices
-			String title = mg.getName().replaceAll(" ", "_").replaceAll("#", "--");
+			String title = mob.getName().replaceAll(" ", "_").replaceAll("#", "--");
 			Hashtable ht_points = new Hashtable(); // because we like inefficiency
 			sb_obj.append("o ").append(title).append('\n');
 			final int len = triangles.size();
