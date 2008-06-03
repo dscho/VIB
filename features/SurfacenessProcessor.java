@@ -4,6 +4,11 @@ package features;
 
 public class SurfacenessProcessor extends HessianEvalueProcessor {
 
+	public SurfacenessProcessor(double sigma, boolean useCalibration) {
+		this.sigma = sigma;
+		this.useCalibration = useCalibration;
+	}
+
 	public float measureFromEvalues2D( float [] evalues ) {
 		return -1.0f;
 	}

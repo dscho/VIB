@@ -181,7 +181,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			}
 		} else {
 			IJ.showStatus("No tubes file found, generating anew...");
-			TubenessProcessor tubifier=new TubenessProcessor();
+			TubenessProcessor tubifier=new TubenessProcessor(1,true);
 			tubenessImage=tubifier.generateImage(image);
 			System.out.println("Got tubes file.");
 			boolean saved=new FileSaver(tubenessImage).saveAsTiffStack(tubesFile.getAbsolutePath());

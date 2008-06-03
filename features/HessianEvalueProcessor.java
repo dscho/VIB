@@ -20,12 +20,21 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 
 	protected boolean normalize = false;
 	protected double sigma = 1.0;
+	protected boolean useCalibration = false;
 
 	public ImagePlus generateImage(ImagePlus original) {
 
 		Calibration calibration=original.getCalibration();
 
-		ComputeCurvatures c = new ComputeCurvatures(original, sigma, this);
+		float sepX = 1, sepY = 1, sepZ = 1;
+		if( useCalibration && (calibration!=null) ) {
+			sepX = (float)calibration.pixelWidth;
+			sepY = (float)calibration.pixelHeight;
+			sepZ = (float)calibration.pixelDepth;
+		}
+
+		ComputeCurvatures c = new ComputeCurvatures(original, sigma, this, useCalibration);
+		IJ.showStatus("Convolving with Gaussian sigma "+sigma+" (pixel width: "+sepX+")...");
 		c.run();
 
 		int width = original.getWidth();
@@ -38,6 +47,15 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 
 		float[] evalues = new float[3];
 
+		float sepX = 1, sepY = 1, sepZ = 1;
+		if( useCalibration && (calibration!=null) ) {
+			sepX = (float)calibration.pixelWidth;
+			sepY = (float)calibration.pixelHeight;
+			sepZ = (float)calibration.pixelDepth;
+		}
+
+		IJ.showStatus("Calculating Hessian eigenvalues at each point...");
+
 		if( depth == 1 ) {
 
 			float[] slice = new float[width * height];
@@ -49,7 +67,9 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 								      true, // order absolute
 								      evalues,
 								      normalize,
-								      false);
+								      false,
+								      sepX,
+								      sepY);
 					int index = y * width + x;
 					slice[index] = measureFromEvalues2D(evalues);
 				}
@@ -74,7 +94,10 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 										      true, // order absolute
 										      evalues,
 										      normalize,
-										      false);
+										      false,
+										      sepX,
+										      sepY,
+										      sepZ);
 							int index = y * width + x;
 							slice[index] = measureFromEvalues3D(evalues);
 						}

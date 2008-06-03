@@ -56,9 +56,8 @@
  * - Added normalisation of the eigenvalues to that the largest has
  *   size 1 (some papers use methods that require this)
  *
- * TODO:
- *
- *   Use calibration information...
+ * - Now we take notice of the calibration information (or not, if
+ *   that option is deselected).
  *
  */
 
@@ -76,11 +75,22 @@ import ij.process.ByteProcessor;
 import ij.process.ShortProcessor;
 import ij.process.FloatProcessor;
 
+import ij.measure.Calibration;
+
 import math3d.JacobiDouble;
 import math3d.JacobiFloat;
 
 public class ComputeCurvatures implements Runnable
 {
+    static class TrivialProgressDisplayer implements GaussianGenerationCallback {
+        public void proportionDone( double proportion ) {
+            if( proportion < 0 )
+                IJ.showProgress(1.0);
+            else
+                IJ.showProgress(proportion);
+        }
+    }
+
     private boolean _3D;
     private FloatArray data;
     private double[][] hessianMatrix;
@@ -93,6 +103,7 @@ public class ComputeCurvatures implements Runnable
 
     protected ImagePlus imp;
     protected double sigma;
+    protected boolean useCalibration;
     protected GaussianGenerationCallback callback;
 
     /* This constructor should used if you're actually using this as
@@ -110,10 +121,12 @@ public class ComputeCurvatures implements Runnable
 
     public ComputeCurvatures( ImagePlus imp,
                               double sigma,
-                              GaussianGenerationCallback callback ) {
+                              GaussianGenerationCallback callback,
+                              boolean useCalibration ) {
         this.imp = imp;
         this.sigma = sigma;
         this.callback = callback;
+        this.useCalibration = useCalibration;
     }
 
     /**
@@ -154,6 +167,9 @@ public class ComputeCurvatures implements Runnable
                 return;
         }
 
+        // Get the calibration data:
+        Calibration calibration = imp.getCalibration();
+
         //
         // Show the dialog
         //
@@ -169,7 +185,8 @@ public class ComputeCurvatures implements Runnable
         gd.addCheckbox("Compute a gaussian convolution", true);
         gd.addMessage("Please define sigma (>= 0.5) for computing.");
         gd.addMessage("(Applies only if you wish to compute the convolution first)");
-        gd.addNumericField("Sigma: ", 0.5f, 2);
+        gd.addNumericField("Sigma: ", (calibration==null) ? 0.5f : (calibration.pixelWidth/2), 4);
+        gd.addCheckbox("Use calibration information", calibration!=null);
         gd.addCheckbox("Show Gauss Image", false);
         gd.addCheckbox("Order eigenvalues on absolute values", true);
         gd.addCheckbox("Normalize eigenvalues", false);
@@ -186,6 +203,7 @@ public class ComputeCurvatures implements Runnable
 
         boolean computeGauss = gd.getNextBoolean();
         sigma = gd.getNextNumber();
+        useCalibration = gd.getNextBoolean();
         boolean showGauss = gd.getNextBoolean();
 
         boolean orderOnAbsoluteValues = gd.getNextBoolean();
@@ -199,18 +217,28 @@ public class ComputeCurvatures implements Runnable
             // IJ.log("Computing Gauss image");
             if (_3D)
             {
-                data = computeGaussianFastMirror((FloatArray3D) data, (float)sigma, null);
+                data = computeGaussianFastMirror((FloatArray3D) data, (float)sigma, new TrivialProgressDisplayer(), useCalibration?calibration:null);
                 if (showGauss)
                     FloatArrayToStack((FloatArray3D)data, "Gauss image", 0, 255).show();
             }
             else
             {
-                data = computeGaussianFastMirror((FloatArray2D) data, (float)sigma, null);
+                data = computeGaussianFastMirror((FloatArray2D) data, (float)sigma, new TrivialProgressDisplayer(), useCalibration?calibration:null);
                 if (showGauss)
                     FloatArrayToImagePlus((FloatArray2D)data, "Gauss image", 0, 255).show();
             }
+        } else {
+            // Otherwise the correction in calculating the Hessian
+            // matrix won't make sense.
+            sigma = 1;
         }
 
+        float sepX = 1, sepY = 1, sepZ = 1;
+        if( useCalibration && (calibration!=null) ) {
+            sepX = (float)calibration.pixelWidth;
+            sepY = (float)calibration.pixelHeight;
+            sepZ = (float)calibration.pixelDepth;
+        }
 
         //
         // Compute Hessian Matrix and principle curvatures for all pixels/voxels
@@ -236,7 +264,10 @@ public class ComputeCurvatures implements Runnable
                                                          orderOnAbsoluteValues,
                                                          eigenValues,
                                                          normalizeEigenValues,
-                                                         false ) ) {
+                                                         false,
+                                                         sepX,
+                                                         sepY,
+                                                         sepZ ) ) {
 
                             for( int i = 0; i < 3; ++i)
                                 if (evaluesToShow[i])
@@ -276,7 +307,9 @@ public class ComputeCurvatures implements Runnable
                                                      orderOnAbsoluteValues,
                                                      eigenValues,
                                                      normalizeEigenValues,
-                                                     false ) ) {
+                                                     false,
+                                                     sepX,
+                                                     sepY ) ) {
 
                         result2D.set((float)eigenValues[0], x, y, 0);
                         result2D.set((float)eigenValues[1], x, y, 1);
@@ -365,10 +398,12 @@ public class ComputeCurvatures implements Runnable
             boolean computeGauss = true;
             boolean showGauss = false;
 
+            Calibration calibration=imp.getCalibration();
+
             // IJ.log("Computing Gauss image");
             if (_3D)
                 {
-                    data = computeGaussianFastMirror((FloatArray3D) data, (float)sigma, callback);
+                    data = computeGaussianFastMirror((FloatArray3D) data, (float)sigma, callback, useCalibration ? calibration : null );
                     if( data == null ) {
                         if( callback != null )
                             callback.proportionDone( -1 );
@@ -379,7 +414,7 @@ public class ComputeCurvatures implements Runnable
                 }
             else
                 {
-                    data = computeGaussianFastMirror((FloatArray2D) data, (float)sigma, callback);
+                    data = computeGaussianFastMirror((FloatArray2D) data, (float)sigma, callback, useCalibration ? calibration : null );
                     if( data == null ) {
                         if( callback != null )
                             callback.proportionDone( -1 );
@@ -428,7 +463,9 @@ public class ComputeCurvatures implements Runnable
                                                 boolean orderOnAbsoluteSize,
                                                 float [] result, /* should be 2 elements */
                                                 boolean normalize,
-                                                boolean fixUp ) {
+                                                boolean fixUp,
+                                                float sepX,
+                                                float sepY ) {
 
         if( _3D ) {
             IJ.error("hessianEigenvaluesAtPoint2D( x, y, z, ... ) is only for 2D data.");
@@ -450,7 +487,7 @@ public class ComputeCurvatures implements Runnable
                 y = data2D.height - 2;
         }
 
-        float [][] hessianMatrix = computeHessianMatrix2DFloat(data2D, x, y, sigma);
+        float [][] hessianMatrix = computeHessianMatrix2DFloat(data2D, x, y, sigma, sepX, sepY);
         float [] eigenValues = computeEigenValues(hessianMatrix);
         if( eigenValues == null )
             return false;
@@ -488,7 +525,9 @@ public class ComputeCurvatures implements Runnable
                                                 boolean orderOnAbsoluteSize,
                                                 double [] result, /* should be 2 elements */
                                                 boolean normalize,
-                                                boolean fixUp ) {
+                                                boolean fixUp,
+                                                float sepX,
+                                                float sepY ) {
 
         if( _3D ) {
             IJ.error("hessianEigenvaluesAtPoint2D( x, y, z, ... ) is only for 2D data.");
@@ -510,7 +549,7 @@ public class ComputeCurvatures implements Runnable
                 y = data2D.height - 2;
         }
 
-        double [][] hessianMatrix = computeHessianMatrix2DDouble(data2D, x, y, sigma);
+        double [][] hessianMatrix = computeHessianMatrix2DDouble(data2D, x, y, sigma, sepX, sepY);
         double [] eigenValues = computeEigenValues(hessianMatrix);
         if( eigenValues == null )
             return false;
@@ -549,7 +588,10 @@ public class ComputeCurvatures implements Runnable
                                                 boolean orderOnAbsoluteSize,
                                                 float [] result, /* should be 3 elements */
                                                 boolean normalize,
-                                                boolean fixUp ) {
+                                                boolean fixUp,
+                                                float sepX,
+                                                float sepY,
+                                                float sepZ ) {
 
         if( ! _3D ) {
             IJ.error("hessianEigenvaluesAtPoint3D( x, y, z, ... ) is only for 3D data.");
@@ -578,7 +620,7 @@ public class ComputeCurvatures implements Runnable
 
         }
 
-        float [][] hessianMatrix = computeHessianMatrix3DFloat(data3D, x, y, z, sigma);
+        float [][] hessianMatrix = computeHessianMatrix3DFloat(data3D, x, y, z, sigma, sepX, sepY, sepZ);
         float [] eigenValues = computeEigenValues(hessianMatrix);
         if( eigenValues == null )
             return false;
@@ -651,7 +693,10 @@ public class ComputeCurvatures implements Runnable
                                                 boolean orderOnAbsoluteSize,
                                                 double [] result, /* should be 3 elements */
                                                 boolean normalize,
-                                                boolean fixUp ) {
+                                                boolean fixUp,
+                                                float sepX,
+                                                float sepY,
+                                                float sepZ ) {
 
         if( ! _3D ) {
             IJ.error("hessianEigenvaluesAtPoint3D( x, y, z, ... ) is only for 3D data.");
@@ -680,7 +725,7 @@ public class ComputeCurvatures implements Runnable
 
         }
 
-        double [][] hessianMatrix = computeHessianMatrix3DDouble(data3D, x, y, z, sigma);
+        double [][] hessianMatrix = computeHessianMatrix3DDouble(data3D, x, y, z, sigma, sepX, sepY, sepZ);
         double [] eigenValues = computeEigenValues(hessianMatrix);
         if( eigenValues == null )
             return false;
@@ -891,26 +936,27 @@ public class ComputeCurvatures implements Runnable
      *
      * @author   Stephan Preibisch
      */
-    public double[][] computeHessianMatrix2DDouble(FloatArray2D laPlace, int x, int y, double sigma)
+    public double[][] computeHessianMatrix2DDouble(FloatArray2D laPlace, int x, int y, double sigma, float sepX, float sepY)
     {
         double[][] hessianMatrix = new double[2][2]; // zeile, spalte
 
         double temp = 2 * laPlace.get(x, y);
 
         // xx
-        hessianMatrix[0][0] = laPlace.get(x + 1, y) - temp + laPlace.get(x - 1, y);
+        hessianMatrix[0][0] = (laPlace.get(x + 1, y) - temp + laPlace.get(x - 1, y)) / (sepX*sepX);
 
         // yy
-        hessianMatrix[1][1] = laPlace.get(x, y + 1) - temp + laPlace.get(x, y - 1);
+        hessianMatrix[1][1] = (laPlace.get(x, y + 1) - temp + laPlace.get(x, y - 1)) / (sepY*sepY);
 
         // xy
         hessianMatrix[0][1] = hessianMatrix[1][0] =
-                (
-                        (laPlace.get(x + 1, y + 1) - laPlace.get(x - 1, y + 1)) / 2
-                        -
-                        (laPlace.get(x + 1, y - 1) - laPlace.get(x - 1, y - 1)) / 2
-                ) / 2;
+            (
+                (laPlace.get(x + 1, y + 1) - laPlace.get(x - 1, y + 1)) / (2*sepX)
+                -
+                (laPlace.get(x + 1, y - 1) - laPlace.get(x - 1, y - 1)) / (2*sepX)
+            ) / (2*sepY);
 
+        // FIXME: get Stephan to remind me why this is needed...
         for (int i = 0; i < 2; i++)
             for (int j = 0; j < 2; j++)
                 hessianMatrix[i][j] *= (sigma * sigma);
@@ -932,26 +978,27 @@ public class ComputeCurvatures implements Runnable
      *
      * @author   Stephan Preibisch
      */
-    public float[][] computeHessianMatrix2DFloat(FloatArray2D laPlace, int x, int y, double sigma)
+    public float[][] computeHessianMatrix2DFloat(FloatArray2D laPlace, int x, int y, double sigma, float sepX, float sepY)
     {
         float[][] hessianMatrix = new float[2][2]; // zeile, spalte
 
         float temp = 2 * laPlace.get(x, y);
 
         // xx
-        hessianMatrix[0][0] = laPlace.get(x + 1, y) - temp + laPlace.get(x - 1, y);
+        hessianMatrix[0][0] = (laPlace.get(x + 1, y) - temp + laPlace.get(x - 1, y)) / (2*sepX);
 
         // yy
-        hessianMatrix[1][1] = laPlace.get(x, y + 1) - temp + laPlace.get(x, y - 1);
+        hessianMatrix[1][1] = (laPlace.get(x, y + 1) - temp + laPlace.get(x, y - 1)) / (2*sepX);
 
         // xy
         hessianMatrix[0][1] = hessianMatrix[1][0] =
                 (
-                        (laPlace.get(x + 1, y + 1) - laPlace.get(x - 1, y + 1)) / 2
+                    (laPlace.get(x + 1, y + 1) - laPlace.get(x - 1, y + 1)) / (2*sepX)
                         -
-                        (laPlace.get(x + 1, y - 1) - laPlace.get(x - 1, y - 1)) / 2
-                ) / 2;
+                    (laPlace.get(x + 1, y - 1) - laPlace.get(x - 1, y - 1)) / (2*sepX)
+                ) / (2*sepY);
 
+        // FIXME: get Stephan to remind me why this is needed...
         for (int i = 0; i < 2; i++)
             for (int j = 0; j < 2; j++)
                 hessianMatrix[i][j] *= (sigma * sigma);
@@ -975,48 +1022,49 @@ public class ComputeCurvatures implements Runnable
      *
      * @author   Stephan Preibisch
      */
-    public double[][] computeHessianMatrix3DDouble(FloatArray3D img, int x, int y, int z, double sigma)
+    public double[][] computeHessianMatrix3DDouble(FloatArray3D img, int x, int y, int z, double sigma, float sepX, float sepY, float sepZ)
     {
         double[][] hessianMatrix = new double[3][3]; // zeile, spalte
 
         double temp = 2 * img.get(x, y, z);
 
         // xx
-        hessianMatrix[0][0] = img.get(x + 1, y, z) - temp + img.get(x - 1, y, z);
+        hessianMatrix[0][0] = (img.get(x + 1, y, z) - temp + img.get(x - 1, y, z)) / (2*sepX);
 
         // yy
-        hessianMatrix[1][1] = img.get(x, y + 1, z) - temp + img.get(x, y - 1, z);
+        hessianMatrix[1][1] = (img.get(x, y + 1, z) - temp + img.get(x, y - 1, z)) / (2*sepY);
 
         // zz
-        hessianMatrix[2][2] = img.get(x, y, z + 1) - temp + img.get(x, y, z - 1);
+        hessianMatrix[2][2] = (img.get(x, y, z + 1) - temp + img.get(x, y, z - 1)) / (2*sepZ);
 
         // xy
         hessianMatrix[0][1] = hessianMatrix[1][0] =
-                (
-                        (img.get(x + 1, y + 1, z) - img.get(x - 1, y + 1, z)) / 2
-                        -
-                        (img.get(x + 1, y - 1, z) - img.get(x - 1, y - 1, z)) / 2
-                ) / 2;
+            (
+                (img.get(x + 1, y + 1, z) - img.get(x - 1, y + 1, z)) / (2*sepX)
+                -
+                (img.get(x + 1, y - 1, z) - img.get(x - 1, y - 1, z)) / (2*sepX)
+                ) / (2*sepY);
 
         // xz
         hessianMatrix[0][2] = hessianMatrix[2][0] =
-                (
-                        (img.get(x + 1, y, z + 1) - img.get(x - 1, y, z + 1)) / 2
-                        -
-                        (img.get(x + 1, y, z - 1) - img.get(x - 1, y, z - 1)) / 2
-                ) / 2;
+            (
+                (img.get(x + 1, y, z + 1) - img.get(x - 1, y, z + 1)) / (2*sepX)
+                -
+                (img.get(x + 1, y, z - 1) - img.get(x - 1, y, z - 1)) / (2*sepX)
+                ) / (2*sepZ);
 
         // yz
         hessianMatrix[1][2] = hessianMatrix[2][1] =
-                (
-                        (img.get(x, y + 1, z + 1) - img.get(x, y - 1, z + 1)) / 2
-                        -
-                        (img.get(x, y + 1, z - 1) - img.get(x, y - 1, z - 1)) / 2
-                ) / 2;
+            (
+                (img.get(x, y + 1, z + 1) - img.get(x, y - 1, z + 1)) / (2*sepY)
+                -
+                (img.get(x, y + 1, z - 1) - img.get(x, y - 1, z - 1)) / (2*sepY)
+                ) / (2*sepZ);
 
-            for (int i = 0; i < 3; i++)
-                for (int j = 0; j < 3; j++)
-                    hessianMatrix[i][j] *= (sigma * sigma);
+        // FIXME: get Stephan to remind me why this is needed...
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                hessianMatrix[i][j] *= (sigma * sigma);
 
         return hessianMatrix;
     }
@@ -1037,58 +1085,51 @@ public class ComputeCurvatures implements Runnable
      *
      * @author   Stephan Preibisch
      */
-    public float[][] computeHessianMatrix3DFloat(FloatArray3D img, int x, int y, int z, double sigma)
+    public float[][] computeHessianMatrix3DFloat(FloatArray3D img, int x, int y, int z, double sigma, float sepX, float sepY, float sepZ)
     {
         float[][] hessianMatrix = new float[3][3]; // zeile, spalte
 
         float temp = 2 * img.get(x, y, z);
 
         // xx
-        hessianMatrix[0][0] = img.get(x + 1, y, z) - temp + img.get(x - 1, y, z);
+        hessianMatrix[0][0] = (img.get(x + 1, y, z) - temp + img.get(x - 1, y, z)) / (2*sepX);
 
         // yy
-        hessianMatrix[1][1] = img.get(x, y + 1, z) - temp + img.get(x, y - 1, z);
+        hessianMatrix[1][1] = (img.get(x, y + 1, z) - temp + img.get(x, y - 1, z)) / (2*sepY);
 
         // zz
-        hessianMatrix[2][2] = img.get(x, y, z + 1) - temp + img.get(x, y, z - 1);
+        hessianMatrix[2][2] = (img.get(x, y, z + 1) - temp + img.get(x, y, z - 1)) / (2*sepZ);
 
         // xy
         hessianMatrix[0][1] = hessianMatrix[1][0] =
-                (
-                        (img.get(x + 1, y + 1, z) - img.get(x - 1, y + 1, z)) / 2
-                        -
-                        (img.get(x + 1, y - 1, z) - img.get(x - 1, y - 1, z)) / 2
-                ) / 2;
+            (
+                (img.get(x + 1, y + 1, z) - img.get(x - 1, y + 1, z)) / (2*sepX)
+                -
+                (img.get(x + 1, y - 1, z) - img.get(x - 1, y - 1, z)) / (2*sepX)
+                ) / (2*sepY);
 
         // xz
         hessianMatrix[0][2] = hessianMatrix[2][0] =
-                (
-                        (img.get(x + 1, y, z + 1) - img.get(x - 1, y, z + 1)) / 2
-                        -
-                        (img.get(x + 1, y, z - 1) - img.get(x - 1, y, z - 1)) / 2
-                ) / 2;
+            (
+                (img.get(x + 1, y, z + 1) - img.get(x - 1, y, z + 1)) / (2*sepX)
+                -
+                (img.get(x + 1, y, z - 1) - img.get(x - 1, y, z - 1)) / (2*sepX)
+                ) / (2*sepZ);
 
         // yz
         hessianMatrix[1][2] = hessianMatrix[2][1] =
-                (
-                        (img.get(x, y + 1, z + 1) - img.get(x, y - 1, z + 1)) / 2
-                        -
-                        (img.get(x, y + 1, z - 1) - img.get(x, y - 1, z - 1)) / 2
-                ) / 2;
+            (
+                (img.get(x, y + 1, z + 1) - img.get(x, y - 1, z + 1)) / (2*sepY)
+                -
+                (img.get(x, y + 1, z - 1) - img.get(x, y - 1, z - 1)) / (2*sepY)
+                ) / (2*sepZ);
 
-            for (int i = 0; i < 3; i++)
-                for (int j = 0; j < 3; j++)
-                    hessianMatrix[i][j] *= (sigma * sigma);
+        // FIXME: get Stephan to remind me why this is needed...
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                hessianMatrix[i][j] *= (sigma * sigma);
 
         return hessianMatrix;
-    }
-
-    public static int max(int a, int b)
-    {
-        if (a > b)
-            return a;
-        else
-            return b;
     }
 
     /**
@@ -1096,34 +1137,36 @@ public class ComputeCurvatures implements Runnable
      *
      * @param sigma Standard Derivation of the gaussian function
      * @param normalize Normalize integral of gaussian function to 1 or not...
+     * @param separation The separation of samples in this dimension.  (Normally taken from calibration information, or set to 1 if unknown.)
      * @return float[] The gaussian kernel
      *
      * @author   Stephan Saalfeld
      */
-    public static float[] createGaussianKernel1D(float sigma, boolean normalize)
+    public static float[] createGaussianKernel1D(float sigma, boolean normalize, float separation)
     {
-        int size = 3;
         float[] gaussianKernel;
 
-        if (sigma <= 0)
-        {
-         gaussianKernel = new float[3];
-         gaussianKernel[1] = 1;
-        }
-        else
-        {
-         size = max(3, (int)(2*(int)(3*sigma + 0.5)+1));
+        if (sigma <= 0) {
 
-         float two_sq_sigma = 2*sigma*sigma;
-         gaussianKernel = new float[size];
+            gaussianKernel = new float[3];
+            gaussianKernel[1] = 1;
 
-         for (int x = size/2; x >= 0; --x)
-         {
-             float val = (float)Math.exp(-(float)(x*x)/two_sq_sigma);
+        } else {
 
-             gaussianKernel[size/2-x] = val;
-             gaussianKernel[size/2+x] = val;
-         }
+            sigma /= separation;
+
+            int size = Math.max(3, (int)(2*(int)(3*sigma + 0.5)+1));
+
+            float two_sq_sigma = 2*sigma*sigma;
+            gaussianKernel = new float[size];
+
+            for (int x = size/2; x >= 0; --x) {
+
+                float val = (float)Math.exp(-(float)(x*x)/two_sq_sigma);
+
+                gaussianKernel[size/2-x] = val;
+                gaussianKernel[size/2+x] = val;
+            }
      }
 
      if (normalize)
@@ -1155,19 +1198,31 @@ public class ComputeCurvatures implements Runnable
      *
      * @author   Stephan Preibisch
      */
-    public FloatArray2D computeGaussianFastMirror(FloatArray2D input, float sigma, GaussianGenerationCallback callback)
+    public FloatArray2D computeGaussianFastMirror(FloatArray2D input, float sigma, GaussianGenerationCallback callback, Calibration calibration)
     {
         FloatArray2D output = new FloatArray2D(input.width, input.height);
 
-        float avg, kernelsum = 0;
-        float[] kernel = createGaussianKernel1D(sigma, true);
-        int filterSize = kernel.length;
+        float avg;
+        float kernelsumX = 0, kernelsumY = 0, kernelsumZ = 0;
 
-        // get kernel sum
-        /*for (double value : kernel)
-            kernelsum += value;*/
-        for (int i = 0; i < kernel.length; i++)
-            kernelsum += kernel[i];
+        float pixelWidth = 1, pixelHeight = 1, pixelDepth = 1;
+
+        if (calibration != null) {
+            pixelWidth = (float)calibration.pixelWidth;
+            pixelHeight = (float)calibration.pixelHeight;
+            pixelDepth = (float)calibration.pixelDepth;
+        }
+
+        float[] kernelX = createGaussianKernel1D(sigma, true, pixelWidth);
+        float[] kernelY = createGaussianKernel1D(sigma, true, pixelHeight);
+        int filterSizeX = kernelX.length;
+        int filterSizeY = kernelY.length;
+
+        // get kernel sums
+        for (int i = 0; i < kernelX.length; i++)
+            kernelsumX += kernelX[i];
+        for (int i = 0; i < kernelY.length; i++)
+            kernelsumY += kernelY[i];
 
         double totalPoints = input.width * input.height * 2;
         long pointsDone = 0;
@@ -1180,14 +1235,14 @@ public class ComputeCurvatures implements Runnable
                 {
                     avg = 0;
 
-                    if (x -filterSize / 2 >= 0 && x + filterSize / 2 < input.width)
-                        for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                            avg += input.get(x + f, y) * kernel[f + filterSize / 2];
+                    if (x -filterSizeX / 2 >= 0 && x + filterSizeX / 2 < input.width)
+                        for (int f = -filterSizeX / 2; f <= filterSizeX / 2; f++)
+                            avg += input.get(x + f, y) * kernelX[f + filterSizeX / 2];
                     else
-                        for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                            avg += input.getMirror(x + f, y) * kernel[f + filterSize / 2];
+                        for (int f = -filterSizeX / 2; f <= filterSizeX / 2; f++)
+                            avg += input.getMirror(x + f, y) * kernelX[f + filterSizeX / 2];
 
-                    output.set(avg / kernelsum, x, y);
+                    output.set(avg / kernelsumX, x, y);
 
                 }
             pointsDone += input.height;
@@ -1206,14 +1261,14 @@ public class ComputeCurvatures implements Runnable
                 {
                     avg = 0;
 
-                    if (y -filterSize / 2 >= 0 && y + filterSize / 2 < input.height)
-                        for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                            avg += output.get(x, y + f) * kernel[f + filterSize / 2];
+                    if (y -filterSizeY / 2 >= 0 && y + filterSizeY / 2 < input.height)
+                        for (int f = -filterSizeY / 2; f <= filterSizeY / 2; f++)
+                            avg += output.get(x, y + f) * kernelY[f + filterSizeY / 2];
                      else
-                        for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                            avg += output.getMirror(x, y + f) * kernel[f + filterSize / 2];
+                        for (int f = -filterSizeY / 2; f <= filterSizeY / 2; f++)
+                            avg += output.getMirror(x, y + f) * kernelY[f + filterSizeY / 2];
 
-                    temp[y] = avg / kernelsum;
+                    temp[y] = avg / kernelsumY;
                 }
 
                 for (int y = 0; y < input.height; y++)
@@ -1239,23 +1294,40 @@ public class ComputeCurvatures implements Runnable
      *
      * @param input FloatProcessor which will be folded (will not be touched)
      * @param sigma Standard Derivation of the gaussian function
+     * @param calibration Calibration data for the image, or null if we assume separation in all three dimensions is 1
      * @return FloatProcessor The folded image
      *
      * @author   Stephan Preibisch
      */
-    public FloatArray3D computeGaussianFastMirror(FloatArray3D input, float sigma,  GaussianGenerationCallback callback)
+    public FloatArray3D computeGaussianFastMirror(FloatArray3D input, float sigma,  GaussianGenerationCallback callback, Calibration calibration)
     {
         FloatArray3D output = new FloatArray3D(input.width, input.height, input.depth);
 
-        float avg, kernelsum = 0;
-        float[] kernel = createGaussianKernel1D(sigma, true);
-        int filterSize = kernel.length;
+        float avg;
+        float kernelsumX = 0, kernelsumY = 0, kernelsumZ = 0;
 
-        // get kernel sum
-        /*for (double value : kernel)
-            kernelsum += value;*/
-        for (int i = 0; i < kernel.length; i++)
-            kernelsum += kernel[i];
+        float pixelWidth = 1, pixelHeight = 1, pixelDepth = 1;
+
+        if (calibration != null) {
+            pixelWidth = (float)calibration.pixelWidth;
+            pixelHeight = (float)calibration.pixelHeight;
+            pixelDepth = (float)calibration.pixelDepth;
+        }
+
+        float[] kernelX = createGaussianKernel1D(sigma, true, pixelWidth);
+        float[] kernelY = createGaussianKernel1D(sigma, true, pixelHeight);
+        float[] kernelZ = createGaussianKernel1D(sigma, true, pixelDepth);
+        int filterSizeX = kernelX.length;
+        int filterSizeY = kernelY.length;
+        int filterSizeZ = kernelZ.length;
+
+        // get kernel sums
+        for (int i = 0; i < kernelX.length; i++)
+            kernelsumX += kernelX[i];
+        for (int i = 0; i < kernelY.length; i++)
+            kernelsumY += kernelY[i];
+        for (int i = 0; i < kernelZ.length; i++)
+            kernelsumZ += kernelZ[i];
 
         double totalPoints = input.width * input.height * input.depth * 3;
         long pointsDone = 0;
@@ -1269,14 +1341,14 @@ public class ComputeCurvatures implements Runnable
                 {
                     avg = 0;
 
-                    if (x -filterSize / 2 >= 0 && x + filterSize / 2 < input.width)
-                        for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                            avg += input.get(x + f, y, z) * kernel[f + filterSize / 2];
+                    if (x -filterSizeX / 2 >= 0 && x + filterSizeX / 2 < input.width)
+                        for (int f = -filterSizeX / 2; f <= filterSizeX / 2; f++)
+                            avg += input.get(x + f, y, z) * kernelX[f + filterSizeX / 2];
                     else
-                        for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                            avg += input.getMirror(x + f, y, z) * kernel[f + filterSize / 2];
+                        for (int f = -filterSizeX / 2; f <= filterSizeX / 2; f++)
+                            avg += input.getMirror(x + f, y, z) * kernelX[f + filterSizeX / 2];
 
-                    output.set(avg / kernelsum, x, y, z);
+                    output.set(avg / kernelsumX, x, y, z);
 
                 }
             pointsDone += input.height * input.depth;
@@ -1296,14 +1368,14 @@ public class ComputeCurvatures implements Runnable
                 {
                     avg = 0;
 
-                    if (y -filterSize / 2 >= 0 && y + filterSize / 2 < input.height)
-                        for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                            avg += output.get(x, y + f, z) * kernel[f + filterSize / 2];
+                    if (y -filterSizeY / 2 >= 0 && y + filterSizeY / 2 < input.height)
+                        for (int f = -filterSizeY / 2; f <= filterSizeY / 2; f++)
+                            avg += output.get(x, y + f, z) * kernelY[f + filterSizeY / 2];
                     else
-                       for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                           avg += output.getMirror(x, y + f, z) * kernel[f + filterSize / 2];
+                       for (int f = -filterSizeY / 2; f <= filterSizeY / 2; f++)
+                           avg += output.getMirror(x, y + f, z) * kernelY[f + filterSizeY / 2];
 
-                    temp[y] = avg / kernelsum;
+                    temp[y] = avg / kernelsumY;
                 }
 
                 for (int y = 0; y < input.height; y++)
@@ -1327,14 +1399,14 @@ public class ComputeCurvatures implements Runnable
                 {
                     avg = 0;
 
-                    if (z -filterSize / 2 >= 0 && z + filterSize / 2 < input.depth)
-                        for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                            avg += output.get(x, y, z + f) * kernel[f + filterSize / 2];
+                    if (z -filterSizeZ / 2 >= 0 && z + filterSizeZ / 2 < input.depth)
+                        for (int f = -filterSizeZ / 2; f <= filterSizeZ / 2; f++)
+                            avg += output.get(x, y, z + f) * kernelZ[f + filterSizeZ / 2];
                     else
-                       for (int f = -filterSize / 2; f <= filterSize / 2; f++)
-                           avg += output.getMirror(x, y, z + f) * kernel[f + filterSize / 2];
+                       for (int f = -filterSizeZ / 2; f <= filterSizeZ / 2; f++)
+                           avg += output.getMirror(x, y, z + f) * kernelZ[f + filterSizeZ / 2];
 
-                    temp[z] = avg / kernelsum;
+                    temp[z] = avg / kernelsumZ;
                 }
 
                 for (int z = 0; z < input.depth; z++)

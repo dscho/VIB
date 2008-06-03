@@ -6,6 +6,7 @@ import ij.*;
 import ij.measure.Calibration;
 import ij.plugin.*;
 import ij.process.*;
+import ij.gui.GenericDialog;
 
 public class Surfaceness_ implements PlugIn {
 
@@ -22,7 +23,25 @@ public class Surfaceness_ implements PlugIn {
                         return;
                 }
 
-		SurfacenessProcessor sp = new SurfacenessProcessor();
+		Calibration calibration = original.getCalibration();
+
+		GenericDialog gd = new GenericDialog("\"Surfaceness\" Filter");
+		gd.addNumericField("Sigma: ", (calibration==null) ? 1f : (calibration.pixelWidth), 4);
+		gd.addMessage("(The default value for sigma is the pixel width.)");
+		gd.addCheckbox("Use calibration information", calibration!=null);
+
+		gd.showDialog();
+		if( gd.wasCanceled() )
+			return;
+
+		double sigma = gd.getNextNumber();
+		if( sigma <= 0 ) {
+			IJ.error("The value of sigma must be positive");
+			return;
+		}
+		boolean useCalibration = gd.getNextBoolean();
+
+		SurfacenessProcessor sp = new SurfacenessProcessor(sigma,useCalibration);
 
 		ImagePlus result = sp.generateImage(original);
 		result.setTitle("surfaceness of " + original.getTitle());

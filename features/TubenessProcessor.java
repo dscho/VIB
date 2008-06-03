@@ -4,6 +4,11 @@ package features;
 
 public class TubenessProcessor extends HessianEvalueProcessor {
 
+	public TubenessProcessor(double sigma, boolean useCalibration) {
+		this.sigma = sigma;
+		this.useCalibration = useCalibration;
+	}
+
 	public float measureFromEvalues2D( float [] evalues ) {
 
 		/* If either of the two principle eigenvalues is
