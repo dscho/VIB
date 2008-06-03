@@ -169,6 +169,11 @@ public class ComputeCurvatures implements Runnable
 
         // Get the calibration data:
         Calibration calibration = imp.getCalibration();
+        double minimumSeparation = 1;
+        if( calibration != null )
+            minimumSeparation = Math.min(calibration.pixelWidth,
+                                         Math.min(calibration.pixelHeight,
+                                                  calibration.pixelDepth));
 
         //
         // Show the dialog
@@ -185,7 +190,7 @@ public class ComputeCurvatures implements Runnable
         gd.addCheckbox("Compute a gaussian convolution", true);
         gd.addMessage("Please define sigma (>= 0.5) for computing.");
         gd.addMessage("(Applies only if you wish to compute the convolution first)");
-        gd.addNumericField("Sigma: ", (calibration==null) ? 0.5f : (calibration.pixelWidth/2), 4);
+        gd.addNumericField("Sigma: ", (calibration==null) ? 0.5f : (minimumSeparation/2), 4);
         gd.addCheckbox("Use calibration information", calibration!=null);
         gd.addCheckbox("Show Gauss Image", false);
         gd.addCheckbox("Order eigenvalues on absolute values", true);

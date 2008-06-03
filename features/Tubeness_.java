@@ -20,8 +20,14 @@ public class Tubeness_ implements PlugIn {
 
 		Calibration calibration = original.getCalibration();
 
+		double minimumSeparation = 1;
+		if( calibration != null )
+			minimumSeparation = Math.min(calibration.pixelWidth,
+						     Math.min(calibration.pixelHeight,
+							      calibration.pixelDepth));
+
 		GenericDialog gd = new GenericDialog("\"Tubeness\" Filter");
-		gd.addNumericField("Sigma: ", (calibration==null) ? 1f : (calibration.pixelWidth), 4);
+		gd.addNumericField("Sigma: ", (calibration==null) ? 1f : minimumSeparation, 4);
 		gd.addMessage("(The default value for sigma is the pixel width.)");
 		gd.addCheckbox("Use calibration information", calibration!=null);
 

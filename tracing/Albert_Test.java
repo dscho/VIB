@@ -69,10 +69,11 @@ public class Albert_Test implements PlugIn {
 		boolean reciprocal = true;
 
 		Calibration calibration = imagePlus.getCalibration();
-		double pixelWidth = 1;
-		if( calibration != null ) {
-			pixelWidth = calibration.pixelWidth;
-		}
+		double minimumSeparation = 1;
+		if( calibration != null )
+			minimumSeparation = Math.min(calibration.pixelWidth,
+						     Math.min(calibration.pixelHeight,
+							      calibration.pixelDepth));
 
                 ComputeCurvatures hessian=null;
                 if( true )  {
@@ -82,7 +83,7 @@ public class Albert_Test implements PlugIn {
                         // In most cases you'll get better results by using the Hessian
                         // based measure of curvatures at each point, so calculate that
                         // in advance.
-                        hessian = new ComputeCurvatures(imagePlus, pixelWidth, null, calibration != null);
+                        hessian = new ComputeCurvatures(imagePlus, minimumSeparation, null, calibration != null);
                         hessian.run();
                 }
 
