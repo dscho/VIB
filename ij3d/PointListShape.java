@@ -27,10 +27,6 @@ public class PointListShape extends BranchGroup
 		this(name, new PointList());
 	}
 	
-	public PointListShape(String name, ImagePlus image) {
-		this(name, PointList.load(image));
-	}
-
 	public PointListShape(String name, PointList points) {
 		this.name = name;
 		setCapability(ALLOW_CHILDREN_EXTEND);
@@ -62,6 +58,21 @@ public class PointListShape extends BranchGroup
 
 	public float getRadius() {
 		return radius;
+	}
+
+	public void setRadius(float r) {
+		this.radius = r;
+		Transform3D t3d = new Transform3D();
+		t3d.set(radius);
+		for(int i = 0; i < numChildren(); i++) {
+			BranchGroup bg = (BranchGroup)getChild(i);
+			TransformGroup tg = (TransformGroup)bg.getChild(0);
+			ScaleInterpolator si = (ScaleInterpolator)tg.getChild(1);
+			si.setMaximumScale(5 * radius);
+			si.setMinimumScale(radius);
+			TransformGroup sig = (TransformGroup)tg.getChild(0);
+			sig.setTransform(t3d);
+		}
 	}
 
 	public void save(String dir, String name) {
@@ -128,7 +139,8 @@ public class PointListShape extends BranchGroup
 		initAppearance(color);
 		for(int i = 0; i < numChildren(); i++) {
 			BranchGroup bg = (BranchGroup)getChild(i);
-			TransformGroup tg = (TransformGroup)bg.getChild(0);
+			TransformGroup tg = (TransformGroup)((Group)bg
+						.getChild(0)).getChild(0);
 			Sphere s = (Sphere)tg.getChild(0);
 			s.setAppearance(appearance);
 		}
@@ -210,12 +222,12 @@ public class PointListShape extends BranchGroup
 		alpha.setDecreasingAlphaDuration(300);
 		alpha.pause();
 		ScaleInterpolator si = new ScaleInterpolator(alpha, sig);
-		si.setMaximumScale(5);
-		si.setMinimumScale(0.5f);
+		si.setMaximumScale(5 * radius);
+		si.setMinimumScale(radius);
 		si.setSchedulingBounds(new BoundingSphere());
 		tg.addChild(si);
 
-		Sphere sphere = new Sphere(radius);
+		Sphere sphere = new Sphere();
 		sphere.getShape().setCapability(Shape3D.ALLOW_APPEARANCE_WRITE);
 		sphere.setCapability(Sphere.ENABLE_APPEARANCE_MODIFY);
 		sphere.setAppearance(appearance);

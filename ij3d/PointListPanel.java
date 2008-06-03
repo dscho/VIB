@@ -80,16 +80,15 @@ public class PointListPanel extends Panel
 		return popup;
 	}
 	
-	public void updatePointsPanel(){
+	private void updatePointsPanel(){
 		removeAll();
 		c = new GridBagConstraints();
 		addHeader();
 		int i = 0;
 		if(points.size() == 0)
 			addEmptyRow();
-		for (BenesNamedPoint p : (Iterable<BenesNamedPoint>)points) {
+		for (BenesNamedPoint p : points)
 			addRow(p, i++);
-		}
 	}
 
 	private void addHeader() {
@@ -211,7 +210,11 @@ public class PointListPanel extends Panel
 
 	// PointListListener interface
 	public void added(BenesNamedPoint p) {
-		updatePointsPanel();
+		int i = points.size();
+		if(i == 1)
+			updatePointsPanel();
+		else
+			addRow(p, points.size());
 	}
 
 	public void removed(BenesNamedPoint p) {

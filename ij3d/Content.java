@@ -253,7 +253,6 @@ public class Content extends BranchGroup implements UniverseListener {
 			dir = fi.directory;
 			name = fi.fileName;
 		}
-		name += ".points";
 		pointlist.save(dir, name);
 	}
 
@@ -277,6 +276,14 @@ public class Content extends BranchGroup implements UniverseListener {
 	
 	public void setListPointPos(int i, Point3d pos) {
 		pointlist.setPos(i, pos);
+	}
+
+	public float getLandmarkPointSize() {
+		return pointlist.getRadius();
+	}
+
+	public void setLandmarkPointSize(float r) {
+		pointlist.setRadius(r);
 	}
 
 	public PointList getPointList() {
