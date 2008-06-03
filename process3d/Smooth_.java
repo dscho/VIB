@@ -63,8 +63,11 @@ public class Smooth_ implements PlugInFilter {
 		ImageStack stack = Convolve_3d.
 					convolve(image,H_x,H_y,H_z).getStack();
 		
-		if(image.getType() == ImagePlus.GRAY32)
-			return new ImagePlus("Smoothed", stack);
+		if(image.getType() == ImagePlus.GRAY32) {
+			ImagePlus result = new ImagePlus("Smoothed", stack);
+			result.setCalibration(image.getCalibration());
+			return result;
+		}
 		// convert the result to an image that matches the type of the
 		// original (currently 8 bit or 16 bit)
 
