@@ -1137,12 +1137,11 @@ public class ComputeCurvatures implements Runnable
      *
      * @param sigma Standard Derivation of the gaussian function
      * @param normalize Normalize integral of gaussian function to 1 or not...
-     * @param separation The separation of samples in this dimension.  (Normally taken from calibration information, or set to 1 if unknown.)
      * @return float[] The gaussian kernel
      *
      * @author   Stephan Saalfeld
      */
-    public static float[] createGaussianKernel1D(float sigma, boolean normalize, float separation)
+    public static float[] createGaussianKernel1D(float sigma, boolean normalize)
     {
         float[] gaussianKernel;
 
@@ -1152,8 +1151,6 @@ public class ComputeCurvatures implements Runnable
             gaussianKernel[1] = 1;
 
         } else {
-
-            sigma /= separation;
 
             int size = Math.max(3, (int)(2*(int)(3*sigma + 0.5)+1));
 
@@ -1213,8 +1210,8 @@ public class ComputeCurvatures implements Runnable
             pixelDepth = (float)calibration.pixelDepth;
         }
 
-        float[] kernelX = createGaussianKernel1D(sigma, true, pixelWidth);
-        float[] kernelY = createGaussianKernel1D(sigma, true, pixelHeight);
+        float[] kernelX = createGaussianKernel1D(sigma / pixelWidth, true);
+        float[] kernelY = createGaussianKernel1D(sigma / pixelHeight, true);
         int filterSizeX = kernelX.length;
         int filterSizeY = kernelY.length;
 
@@ -1314,9 +1311,9 @@ public class ComputeCurvatures implements Runnable
             pixelDepth = (float)calibration.pixelDepth;
         }
 
-        float[] kernelX = createGaussianKernel1D(sigma, true, pixelWidth);
-        float[] kernelY = createGaussianKernel1D(sigma, true, pixelHeight);
-        float[] kernelZ = createGaussianKernel1D(sigma, true, pixelDepth);
+        float[] kernelX = createGaussianKernel1D(sigma / pixelWidth, true);
+        float[] kernelY = createGaussianKernel1D(sigma / pixelHeight, true);
+        float[] kernelZ = createGaussianKernel1D(sigma / pixelDepth, true);
         int filterSizeX = kernelX.length;
         int filterSizeY = kernelY.length;
         int filterSizeZ = kernelZ.length;
