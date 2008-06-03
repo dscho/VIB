@@ -80,6 +80,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem pl_load;
 	private MenuItem regist;
 	private MenuItem pl_save;
+	private MenuItem pl_size;
 	private MenuItem j3dproperties;
 	private CheckboxMenuItem pl_show;
 	private CheckboxMenuItem perspective;
@@ -279,6 +280,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		pl_show = new CheckboxMenuItem("Show Point List");
 		pl_show.addItemListener(this);
 		pl.add(pl_show);
+
+		pl.addSeparator();
+
+		pl_size = new MenuItem("Point size");
+		pl_size.addActionListener(this);
+		pl.add(pl_size);
 
 		return pl;
 	}
@@ -716,6 +723,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			}
 			c.savePointList();
 		}
+		if (e.getSource() == pl_size) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			changePointSize(c);
+		}
 		if (e.getSource() == exportDXF) {
 			MeshExporter.saveAsDXF(univ.getContents());
 		}
@@ -896,6 +911,33 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		sc.setUnit(gd.getNextString());
 		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
 		sc.setVisible(gd.getNextBoolean());
+	}
+
+	public void changePointSize(final Content selected) {
+		final GenericDialog gd = 
+				new GenericDialog("Size");
+		final float oldS = (float)(selected.getLandmarkPointSize());
+		gd.addSlider("Size", 0, 20, oldS);
+		((Scrollbar)gd.getSliders().get(0)).
+			addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				float newS = (float)e.getValue();
+				selected.setLandmarkPointSize(newS);
+			}
+		});
+		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				openDialogs.remove(gd);
+				if(gd.wasCanceled()) {
+					selected.setLandmarkPointSize(oldS);
+					return;
+				}
+			}
+		});
+		openDialogs.add(gd);
+		gd.showDialog();
+		
 	}
 
 	public void changeTransparency(final Content selected) {
