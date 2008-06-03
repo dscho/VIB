@@ -32,25 +32,7 @@ import stacks.ThreePanesCanvas;
 import stacks.PaneOwner;
 import stacks.ThreePanes;
 
-import util.Arrow;
-
 public class TracerCanvas extends ThreePanesCanvas {
-
-	private int maxArrows = 4;
-	private Arrow[] arrows = new Arrow[maxArrows];
-
-	public void setArrow( int i, Arrow a ) {
-		arrows[i] = a;
-	}
-	
-	public Arrow getArrow( int i ) {
-		return arrows[i];
-	}
-	
-	public void unsetArrows( ) {
-		for( int i = 0; i < maxArrows; ++i )
-			arrows[i] = null;
-	}	
 	
 	private PathAndFillManager pathAndFillManager;
 
@@ -89,33 +71,6 @@ public class TracerCanvas extends ThreePanesCanvas {
 
 	@Override
 	protected void drawOverlay(Graphics g) {
-
-		for( int i = maxArrows - 1; i >= 0; --i ) {
-			// for( int i = 0; i < maxArrows; ++i ) {
-			
-			Arrow a = arrows[i];
-			if( a == null )
-				continue;
-			
-			g.setColor(a.c);
-			
-			if( plane == ThreePanes.XY_PLANE ) {
-				g.drawLine( (int)( a.start_x ),
-					    (int)( a.start_y ),
-					    (int)( a.start_x + a.length * a.vx ),
-					    (int)( a.start_y + a.length * a.vy ) );
-			} else if( plane == ThreePanes.XZ_PLANE ) {
-				g.drawLine( (int)( a.start_x ),
-					    (int)( a.start_z ),
-					    (int)( a.start_x + a.length * a.vx ),
-					    (int)( a.start_z + a.length * a.vz ) );
-			} else if( plane == ThreePanes.ZY_PLANE ) {
-				g.drawLine( (int)( a.start_z ),
-					    (int)( a.start_y ),
-					    (int)( a.start_z + a.length * a.vz ),
-					    (int)( a.start_y + a.length * a.vy ) );
-			}
-		}
 
 		/*
 		int current_z = -1;

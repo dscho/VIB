@@ -210,7 +210,6 @@ class NeuriteTracerResultsDialog
 	public void changeState( int newState ) {
 
 		if (verbose) System.out.println("changeState to: "+stateNames[newState]);
-		// if (verbose) System.out.println(Simple_Neurite_Tracer.getStackTrace());
 
 		switch( newState ) {
 
@@ -767,11 +766,9 @@ class NeuriteTracerResultsDialog
 
 			String savePath;
 			if(sd.getFileName()==null) {
-				// if (verbose) System.out.println("no savePath found");
 				return;
 			} else {
 				savePath = sd.getDirectory()+sd.getFileName();
-				// if (verbose) System.out.println("found savePath: "+savePath);
 			}
 
 			File file = new File(savePath);
@@ -785,13 +782,7 @@ class NeuriteTracerResultsDialog
 
 			IJ.showStatus("Saving traces to "+savePath);
 
-			// pathAndFillManager.writeTracesToFile( savePath );
-
 			try {
-
-				// BufferedWriter out = new BufferedWriter(new FileWriter(savePath,false));
-				// BufferedWriter out = new BufferedWriter(new GZIPOutputStream(new FileOutputStream(savePath)));
-				// pathAndFillManager.writeXML( out, plugin );
 
 				pathAndFillManager.writeXML( savePath, plugin, true );
 
@@ -956,8 +947,6 @@ class NeuriteTracerResultsDialog
 
 		if( source == viewPathChoice ) {
 
-			// if (verbose) System.out.println("e.getItem() is of class "+e.getItem().getClass());
-
 			plugin.justDisplayNearSlices(nearbySlices(),getEitherSide());
 
 		} else if( source == pathList ) {
@@ -973,8 +962,6 @@ class NeuriteTracerResultsDialog
 
 
 		} else if( source == preprocess ) {
-
-			// if (verbose) System.out.println("change in status of preprocess to: "+preprocess.getState());
 
 			if( preprocess.getState() ) {
 				preGaussianState = currentState;
@@ -1053,10 +1040,10 @@ class NeuriteTracerResultsDialog
 	}
 
 	public void finished( SearchThread source, boolean success ) {
-		// IJ.error("FIXME: implement");
+		// Unused
 	}
 
 	public void pointsInSearch( SearchThread source, int inOpen, int inClosed ) {
-		// IJ.error("FIXME: implement");
+		// Unused
 	}
 }

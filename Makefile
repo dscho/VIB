@@ -80,8 +80,6 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	features/GaussianGenerationCallback.java \
 	features/Tubeness_.java \
 	client/ArchiveClient.java \
-	util/Arrow.java \
-	util/ArrowDisplayer.java \
 	util/BatchOpener.java \
 	util/RGB_to_Luminance.java \
 	tracing/README tracing/COPYING \

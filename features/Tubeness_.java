@@ -6,116 +6,9 @@ import ij.*;
 import ij.measure.Calibration;
 import ij.plugin.*;
 import ij.process.*;
+import ij.gui.GenericDialog;
 
-/* For testing the hessianEigenvaluesAtPoint() method, essentially,
- * and experimenting with measures based on those eigenvalues. */
-public class Tubeness_ implements PlugIn, GaussianGenerationCallback {
-
-	public ImagePlus generateTubenessImage(ImagePlus original) {
-
-		Calibration calibration=original.getCalibration();
-
-		ComputeCurvatures c = new ComputeCurvatures(original, 1.0, this);
-		c.run();
-
-		int width = original.getWidth();
-		int height = original.getHeight();
-		int depth = original.getStackSize();
-
-		System.out.println("w: " + width + ", h: " + height + ", d:" + depth);
-
-		ImageStack stack = new ImageStack(width, height);
-
-		double[] evalues = new double[3];
-
-		if( depth == 1 ) {
-
-			float[] slice = new float[width * height];
-
-			for (int y = 1; y < height - 1; ++y) {
-				for (int x = 1; x < width - 1; ++x) {
-
-					c.hessianEigenvaluesAtPoint2D(x, y,
-								      true, // order absolute
-								      evalues,
-								      false);
-
-					int index = y * width + x;
-
-					if ((evalues[1] >= 0) || (evalues[0] >= 0)) {
-
-						// If either of the two principle eigenvalues
-						// is positive then the curvature is in the
-						// wrong direction - towards higher
-						// instensities rather than lower.
-
-						slice[index] = 0;
-
-					} else {
-
-						slice[index] = (float) Math.abs(evalues[1]);
-
-					}
-				}
-				IJ.showProgress(1 / (double) height);
-			}
-
-			FloatProcessor fp = new FloatProcessor(width, height);
-			fp.setPixels(slice);
-			stack.addSlice(null, fp);
-
-		} else {
-
-			for (int z = 0; z < depth; ++z) {
-
-				System.out.println("Working on slice: " + z);
-
-				float[] slice = new float[width * height];
-
-				if ((z >= 1) && (z < depth - 1)) {
-					for (int y = 1; y < height - 1; ++y) {
-						for (int x = 1; x < width - 1; ++x) {
-
-							c.hessianEigenvaluesAtPoint3D(x, y, z,
-										      true, // order absolute
-										      evalues,
-										      false);
-
-							int index = y * width + x;
-
-							if ((evalues[1] >= 0) || (evalues[2] >= 0)) {
-
-								// If either of the two principle eigenvalues
-								// is positive then the curvature is in the
-								// wrong direction - towards higher
-								// instensities rather than lower.
-
-								slice[index] = 0;
-
-							} else {
-
-								slice[index] = (float) Math.sqrt(evalues[2] * evalues[1]);
-
-							}
-						}
-					}
-				}
-
-				FloatProcessor fp = new FloatProcessor(width, height);
-				fp.setPixels(slice);
-				stack.addSlice(null, fp);
-				IJ.showProgress(z / (double) depth);
-
-			}
-
-		}
-
-		IJ.showProgress(1.0);
-
-		ImagePlus result=new ImagePlus("tubeness of " + original.getTitle(), stack);
-		result.setCalibration(calibration);
-		return result;
-	}
+public class Tubeness_ implements PlugIn {
 
 	public void run(String ignored) {
 
@@ -125,12 +18,35 @@ public class Tubeness_ implements PlugIn, GaussianGenerationCallback {
 			return;
 		}
 
-		ImagePlus result = generateTubenessImage(original);
+		Calibration calibration = original.getCalibration();
+
+		double minimumSeparation = 1;
+		if( calibration != null )
+			minimumSeparation = Math.min(calibration.pixelWidth,
+						     Math.min(calibration.pixelHeight,
+							      calibration.pixelDepth));
+
+		GenericDialog gd = new GenericDialog("\"Tubeness\" Filter");
+		gd.addNumericField("Sigma: ", (calibration==null) ? 1f : minimumSeparation, 4);
+		gd.addMessage("(The default value for sigma is the pixel width.)");
+		gd.addCheckbox("Use calibration information", calibration!=null);
+
+		gd.showDialog();
+		if( gd.wasCanceled() )
+			return;
+
+		double sigma = gd.getNextNumber();
+		if( sigma <= 0 ) {
+			IJ.error("The value of sigma must be positive");
+			return;
+		}
+		boolean useCalibration = gd.getNextBoolean();
+
+		TubenessProcessor tp = new TubenessProcessor(sigma,useCalibration);
+
+		ImagePlus result = tp.generateImage(original);
+		result.setTitle("tubeness of " + original.getTitle());
 
 		result.show();
-	}
-
-	public void proportionDone(double d) {
-		IJ.showProgress(d);
 	}
 }

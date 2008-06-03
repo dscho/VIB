@@ -203,7 +203,7 @@ public class TracerThread extends SearchThread {
 					double [] hessianEigenValues = new double[2];
 
 					hessian.hessianEigenvaluesAtPoint2D( new_x, new_y,
-									     true, hessianEigenValues, true );
+									     true, hessianEigenValues, false, true, x_spacing, y_spacing );
 
 					// Just use the absolute value
 					// of the largest eigenvalue
@@ -228,7 +228,7 @@ public class TracerThread extends SearchThread {
 					double [] hessianEigenValues = new double[3];
 
 					hessian.hessianEigenvaluesAtPoint3D( new_x, new_y, new_z,
-									     true, hessianEigenValues, true );
+									     true, hessianEigenValues, false, true, x_spacing, y_spacing, z_spacing );
 
 					/* FIXME: there's lots of literature on how to
 					   pick this rule (see Sato et al,

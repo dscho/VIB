@@ -23,8 +23,6 @@
 
 package tracing;
 
-/* FIXME: This plugin is a mess now, needs a lot of tidying up. */
-
 import ij.*;
 import ij.process.*;
 import ij.gui.*;
@@ -46,8 +44,6 @@ import client.ArchiveClient;
 
 import stacks.ThreePanes;
 
-import util.Arrow;
-import util.ArrowDisplayer;
 import util.BatchOpener;
 import util.RGB_to_Luminance;
 
@@ -57,14 +53,19 @@ import features.ComputeCurvatures;
 import amira.AmiraMeshDecoder;
 import amira.AmiraParameters;
 
-/* Note On Confusing Terminology: traces and paths are the same thing;
-   they're made up of connections.  Traces, paths and connections are
-   all non-branching sequences of adjacent points in the image. */
+/* Note on terminology:
+
+      "traces" files are made up of "paths".  Paths are non-branching
+      sequences of adjacent points (including diagonals) in the image.
+      Branches and joins are supported by attributes of paths that
+      specify that they begin on (or end on) other paths.
+
+ */
 
 public class Simple_Neurite_Tracer extends ThreePanes
-	implements PlugIn, SearchProgressCallback, ArrowDisplayer, FillerProgressCallback, GaussianGenerationCallback {
+	implements PlugIn, SearchProgressCallback, FillerProgressCallback, GaussianGenerationCallback {
 	
-	public static final String PLUGIN_VERSION = "1.1.3";
+	public static final String PLUGIN_VERSION = "1.2.1";
 	static final boolean verbose = false;
 	
 	PathAndFillManager pathAndFillManager;
@@ -80,7 +81,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	}
 	
 	/* Just for convenience, keep casted references to the
-	   superclass's InteractiveTracerCanvas objects */
+	   superclass's InteractiveTracerCanvas objects: */
 	
 	InteractiveTracerCanvas xy_tracer_canvas;
 	InteractiveTracerCanvas xz_tracer_canvas;
@@ -88,10 +89,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	
 	public ImagePlus getImagePlus() {
 		return xy;
-	}
-	
-	public Simple_Neurite_Tracer( ) {
-		// Everything's set up in the run method...
 	}
 	
 	/* This overrides the method in ThreePanes... */
@@ -107,7 +104,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	}
 	
 	public void threadStatus( SearchThread source, int status ) {
-		
+		// Ignore this information.
 	}
 	
 	synchronized public void saveFill( ) {
@@ -157,8 +154,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	
 	public void finished( SearchThread source, boolean success ) {
 		
-		// This is called by both filler and currentSearchThread,
-		// so distinguish these:
+		/* This is called by both filler and currentSearchThread,
+		   so distinguish these cases: */
 		
 		if( source == currentSearchThread ) {
 			
@@ -168,7 +165,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					IJ.error("Bug! Succeeded, but null result.");
 					return;
 				}
-				// if (verbose) System.out.println( "finished, with endJoin: "+endJoin+" and "+endJoinIndex );
 				result.setJoin( Path.PATH_END, endJoin, endJoinIndex );
 				setTemporaryPath( result );
 				
@@ -191,17 +187,21 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	}
 	
 	public void pointsInSearch( SearchThread source, int inOpen, int inClosed ) {
-		// IJ.error("FIXME: implement");
 		// Just use this signal to repaint the canvas, in case there's
 		// been no mouse movement.
 		repaintAllPanes();
 	}
 	
-	String nonsense = "unused"; // FIXME, just for synchronization...
+        /* FIXME, just for synchronization - replace this with
+	   synchronization on the object it protects: */
+
+	String nonsense = "unused"; 
 	
 	/* These member variables control what we're actually doing -
 	   whether that's tracing, logging points or displaying values
-	   of the Hessian at particular points. */
+	   of the Hessian at particular points.  Currently we only
+	   support tracing, support for the others has been
+	   removed. */
 	
 	boolean setupLog = false;
 	boolean setupEv = false;
@@ -215,46 +215,13 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	
 	/* For the original file info - needed for loading the
 	   corresponding labels file and checking if a "tubes.tif"
-	   file was already there... */
+	   file already exists: */
 	
 	public FileInfo file_info;
 	
 	protected int width, height, depth;
 	
 	int last_x, last_y, last_z;
-	
-	String logFilename;
-	
-	public void setNewArrow( Arrow a ) {
-		
-		xy_tracer_canvas.unsetArrows( );
-		xy_tracer_canvas.setArrow( 0, a );
-		
-		if( ! single_pane ) {
-			zy_tracer_canvas.unsetArrows( );
-			zy_tracer_canvas.setArrow( 0, a );
-			
-			xz_tracer_canvas.unsetArrows( );
-			xz_tracer_canvas.setArrow( 0, a );
-			
-			zy_tracer_canvas.repaint();
-			xz_tracer_canvas.repaint();
-		}
-		xy_tracer_canvas.repaint();
-		
-	}
-	
-	public void logPosition( int x, int y, int z, double ev1, double ev2, double ev3 ) {
-		
-		try {
-			BufferedWriter out = new BufferedWriter(new FileWriter(logFilename, true));
-			out.write(xy.getShortTitle()+"\t"+x+"\t"+y+"\t"+z+"\t"+ev1+"\t"+ev2+"\t"+ev2+"\n");
-			out.close();
-		} catch (IOException e) {
-			IJ.error( "Writing to log file '" + logFilename + "' failed" );
-		}
-		
-	}
 	
 	public void justDisplayNearSlices( boolean value, int eitherSide ) {
 		
@@ -271,16 +238,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 		
 		repaintAllPanes();
-		
-	}
-	
-	public void setArrow( int i, Arrow a ) {
-		
-		xy_tracer_canvas.setArrow( i, a );
-		if( ! single_pane ) {
-			zy_tracer_canvas.setArrow( i, a );
-			xz_tracer_canvas.setArrow( i, a );
-		}
 		
 	}
 	
@@ -324,13 +281,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		int materials = parameters.getMaterialCount();
 		
 		materialList = parameters.getMaterialList();
-		
-		/*
-		  System.out.println("loaded materialList was of size: "+materialList.length);
-		  for( int i = 0; i < materialList.length; ++i ) {
-		  System.out.println("materialList["+i+"]: "+materialList[i]);
-		  }
-		*/
 		
 		labelData = new byte[depth][];
 		for( int z = 0; z < depth; ++z ) {
@@ -524,15 +474,15 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	int endJoinIndex;
 	
 	/* If we've finished searching for a path, but the user hasn't
-	 * confirmed that they want to keep it yet, temporaryPath is
-	 * non-null and holds the Path we just searched out. */
+	   confirmed that they want to keep it yet, temporaryPath is
+	   non-null and holds the Path we just searched out. */
 	
 	// Any method that deals with these two fields should be synchronized.
 	
 	Path temporaryPath = null;
 	Path currentPath = null;
 	
-	// When we set temporaryPath, we also want to update the display
+	// When we set temporaryPath, we also want to update the display:
 	
 	synchronized public void setTemporaryPath( Path path ) {
 		
@@ -563,7 +513,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	/* pathUnfinished indicates that we have started to create a
 	   path, but not yet finished it (in the sense of moving on to
 	   a new path with a differen starting point.)  FIXME: this
-	   may be redundant..
+	   may be redundant - check that.
 	*/
 	
 	boolean pathUnfinished = false;
@@ -621,11 +571,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		ip.show( );
 	}
 	
-	/* If non-null, holds a reference to the currently searching thread */
+	/* If non-null, holds a reference to the currently searching thread: */
 	
 	TracerThread currentSearchThread;
 	
-	/* Start a search thread looking for the goal in the arguments... */
+	/* Start a search thread looking for the goal in the arguments: */
 	
 	synchronized void testPathTo( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
 		
@@ -649,7 +599,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			y_end = p[1];
 			z_end = p[2];
 			
-			// if (verbose) System.out.println("not setting endJoin");
 		} else {
 			x_end = joinPoint.x;
 			y_end = joinPoint.y;
@@ -657,14 +606,13 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			endJoin = joinPoint.onPath;
 			endJoinIndex = joinPoint.onPathIndex;
 			
-			// if (verbose) System.out.println("set endJoin");
 		}
 		
 		currentSearchThread = new TracerThread(
 			xy,
 			stackMin,
 			stackMax,
-			0, // timeoutSeconds
+			0, // timeout in seconds
 			1000, // reportEveryMilliseconds
 			last_start_point_x,
 			last_start_point_y,
@@ -703,16 +651,14 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		last_start_point_y = last.y;
 		last_start_point_z = last.z;
 		
-		// if (verbose) System.out.println("confirming path; have "+allPaths.size()+" afterwards");
-		
 		if( temporaryPath.endJoins == null ) {
 			setTemporaryPath( null );
 			resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 			repaintAllPanes( );
 		} else {
-			// if (verbose) System.out.println("confirming, but with an endJoin");
 			setTemporaryPath( null );
-			finishedPath( ); // Since joining onto another path for the end must finish the path.
+			// Since joining onto another path for the end must finish the path:
+			finishedPath( );
 		}
 	}
 	
@@ -786,7 +732,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			joinPoint = pathAndFillManager.nearestJoinPointOnSelectedPaths( p[0], p[1], p[2] );
 		}
 		
-		// FIXME: in some of the states this doesn't make sense; check for them...
+		// FIXME: in some of the states this doesn't make sense; check for them:
 		
 		if( currentSearchThread != null )
 			return;
@@ -886,11 +832,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		return sw.toString();
 	}
 	
-	double x_spacing;
-	double y_spacing;
-	double z_spacing;
+	double x_spacing = 1;
+	double y_spacing = 1;
+	double z_spacing = 1;
 	
-	String spacing_units;
+	String spacing_units = "";
 	
 	public void viewFillIn3D( ) {
 		ImagePlus imagePlus = filler.fillAsImagePlus( ! resultsDialog.createMask() );
@@ -919,17 +865,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	
 	boolean singleSlice;
 
-	// HessianAnalyzer hessianAnalyzer;
 	ArchiveClient archiveClient;
 
 	float stackMax = Float.MIN_VALUE;       
 	float stackMin = Float.MAX_VALUE;
 
 	public void run( String ignoredArguments ) {
-		
-		// if (verbose) System.out.println("Macro options are: "+Macro.getOptions());
-		
-		// if (verbose) System.err.println("client running with arguments: "+arguments);
 		
 		Applet applet = IJ.getApplet();
 		if( applet != null ) {
@@ -940,8 +881,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			archiveClient.closeChannelsWithTag("nc82");
 		
 		try {
-			
-			// toastKeyListeners( IJ.getInstance(), "IJ.getInstance()" );
 			
 			ImagePlus currentImage = WindowManager.getCurrentImage();
 			
@@ -975,20 +914,18 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			depth = currentImage.getStackSize();
 			
 			Calibration calibration = currentImage.getCalibration();
-			
-			x_spacing = calibration.pixelWidth;
-			y_spacing = calibration.pixelHeight;
-			z_spacing = calibration.pixelDepth;
-			
-			spacing_units = calibration.getUnit();
-			
-			// if (verbose) System.out.println( "calibration was: " + x_spacing + ", " + y_spacing + ", " + z_spacing );
+			if( calibration != null ) {
+				x_spacing = calibration.pixelWidth;
+				y_spacing = calibration.pixelHeight;
+				z_spacing = calibration.pixelDepth;
+				spacing_units = calibration.getUnit();
+			}
 
 			pathAndFillManager = new PathAndFillManager(this);
 					
 			file_info = currentImage.getOriginalFileInfo();
 			
-			// Turn it grey, since I find that helpful...
+			// Turn it grey, since I find that helpful:
 			{
 				ImageProcessor imageProcessor = currentImage.getProcessor();
 				byte [] reds = new byte[256];
@@ -1064,9 +1001,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			xz_tracer_canvas = (InteractiveTracerCanvas)xz_canvas;
 			zy_tracer_canvas = (InteractiveTracerCanvas)zy_canvas;
 			
-			// toastKeyListeners( IJ.getInstance(), "IJ.getInstance()" );
-			
-			setupTrace = true; // can be changed with the "just log points" or "show eigenvalues"
+			setupTrace = true;
 			resultsDialog = new NeuriteTracerResultsDialog( "Tracing for: " + xy.getShortTitle(),
 									this,
 									applet != null );
@@ -1169,12 +1104,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		
 	}
 	
-	// This should only be assigned to when synchronized on this object (FIXME: check)
+	// This should only be assigned to when synchronized on this object
+	// (FIXME: check that that is true)
 	FillerThread filler = null;
 	
 	synchronized public void startFillingPaths( ) {
-		
-		// FIXME: check if one is running already, etc.
 		
 		filler = new FillerThread( xy,
 					   stackMin,
@@ -1206,19 +1140,19 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	}
 	
 	public void maximumDistanceCompletelyExplored( SearchThread source, float f ) {
-		// IJ.error("FIXME: implement");
+		// Unused
 	}
 	
-	public byte [] squareNormalToVector( int side,     // The number of samples in x and y in the plane, separated by step
-					     double step,   // step is in the same units as the _spacing, etc. variables.
-					     int original_x,     // These are are *not* yet scaled in z
-					     int original_y,     // They're just sample point differences
+	public byte [] squareNormalToVector( int side,        // The number of samples in x and y in the plane, separated by step
+					     double step,     // step is in the same units as the _spacing, etc. variables.
+					     int original_x,      /* These are are *not* yet scaled in z    */
+					     int original_y,      /* They're just sample point differences  */
 					     int original_z,
 					     int normal_x,
 					     int normal_y,
 					     int normal_z,
-					     double [] x_basis_vector,    // The basis vectors are returned here
-					     double [] y_basis_vector ) { // they *are* scaled by _spacing
+					     double [] x_basis_vector,    /* The basis vectors are returned here  */
+					     double [] y_basis_vector ) { /* they *are* scaled by _spacing        */
 		
 		double ox = original_x * x_spacing;
 		double oy = original_y * y_spacing;
@@ -1415,7 +1349,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			if( hessian == null && tubeness == null ) {
 				resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
 				resultsDialog.preprocess.setEnabled(false);
-				hessian = new ComputeCurvatures( xy, 1.0, this );
+				hessian = new ComputeCurvatures( xy, x_spacing, this, true );
 				new Thread(hessian).start();
 			}
 			System.out.println("Setting hessianEnabled to true");

@@ -21,7 +21,6 @@
 
 package tracing;
 
-import features.Tubeness_;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -37,6 +36,7 @@ import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.HashSet;
+import features.TubenessProcessor;
 import util.BatchOpener;
 
 import java.awt.Color;
@@ -50,7 +50,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	int height;
 	int depth;
 
-	HashSet<AutoPoint> done;		
+	HashSet<AutoPoint> done;
 	PriorityQueue<AutoPoint> mostTubelikePoints;
 	float [][] tubeValues;
 
@@ -60,17 +60,17 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		    a.getStackSize() == b.getStackSize();
 	}
 
-        /* Just for convenience, keep casted references to the
-           superclass's InteractiveTracerCanvas objects */
+	/* Just for convenience, keep casted references to the
+	   superclass's InteractiveTracerCanvas objects */
 
-        AutoTracerCanvas canvas;
+	AutoTracerCanvas canvas;
 
-        /* This override the method in ThreePanes... */
+	/* This override the method in ThreePanes... */
 
 	@Override
-        public TracerCanvas createCanvas( ImagePlus imagePlus, int plane ) {
-                return new AutoTracerCanvas( imagePlus, this, plane, null );
-        }
+	public TracerCanvas createCanvas( ImagePlus imagePlus, int plane ) {
+		return new AutoTracerCanvas( imagePlus, this, plane, null );
+	}
 
 	static class AutoTracerParameters {
 		float tubenessThreshold;
@@ -135,11 +135,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	}
 
 	public void recreatePriorityQueue( boolean checkDone ) {
-	
+
 		System.out.println("  [Recreating Priority Queue]");
 		mostTubelikePoints=new PriorityQueue<AutoPoint>(512,new TubenessComparator(width,height,depth,tubeValues));
 		System.gc();
-		
+
 		for(int z=0;z<depth;++z) {
 			for(int y=0;y<height;++y) {
 				for(int x=0;x<width;++x) {
@@ -157,10 +157,12 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		System.out.println("  [Done]");
 	}
 
-	
+
 	boolean verbose = false;
 
 	public void autoTrace( ImagePlus image ) {
+
+		Calibration calibration = image.getCalibration();
 
 		FileInfo originalFileInfo = image.getOriginalFileInfo();
 		String originalFileName=originalFileInfo.fileName;
@@ -181,8 +183,15 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			}
 		} else {
 			IJ.showStatus("No tubes file found, generating anew...");
-			Tubeness_ tubifier=new Tubeness_();
-			tubenessImage=tubifier.generateTubenessImage(image);
+
+			double minimumSeparation = 1;
+			if( calibration != null )
+				minimumSeparation = Math.min(calibration.pixelWidth,
+							     Math.min(calibration.pixelHeight,
+								      calibration.pixelDepth));
+
+			TubenessProcessor tubifier=new TubenessProcessor(minimumSeparation,true);
+			tubenessImage=tubifier.generateImage(image);
 			System.out.println("Got tubes file.");
 			boolean saved=new FileSaver(tubenessImage).saveAsTiffStack(tubesFile.getAbsolutePath());
 			if( ! saved ) {
@@ -247,14 +256,18 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		done = new HashSet<AutoPoint>();
 
 		recreatePriorityQueue(false);
-		
+
 		System.out.println("Initial points: "+mostTubelikePoints.size());
 
 		if( false )
 			return;
 
-		Calibration c = image.getCalibration();
-		SinglePathsGraph completePaths = new SinglePathsGraph(width,height,depth,c.pixelWidth,c.pixelHeight,c.pixelDepth);
+		SinglePathsGraph completePaths = new SinglePathsGraph(width,
+								      height,
+								      depth,
+								      calibration.pixelWidth,
+								      calibration.pixelHeight,
+								      calibration.pixelDepth);
 
 		int maxLoops = -1;
 		int loopsDone = 0;
@@ -275,11 +288,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			if( done.contains(startPoint) ) {
 				continue;
 			}
-			
+
 			System.out.println("=== Done size is: "+done.size());
 			System.out.println("=== Priority queue now has: "+mostTubelikePoints.size());
 			System.out.println("=== Loops done: "+loopsDone);
-			
+
 			System.out.println("  Got point "+startPoint+" with tubeness: "+tubeValues[startPoint.z][startPoint.y*width+startPoint.x]);
 
 			// Move to that slice, just for presentation purposes:
@@ -428,10 +441,10 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			 * clear how trustworthy these memory
 			 * statistics are, unfortunately. */
 
-                	long freeMem = Runtime.getRuntime().freeMemory();
-		        long totMem = Runtime.getRuntime().totalMemory();
+			long freeMem = Runtime.getRuntime().freeMemory();
+			long totMem = Runtime.getRuntime().totalMemory();
 			int percentUsed = (int)(((totMem-freeMem)*100) / totMem);
-			
+
 			System.out.println("=== Memory usage: "+percentUsed+"%");
 			if( (percentUsed > 95) || ((loopsDone % 50) == 49) ) {
 				recreatePriorityQueue(true);
@@ -474,70 +487,70 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	 * parameters must be picked manually:
 
 
-        [A] Tubeness threshold
-        [B] Max time for each search
-        [C] Max iterations for each search
-        [D] Minimum mean tubeness along path segment
-        [E] Length of path segment used to calculate "mean tubeness"
+	[A] Tubeness threshold
+	[B] Max time for each search
+	[C] Max iterations for each search
+	[D] Minimum mean tubeness along path segment
+	[E] Length of path segment used to calculate "mean tubeness"
 
-             - The image is preprocessed to find a "tubeness" value
-               for each point in the image.  This gives a score to
-               each point according to how tube-like the local shape
-               of the image is.
+	     - The image is preprocessed to find a "tubeness" value
+	       for each point in the image.  This gives a score to
+	       each point according to how tube-like the local shape
+	       of the image is.
 
-             - The user should pick a threshold [A] for these
-               tubneness values such at:
+	     - The user should pick a threshold [A] for these
+	       tubneness values such at:
 
-                  - Almost all of the values above that threshold
-                    genuinely seem to be parts of neuron-like
-                    structures.  However, one shouldn't set the
-                    threshold such that there are clear paths along
-                    the neurons of interest - scattered points are
-                    fine, so the aim should be to minimize "false
-                    positives" (i.e. points above the threshold that
-                    are not plausibly part of any neuron-like
-                    structure.
+		  - Almost all of the values above that threshold
+		    genuinely seem to be parts of neuron-like
+		    structures.  However, one shouldn't set the
+		    threshold such that there are clear paths along
+		    the neurons of interest - scattered points are
+		    fine, so the aim should be to minimize "false
+		    positives" (i.e. points above the threshold that
+		    are not plausibly part of any neuron-like
+		    structure.
 
-            - The above threshold points are put into a priority
-              queue, where the most tube-like points are the first to
-              be removed from the queue.
+	    - The above threshold points are put into a priority
+	      queue, where the most tube-like points are the first to
+	      be removed from the queue.
 
-            - While there are still points in the priority queue, we
-              do the following loop:
+	    - While there are still points in the priority queue, we
+	      do the following loop:
 
-                 - Extract the most tube-like point left in the
-                   priority queue.
+		 - Extract the most tube-like point left in the
+		   priority queue.
 
-                 - Begin a best-first search from that point.  Carry
-                   on until a given number of iterations have been
-                   reached [C] or a certain amount of time has been
-                   reached [B].
+		 - Begin a best-first search from that point.  Carry
+		   on until a given number of iterations have been
+		   reached [C] or a certain amount of time has been
+		   reached [B].
 
-                 - When each new point is added in the search check
-                   whether it is either in a path found on a previous
-                   iteration or above the tubeness threshold [A].  If
-                   so, add that to a hashtable H.
+		 - When each new point is added in the search check
+		   whether it is either in a path found on a previous
+		   iteration or above the tubeness threshold [A].  If
+		   so, add that to a hashtable H.
 
-                 - Once the search has terminated we first build paths
-                   from the start point to each of the points we
-                   recorded in the hashtable.  There should be a *lot*
-                   of overlap, so while building this we:
+		 - Once the search has terminated we first build paths
+		   from the start point to each of the points we
+		   recorded in the hashtable.  There should be a *lot*
+		   of overlap, so while building this we:
 
-                       - Reuse bits of paths that we've already found.
-                         (Approximately described...)
+		       - Reuse bits of paths that we've already found.
+			 (Approximately described...)
 
-                   We also record the rolling tubeness value over a
-                   certain distance.
+		   We also record the rolling tubeness value over a
+		   certain distance.
 
-                 - Now we want to exclude any bits of paths that might
+		 - Now we want to exclude any bits of paths that might
 		   have big gaps in them.
 
-                       - Delete parts of the paths where the rolling
-                         average drops too low.
+		       - Delete parts of the paths where the rolling
+			 average drops too low.
 
-                 - For all of the points above the tubeness threshold
-                   that we can still reach after the pruning, remove
-                   them from the most-tube like priority queue.
+		 - For all of the points above the tubeness threshold
+		   that we can still reach after the pruning, remove
+		   them from the most-tube like priority queue.
 
 	 */
 
@@ -568,7 +581,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			if( lower.length() > 0 && (lower.equals("no") || lower.equals("f") || lower.equals("false") || lower.equals("n")) )
 				liveDisplay = false;
 		}
-		
+
 		single_pane = true;
 
 		if( liveDisplay ) {
