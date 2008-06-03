@@ -7,6 +7,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
+import ij.process.ImageProcessor;
 import ij.process.FloatProcessor;
 
 public abstract class HessianEvalueProcessor implements GaussianGenerationCallback {
@@ -52,6 +53,9 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 
 		IJ.showStatus("Calculating Hessian eigenvalues at each point...");
 
+		float minResult = Float.MAX_VALUE;
+		float maxResult = Float.MIN_VALUE;
+
 		if( depth == 1 ) {
 
 			float[] slice = new float[width * height];
@@ -67,7 +71,13 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 								      sepX,
 								      sepY);
 					int index = y * width + x;
-					slice[index] = measureFromEvalues2D(evalues);
+					float value = measureFromEvalues2D(evalues);
+					slice[index] = value;
+					if( value < minResult )
+						minResult = value;
+					if( value > maxResult )
+						maxResult = value;
+
 				}
 				IJ.showProgress(1 / (double) height);
 			}
@@ -95,7 +105,12 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 										      sepY,
 										      sepZ);
 							int index = y * width + x;
-							slice[index] = measureFromEvalues3D(evalues);
+							float value = measureFromEvalues3D(evalues);
+							slice[index] = value;
+							if( value < minResult )
+								minResult = value;
+							if( value > maxResult )
+								maxResult = value;
 						}
 					}
 				}
@@ -111,6 +126,11 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 
 		ImagePlus result=new ImagePlus("processed " + original.getTitle(), stack);
 		result.setCalibration(calibration);
-		return result;		
+
+
+		result.getProcessor().setMinAndMax(minResult,maxResult);
+		result.updateAndDraw();
+
+		return result;
 	}
 }
