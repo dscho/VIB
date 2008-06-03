@@ -45,8 +45,6 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 		int height = original.getHeight();
 		int depth = original.getStackSize();
 
-		System.out.println("w: " + width + ", h: " + height + ", d:" + depth);
-
 		ImageStack stack = new ImageStack(width, height);
 
 		float[] evalues = new float[3];
