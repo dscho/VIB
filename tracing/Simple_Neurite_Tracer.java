@@ -832,11 +832,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		return sw.toString();
 	}
 	
-	double x_spacing;
-	double y_spacing;
-	double z_spacing;
+	double x_spacing = 1;
+	double y_spacing = 1;
+	double z_spacing = 1;
 	
-	String spacing_units;
+	String spacing_units = "";
 	
 	public void viewFillIn3D( ) {
 		ImagePlus imagePlus = filler.fillAsImagePlus( ! resultsDialog.createMask() );
@@ -914,12 +914,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			depth = currentImage.getStackSize();
 			
 			Calibration calibration = currentImage.getCalibration();
-			
-			x_spacing = calibration.pixelWidth;
-			y_spacing = calibration.pixelHeight;
-			z_spacing = calibration.pixelDepth;
-			
-			spacing_units = calibration.getUnit();
+			if( calibration != null ) {
+				x_spacing = calibration.pixelWidth;
+				y_spacing = calibration.pixelHeight;
+				z_spacing = calibration.pixelDepth;
+				spacing_units = calibration.getUnit();
+			}
 
 			pathAndFillManager = new PathAndFillManager(this);
 					
@@ -1349,7 +1349,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			if( hessian == null && tubeness == null ) {
 				resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
 				resultsDialog.preprocess.setEnabled(false);
-				hessian = new ComputeCurvatures( xy, 1.0, this );
+				hessian = new ComputeCurvatures( xy, x_spacing, this, true );
 				new Thread(hessian).start();
 			}
 			System.out.println("Setting hessianEnabled to true");

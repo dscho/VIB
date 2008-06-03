@@ -1,94 +1,51 @@
-/*
- *
- */
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
 package features;
 
 import ij.*;
+import ij.measure.Calibration;
 import ij.plugin.*;
 import ij.process.*;
+import ij.gui.GenericDialog;
 
-/* For testing the hessianEigenvaluesAtPoint() method, essentially,
- * and experimenting with measures based on those eigenvalues. */
+public class Surfaceness_ implements PlugIn {
 
-public class Surfaceness_ implements PlugIn, GaussianGenerationCallback {
+	public void run(String ignored) {
 
-    ImagePlus original;
+		ImagePlus original = WindowManager.getCurrentImage();
+		if (original == null) {
+			IJ.error("No current image to calculate surfaceness of.");
+			return;
+		}
 
-    public void run( String ignored ) {
-
-        original = WindowManager.getCurrentImage();
-
-        if( original.getStackSize() == 1 ) {
-            IJ.error("It only makes sense to look for Sufaceness of 3D images (stacks)>");
-            return;
-        }
-
-        ComputeCurvatures c = new ComputeCurvatures( original, 1.0, this  );
-
-        c.run();
-
-        int width = original.getWidth();
-        int height = original.getHeight();
-        int depth = original.getStackSize();
-
-        System.out.println("w: "+width+", h: "+height+", d:" +depth);
-
-        ImageStack stack = new ImageStack( width, height );
-
-        double [] evalues = new double[3];
-
-        for( int z = 0; z < depth; ++z ) {
-
-            System.out.println( "Working on slice: "+z );
-            
-            float [] slice = new float[ width * height ];
-
-            if( (z >= 1) && (z < depth - 1) )
-                for( int y = 1; y < height - 1; ++y ) {
-                    for( int x = 1; x < width - 1; ++x ) {
-
-                        c.hessianEigenvaluesAtPoint3D( x, y, z,
-                                                       true, // order absolute
-                                                       evalues,
-                                                       false );
-
-                        int index = y * width + x;
-
-                        if( (evalues[1] >= 0) || (evalues[2] >= 0) ) {
-
-                            // If either of the two principle eigenvalues
-                            // is positive then the curvature is in the
-                            // wrong direction - towards higher
-                            // instensities rather than lower.
-
-                            slice[index] = 0;
-
-                        } else {
-
-                            slice[index] = (float) Math.sqrt(Math.abs( evalues[2] / evalues[1] )) - 1;
-
-                        }
-                    }
+                if( original.getStackSize() == 1 ) {
+                        IJ.error("It only makes sense to look for Sufaceness of 3D images (stacks)");
+                        return;
                 }
 
+		Calibration calibration = original.getCalibration();
 
-            FloatProcessor fp = new FloatProcessor( width, height );            
-            fp.setPixels( slice );
-            stack.addSlice( null, fp );
-            IJ.showProgress( z / (double)depth );
+		GenericDialog gd = new GenericDialog("\"Surfaceness\" Filter");
+		gd.addNumericField("Sigma: ", (calibration==null) ? 1f : (calibration.pixelWidth), 4);
+		gd.addMessage("(The default value for sigma is the pixel width.)");
+		gd.addCheckbox("Use calibration information", calibration!=null);
 
-        }
+		gd.showDialog();
+		if( gd.wasCanceled() )
+			return;
 
-        IJ.showProgress( 1.0 );
-        
-        ImagePlus imp = new ImagePlus( "surfaceness of "+original.getTitle(), stack );
-        imp.show();
-        
-    }
+		double sigma = gd.getNextNumber();
+		if( sigma <= 0 ) {
+			IJ.error("The value of sigma must be positive");
+			return;
+		}
+		boolean useCalibration = gd.getNextBoolean();
 
-    public void proportionDone( double d ) {
-        IJ.showProgress( d );
-    }
+		SurfacenessProcessor sp = new SurfacenessProcessor(sigma,useCalibration);
 
+		ImagePlus result = sp.generateImage(original);
+		result.setTitle("surfaceness of " + original.getTitle());
+
+		result.show();
+	}
 }

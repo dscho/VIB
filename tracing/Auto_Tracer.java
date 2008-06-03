@@ -21,7 +21,6 @@
 
 package tracing;
 
-import features.Tubeness_;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -37,6 +36,7 @@ import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.HashSet;
+import features.TubenessProcessor;
 import util.BatchOpener;
 
 import java.awt.Color;
@@ -181,8 +181,8 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			}
 		} else {
 			IJ.showStatus("No tubes file found, generating anew...");
-			Tubeness_ tubifier=new Tubeness_();
-			tubenessImage=tubifier.generateTubenessImage(image);
+			TubenessProcessor tubifier=new TubenessProcessor(1,true);
+			tubenessImage=tubifier.generateImage(image);
 			System.out.println("Got tubes file.");
 			boolean saved=new FileSaver(tubenessImage).saveAsTiffStack(tubesFile.getAbsolutePath());
 			if( ! saved ) {
