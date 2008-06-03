@@ -33,8 +33,11 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 			sepZ = (float)calibration.pixelDepth;
 		}
 
+		double minimumSeparation = Math.min(sepX,
+						    Math.min(sepY,sepX));
+
 		ComputeCurvatures c = new ComputeCurvatures(original, sigma, this, useCalibration);
-		IJ.showStatus("Convolving with Gaussian sigma "+sigma+" (pixel width: "+sepX+")...");
+		IJ.showStatus("Convolving with Gaussian \u03C3="+sigma+" (min. pixel separation: "+minimumSeparation+")...");
 		c.run();
 
 		int width = original.getWidth();
