@@ -65,7 +65,7 @@ import amira.AmiraParameters;
 public class Simple_Neurite_Tracer extends ThreePanes
 	implements PlugIn, SearchProgressCallback, FillerProgressCallback, GaussianGenerationCallback {
 	
-	public static final String PLUGIN_VERSION = "1.2.1";
+	public static final String PLUGIN_VERSION = "1.2.2";
 	static final boolean verbose = false;
 	
 	PathAndFillManager pathAndFillManager;
@@ -945,7 +945,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			if( file_info != null ) {
 				String originalFileName=file_info.fileName;
-				System.out.println("originalFileName was: "+originalFileName);
+				if (verbose) System.out.println("originalFileName was: "+originalFileName);
 				if( originalFileName != null ) {
 					int lastDot=originalFileName.lastIndexOf(".");
 					if( lastDot > 0 ) {
@@ -953,11 +953,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 						String tubesFileName=beforeExtension+".tubes.tif";
 						ImagePlus tubenessImage = null;
 						File tubesFile=new File(file_info.directory,tubesFileName);
-						System.out.println("Testing for the existence of "+tubesFile.getAbsolutePath());
+						if (verbose) System.out.println("Testing for the existence of "+tubesFile.getAbsolutePath());
 						if( tubesFile.exists() ) {
 							IJ.showStatus("Loading tubes file.");
 							tubenessImage=BatchOpener.openFirstChannel(tubesFile.getAbsolutePath());
-							System.out.println("Loaded the tubeness file");
+							if (verbose) System.out.println("Loaded the tubeness file");
 							if( tubenessImage == null ) {
 								IJ.error("Failed to load tubes image from "+tubesFile.getAbsolutePath()+" although it existed");
 								return;
