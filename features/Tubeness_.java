@@ -10,6 +10,8 @@ import ij.gui.GenericDialog;
 
 public class Tubeness_ implements PlugIn {
 
+	static final String PLUGIN_VERSION = "1.0";
+
 	public void run(String ignored) {
 
 		ImagePlus original = WindowManager.getCurrentImage();
@@ -26,9 +28,9 @@ public class Tubeness_ implements PlugIn {
 						     Math.min(calibration.pixelHeight,
 							      calibration.pixelDepth));
 
-		GenericDialog gd = new GenericDialog("\"Tubeness\" Filter");
+		GenericDialog gd = new GenericDialog("\"Tubeness\" Filter (version "+PLUGIN_VERSION+")");
 		gd.addNumericField("Sigma: ", (calibration==null) ? 1f : minimumSeparation, 4);
-		gd.addMessage("(The default value for sigma is the pixel width.)");
+		gd.addMessage("(The default value for sigma is the minimum voxel separation.)");
 		gd.addCheckbox("Use calibration information", calibration!=null);
 
 		gd.showDialog();
