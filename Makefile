@@ -200,6 +200,17 @@ Find_Connected_Regions.jar: SOURCES=util/Find_Connected_Regions.java \
 Mask_Of_Nearby_Points.jar: SOURCES=util/Mask_Of_Nearby_Points.java \
 	util/COPYING
 
+Tubeness_.jar: SOURCES=features/Tubeness_.java \
+	features/HessianEvalueProcessor.java \
+	features/ComputeCurvatures.java \
+	features/TubenessProcessor.java \
+	features/GaussianGenerationCallback.java \
+	math3d/JacobiFloat.java \
+	math3d/JacobiDouble.java \
+	math3d/Point3d.java \
+	math3d/FloatMatrixN.java \
+	math3d/FastMatrixN.java
+
 Simple_Neurite_Tracer.jar: SOURCES=$(TRACERSOURCES)
 
 ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
