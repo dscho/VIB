@@ -1352,7 +1352,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				hessian = new ComputeCurvatures( xy, x_spacing, this, true );
 				new Thread(hessian).start();
 			}
-			System.out.println("Setting hessianEnabled to true");
 			hessianEnabled = true;
 		} else {
 			hessianEnabled = false;
