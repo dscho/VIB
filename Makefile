@@ -78,13 +78,16 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	$(wildcard pal/math/*.java) \
 	features/ComputeCurvatures.java \
 	features/GaussianGenerationCallback.java \
-	features/Tubeness_.java \
+	features/TubenessProcessor.java \
+	features/HessianEvalueProcessor.java \
 	client/ArchiveClient.java \
 	util/BatchOpener.java \
 	util/RGB_to_Luminance.java \
 	tracing/README tracing/COPYING \
 	math3d/JacobiDouble.java \
+	math3d/JacobiFloat.java \
 	math3d/FastMatrixN.java \
+	math3d/FloatMatrixN.java \
 	amira/AmiraParameters.java \
 	amira/AmiraMeshDecoder.java \
 	amira/AmiraTable.java
@@ -211,7 +214,7 @@ Tubeness_.jar: SOURCES=features/Tubeness_.java \
 	math3d/FloatMatrixN.java \
 	math3d/FastMatrixN.java
 
-Simple_Neurite_Tracer.jar: SOURCES=$(TRACERSOURCES)
+Simple_Neurite_Tracer.jar: SOURCES=$(filter-out tracing/Auto_Tracer.java,$(TRACERSOURCES))
 
 ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	marchingcubes/MCTriangulator.java \
