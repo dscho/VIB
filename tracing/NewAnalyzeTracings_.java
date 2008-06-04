@@ -89,7 +89,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		double f() {
 			return g + h;
 		}
-		@Override
+		//@Override
 		public int compareTo( Object other ) {
 			NewGraphNode n = (NewGraphNode)other;
 			return Double.compare( f(), n.f() );
