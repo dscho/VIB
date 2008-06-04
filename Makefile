@@ -214,7 +214,7 @@ Tubeness_.jar: SOURCES=features/Tubeness_.java \
 	math3d/FloatMatrixN.java \
 	math3d/FastMatrixN.java
 
-Simple_Neurite_Tracer.jar: SOURCES=$(filter-out tracing/Auto_Tracer.java,$(TRACERSOURCES))
+Simple_Neurite_Tracer.jar: SOURCES=$(filter-out tracing/Auto_Tracer.java tracing/AutoTraceThread.java tracing/AutoSearchThread.java tracing/AutoTracerCanvas.java,$(TRACERSOURCES))
 
 ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	marchingcubes/MCTriangulator.java \
