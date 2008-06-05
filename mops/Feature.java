@@ -1,14 +1,17 @@
 package mops;
 
+import process3d.Smooth_;
 import vib.InterpolatedImage;
 import vib.FastMatrix;
+import Jama.EigenvalueDecomposition;
+import Jama.Matrix;
 
 import math3d.Point3d;
 
 import ij.measure.Calibration;
 
-public class Feature extends Point3d {
-
+public class Feature extends Point3d
+{
 	/*
 	 * Feature descriptor width. For simplicity, assume a 
 	 * cubic descriptor for the moment.
@@ -26,33 +29,135 @@ public class Feature extends Point3d {
 	 * 2nd steepest is in y direction.
 	 */
 	private FastMatrix orientation = null;
+	
+	/**
+	 * scale = sigma of the feature relative to the octave
+	 */
+	private double scale;
 
+	Feature( double x, double y, double z, double scale )
+	{
+		super( x, y, z );
+		this.scale = scale;
+	}
+	
 	/*
 	 * Sum up the gaussian weighted derivative in a sigma-dependent
 	 * environment around the position of this feature. The result
 	 * is normalized and stored in <code>orientation</code>.
+	 * 
+	 * @param smoothed is expected to be an image with sigma = 4.5 * {@link #sigma}
+	 *   detected
 	 */
-	public void extractOrientation(InterpolatedImage ii, float sigma) {
-		Calibration cal = ii.getImage().getCalibration();
+	public void extractOrientation(InterpolatedImage smoothed) {
+		Calibration cal = smoothed.getImage().getCalibration();
 		int ix = (int)(x / cal.pixelWidth);
 		int iy = (int)(y / cal.pixelHeight);
 		int iz = (int)(z / cal.pixelDepth);
+		
+		float v2 = 2 * smoothed.getNoInterpolFloat( ix, iy, iz );
+		
+		
+		double[][] h = new double[ 3 ][ 3 ];
+		
+		h[ 0 ][ 0 ] =
+			smoothed.getNoInterpolFloat( ix + 1, iy, iz ) -
+			v2 +
+			smoothed.getNoInterpolFloat( ix - 1, iy, iz );
+		h[ 1 ][ 1 ] =
+			smoothed.getNoInterpolFloat( ix, iy + 1, iz ) -
+			v2 +
+			smoothed.getNoInterpolFloat( ix, iy - 1, iz );
+		h[ 2 ][ 2 ] =
+			smoothed.getNoInterpolFloat( ix, iy, iz + 1 ) -
+			v2 +
+			smoothed.getNoInterpolFloat( ix, iy, iz - 1 );
+		
+		h[ 0 ][ 1 ] = h[ 1 ][ 0 ] =
+			( smoothed.getNoInterpolFloat( ix + 1, iy + 1, iz ) -
+			  smoothed.getNoInterpolFloat( ix - 1, iy + 1, iz ) ) / 4 -
+			( smoothed.getNoInterpolFloat( ix + 1, iy - 1, iz ) -
+			  smoothed.getNoInterpolFloat( ix - 1, iy - 1, iz ) ) / 4;
+		h[ 0 ][ 2 ] = h[ 2 ][ 0 ] =
+			( smoothed.getNoInterpolFloat( ix + 1, iy, iz + 1 ) -
+			  smoothed.getNoInterpolFloat( ix - 1, iy, iz + 1 ) ) / 4 -
+			( smoothed.getNoInterpolFloat( ix + 1, iy, iz - 1 ) -
+			  smoothed.getNoInterpolFloat( ix - 1, iy, iz - 1 ) ) / 4;
+		h[ 1 ][ 2 ] = h[ 2 ][ 1 ] =
+			( smoothed.getNoInterpolFloat( ix, iy + 1, iz + 1 ) -
+			  smoothed.getNoInterpolFloat( ix, iy - 1, iz + 1 ) ) / 4 -
+			( smoothed.getNoInterpolFloat( ix, iy + 1, iz - 1 ) -
+			  smoothed.getNoInterpolFloat( ix, iy - 1, iz - 1 ) ) / 4;
+		
+		EigenvalueDecomposition evd =
+			new EigenvalueDecomposition( new Matrix( h ) );
+		
+		double[] ev = evd.getRealEigenvalues();
+		double[][] evect = evd.getV().getArray();
+		
+		
+		// Sort the eigenvalues by ascending size.
+		int i0 = 0;
+		int i1 = 1;
+		int i2 = 2;
+		
+		ev[ 0 ] = Math.abs( ev[ 0 ] );
+		ev[ 1 ] = Math.abs( ev[ 1 ] );
+		ev[ 2 ] = Math.abs( ev[ 2 ] );
+		
+		if ( ev[ i1 ] < ev[ i0 ] )
+		{
+			int temp = i0;
+			i0 = i1;
+			i1 = temp;
+		}
+		if ( ev[ i2 ] < ev[ i1 ] )
+		{
+			int temp = i1;
+			i1 = i2;
+			i2 = temp;
+			if ( ev[ i1 ] < ev[ i0 ] )
+			{
+				temp = i0;
+				i0 = i1;
+				i1 = temp;
+			}
+		}
+		
+		
+		
+		double[][] sortedEigenvect = new double[ 3 ][ 3 ];
+		
+		int s = 0;
+		int l = 0;
+		
+		ev[ 0 ] = Math.abs(  ev[ 0 ] );
+		for ( int i = 1; i < ev.length; ++i )
+		{
+			ev[ i ] = Math.abs( ev[ i ] );
+			if ( ev[ i ] < ev[ s ] ) s = i;
+			if ( ev[ i ] > ev[ l ] ) l = i;
+		}
+		
+		
+			
+	
 		float[] gauss_k = create3DGaussianKernel(sigma);
 		int diam = (int)Math.ceil(5 * sigma);
 		if(diam % 2 == 0) diam++;
 		int r = diam / 2;
 		// TODO does this work if x-r < 0 etc ???
 		InterpolatedImage.Iterator it = 
-			ii.iterator(false, ix-r, iy-r, iz-r, ix+r, iy+r, iz+r);
+			smoothed.iterator(false, ix-r, iy-r, iz-r, ix+r, iy+r, iz+r);
 		// sum up the gradients weighted by the gaussian
 		// This is the steepest gradient direction
 		float[] o = new float[3];
 		for(int i = 0; i < gauss_k.length; i++) {
 			it.next();
-			float v = ii.getNoInterpolFloat(it.i, it.j, it.k);
-			float v1 = ii.getNoInterpolFloat(it.i-1, it.j, it.k);
-			float v2 = ii.getNoInterpolFloat(it.i, it.j-1, it.k);
-			float v3 = ii.getNoInterpolFloat(it.i, it.j, it.k-1);
+			float v = smoothed.getNoInterpolFloat(it.i, it.j, it.k);
+			float v1 = smoothed.getNoInterpolFloat(it.i-1, it.j, it.k);
+			float v2 = smoothed.getNoInterpolFloat(it.i, it.j-1, it.k);
+			float v3 = smoothed.getNoInterpolFloat(it.i, it.j, it.k-1);
 			float l = (float)Math.sqrt(
 				(v-v1)*(v-v1) + (v-v2)*(v-v2) + (v-v3)*(v-v3));
 			float w = gauss_k[i] * l;
