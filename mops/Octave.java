@@ -5,82 +5,73 @@ import java.util.ArrayList;
 
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.gui.NewImage;
 import ij.measure.Calibration;
 
 import vib.InterpolatedImage;
 
 public class Octave {
 
-	private InterpolatedImage first, last;
+	float[] sigma;
 	private float[] sigma_diff;
+	final float k;
 
-	private InterpolatedImage[] dog;
+	InterpolatedImage[] img;
+	InterpolatedImage[] dog;
+	
+	final public int getWidth(){ return img[ 0 ].getWidth(); }
+	final public int getHeight(){ return img[ 0 ].getWidth(); }
+	final public int getDepth(){ return img[ 0 ].getWidth(); }
 
-	public Octave(InterpolatedImage image, float[] sigma_diff) {
-		this.first = image;
+	public Octave( InterpolatedImage image, float[] sigma, float[] sigma_diff )
+	{
+		k = ( float )Math.pow( 2.0, 1.0 / ( sigma.length - 3 ) );
+		this.sigma = sigma;
 		this.sigma_diff = sigma_diff;
-		this.last = Filter.gauss(
-			first, sigma_diff[sigma_diff.length - 1]);
+		img = new InterpolatedImage[ sigma.length ];
+		img[ 0 ] = image;
+		img[ img.length - 1 ] = Filter.gauss(
+			img[ 0 ], sigma_diff[sigma_diff.length - 1]);
 	}
-
-	public InterpolatedImage resample() {
-		ImagePlus tmp = last.getImage();
-		int w = tmp.getWidth(), h = tmp.getHeight();
-		int d = tmp.getStackSize();
-		int w_2 = w/2, h_2 = h/2, d_2 = d/2;
-		ImageStack stack = new ImageStack(w_2, h_2);
-		for(int z = 0; z < d_2; z++) {
-			float[] p = new float[w_2 * h_2];
-			for(int y = 0; y < h_2; y++) {
-				for(int x = 0; x < w_2; x++) {
-					p[y * w_2 + x] = last.getNoCheckFloat(
-						x*2, y*2, z*2);
-				}
-			}
-			stack.addSlice("", p);
-		}
-		ImagePlus retImage = new ImagePlus("", stack);
-		Calibration c = tmp.getCalibration().copy();
+	
+	public InterpolatedImage resample()
+	{
+		ImagePlus imp = NewImage.createFloatImage(
+				"",
+				getWidth() / 2 + getWidth() % 2,
+				getHeight() / 2 + getHeight() % 2,
+				getDepth() / 2 + getDepth() % 2,
+				NewImage.FILL_BLACK );
+		Calibration c = img[ 0 ].getImage().getCalibration().copy();
 		c.pixelWidth *= 2;
 		c.pixelHeight *= 2;
 		c.pixelDepth *= 2;
-		retImage.setCalibration(c);
-		return new InterpolatedImage(retImage);
+		imp.setCalibration( c );
+		InterpolatedImage tmp = new InterpolatedImage( imp );
+		int w = tmp.getWidth(), h = tmp.getHeight(), d = tmp.getDepth();
+		
+		for ( int z = 0; z < d; z++ )
+			for ( int y = 0; y < h; y++ )
+				for ( int x = 0; x < w; x++)
+					tmp.setFloat( x, y, z, img[ img.length - 1 ].getNoCheckFloat(
+						x*2, y*2, z*2 ) );
+		
+		return tmp;
 	}
 
 	public void dog() {
 		int steps = sigma_diff.length;
 		dog = new InterpolatedImage[steps - 1];
-		InterpolatedImage prev = first.cloneImage(), next;
-		for(int i = 0; i < steps - 1; i++) {
-			next = Filter.gauss(prev, sigma_diff[i+1]);
-			Filter.sub(next, prev);
-			dog[i] = prev;
-			prev = next;
+		for(int i = 1; i < steps - 1; i++) {
+			img[ i ] = Filter.gauss(img[ 0 ], sigma_diff[i]);
+			dog[ i - 1 ] = Filter.sub( img[ i ], img[ i - 1 ] );
 		}
 	}
 
-	/*
-	 * float indices of return list are
-	 * 0 -> x, 1 -> y, 2 -> z, 3 -> scale index
-	 */
-	public List<float[]> getCandidates() {
-		if(dog == null)
-			dog();
-
-		List<float[]> l = new ArrayList<float[]> ();
-		InterpolatedImage.Iterator it = null;
-		for(int i = 0; i < dog.length; i++) {
-			Filter.suppNonExtremum(dog[i]);
-			it = dog[i].iterator();
-			float v;
-			while(it.next() != null) {
-				v = dog[i].getNoCheckFloat(it.i, it.j, it.k);
-				if(v != 0)
-					l.add(new float[] {it.i,it.j,it.k,i});
-			}
-		}
-		return l;
+	public void clear()
+	{
+		this.dog = null;
+		this.img = null;
 	}
 }
 
