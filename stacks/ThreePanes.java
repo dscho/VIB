@@ -132,7 +132,8 @@ public class ThreePanes implements PaneOwner {
 			zy.close();
 			xz.close();
 		}
-		xy_window = new StackWindow( xy, original_xy_canvas );
+		if( original_xy_canvas != null && xy != null && xy.getImage() != null )
+			xy_window = new StackWindow( xy, original_xy_canvas );
 	}
 
 	public ThreePanes( ) {
