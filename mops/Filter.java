@@ -10,17 +10,19 @@ public class Filter {
 					ii.getImage(), true, sig, false));
 	}
 
-	/*
-	 * subtract i2 from i1 and save the result in _i2_
+	/**
+	 * subtract i2 from i1
 	 * The images must have the same size; this is not checked.
 	 */
-	public static void sub(InterpolatedImage i1, InterpolatedImage i2) {
-		InterpolatedImage.Iterator it = i1.iterator();
+	public static InterpolatedImage sub(InterpolatedImage i1, InterpolatedImage i2) {
+		InterpolatedImage ret = i1.cloneDimensionsOnly();
+		InterpolatedImage.Iterator it = ret.iterator();
 		while(it.next() != null) {
-			i2.setFloat(it.i, it.j, it.k,
+			ret.setFloat(it.i, it.j, it.k,
 				i1.getNoCheckFloat(it.i, it.j, it.k) -
 				i2.getNoCheckFloat(it.i, it.j, it.k));
 		}
+		return ret;
 	}
 
 	public static InterpolatedImage gradX(InterpolatedImage ii) {
@@ -76,5 +78,31 @@ public class Filter {
 			}
 		}
 	}
+	
+	/**
+     * In place enhance all values of an InterPolatedImage to fill the given range.
+     * 
+     * @param src source
+     * @param scale defines the range 
+     */
+    public static final void enhance( InterpolatedImage src, float scale )
+    {
+    	float min = src.getNoCheckFloat( 0, 0, 0 );
+    	float max = min;
+    	InterpolatedImage.Iterator it = src.iterator();
+    	it.next();
+    	while ( it.next() != null )
+    	{
+    		float v = src.getNoCheckFloat( it.i, it.j, it.k );
+    		if ( v < min ) min = v;
+    		else if ( v > max ) max = v;
+    	}
+    	scale /= ( max - min );
+    	it = src.iterator();
+    	while ( it.next() != null )
+    		src.setFloat(
+    				it.i, it.j, it.k,
+    				scale * ( src.getNoCheckFloat( it.i, it.j, it.k ) - min ) );
+    }
 }
 
