@@ -43,10 +43,10 @@ show:
 
 JUNIT4JAR=$(shell pwd)/junit-4.4.jar
 
-TESTCLASSES=distance.TestMutualInformation \
+TESTCLASSES=math3d.TestEigenvalueDecompositions \
+	distance.TestMutualInformation \
 	distance.TestEuclidean \
-	distance.TestCorrelation \
-	vib.TestRigidRegistration
+	distance.TestCorrelation
 
 TESTMEM=512m
 
@@ -93,7 +93,7 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	amira/AmiraTable.java
 
 test :
-	java -Xmx$(TESTMEM) -classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR) org.junit.runner.JUnitCore $(TESTCLASSES)
+	java -Xmx$(TESTMEM) -classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar org.junit.runner.JUnitCore $(TESTCLASSES)
 
 %.class: %.java
 	javac -O $(JAVACOPTS) "$<"
