@@ -927,6 +927,9 @@ public class ComputeCurvatures implements Runnable
 
     }
 
+    
+
+
     /**
      * This method computes the Hessian Matrix for the 3x3 environment of a certain pixel <br><br>
      *
@@ -943,6 +946,9 @@ public class ComputeCurvatures implements Runnable
      */
     public double[][] computeHessianMatrix2DDouble(FloatArray2D laPlace, int x, int y, double sigma, float sepX, float sepY)
     {
+        if( laPlace == null )
+            laPlace = (FloatArray2D)data;
+
         double[][] hessianMatrix = new double[2][2]; // zeile, spalte
 
         double temp = 2 * laPlace.get(x, y);
@@ -985,6 +991,9 @@ public class ComputeCurvatures implements Runnable
      */
     public float[][] computeHessianMatrix2DFloat(FloatArray2D laPlace, int x, int y, double sigma, float sepX, float sepY)
     {
+        if( laPlace == null )
+            laPlace = (FloatArray2D)data;
+
         float[][] hessianMatrix = new float[2][2]; // zeile, spalte
 
         float temp = 2 * laPlace.get(x, y);
@@ -1029,6 +1038,9 @@ public class ComputeCurvatures implements Runnable
      */
     public double[][] computeHessianMatrix3DDouble(FloatArray3D img, int x, int y, int z, double sigma, float sepX, float sepY, float sepZ)
     {
+        if( img == null )
+            img = (FloatArray3D)data;
+
         double[][] hessianMatrix = new double[3][3]; // zeile, spalte
 
         double temp = 2 * img.get(x, y, z);
@@ -1092,6 +1104,9 @@ public class ComputeCurvatures implements Runnable
      */
     public float[][] computeHessianMatrix3DFloat(FloatArray3D img, int x, int y, int z, double sigma, float sepX, float sepY, float sepZ)
     {
+        if( img == null )
+            img = (FloatArray3D)data;
+
         float[][] hessianMatrix = new float[3][3]; // zeile, spalte
 
         float temp = 2 * img.get(x, y, z);
