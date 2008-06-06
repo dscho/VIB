@@ -53,7 +53,7 @@ public class Viewer4DController implements ActionListener {
 		}
 		gd.addPanel(p);
 		gd.addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
+			public void windowClosed(WindowEvent e) {
 				viewer4d.releaseContents();
 			}
 		});

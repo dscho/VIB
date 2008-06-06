@@ -48,16 +48,16 @@ public class Viewer4D {
 		new Thread(new Runnable() {
 			public void run() {
 				while(!shouldPause) {
+					if(current < contents.length - 1)
+						next();
+					else
+						first();
 					try {
 						Thread.currentThread()
 							.sleep(delay);
 					} catch(Exception e) {
 						shouldPause = false;
 					}
-					if(current < contents.length - 1)
-						next();
-					else
-						first();
 				}
 				shouldPause = false;
 			}
@@ -115,6 +115,11 @@ public class Viewer4D {
 	public void releaseContents() {
 		pause();
 		directory = null;
+		// remove all except the current content
+		for(int i = 0; i < contents.length; i++) {
+			if(i != current)
+				univ.removeContent(contents[i].getName());
+		}
 		contents = null;
 		current = 0;
 		univ.setStatus("");
@@ -140,8 +145,6 @@ public class Viewer4D {
 							"Time lapse dir");
 				String dir = dc.getDirectory();
 				if (null == dir) return;
-				dir = dir.replace('\\', '/');
-				if (!dir.endsWith("/")) dir += "/";
 				folder.setText(dir);
 			}
 		});
@@ -161,6 +164,9 @@ public class Viewer4D {
 			return;
 
 		directory = folder.getText();
+		directory = directory.replace('\\', '/');
+		if (!directory.endsWith("/"))
+			directory += "/";
 		type = (int)gd.getNextChoiceIndex();
 		threshold = (int)gd.getNextNumber();
 		resf = (int)gd.getNextNumber();
