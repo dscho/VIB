@@ -33,6 +33,11 @@ import pal.math.*;
 
 import stacks.ThreePanes;
 
+import ij3d.Image3DUniverse;
+import ij3d.Content;
+import ij3d.Pipe;
+import javax.vecmath.Color3f;
+
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
 
@@ -745,4 +750,40 @@ public class Path implements Cloneable {
 		return result;
 	}
 
+	public Content addTo3DViewer(Image3DUniverse univ, double x_spacing, double y_spacing, double z_spacing) {
+
+		double [] x_points_d = new double[points];
+		double [] y_points_d = new double[points];
+		double [] z_points_d = new double[points];
+		double [] diameters = new double[points];
+
+		for(int i=0; i<points; ++i) {
+			x_points_d[i] = x_spacing * x_positions[i];
+			y_points_d[i] = y_spacing * y_positions[i];
+			z_points_d[i] = z_spacing * z_positions[i];
+			diameters[i] = x_spacing * 3;
+		}
+
+		double [][][] allPoints = Pipe.makeTube(x_points_d,
+							y_points_d,
+							z_points_d,
+							diameters,
+							4,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
+							12);     // "parallels" (12 means cross-sections are dodecagons)
+
+		java.util.List triangles = Pipe.generateTriangles(allPoints,
+								  1); // scale
+
+		String title = "helloooo";
+
+		univ.resetView();
+
+		univ.addMesh(triangles,
+			     new Color3f(Color.magenta),
+			     title,
+			     // 1f,  // scale
+			     1); // threshold
+
+		return univ.getContent(title);
+	}
 }
