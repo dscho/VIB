@@ -145,7 +145,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Content addContent(ImagePlus image, Color3f color, String name,
 		int thresh, boolean[] channels, int resf, int type) {
-		if(contents.contains(name)) {
+		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
@@ -212,7 +212,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addMesh(List mesh,
 			Color3f color, String name, int threshold) {
 		// check if exists already
-		if(contents.contains(name)) {
+		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
