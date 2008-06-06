@@ -164,6 +164,8 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard orthoslice/*.java) \
 	$(wildcard javax/media/j3d/*.java) \
 	$(wildcard math3d/*.java) \
+	$(wildcard view4d/*.java) $(wildcard view4d/icons/*.png) \
+	vib/segment/ImageButton.java vib/segment/Border.java \
 	vib/Resample_.java vib/InterpolatedImage.java \
 	vib/PointList.java vib/BenesNamedPoint.java \
 	amira/AmiraParameters.java amira/AmiraTable.java \
