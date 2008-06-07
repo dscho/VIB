@@ -495,6 +495,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	synchronized public void setTemporaryPath( Path path ) {
 
+		Path oldTemporaryPath = this.temporaryPath;
+
 		xy_tracer_canvas.setTemporaryPath( path );
 		if( ! single_pane ) {
 			zy_tracer_canvas.setTemporaryPath( path );
@@ -502,9 +504,21 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 
 		temporaryPath = path;
+
+		if( temporaryPath != null )
+			temporaryPath.setName("Temporary Path");
+		if( use3DViewer ) {
+			if( oldTemporaryPath != null ) {
+				oldTemporaryPath.removeFrom3DViewer(univ);
+			}
+			if( temporaryPath != null )
+				temporaryPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing,Color.BLUE);
+		}
 	}
 
 	synchronized public void setCurrentPath( Path path ) {
+
+		Path oldCurrentPath = this.currentPath;
 
 		xy_tracer_canvas.setCurrentPath( path );
 		if( ! single_pane ) {
@@ -513,6 +527,16 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 
 		currentPath = path;
+
+		if( currentPath != null )
+			currentPath.setName("Current Path");
+		if( use3DViewer ) {
+			if( oldCurrentPath != null ) {
+				oldCurrentPath.removeFrom3DViewer(univ);
+			}
+			if( currentPath != null )
+				currentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing,Color.RED);
+		}
 	}
 
 	synchronized public Path getCurrentPath( ) {
@@ -669,6 +693,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			// Since joining onto another path for the end must finish the path:
 			finishedPath( );
 		}
+
+		/* This has the effect of removing the path from the
+		   3D viewer and adding it again: */
+		setCurrentPath(currentPath);
 	}
 
 	synchronized public void cancelTemporary( ) {
@@ -720,9 +748,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		lastStartPointSet = false;
 		setPathUnfinished( false );
 
-		pathAndFillManager.addPath( currentPath );
+		Path savedCurrentPath = currentPath;
+		setCurrentPath(null);
+
+		pathAndFillManager.addPath( savedCurrentPath, true );
 		if( use3DViewer )
-			currentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing);
+			savedCurrentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing);
 		setCurrentPath( null );
 
 		unsavedPaths = true;
@@ -1010,7 +1041,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					gd.addMessage("(3D viewer option is only currently available for 8 bit images)");
 				} else {
 					showed3DViewerOption = true;
-					gd.addCheckbox("Use 3D viewer?",true);
+					gd.addCheckbox("Use 3D viewer? (Experimental)",true);
 				}
 
 				gd.showDialog();

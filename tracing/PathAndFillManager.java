@@ -277,9 +277,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return -1;
 	}
 
-	public synchronized void addPath( Path p ) {
+	public void addPath( Path p ) {
+		addPath(p,false);
+	}
+
+	public synchronized void addPath( Path p, boolean forceNewName ) {
 		String suggestedName = getDefaultName();
-		if(p.getName() == null) {
+		if(p.getName() == null || forceNewName) {
 			p.setName(suggestedName);
 		}
 		allPaths.add(p);

@@ -755,7 +755,20 @@ public class Path implements Cloneable {
 
 	Content content3D;
 
+	public void removeFrom3DViewer(Image3DUniverse univ) {
+		univ.removeContent(getName());
+	}
+
 	public Content addTo3DViewer(Image3DUniverse univ, double x_spacing, double y_spacing, double z_spacing) {
+		return addTo3DViewer( univ, x_spacing, y_spacing, z_spacing, null );
+	}
+
+	public Content addTo3DViewer(Image3DUniverse univ, double x_spacing, double y_spacing, double z_spacing, Color c) {
+
+		if(points <= 1) {
+			content3D = null;
+			return null;
+		}
 
 		double [] x_points_d = new double[points];
 		double [] y_points_d = new double[points];
@@ -784,7 +797,7 @@ public class Path implements Cloneable {
 		univ.resetView();
 
 		univ.addMesh(triangles,
-			     new Color3f(Color.magenta),
+			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
 			     title,
 			     // 1f,  // scale
 			     1); // threshold
