@@ -7,6 +7,7 @@ import ij.measure.Calibration;
 import java.applet.Applet;
 import java.awt.BorderLayout;
 import java.awt.Frame;
+import java.awt.Color;
 import java.awt.event.*;
 import java.awt.GraphicsConfiguration;
 import com.sun.j3d.utils.applet.MainFrame; 
@@ -23,19 +24,35 @@ public final class SurfacePlot extends Shape3D {
 	private ImageProcessor image;
 	private float pw = 1, ph = 1;
 	private int w, h;
-	private QuadArray geometry;
+	private IndexedQuadArray geometry;
 	private Appearance appearance;
+	private Color3f color = null;
+	private float transparency = 0f;
 
-	private float zFactor = 1;
 	private float maxVal = -1;
 
 	public SurfacePlot(ImagePlus image) {
+		this(image, null, 0f, 1);
+	}
+
+	public SurfacePlot(ImagePlus image, Color3f color,
+							float transp, int res) {
 		this.image = image.getProcessor();
+		pw = image.getWidth();
+		ph = image.getHeight();
+		this.color = color;
+		this.transparency = transp;
+
+		w = this.image.getWidth() / res;
+		h = this.image.getHeight() / res;
+		this.image.setInterpolate(true);
+		this.image = this.image.resize(w, h);
+
 		Calibration cal = image.getCalibration();
-		pw = (float)cal.pixelWidth;
-		ph = (float)cal.pixelHeight;
-		w = image.getWidth();
-		h = image.getHeight();
+		pw = (float)(pw * cal.pixelWidth / w);
+		ph = (float)(ph * cal.pixelHeight / h);
+
+		calculateMax();
 
 		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
@@ -61,20 +78,38 @@ public final class SurfacePlot extends Shape3D {
 	public void calculateMinMaxCenterPoint(Point3f min, 
 				Point3f max, Point3f center) {
 
-		if(maxVal < 0)
-			calculateMax();
 		min.x = 0; min.y = 0; min.z = 0;
-		max.x = w * pw; max.y = h * ph; max.z = maxVal * zFactor;
+		max.x = w * pw; max.y = h * ph; max.z = maxVal;
 		center.x = max.x / 2;
 		center.y = max.y / 2;
 		center.z = max.z / 2;
+	}
+
+	public Color3f getColor() {
+		return color;
+	}
+
+	public void setColor(Color3f color) {
+		this.color = color;
+
+		int N = geometry.getVertexCount();
+		Color3f colors[] = new Color3f[N];
+		Point3f coord = new Point3f();
+		for(int i = 0; i < N; i++) {
+			geometry.getCoordinate(i, coord);
+			colors[i] = color != null
+					? color
+					: new Color3f(Color.getHSBColor(
+						coord.z / maxVal, 1, 1));
+		}
+		geometry.setColors(0, colors);
 	}
 
 	private Appearance createAppearance () {
 		Appearance appearance = new Appearance();
 		appearance.setCapability(Appearance.
 					ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
-		
+
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_LINE);
 		polyAttrib.setCullFace(PolygonAttributes.CULL_NONE);
@@ -87,7 +122,6 @@ public final class SurfacePlot extends Shape3D {
 		appearance.setColoringAttributes(colorAttrib);
 
 		TransparencyAttributes tr = new TransparencyAttributes();
-		float transparency = 0;
 		int mode = transparency == 0f ? TransparencyAttributes.NONE
 					: TransparencyAttributes.FASTEST;
 		tr.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
@@ -95,7 +129,7 @@ public final class SurfacePlot extends Shape3D {
 		tr.setTransparencyMode(mode);
 		tr.setTransparency(transparency);
 		appearance.setTransparencyAttributes(tr);
-		
+
 		Material material = new Material();
 		material.setAmbientColor(0.1f, 0.1f, 0.1f);
 		material.setSpecularColor(0.5f,0.5f,0.5f);
@@ -103,55 +137,62 @@ public final class SurfacePlot extends Shape3D {
 		appearance.setMaterial(material);
 		return appearance;
 	}
-	
-	private QuadArray createGeometry() {
+
+	private IndexedQuadArray createGeometry() {
 
 		if(image == null)
 			return null;
-
 		int w = image.getWidth(), h = image.getHeight();
 		int nQuads = (w - 1) * (h - 1);
+		int nIndices = w * h;
 		int nVertices = nQuads * 4;
 
-		Point3f[] coords = new Point3f[nVertices];
-		Color3f colors[] = new Color3f[nVertices];
-		for(int i = 0; i < nVertices; i++)
-			colors[i] = new Color3f(1, 0, 0);
-		
-		QuadArray ta = new QuadArray (nVertices, 
-					TriangleArray.COORDINATES | 
+		IndexedQuadArray ta = new IndexedQuadArray (nIndices,
+					TriangleArray.COORDINATES |
 					TriangleArray.COLOR_3 |
-					TriangleArray.NORMALS);
+					TriangleArray.NORMALS,nVertices);
 
-		// calculate coordinates
+		Point3f[] coords = new Point3f[nIndices];
+		Color3f colors[] = new Color3f[nIndices];
+		for(int i = 0; i < nIndices; i++) {
+			float y = ph * (i / w);
+			float x = pw * (i % w);
+			float v = image.getf(i);
+			coords[i] = new Point3f(x, y, v);
+			colors[i] = color != null
+					? color
+					: new Color3f(Color.getHSBColor(
+						coords[i].z / maxVal, 1, 1));
+		}
+		ta.setCoordinates(0, coords);
+		ta.setColors(0, colors);
+
+
+		int[] indices = new int[nVertices];
 		int index = 0;
 		for(int y = 0; y < h-1; y++) {
 			for(int x = 0; x < w-1; x++) {
-				float v00 = image.getf(x, y);
-				float v10 = image.getf(x, y+1);
-				float v01 = image.getf(x+1, y);
-				float v11 = image.getf(x+1, y+1);
-
-				coords[index++] = new Point3f(x * pw, y * ph, v00 * zFactor);
-				coords[index++] = new Point3f(x * pw, (y+1) * ph, v10 * zFactor);
-				coords[index++] = new Point3f((x+1) * pw, (y+1) * ph, v11 * zFactor);
-				coords[index++] = new Point3f((x+1) * pw, y * ph, v01 * zFactor);
+				indices[index++] = y * w + x;
+				indices[index++] = (y+1) * w + x;
+				indices[index++] = (y+1) * w + x+1;
+				indices[index++] = y * w + x+1;
 			}
 		}
-				
-		ta.setCoordinates(0, coords);
-		ta.setColors(0, colors);
+		ta.setCoordinateIndices(0, indices);
+		ta.setColorIndices(0, indices);
+
 		// initialize the geometry info here
 		GeometryInfo gi = new GeometryInfo(ta);
 		// generate normals
 		NormalGenerator ng = new NormalGenerator();
 		ng.generateNormals(gi);
-		// stripify
-		QuadArray result = (QuadArray)gi.getGeometryArray();
+
+		IndexedQuadArray result = (IndexedQuadArray)gi
+					.getIndexedGeometryArray();
 		result.setCapability(TriangleArray.ALLOW_COLOR_WRITE);
 		result.setCapability(TriangleArray.ALLOW_COUNT_READ);
 		result.setCapability(TriangleArray.ALLOW_INTERSECT);
-		
+
 		return result;
 	}
 }
