@@ -19,8 +19,6 @@ import ij3d.ColorTable;
 
 import vib.Resample_;
 
-import marchingcubes.MCTriangulator;
-
 import javax.media.j3d.Node;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
@@ -36,11 +34,8 @@ public class SurfacePlotGroup extends ContentNode {
 	public SurfacePlotGroup (Content c) {
 		super();
 		this.c = c;
-		ImagePlus imp = c.getResamplingFactor() == 1 ? c.getImage() 
-			: Resample_.resample(c.getImage(), 
-				c.getResamplingFactor());
-		imp.setSlice(c.getImage().getSlice());
-		surfacep = new SurfacePlot(imp);
+		surfacep = new SurfacePlot(c.getImage(), c.getColor(),
+			c.getTransparency(), c.getResamplingFactor());
 		calculateMinMaxCenterPoint();
 		addChild(surfacep);
 	}
@@ -73,7 +68,9 @@ public class SurfacePlotGroup extends ContentNode {
 	}
 
 	public void colorUpdated() {
-		// TODO
+		if(c.getColor() == surfacep.getColor())
+			return;
+		surfacep.setColor(c.getColor());
 	}
 
 	public void transparencyUpdated() {
