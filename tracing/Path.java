@@ -49,12 +49,16 @@ public class Path implements Cloneable {
 	public static final int PATH_START = 0;
 	public static final int PATH_END = 1;
 
-	// It's sometimes useful to give paths a name, but this will
-	// mostly be null:
+	// Paths should always be given a name (since the name
+	// identifies them to the 3D viewer)...
 	String name;
 
 	public void setName(String newName) {
 		this.name = newName;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public double getRealLength( double x_spacing, double y_spacing, double z_spacing ) {
