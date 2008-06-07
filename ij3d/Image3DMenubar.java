@@ -80,6 +80,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem displayAsVolume;
 	private MenuItem displayAsOrtho;
 	private MenuItem displayAsSurface;
+	private MenuItem displayAsSurfacePlot;
 	private MenuItem pl_load;
 	private MenuItem regist;
 	private MenuItem pl_save;
@@ -384,6 +385,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		displayAsSurface.addActionListener(this);
 		display.add(displayAsSurface);
 
+		displayAsSurfacePlot = new MenuItem("Surface Plot 2D");
+		displayAsSurfacePlot.addActionListener(this);
+		display.add(displayAsSurfacePlot);
+
 		return display;
 	}
 
@@ -581,6 +586,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				return;
 			}
 			c.displayAs(Content.SURFACE);
+			univ.clearSelection();
+		}
+
+		if(e.getSource() == displayAsSurfacePlot) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.displayAs(Content.SURFACE_PLOT2D);
 			univ.clearSelection();
 		}
 
@@ -1291,6 +1306,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		displayAsVolume.setEnabled(c.getType() != Content.VOLUME);
 		displayAsOrtho.setEnabled(c.getType() != Content.ORTHO);
 		displayAsSurface.setEnabled(c.getType() != Content.SURFACE);
+		displayAsSurfacePlot.setEnabled(c.getType() != Content.SURFACE_PLOT2D);
 	}
 
 	private boolean containsSelectedMenu() {
@@ -1398,7 +1414,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		images = (String[])windows.toArray(new String[]{});
 		String name = image == null ? images[0] : image.getTitle();
 		String[] types = new String[] {
-				"Volume", "Orthoslice", "Surface"};
+				"Volume", "Orthoslice", "Surface", "Surface Plot 2D"};
 		type = type < 0 ? 0 : type;
 		int threshold = type == Content.SURFACE ? 50 : 0;
 		int resf = 2;
