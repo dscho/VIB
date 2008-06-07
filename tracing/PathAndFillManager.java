@@ -49,13 +49,17 @@ import org.xml.sax.SAXException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.media.j3d.View;
+import ij3d.Content;
+import ij3d.UniverseListener;
+
 class TracesFileFormatException extends SAXException {
 	public TracesFileFormatException(String message) {
 		super(message);
 	}
 }
 
-public class PathAndFillManager extends DefaultHandler {
+public class PathAndFillManager extends DefaultHandler implements UniverseListener {
 
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
@@ -139,6 +143,15 @@ public class PathAndFillManager extends DefaultHandler {
 		return allPaths.get(i);
 	}
 
+	/* This is called to update the PathAndFillManager's idea of
+	   which paths are currently selected.  This is also
+	   propagated to:
+
+               (a) Each Path object (so that the 3D viewer can reflect
+               the change, for instance.)
+
+               (b) All the registered PathAndFillListener objects.
+	*/
 	public synchronized void setSelected( int [] selectedIndices ) {
 		selectedPaths = new boolean[allPaths.size()];
 		for( int i = 0; i < selectedPaths.length; ++i ) {
@@ -153,6 +166,9 @@ public class PathAndFillManager extends DefaultHandler {
 			// which will change the colour of the Path in
 			// the 3D viewer if necessary:
 			allPaths.get(i).setSelected(selectedPaths[i]);
+		}
+		for( Iterator<PathAndFillListener> i = listeners.iterator(); i.hasNext(); ) {
+			i.next().setSelectedPaths( selectedIndices );
 		}
 	}
 
@@ -1228,5 +1244,37 @@ public class PathAndFillManager extends DefaultHandler {
 	ArrayList<Path> getAllPaths() {
 		return allPaths;
 	}
+
+	// Methods we need to implement for UniverseListener:
+
+	public void transformationStarted(View view) { }
+	public void transformationUpdated(View view) { }
+	public void transformationFinished(View view) { }
+
+	public void contentAdded(Content c) { }
+	public void contentRemoved(Content c) { }
+	public void contentChanged(Content c) { }
+	/* If someone selects a path in the 3D viewer, it would be
+	   good to update the path list's selections with that: */
+	public void contentSelected(Content c) {
+		int selectedIndex = -1;
+		int i = 0;
+		for( Iterator<Path> j = allPaths.iterator(); j.hasNext(); ) {
+			Path p = j.next();
+			if( p.content3D == c )
+				selectedIndex = i;
+			++i;
+		}
+		if( selectedIndex >= 0 ) {
+			int [] newSelected = new int[1];
+			newSelected[0] = selectedIndex;
+			setSelected(newSelected);
+		} else {
+			// This is probably someone accidentally
+			// selecting the original image...
+		}
+	}
+	public void canvasResized() { }
+	public void universeClosed() { }
 
 }

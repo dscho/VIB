@@ -152,7 +152,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 	}
 
-
 	synchronized public void pauseOrRestartFilling( ) {
 		if( filler != null ) {
 			filler.pauseOrUnpause( );
@@ -1114,6 +1113,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				String title = "Original image for tracing";
 				
 				univ = new Image3DUniverse(512, 512);
+				univ.addUniverseListener(pathAndFillManager);
 				univ.show();
 				GUI.center(univ.getWindow());
 				boolean [] channels = { true, true, true };

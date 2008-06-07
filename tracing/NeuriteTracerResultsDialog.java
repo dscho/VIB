@@ -133,6 +133,23 @@ class NeuriteTracerResultsDialog
 			fillList.add( newList[i] );
 	}
 
+	public void setSelectedPaths( int [] selectedIndices ) {
+		int items = pathList.getItemCount();
+		boolean [] itemStates = new boolean[items];
+		for( int i = 0; i < selectedIndices.length; ++i )
+			itemStates[selectedIndices[i]] = true;
+		for( int i = 0; i < items; ++i ) {
+			if( itemStates[i] ) {
+				if( ! pathList.isIndexSelected(i) )
+					pathList.select(i);
+			} else {
+				if( pathList.isIndexSelected(i) )
+					pathList.deselect(i);
+			}
+		}
+		plugin.repaintAllPanes();
+	}
+
 	// ------------------------------------------------------------------------
 
 	int preGaussianState;
