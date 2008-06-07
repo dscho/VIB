@@ -918,7 +918,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				x_spacing = calibration.pixelWidth;
 				y_spacing = calibration.pixelHeight;
 				z_spacing = calibration.pixelDepth;
-				spacing_units = calibration.getUnit();
+				spacing_units = calibration.getUnits();
+				if( spacing_units == null || spacing_units.length() == 0 )
+					spacing_units = "" + calibration.getUnit();
 			}
 
 			pathAndFillManager = new PathAndFillManager(this);

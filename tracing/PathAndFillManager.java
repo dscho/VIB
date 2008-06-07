@@ -73,6 +73,8 @@ public class PathAndFillManager extends DefaultHandler {
 		this.y_spacing = c.pixelHeight;
 		this.z_spacing = c.pixelDepth;
 		this.spacing_units = c.getUnit();
+		if( this.spacing_units == null || this.spacing_units.length() == 0 )
+			this.spacing_units = "" + c.getUnit();
 		this.width = imagePlus.getWidth();
 		this.height = imagePlus.getHeight();
 		this.depth = imagePlus.getStackSize();
