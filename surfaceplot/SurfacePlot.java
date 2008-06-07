@@ -143,7 +143,7 @@ public final class SurfacePlot extends Shape3D {
 
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
-		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_LINE);
+		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
 		polyAttrib.setCullFace(PolygonAttributes.CULL_NONE);
 		polyAttrib.setBackFaceNormalFlip(true);
 		appearance.setPolygonAttributes(polyAttrib);
