@@ -76,5 +76,10 @@ public class SurfacePlotGroup extends ContentNode {
 		if(c.getTransparency() != surfacep.getTransparency())
 			surfacep.setTransparency(c.getTransparency());
 	}
+
+	public void shadeUpdated() {
+		if(c.isShaded() != surfacep.isShaded())
+			surfacep.setShaded(c.isShaded());
+	}
 }
 

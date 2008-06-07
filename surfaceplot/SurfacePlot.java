@@ -31,6 +31,7 @@ public final class SurfacePlot extends Shape3D {
 
 	private Color3f color = null;
 	private float transparency = 0f;
+	private boolean shaded = true;
 
 
 	public SurfacePlot(ImagePlus image) {
@@ -121,12 +122,27 @@ public final class SurfacePlot extends Shape3D {
 		geometry.setColors(0, colors);
 	}
 
+	public boolean isShaded() {
+		return shaded;
+	}
+
+	public void setShaded(boolean b) {
+		this.shaded = b;
+		PolygonAttributes pa = appearance.getPolygonAttributes();
+		if(b)
+			pa.setPolygonMode(PolygonAttributes.POLYGON_FILL);
+		else
+			pa.setPolygonMode(PolygonAttributes.POLYGON_LINE);
+	}
+
+
 	private Appearance createAppearance () {
 		Appearance appearance = new Appearance();
 		appearance.setCapability(Appearance.
 					ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
 
 		PolygonAttributes polyAttrib = new PolygonAttributes();
+		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
 		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_LINE);
 		polyAttrib.setCullFace(PolygonAttributes.CULL_NONE);
 		polyAttrib.setBackFaceNormalFlip(true);
