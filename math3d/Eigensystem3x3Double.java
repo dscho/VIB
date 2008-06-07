@@ -16,6 +16,20 @@ public class Eigensystem3x3Double {
 		}
 	}
 
+	public void getEvalues(double [] eigenValues) {
+		eigenValues[0] = this.eigenValues[0];
+		eigenValues[1] = this.eigenValues[1];
+		eigenValues[2] = this.eigenValues[2];
+	}
+
+	public double [] getEvaluesCopy() {
+		return eigenValues.clone();
+	}
+
+	public double [] getEvalues() {
+		return eigenValues;
+	}
+
 	public boolean findEvalues() {
 
 		eigenValues = new double[3];
