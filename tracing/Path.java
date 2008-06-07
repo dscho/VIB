@@ -72,7 +72,7 @@ public class Path implements Cloneable {
 	}
 
 	public String getRealLengthString( double x_spacing, double y_spacing, double z_spacing ) {
-		return String.format( "%6.4g", getRealLength( x_spacing, y_spacing, z_spacing ) );
+		return String.format( "%.4f", getRealLength( x_spacing, y_spacing, z_spacing ) );
 	}
 
 	/* To unset a join, make 'other' null */
