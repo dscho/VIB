@@ -20,6 +20,7 @@ public final class IsoShape extends Shape3D {
 	List mesh = null;
 	private int threshold;
 	private float transparency;
+	private boolean shaded = true;
 	private float volume;
 
 	public IsoShape(List mesh, int threshold, float transparency){
@@ -64,6 +65,19 @@ public final class IsoShape extends Shape3D {
 
 	public float getTransparency() {
 		return transparency;
+	}
+
+	public boolean isShaded() {
+		return shaded;
+	}
+
+	public void setShaded(boolean b) {
+		this.shaded = b;
+		PolygonAttributes pa = getAppearance().getPolygonAttributes();
+		if(b)
+			pa.setPolygonMode(PolygonAttributes.POLYGON_FILL);
+		else
+			pa.setPolygonMode(PolygonAttributes.POLYGON_LINE);
 	}
 
 	public void calculateMinMaxCenterPoint(Point3f min, 
@@ -121,7 +135,8 @@ public final class IsoShape extends Shape3D {
 					ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
 		
 		PolygonAttributes polyAttrib = new PolygonAttributes();
-		//polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_LINE);
+		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
+		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
 		polyAttrib.setCullFace(PolygonAttributes.CULL_BACK);
 		polyAttrib.setBackFaceNormalFlip(false);
 		appearance.setPolygonAttributes(polyAttrib);

@@ -83,6 +83,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem displayAsSurfacePlot;
 	private MenuItem pl_load;
 	private MenuItem regist;
+	private CheckboxMenuItem shaded;
 	private MenuItem pl_save;
 	private MenuItem pl_size;
 	private MenuItem j3dproperties;
@@ -367,6 +368,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		threshold = new MenuItem("Adjust threshold");
 		threshold.addActionListener(this);
 		attributes.add(threshold);
+
+		shaded = new CheckboxMenuItem("Shade surface");
+		shaded.setState(true);
+		shaded.addItemListener(this);
+		attributes.add(shaded);
+
 		return attributes;
 	}
 
@@ -862,6 +869,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(UNLOCK);
 		}
 
+		if(e.getSource() == shaded) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			int t = c.getType();
+			if(t == Content.SURFACE || t == Content.SURFACE_PLOT2D)
+				c.setShaded(!c.isShaded());
+		}
+
 		if (e.getSource() == pl_show) {
 			Content c = univ.getSelected();
 			if(c == null) {
@@ -1291,22 +1309,27 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			remove(selectedMenu);
 			return;
 		}	
+		int t = c.getType();
 		selectedMenu.setLabel(c.getName());
 		if(!containsSelectedMenu())
 			add(selectedMenu);
 		
-		slices.setEnabled(c.getType() == Content.ORTHO);
-		fill.setEnabled(c.getType() == Content.VOLUME);
+		slices.setEnabled(t == Content.ORTHO);
+		fill.setEnabled(t == Content.VOLUME);
+		shaded.setEnabled(t == Content.SURFACE_PLOT2D ||
+			t == Content.SURFACE);
 
 		coordinateSystem.setState(c.hasCoord());
 		lock.setState(c.isLocked());
 		show.setState(c.isVisible());
 		pl_show.setState(c.isPLVisible());
+		shaded.setState(c.isShaded());
 
-		displayAsVolume.setEnabled(c.getType() != Content.VOLUME);
-		displayAsOrtho.setEnabled(c.getType() != Content.ORTHO);
-		displayAsSurface.setEnabled(c.getType() != Content.SURFACE);
-		displayAsSurfacePlot.setEnabled(c.getType() != Content.SURFACE_PLOT2D);
+
+		displayAsVolume.setEnabled(t != Content.VOLUME);
+		displayAsOrtho.setEnabled(t != Content.ORTHO);
+		displayAsSurface.setEnabled(t != Content.SURFACE);
+		displayAsSurfacePlot.setEnabled(t != Content.SURFACE_PLOT2D);
 	}
 
 	private boolean containsSelectedMenu() {

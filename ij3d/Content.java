@@ -39,6 +39,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	protected float transparency = 0f;
 	protected int resamplingF = 1;
 	protected int threshold = 0;
+	protected boolean shaded = true;
 	protected int type = VOLUME;
 
 	// visibility flags
@@ -374,6 +375,15 @@ public class Content extends BranchGroup implements UniverseListener {
 			this.threshold = th;
 			contentNode.thresholdUpdated();
 		}
+	}
+
+	public void setShaded(boolean b) {
+		this.shaded = b;
+		contentNode.shadeUpdated();
+	}
+
+	public boolean isShaded() {
+		return shaded;
 	}
 
 	public void setColor(Color3f color) {
