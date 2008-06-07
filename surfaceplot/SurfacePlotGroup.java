@@ -68,13 +68,13 @@ public class SurfacePlotGroup extends ContentNode {
 	}
 
 	public void colorUpdated() {
-		if(c.getColor() == surfacep.getColor())
-			return;
-		surfacep.setColor(c.getColor());
+		if(c.getColor() != surfacep.getColor())
+			surfacep.setColor(c.getColor());
 	}
 
 	public void transparencyUpdated() {
-		// TODO
+		if(c.getTransparency() != surfacep.getTransparency())
+			surfacep.setTransparency(c.getTransparency());
 	}
 }
 

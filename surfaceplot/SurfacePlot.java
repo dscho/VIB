@@ -24,12 +24,14 @@ public final class SurfacePlot extends Shape3D {
 	private ImageProcessor image;
 	private float pw = 1, ph = 1;
 	private int w, h;
+	private float maxVal = -1;
+
 	private IndexedQuadArray geometry;
 	private Appearance appearance;
+
 	private Color3f color = null;
 	private float transparency = 0f;
 
-	private float maxVal = -1;
 
 	public SurfacePlot(ImagePlus image) {
 		this(image, null, 0f, 1);
@@ -87,6 +89,20 @@ public final class SurfacePlot extends Shape3D {
 
 	public Color3f getColor() {
 		return color;
+	}
+
+	public float getTransparency() {
+		return transparency;
+	}
+
+	public void setTransparency(float t) {
+		this.transparency = t;
+		TransparencyAttributes tr = appearance
+					.getTransparencyAttributes();
+		int mode = transparency == 0f ? TransparencyAttributes.NONE
+					: TransparencyAttributes.FASTEST;
+		tr.setTransparencyMode(mode);
+		tr.setTransparency(transparency);
 	}
 
 	public void setColor(Color3f color) {
