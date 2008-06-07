@@ -45,6 +45,8 @@ public class Path implements Cloneable {
 
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
+	boolean selected;
+
 	Path startJoins;
 	int startJoinsIndex = -1;
 
@@ -750,6 +752,9 @@ public class Path implements Cloneable {
 		return result;
 	}
 
+
+	Content content3D;
+
 	public Content addTo3DViewer(Image3DUniverse univ, double x_spacing, double y_spacing, double z_spacing) {
 
 		double [] x_points_d = new double[points];
@@ -774,7 +779,7 @@ public class Path implements Cloneable {
 		java.util.List triangles = Pipe.generateTriangles(allPoints,
 								  1); // scale
 
-		String title = "helloooo";
+		String title = getName();
 
 		univ.resetView();
 
@@ -784,6 +789,18 @@ public class Path implements Cloneable {
 			     // 1f,  // scale
 			     1); // threshold
 
-		return univ.getContent(title);
+		content3D = univ.getContent(title);
+		return content3D;
 	}
+
+	public void setSelected(boolean newSelectedStatus) {
+		if( newSelectedStatus != selected ) {
+			selected = newSelectedStatus;
+			if( selected )
+				content3D.setColor(new Color3f(Color.green));
+			else
+				content3D.setColor(new Color3f(Color.magenta));
+		}
+	}
+
 }

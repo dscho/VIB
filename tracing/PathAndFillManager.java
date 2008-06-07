@@ -143,9 +143,16 @@ public class PathAndFillManager extends DefaultHandler {
 		selectedPaths = new boolean[allPaths.size()];
 		for( int i = 0; i < selectedPaths.length; ++i ) {
 			selectedPaths[i] = false;
+			allPaths.get(i);
 		}
 		for( int i = 0; i < selectedIndices.length; ++i ) {
 			selectedPaths[selectedIndices[i]] = true;
+		}
+		for( int i = 0; i < selectedPaths.length; ++i ) {
+			// Update the selected flag in the Path class,
+			// which will change the colour of the Path in
+			// the 3D viewer if necessary:
+			allPaths.get(i).setSelected(selectedPaths[i]);
 		}
 	}
 
