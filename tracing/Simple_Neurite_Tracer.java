@@ -76,6 +76,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	PathAndFillManager pathAndFillManager;
 
+	boolean use3DViewer;
 	Image3DUniverse univ;
 	Content imageContent;
 
@@ -721,7 +722,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		setPathUnfinished( false );
 
 		pathAndFillManager.addPath( currentPath );
-		currentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing);
+		if( use3DViewer )
+			currentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing);
 		setCurrentPath( null );
 
 		unsavedPaths = true;
@@ -995,16 +997,30 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			single_pane = true;
 
 			if( ! singleSlice ) {
+				boolean java3DAvailable = haveJava3D();
+				boolean showed3DViewerOption = false;
+
 				GenericDialog gd = new GenericDialog("Simple Neurite Tracer (v" +
 								     PLUGIN_VERSION + ")");
-				gd.addMessage("Tracing: "+currentImage.getTitle());
+				gd.addMessage("Tracing the image: "+currentImage.getTitle());
 				gd.addCheckbox("Use three pane view?", true);
+
+				if( ! java3DAvailable ) {
+					gd.addMessage("(Java3D classes don't seem to be available, so no 3D viewer option is available.)");
+				} else if( currentImage.getBitDepth() != 8 ) {
+					gd.addMessage("(3D viewer option is only currently available for 8 bit images)");
+				} else {
+					showed3DViewerOption = true;
+					gd.addCheckbox("Use 3D viewer?",true);
+				}
 
 				gd.showDialog();
 				if (gd.wasCanceled())
 					return;
 
 				single_pane = ! gd.getNextBoolean();
+				if( showed3DViewerOption )
+					use3DViewer = gd.getNextBoolean();
 			}
 
 			initialize(currentImage);
@@ -1093,7 +1109,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			}
 
-			if( imageType == ImagePlus.GRAY8 || imageType == ImagePlus.COLOR_256 ) {
+			if( use3DViewer ) {
+
 				String title = "Original image for tracing";
 				
 				univ = new Image3DUniverse(512, 512);
@@ -1422,5 +1439,18 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			unsavedPaths = false;
 	}
 
-
+	public static boolean haveJava3D() {
+		ClassLoader loader = IJ.getClassLoader();
+		if (loader == null)
+			throw new RuntimeException("IJ.getClassLoader() failed (!)");
+		try {
+			Class<?> c = loader.loadClass("ij3d.ImageWindow3D");
+			/* In fact the documentation says that this
+			   should throw an exception and not return
+			   null, but just in case: */
+			return c != null;
+		} catch( Exception e ) {
+			return false;
+		}
+	}
 }
