@@ -2685,14 +2685,21 @@ public class LSM_Reader implements PlugIn{
             lsm_fi.ShortNotes = (String)scanObjectArray(lsm_fi.SCANINFO.recordings,22);
             lsm_fi.DetailedNotes = (String)scanObjectArray(lsm_fi.SCANINFO.recordings,21);
             lsm_fi.User = (String)scanObjectArray(lsm_fi.SCANINFO.recordings,66);
-            lsm_fi.ZOOM_X = ((Double)scanObjectArray(lsm_fi.SCANINFO.recordings,41)).doubleValue();
-            lsm_fi.ZOOM_Y = ((Double)scanObjectArray(lsm_fi.SCANINFO.recordings,42)).doubleValue();
-            lsm_fi.ZOOM_Z = ((Double)scanObjectArray(lsm_fi.SCANINFO.recordings,43)).doubleValue();
-            lsm_fi.PLANE_SPACING = ((Double)scanObjectArray(lsm_fi.SCANINFO.recordings,49)).doubleValue();
-            lsm_fi.PLANE_WIDTH = ((Double)scanObjectArray(lsm_fi.SCANINFO.recordings,50)).doubleValue();
-            lsm_fi.PLANE_HEIGHT = ((Double)scanObjectArray(lsm_fi.SCANINFO.recordings,51)).doubleValue();
-            lsm_fi.VOLUME_DEPTH = ((Double)scanObjectArray(lsm_fi.SCANINFO.recordings,52)).doubleValue();
+            lsm_fi.ZOOM_X = getDouble(41);
+            lsm_fi.ZOOM_Y = getDouble(42);
+            lsm_fi.ZOOM_Z = getDouble(43);
+            lsm_fi.PLANE_SPACING = getDouble(49);
+            lsm_fi.PLANE_WIDTH = getDouble(50);
+            lsm_fi.PLANE_HEIGHT = getDouble(51);
+            lsm_fi.VOLUME_DEPTH = getDouble(52);
         }
+
+	double getDouble(int index) {
+		Object o = scanObjectArray(lsm_fi.SCANINFO.recordings,index);
+		if (o instanceof String && o.equals(""))
+			return -1;
+		return ((Double)o).doubleValue();
+	}
 
         /*****************************************************************************
          * method : scanObjectArrayList, scans an ArrayList containing an object and *
