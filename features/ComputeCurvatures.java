@@ -80,6 +80,8 @@ import ij.measure.Calibration;
 
 import math3d.Eigensystem3x3Float;
 import math3d.Eigensystem3x3Double;
+import math3d.Eigensystem2x2Float;
+import math3d.Eigensystem2x2Double;
 import math3d.JacobiDouble;
 import math3d.JacobiFloat;
 
@@ -909,6 +911,10 @@ public class ComputeCurvatures implements Runnable
 			Eigensystem3x3Double e = new Eigensystem3x3Double(matrix);
 			boolean result = e.findEvalues();
 			return result ? e.getEvaluesCopy() : null;
+        } else if(matrix.length == 2 && matrix[0].length ==2) {
+			Eigensystem2x2Double e = new Eigensystem2x2Double(matrix);
+			boolean result = e.findEvalues();
+			return result ? e.getEvaluesCopy() : null;
         } else {
             JacobiDouble jc=new JacobiDouble(matrix,50);
             return jc.getEigenValues();
@@ -933,6 +939,10 @@ public class ComputeCurvatures implements Runnable
 
         if(matrix.length == 3 && matrix[0].length == 3) {
 			Eigensystem3x3Float e = new Eigensystem3x3Float(matrix);
+			boolean result = e.findEvalues();
+			return result ? e.getEvaluesCopy() : null;
+        } else if(matrix.length == 2 && matrix[0].length ==2) {
+			Eigensystem2x2Float e = new Eigensystem2x2Float(matrix);
 			boolean result = e.findEvalues();
 			return result ? e.getEvaluesCopy() : null;
         } else {
