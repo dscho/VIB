@@ -16,7 +16,6 @@ import ij.IJ;
 public class Volume implements VolRendConstants {
 
 	private ImagePlus imp;
-	private boolean	tFlip = false;
 	private byte[][][] fileData;
 
 	public int xDim = 0, yDim = 0, zDim = 0;
@@ -112,41 +111,21 @@ public class Volume implements VolRendConstants {
 	// instead of (row).
 
 	// load byteData with Intensity values
-	void loadZ(int zValue, byte[] byteData) {
-		loadZ(zValue, byteData, 0);
-	}
 
-	void loadZ(int zValue, byte[] byteData, int byteOffset) {
+	void loadZ(int zValue, byte[] byteData) {
 		for (int y=0; y < yDim; y++){
 			byte[] vRow = fileData[zValue][y];
-			int rowIndex = 0;
-			if (tFlip) {
-				rowIndex = (yTexSize - y - 1) * xTexSize;
-			} else {
-				rowIndex = y * xTexSize;
-			}
-			System.arraycopy(vRow,0,byteData,byteOffset + rowIndex,xDim);
+			int rowIndex = y * xTexSize;
+			System.arraycopy(vRow, 0, byteData, rowIndex, xDim);
 		}
 	}
 
 	// this routine loads values for constant yValue, the texture map is
 	// stored in x,z format (x changes fastest)
-	private byte[] emptyByteRow = new byte[1024];
 	void loadY(int yValue, byte[] byteData)  {
-		//boolean tFlip = true;
 		for (int z=0; z < zDim; z++){
-			int rowIndex;
-			if (tFlip) {
-				rowIndex = (zTexSize - z - 1) * xTexSize;
-			} else {
-				rowIndex = z * xTexSize;
-			}
-			byte[] vRow;
-			if (z < zDim) {
-				vRow = fileData[z][yValue];
-			} else {
-				vRow = emptyByteRow;
-			}
+			int rowIndex = z * xTexSize;
+			byte[] vRow = fileData[z][yValue];
 			System.arraycopy(vRow, 0, byteData, rowIndex, xDim);
 		}
 	}
@@ -155,27 +134,12 @@ public class Volume implements VolRendConstants {
 	// order (y changes fastest)
 	void loadX(int xValue, byte[] byteData)  {
 		for (int z=0; z < zDim; z++){
-			int rowIndex;
-			if (tFlip) {
-				rowIndex = (zTexSize - z - 1) * yTexSize;
-			} else {
-				rowIndex = z * yTexSize;
-			}
+			int rowIndex = z * yTexSize;
 			for (int y=0; y < yDim; y++){
 				byte value;
 				value = fileData[z][y][xValue];
 				int tIndex = rowIndex + y;
-				try {
-					byteData[tIndex] = value;
-				} catch (ArrayIndexOutOfBoundsException e) {
-					System.out.println("tIndex = " + tIndex +
-					" byteData.length = " + byteData.length);
-					System.out.println("rowIndex =  " + rowIndex);
-					System.out.println("zTexSize =  " + zTexSize);
-					System.out.println("xDim =  " + xDim);
-					System.out.println("z =  " + z + " y = " + y);
-					System.exit(0);
-				}
+				byteData[tIndex] = value;
 			}
 		}
 	}
