@@ -16,7 +16,6 @@ import ij.IJ;
 public class Volume implements VolRendConstants {
 
 	private ImagePlus imp;
-	private byte[][][] fileData;
 
 	public int xDim = 0, yDim = 0, zDim = 0;
 	public float xSpace = 0, ySpace = 0, zSpace = 0;
@@ -29,25 +28,19 @@ public class Volume implements VolRendConstants {
 
 	public Volume(ImagePlus imp) {
 		this.imp = imp;
+		ImageStack stack = imp.getStack();
+		int d = imp.getStackSize();
+		fData = new byte[d][];
+		for (int z = 0; z < d; z++)
+			fData[z] = (byte[])stack.getPixels(z+1);
 	}
 
 	public void update() {
-		ImageStack stack = imp.getStack();
 		Calibration c = imp.getCalibration();
+		ImageStack stack = imp.getStack();
 		xDim = stack.getWidth();
 		yDim = stack.getHeight();
 		zDim = stack.getSize();
-		fileData = new byte[zDim][yDim][xDim];
-
-		for (int z = 0; z < zDim; z++) {
-			byte[] slice = (byte[])stack.getPixels(z+1);
-			int offset = 0;
-			for(int y = 0; y < yDim; y++) {
-				byte[] datarow = fileData[z][y];
-				System.arraycopy(slice, offset, datarow, 0, xDim);
-				offset += xDim;
-			}
-		}
 		int type = imp.getType();
 		if(type != ImagePlus.GRAY8 && type != ImagePlus.COLOR_256){
 			IJ.error("8 bit image required");
@@ -112,34 +105,36 @@ public class Volume implements VolRendConstants {
 
 	// load byteData with Intensity values
 
-	void loadZ(int zValue, byte[] byteData) {
+	byte[][] fData;
+	void loadZ(int zValue, byte[] dst) {
+		byte[] src = fData[zValue];
 		for (int y=0; y < yDim; y++){
-			byte[] vRow = fileData[zValue][y];
-			int rowIndex = y * xTexSize;
-			System.arraycopy(vRow, 0, byteData, rowIndex, xDim);
+			int offsSrc = y * xDim;
+			int offsDst = y * xTexSize;
+			System.arraycopy(src, offsSrc, dst, offsDst, xDim);
 		}
 	}
 
 	// this routine loads values for constant yValue, the texture map is
 	// stored in x,z format (x changes fastest)
-	void loadY(int yValue, byte[] byteData)  {
+	void loadY(int yValue, byte[] dst)  {
 		for (int z=0; z < zDim; z++){
-			int rowIndex = z * xTexSize;
-			byte[] vRow = fileData[z][yValue];
-			System.arraycopy(vRow, 0, byteData, rowIndex, xDim);
+			byte[] src = fData[z];
+			int offsSrc = yValue * xDim;
+			int offsDst = z * xTexSize;
+			System.arraycopy(src, offsSrc, dst, offsDst, xDim);
 		}
 	}
 
 	// this routine loads values for constant xValue, into byteData in y,z
 	// order (y changes fastest)
-	void loadX(int xValue, byte[] byteData)  {
+	void loadX(int xValue, byte[] dst)  {
 		for (int z=0; z < zDim; z++){
-			int rowIndex = z * yTexSize;
+			byte[] src = fData[z];
+			int offsDst = z * yTexSize;
 			for (int y=0; y < yDim; y++){
-				byte value;
-				value = fileData[z][y][xValue];
-				int tIndex = rowIndex + y;
-				byteData[tIndex] = value;
+				int offsSrc = y * xDim + xValue;
+				dst[offsDst + y] = fData[z][offsSrc];
 			}
 		}
 	}
