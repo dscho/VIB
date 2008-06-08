@@ -12,37 +12,37 @@ package math3d;
      version, essentially.
  */
 
-public class Eigensystem3x3Double {
+public class Eigensystem3x3Float {
 
-	/*change*/double [][] m;
+	float [][] m;
 
-	/*change*/double [] eigenVectors;
-	/*change*/double [] eigenValues;
+	float [] eigenVectors;
+	float [] eigenValues;
 
-	public Eigensystem3x3Double(/*change*/double [][] symmetricMatrix) {
+	public Eigensystem3x3Float(float [][] symmetricMatrix) {
 		this.m = symmetricMatrix;
 		if( m[0][1] != m[1][0] || m[0][2] != m[2][0] || m[1][2] != m[2][1] ) {
-			throw new RuntimeException("Eigensystem3x3Double only works with symmetric matrices");
+			throw new RuntimeException("Eigensystem3x3Float only works with symmetric matrices");
 		}
 	}
 
-	public void getEvalues(/*change*/double [] eigenValues) {
+	public void getEvalues(float [] eigenValues) {
 		eigenValues[0] = this.eigenValues[0];
 		eigenValues[1] = this.eigenValues[1];
 		eigenValues[2] = this.eigenValues[2];
 	}
 
-	public /*change*/double [] getEvaluesCopy() {
+	public float [] getEvaluesCopy() {
 		return eigenValues.clone();
 	}
 
-	public /*change*/double [] getEvalues() {
+	public float [] getEvalues() {
 		return eigenValues;
 	}
 
 	public boolean findEvalues() {
 
-		eigenValues = new /*change*/double[3];
+		eigenValues = new float[3];
 
 		// Find the coefficients of the characteristic polynomial:
 		// http://en.wikipedia.org/wiki/Eigenvalue_algorithm
@@ -145,14 +145,14 @@ public class Eigensystem3x3Double {
 
 			double sPlusT = 2 * stSize * Math.cos(sAngle);
 
-			eigenValues[0] = (/*change*/double)( sPlusT - (b / (3*a)) );
+			eigenValues[0] = (float)( sPlusT - (b / (3*a)) );
 
 			double firstPart = - (sPlusT / 2) - (b / 3*a);
 
 			double lastPart = - rootThree * stSize * Math.sin(sAngle);
 
-			eigenValues[1] = (/*change*/double)( firstPart + lastPart );
-			eigenValues[2] = (/*change*/double)( firstPart - lastPart );
+			eigenValues[1] = (float)( firstPart + lastPart );
+			eigenValues[2] = (float)( firstPart - lastPart );
 
 			return true;
 
@@ -169,8 +169,8 @@ public class Eigensystem3x3Double {
 
 			double bOver3A = b / (3 * a);
 
-			eigenValues[0] = (/*change*/double)( sPlusT - bOver3A );
-			eigenValues[1] = (/*change*/double)( - sPlusT / 2 - bOver3A );
+			eigenValues[0] = (float)( sPlusT - bOver3A );
+			eigenValues[1] = (float)( - sPlusT / 2 - bOver3A );
 			eigenValues[2] = eigenValues[1];
 
 			return true;
