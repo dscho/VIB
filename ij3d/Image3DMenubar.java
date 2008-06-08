@@ -9,6 +9,9 @@ import ij.text.TextWindow;
 import ij.gui.Toolbar;
 import ij.process.StackConverter;
 
+import view4d.Viewer4D;
+import view4d.Viewer4DController;
+
 import math3d.Transform_IO;
 
 import java.text.DecimalFormat;
@@ -82,6 +85,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem pl_save;
 	private MenuItem pl_size;
 	private MenuItem j3dproperties;
+	private MenuItem viewer4d;
 	private CheckboxMenuItem pl_show;
 	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
@@ -213,6 +217,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		scalebar = new MenuItem("Scalebar");
 		scalebar.addActionListener(this);
 		view.add(scalebar);
+
+		view.addSeparator();
+
+		viewer4d = new MenuItem("Load 4D data");
+		viewer4d.addActionListener(this);
+		view.add(viewer4d);
 
 		view.addSeparator();
 
@@ -432,6 +442,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(e.getSource() == scalebar) {
 			editScalebar();
+		}
+
+		if(e.getSource() == viewer4d) {
+			Viewer4D view4d = new Viewer4D(univ);
+			view4d.loadContents();
+			new Viewer4DController(view4d);
 		}
 
 		if(e.getSource() == channels) {
