@@ -20,6 +20,12 @@ sed -e "s/double/float/g" \
     -e "s/[0-9][0-9]*\.[0-9][0-9]*/&f/g" \
     < math3d/FastMatrixN.java > math3d/FloatMatrixN.java
 
+sed -e "s,/\\*change\\*/double,float,g" -e "s/Double/Float/g" \
+    < math3d/Eigensystem3x3Double.java > math3d/Eigensystem3x3Float.java
+
+sed -e "s,/\\*change\\*/double,float,g" -e "s/Double/Float/g" \
+    < math3d/Eigensystem2x2Double.java > math3d/Eigensystem2x2Float.java
+
 javac -cp ../ImageJ/ij.jar:Jama-1.0.2.jar:Quick3dApplet-1.0.8.jar:jzlib-1.0.7.jar:junit-4.4.jar $(find . -name '*.java' | egrep -v _darcs) 
 
 # rm -rf ../VIB-doc/*

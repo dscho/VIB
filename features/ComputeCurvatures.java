@@ -59,6 +59,7 @@
  * - Now we take notice of the calibration information (or not, if
  *   that option is deselected).
  *
+ * - Use some faster eigenvalue calculation code for the 3x3 case.
  */
 
 package features;
@@ -77,6 +78,10 @@ import ij.process.FloatProcessor;
 
 import ij.measure.Calibration;
 
+import math3d.Eigensystem3x3Float;
+import math3d.Eigensystem3x3Double;
+import math3d.Eigensystem2x2Float;
+import math3d.Eigensystem2x2Double;
 import math3d.JacobiDouble;
 import math3d.JacobiFloat;
 
@@ -888,7 +893,8 @@ public class ComputeCurvatures implements Runnable
     /**
      * This method computes the Eigenvalues of the Hessian Matrix, the
      * Eigenvalues correspond to the Principle Curvatures.  (MHL
-     * modified to use the JacobiDouble class in math3d.)<br>
+     * modified to use the JacobiDouble class in math3d, or an optimized
+     * version for the special case of 3x3 matrices.)<br>
      *
      * <br>
      * Note: If the Eigenvalues contain imaginary numbers, this method will return null
@@ -901,9 +907,18 @@ public class ComputeCurvatures implements Runnable
 
     public double[] computeEigenValues(double[][] matrix) {
 
-        JacobiDouble jc=new JacobiDouble(matrix,50);
-        return jc.getEigenValues();
-
+        if(matrix.length == 3 && matrix[0].length == 3) {
+			Eigensystem3x3Double e = new Eigensystem3x3Double(matrix);
+			boolean result = e.findEvalues();
+			return result ? e.getEvaluesCopy() : null;
+        } else if(matrix.length == 2 && matrix[0].length ==2) {
+			Eigensystem2x2Double e = new Eigensystem2x2Double(matrix);
+			boolean result = e.findEvalues();
+			return result ? e.getEvaluesCopy() : null;
+        } else {
+            JacobiDouble jc=new JacobiDouble(matrix,50);
+            return jc.getEigenValues();
+        }
     }
 
     /**
@@ -922,9 +937,18 @@ public class ComputeCurvatures implements Runnable
 
     public float[] computeEigenValues(float[][] matrix) {
 
-        JacobiFloat jc=new JacobiFloat(matrix,50);
-        return jc.getEigenValues();
-
+        if(matrix.length == 3 && matrix[0].length == 3) {
+			Eigensystem3x3Float e = new Eigensystem3x3Float(matrix);
+			boolean result = e.findEvalues();
+			return result ? e.getEvaluesCopy() : null;
+        } else if(matrix.length == 2 && matrix[0].length ==2) {
+			Eigensystem2x2Float e = new Eigensystem2x2Float(matrix);
+			boolean result = e.findEvalues();
+			return result ? e.getEvaluesCopy() : null;
+        } else {
+            JacobiFloat jc=new JacobiFloat(matrix,50);
+            return jc.getEigenValues();
+        }
     }
 
     /**
@@ -943,6 +967,9 @@ public class ComputeCurvatures implements Runnable
      */
     public double[][] computeHessianMatrix2DDouble(FloatArray2D laPlace, int x, int y, double sigma, float sepX, float sepY)
     {
+        if( laPlace == null )
+            laPlace = (FloatArray2D)data;
+
         double[][] hessianMatrix = new double[2][2]; // zeile, spalte
 
         double temp = 2 * laPlace.get(x, y);
@@ -985,6 +1012,9 @@ public class ComputeCurvatures implements Runnable
      */
     public float[][] computeHessianMatrix2DFloat(FloatArray2D laPlace, int x, int y, double sigma, float sepX, float sepY)
     {
+        if( laPlace == null )
+            laPlace = (FloatArray2D)data;
+
         float[][] hessianMatrix = new float[2][2]; // zeile, spalte
 
         float temp = 2 * laPlace.get(x, y);
@@ -1029,6 +1059,9 @@ public class ComputeCurvatures implements Runnable
      */
     public double[][] computeHessianMatrix3DDouble(FloatArray3D img, int x, int y, int z, double sigma, float sepX, float sepY, float sepZ)
     {
+        if( img == null )
+            img = (FloatArray3D)data;
+
         double[][] hessianMatrix = new double[3][3]; // zeile, spalte
 
         double temp = 2 * img.get(x, y, z);
@@ -1092,6 +1125,9 @@ public class ComputeCurvatures implements Runnable
      */
     public float[][] computeHessianMatrix3DFloat(FloatArray3D img, int x, int y, int z, double sigma, float sepX, float sepY, float sepZ)
     {
+        if( img == null )
+            img = (FloatArray3D)data;
+
         float[][] hessianMatrix = new float[3][3]; // zeile, spalte
 
         float temp = 2 * img.get(x, y, z);

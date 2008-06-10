@@ -33,12 +33,19 @@ import pal.math.*;
 
 import stacks.ThreePanes;
 
+import ij3d.Image3DUniverse;
+import ij3d.Content;
+import ij3d.Pipe;
+import javax.vecmath.Color3f;
+
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
 
 public class Path implements Cloneable {
 
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
+
+	boolean selected;
 
 	Path startJoins;
 	int startJoinsIndex = -1;
@@ -49,12 +56,16 @@ public class Path implements Cloneable {
 	public static final int PATH_START = 0;
 	public static final int PATH_END = 1;
 
-	// It's sometimes useful to give paths a name, but this will
-	// mostly be null:
+	// Paths should always be given a name (since the name
+	// identifies them to the 3D viewer)...
 	String name;
 
 	public void setName(String newName) {
 		this.name = newName;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public double getRealLength( double x_spacing, double y_spacing, double z_spacing ) {
@@ -72,7 +83,7 @@ public class Path implements Cloneable {
 	}
 
 	public String getRealLengthString( double x_spacing, double y_spacing, double z_spacing ) {
-		return String.format( "%6.4g", getRealLength( x_spacing, y_spacing, z_spacing ) );
+		return String.format( "%.4f", getRealLength( x_spacing, y_spacing, z_spacing ) );
 	}
 
 	/* To unset a join, make 'other' null */
@@ -739,6 +750,70 @@ public class Path implements Cloneable {
 			result += " to " + x_positions[n-1] + ", " + y_positions[n-1] + ", " + z_positions[n-1];
 		}
 		return result;
+	}
+
+
+	Content content3D;
+
+	public void removeFrom3DViewer(Image3DUniverse univ) {
+		univ.removeContent(getName());
+	}
+
+	public Content addTo3DViewer(Image3DUniverse univ, double x_spacing, double y_spacing, double z_spacing) {
+		return addTo3DViewer( univ, x_spacing, y_spacing, z_spacing, null );
+	}
+
+	public Content addTo3DViewer(Image3DUniverse univ, double x_spacing, double y_spacing, double z_spacing, Color c) {
+
+		if(points <= 1) {
+			content3D = null;
+			return null;
+		}
+
+		double [] x_points_d = new double[points];
+		double [] y_points_d = new double[points];
+		double [] z_points_d = new double[points];
+		double [] diameters = new double[points];
+
+		for(int i=0; i<points; ++i) {
+			x_points_d[i] = x_spacing * x_positions[i];
+			y_points_d[i] = y_spacing * y_positions[i];
+			z_points_d[i] = z_spacing * z_positions[i];
+			diameters[i] = x_spacing * 3;
+		}
+
+		double [][][] allPoints = Pipe.makeTube(x_points_d,
+							y_points_d,
+							z_points_d,
+							diameters,
+							4,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
+							12);     // "parallels" (12 means cross-sections are dodecagons)
+
+		java.util.List triangles = Pipe.generateTriangles(allPoints,
+								  1); // scale
+
+		String title = getName();
+
+		univ.resetView();
+
+		univ.addMesh(triangles,
+			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
+			     title,
+			     // 1f,  // scale
+			     1); // threshold
+
+		content3D = univ.getContent(title);
+		return content3D;
+	}
+
+	public void setSelected(boolean newSelectedStatus) {
+		if( newSelectedStatus != selected ) {
+			selected = newSelectedStatus;
+			if( selected )
+				content3D.setColor(new Color3f(Color.green));
+			else
+				content3D.setColor(new Color3f(Color.magenta));
+		}
 	}
 
 }
