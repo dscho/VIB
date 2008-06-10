@@ -1,7 +1,11 @@
 package voltex;
 
 import java.awt.Polygon;
+import java.awt.color.ColorSpace;
+import java.awt.Transparency;
+import java.awt.image.ComponentColorModel;
 import java.awt.image.IndexColorModel;
+import java.awt.image.ColorModel;
 
 import java.util.List;
 import java.util.Vector;
@@ -23,6 +27,7 @@ import ij.IJ;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.measure.Calibration;
+import ij.process.ImageProcessor;
 
 import ij3d.Content;
 import ij3d.ContentNode;
@@ -45,11 +50,23 @@ public class VoltexGroup extends ContentNode {
 		float scale = c.getImage().getWidth() * 
 			(float)c.getImage().getCalibration().pixelWidth;
 
-		IndexColorModel cmodel = c.getColor() == null ? 
-			ColorTable.getIndexedColorModel(
-				c.getImage(), c.getChannels()) :
-			ColorTable.getAverageGrayColorModel(
-				c.getImage(),c.getChannels());
+		ColorModel cmodel = null;
+		if(c.getImage().getType() == ImagePlus.COLOR_RGB) {
+
+			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+			int[] nBits = { 8, 8, 8, 8 };
+			ColorModel cm = new ComponentColorModel(
+						cs, nBits, true, false,
+					Transparency.OPAQUE, 0);
+			cmodel = ColorModel.getRGBdefault();
+		} else
+			cmodel = c.getImage().getProcessor().getColorModel();
+
+// 		IndexColorModel cmodel = c.getColor() == null ? 
+// 			ColorTable.getIndexedColorModel(
+// 				c.getImage(), c.getChannels()) :
+// 			ColorTable.getAverageGrayColorModel(
+// 				c.getImage(),c.getChannels());
 		ImagePlus imp = c.getResamplingFactor() == 1 ? c.getImage() 
 			: Resample_.resample(c.getImage(), 
 				c.getResamplingFactor());
@@ -83,10 +100,13 @@ public class VoltexGroup extends ContentNode {
 		long vol = 0;
 		for(int zi = 0; zi < d; zi++) {
 			float z = zi * (float)c.pixelDepth;
-			byte[] p = (byte[])imp.getStack().getPixels(zi+1);
-			for(int i = 0; i < p.length; i++) {
-				if(p[i] == 0) continue;
-				vol += (p[i] & 0xff);
+			ImageProcessor ip = imp.getStack().getProcessor(zi+1);
+			int wh = w * h;
+// 			byte[] p = (byte[])imp.getStack().getPixels(zi+1);
+			for(int i = 0; i < wh; i++) {
+				float v = ip.getf(i);
+				if(v == 0) continue;
+				vol += v;
 				float x = (i % w) * (float)c.pixelWidth;
 				float y = (i / w) * (float)c.pixelHeight;
 				if(x < min.x) min.x = x;
@@ -95,9 +115,12 @@ public class VoltexGroup extends ContentNode {
 				if(x > max.x) max.x = x;
 				if(y > max.y) max.y = y;
 				if(z > max.z) max.z = z;
-				center.x += (p[i] & 0xff) * x;
-				center.y += (p[i] & 0xff) * y;
-				center.z += (p[i] & 0xff) * z;
+				center.x += v * x;
+				center.y += v * y;
+				center.z += v * z;
+// 				center.x += (p[i] & 0xff) * x;
+// 				center.y += (p[i] & 0xff) * y;
+// 				center.z += (p[i] & 0xff) * z;
 			}
 		}
 		center.x /= vol;

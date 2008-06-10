@@ -1461,10 +1461,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		int imaget = image.getType();
 		switch(imaget) {
 			case ImagePlus.COLOR_RGB:
-				if(IJ.showMessageWithCancel("Convert...", 
-					"8-bit image required. Convert?"))
-					new StackConverter(image).
-						convertToIndexedColor(256);
+// 				if(IJ.showMessageWithCancel("Convert...", 
+// 					"8-bit image required. Convert?"))
+// 					new StackConverter(image).
+// 						convertToIndexedColor(256);
 				break;
 			case ImagePlus.GRAY16:
 			case ImagePlus.GRAY32:

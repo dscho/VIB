@@ -1,6 +1,7 @@
 package orthoslice;
 
 import java.awt.Polygon;
+import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
 
 import java.util.List;
@@ -49,11 +50,16 @@ public class OrthoGroup extends ContentNode {
 		float scale = c.getImage().getWidth() * 
 			(float)c.getImage().getCalibration().pixelWidth;
 
-		IndexColorModel cmodel = c.getColor() == null ? 
-			ColorTable.getOpaqueIndexedColorModel(
-				c.getImage(), c.getChannels()) :
-			ColorTable.getOpaqueAverageGrayColorModel(
-				c.getImage(), c.getChannels());
+		ColorModel cmodel = null;
+		if(c.getImage().getType() == ImagePlus.COLOR_RGB)
+			cmodel = ColorModel.getRGBdefault();
+		else
+			cmodel = c.getImage().getProcessor().getColorModel();
+// 		IndexColorModel cmodel = c.getColor() == null ? 
+// 			ColorTable.getOpaqueIndexedColorModel(
+// 				c.getImage(), c.getChannels()) :
+// 			ColorTable.getOpaqueAverageGrayColorModel(
+// 				c.getImage(), c.getChannels());
 		ImagePlus imp = c.getResamplingFactor() == 1 ? c.getImage() 
 			: Resample_.resample(c.getImage(), c.getResamplingFactor());
 		renderer = new Orthoslice(imp, cmodel, 

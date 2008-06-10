@@ -19,7 +19,7 @@ public class Orthoslice extends VolumeRenderer {
 	boolean[] visible = new boolean[3];
 	BitSet whichChild = new BitSet(6);
 
-	public Orthoslice(ImagePlus img, IndexColorModel cmodel, 
+	public Orthoslice(ImagePlus img, ColorModel cmodel, 
 					Color3f color, float tr) {
 		super(img, cmodel, color, tr);
 		dimensions[0] = img.getWidth();
