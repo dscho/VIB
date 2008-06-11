@@ -80,16 +80,15 @@ public class PointListPanel extends Panel
 		return popup;
 	}
 	
-	public void updatePointsPanel(){
+	private void updatePointsPanel(){
 		removeAll();
 		c = new GridBagConstraints();
 		addHeader();
 		int i = 0;
 		if(points.size() == 0)
 			addEmptyRow();
-		for (BenesNamedPoint p : (Iterable<BenesNamedPoint>)points) {
+		for (BenesNamedPoint p : points)
 			addRow(p, i++);
-		}
 	}
 
 	private void addHeader() {
@@ -210,27 +209,30 @@ public class PointListPanel extends Panel
 	}
 
 	// PointListListener interface
-	public void added(int i) {
+	public void added(BenesNamedPoint p) {
+		int i = points.size();
+		if(i == 1)
+			updatePointsPanel();
+		else
+			addRow(p, points.size());
+	}
+
+	public void removed(BenesNamedPoint p) {
 		updatePointsPanel();
 	}
 
-	public void removed(int i) {
+	public void renamed(BenesNamedPoint p) {
 		updatePointsPanel();
 	}
 
-	public void renamed(int i) {
-		updatePointsPanel();
-	}
-
-	public void highlighted(int i) {
+	public void highlighted(BenesNamedPoint p) {
 	}
 
 	public void reordered() {
 		updatePointsPanel();
 	}
 
-	public void moved(int index) {
-		BenesNamedPoint p = points.get(index);
+	public void moved(BenesNamedPoint p) {
 		Component[] c = getComponents();
 		boolean found = false;
 		for(int i = 0; i < c.length; i++) {

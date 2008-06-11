@@ -50,7 +50,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
-		pld = new PointListDialog(win);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -96,6 +95,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		menubar = new Image3DMenubar(this);
 		registrationMenubar = new RegistrationMenubar(this);
 		setMenubar(menubar);
+		pld = new PointListDialog(win);
 	}
 
 	public void setMenubar(MenuBar mb) {
@@ -145,7 +145,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Content addContent(ImagePlus image, Color3f color, String name,
 		int thresh, boolean[] channels, int resf, int type) {
-		if(contents.contains(name)) {
+		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
@@ -212,7 +212,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addMesh(List mesh,
 			Color3f color, String name, int threshold) {
 		// check if exists already
-		if(contents.contains(name)) {
+		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
@@ -229,10 +229,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void removeAllContents() {
-		for(Iterator it = contents.keySet().iterator(); it.hasNext();) {
-			String name = (String)it.next();
-			removeContent(name);
-		}
+		String[] names = new String[contents.size()];
+		contents.keySet().toArray(names);
+		for (int i=0; i<names.length; i++)
+			removeContent(names[i]);
 	}
 
 	public void removeContent(String name) {

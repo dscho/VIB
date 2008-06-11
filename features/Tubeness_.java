@@ -1,89 +1,54 @@
-/*
- *
- */
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
 package features;
 
 import ij.*;
+import ij.measure.Calibration;
 import ij.plugin.*;
 import ij.process.*;
+import ij.gui.GenericDialog;
 
-/* For testing the hessianEigenvaluesAtPoint() method, essentially,
- * and experimenting with measures based on those eigenvalues. */
+public class Tubeness_ implements PlugIn {
 
-public class Tubeness_ implements PlugIn, GaussianGenerationCallback {
+	static final String PLUGIN_VERSION = "1.0";
 
-    ImagePlus original;
+	public void run(String ignored) {
 
-    public void run( String ignored ) {
+		ImagePlus original = WindowManager.getCurrentImage();
+		if (original == null) {
+			IJ.error("No current image to calculate tubeness of.");
+			return;
+		}
 
-        original = WindowManager.getCurrentImage();
+		Calibration calibration = original.getCalibration();
 
-        ComputeCurvatures c = new ComputeCurvatures( original, 1.0, this  );
+		double minimumSeparation = 1;
+		if( calibration != null )
+			minimumSeparation = Math.min(calibration.pixelWidth,
+						     Math.min(calibration.pixelHeight,
+							      calibration.pixelDepth));
 
-        c.run();
+		GenericDialog gd = new GenericDialog("\"Tubeness\" Filter (version "+PLUGIN_VERSION+")");
+		gd.addNumericField("Sigma: ", (calibration==null) ? 1f : minimumSeparation, 4);
+		gd.addMessage("(The default value for sigma is the minimum voxel separation.)");
+		gd.addCheckbox("Use calibration information", calibration!=null);
 
-        int width = original.getWidth();
-        int height = original.getHeight();
-        int depth = original.getStackSize();
+		gd.showDialog();
+		if( gd.wasCanceled() )
+			return;
 
-        System.out.println("w: "+width+", h: "+height+", d:" +depth);
+		double sigma = gd.getNextNumber();
+		if( sigma <= 0 ) {
+			IJ.error("The value of sigma must be positive");
+			return;
+		}
+		boolean useCalibration = gd.getNextBoolean();
 
-        ImageStack stack = new ImageStack( width, height );
+		TubenessProcessor tp = new TubenessProcessor(sigma,useCalibration);
 
-        double [] evalues = new double[3];
+		ImagePlus result = tp.generateImage(original);
+		result.setTitle("tubeness of " + original.getTitle());
 
-        for( int z = 0; z < depth; ++z ) {
-
-            System.out.println( "Working on slice: "+z );
-            
-            float [] slice = new float[ width * height ];
-
-            if( (z >= 1) && (z < depth - 1) )
-                for( int y = 1; y < height - 1; ++y ) {
-                    for( int x = 1; x < width - 1; ++x ) {
-
-                        c.hessianEigenvaluesAtPoint( x, y, z,
-                                                     true, // order absolute
-                                                     evalues,
-                                                     false );
-
-                        int index = y * width + x;
-
-                        if( (evalues[1] >= 0) || (evalues[2] >= 0) ) {
-
-                            // If either of the two principle eigenvalues
-                            // is positive then the curvature is in the
-                            // wrong direction - towards higher
-                            // instensities rather than lower.
-
-                            slice[index] = 0;
-
-                        } else {
-
-                            slice[index] = (float) Math.sqrt( evalues[2] * evalues[1] );
-
-                        }
-                    }
-                }
-
-
-            FloatProcessor fp = new FloatProcessor( width, height );            
-            fp.setPixels( slice );
-            stack.addSlice( null, fp );
-            IJ.showProgress( z / (double)depth );
-
-        }
-
-        IJ.showProgress( 1.0 );
-        
-        ImagePlus imp = new ImagePlus( "tubeness of "+original.getTitle(), stack );
-        imp.show();
-        
-    }
-
-    public void proportionDone( double d ) {
-        IJ.showProgress( d );
-    }
-
+		result.show();
+	}
 }

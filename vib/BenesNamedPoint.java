@@ -34,6 +34,7 @@ public class BenesNamedPoint extends Point3d {
 	
 	public void set(double x, double y, double z){
 		this.x = x; this.y = y; this.z = z;
+		this.set = true;
 	}
 
 	public static BenesNamedPoint fromLine(String line){

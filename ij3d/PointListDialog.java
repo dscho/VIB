@@ -79,6 +79,15 @@ public class PointListDialog extends Dialog {
 		update();
 	}
 
+	public void removeExtraPanel() {
+		if(extraPanel != null) {
+			remove(extraPanel);
+			extraPanel = null;
+			update();
+		}
+	}
+		
+
 	private void print() {
 		Component[] c = panel.getComponents();
 		for(int i = 0; i < c.length; i++) {

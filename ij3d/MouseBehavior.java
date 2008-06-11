@@ -136,7 +136,7 @@ public class MouseBehavior extends Behavior {
 	public void doProcess(KeyEvent e) {
 		int id = e.getID();
 
-		if(id == KeyEvent.KEY_RELEASED)
+		if(id == KeyEvent.KEY_RELEASED || id == KeyEvent.KEY_TYPED)
 			return;
 
 		Content c = univ.getSelected();
@@ -149,37 +149,45 @@ public class MouseBehavior extends Behavior {
 			axis = Renderer.Y_AXIS;
 		else if(ic3d.isKeyDown(KeyEvent.VK_Z))
 			axis = Renderer.Z_AXIS;
+		// Consume events if used, to avoid other listeners from reusing the event
+		boolean consumed = true;
+		try {
 		if(e.isShiftDown()) {
 			switch(code) {
-				case KeyEvent.VK_RIGHT:translate(c, 5, 0);break;
-				case KeyEvent.VK_LEFT:translate(c, -5, 0);break;
-				case KeyEvent.VK_UP: translate(c, 0, -5);break;
-				case KeyEvent.VK_DOWN: translate(c, 0, 5);break;
+				case KeyEvent.VK_RIGHT:translate(c,5,0);return;
+				case KeyEvent.VK_LEFT:translate(c,-5,0);return;
+				case KeyEvent.VK_UP: translate(c,0,-5);return;
+				case KeyEvent.VK_DOWN: translate(c,0,5);return;
 			}
 		} else if(e.isAltDown()) {
 			switch(code) {
-				case KeyEvent.VK_UP: zoom(c, 1); break;
-				case KeyEvent.VK_DOWN: zoom(c, -1); break;
+				case KeyEvent.VK_UP: zoom(c, 1); return;
+				case KeyEvent.VK_DOWN: zoom(c, -1); return;
 			}
 		} else if(c != null && c.getType() == Content.ORTHO && axis != -1) {
 			OrthoGroup og = (OrthoGroup)c.getContent();
 			switch(code) {
 				case KeyEvent.VK_RIGHT:
-				case KeyEvent.VK_UP: og.increase(axis); break;
+				case KeyEvent.VK_UP: og.increase(axis); return;
 				case KeyEvent.VK_LEFT:
-				case KeyEvent.VK_DOWN: og.decrease(axis); break;
-				case KeyEvent.VK_SPACE:
-					boolean b = og.isVisible(axis);
-					og.setVisible(axis, !b);
-					break;
+				case KeyEvent.VK_DOWN:og.decrease(axis); return;
+				case KeyEvent.VK_SPACE: og.setVisible(axis,
+					!og.isVisible(axis)); return;
 			}
 		} else {
 			switch(code) {
-				case KeyEvent.VK_RIGHT: rotate(c, 5, 0); break;
-				case KeyEvent.VK_LEFT: rotate(c, -5, 0); break;
-				case KeyEvent.VK_UP: rotate(c, 0, -5); break;
-				case KeyEvent.VK_DOWN: rotate(c, 0, 5); break;
+				case KeyEvent.VK_RIGHT: rotate(c, 5, 0); return;
+				case KeyEvent.VK_LEFT: rotate(c, -5, 0); return;
+				case KeyEvent.VK_UP: rotate(c, 0, -5); return;
+				case KeyEvent.VK_DOWN: rotate(c, 0, 5); return;
 			}
+		}
+		// must be last line in try/catch block
+		consumed = false;
+		} finally {
+			// executed when returning anywhere above,
+			// since then consumed is not set to false
+			if (consumed) e.consume();
 		}
 	}
 
@@ -215,7 +223,27 @@ public class MouseBehavior extends Behavior {
 			}
 		}
 		if(id == MouseEvent.MOUSE_WHEEL) {
-			wheel_zoom(c, e);
+			int axis = -1;
+			if(ic3d.isKeyDown(KeyEvent.VK_X))
+				axis = Renderer.X_AXIS;
+			else if(ic3d.isKeyDown(KeyEvent.VK_Y))
+				axis = Renderer.Y_AXIS;
+			else if(ic3d.isKeyDown(KeyEvent.VK_Z))
+				axis = Renderer.Z_AXIS;
+			if(c != null && c.getType() == Content.ORTHO 
+								&& axis != -1) {
+				OrthoGroup og = (OrthoGroup)c.getContent();
+				MouseWheelEvent we = (MouseWheelEvent)e;
+				int units = 0;
+				if(we.getScrollType() == 
+					MouseWheelEvent.WHEEL_UNIT_SCROLL)
+					units = we.getUnitsToScroll();
+				if(units > 0) og.increase(axis);
+				else if(units < 0) og.decrease(axis);
+					
+			} else {
+				wheel_zoom(c, e);
+			}
 		}
 	}
 

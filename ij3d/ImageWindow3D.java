@@ -87,15 +87,16 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 
 		pack();
 
-		ImageJ ij = IJ.getInstance();
-		if (ij != null)
-			addKeyListener(ij);
 		addFocusListener(this);
 		setFocusTraversalKeysEnabled(false);
 		addWindowListener(this);
 		addWindowStateListener(this);
-		canvas3D.addKeyListener(ij);
+		// this listener first, to interrupt events
 		canvas3D.addKeyListener(this);
+		canvas3D.addKeyListener(ij);
+		ImageJ ij = IJ.getInstance();
+		if (ij != null)
+			addKeyListener(ij);
 		universe.addUniverseListener(this);
 		updateImagePlus();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
@@ -279,6 +280,17 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 			else {
 				lastToolID = Toolbar.getToolId();
 				Toolbar.getInstance().setTool(Toolbar.HAND);
+			}
+		}
+		// AVOID forwarding the x,y,z commands to ImageJ when manipulating an orthoslice
+		Content c = universe.getSelected();
+		if (null != c && c.getType() == Content.ORTHO) {
+			switch (e.getKeyCode()) {
+				case KeyEvent.VK_X:
+				case KeyEvent.VK_Y:
+				case KeyEvent.VK_Z:
+					e.consume();
+					break;
 			}
 		}
 	}

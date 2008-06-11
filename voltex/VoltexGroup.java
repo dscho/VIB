@@ -127,6 +127,10 @@ public class VoltexGroup extends ContentNode {
 		renderer.setColorModel(cmodel);
 	}
 
+	public void shadeUpdated() {
+		// do nothing
+	}
+
 	public void colorUpdated() {
 		// color model only needs update if there is a switch
 		// between null and non-null color

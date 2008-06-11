@@ -28,5 +28,7 @@ public interface PathAndFillListener {
 	void setPathList( String [] pathList );
 	
 	void setFillList( String [] fillList );
+
+	void setSelectedPaths( int [] selectedIndices );
 	
 }

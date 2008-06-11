@@ -45,6 +45,7 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 	
 	private Menu register;
 	private MenuItem exit;
+	private MenuItem adjustSlices;
 
 	private List openDialogs = new ArrayList();
 
@@ -63,6 +64,10 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		exit.addActionListener(this);
 		register.add(exit);
 
+		adjustSlices = new MenuItem("Adjust slices");
+		adjustSlices.addActionListener(this);
+		register.add(adjustSlices);
+
 		this.add(register);
 
 	}
@@ -70,6 +75,10 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == exit) {
 			exitRegistration();
+		} else if(e.getSource() == adjustSlices) {
+			Content c = univ.getSelected();
+			if(c != null)
+				univ.getMenuBar().adjustSlices(c);
 		} else if(e.getActionCommand().equals("LS_TEMPLATE")) {
 			// select landmarks of the template
 			selectLandmarkSet(templ, "LS_MODEL");
@@ -99,6 +108,7 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		univ.setMenubar(mb);
 		univ.clearSelection();
 		univ.setStatus("");
+		univ.pld.removeExtraPanel();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
 	}
 
@@ -223,10 +233,16 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		model.setTransform(t3d);
 
 		templ.setVisible(true);
+		templ.setLocked(true);
 		model.setVisible(true);
+		model.setLocked(true);
 
 		univ.clearSelection();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
+
+		IJ.showMessage("Contents are locked to prevent\n" +
+			"accidental transformations");
+		exitRegistration();
 	}
 
 	public void closeAllDialogs() {
