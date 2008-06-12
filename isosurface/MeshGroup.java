@@ -111,6 +111,11 @@ public class MeshGroup extends ContentNode {
 		return shape.getVolume();
 	}
 
+	public void shadeUpdated() {
+		if(shape.isShaded() != c.isShaded())
+			shape.setShaded(c.isShaded());
+	}
+
 	public void colorUpdated() {
 		Color3f newColor = c.getColor();
 		if(newColor == null){
