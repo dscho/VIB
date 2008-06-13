@@ -3,6 +3,7 @@ package surfaceplot;
 import ij.process.ImageProcessor;
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import ij.IJ;
 
 import java.applet.Applet;
 import java.awt.BorderLayout;
@@ -70,8 +71,10 @@ public final class SurfacePlot extends Shape3D {
 		new Thread() {
 			public void run() {
 				for(int g = 0; g < d; g++) {
-					if(g != slice)
+					if(g != slice) {
 						geometry[g] = createGeometry(g);
+						IJ.showProgress(g+1, d);
+					}
 				}
 			}
 		}.start();
