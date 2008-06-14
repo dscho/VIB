@@ -33,6 +33,8 @@ public class AppearanceCreator implements VolRendConstants {
 		Texture tex = null;
 		TexCoordGeneration tg = null;
 		Appearance a = new Appearance();
+		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
+		a.setCapability(Appearance.ALLOW_TEXGEN_WRITE);
 		a.setMaterial(material);
 		a.setTransparencyAttributes(transAttr);
 		a.setPolygonAttributes(polyAttr);
@@ -160,6 +162,7 @@ public class AppearanceCreator implements VolRendConstants {
 		}
 
 		boolean rgb = volume.getDataType() == Volume.INT_DATA;
+		boolean opaque = volume.getTransparenyType() == Volume.OPAQUE;
 		// otherwise, let's assume we're dealing with intensity data
 		int textureMode, componentType;
 		BufferedImage bImage = null;
@@ -170,14 +173,15 @@ public class AppearanceCreator implements VolRendConstants {
 				BufferedImage.TYPE_INT_ARGB);
 			DataBuffer db = bImage.getRaster().getDataBuffer();
 			data = ((DataBufferInt)db).getData();
-			textureMode = Texture.RGBA;
+			textureMode = opaque ? Texture.RGB : Texture.RGBA;
 			componentType = ImageComponent.FORMAT_RGBA;
 		} else {
 			bImage = new BufferedImage(sSize, tSize,
 				BufferedImage.TYPE_BYTE_GRAY);
 			DataBuffer db = bImage.getRaster().getDataBuffer();
 			data = ((DataBufferByte)db).getData();
-			textureMode = Texture.INTENSITY;
+			textureMode = opaque ? Texture.LUMINANCE 
+						: Texture.INTENSITY;
 			componentType = ImageComponent.FORMAT_CHANNEL8;
 		}
 

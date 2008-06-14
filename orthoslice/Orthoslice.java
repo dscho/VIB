@@ -11,6 +11,7 @@ import ij.ImagePlus;
 import java.util.BitSet;
 
 import voltex.VolumeRenderer;
+import voltex.Volume;
 
 public class Orthoslice extends VolumeRenderer {
 
@@ -19,9 +20,10 @@ public class Orthoslice extends VolumeRenderer {
 	boolean[] visible = new boolean[3];
 	BitSet whichChild = new BitSet(6);
 
-	public Orthoslice(ImagePlus img, ColorModel cmodel, 
-					Color3f color, float tr) {
-		super(img, cmodel, color, tr);
+	public Orthoslice(ImagePlus img, Color3f color, 
+					float tr, boolean[] channels) {
+		super(img, color, tr, channels);
+		volume.setTransparencyType(Volume.OPAQUE);
 		dimensions[0] = img.getWidth();
 		dimensions[1] = img.getHeight();
 		dimensions[2] = img.getStackSize();

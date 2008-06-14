@@ -51,20 +51,10 @@ public class OrthoGroup extends ContentNode {
 		float scale = c.getImage().getWidth() * 
 			(float)c.getImage().getCalibration().pixelWidth;
 
-		ColorModel cmodel = null;
-		if(c.getImage().getType() == ImagePlus.COLOR_RGB)
-			cmodel = ColorModel.getRGBdefault();
-		else
-			cmodel = c.getImage().getProcessor().getColorModel();
-// 		IndexColorModel cmodel = c.getColor() == null ? 
-// 			ColorTable.getOpaqueIndexedColorModel(
-// 				c.getImage(), c.getChannels()) :
-// 			ColorTable.getOpaqueAverageGrayColorModel(
-// 				c.getImage(), c.getChannels());
 		ImagePlus imp = c.getResamplingFactor() == 1 ? c.getImage() 
 			: Resample_.resample(c.getImage(), c.getResamplingFactor());
-		renderer = new Orthoslice(imp, cmodel, 
-				c.getColor(), c.getTransparency());
+		renderer = new Orthoslice(imp, c.getColor(), 
+				c.getTransparency(), c.getChannels());
 		ortho = (Orthoslice)renderer;
 		renderer.fullReload();
 		oldColor = c.getColor();
@@ -132,12 +122,7 @@ public class OrthoGroup extends ContentNode {
 	}
 
 	public void channelsUpdated() {
-		IndexColorModel cmodel = c.getColor() == null ?
-			ColorTable.getOpaqueIndexedColorModel(
-				c.getImage(), c.getChannels()) :
-			ColorTable.getOpaqueAverageGrayColorModel(
-				c.getImage(), c.getChannels());
-		renderer.setColorModel(cmodel);
+		renderer.setChannels(c.getChannels());
 	}
 
 	public void shadeUpdated() {
@@ -145,19 +130,6 @@ public class OrthoGroup extends ContentNode {
 	}
 
 	public void colorUpdated() {
-		// color model only needs update if there is a switch
-		// between null and non-null color
-		if(oldColor == null && c.getColor() != null || 
-			oldColor != null && c.getColor() == null) {
-
-			IndexColorModel cmodel = c.getColor() == null ?
-				ColorTable.getOpaqueIndexedColorModel(
-					c.getImage(), c.getChannels()) :
-				ColorTable.getOpaqueAverageGrayColorModel(
-					c.getImage(), c.getChannels());
-			renderer.setColorModel(cmodel);
-		}
-		oldColor = c.getColor();
 		renderer.setColor(c.getColor());
 	}
 

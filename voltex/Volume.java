@@ -17,10 +17,17 @@ public class Volume implements VolRendConstants {
 
 	public static final int INT_DATA = 0;
 	public static final int BYTE_DATA = 1;
+	
+	public static final int TRANSLUCENT = 2;
+	public static final int OPAQUE = 3;
 
 	private ImagePlus imp;
 	private Loader loader;
+
 	private int dataType;
+	private int transparencyType = TRANSLUCENT;
+	private boolean average = false;
+
 	private boolean[] channels = new boolean[] {true, true, true};
 
 	public int xDim = 0, yDim = 0, zDim = 0;
@@ -32,75 +39,105 @@ public class Volume implements VolRendConstants {
 	Point3d maxCoord = new Point3d();
 	Point3d volRefPt = new Point3d();
 
-	public Volume(ImagePlus imp) {
-		this(imp, new boolean[] {true, true, true});
+	public Volume(ImagePlus imp, int transpType) {
+		this(imp, transpType, new boolean[] {true, true, true});
 	}
 
-	public Volume(ImagePlus imp, boolean[] ch) {
+	public Volume(ImagePlus imp, int transpType, boolean[] ch) {
 		this.channels = ch;
 		this.imp = imp;
+		this.transparencyType = transpType;
 		init();
-		int type = imp.getType();
-		int usedCh = 0;
-		for(int i = 0; i < 3; i++)
-			if(ch[i]) usedCh++;
-		switch(type) {
-			case ImagePlus.GRAY8:
-				loader = new ByteLoader();
-				dataType = BYTE_DATA;
-				break;
-			case ImagePlus.COLOR_RGB:
-				if(usedCh == 1) {
-					loader = new ByteFromIntLoader(ch);
-					dataType = BYTE_DATA;
-				} else if(usedCh == 2) {
-					loader = new IntFromIntLoader(ch);
-					dataType = INT_DATA;
-				} else {
-					loader = new IntLoader();
-					dataType = INT_DATA;
-				}
-				break;
-			default: IJ.error("image format not supported");
-		}
+		initLoader();
 	}
 
 	public int getDataType() {
 		return dataType;
 	}
 
+	public int getTransparenyType() {
+		return transparencyType;
+	}
+
+	public void setTransparencyType(int t) {
+		transparencyType = t;
+	}
+
+	/*
+	 * Returns a flag which indicates whether the textures should
+	 * be reloaded.
+	 */
+	public boolean setAverage(boolean a) {
+		if(average != a) {
+			this.average = a;
+			initLoader();
+			return true;
+		}
+		return false;
+	}
+
+	public boolean isAverage() {
+		return average;
+	}
+
 	/*
 	 * Returns true if data has to be reloaded.
 	 */
 	public boolean setChannels(boolean[] ch) {
-		System.out.println("volume.setChannels");
 		if(ch[0] == channels[0] && 
 			ch[1] == channels[1] && 
 			ch[2] == channels[2])
 			return false;
+		channels = ch;
+		initLoader();
+		return true;
+	}
+
+	/*
+	 * OK, this code is not nice. I will clean it later, as soon as it
+	 * works.
+	 */
+	public void initLoader() {
+System.out.println("initLoader");
+System.out.println(channels[0] + " - " + channels[1] + " - " + channels[2]);
+System.out.println("opaque = " + (transparencyType == OPAQUE));
+System.out.println("average = " + average);
 
 		int usedCh = 0;
 		for(int i = 0; i < 3; i++)
-			if(ch[i]) usedCh++;
+			if(channels[i]) usedCh++;
 		switch(imp.getType()) {
 			case ImagePlus.GRAY8:
-			case ImagePlus.COLOR_256:
-				return false;
+				loader = new ByteLoader();
+				dataType = BYTE_DATA;
+				break;
 			case ImagePlus.COLOR_RGB:
 				if(usedCh == 1) {
-					loader = new ByteFromIntLoader(ch);
+					loader = new ByteFromIntLoader(channels);
 					dataType = BYTE_DATA;
 				} else if(usedCh == 2) {
-					loader = new IntFromIntLoader(ch);
-					dataType = INT_DATA;
+					if(average) {
+						loader = new ByteFromIntLoader(channels);
+						dataType = BYTE_DATA;
+					} else {
+						loader = new IntFromIntLoader(channels);
+						dataType = INT_DATA;
+					}
 				} else {
-					loader = new IntLoader();
+					if(average) {
+						loader = new ByteFromIntLoader(channels);
+						dataType = BYTE_DATA;
+					} else {
+						loader = new IntLoader();
+						dataType = INT_DATA;
+					}
+					loader = new IntFromIntLoader(channels);
 					dataType = INT_DATA;
 				}
-				return true;
+				break;
 			default: 
 				IJ.error("image format not supported");
-				return false;
+				break;
 		}
 	}
 
@@ -177,6 +214,7 @@ public class Volume implements VolRendConstants {
 			fData = new byte[d][];
 			for (int z = 0; z < d; z++)
 				fData[z] = (byte[])stack.getPixels(z+1);
+System.out.println("ByteLoader");
 		}
 
 		void loadZ(int zValue, Object arr) {
@@ -226,6 +264,7 @@ public class Volume implements VolRendConstants {
 		int[][] fData;
 
 		IntLoader() {
+System.out.println("IntLoader");
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();
 			fData = new int[d][];
@@ -300,6 +339,7 @@ public class Volume implements VolRendConstants {
 		int usedCh = 3;
 
 		IntFromIntLoader(boolean[] channels) {
+System.out.println("IntFromIntLoader");
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();
 			fData = new int[d][];
@@ -386,6 +426,7 @@ public class Volume implements VolRendConstants {
 		int usedCh = 3;
 
 		ByteFromIntLoader(boolean[] channels) {
+System.out.println("ByteFromIntLoader");
 			this.channels = channels;
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();

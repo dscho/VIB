@@ -28,6 +28,7 @@ public class VolumeRenderer extends Renderer {
 	public VolumeRenderer(ImagePlus img, Color3f color, 
 					float tr, boolean[] channels) {
 		super(img);
+		volume.setTransparencyType(Volume.TRANSLUCENT);
 		this.transparency = tr;
 		this.color = color;
 		appCreator = new AppearanceCreator(
@@ -148,6 +149,8 @@ public class VolumeRenderer extends Renderer {
 
 	public void setColor(Color3f color) {
 		this.color = color;
+		if(volume.setAverage(color != null))
+			fullReload();
 		Color3f c = color != null ? color : new Color3f(1f, 1f, 1f);
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {
 			Group g = (Group)axisSwitch.getChild(i);

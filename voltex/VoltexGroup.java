@@ -121,12 +121,7 @@ public class VoltexGroup extends ContentNode {
 	}
 
 	public void channelsUpdated() {
-		IndexColorModel cmodel = c.getColor() == null ?
-			ColorTable.getIndexedColorModel(
-				c.getImage(), c.getChannels()) :
-			ColorTable.getAverageGrayColorModel(
-				c.getImage(), c.getChannels());
-		renderer.setColorModel(cmodel);
+		renderer.setChannels(c.getChannels());
 	}
 
 	public void shadeUpdated() {
@@ -134,19 +129,6 @@ public class VoltexGroup extends ContentNode {
 	}
 
 	public void colorUpdated() {
-		// color model only needs update if there is a switch
-		// between null and non-null color
-		if(oldColor == null && c.getColor() != null || 
-			oldColor != null && c.getColor() == null) {
-
-			IndexColorModel cmodel = c.getColor() == null ?
-				ColorTable.getIndexedColorModel(
-					c.getImage(), c.getChannels()):
-				ColorTable.getAverageGrayColorModel(
-					c.getImage(), c.getChannels());
-			renderer.setColorModel(cmodel);
-		}
-		oldColor = c.getColor();
 		renderer.setColor(c.getColor());
 	}
 
