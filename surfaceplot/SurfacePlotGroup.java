@@ -4,11 +4,18 @@ import java.util.List;
 import java.util.Vector;
 
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Scrollbar;
+
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
+
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
+import ij.gui.StackWindow;
 
 import ij.measure.Calibration;
 
@@ -26,7 +33,7 @@ import javax.vecmath.Vector3f;
 import javax.vecmath.Point3f;
 import javax.vecmath.Color3f;
 
-public class SurfacePlotGroup extends ContentNode {
+public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 
 	SurfacePlot surfacep;
 	Content c;
@@ -34,10 +41,28 @@ public class SurfacePlotGroup extends ContentNode {
 	public SurfacePlotGroup (Content c) {
 		super();
 		this.c = c;
-		surfacep = new SurfacePlot(c.getImage(), c.getColor(),
-			c.getTransparency(), c.getResamplingFactor());
+		int res = c.getResamplingFactor();
+		ImagePlus imp = res == 1 ? c.getImage() 
+			: Resample_.resample(c.getImage(), res, res, 1);
+		surfacep = new SurfacePlot(imp, c.getColor(),
+				c.getTransparency(), c.getImage().getSlice());
 		calculateMinMaxCenterPoint();
 		addChild(surfacep);
+		if(c.getImage().getStackSize() == 1)
+			return;
+		StackWindow win = (StackWindow)c.getImage().getWindow();
+		if(win == null)
+			return;
+		Component[] co = win.getComponents();
+		for(int i = 0; i < co.length; i++) {
+			if(co[i] instanceof Scrollbar) {
+				((Scrollbar)co[i]).addAdjustmentListener(this);
+			}
+		}
+	}
+
+	public void adjustmentValueChanged(AdjustmentEvent e) {
+		surfacep.setSlice(((Scrollbar)e.getSource()).getValue());
 	}
 
 	public void eyePtChanged(View view) {

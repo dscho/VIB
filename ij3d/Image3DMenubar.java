@@ -8,6 +8,7 @@ import ij.ImagePlus;
 import ij.text.TextWindow;
 import ij.gui.Toolbar;
 import ij.process.StackConverter;
+import ij.process.ImageConverter;
 
 import view4d.Viewer4D;
 import view4d.Viewer4DController;
@@ -1498,25 +1499,40 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		int imaget = image.getType();
-		switch(imaget) {
-			case ImagePlus.COLOR_RGB:
-// 				if(IJ.showMessageWithCancel("Convert...", 
-// 					"8-bit image required. Convert?"))
-// 					new StackConverter(image).
-// 						convertToIndexedColor(256);
-				break;
-			case ImagePlus.GRAY16:
-			case ImagePlus.GRAY32:
-				if(IJ.showMessageWithCancel("Convert...", 
-					"8-bit image required. Convert?"))
-					new StackConverter(image).
-						convertToGray8();
-				new StackConverter(image).convertToGray8();
-				break;
-		}
+		if(imaget != ImagePlus.GRAY8 && imaget != ImagePlus.COLOR_RGB)
+			// TODO correct message
+			if(IJ.showMessageWithCancel("Convert...", 
+				"8-bit image required. Convert?"))
+				convert(image);
 
 		return univ.addContent(image, color, 
 				name, threshold, channels, resf, type);
+	}
+
+	public static void convert(ImagePlus image) {
+		int imaget = image.getType();
+		if(imaget == ImagePlus.GRAY8 || imaget == ImagePlus.COLOR_256)
+			return;
+		int s = image.getStackSize();
+		switch(imaget) {
+			case ImagePlus.COLOR_256:
+				if(s == 1)
+					new ImageConverter(image).
+						convertToRGB();
+				else
+					new StackConverter(image).
+						convertToRGB();
+				break;
+			case ImagePlus.GRAY16:
+			case ImagePlus.GRAY32:
+				if(s == 1)
+					new ImageConverter(image).
+						convertToGray8();
+				else
+					new StackConverter(image).
+						convertToGray8();
+				break;
+		}
 	}
 
 	public void closeAllDialogs() {
