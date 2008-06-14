@@ -118,13 +118,13 @@ public class Volume implements VolRendConstants {
 		}
 
 		void loadZ(int zValue, Object arr) {
-			byte[][] dst = (byte[][])arr;
+			byte[] dst = (byte[])arr;
 			byte[] src = fData[zValue];
 			for (int y=0; y < yDim; y++){
 				int offsSrc = y * xDim;
 				int offsDst = y * xTexSize;
 				System.arraycopy(
-					src, offsSrc, dst[0], offsDst, xDim);
+					src, offsSrc, dst, offsDst, xDim);
 			}
 		}
 
@@ -133,13 +133,13 @@ public class Volume implements VolRendConstants {
 		 * texture map is stored in x,z format (x changes fastest)
 		 */
 		void loadY(int yValue, Object arr)  {
-			byte[][] dst = (byte[][])arr;
+			byte[] dst = (byte[])arr;
 			for (int z=0; z < zDim; z++){
 				byte[] src = fData[z];
 				int offsSrc = yValue * xDim;
 				int offsDst = z * xTexSize;
 				System.arraycopy(
-					src, offsSrc, dst[0], offsDst, xDim);
+					src, offsSrc, dst, offsDst, xDim);
 			}
 		}
 
@@ -148,13 +148,79 @@ public class Volume implements VolRendConstants {
 		 * byteData in y,z order (y changes fastest)
 		 */
 		void loadX(int xValue, Object arr)  {
-			byte[][] dst = (byte[][])arr;
+			byte[] dst = (byte[])arr;
 			for (int z=0; z < zDim; z++){
 				byte[] src = fData[z];
 				int offsDst = z * yTexSize;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;
-					dst[0][offsDst + y] = fData[z][offsSrc];
+					dst[offsDst + y] = fData[z][offsSrc];
+				}
+			}
+		}
+	}
+
+	private final class IntLoader extends Loader {
+		int[][] fData;
+
+		IntLoader() {
+			ImageStack stack = imp.getStack();
+			int d = imp.getStackSize();
+			fData = new int[d][];
+			for (int z = 0; z < d; z++)
+				fData[z] = (int[])stack.getPixels(z+1);
+			adjustAlphaChannel();
+		}
+
+		void adjustAlphaChannel() {
+			for(int z = 0; z < fData.length; z++) {
+				for(int i = 0; i < fData[z].length; i++) {
+					int v = fData[z][i];
+					int r = (v&0xff0000)>>16;
+					int g = (v&0xff00)>>8;
+					int b = (v&0xff);
+					int a = ((r + g + b) / 3) << 24;
+					fData[z][i] = (v & 0xffffff) + a;
+				}
+			}
+		}
+
+		void loadZ(int zValue, Object arr) {
+			int[] dst = (int[])arr;
+			int[] src = fData[zValue];
+			for (int y=0; y < yDim; y++){
+				int offsSrc = y * xDim;
+				int offsDst = y * xTexSize;
+				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+			}
+		}
+
+		/* 
+		 * this routine loads values for constant yValue, the 
+		 * texture map is stored in x,z format (x changes fastest)
+		 */
+		void loadY(int yValue, Object arr)  {
+			int[] dst = (int[])arr;
+			for (int z=0; z < zDim; z++){
+				int[] src = fData[z];
+				int offsSrc = yValue * xDim;
+				int offsDst = z * xTexSize;
+				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+			}
+		}
+
+		/* 
+		 * this routine loads values for constant xValue, into 
+		 * byteData in y,z order (y changes fastest)
+		 */
+		void loadX(int xValue, Object arr)  {
+			int[] dst = (int[])arr;
+			for (int z=0; z < zDim; z++){
+				int[] src = fData[z];
+				int offsDst = z * yTexSize;
+				for (int y=0; y < yDim; y++){
+					int offsSrc = y * xDim + xValue;
+					dst[offsDst + y] = fData[z][offsSrc];
 				}
 			}
 		}
@@ -164,34 +230,40 @@ public class Volume implements VolRendConstants {
 // 		int[][] fData;
 // 
 // 		IntLoader() {
+// System.out.println("using int loader");
 // 			ImageStack stack = imp.getStack();
 // 			int d = imp.getStackSize();
 // 			fData = new int[d][];
 // 			for (int z = 0; z < d; z++)
 // 				fData[z] = (int[])stack.getPixels(z+1);
-// 			adjustAlphaChannel();
+// // 			adjustAlphaChannel();
 // 		}
 // 
-// 		void adjustAlphaChannel() {
-// 			for(int z = 0; z < fData.length; z++) {
-// 				for(int i = 0; i < fData[z].length; i++) {
-// 					int v = fData[z][i];
-// 					int r = (v&0xff0000)>>16;
-// 					int g = (v&0xff00)>>8;
-// 					int b = (v&0xff);
-// 					int a = ((r + g + b) / 3) << 24;
-// 					fData[z][i] = (v & 0xffffff) + a;
-// 				}
-// 			}
-// 		}
+// // 		void adjustAlphaChannel() {
+// // 			for(int z = 0; z < fData.length; z++) {
+// // 				for(int i = 0; i < fData[z].length; i++) {
+// // 					int v = fData[z][i];
+// // 					int r = (v&0xff0000)>>16;
+// // 					int g = (v&0xff00)>>8;
+// // 					int b = (v&0xff);
+// // 					int a = ((r + g + b) / 3) << 24;
+// // 					fData[z][i] = (v & 0xffffff) + a;
+// // 				}
+// // 			}
+// // 		}
 // 
 // 		void loadZ(int zValue, Object arr) {
-// 			int[] dst = (int[])arr;
+// 			byte[][] dst = (byte[][])arr;
 // 			int[] src = fData[zValue];
 // 			for (int y=0; y < yDim; y++){
 // 				int offsSrc = y * xDim;
 // 				int offsDst = y * xTexSize;
-// 				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+// 				for(int x = 0; x < xDim; x++) {
+// 					int v = src[offsSrc + x];
+// 					dst[0][offsDst + x] = (byte)((v&0xff0000)>>16);
+// 					dst[1][offsDst + x] = (byte)((v&0xff00)>>8);
+// 					dst[2][offsDst + x] = (byte)(v&0xff);
+// 				}
 // 			}
 // 		}
 // 
@@ -200,12 +272,17 @@ public class Volume implements VolRendConstants {
 // 		 * texture map is stored in x,z format (x changes fastest)
 // 		 */
 // 		void loadY(int yValue, Object arr)  {
-// 			int[] dst = (int[])arr;
+// 			byte[][] dst = (byte[][])arr;
 // 			for (int z=0; z < zDim; z++){
 // 				int[] src = fData[z];
 // 				int offsSrc = yValue * xDim;
 // 				int offsDst = z * xTexSize;
-// 				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+// 				for(int x = 0; x < xDim; x++) {
+// 					int v = src[offsSrc + x];
+// 					dst[0][offsDst + x] = (byte)((v&0xff0000)>>16);
+// 					dst[1][offsDst + x] = (byte)((v&0xff00)>>8);
+// 					dst[2][offsDst + x] = (byte)(v&0xff);
+// 				}
 // 			}
 // 		}
 // 
@@ -214,95 +291,18 @@ public class Volume implements VolRendConstants {
 // 		 * byteData in y,z order (y changes fastest)
 // 		 */
 // 		void loadX(int xValue, Object arr)  {
-// 			int[] dst = (int[])arr;
+// 			byte[][] dst = (byte[][])arr;
 // 			for (int z=0; z < zDim; z++){
 // 				int[] src = fData[z];
 // 				int offsDst = z * yTexSize;
 // 				for (int y=0; y < yDim; y++){
 // 					int offsSrc = y * xDim + xValue;
-// 					dst[offsDst + y] = fData[z][offsSrc];
+// 					int v = src[offsSrc];
+// 					dst[0][offsDst + y] = (byte)((v&0xff0000)>>16);
+// 					dst[1][offsDst + y] = (byte)((v&0xff00)>>8);
+// 					dst[2][offsDst + y] = (byte)(v&0xff);
 // 				}
 // 			}
 // 		}
 // 	}
-
-	private final class IntLoader extends Loader {
-		int[][] fData;
-
-		IntLoader() {
-System.out.println("using int loader");
-			ImageStack stack = imp.getStack();
-			int d = imp.getStackSize();
-			fData = new int[d][];
-			for (int z = 0; z < d; z++)
-				fData[z] = (int[])stack.getPixels(z+1);
-// 			adjustAlphaChannel();
-		}
-
-// 		void adjustAlphaChannel() {
-// 			for(int z = 0; z < fData.length; z++) {
-// 				for(int i = 0; i < fData[z].length; i++) {
-// 					int v = fData[z][i];
-// 					int r = (v&0xff0000)>>16;
-// 					int g = (v&0xff00)>>8;
-// 					int b = (v&0xff);
-// 					int a = ((r + g + b) / 3) << 24;
-// 					fData[z][i] = (v & 0xffffff) + a;
-// 				}
-// 			}
-// 		}
-
-		void loadZ(int zValue, Object arr) {
-			byte[][] dst = (byte[][])arr;
-			int[] src = fData[zValue];
-			for (int y=0; y < yDim; y++){
-				int offsSrc = y * xDim;
-				int offsDst = y * xTexSize;
-				for(int x = 0; x < xDim; x++) {
-					int v = src[offsSrc + x];
-					dst[0][offsDst + x] = (byte)((v&0xff0000)>>16);
-					dst[1][offsDst + x] = (byte)((v&0xff00)>>8);
-					dst[2][offsDst + x] = (byte)(v&0xff);
-				}
-			}
-		}
-
-		/* 
-		 * this routine loads values for constant yValue, the 
-		 * texture map is stored in x,z format (x changes fastest)
-		 */
-		void loadY(int yValue, Object arr)  {
-			byte[][] dst = (byte[][])arr;
-			for (int z=0; z < zDim; z++){
-				int[] src = fData[z];
-				int offsSrc = yValue * xDim;
-				int offsDst = z * xTexSize;
-				for(int x = 0; x < xDim; x++) {
-					int v = src[offsSrc + x];
-					dst[0][offsDst + x] = (byte)((v&0xff0000)>>16);
-					dst[1][offsDst + x] = (byte)((v&0xff00)>>8);
-					dst[2][offsDst + x] = (byte)(v&0xff);
-				}
-			}
-		}
-
-		/* 
-		 * this routine loads values for constant xValue, into 
-		 * byteData in y,z order (y changes fastest)
-		 */
-		void loadX(int xValue, Object arr)  {
-			byte[][] dst = (byte[][])arr;
-			for (int z=0; z < zDim; z++){
-				int[] src = fData[z];
-				int offsDst = z * yTexSize;
-				for (int y=0; y < yDim; y++){
-					int offsSrc = y * xDim + xValue;
-					int v = src[offsSrc];
-					dst[0][offsDst + y] = (byte)((v&0xff0000)>>16);
-					dst[1][offsDst + y] = (byte)((v&0xff00)>>8);
-					dst[2][offsDst + y] = (byte)(v&0xff);
-				}
-			}
-		}
-	}
 }
