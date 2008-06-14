@@ -24,6 +24,7 @@ import ij.IJ;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.measure.Calibration;
+import ij.process.ImageProcessor;
 
 import ij3d.Content;
 import ij3d.ContentNode;
@@ -93,10 +94,12 @@ public class OrthoGroup extends ContentNode {
 		long vol = 0;
 		for(int zi = 0; zi < d; zi++) {
 			float z = zi * (float)c.pixelDepth;
-			byte[] p = (byte[])imp.getStack().getPixels(zi+1);
-			for(int i = 0; i < p.length; i++) {
-				if(p[i] == 0) continue;
-				vol += (p[i] & 0xff);
+			ImageProcessor ip = imp.getStack().getProcessor(zi+1);
+			int wh = w * h;
+			for(int i = 0; i < wh; i++) {
+				int v = ip.get(i);
+				if(v == 0) continue;
+				vol += v;
 				float x = (i % w) * (float)c.pixelWidth;
 				float y = (i / w) * (float)c.pixelHeight;
 				if(x < min.x) min.x = x;
@@ -105,9 +108,9 @@ public class OrthoGroup extends ContentNode {
 				if(x > max.x) max.x = x;
 				if(y > max.y) max.y = y;
 				if(z > max.z) max.z = z;
-				center.x += (p[i] & 0xff) * x;
-				center.y += (p[i] & 0xff) * y;
-				center.z += (p[i] & 0xff) * z;
+				center.x += v * x;
+				center.y += v * y;
+				center.z += v * z;
 			}
 		}
 		center.x /= vol;

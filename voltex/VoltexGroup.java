@@ -53,11 +53,6 @@ public class VoltexGroup extends ContentNode {
 		ColorModel cmodel = null;
 		if(c.getImage().getType() == ImagePlus.COLOR_RGB) {
 
-			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-			int[] nBits = { 8, 8, 8, 8 };
-			ColorModel cm = new ComponentColorModel(
-						cs, nBits, true, false,
-					Transparency.OPAQUE, 0);
 			cmodel = ColorModel.getRGBdefault();
 		} else
 			cmodel = c.getImage().getProcessor().getColorModel();
@@ -102,9 +97,8 @@ public class VoltexGroup extends ContentNode {
 			float z = zi * (float)c.pixelDepth;
 			ImageProcessor ip = imp.getStack().getProcessor(zi+1);
 			int wh = w * h;
-// 			byte[] p = (byte[])imp.getStack().getPixels(zi+1);
 			for(int i = 0; i < wh; i++) {
-				float v = ip.getf(i);
+				int v = ip.get(i);
 				if(v == 0) continue;
 				vol += v;
 				float x = (i % w) * (float)c.pixelWidth;
@@ -118,9 +112,6 @@ public class VoltexGroup extends ContentNode {
 				center.x += v * x;
 				center.y += v * y;
 				center.z += v * z;
-// 				center.x += (p[i] & 0xff) * x;
-// 				center.y += (p[i] & 0xff) * y;
-// 				center.z += (p[i] & 0xff) * z;
 			}
 		}
 		center.x /= vol;
