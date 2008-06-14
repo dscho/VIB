@@ -25,13 +25,13 @@ public class VolumeRenderer extends Renderer {
 	protected Switch axisSwitch;
 	protected int[][] axisIndex = new int[3][2];
 
-	public VolumeRenderer(ImagePlus img, ColorModel cmodel, 
-					Color3f color, float tr) {
+	public VolumeRenderer(ImagePlus img, Color3f color, 
+					float tr, boolean[] channels) {
 		super(img);
 		this.transparency = tr;
 		this.color = color;
 		appCreator = new AppearanceCreator(
-				volume, cmodel, color, tr);
+				volume, color, tr, channels);
 		geomCreator = new GeometryCreator(volume);
 
 		axisIndex[X_AXIS][FRONT] = 0;
@@ -141,9 +141,9 @@ public class VolumeRenderer extends Renderer {
 		appCreator.setTransparency(transparency);
 	}
 
-	public void setColorModel(IndexColorModel cmodel) {
-		appCreator.setColorModel(cmodel);
-		fullReload();
+	public void setChannels(boolean[] channels) {
+		if(volume.setChannels(channels))
+			fullReload();
 	}
 
 	public void setColor(Color3f color) {

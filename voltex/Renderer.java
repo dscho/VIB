@@ -44,7 +44,7 @@ abstract public class Renderer implements VolRendConstants {
 
 	abstract public void setTransparency(float transparency);
 
-	abstract public void setColorModel(IndexColorModel cmodel);
+	abstract public void setChannels(boolean[] channels);
 
 	abstract public void setColor(Color3f color);
 

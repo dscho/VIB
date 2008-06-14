@@ -50,23 +50,11 @@ public class VoltexGroup extends ContentNode {
 		float scale = c.getImage().getWidth() * 
 			(float)c.getImage().getCalibration().pixelWidth;
 
-		ColorModel cmodel = null;
-		if(c.getImage().getType() == ImagePlus.COLOR_RGB) {
-
-			cmodel = ColorModel.getRGBdefault();
-		} else
-			cmodel = c.getImage().getProcessor().getColorModel();
-
-// 		IndexColorModel cmodel = c.getColor() == null ? 
-// 			ColorTable.getIndexedColorModel(
-// 				c.getImage(), c.getChannels()) :
-// 			ColorTable.getAverageGrayColorModel(
-// 				c.getImage(),c.getChannels());
 		ImagePlus imp = c.getResamplingFactor() == 1 ? c.getImage() 
 			: Resample_.resample(c.getImage(), 
 				c.getResamplingFactor());
-		renderer = new VolumeRenderer(
-				imp, cmodel, c.getColor(), c.getTransparency());
+		renderer = new VolumeRenderer(imp, c.getColor(),
+				c.getTransparency(), c.getChannels());
 		renderer.fullReload();
 		oldColor = c.getColor();
 		addChild(renderer.getVolumeNode());

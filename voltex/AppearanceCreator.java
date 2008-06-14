@@ -20,17 +20,12 @@ public class AppearanceCreator implements VolRendConstants {
 	public Texture2D[] zTextures;
 
 	private Volume volume;
-	private ColorModel cmodel;
 
-	public AppearanceCreator(Volume volume, ColorModel cmodel,
-				Color3f color, float transparency) {
+	public AppearanceCreator(Volume volume, 
+			Color3f color, float transparency, boolean[] ch) {
 		this.volume = volume;
-		this.cmodel = cmodel;
+		this.volume.setChannels(ch);
 		initAttributes(color, transparency);
-	}
-
-	public void setColorModel(ColorModel cmodel) {
-		this.cmodel = cmodel;
 	}
 
 	public Appearance getAppearance(int direction, 
@@ -73,7 +68,6 @@ public class AppearanceCreator implements VolRendConstants {
 	}
 
 	public void loadTexture() {
-		volume.update();
 		IJ.showStatus("Loading Z axis texture maps");
 		loadAxis(Z_AXIS);
 		IJ.showStatus("Loading Y axis texture maps");
@@ -165,27 +159,27 @@ public class AppearanceCreator implements VolRendConstants {
 			break;
 		}
 
-		WritableRaster raster = cmodel.
-			createCompatibleWritableRaster(sSize, tSize); 
-		DataBuffer db = raster.getDataBuffer();
-
-		boolean rgb = db.getDataType() == DataBuffer.TYPE_INT;
+		boolean rgb = volume.getDataType() == Volume.INT_DATA;
 		// otherwise, let's assume we're dealing with intensity data
-		
 		int textureMode, componentType;
+		BufferedImage bImage = null;
 		Object data = null;
+
 		if(rgb) {
+			bImage = new BufferedImage(sSize, tSize, 
+				BufferedImage.TYPE_INT_ARGB);
+			DataBuffer db = bImage.getRaster().getDataBuffer();
 			data = ((DataBufferInt)db).getData();
 			textureMode = Texture.RGBA;
 			componentType = ImageComponent.FORMAT_RGBA;
 		} else {
+			bImage = new BufferedImage(sSize, tSize,
+				BufferedImage.TYPE_BYTE_GRAY);
+			DataBuffer db = bImage.getRaster().getDataBuffer();
 			data = ((DataBufferByte)db).getData();
 			textureMode = Texture.INTENSITY;
 			componentType = ImageComponent.FORMAT_CHANNEL8;
 		}
-
-		BufferedImage bImage = 
-			new BufferedImage(cmodel, raster, true, null); 
 
 		for (int i = 0; i < rSize; i ++) { 
 			switch (axis) {
