@@ -15,8 +15,13 @@ import ij.IJ;
 
 public class Volume implements VolRendConstants {
 
+	public static final int INT_DATA = 0;
+	public static final int BYTE_DATA = 1;
+
 	private ImagePlus imp;
 	private Loader loader;
+	private int dataType;
+	private boolean[] channels = new boolean[] {true, true, true};
 
 	public int xDim = 0, yDim = 0, zDim = 0;
 	public float xSpace = 0, ySpace = 0, zSpace = 0;
@@ -28,21 +33,78 @@ public class Volume implements VolRendConstants {
 	Point3d volRefPt = new Point3d();
 
 	public Volume(ImagePlus imp) {
+		this(imp, new boolean[] {true, true, true});
+	}
+
+	public Volume(ImagePlus imp, boolean[] ch) {
+		this.channels = ch;
 		this.imp = imp;
+		init();
 		int type = imp.getType();
+		int usedCh = 0;
+		for(int i = 0; i < 3; i++)
+			if(ch[i]) usedCh++;
 		switch(type) {
 			case ImagePlus.GRAY8:
-			case ImagePlus.COLOR_256:
 				loader = new ByteLoader();
+				dataType = BYTE_DATA;
 				break;
 			case ImagePlus.COLOR_RGB:
-				loader = new IntLoader();
+				if(usedCh == 1) {
+					loader = new ByteFromIntLoader(ch);
+					dataType = BYTE_DATA;
+				} else if(usedCh == 2) {
+					loader = new IntFromIntLoader(ch);
+					dataType = INT_DATA;
+				} else {
+					loader = new IntLoader();
+					dataType = INT_DATA;
+				}
 				break;
 			default: IJ.error("image format not supported");
 		}
 	}
 
-	public void update() {
+	public int getDataType() {
+		return dataType;
+	}
+
+	/*
+	 * Returns true if data has to be reloaded.
+	 */
+	public boolean setChannels(boolean[] ch) {
+		System.out.println("volume.setChannels");
+		if(ch[0] == channels[0] && 
+			ch[1] == channels[1] && 
+			ch[2] == channels[2])
+			return false;
+
+		int usedCh = 0;
+		for(int i = 0; i < 3; i++)
+			if(ch[i]) usedCh++;
+		switch(imp.getType()) {
+			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
+				return false;
+			case ImagePlus.COLOR_RGB:
+				if(usedCh == 1) {
+					loader = new ByteFromIntLoader(ch);
+					dataType = BYTE_DATA;
+				} else if(usedCh == 2) {
+					loader = new IntFromIntLoader(ch);
+					dataType = INT_DATA;
+				} else {
+					loader = new IntLoader();
+					dataType = INT_DATA;
+				}
+				return true;
+			default: 
+				IJ.error("image format not supported");
+				return false;
+		}
+	}
+
+	private void init() {
 		Calibration c = imp.getCalibration();
 		ImageStack stack = imp.getStack();
 		xDim = stack.getWidth();
@@ -223,6 +285,94 @@ public class Volume implements VolRendConstants {
 					dst[offsDst + y] = fData[z][offsSrc];
 				}
 			}
+		}
+	}
+
+	/*
+	 * Loads the specified channels from int data
+	 * This class should only be used if not all channels are
+	 * used. Otherwise, it's faster to use the IntLoader.
+	 */
+	private final class IntFromIntLoader extends Loader {
+		int[][] fData;
+		int mask = 0xffffff;
+		boolean[] ch = new boolean[] {true, true, true};
+		int usedCh = 3;
+
+		IntFromIntLoader(boolean[] channels) {
+			ImageStack stack = imp.getStack();
+			int d = imp.getStackSize();
+			fData = new int[d][];
+			for (int z = 0; z < d; z++)
+				fData[z] = (int[])stack.getPixels(z+1);
+
+			ch = channels;
+			usedCh = 0;
+			mask = 0xff000000;
+			if(ch[0]) { usedCh++; mask |= 0xff0000; }
+			if(ch[1]) { usedCh++; mask |= 0xff00; }
+			if(ch[2]) { usedCh++; mask |= 0xff; }
+			adjustAlphaChannel();
+		}
+
+		void adjustAlphaChannel() {
+			for(int z = 0; z < fData.length; z++) {
+				for(int i = 0; i < fData[z].length; i++) {
+					int v = fData[z][i];
+					int n = 0;
+					if(ch[0]) n += (v & 0xff0000) >> 16;
+					if(ch[1]) n += (v & 0xff00) >> 8;
+					if(ch[2]) n += (v & 0xff);
+					int a = (n / usedCh) << 24;
+					fData[z][i] = (v & 0xffffff) + a;
+				}
+			}
+		}
+
+		void loadZ(int zValue, Object arr) {
+			int[] dst = (int[])arr;
+			int[] src = fData[zValue];
+			for (int y=0; y < yDim; y++){
+				int offsSrc = y * xDim;
+				int offsDst = y * xTexSize;
+				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+			}
+			for(int i = 0; i < dst.length; i++)
+				dst[i] &= mask;
+		}
+
+		/* 
+		 * this routine loads values for constant yValue, the 
+		 * texture map is stored in x,z format (x changes fastest)
+		 */
+		void loadY(int yValue, Object arr)  {
+			int[] dst = (int[])arr;
+			for (int z=0; z < zDim; z++){
+				int[] src = fData[z];
+				int offsSrc = yValue * xDim;
+				int offsDst = z * xTexSize;
+				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+			}
+			for(int i = 0; i < dst.length; i++)
+				dst[i] &= mask;
+		}
+
+		/* 
+		 * this routine loads values for constant xValue, into 
+		 * byteData in y,z order (y changes fastest)
+		 */
+		void loadX(int xValue, Object arr)  {
+			int[] dst = (int[])arr;
+			for (int z=0; z < zDim; z++){
+				int[] src = fData[z];
+				int offsDst = z * yTexSize;
+				for (int y=0; y < yDim; y++){
+					int offsSrc = y * xDim + xValue;
+					dst[offsDst + y] = fData[z][offsSrc];
+				}
+			}
+			for(int i = 0; i < dst.length; i++)
+				dst[i] &= mask;
 		}
 	}
 
