@@ -13,6 +13,7 @@ import isosurface.IsoShape;
 import isosurface.MeshGroup;
 import voltex.VoltexGroup;
 import orthoslice.OrthoGroup;
+import surfaceplot.SurfacePlotGroup;
 
 import java.awt.image.IndexColorModel;
 import java.util.BitSet;
@@ -38,6 +39,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	protected float transparency = 0f;
 	protected int resamplingF = 1;
 	protected int threshold = 0;
+	protected boolean shaded = true;
 	protected int type = VOLUME;
 
 	// visibility flags
@@ -73,6 +75,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	public static final int VOLUME = 0;
 	public static final int ORTHO = 1;
 	public static final int SURFACE = 2;
+	public static final int SURFACE_PLOT2D = 3;
 	
 	public Content(String name) {
 		// create BranchGroup for this image
@@ -110,6 +113,8 @@ public class Content extends BranchGroup implements UniverseListener {
 			case VOLUME: contentNode = new VoltexGroup(this); break;
 			case ORTHO: contentNode = new OrthoGroup(this); break;
 			case SURFACE: contentNode = new MeshGroup(this); break;
+			case SURFACE_PLOT2D: contentNode =
+				new SurfacePlotGroup(this); break;
 		}
 		bbSwitch.addChild(contentNode);
 
@@ -370,6 +375,15 @@ public class Content extends BranchGroup implements UniverseListener {
 			this.threshold = th;
 			contentNode.thresholdUpdated();
 		}
+	}
+
+	public void setShaded(boolean b) {
+		this.shaded = b;
+		contentNode.shadeUpdated();
+	}
+
+	public boolean isShaded() {
+		return shaded;
 	}
 
 	public void setColor(Color3f color) {

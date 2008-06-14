@@ -80,8 +80,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem displayAsVolume;
 	private MenuItem displayAsOrtho;
 	private MenuItem displayAsSurface;
+	private MenuItem displayAsSurfacePlot;
 	private MenuItem pl_load;
 	private MenuItem regist;
+	private CheckboxMenuItem shaded;
 	private MenuItem pl_save;
 	private MenuItem pl_size;
 	private MenuItem j3dproperties;
@@ -366,6 +368,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		threshold = new MenuItem("Adjust threshold");
 		threshold.addActionListener(this);
 		attributes.add(threshold);
+
+		shaded = new CheckboxMenuItem("Shade surface");
+		shaded.setState(true);
+		shaded.addItemListener(this);
+		attributes.add(shaded);
+
 		return attributes;
 	}
 
@@ -383,6 +391,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		displayAsSurface = new MenuItem("Surface");
 		displayAsSurface.addActionListener(this);
 		display.add(displayAsSurface);
+
+		displayAsSurfacePlot = new MenuItem("Surface Plot 2D");
+		displayAsSurfacePlot.addActionListener(this);
+		display.add(displayAsSurfacePlot);
 
 		return display;
 	}
@@ -581,6 +593,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				return;
 			}
 			c.displayAs(Content.SURFACE);
+			univ.clearSelection();
+		}
+
+		if(e.getSource() == displayAsSurfacePlot) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			c.displayAs(Content.SURFACE_PLOT2D);
 			univ.clearSelection();
 		}
 
@@ -845,6 +867,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 				record(LOCK);
 			else
 				record(UNLOCK);
+		}
+
+		if(e.getSource() == shaded) {
+			Content c = univ.getSelected();
+			if(c == null) {
+				IJ.error("Selection required");
+				return;
+			}
+			int t = c.getType();
+			if(t == Content.SURFACE || t == Content.SURFACE_PLOT2D)
+				c.setShaded(!c.isShaded());
 		}
 
 		if (e.getSource() == pl_show) {
@@ -1276,21 +1309,27 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			remove(selectedMenu);
 			return;
 		}	
+		int t = c.getType();
 		selectedMenu.setLabel(c.getName());
 		if(!containsSelectedMenu())
 			add(selectedMenu);
 		
-		slices.setEnabled(c.getType() == Content.ORTHO);
-		fill.setEnabled(c.getType() == Content.VOLUME);
+		slices.setEnabled(t == Content.ORTHO);
+		fill.setEnabled(t == Content.VOLUME);
+		shaded.setEnabled(t == Content.SURFACE_PLOT2D ||
+			t == Content.SURFACE);
 
 		coordinateSystem.setState(c.hasCoord());
 		lock.setState(c.isLocked());
 		show.setState(c.isVisible());
 		pl_show.setState(c.isPLVisible());
+		shaded.setState(c.isShaded());
 
-		displayAsVolume.setEnabled(c.getType() != Content.VOLUME);
-		displayAsOrtho.setEnabled(c.getType() != Content.ORTHO);
-		displayAsSurface.setEnabled(c.getType() != Content.SURFACE);
+
+		displayAsVolume.setEnabled(t != Content.VOLUME);
+		displayAsOrtho.setEnabled(t != Content.ORTHO);
+		displayAsSurface.setEnabled(t != Content.SURFACE);
+		displayAsSurfacePlot.setEnabled(t != Content.SURFACE_PLOT2D);
 	}
 
 	private boolean containsSelectedMenu() {
@@ -1398,7 +1437,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		images = (String[])windows.toArray(new String[]{});
 		String name = image == null ? images[0] : image.getTitle();
 		String[] types = new String[] {
-				"Volume", "Orthoslice", "Surface"};
+				"Volume", "Orthoslice", "Surface", "Surface Plot 2D"};
 		type = type < 0 ? 0 : type;
 		int threshold = type == Content.SURFACE ? 50 : 0;
 		int resf = 2;

@@ -14,6 +14,8 @@ import java.io.*;
 import java.util.zip.*;
 import java.util.Enumeration;
 import java.util.Vector;
+import java.net.URL;
+import java.awt.image.ImageProducer;
 
 import vib.segment.ImageButton;
 
@@ -22,14 +24,14 @@ public class Viewer4DController implements ActionListener {
 	public static int ICON_SIZE = 24;
 
 	public static final String[] FILES = new String[] {
-				"view4d/icons/first.png",
-				"view4d/icons/previous.png",
-				"view4d/icons/next.png",
-				"view4d/icons/last.png",
-				"view4d/icons/play.png",
-				"view4d/icons/pause.png",
-				"view4d/icons/faster.png",
-				"view4d/icons/slower.png"};
+				"icons/first.png",
+				"icons/previous.png",
+				"icons/next.png",
+				"icons/last.png",
+				"icons/play.png",
+				"icons/pause.png",
+				"icons/faster.png",
+				"icons/slower.png"};
 
 	public static final String[] COMMANDS = new String[] {
 			"FIRST", "PREV", "NEXT", "LAST", 
@@ -45,8 +47,7 @@ public class Viewer4DController implements ActionListener {
 		GenericDialog gd = new GenericDialog("Test Button");
 		Panel p = new Panel(new FlowLayout());
 		for(int i = 0; i < FILES.length; i++) {
-			buttons[i] = new ImageButton(
-				loadIcon(FILES[i]).createImage());
+			buttons[i] = new ImageButton(loadIcon(FILES[i]));
 			buttons[i].addActionListener(this);
 			buttons[i].setActionCommand(COMMANDS[i]);
 			p.add(buttons[i]);
@@ -61,8 +62,19 @@ public class Viewer4DController implements ActionListener {
 		gd.showDialog();
 	}
 
-	public ImageProcessor loadIcon(String name) {
-		return IJ.openImage(name).getProcessor();
+	public Image loadIcon(String name) {
+		URL url;
+		Image img = null;
+		try {
+			url = getClass().getResource(name);
+			img = Toolkit.getDefaultToolkit()
+				.createImage((ImageProducer)url.getContent());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (img == null)
+			throw new RuntimeException("Image not found: " + name);
+		return img;
 	}
 
 	public void actionPerformed(ActionEvent e) {

@@ -74,16 +74,6 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		status.setBackground(Color.BLACK);
 		status.setFont(new Font("Verdana", Font.PLAIN, 20));
 		add(status, BorderLayout.SOUTH);
-		/*
-		 * Fixes a problem occurring on some machines: It happened
-		 * from time to time that the window has a size of zero or
-		 * at least very very small. Circumvent this behaviour by
-		 * the following lines from Albert Cardonna:
-		 */
-		Rectangle box = canvas3D.getBounds();
-		int min_width = box.width < 512 ? 512 : box.width;
-		int min_height = box.height < 512 ? 512 : box.height;
-		this.setMinimumSize(new Dimension(min_width, min_height));
 
 		pack();
 
@@ -101,6 +91,24 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		updateImagePlus();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
 		show();
+
+		/*
+		 * Fixes a problem occurring on some machines: It happened
+		 * from time to time that the window has a size of zero or
+		 * at least very very small. Circumvent this behaviour by
+		 * the following lines from Albert Cardona:
+		 *
+		 * Must be run after calls to pack() and show() above.
+		 */
+		java.awt.EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				Rectangle box = ImageWindow3D.this.canvas3D.getBounds();
+				int min_width = box.width < 512 ? 512 : box.width;
+				int min_height = box.height < 512 ? 512 : box.height;
+				ImageWindow3D.this.setMinimumSize(new Dimension(min_width, min_height));
+				ImageWindow3D.this.setPreferredSize(new Dimension(min_width, min_height));
+			}
+		});
 	}
 
 	public boolean close() {
