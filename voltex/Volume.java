@@ -98,11 +98,8 @@ public class Volume implements VolRendConstants {
 	 * works.
 	 */
 	public void initLoader() {
-System.out.println("initLoader");
-System.out.println(channels[0] + " - " + channels[1] + " - " + channels[2]);
-System.out.println("opaque = " + (transparencyType == OPAQUE));
-System.out.println("average = " + average);
 
+		boolean[] c = channels;
 		int usedCh = 0;
 		for(int i = 0; i < 3; i++)
 			if(channels[i]) usedCh++;
@@ -113,26 +110,24 @@ System.out.println("average = " + average);
 				break;
 			case ImagePlus.COLOR_RGB:
 				if(usedCh == 1) {
-					loader = new ByteFromIntLoader(channels);
+					loader = new ByteFromIntLoader(c);
 					dataType = BYTE_DATA;
 				} else if(usedCh == 2) {
 					if(average) {
-						loader = new ByteFromIntLoader(channels);
+						loader = new ByteFromIntLoader(c);
 						dataType = BYTE_DATA;
 					} else {
-						loader = new IntFromIntLoader(channels);
+						loader = new IntFromIntLoader(c);
 						dataType = INT_DATA;
 					}
 				} else {
 					if(average) {
-						loader = new ByteFromIntLoader(channels);
+						loader = new ByteFromIntLoader(c);
 						dataType = BYTE_DATA;
 					} else {
 						loader = new IntLoader();
 						dataType = INT_DATA;
 					}
-					loader = new IntFromIntLoader(channels);
-					dataType = INT_DATA;
 				}
 				break;
 			default: 
