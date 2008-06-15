@@ -1,17 +1,8 @@
 package voltex;
 
 import java.awt.Polygon;
-import java.awt.color.ColorSpace;
-import java.awt.Transparency;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.IndexColorModel;
-import java.awt.image.ColorModel;
 
-import java.util.List;
-import java.util.Vector;
 import javax.vecmath.Color3f;
-import javax.vecmath.Vector3d;
-import javax.vecmath.Vector3f;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
@@ -24,8 +15,6 @@ import com.sun.j3d.utils.behaviors.picking.PickingCallback;
 
 import ij.ImagePlus;
 import ij.IJ;
-import ij.WindowManager;
-import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import ij.process.ImageProcessor;
 
@@ -33,23 +22,23 @@ import ij3d.Content;
 import ij3d.ContentNode;
 import ij3d.ImageCanvas3D;
 import ij3d.Image3DUniverse;
-import ij3d.ColorTable;
 
 import vib.Resample_;
 
 public class VoltexGroup extends ContentNode {
 
-	private Renderer renderer;
+	protected Renderer renderer;
+	protected Color3f oldColor;
+	protected Content c;
 	private float volume;
-	private Color3f oldColor;
-	private Content c;
+
+	protected VoltexGroup() {
+		super();
+	}
 
 	public VoltexGroup(Content c) {
 		super();
 		this.c = c;
-		float scale = c.getImage().getWidth() * 
-			(float)c.getImage().getCalibration().pixelWidth;
-
 		ImagePlus imp = c.getResamplingFactor() == 1 ? c.getImage() 
 			: Resample_.resample(c.getImage(), 
 				c.getResamplingFactor());
