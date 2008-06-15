@@ -124,17 +124,7 @@ public class VolumeRenderer extends Renderer {
 		value = Math.min(1f, value);
 		value = Math.max(0.1f, value);
 		this.threshold = (int)Math.round(value * 255);
-		for(int i = 0; i < axisSwitch.numChildren(); i++) {
-			Group g = (Group)axisSwitch.getChild(i);
-			int num = g.numChildren();
-			for(int y = 0; y < num; y++) {
-				Shape3D shape = (Shape3D)
-					((Group)g.getChild(y)).getChild(0);
-				shape.getAppearance().
-					getRenderingAttributes().
-					setAlphaTestValue(value);
-			}
-		}
+		appCreator.setThreshold(value);
 	}
 
 	public void setTransparency(float transparency) {
@@ -152,18 +142,7 @@ public class VolumeRenderer extends Renderer {
 		if(volume.setAverage(color != null))
 			fullReload();
 		Color3f c = color != null ? color : new Color3f(1f, 1f, 1f);
-		for(int i = 0; i < axisSwitch.numChildren(); i++) {
-			Group g = (Group)axisSwitch.getChild(i);
-			int num = g.numChildren();
-			for(int y = 0; y < num; y++) {
-				Shape3D shape = (Shape3D)
-					((Group)g.getChild(y)).
-							getChild(0);
-				shape.getAppearance().
-					getColoringAttributes().
-						setColor(c);
-			}
-		}
+		appCreator.setColor(c);
 	}
 
 	private void loadQuads() {

@@ -51,6 +51,14 @@ public class AppearanceCreator implements VolRendConstants {
 		transAttr.setTransparency(f);
 	}
 
+	public void setThreshold(float f) {
+		rendAttr.setAlphaTestValue(f);
+	}
+
+	public void setColor(Color3f c) {
+		colAttr.setColor(c);
+	}
+
 	public Texture2D getTexture(int direction, int index) {
 		switch(direction) {
 			case X_AXIS: return xTextures[index];
