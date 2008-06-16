@@ -1024,6 +1024,70 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		
 	}
 
+
+	/** A threaded adjuster that executes GenericDialog scroll bar events. */
+	private TransparencyAdjuster transp_adjuster = null;
+
+	private class TransparencyAdjuster extends Thread {
+		boolean go = true;
+		int newTr;
+		Content content;
+		Image3DUniverse univ;
+		final Object lock = new Object();
+		TransparencyAdjuster() {
+			super("VIB-TransparencyAdjuster");
+			setPriority(Thread.NORM_PRIORITY);
+			setDaemon(true);
+			start();
+		}
+		/** Set a new event, overwritting previous if any. */
+		void exec(final int newTr, final Content content, final Image3DUniverse univ) {
+			synchronized (lock) {
+				this.newTr = newTr;
+				this.content = content;
+				this.univ = univ;
+			}
+			synchronized (this) { notify(); }
+		}
+		public void quit() {
+			this.go = false;
+			synchronized (this) { notify(); }
+		}
+		public void run() {
+			while (go) {
+				try {
+					if (null == content) {
+						synchronized (this) { wait(); }
+					}
+					if (!go) return;
+					// 1 - cache vars, to free the lock very quickly
+					Content c;
+					int transp = 0;
+					Image3DUniverse u;
+					synchronized (lock) {
+						c = this.content;
+						transp = this.newTr;
+						u = this.univ;
+					}
+					// 2 - exec cached vars
+					if (null != c) {
+						c.setThreshold(transp);
+						u.fireContentChanged(c);
+					}
+					// 3 - done: reset only if no new request was put
+					synchronized (lock) {
+						if (c == this.content) {
+							this.content = null;
+							this.univ = null;
+						}
+					}
+				} catch (Throwable t) {
+					t.printStackTrace();
+				}
+			}
+		}
+	}
+
 	public void adjustThreshold(final Content selected) {
 		final int oldTr = (int)(selected.getThreshold());
 		if(selected.getType() == Content.SURFACE) {
@@ -1042,10 +1106,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		gd.addSlider("Transparency", 0, 255, oldTr);
 		((Scrollbar)gd.getSliders().get(0)).
 			addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
+			public void adjustmentValueChanged(final AdjustmentEvent e) {
+				// Create threaded adjuster and request an action
+				if (null == transp_adjuster) transp_adjuster = new TransparencyAdjuster();
+				transp_adjuster.exec((int)e.getValue(), selected, univ);
+				/*
 				int newTr = (int)e.getValue();
 				selected.setThreshold(newTr);
 				univ.fireContentChanged(selected);
+				*/
 			}
 		});
 		gd.setModal(false);
@@ -1061,6 +1130,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 						Integer.toString(
 							selected.threshold));
 				}
+				// clean up
+				if (null != transp_adjuster) transp_adjuster.quit();
 			}
 		});
 		openDialogs.add(gd);
