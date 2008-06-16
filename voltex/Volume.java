@@ -13,7 +13,7 @@ import ij.ImageStack;
 import ij.measure.Calibration;
 import ij.IJ;
 
-public class Volume implements VolRendConstants {
+public class Volume {
 
 	public static final int INT_DATA = 0;
 	public static final int BYTE_DATA = 1;
@@ -182,34 +182,49 @@ public class Volume implements VolRendConstants {
 		return retval;
 	}
 
-	void loadZ(int z, Object dst) {
+	public int load(int x, int y, int z) {
+		return loader.load(x, y, z);
+	}
+
+	public void loadZ(int z, Object dst) {
 		loader.loadZ(z, dst);
 	}
 
-	void loadY(int y, Object dst) {
+	public void loadY(int y, Object dst) {
 		loader.loadY(y, dst);
 	}
 
-	void loadX(int x, Object dst) {
+	public void loadX(int x, Object dst) {
 		loader.loadX(x, dst);
 	}
 
 	private abstract class Loader {
+		abstract int load(int x, int y, int z);
+
 		abstract void loadZ(int z, Object dst);
 		abstract void loadY(int y, Object dst);
 		abstract void loadX(int x, Object dst);
 	}
 
+	/*
+	 * This class loads bytes from byte data.
+	 */
 	private final class ByteLoader extends Loader {
 		byte[][] fData;
+		int w;
 
 		ByteLoader() {
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();
+			w = imp.getWidth();
 			fData = new byte[d][];
 			for (int z = 0; z < d; z++)
 				fData[z] = (byte[])stack.getPixels(z+1);
 System.out.println("ByteLoader");
+		}
+
+		int load(int x, int y, int z) {
+			return (int)fData[z][y * w + x] & 0xff;
 		}
 
 		void loadZ(int zValue, Object arr) {
@@ -255,13 +270,19 @@ System.out.println("ByteLoader");
 		}
 	}
 
+	/*
+	 * This class loads all channels from int data and returns
+	 * it as int array.
+	 */
 	private final class IntLoader extends Loader {
 		int[][] fData;
+		int w;
 
 		IntLoader() {
 System.out.println("IntLoader");
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();
+			w = imp.getWidth();
 			fData = new int[d][];
 			for (int z = 0; z < d; z++)
 				fData[z] = (int[])stack.getPixels(z+1);
@@ -279,6 +300,10 @@ System.out.println("IntLoader");
 					fData[z][i] = (v & 0xffffff) + a;
 				}
 			}
+		}
+
+		int load(int x, int y, int z) {
+			return fData[z][y * w + x];
 		}
 
 		void loadZ(int zValue, Object arr) {
@@ -329,6 +354,7 @@ System.out.println("IntLoader");
 	 */
 	private final class IntFromIntLoader extends Loader {
 		int[][] fData;
+		int w;
 		int mask = 0xffffff;
 		boolean[] ch = new boolean[] {true, true, true};
 		int usedCh = 3;
@@ -362,6 +388,10 @@ System.out.println("IntFromIntLoader");
 					fData[z][i] = (v & 0xffffff) + a;
 				}
 			}
+		}
+
+		int load(int x, int y, int z) {
+			return fData[z][y * w + x] & mask;
 		}
 
 		void loadZ(int zValue, Object arr) {
@@ -417,6 +447,7 @@ System.out.println("IntFromIntLoader");
 	 */
 	private final class ByteFromIntLoader extends Loader {
 		int[][] fdata;
+		int w;
 		boolean[] channels = new boolean[] {true, true, true};
 		int usedCh = 3;
 
@@ -425,12 +456,21 @@ System.out.println("ByteFromIntLoader");
 			this.channels = channels;
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();
+			w = imp.getWidth();
 			fdata = new int[d][];
 			for (int z = 0; z < d; z++)
 				fdata[z] = (int[])stack.getPixels(z+1);
 			usedCh = 0;
 			for(int i = 0; i < 3; i++)
 				if(channels[i]) usedCh++;
+		}
+
+		int load(int x, int y, int z) {
+			int v = fdata[z][y*w + x], n = 0;
+			if(channels[0]) n += (v & 0xff0000) >> 16;
+			if(channels[1]) n += (v & 0xff00) >> 8;
+			if(channels[2]) n += (v & 0xff);
+			return (n /= usedCh);
 		}
 
 		void loadZ(int zValue, Object arr) {
