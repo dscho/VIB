@@ -20,13 +20,15 @@ import javax.vecmath.*;
 import java.util.List;
 import java.util.ArrayList;
 
+import voltex.Volume;
+
 public final class SurfacePlot extends Shape3D {
 
-	private ImagePlus image;
+	private Volume volume;
 	private int slice = 1;
 	private float pw = 1, ph = 1;
 	private int w, h, d;
-	private float maxVal = -1;
+	private int maxVal = -1;
 	private float maxZ = -1;
 	private float zFactor = 1;
 
@@ -37,23 +39,18 @@ public final class SurfacePlot extends Shape3D {
 	private float transparency = 0f;
 	private boolean shaded = true;
 
-	public SurfacePlot(ImagePlus image) {
-		this(image, null, 0f, 1);
-	}
-
-	public SurfacePlot(ImagePlus image, Color3f color, 
+	public SurfacePlot(Volume volume, Color3f color, 
 					float transp, final int slice) {
-		this.image = image;
+		this.volume = volume;
 		this.slice = slice;
-		Calibration cal = image.getCalibration();
-		pw = (float)cal.pixelWidth;
-		ph = (float)cal.pixelHeight;
+		pw = (float)volume.pw;
+		ph = (float)volume.ph;
 		this.color = color;
 		this.transparency = transp;
 
-		w = this.image.getWidth();
-		h = this.image.getHeight();
-		d = this.image.getStackSize();
+		w = this.volume.xDim;
+		h = this.volume.yDim;
+		d = this.volume.zDim;
 
 		calculateMax();
 		calculateZFactor();
@@ -85,20 +82,16 @@ public final class SurfacePlot extends Shape3D {
 		setGeometry(geometry[slice-1]);
 	}
 
-	private ImageProcessor getProcessor(int i) {
-		return d == 1 ? image.getProcessor()
-				: image.getStack().getProcessor(i);
-	}
-
 	private void calculateMax() {
 		int wh = w * h;
 		maxVal = 0;
 		for(int z = 0; z < d; z++) {
-			ImageProcessor ip = getProcessor(z + 1);
-			for(int i = 0; i < wh; i++) {
-				float v = ip.get(i);
-				if(v > maxVal)
-					maxVal = v;
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					int v = volume.load(x, y, z);
+					if(v > maxVal)
+						maxVal = v;
+				}
 			}
 		}
 	}
@@ -114,7 +107,7 @@ public final class SurfacePlot extends Shape3D {
 				Point3f max, Point3f center) {
 
 		min.x = 0; min.y = 0; min.z = 0;
-		max.x = w * pw; max.y = h * ph; max.z = maxVal;
+		max.x = w * pw; max.y = h * ph; max.z = maxZ;
 		center.x = max.x / 2;
 		center.y = max.y / 2;
 		center.z = max.z / 2;
@@ -205,9 +198,6 @@ public final class SurfacePlot extends Shape3D {
 
 	private IndexedQuadArray createGeometry(int g) {
 
-		if(image == null)
-			return null;
-		ImageProcessor ip = getProcessor(g + 1);
 		int nQuads = (w - 1) * (h - 1);
 		int nIndices = w * h;
 		int nVertices = nQuads * 4;
@@ -222,12 +212,12 @@ public final class SurfacePlot extends Shape3D {
 		for(int i = 0; i < nIndices; i++) {
 			float y = ph * (i / w);
 			float x = pw * (i % w);
-			float v = ip.get(i) * zFactor;
+			float v = zFactor * volume.load(i%w, i/w, g);
 			coords[i] = new Point3f(x, y, v);
 			colors[i] = color != null
 					? color
 					: new Color3f(Color.getHSBColor(
-						coords[i].z / maxZ, 1, 1));
+						v / maxZ, 1, 1));
 		}
 		ta.setCoordinates(0, coords);
 		ta.setColors(0, colors);

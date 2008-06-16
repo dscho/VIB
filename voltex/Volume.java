@@ -41,6 +41,10 @@ public class Volume {
 	Point3d maxCoord = new Point3d();
 	Point3d volRefPt = new Point3d();
 
+	public Volume(ImagePlus imp) {
+		this(imp, OPAQUE);
+	}
+
 	public Volume(ImagePlus imp, int transpType) {
 		this(imp, transpType, new boolean[] {true, true, true});
 	}
