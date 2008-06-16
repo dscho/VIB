@@ -1499,7 +1499,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		}
 
 		int imaget = image.getType();
-		if(imaget != ImagePlus.GRAY8 && imaget != ImagePlus.COLOR_256)
+		if(imaget != ImagePlus.GRAY8 && imaget != ImagePlus.COLOR_RGB)
+			// TODO correct message
 			if(IJ.showMessageWithCancel("Convert...", 
 				"8-bit image required. Convert?"))
 				convert(image);
@@ -1514,13 +1515,13 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			return;
 		int s = image.getStackSize();
 		switch(imaget) {
-			case ImagePlus.COLOR_RGB:
+			case ImagePlus.COLOR_256:
 				if(s == 1)
 					new ImageConverter(image).
-						convertRGBtoIndexedColor(256);
+						convertToRGB();
 				else
 					new StackConverter(image).
-						convertToIndexedColor(256);
+						convertToRGB();
 				break;
 			case ImagePlus.GRAY16:
 			case ImagePlus.GRAY32:

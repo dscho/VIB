@@ -16,9 +16,18 @@ public final class MCCube {
 
 	// interpolated values
 	private Point3f[] e;
+
+	private MCCube() {
+		this.v = new Point3f[8];
+		for(int i = 0; i < 8; i++)
+			v[i] = new Point3f();
+		this.e = new Point3f[12];
+		for(int i = 0; i < 12; i++)
+			e[i] = new Point3f();
+	}
 	
 	/**
-	 * constructor of a MCCube object
+	 * initializes a MCCube object
 	 *        _________           0______x
 	 *       /v0    v1/|         /|
 	 *      /________/ |        / | 
@@ -26,18 +35,15 @@ public final class MCCube {
 	 *      |________|/
 	 *       v7    v6
 	 */
-	public MCCube(int x, int y, int z){
-		this.v = new Point3f[8];
-		//x -= w/2; y -= h/2; z -= d/2;
-		v[0] = new Point3f(x,     y,     z);
-		v[1] = new Point3f(x+SIZE,y,     z);
-		v[2] = new Point3f(x+SIZE,y-SIZE,z);
-		v[3] = new Point3f(x,     y-SIZE,z);
-		v[4] = new Point3f(x,     y,     z+SIZE);
-		v[5] = new Point3f(x+SIZE,y,     z+SIZE);
-		v[6] = new Point3f(x+SIZE,y-SIZE,z+SIZE);
-		v[7] = new Point3f(x,     y-SIZE,z+SIZE);
-		this.e = new Point3f[12];
+	public void init(int x, int y, int z){
+		v[0].set(x,     y,     z);
+		v[1].set(x+SIZE,y,     z);
+		v[2].set(x+SIZE,y-SIZE,z);
+		v[3].set(x,     y-SIZE,z);
+		v[4].set(x,     y,     z+SIZE);
+		v[5].set(x+SIZE,y,     z+SIZE);
+		v[6].set(x+SIZE,y-SIZE,z+SIZE);
+		v[7].set(x,     y-SIZE,z+SIZE);
 	} 
 	
 	/**
@@ -45,72 +51,47 @@ public final class MCCube {
 	 * intensity equals the reference value
 	 * @param v1 first extremity of the edge
 	 * @param v2 second extremity of the edge
-	 * @return the point on the edge where intensity equals the isovalue; 
-	 * null is interpolated point is beyond edge boundaries
+	 * @param result stores the resulting edge
+	 * return the point on the edge where intensity equals the isovalue; 
+	 * @return false if the interpolated point is beyond edge boundaries
 	 */
-	private Point3f computeEdge(Point3f v1, Point3f v2, final Carrier car) {
+	private boolean computeEdge(Point3f v1, Point3f v2, 
+				Point3f result, final Carrier car) {
 		// 30 --- 50 --- 70 : t=0.5
 		// 70 --- 50 --- 30 : t=0.5
 		float t = (car.threshold - car.intensity(v1))/
 				(float) (car.intensity(v2) - car.intensity(v1));
 		if (t >= 0 && t <= 1) {
 			// v1 + t*(v2-v1)
-			Point3f vDir = new Point3f(v2);
-			vDir.sub(v1);
-			vDir.scale(t);
-			vDir.add(v1);
-			return vDir;
+			result.set(v2);
+			result.sub(v1);
+			result.scale(t);
+			result.add(v1);
+			return true;
 		}
-		return null;
+		result.set(-1, -1, -1);
+		return false;
 	}
 
-	private Point3f computeEdge2(Point3f v1, Point3f v2, final Carrier car){
-		Point3f v1_cp = new Point3f(v1);
-		Point3f v2_cp = new Point3f(v2);
-		if(car.intensity(v1_cp) > car.intensity(v2_cp)) {
-			Point3f tmp = v1_cp;
-			v1_cp = v2_cp;
-			v2_cp = tmp;
-		}
-		if(car.intensity(v1_cp) <= car.threshold && 
-					car.intensity(v2_cp) >= car.threshold) {
-			while(car.intensity(v1_cp) < car.threshold){
-				stepTo(v1_cp, v2_cp);
-			}
-			return v1_cp;
-		}
-		return null;
-	}
-
-	private void stepTo(Point3f p1, Point3f p2) {
-		if(p1.x != p2.x && p1.y == p2.y && p1.z == p2.z) {
-			p1.x = p1.x < p2.x ? ++p1.x : --p1.x;
-		} else if (p1.y != p2.y && p1.x == p2.x && p1.z == p2.z) {
-			p1.y = p1.y < p2.y ? ++p1.y : --p1.y;
-		} else if (p1.z != p2.z && p1.x == p2.x && p1.y == p2.y) {
-			p1.z = p1.z < p2.z ? ++p1.z : --p1.z;
-		}
-	}
-	
 	/**
 	 * computes interpolated values along each edge of the cube 
 	 * (null if interpolated value doesn't belong to the edge)
 	 */
 	private void computeEdges(final Carrier car) {
-		this.e[0] = this.computeEdge(v[0], v[1], car);
-		this.e[1] = this.computeEdge(v[1], v[2], car);
-		this.e[2] = this.computeEdge(v[2], v[3], car);
-		this.e[3] = this.computeEdge(v[3], v[0], car);
+		this.computeEdge(v[0], v[1], e[0], car);
+		this.computeEdge(v[1], v[2], e[1], car);
+		this.computeEdge(v[2], v[3], e[2], car);
+		this.computeEdge(v[3], v[0], e[3], car);
 		
-		this.e[4] = this.computeEdge(v[4], v[5], car);
-		this.e[5] = this.computeEdge(v[5], v[6], car);
-		this.e[6] = this.computeEdge(v[6], v[7], car);
-		this.e[7] = this.computeEdge(v[7], v[4], car);
+		this.computeEdge(v[4], v[5], e[4], car);
+		this.computeEdge(v[5], v[6], e[5], car);
+		this.computeEdge(v[6], v[7], e[6], car);
+		this.computeEdge(v[7], v[4], e[7], car);
 		
-		this.e[8] = this.computeEdge(v[0], v[4], car);
-		this.e[9] = this.computeEdge(v[1], v[5], car);
-		this.e[10] = this.computeEdge(v[3], v[7], car);
-		this.e[11] = this.computeEdge(v[2], v[6], car);
+		this.computeEdge(v[0], v[4], e[8], car);
+		this.computeEdge(v[1], v[5], e[9], car);
+		this.computeEdge(v[3], v[7], e[10], car);
+		this.computeEdge(v[2], v[6], e[11], car);
 	}
 	
 	/**
@@ -136,9 +117,9 @@ public final class MCCube {
 			// if there's a triangle
 			if (faces[offset] != -1) {
 				// pick up vertexes of the current triangle
-				list.add(this.e[faces[offset + 0]]);
-				list.add(this.e[faces[offset + 1]]);
-				list.add(this.e[faces[offset + 2]]);
+				list.add(new Point3f(this.e[faces[offset+0]]));
+				list.add(new Point3f(this.e[faces[offset+1]]));
+				list.add(new Point3f(this.e[faces[offset+2]]));
 			} 
 			offset += 3;
 		}
@@ -152,45 +133,42 @@ public final class MCCube {
 		int caseNumber = 0;
 		for (int index = -1; 
 			++index < v.length; 
-			caseNumber += (car.intensity(v[index]) - car.threshold > 0) 
+			caseNumber += 
+				(car.intensity(v[index]) - car.threshold > 0) 
 					? 1 << index
 					: 0);
 		return caseNumber;
 	}
 
-	/** An encapsulating class to avoid thread collisions on static fields. */
-	private static class Carrier {
+	/* 
+	 * An encapsulating class to avoid thread collisions on static fields.
+	 */
+	private static final class Carrier {
 		int w, h, d;
-		byte[][] voxData;
+		voltex.Volume volume;
 		int threshold;
 
-		int intensity(final Point3f p) {
-			// int x = (int)p.x + 
-			//	w/2, y = (int)p.y + h/2, z = (int)p.z + d/2;
-			int x = (int)p.x, y = (int)p.y, z = (int)p.z;
-			return voxData[z][y * w + x] & 0xff;
+		final int intensity(final Point3f p) {
+			return volume.load((int)p.x, (int)p.y, (int)p.z);
 		}
 	}
 
-	public static final List<Point3f> getTriangles(ImagePlus image, 
-							int thresh){
+	public static final List<Point3f> getTriangles(
+				voltex.Volume volume, int thresh){
 		List<Point3f> tri = new ArrayList<Point3f>();
 		final Carrier car = new Carrier();
-		car.w = image.getWidth();
-		car.h = image.getHeight();
-		car.d = image.getStackSize();
+		car.w = volume.xDim;
+		car.h = volume.yDim;
+		car.d = volume.zDim;
 		car.threshold = thresh;
-		car.voxData = new byte[car.d][];
-		for(int z = 0; z < car.d; z++) {
-			car.voxData[z] = (byte[])image.
-				getStack().getProcessor(z+1).getPixels();
-		}
+		car.volume = volume;
 		int SIZE = 1;
 		MCCube.SIZE = SIZE;
+		MCCube cube = new MCCube();
 		for(int z = 0; z < car.d-1; z+=SIZE){
 			for(int x = 0; x < car.w-SIZE; x+=SIZE){
 				for(int y = SIZE; y < car.h; y+=SIZE){
-					MCCube cube = new MCCube(x, y, z);
+					cube.init(x, y, z);
 					cube.computeEdges(car);
 					cube.getTriangles(tri, car);
 				}
@@ -199,20 +177,16 @@ public final class MCCube {
 		}
 
 		// convert pixel coordinates 
-		Calibration calib = image.getCalibration();
-		float pwidth = (float)calib.pixelWidth;
-		float pheight = (float)calib.pixelHeight;
-		float pdepth = (float)Math.abs(calib.pixelDepth);
-		List ret = new ArrayList(tri.size());
 		for(int i = 0; i < tri.size(); i++) {
 			Point3f p = (Point3f)tri.get(i);
-			ret.add(new Point3f(p.x*pwidth, 
-						p.y*pheight, p.z*pdepth));
+			p.x *= volume.pw;
+			p.y *= volume.ph;
+			p.z *= volume.pd;
 		}	
-		return ret;
+		return tri;
 	}
 
-	protected static int ambigous[] = {
+	protected static final int ambigous[] = {
 		250,
 		245,
 		237,
@@ -276,7 +250,7 @@ public final class MCCube {
 	};        
 
 	// triangles to be drawn in each case
-	private static int faces[] =
+	private static final int faces[] =
 	{
 		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 		0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
