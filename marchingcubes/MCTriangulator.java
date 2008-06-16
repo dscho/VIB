@@ -29,7 +29,7 @@ public class MCTriangulator implements Triangulator {
 		volume.setAverage(true);
 
 		// get triangles
-		List l = MCCube.getTriangles(volume, image, threshold);
+		List l = MCCube.getTriangles(volume, threshold);
 		return l;
 	}
 

@@ -153,13 +153,13 @@ public final class MCCube {
 		}
 	}
 
-	public static final List<Point3f> getTriangles(voltex.Volume volume, 
-					ImagePlus image, int thresh){
+	public static final List<Point3f> getTriangles(
+				voltex.Volume volume, int thresh){
 		List<Point3f> tri = new ArrayList<Point3f>();
 		final Carrier car = new Carrier();
-		car.w = image.getWidth();
-		car.h = image.getHeight();
-		car.d = image.getStackSize();
+		car.w = volume.xDim;
+		car.h = volume.yDim;
+		car.d = volume.zDim;
 		car.threshold = thresh;
 		car.volume = volume;
 		int SIZE = 1;
@@ -177,15 +177,11 @@ public final class MCCube {
 		}
 
 		// convert pixel coordinates 
-		Calibration calib = image.getCalibration();
-		float pwidth = (float)calib.pixelWidth;
-		float pheight = (float)calib.pixelHeight;
-		float pdepth = (float)Math.abs(calib.pixelDepth);
 		for(int i = 0; i < tri.size(); i++) {
 			Point3f p = (Point3f)tri.get(i);
-			p.x *= pwidth;
-			p.y *= pheight;
-			p.z *= pdepth;
+			p.x *= volume.pw;
+			p.y *= volume.ph;
+			p.z *= volume.pd;
 		}	
 		return tri;
 	}

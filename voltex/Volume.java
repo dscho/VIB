@@ -30,7 +30,9 @@ public class Volume {
 
 	private boolean[] channels = new boolean[] {true, true, true};
 
-	public int xDim = 0, yDim = 0, zDim = 0;
+	public final int xDim, yDim, zDim;
+	public final double pw, ph, pd;
+
 	public float xSpace = 0, ySpace = 0, zSpace = 0;
 	public int xTexSize, yTexSize, zTexSize;
 	public float xTexGenScale, yTexGenScale, zTexGenScale;
@@ -47,6 +49,14 @@ public class Volume {
 		this.channels = ch;
 		this.imp = imp;
 		this.transparencyType = transpType;
+		xDim = imp.getWidth();
+		yDim = imp.getHeight();
+		zDim = imp.getStackSize();
+		Calibration c = imp.getCalibration();
+		pw = c.pixelWidth;
+		ph = c.pixelHeight;
+		pd = c.pixelDepth;
+		
 		init();
 		initLoader();
 	}
@@ -137,11 +147,6 @@ public class Volume {
 	}
 
 	private void init() {
-		Calibration c = imp.getCalibration();
-		ImageStack stack = imp.getStack();
-		xDim = stack.getWidth();
-		yDim = stack.getHeight();
-		zDim = stack.getSize();
 
 		// tex size is next power of two greater than max - min
 		// regarding pixels
@@ -149,10 +154,10 @@ public class Volume {
 		yTexSize = powerOfTwo(yDim);
 		zTexSize = powerOfTwo(zDim);
 
-		xSpace = (float)imp.getCalibration().pixelWidth;
-		ySpace = (float)imp.getCalibration().pixelHeight;
-		zSpace = (float)imp.getCalibration().pixelDepth;
-		
+		xSpace = (float)pw;
+		ySpace = (float)ph;
+		zSpace = (float)pd;
+
 		// real coords
 		maxCoord.x = xDim * xSpace;
 		maxCoord.y = yDim * ySpace;
