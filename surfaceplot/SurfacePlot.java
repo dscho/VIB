@@ -131,6 +131,25 @@ public final class SurfacePlot extends Shape3D {
 		tr.setTransparency(transparency);
 	}
 
+	public void setChannels(boolean[] ch) {
+		if(!volume.setChannels(ch))
+			return;
+		calculateMax();
+		calculateZFactor();
+		geometry[slice] = createGeometry(slice);
+		setGeometry(geometry[slice]);
+		new Thread() {
+			public void run() {
+				for(int g = 0; g < d; g++) {
+					if(g != slice) {
+						geometry[g] = createGeometry(g);
+						IJ.showProgress(g+1, d);
+					}
+				}
+			}
+		}.start();
+	}
+
 	public void setColor(Color3f color) {
 		this.color = color;
 
