@@ -553,6 +553,11 @@ public class Executer {
 	public void changeTransparency(final Content c) {
 		if(!checkSel(c))
 			return;
+		final SliderAdjuster transp_adjuster = new SliderAdjuster() {
+			public synchronized final void setValue(Content c, int v) {
+				c.setTransparency(v / 100f);
+			}
+		};
 		final GenericDialog gd = new GenericDialog(
 			"Adjust transparency ...", univ.getWindow());
 		final int oldTr = (int)(c.getTransparency() * 100);
@@ -560,9 +565,9 @@ public class Executer {
 		((Scrollbar)gd.getSliders().get(0)).
 			addAdjustmentListener(new AdjustmentListener() {
 			public void adjustmentValueChanged(AdjustmentEvent e) {
-				float newTr = (float)e.getValue() / 100f; 
-				c.setTransparency(newTr);
-				univ.fireContentChanged(c);
+				if(!transp_adjuster.go)
+					transp_adjuster.start();
+				transp_adjuster.exec((int)e.getValue(), c, univ);
 			}
 		});
 		gd.setModal(false);
@@ -578,28 +583,30 @@ public class Executer {
 					toString(((Scrollbar)gd.getSliders().
 					get(0)).getValue() / 100f));
 				}
+				if (null != transp_adjuster)
+					transp_adjuster.quit();
 				univ.clearSelection();
 			}
 		});
 		gd.showDialog();
 	}
 
-	public void changeThreshold(final Content selected) {
-		if(!checkSel(selected))
+	public void changeThreshold(final Content c) {
+		if(!checkSel(c))
 			return;
-		final SliderAdjuster transp_adjuster = new SliderAdjuster() {
+		final SliderAdjuster thresh_adjuster = new SliderAdjuster() {
 			public synchronized final void setValue(Content c, int v) {
 				c.setThreshold(v);
 			}
 		};
-		final int oldTr = (int)(selected.getThreshold());
-		if(selected.getType() == Content.SURFACE) {
+		final int oldTr = (int)(c.getThreshold());
+		if(c.getType() == Content.SURFACE) {
 			int th = (int)Math.round(
 				IJ.getNumber("Threshold [0..255]", oldTr));
 			th = Math.max(0, th);
 			th = Math.min(th, 255);
-			selected.setThreshold(th);
-			univ.fireContentChanged(selected);
+			c.setThreshold(th);
+			univ.fireContentChanged(c);
 			record(SET_THRESHOLD, Integer.toString(th));
 			return;
 		}
@@ -611,26 +618,26 @@ public class Executer {
 			addAdjustmentListener(new AdjustmentListener() {
 			public void adjustmentValueChanged(final AdjustmentEvent e) {
 				// start adjuster and request an action
-				if(!transp_adjuster.go)
-					transp_adjuster.start();
-				transp_adjuster.exec((int)e.getValue(), selected, univ);
+				if(!thresh_adjuster.go)
+					thresh_adjuster.start();
+				thresh_adjuster.exec((int)e.getValue(), c, univ);
 			}
 		});
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
-					selected.setThreshold(oldTr);
-					univ.fireContentChanged(selected);
+					c.setThreshold(oldTr);
+					univ.fireContentChanged(c);
 					return;
 				} else {
 					record(SET_THRESHOLD, 
 						Integer.toString(
-							selected.threshold));
+							c.threshold));
 				}
 				// clean up
-				if (null != transp_adjuster)
-					transp_adjuster.quit();
+				if (null != thresh_adjuster)
+					thresh_adjuster.quit();
 				univ.clearSelection();
 			}
 		});
