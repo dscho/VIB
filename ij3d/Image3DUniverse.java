@@ -41,6 +41,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private RegistrationMenubar registrationMenubar;
 	private ImageCanvas3D canvas;
 
+	private Executer executer;
+
 	private Point3f globalMin = new Point3f();
 	private Point3f globalMax = new Point3f();
 	private Point3f globalCenter = new Point3f();
@@ -50,6 +52,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
+		executer = new Executer(this);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -106,6 +109,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		super.close();
 		removeAllContents();
 		contents = null;
+	}
+
+	public Executer getExecuter() {
+		return executer;
 	}
 
 	public void setStatus(String text) {
