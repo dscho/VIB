@@ -70,98 +70,75 @@ public class Executer {
 
 	public static final String SMOOTH = "smooth";
 
-
-
-
 	private Image3DUniverse univ;
+
 
 	public Executer(Image3DUniverse univ) {
 		this.univ = univ;
 	}
 
-	public void select(String name) {
-		Content c = univ.getContent(name);
-		if(c != null)
-			univ.select(c);
+
+	/* **********************************************************
+	 * File menu
+	 * *********************************************************/
+	public void saveAsDXF() {
+		MeshExporter.saveAsDXF(univ.getContents());
 	}
 
-	private final boolean checkSel(Content c) {
-		if(c == null) {
-			IJ.error("Selection required");
-			return false;
-		}
-		return true;
+	public void saveAsWaveFront() {
+		MeshExporter.saveAsWaveFront(univ.getContents());
 	}
 
-	public void changeColor(final Content c) {
-		if(!checkSel(c))
+
+
+	/* **********************************************************
+	 * View menu
+	 * *********************************************************/
+	public void setWindowSize() {
+		final GenericDialog gd = new GenericDialog(
+					"Window size...", univ.getWindow());
+		Dimension d = univ.getSize();
+		if(d == null)
 			return;
-		final GenericDialog gd = 
-			new GenericDialog("Adjust color ...", univ.getWindow());
-		final Color3f oldC = c.color;
-
-		gd.addCheckbox("Use default color", oldC == null);
-		gd.addSlider("Red",0,255,oldC == null ? 255 : oldC.x*255);
-		gd.addSlider("Green",0,255,oldC == null ? 0 : oldC.y*255);
-		gd.addSlider("Blue",0,255,oldC == null ? 0 : oldC.z*255);
-
-		final Scrollbar rSlider = (Scrollbar)gd.getSliders().get(0);
-		final Scrollbar gSlider = (Scrollbar)gd.getSliders().get(1);
-		final Scrollbar bSlider = (Scrollbar)gd.getSliders().get(2);
-		final Checkbox cBox = (Checkbox)gd.getCheckboxes().get(0);
-
-		rSlider.setEnabled(oldC != null);
-		gSlider.setEnabled(oldC != null);
-		bSlider.setEnabled(oldC != null);
-
-		cBox.addItemListener(new ItemListener() {
-			public void itemStateChanged(ItemEvent e) {
-				gd.setCursor(new Cursor(Cursor.WAIT_CURSOR));
-				rSlider.setEnabled(!cBox.getState());
-				gSlider.setEnabled(!cBox.getState());
-				bSlider.setEnabled(!cBox.getState());
-				c.setColor(cBox.getState() ? null :
-					new Color3f(rSlider.getValue() / 255f,
-						gSlider.getValue() / 255f,
-						bSlider.getValue() / 255f));
-				gd.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-				univ.fireContentChanged(c);
-			}
-		});
-
-		AdjustmentListener listener = new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				c.setColor(new Color3f(
-						rSlider.getValue() / 255f,
-						gSlider.getValue() / 255f,
-						bSlider.getValue() / 255f));
-				univ.fireContentChanged(c);
-			}
-		};
-		rSlider.addAdjustmentListener(listener);
-		gSlider.addAdjustmentListener(listener);
-		bSlider.addAdjustmentListener(listener);
-
-		gd.setModal(false);
-		gd.addWindowListener(new WindowAdapter() {
-			public void windowClosed(WindowEvent e) {
-				if(gd.wasCanceled()) {
-					c.setColor(oldC);
-					univ.fireContentChanged(c);
-					return;
-				} else if(cBox.getState()){
-					record(SET_COLOR,
-					"null", "null", "null");
-				} else {
-					record(SET_COLOR,
-					Integer.toString(rSlider.getValue()),
-					Integer.toString(gSlider.getValue()),
-					Integer.toString(bSlider.getValue()));
-				}
-				univ.clearSelection();
-			}
-		});
+		gd.addNumericField("width", d.width, 0);
+		gd.addNumericField("height", d.height, 0);
 		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
+	}
+
+	public void resetView() {
+		univ.resetView();
+		record(RESET_VIEW);
+	}
+
+	public void perspectiveProjection(boolean b) {
+		univ.getViewer().getView().setProjectionPolicy(b 
+			? View.PERSPECTIVE_PROJECTION 
+			: View.PARALLEL_PROJECTION);
+	}
+
+	public void startRecording() {
+		univ.startRecording();
+		record(START_RECORD);
+	}
+
+	public void stopRecording() {
+		ImagePlus movie = univ.stopRecording();
+		if(movie != null)
+			movie.show();
+		record(STOP_RECORD);
+	}
+
+	public void startAnimation() {
+		univ.startAnimation();
+		record(START_ANIMATE);
+	}
+
+	public void stopAnimation() {
+		univ.pauseAnimation();
+		record(STOP_ANIMATE);
 	}
 
 	public void editScalebar() {
@@ -192,64 +169,16 @@ public class Executer {
 		new Viewer4DController(view4d);
 	}
 
-	public void changeChannels(Content c) {
-		if(!checkSel(c))
-			return;
-		GenericDialog gd = new GenericDialog("Adjust channels ...",
-							univ.getWindow());
-		gd.addMessage("Channels");
-		gd.addCheckboxGroup(1, 3, 
-				new String[] {"red", "green", "blue"}, 
-				c.getChannels());
-		gd.showDialog();
-		if(gd.wasCanceled())
-			return;
-			
-		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
-						gd.getNextBoolean(), 
-						gd.getNextBoolean()};
-		c.setChannels(channels);
-		univ.fireContentChanged(c);
-		record(SET_CHANNELS, Boolean.toString(channels[0]),
-			Boolean.toString(channels[1]),
-			Boolean.toString(channels[2]));
-		univ.clearSelection();
+	public void close() {
+		univ.close();
+		record(CLOSE);
 	}
 
-	public void changeTransparency(final Content c) {
-		if(!checkSel(c))
-			return;
-		final GenericDialog gd = new GenericDialog(
-			"Adjust transparency ...", univ.getWindow());
-		final int oldTr = (int)(c.getTransparency() * 100);
-		gd.addSlider("Transparency", 0, 100, oldTr);
-		((Scrollbar)gd.getSliders().get(0)).
-			addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				float newTr = (float)e.getValue() / 100f; 
-				c.setTransparency(newTr);
-				univ.fireContentChanged(c);
-			}
-		});
-		gd.setModal(false);
-		gd.addWindowListener(new WindowAdapter() {
-			public void windowClosed(WindowEvent e) {
-				if(gd.wasCanceled()) {
-					float newTr = (float)oldTr / 100f;
-					c.setTransparency(newTr);
-					univ.fireContentChanged(c);
-					return;
-				} else {
-					record(SET_TRANSPARENCY, Float.
-					toString(((Scrollbar)gd.getSliders().
-					get(0)).getValue() / 100f));
-				}
-				univ.clearSelection();
-			}
-		});
-		gd.showDialog();
-	}
 
+
+	/* ***********************************************************
+	 * Contents menu
+	 * **********************************************************/
 	public void addContent(final ImagePlus image, final int type) {
 		new Thread() {
 			public void run() {
@@ -369,6 +298,12 @@ public class Executer {
 		record(DELETE);
 	}
 
+	public void select(String name) {
+		Content c = univ.getContent(name);
+		if(c != null)
+			univ.select(c);
+	}
+
 	public void register() {
 		// Select the contents used for registration
 		Collection contents = univ.getContents();
@@ -382,54 +317,37 @@ public class Executer {
 		rm.register();
 	}
 
-	public void resetView() {
-		univ.resetView();
-		record(RESET_VIEW);
+	public void smoothAllMeshes() {
+		// process each Mesh in a separate thread
+		final Collection all = univ.getContents();
+		final Content[] c = new Content[all.size()];
+		all.toArray(c);
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] thread = new Thread[
+			Runtime.getRuntime().availableProcessors()];
+		for (int i = 0; i<thread.length; i++) {
+			thread[i] = new Thread() {
+				public void run() {
+					try {
+						for (int k=ai.getAndIncrement();
+						k < c.length;
+						k = ai.getAndIncrement()) {
+							MeshEditor.
+							smooth(c[k], 0.25f);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			thread[i].start();
+		}
 	}
 
-	public void setWindowSize() {
-		final GenericDialog gd = new GenericDialog(
-					"Window size...", univ.getWindow());
-		Dimension d = univ.getSize();
-		if(d == null)
-			return;
-		gd.addNumericField("width", d.width, 0);
-		gd.addNumericField("height", d.height, 0);
-		gd.showDialog();
-		if(gd.wasCanceled())
-			return;
-		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
-	}
 
-	public void startRecording() {
-		univ.startRecording();
-		record(START_RECORD);
-	}
-
-	public void stopRecording() {
-		ImagePlus movie = univ.stopRecording();
-		if(movie != null)
-			movie.show();
-		record(STOP_RECORD);
-	}
-
-	public void startAnimation() {
-		univ.startAnimation();
-		record(START_ANIMATE);
-	}
-
-	public void stopAnimation() {
-		univ.pauseAnimation();
-		record(STOP_ANIMATE);
-	}
-
-	public void displayAs(Content c, int type) {
-		if(!checkSel(c))
-			return;
-		c.displayAs(Content.VOLUME);
-		univ.clearSelection();
-	}
-
+	/* **********************************************************
+	 * Selected Content menu
+	 * *********************************************************/
 	public void changeSlices(final Content c) {
 		if(!checkSel(c))
 			return;
@@ -500,6 +418,172 @@ public class Executer {
 		gd.showDialog();
 	}
 
+	public void fill(final Content c) {
+		if(!checkSel(c))
+			return;
+		int type = c.getType();
+		if(type != Content.VOLUME && type != Content.ORTHO) 
+			return;
+		new Thread() {
+			public void run() {
+				((VoltexGroup)c.getContent()).
+					fillRoiBlack(univ, (byte)0);
+				univ.fireContentChanged(c);
+				record(FILL_SELECTION);
+			}
+		}.start();
+	}
+
+	public void smoothMesh(Content c) {
+		if(!checkSel(c))
+			return;
+		MeshEditor.smooth(c, 0.25f);
+	}
+
+
+	/* ----------------------------------------------------------
+	 * Display As submenu
+	 * --------------------------------------------------------*/
+	public void displayAs(Content c, int type) {
+		if(!checkSel(c))
+			return;
+		c.displayAs(Content.VOLUME);
+		univ.clearSelection();
+	}
+
+
+	/* ----------------------------------------------------------
+	 * Attributes submenu
+	 * --------------------------------------------------------*/
+	public void changeColor(final Content c) {
+		if(!checkSel(c))
+			return;
+		final GenericDialog gd = 
+			new GenericDialog("Adjust color ...", univ.getWindow());
+		final Color3f oldC = c.color;
+
+		gd.addCheckbox("Use default color", oldC == null);
+		gd.addSlider("Red",0,255,oldC == null ? 255 : oldC.x*255);
+		gd.addSlider("Green",0,255,oldC == null ? 0 : oldC.y*255);
+		gd.addSlider("Blue",0,255,oldC == null ? 0 : oldC.z*255);
+
+		final Scrollbar rSlider = (Scrollbar)gd.getSliders().get(0);
+		final Scrollbar gSlider = (Scrollbar)gd.getSliders().get(1);
+		final Scrollbar bSlider = (Scrollbar)gd.getSliders().get(2);
+		final Checkbox cBox = (Checkbox)gd.getCheckboxes().get(0);
+
+		rSlider.setEnabled(oldC != null);
+		gSlider.setEnabled(oldC != null);
+		bSlider.setEnabled(oldC != null);
+
+		cBox.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				gd.setCursor(new Cursor(Cursor.WAIT_CURSOR));
+				rSlider.setEnabled(!cBox.getState());
+				gSlider.setEnabled(!cBox.getState());
+				bSlider.setEnabled(!cBox.getState());
+				c.setColor(cBox.getState() ? null :
+					new Color3f(rSlider.getValue() / 255f,
+						gSlider.getValue() / 255f,
+						bSlider.getValue() / 255f));
+				gd.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+				univ.fireContentChanged(c);
+			}
+		});
+
+		AdjustmentListener listener = new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				c.setColor(new Color3f(
+						rSlider.getValue() / 255f,
+						gSlider.getValue() / 255f,
+						bSlider.getValue() / 255f));
+				univ.fireContentChanged(c);
+			}
+		};
+		rSlider.addAdjustmentListener(listener);
+		gSlider.addAdjustmentListener(listener);
+		bSlider.addAdjustmentListener(listener);
+
+		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					c.setColor(oldC);
+					univ.fireContentChanged(c);
+					return;
+				} else if(cBox.getState()){
+					record(SET_COLOR,
+					"null", "null", "null");
+				} else {
+					record(SET_COLOR,
+					Integer.toString(rSlider.getValue()),
+					Integer.toString(gSlider.getValue()),
+					Integer.toString(bSlider.getValue()));
+				}
+				univ.clearSelection();
+			}
+		});
+		gd.showDialog();
+	}
+
+	public void changeChannels(Content c) {
+		if(!checkSel(c))
+			return;
+		GenericDialog gd = new GenericDialog("Adjust channels ...",
+							univ.getWindow());
+		gd.addMessage("Channels");
+		gd.addCheckboxGroup(1, 3, 
+				new String[] {"red", "green", "blue"}, 
+				c.getChannels());
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+			
+		boolean[] channels = new boolean[]{gd.getNextBoolean(), 
+						gd.getNextBoolean(), 
+						gd.getNextBoolean()};
+		c.setChannels(channels);
+		univ.fireContentChanged(c);
+		record(SET_CHANNELS, Boolean.toString(channels[0]),
+			Boolean.toString(channels[1]),
+			Boolean.toString(channels[2]));
+		univ.clearSelection();
+	}
+
+	public void changeTransparency(final Content c) {
+		if(!checkSel(c))
+			return;
+		final GenericDialog gd = new GenericDialog(
+			"Adjust transparency ...", univ.getWindow());
+		final int oldTr = (int)(c.getTransparency() * 100);
+		gd.addSlider("Transparency", 0, 100, oldTr);
+		((Scrollbar)gd.getSliders().get(0)).
+			addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				float newTr = (float)e.getValue() / 100f; 
+				c.setTransparency(newTr);
+				univ.fireContentChanged(c);
+			}
+		});
+		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					float newTr = (float)oldTr / 100f;
+					c.setTransparency(newTr);
+					univ.fireContentChanged(c);
+					return;
+				} else {
+					record(SET_TRANSPARENCY, Float.
+					toString(((Scrollbar)gd.getSliders().
+					get(0)).getValue() / 100f));
+				}
+				univ.clearSelection();
+			}
+		});
+		gd.showDialog();
+	}
+
 	public void changeThreshold(final Content selected) {
 		if(!checkSel(selected))
 			return;
@@ -553,25 +637,91 @@ public class Executer {
 		gd.showDialog();
 	}
 
-	public void fill(final Content c) {
+	public void setShaded(Content c, boolean b) {
 		if(!checkSel(c))
 			return;
-		int type = c.getType();
-		if(type != Content.VOLUME && type != Content.ORTHO) 
-			return;
-		new Thread() {
-			public void run() {
-				((VoltexGroup)c.getContent()).
-					fillRoiBlack(univ, (byte)0);
-				univ.fireContentChanged(c);
-				record(FILL_SELECTION);
-			}
-		}.start();
+		int t = c.getType();
+		if(t == Content.SURFACE || t == Content.SURFACE_PLOT2D)
+			c.setShaded(b);
 	}
 
-	public void close() {
-		univ.close();
-		record(CLOSE);
+
+	/* ----------------------------------------------------------
+	 * Hide/Show submenu
+	 * --------------------------------------------------------*/
+	public void showCoordinateSystem(Content c, boolean b) {
+		if(!checkSel(c))
+			return;
+		c.showCoordinateSystem(b);
+		record(SET_CS, Boolean.toString(b));
+	}
+
+	public void showContent(Content c, boolean b) {
+		if(!checkSel(c))
+			return;
+		univ.getSelected().setVisible(b);
+		if(!b)
+			univ.clearSelection();
+	}
+
+
+	/* ----------------------------------------------------------
+	 * Point list submenu
+	 * --------------------------------------------------------*/
+	public void loadPointList(Content c) {
+		if(!checkSel(c))
+			return;
+		c.loadPointList();
+	}
+
+	public void savePointList(Content c) {
+		if(!checkSel(c))
+			return;
+		c.savePointList();
+	}
+
+	public void changePointSize(final Content c) {
+		if(!checkSel(c))
+			return;
+		final GenericDialog gd = 
+			new GenericDialog("Point size", univ.getWindow());
+		final float oldS = (float)(c.getLandmarkPointSize());
+		gd.addSlider("Size", 0, 20, oldS);
+		((Scrollbar)gd.getSliders().get(0)).
+			addAdjustmentListener(new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				float newS = (float)e.getValue();
+				c.setLandmarkPointSize(newS);
+			}
+		});
+		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					c.setLandmarkPointSize(oldS);
+					return;
+				}
+			}
+		});
+		gd.showDialog();
+	}
+
+	public void showPointList(Content c, boolean b) {
+		if(!checkSel(c))
+			return;
+		c.showPointList(b);
+	}
+
+
+	/* ----------------------------------------------------------
+	 * Transformation submenu
+	 * --------------------------------------------------------*/
+	public void setLocked(Content c, boolean b) {
+		if(!checkSel(c))
+			return;
+		c.setLocked(b);
+		if(b) record(LOCK);
+		else record(UNLOCK);
 	}
 
 	public void resetTransform(Content c) {
@@ -677,6 +827,10 @@ public class Executer {
 		out.getImage().show();
 	}
 
+
+	/* ----------------------------------------------------------
+	 * Properties submenu
+	 * --------------------------------------------------------*/
 	public void contentProperties(Content c) {
 		if(!checkSel(c))
 			return;
@@ -695,127 +849,7 @@ public class Executer {
 			512, 512);
 	}
 
-	public void loadPointList(Content c) {
-		if(!checkSel(c))
-			return;
-		c.loadPointList();
-	}
 
-	public void savePointList(Content c) {
-		if(!checkSel(c))
-			return;
-		c.savePointList();
-	}
-
-	public void changePointSize(final Content c) {
-		if(!checkSel(c))
-			return;
-		final GenericDialog gd = 
-			new GenericDialog("Point size", univ.getWindow());
-		final float oldS = (float)(c.getLandmarkPointSize());
-		gd.addSlider("Size", 0, 20, oldS);
-		((Scrollbar)gd.getSliders().get(0)).
-			addAdjustmentListener(new AdjustmentListener() {
-			public void adjustmentValueChanged(AdjustmentEvent e) {
-				float newS = (float)e.getValue();
-				c.setLandmarkPointSize(newS);
-			}
-		});
-		gd.setModal(false);
-		gd.addWindowListener(new WindowAdapter() {
-			public void windowClosed(WindowEvent e) {
-				if(gd.wasCanceled()) {
-					c.setLandmarkPointSize(oldS);
-					return;
-				}
-			}
-		});
-		gd.showDialog();
-	}
-
-	public void saveAsDXF() {
-		MeshExporter.saveAsDXF(univ.getContents());
-	}
-
-	public void saveAsWaveFront() {
-		MeshExporter.saveAsWaveFront(univ.getContents());
-	}
-
-	public void smoothMesh(Content c) {
-		if(!checkSel(c))
-			return;
-		MeshEditor.smooth(c, 0.25f);
-	}
-
-	public void smoothAllMeshes() {
-		// process each Mesh in a separate thread
-		final Collection all = univ.getContents();
-		final Content[] c = new Content[all.size()];
-		all.toArray(c);
-		final AtomicInteger ai = new AtomicInteger(0);
-		final Thread[] thread = new Thread[
-			Runtime.getRuntime().availableProcessors()];
-		for (int i = 0; i<thread.length; i++) {
-			thread[i] = new Thread() {
-				public void run() {
-					try {
-						for (int k=ai.getAndIncrement();
-						k < c.length;
-						k = ai.getAndIncrement()) {
-							MeshEditor.
-							smooth(c[k], 0.25f);
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-			};
-			thread[i].start();
-		}
-	}
-
-	public void perspectiveProjection(boolean b) {
-		univ.getViewer().getView().setProjectionPolicy(b 
-			? View.PERSPECTIVE_PROJECTION 
-			: View.PARALLEL_PROJECTION);
-	}
-
-	public void showCoordinateSystem(Content c, boolean b) {
-		if(!checkSel(c))
-			return;
-		c.showCoordinateSystem(b);
-		record(SET_CS, Boolean.toString(b));
-	}
-
-	public void showContent(Content c, boolean b) {
-		if(!checkSel(c))
-			return;
-		univ.getSelected().setVisible(b);
-		if(!b)
-			univ.clearSelection();
-	}
-
-	public void setLocked(Content c, boolean b) {
-		if(!checkSel(c))
-			return;
-		c.setLocked(b);
-		if(b) record(LOCK);
-		else record(UNLOCK);
-	}
-
-	public void setShaded(Content c, boolean b) {
-		if(!checkSel(c))
-			return;
-		int t = c.getType();
-		if(t == Content.SURFACE || t == Content.SURFACE_PLOT2D)
-			c.setShaded(b);
-	}
-
-	public void showPointList(Content c, boolean b) {
-		if(!checkSel(c))
-			return;
-		c.showPointList(b);
-	}
 
 	/* **********************************************************
 	 * Help menu
@@ -840,7 +874,6 @@ public class Executer {
 	}
 
 
-	
 
 	/* **********************************************************
 	 * Utility methods
@@ -946,6 +979,14 @@ public class Executer {
 		return imp.getProcessor().getAutoThreshold(histo);
 	}
 
+	private final boolean checkSel(Content c) {
+		if(c == null) {
+			IJ.error("Selection required");
+			return false;
+		}
+		return true;
+	}
+
 
 
 	/* **********************************************************
@@ -995,11 +1036,11 @@ public class Executer {
 	}
 
 
+
 	/* **********************************************************
 	 * Thread which handles the updates of sliders
 	 * *********************************************************/
 	private abstract class SliderAdjuster extends Thread {
-
 		boolean go = false;
 		int newV;
 		Content content;
