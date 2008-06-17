@@ -606,7 +606,7 @@ public class Executer {
 		// in case we've not a mesh, change it interactively
 		final GenericDialog gd = 
 				new GenericDialog("Adjust threshold...");
-		gd.addSlider("Transparency", 0, 255, oldTr);
+		gd.addSlider("Threshold", 0, 255, oldTr);
 		((Scrollbar)gd.getSliders().get(0)).
 			addAdjustmentListener(new AdjustmentListener() {
 			public void adjustmentValueChanged(final AdjustmentEvent e) {
