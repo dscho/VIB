@@ -1,13 +1,8 @@
 package voltex;
 
 import java.awt.Polygon;
-import java.awt.image.IndexColorModel;
 
-import java.util.List;
-import java.util.Vector;
 import javax.vecmath.Color3f;
-import javax.vecmath.Vector3d;
-import javax.vecmath.Vector3f;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
@@ -20,41 +15,35 @@ import com.sun.j3d.utils.behaviors.picking.PickingCallback;
 
 import ij.ImagePlus;
 import ij.IJ;
-import ij.WindowManager;
-import ij.gui.GenericDialog;
 import ij.measure.Calibration;
+import ij.process.ImageProcessor;
 
 import ij3d.Content;
 import ij3d.ContentNode;
 import ij3d.ImageCanvas3D;
 import ij3d.Image3DUniverse;
-import ij3d.ColorTable;
 
 import vib.Resample_;
 
 public class VoltexGroup extends ContentNode {
 
-	private Renderer renderer;
+	protected Renderer renderer;
+	protected Color3f oldColor;
+	protected Content c;
 	private float volume;
-	private Color3f oldColor;
-	private Content c;
+
+	protected VoltexGroup() {
+		super();
+	}
 
 	public VoltexGroup(Content c) {
 		super();
 		this.c = c;
-		float scale = c.getImage().getWidth() * 
-			(float)c.getImage().getCalibration().pixelWidth;
-
-		IndexColorModel cmodel = c.getColor() == null ? 
-			ColorTable.getIndexedColorModel(
-				c.getImage(), c.getChannels()) :
-			ColorTable.getAverageGrayColorModel(
-				c.getImage(),c.getChannels());
 		ImagePlus imp = c.getResamplingFactor() == 1 ? c.getImage() 
 			: Resample_.resample(c.getImage(), 
 				c.getResamplingFactor());
-		renderer = new VolumeRenderer(
-				imp, cmodel, c.getColor(), c.getTransparency());
+		renderer = new VolumeRenderer(imp, c.getColor(),
+				c.getTransparency(), c.getChannels());
 		renderer.fullReload();
 		oldColor = c.getColor();
 		addChild(renderer.getVolumeNode());
@@ -83,10 +72,12 @@ public class VoltexGroup extends ContentNode {
 		long vol = 0;
 		for(int zi = 0; zi < d; zi++) {
 			float z = zi * (float)c.pixelDepth;
-			byte[] p = (byte[])imp.getStack().getPixels(zi+1);
-			for(int i = 0; i < p.length; i++) {
-				if(p[i] == 0) continue;
-				vol += (p[i] & 0xff);
+			ImageProcessor ip = imp.getStack().getProcessor(zi+1);
+			int wh = w * h;
+			for(int i = 0; i < wh; i++) {
+				int v = ip.get(i);
+				if(v == 0) continue;
+				vol += v;
 				float x = (i % w) * (float)c.pixelWidth;
 				float y = (i / w) * (float)c.pixelHeight;
 				if(x < min.x) min.x = x;
@@ -95,9 +86,9 @@ public class VoltexGroup extends ContentNode {
 				if(x > max.x) max.x = x;
 				if(y > max.y) max.y = y;
 				if(z > max.z) max.z = z;
-				center.x += (p[i] & 0xff) * x;
-				center.y += (p[i] & 0xff) * y;
-				center.z += (p[i] & 0xff) * z;
+				center.x += v * x;
+				center.y += v * y;
+				center.z += v * z;
 			}
 		}
 		center.x /= vol;
@@ -119,12 +110,7 @@ public class VoltexGroup extends ContentNode {
 	}
 
 	public void channelsUpdated() {
-		IndexColorModel cmodel = c.getColor() == null ?
-			ColorTable.getIndexedColorModel(
-				c.getImage(), c.getChannels()) :
-			ColorTable.getAverageGrayColorModel(
-				c.getImage(), c.getChannels());
-		renderer.setColorModel(cmodel);
+		renderer.setChannels(c.getChannels());
 	}
 
 	public void shadeUpdated() {
@@ -132,19 +118,6 @@ public class VoltexGroup extends ContentNode {
 	}
 
 	public void colorUpdated() {
-		// color model only needs update if there is a switch
-		// between null and non-null color
-		if(oldColor == null && c.getColor() != null || 
-			oldColor != null && c.getColor() == null) {
-
-			IndexColorModel cmodel = c.getColor() == null ?
-				ColorTable.getIndexedColorModel(
-					c.getImage(), c.getChannels()):
-				ColorTable.getAverageGrayColorModel(
-					c.getImage(), c.getChannels());
-			renderer.setColorModel(cmodel);
-		}
-		oldColor = c.getColor();
 		renderer.setColor(c.getColor());
 	}
 

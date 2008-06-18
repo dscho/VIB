@@ -158,9 +158,6 @@ public class ColorTable {
 		cmodel.getReds(r);
 		cmodel.getGreens(g);
 		cmodel.getBlues(b);
-		// index in cmodel which has most pixels:
-		// this is asumed to be the background value
-		int histoMax = getHistogramMax(imp);
 		int[] sumInt = new int[N];
 		int maxInt = 0;
 		for(int i = 0; i < N; i++) {

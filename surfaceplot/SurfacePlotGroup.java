@@ -23,6 +23,7 @@ import ij3d.Content;
 import ij3d.ContentNode;
 import ij3d.Image3DUniverse;
 import ij3d.ColorTable;
+import voltex.Volume;
 
 import vib.Resample_;
 
@@ -44,7 +45,10 @@ public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 		int res = c.getResamplingFactor();
 		ImagePlus imp = res == 1 ? c.getImage() 
 			: Resample_.resample(c.getImage(), res, res, 1);
-		surfacep = new SurfacePlot(imp, c.getColor(),
+		Volume volume = new Volume(imp);
+		volume.setAverage(true);
+		volume.setChannels(c.getChannels());
+		surfacep = new SurfacePlot(volume, c.getColor(),
 				c.getTransparency(), c.getImage().getSlice());
 		calculateMinMaxCenterPoint();
 		addChild(surfacep);
@@ -74,7 +78,7 @@ public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 	}
 
 	public void channelsUpdated() {
-		// TODO
+		surfacep.setChannels(c.getChannels());
 	}
 
 	public void calculateMinMaxCenterPoint() {

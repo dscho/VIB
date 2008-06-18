@@ -10,6 +10,7 @@ import ij.plugin.PlugIn;
 import ij.gui.GenericDialog;
 
 import ij3d.Image3DUniverse;
+import voltex.Volume;
 import marchingcubes.MCCube;
 
 import java.util.List;
@@ -65,7 +66,8 @@ public class MC_Test implements PlugIn {
 		}
 		
 		createCase(caseNo);
-		List l = MCCube.getTriangles(image, threshold);
+		Volume volume = new Volume(image);
+		List l = MCCube.getTriangles(volume, threshold);
 		univ.addMesh(l, RED, "case" + caseNo, threshold);
 		for(int z = 0; z < data.length; z++) {
 			for(int y = 0; y < 2; y++) {

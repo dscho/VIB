@@ -40,7 +40,7 @@ public class ImageJ3DViewer implements PlugIn {
 			int type = -1;
 			Image3DMenubar menu = univ.getMenuBar();
 			if(image != null)
-				menu.addContent(image, type);
+				univ.getExecuter().addContent(image, type);
 
 		} catch(Exception e) {
 			StringBuffer buf = new StringBuffer();
