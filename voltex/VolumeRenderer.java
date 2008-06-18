@@ -25,12 +25,14 @@ public class VolumeRenderer extends Renderer {
 	protected Switch axisSwitch;
 	protected int[][] axisIndex = new int[3][2];
 
-	public VolumeRenderer(ImagePlus img, IndexColorModel cmodel, 
-					Color3f color, float tr) {
+	public VolumeRenderer(ImagePlus img, Color3f color, 
+					float tr, boolean[] channels) {
 		super(img);
+		volume.setTransparencyType(Volume.TRANSLUCENT);
 		this.transparency = tr;
 		this.color = color;
-		appCreator = new AppearanceCreator(volume, cmodel);
+		appCreator = new AppearanceCreator(
+				volume, color, tr, channels);
 		geomCreator = new GeometryCreator(volume);
 
 		axisIndex[X_AXIS][FRONT] = 0;
@@ -122,54 +124,25 @@ public class VolumeRenderer extends Renderer {
 		value = Math.min(1f, value);
 		value = Math.max(0.1f, value);
 		this.threshold = (int)Math.round(value * 255);
-		for(int i = 0; i < axisSwitch.numChildren(); i++) {
-			Group g = (Group)axisSwitch.getChild(i);
-			int num = g.numChildren();
-			for(int y = 0; y < num; y++) {
-				Shape3D shape = (Shape3D)
-					((Group)g.getChild(y)).getChild(0);
-				shape.getAppearance().
-					getRenderingAttributes().
-					setAlphaTestValue(value);
-			}
-		}
+		appCreator.setThreshold(value);
 	}
 
 	public void setTransparency(float transparency) {
 		this.transparency = transparency;
-		for(int i = 0; i < axisSwitch.numChildren(); i++) {
-			Group g = (Group)axisSwitch.getChild(i);
-			int num = g.numChildren();
-			for(int y = 0; y < num; y++) {
-				Shape3D shape = (Shape3D)
-					((Group)g.getChild(y)).getChild(0);
-				shape.getAppearance().
-					getTransparencyAttributes().
-						setTransparency(transparency);
-			}
-		}
+		appCreator.setTransparency(transparency);
 	}
 
-	public void setColorModel(IndexColorModel cmodel) {
-		appCreator.setColorModel(cmodel);
-		fullReload();
+	public void setChannels(boolean[] channels) {
+		if(volume.setChannels(channels))
+			fullReload();
 	}
 
 	public void setColor(Color3f color) {
 		this.color = color;
+		if(volume.setAverage(color != null))
+			fullReload();
 		Color3f c = color != null ? color : new Color3f(1f, 1f, 1f);
-		for(int i = 0; i < axisSwitch.numChildren(); i++) {
-			Group g = (Group)axisSwitch.getChild(i);
-			int num = g.numChildren();
-			for(int y = 0; y < num; y++) {
-				Shape3D shape = (Shape3D)
-					((Group)g.getChild(y)).
-							getChild(0);
-				shape.getAppearance().
-					getColoringAttributes().
-						setColor(c);
-			}
-		}
+		appCreator.setColor(c);
 	}
 
 	private void loadQuads() {

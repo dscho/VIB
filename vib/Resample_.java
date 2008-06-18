@@ -34,6 +34,27 @@ public class Resample_ implements PlugInFilter {
 		public int get() { return (int)(cumul/count); }
 	}
 
+	public static class IntAverager implements Accumulator {
+		long count, cumulR, cumulG, cumulB;
+
+		public void reset() {
+			count = cumulR = cumulG = cumulB = 0;
+		}
+
+		public void add(int value) {
+			count++;
+			cumulR += (value & 0xff0000) >> 16;
+			cumulG += (value & 0xff00) >> 8;
+			cumulB += (value & 0xff);
+		}
+
+		public int get() {
+			return (int)(((cumulR / count) << 16) 
+				+ ((cumulG / count) << 8)
+				+ cumulB / count);
+		}
+	}
+
 	public static class MaxLikelihood implements Accumulator {
 		int[] histo;
 		int[] empty;
@@ -140,8 +161,8 @@ public class Resample_ implements PlugInFilter {
 		boolean minEntropy = gd.getNextBoolean();
 
 		ImagePlus res = (minEntropy ?
-				resampleMinEnt(image, factorX, factorY, factorZ) :
-				resample(image, factorX, factorY, factorZ));
+			resampleMinEnt(image, factorX, factorY, factorZ) :
+			resample(image, factorX, factorY, factorZ));
 
 		if (AmiraParameters.isAmiraMesh(image))
 			new AmiraParameters(image).setParameters(res);
@@ -157,13 +178,15 @@ public class Resample_ implements PlugInFilter {
 	public static ImagePlus resample(ImagePlus image, int factorX, 
 					int factorY, int factorZ) {
 		Accumulator accu = null;
+		int type = image.getType();
 		if (image.getProcessor().isColorLut()) {
-			int type = image.getType();
 			if (type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
 				accu = new MaxLikelihood(255);
 			else if (type==ImagePlus.GRAY16)
 				accu = new MaxLikelihood((1<<16)-1);
-		} else
+		} else if(type == ImagePlus.COLOR_RGB)
+			accu = new IntAverager();
+		else
 			accu = new Averager();
 
 		return resample(image, factorX, factorY, factorZ, accu);
@@ -196,6 +219,7 @@ public class Resample_ implements PlugInFilter {
 
 			byte[][] slices = null;
 			short[][] slicesShort = null;
+			int[][] slicesInt = null;
 
 			if(type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256) {
 				slices = new byte[kfactor][];
@@ -205,6 +229,10 @@ public class Resample_ implements PlugInFilter {
 				slicesShort = new short[kfactor][];
 				for(int k=0;k<kfactor;k++)
 					slicesShort[k]=(short[])stack.getProcessor(z+k+1).getPixels();
+			} else if (type==ImagePlus.COLOR_RGB) {
+				slicesInt = new int[kfactor][];
+				for(int k=0;k<kfactor;k++)
+					slicesInt[k]=(int[])stack.getProcessor(z+k+1).getPixels();
 			} else {
 				IJ.error("Resample only currently works on 8 bit and 16 bit images.");
 				return null;
@@ -212,6 +240,7 @@ public class Resample_ implements PlugInFilter {
 
 			byte[] newSlice = null;
 			short[] newSliceShort = null;
+			int[] newSliceInt = null;
 
 			int pointsInNewSlice = (1+(w-1)/factorX)*(1+(h-1)/factorY);
 
@@ -219,6 +248,8 @@ public class Resample_ implements PlugInFilter {
 				newSlice = new byte[pointsInNewSlice];
 			else if(type==ImagePlus.GRAY16)
 				newSliceShort = new short[pointsInNewSlice];
+			else if(type==ImagePlus.COLOR_RGB)
+				newSliceInt = new int[pointsInNewSlice];
 
 			for(int y=0;y<h;y+=factorY) {
 				for(int x=0;x<w;x+=factorX) {
@@ -239,6 +270,13 @@ public class Resample_ implements PlugInFilter {
 									accu.add(slicesShort[k][x+i+w*(y+j)]);
 						newSliceShort[(x/factorX)+(w/factorX)*(y/factorY)]=
 							(short)accu.get();
+					} else if (type==ImagePlus.COLOR_RGB) {
+						for(int i=0;i<ifactor;i++)
+							for(int j=0;j<jfactor;j++)
+								for(int k=0;k<kfactor;k++)
+									accu.add(slicesInt[k][x+i+w*(y+j)]);
+						newSliceInt[(x/factorX)+(w/factorX)*(y/factorY)]=
+							(int)accu.get();
 					}
 				}
 				IJ.showProgress(z*h+y+1, h*d);
@@ -247,6 +285,8 @@ public class Resample_ implements PlugInFilter {
 				result.addSlice(null,newSlice);
 			else if(type==ImagePlus.GRAY16)
 				result.addSlice(null,newSliceShort);				
+			else if(type==ImagePlus.COLOR_RGB)
+				result.addSlice(null,newSliceInt);
 			
 		}
 
@@ -270,6 +310,6 @@ public class Resample_ implements PlugInFilter {
 	public int setup(String arg, ImagePlus imp) {
 		image = imp;
 		// TODO: handle 32-bit
-		return DOES_8G | DOES_8C | DOES_16 | NO_CHANGES;
+		return DOES_8G | DOES_8C | DOES_16 | DOES_RGB | NO_CHANGES;
 	}
 }

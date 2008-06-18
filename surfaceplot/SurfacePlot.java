@@ -3,6 +3,7 @@ package surfaceplot;
 import ij.process.ImageProcessor;
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import ij.IJ;
 
 import java.applet.Applet;
 import java.awt.BorderLayout;
@@ -19,70 +20,94 @@ import javax.vecmath.*;
 import java.util.List;
 import java.util.ArrayList;
 
+import voltex.Volume;
+
 public final class SurfacePlot extends Shape3D {
 
-	private ImageProcessor image;
+	private Volume volume;
+	private int slice = 1;
 	private float pw = 1, ph = 1;
-	private int w, h;
-	private float maxVal = -1;
+	private int w, h, d;
+	private int maxVal = -1;
+	private float maxZ = -1;
+	private float zFactor = 1;
 
-	private IndexedQuadArray geometry;
+	private IndexedQuadArray[] geometry;
 	private Appearance appearance;
 
 	private Color3f color = null;
 	private float transparency = 0f;
 	private boolean shaded = true;
 
-
-	public SurfacePlot(ImagePlus image) {
-		this(image, null, 0f, 1);
-	}
-
-	public SurfacePlot(ImagePlus image, Color3f color,
-							float transp, int res) {
-		this.image = image.getProcessor();
-		pw = image.getWidth();
-		ph = image.getHeight();
+	public SurfacePlot(Volume volume, Color3f color, 
+					float transp, final int slice) {
+		this.volume = volume;
+		this.slice = slice;
+		pw = (float)volume.pw;
+		ph = (float)volume.ph;
 		this.color = color;
 		this.transparency = transp;
 
-		w = this.image.getWidth() / res;
-		h = this.image.getHeight() / res;
-		this.image.setInterpolate(true);
-		this.image = this.image.resize(w, h);
-
-		Calibration cal = image.getCalibration();
-		pw = (float)(pw * cal.pixelWidth / w);
-		ph = (float)(ph * cal.pixelHeight / h);
+		w = this.volume.xDim;
+		h = this.volume.yDim;
+		d = this.volume.zDim;
 
 		calculateMax();
+		calculateZFactor();
 
 		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
 		this.setCapability(ALLOW_APPEARANCE_READ);
 		this.setCapability(ALLOW_APPEARANCE_WRITE);
 
-		geometry = createGeometry();
+		geometry = new IndexedQuadArray[d];
+		geometry[slice] = createGeometry(slice);
 		appearance = createAppearance();
-		setGeometry(geometry);
+		setGeometry(geometry[slice]);
 		setAppearance(appearance);
+		new Thread() {
+			public void run() {
+				for(int g = 0; g < d; g++) {
+					if(g != slice) {
+						geometry[g] = createGeometry(g);
+						IJ.showProgress(g+1, d);
+					}
+				}
+			}
+		}.start();
+	}
+
+	public void setSlice(int slice) {
+		this.slice = slice;
+		setGeometry(geometry[slice-1]);
 	}
 
 	private void calculateMax() {
 		int wh = w * h;
-		for(int i = 0; i < wh; i++) {
-			float v = image.getf(i);
-			if(v > maxVal)
-				maxVal = v;
+		maxVal = 0;
+		for(int z = 0; z < d; z++) {
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					int v = volume.load(x, y, z);
+					if(v > maxVal)
+						maxVal = v;
+				}
+			}
 		}
 	}
 
+	private void calculateZFactor() {
+		float realW = w * pw;
+		float realH = h * ph;
+		maxZ = realW > realH ? realW : realH;
+		float zFactor = maxZ / maxVal;
+	}
 
 	public void calculateMinMaxCenterPoint(Point3f min, 
 				Point3f max, Point3f center) {
 
 		min.x = 0; min.y = 0; min.z = 0;
-		max.x = w * pw; max.y = h * ph; max.z = maxVal;
+		max.x = w * pw; max.y = h * ph; max.z = maxZ;
 		center.x = max.x / 2;
 		center.y = max.y / 2;
 		center.z = max.z / 2;
@@ -106,20 +131,40 @@ public final class SurfacePlot extends Shape3D {
 		tr.setTransparency(transparency);
 	}
 
+	public void setChannels(boolean[] ch) {
+		if(!volume.setChannels(ch))
+			return;
+		calculateMax();
+		calculateZFactor();
+		geometry[slice] = createGeometry(slice);
+		setGeometry(geometry[slice]);
+		new Thread() {
+			public void run() {
+				for(int g = 0; g < d; g++) {
+					if(g != slice) {
+						geometry[g] = createGeometry(g);
+						IJ.showProgress(g+1, d);
+					}
+				}
+			}
+		}.start();
+	}
+
 	public void setColor(Color3f color) {
 		this.color = color;
 
-		int N = geometry.getVertexCount();
-		Color3f colors[] = new Color3f[N];
-		Point3f coord = new Point3f();
-		for(int i = 0; i < N; i++) {
-			geometry.getCoordinate(i, coord);
-			colors[i] = color != null
-					? color
+		for(int g = 0; g < geometry.length; g++) {
+			int N = geometry[g].getVertexCount();
+			Color3f colors[] = new Color3f[N];
+			Point3f coord = new Point3f();
+			for(int i = 0; i < N; i++) {
+				geometry[g].getCoordinate(i, coord);
+				colors[i] = color != null ? color
 					: new Color3f(Color.getHSBColor(
-						coord.z / maxVal, 1, 1));
+						coord.z / maxZ, 1, 1));
+			}
+			geometry[g].setColors(0, colors);
 		}
-		geometry.setColors(0, colors);
 	}
 
 	public boolean isShaded() {
@@ -170,11 +215,8 @@ public final class SurfacePlot extends Shape3D {
 		return appearance;
 	}
 
-	private IndexedQuadArray createGeometry() {
+	private IndexedQuadArray createGeometry(int g) {
 
-		if(image == null)
-			return null;
-		int w = image.getWidth(), h = image.getHeight();
 		int nQuads = (w - 1) * (h - 1);
 		int nIndices = w * h;
 		int nVertices = nQuads * 4;
@@ -189,12 +231,12 @@ public final class SurfacePlot extends Shape3D {
 		for(int i = 0; i < nIndices; i++) {
 			float y = ph * (i / w);
 			float x = pw * (i % w);
-			float v = image.getf(i);
+			float v = zFactor * volume.load(i%w, i/w, g);
 			coords[i] = new Point3f(x, y, v);
 			colors[i] = color != null
 					? color
 					: new Color3f(Color.getHSBColor(
-						coords[i].z / maxVal, 1, 1));
+						v / maxZ, 1, 1));
 		}
 		ta.setCoordinates(0, coords);
 		ta.setColors(0, colors);

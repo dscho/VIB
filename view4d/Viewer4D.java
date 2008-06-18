@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import javax.vecmath.Color3f;
 import ij3d.Image3DUniverse;
+import ij3d.Executer;
 import ij3d.Content;
 
 public class Viewer4D {
@@ -195,6 +196,7 @@ public class Viewer4D {
 			ImagePlus image = IJ.openImage(directory + names[j]);
 			if(image == null)
 				continue;
+			Executer.convert(image);
 			IJ.showStatus("adding " + image);
 			c[i] = univ.addContent(image, null, names[j],
 				threshold, new boolean[] {true, true, true}, 
