@@ -10,6 +10,9 @@ package math3d;
      we do all the arithmetic in doubles even in the float version.
      It's just for convenience of interface that we generate the float
      version, essentially.
+
+     Thanks to Ting Zhao for suggesting calculating the eigenvalues
+     directly in this way rather than using an iterative method.
  */
 
 public class Eigensystem2x2Float {
