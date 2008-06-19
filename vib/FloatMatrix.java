@@ -918,27 +918,27 @@ public class FloatMatrix {
 			 */
 			boolean is4x4Columns = true;
 			
-			matrix.a00 = (float)Double.parseDouble(tokenizer.nextToken());
-			matrix.a10 = (float)Double.parseDouble(tokenizer.nextToken());
-			matrix.a20 = (float)Double.parseDouble(tokenizer.nextToken());
-			float dummy = (float)Double.parseDouble(tokenizer.nextToken());
+			matrix.a00 = (float)Float.parseFloat(tokenizer.nextToken());
+			matrix.a10 = (float)Float.parseFloat(tokenizer.nextToken());
+			matrix.a20 = (float)Float.parseFloat(tokenizer.nextToken());
+			float dummy = (float)Float.parseFloat(tokenizer.nextToken());
 			if (dummy != 0.0f) {
 				is4x4Columns = false;
 				matrix.a03 = dummy;
 			}
-			matrix.a01 = (float)Double.parseDouble(tokenizer.nextToken());
-			matrix.a11 = (float)Double.parseDouble(tokenizer.nextToken());
-			matrix.a21 = (float)Double.parseDouble(tokenizer.nextToken());
-			dummy = (float)Double.parseDouble(tokenizer.nextToken());
+			matrix.a01 = (float)Float.parseFloat(tokenizer.nextToken());
+			matrix.a11 = (float)Float.parseFloat(tokenizer.nextToken());
+			matrix.a21 = (float)Float.parseFloat(tokenizer.nextToken());
+			dummy = (float)Float.parseFloat(tokenizer.nextToken());
 			if (is4x4Columns && dummy != 0.0f)
 				is4x4Columns = false;
 			if (!is4x4Columns)
 				matrix.a13 = dummy;
 			
-			matrix.a02 = (float)Double.parseDouble(tokenizer.nextToken());
-			matrix.a12 = (float)Double.parseDouble(tokenizer.nextToken());
-			matrix.a22 = (float)Double.parseDouble(tokenizer.nextToken());
-			dummy = (float)Double.parseDouble(tokenizer.nextToken());
+			matrix.a02 = (float)Float.parseFloat(tokenizer.nextToken());
+			matrix.a12 = (float)Float.parseFloat(tokenizer.nextToken());
+			matrix.a22 = (float)Float.parseFloat(tokenizer.nextToken());
+			dummy = (float)Float.parseFloat(tokenizer.nextToken());
 			if (is4x4Columns && dummy != 0.0f)
 				is4x4Columns = false;
 			if (!is4x4Columns)
@@ -951,10 +951,10 @@ public class FloatMatrix {
 				throw new RuntimeException("Not a uniform matrix: "+m);
 			
 			if (is4x4Columns) {
-				matrix.a03 = (float)Double.parseDouble(tokenizer.nextToken());
-				matrix.a13 = (float)Double.parseDouble(tokenizer.nextToken());
-				matrix.a23 = (float)Double.parseDouble(tokenizer.nextToken());
-				if (Double.parseDouble(tokenizer.nextToken()) != 1.0f)
+				matrix.a03 = (float)Float.parseFloat(tokenizer.nextToken());
+				matrix.a13 = (float)Float.parseFloat(tokenizer.nextToken());
+				matrix.a23 = (float)Float.parseFloat(tokenizer.nextToken());
+				if (Float.parseFloat(tokenizer.nextToken()) != 1.0f)
 					throw new RuntimeException("Not a uniform matrix: "+m);
 			} else {
 				// swap rotation part
