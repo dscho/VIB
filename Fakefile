@@ -1,11 +1,15 @@
 javaVersion=1.5
-all <- VIB_.jar
+all <- remove-tempdir VIB_.jar
 
 CLASSPATH=$CLASSPATH:junit-4.4.jar:.
 VIB_.jar <- **/*.java \
 	vib/FloatMatrix.java math3d/FloatMatrixN.java FibonacciHeapInt.java \
 	math3d/JacobiFloat.java math3d/Eigensystem3x3Float.java \
 	math3d/Eigensystem2x2Float.java
+
+# clean up from "make"
+
+remove-tempdir[rm.py tempdir] <-
 
 # pre-Java5 generics ;-)
 
