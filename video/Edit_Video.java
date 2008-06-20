@@ -185,7 +185,9 @@ public class Edit_Video implements PlugIn, ActionListener {
 			if(roi == null || roi.getType() != Roi.LINE)
 				return;
 			Line line = (Line)roi;
-			drawLine(line.x1, line.y1, line.x2, line.y2, 5);
+			int i = drawLine(line.x1, line.y1, line.x2, line.y2, 5);
+			System.out.println(i + " slices inserted");
+			preview.setSlice(index + i);
 			IJ.getImage().changes = false;
 			IJ.getImage().close();
 		} else if(e.getActionCommand().equals("Draw Roi")) {
@@ -196,7 +198,7 @@ public class Edit_Video implements PlugIn, ActionListener {
 			Roi roi = IJ.getImage().getRoi();
 			if(roi == null || !(roi	instanceof PolygonRoi))
 				return;
-			drawRoi(roi);
+			drawRoi(roi, 5);
 			IJ.getImage().changes = false;
 			IJ.getImage().close();
 		} else if(e.getActionCommand().equals("Draw Oval")) {
@@ -291,7 +293,7 @@ public class Edit_Video implements PlugIn, ActionListener {
 		}
 	}
 
-	public void drawRoi(Roi roi) {
+	public void drawRoi(Roi roi, int speed) {
 		int index = preview.getCurrentSlice();
 		int red = (255 & 0xff) << 16;
 		int lw = 3;
@@ -301,18 +303,16 @@ public class Edit_Video implements PlugIn, ActionListener {
 		int[] y = poly.ypoints;
 		boolean finished = false;
 
-		for(int z = 0; z < n-1; z++) {
-			preview.setSlice(index + z);
-			drawLine(x[z], y[z], x[z+1], y[z+1], 3);
-
-			for(int i = 0; i < z; i++) {
-				drawLine(x[i], y[i], x[i+1], y[i+1], 3);
-			}
+		for(int z = 0; z < n; z++) {
+			int sl = drawLine(x[z], y[z], 
+				x[(z+1)%n], y[(z+1)%n], speed);
+			preview.setSlice(preview.getCurrentSlice() + sl);
 		}
 	}
 
-	public void drawLine(int x1, int y1, int x2, int y2, int speed) {
+	public int drawLine(int x1, int y1, int x2, int y2, int speed) {
 		int index = preview.getCurrentSlice();
+System.out.println("Draw line at slice " + preview.getCurrentSlice());
 		int red = (255 & 0xff) << 16;
 		int lw = 3;
 		int dx = x2 - x1;
@@ -331,26 +331,33 @@ public class Edit_Video implements PlugIn, ActionListener {
 
 		boolean finished = false;
 		double x = x1, y = y1;
+		int slicesInserted = 0;
 
 		ImageProcessor ip = stack.getProcessor(index);
+		ip = ip.convertToRGB();
+		ip.setValue(red);
+		ip.setLineWidth(lw);
 		for(int z = 0; !finished; z++) {
-			ip = ip.convertToRGB();
 			ip.setValue(red);
 			ip.setLineWidth(lw);
-
-			ip.moveTo(x1, y1);
-			x = x1 + (speed * z + 1) * dx_dt;
-			y = y1 + (speed * z + 1) * dy_dt;
-			for(int i = 0; i < z; i++) {
-				ip.lineTo((int)x, (int)y);
-				finished = Math.abs((int)x - x1) >= dx &&
-					Math.abs((int)y - y1) >= dy;
-				x = x1 + (speed * i + 1) * dx_dt;
-				y = y1 + (speed * i + 1) * dy_dt;
+			ip.moveTo((int)x, (int)y);
+			x = x1 + (z + 1) * dx_dt;
+			y = y1 + (z + 1) * dy_dt;
+			finished = Math.abs((int)x - x1) >= dx &&
+				Math.abs((int)y - y1) >= dy;
+			if(finished) {
+				x = x2;
+				y = y2;
 			}
-			if(!stack.addSlice(index + z, ip))
+			ip.lineTo((int)x, (int)y);
+			if(z % speed != 0)
+				continue;
+			if(!stack.addSlice(index + slicesInserted, ip))
 				break;
+			slicesInserted++;
+			ip = ip.duplicate();
 		}
+		return slicesInserted;
 	}
 
 	public void fade(int numSlices) {

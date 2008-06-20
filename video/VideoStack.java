@@ -74,6 +74,8 @@ System.out.println("opening " + files[i]);
 		preview.setPixels(ip.getPixels(), index);
 	}
 
+	
+	DecimalFormat df = new DecimalFormat("00000000");
 	public boolean addSlice(int index, ImageProcessor ip) {
 		if(ip == null)
 			ip = new ColorProcessor(w_org, h_org);
@@ -85,18 +87,21 @@ System.out.println("opening " + files[i]);
 						basename.length() + DIGITS);
 		int dig = DIGITS;
 		String name = "";
-		while(name_a.charAt(dig-1)=='0' && name_b.charAt(dig-1)=='0')
-			dig--;
-		for(; dig <= DIGITS; dig++) {
+// 		while(name_a.charAt(dig-1)=='0' && name_b.charAt(dig-1)=='0')
+// 			dig--;
+// 		for(; dig <= DIGITS; dig++) {
 			int a = Integer.parseInt(name_a.substring(0, dig));
 			int b = Integer.parseInt(name_b.substring(0, dig));
+System.out.println("a = " + a);
+System.out.println("b = " + b);
 			if(a > b+1) {
-				name = Integer.toString(b+1);
-				while(name.length() < dig)
-					name = '0' + name;
-				break;
+// 				name = Integer.toString(b+1);
+				name = df.format(b+1);
+// 				while(name.length() < dig)
+// 					name = '0' + name;
+// 				break;
 			}
-		}
+// 		}
 		if(name.isEmpty()) {
 			try {
 				if(!rebaseImages())
