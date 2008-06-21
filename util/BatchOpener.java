@@ -31,17 +31,17 @@ import java.util.Arrays;
 
       Tested file types:
 
-        - Zeiss LSM files (using LSM_Toolbox rather than LSM_Reader)
-        - Leica SP files (using the Leica_SP_Reader plugin)
-        - Ordinary TIFF files (using the default ImageJ opener)
-        - AmiraMesh files (using the AmiraMeshReader plugin)
+	- Zeiss LSM files (using LSM_Toolbox rather than LSM_Reader)
+	- Leica SP files (using the Leica_SP_Reader plugin)
+	- Ordinary TIFF files (using the default ImageJ opener)
+	- AmiraMesh files (using the AmiraMeshReader plugin)
 
       Untested file types (please send me example files!):
 
-        - Biorad PIC files (using the Biorad_Reader plugin)
-        - IPLab files (using the IPLab_Reader plugin)
-        - Packard InstantImager format (.img) files
-        - Gatan Digital Micrograph DM3 handler (DM3_Reader plugin)
+	- Biorad PIC files (using the Biorad_Reader plugin)
+	- IPLab files (using the IPLab_Reader plugin)
+	- Packard InstantImager format (.img) files
+	- Gatan Digital Micrograph DM3 handler (DM3_Reader plugin)
 
     Mark Longair <mark-imagej@longair.net>
 
@@ -122,7 +122,7 @@ public class BatchOpener {
 	}
 
 	/** A helper class to return the array of ImagePlus as well as an
-            indication of the file loader that was used. */
+	    indication of the file loader that was used. */
 	public static class ChannelsAndLoader {
 		public ChannelsAndLoader( ImagePlus [] channels, String loaderUsed ) {
 			this.channels = channels;
@@ -241,7 +241,14 @@ public class BatchOpener {
 					parameters[3] = false;
 					parameters[4] = false;
 
-					ImagePlus [] result = (ImagePlus [])m.invoke(newInstance,parameters);
+					ImagePlus [] result;
+					Object invokeResult = m.invoke(newInstance,parameters);
+
+					if( invokeResult instanceof CompositeImage )
+						result = ((CompositeImage)invokeResult).splitChannels(true);
+					else
+						result = (ImagePlus [])invokeResult;
+
 					return new ChannelsAndLoader(result,loaderUsed);
 
 				} catch (IllegalArgumentException e) {
