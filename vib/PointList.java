@@ -4,6 +4,7 @@ import ij.ImagePlus;
 import ij.io.FileInfo;
 import ij.io.OpenDialog;
 import ij.io.SaveDialog;
+import ij.measure.Calibration;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -48,6 +49,12 @@ public class PointList implements Iterable<BenesNamedPoint>{
 			fireRemoved(p);
 		}
 	}
+
+	public void clear() {
+		while(size() > 0) {
+			remove(0);
+		}
+	}
 	
 	public void rename(BenesNamedPoint point, String name){
 		point.name = name;
@@ -76,9 +83,7 @@ public class PointList implements Iterable<BenesNamedPoint>{
 
 	public void placePoint(BenesNamedPoint point, 
 				double x, double y, double z) {
-		point.x = x;
-		point.y = y;
-		point.z = z;
+		point.set(x, y, z);
 		fireMoved(point);
 	}
 	
@@ -110,19 +115,48 @@ public class PointList implements Iterable<BenesNamedPoint>{
 	public Iterator<BenesNamedPoint> iterator() {
 		return points.iterator();
 	}
+
+	public PointList duplicate() {
+		PointList copy = new PointList();
+		Iterator<BenesNamedPoint> it = iterator();
+		while(it.hasNext()) {
+			BenesNamedPoint p = it.next();
+			copy.add(new BenesNamedPoint(p.name, p.x, p.y, p.z));
+		}
+		return copy;
+	}
+
+	public static PointList fromMask(ImagePlus imp) {
+		PointList res = new PointList();
+		int w = imp.getWidth(), h = imp.getHeight();
+		int d = imp.getStackSize();
+		Calibration cal = imp.getCalibration();
+		double pw = cal.pixelWidth, ph = cal.pixelHeight;
+		double pd = cal.pixelDepth;
+		for(int z = 0; z < d; z++) {
+			byte[] pixels = (byte[])imp.getStack().getPixels(z+1);
+			for(int i = 0; i < pixels.length; i++) {
+				if(pixels[i] != (byte)255)
+					continue;
+				res.add(new BenesNamedPoint("point" + i,
+					(i % w) * pw, (i / w) * ph, z * pd));
+			}
+		}
+		return res;
+	}
 	
 	public static PointList load(ImagePlus imp){
 		FileInfo info = imp.getOriginalFileInfo();
 		if(info != null){
-			PointList l =  load(info.directory,
-					info.fileName + ".points",false);
-			if(l == null){
-				l = load(info.directory,
+// 			PointList l =  load(info.directory,
+// 					info.fileName + ".points",false);
+// 			if(l == null){
+				PointList l = load(info.directory,
 					info.fileName + ".points",true);
-			}
+// 			}
 			return l;
 		}
-		return null;
+		return load(null, null, true);
 	}
 	
 	public static PointList load(String dir, String file, 

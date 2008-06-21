@@ -78,7 +78,7 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		} else if(e.getSource() == adjustSlices) {
 			Content c = univ.getSelected();
 			if(c != null)
-				univ.getMenuBar().adjustSlices(c);
+				univ.getExecuter().changeSlices(c);
 		} else if(e.getActionCommand().equals("LS_TEMPLATE")) {
 			// select landmarks of the template
 			selectLandmarkSet(templ, "LS_MODEL");

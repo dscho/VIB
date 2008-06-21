@@ -25,7 +25,9 @@ package tracing;
 
 import ij.*;
 import ij.process.*;
+import ij.gui.ImageCanvas;
 
+import java.awt.*;
 import java.util.*;
 
 public class FillerThread extends SearchThread {
@@ -39,18 +41,8 @@ public class FillerThread extends SearchThread {
 	
         boolean reciprocal;
 	
-        float threshold;
-	
         double reciprocal_fudge = 0.5;
-	
-        public void setThreshold( double threshold ) {
-                this.threshold = (float)threshold;
-        }
-	
-	public float getThreshold( ) {
-		return threshold;
-	}
-	
+
         public float getDistanceAtPoint( int x, int y, int z ) {
 		
                 SearchNode [] slice = nodes_as_image[z];
@@ -145,6 +137,8 @@ public class FillerThread extends SearchThread {
         ArrayList< Path > sourcePaths;
 	
 	public static FillerThread fromFill( ImagePlus imagePlus,
+					     float stackMin,
+					     float stackMax,
 					     boolean startPaused,
 					     Fill fill ) {
 		
@@ -170,6 +164,8 @@ public class FillerThread extends SearchThread {
 		if (verbose) System.out.println("loading a fill with threshold: " + fill.getThreshold() );
 		
 		FillerThread result = new FillerThread( imagePlus,
+							stackMin,
+							stackMax,
 							startPaused,
 							reciprocal,
 							fill.getThreshold(),
@@ -213,16 +209,30 @@ public class FillerThread extends SearchThread {
 		return result;
 		
 	}
+
+	float threshold;
+
+        public void setThreshold( double threshold ) {
+                this.threshold = (float)threshold;
+        }
+
+	public float getThreshold( ) {
+		return threshold;
+	}
 	
         /* If you specify 0 for timeoutSeconds then there is no timeout. */
 	
         public FillerThread( ImagePlus imagePlus,
+			     float stackMin,
+			     float stackMax,
 			     boolean startPaused,
                              boolean reciprocal,
                              double initialThreshold,
 			     long reportEveryMilliseconds ) {
 		
 		super( imagePlus,
+		       stackMin,
+		       stackMax,
 		       false, // bidirectional
 		       false, // definedGoal
 		       startPaused,
@@ -273,9 +283,23 @@ public class FillerThread extends SearchThread {
 	
         public ImagePlus fillAsImagePlus( boolean realData ) {
 		
-                byte [][] new_slice_data = new byte[depth][];
+		byte [][] new_slice_data_b = new byte[depth][];
+		short [][] new_slice_data_s = new short[depth][];
+		float [][] new_slice_data_f = new float[depth][];
+
                 for( int z = 0; z < depth; ++z ) {
-                        new_slice_data[z] = new byte[width * height];
+			switch( imageType ) {
+			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
+				new_slice_data_b[z] = new byte[width*height];
+				break;
+			case ImagePlus.GRAY16:
+				new_slice_data_s[z] = new short[width*height];
+				break;
+			case ImagePlus.GRAY32:
+				new_slice_data_f[z] = new float[width*height];
+				break;
+			}
                 }
 		
                 ImageStack stack = new ImageStack(width,height);
@@ -286,15 +310,46 @@ public class FillerThread extends SearchThread {
 				for( int y = 0; y < height; ++y ) {
 					for( int x = 0; x < width; ++x ) {
 						SearchNode s = nodes_as_image[z][y*width+x];
-						if( (s != null) && (s.g <= threshold) ) {
-							new_slice_data[z][y*width+x] = realData ? slices_data[z][y*width+x] : (byte)255;
+						if( (s != null) && (s.g <= threshold) ) {	
+							switch( imageType ) {
+							case ImagePlus.GRAY8:
+							case ImagePlus.COLOR_256:
+								new_slice_data_b[z][y*width+x] = realData ? slices_data_b[z][y*width+x] : (byte)255;
+								break;
+							case ImagePlus.GRAY16:
+								new_slice_data_s[z][y*width+x] = realData ? slices_data_s[z][y*width+x] : 255;
+								break;
+							case ImagePlus.GRAY32:
+								new_slice_data_f[z][y*width+x] = realData ? slices_data_f[z][y*width+x] : 255;
+								break;
+							default:
+								break;
+							}
 						}
 					}
 				}
-			
-                        ByteProcessor bp = new ByteProcessor(width,height);
-                        bp.setPixels( new_slice_data[z] );
-                        stack.addSlice(null,bp);
+
+			switch( imageType ) {
+			case ImagePlus.GRAY8:
+			case ImagePlus.COLOR_256:
+				ByteProcessor bp = new ByteProcessor(width,height);
+				bp.setPixels( new_slice_data_b[z] );
+				stack.addSlice(null,bp);
+				break;
+			case ImagePlus.GRAY16:
+				ShortProcessor sp = new ShortProcessor(width,height);
+				sp.setPixels( new_slice_data_s[z] );
+				stack.addSlice(null,sp);
+				break;
+			case ImagePlus.GRAY32:
+				FloatProcessor fp = new FloatProcessor(width,height);
+				fp.setPixels( new_slice_data_f[z] );
+				stack.addSlice(null,fp);
+				break;
+			default:
+				break;
+			}
+
                 }
 		
                 ImagePlus imp=new ImagePlus("filled neuron",stack);
@@ -326,6 +381,16 @@ public class FillerThread extends SearchThread {
 		
 	}
 	
-	
+
+	@Override
+	void drawProgressOnSlice( int plane,
+				  int currentSliceInPlane,
+				  ImageCanvas canvas,
+				  Graphics g )  {
+		
+		super.drawProgressOnSlice(plane,currentSliceInPlane,canvas,g);
+
+	}
+
 	
 }

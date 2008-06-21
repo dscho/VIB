@@ -149,6 +149,9 @@ public class MouseBehavior extends Behavior {
 			axis = Renderer.Y_AXIS;
 		else if(ic3d.isKeyDown(KeyEvent.VK_Z))
 			axis = Renderer.Z_AXIS;
+		// Consume events if used, to avoid other listeners from reusing the event
+		boolean consumed = true;
+		try {
 		if(e.isShiftDown()) {
 			switch(code) {
 				case KeyEvent.VK_RIGHT:translate(c,5,0);return;
@@ -178,6 +181,13 @@ public class MouseBehavior extends Behavior {
 				case KeyEvent.VK_UP: rotate(c, 0, -5); return;
 				case KeyEvent.VK_DOWN: rotate(c, 0, 5); return;
 			}
+		}
+		// must be last line in try/catch block
+		consumed = false;
+		} finally {
+			// executed when returning anywhere above,
+			// since then consumed is not set to false
+			if (consumed) e.consume();
 		}
 	}
 

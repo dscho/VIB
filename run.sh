@@ -28,6 +28,12 @@ rudi)
 rioja|cognac.brookfield.local)
 	MEM=1024m
 	;;
+claret)
+	MEM=350m
+	;;
+wiggle)
+	MEM=950m
+	;;
 esac
 
 # Profiling stuff (see http://jiprof.sourceforge.net/)
@@ -37,12 +43,18 @@ test -f "$curdir"/profile.jar &&
 test -f "$curdir"/profile.properties &&
 	EXTRADEFS="$EXTRADEFS -Dprofile.properties:$curdir/profile.properties"
 
+if test -f "$curdir"/../ImageJA/ij.jar; then
+	IJ_JAR="$curdir"/../ImageJA/ij.jar
+else
+	IJ_JAR="$curdir"/../ImageJ/ij.jar
+fi
+
 case "$DEBUGIJ" in
 ''|echo)
 	$DEBUGIJ java -Xmx$MEM -Dplugins.dir="$curdir" $EXTRADEFS \
-		-jar "$curdir"/../ImageJ/ij.jar "$@"
+		-jar $IJ_JAR "$@"
 ;;
 *)
-	jdb -classpath "$curdir"/../ImageJ/ij.jar ij.ImageJ "$@"
+	jdb -classpath $IJ_JAR ij.ImageJ "$@"
 esac
 

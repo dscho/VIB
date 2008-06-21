@@ -116,6 +116,8 @@ public class BatchOpener {
 		} catch( ImageLoaderException e ) {
 			return null;
 		}
+		if( cal == null )
+			return null;
 		return cal.channels;
 	}
 

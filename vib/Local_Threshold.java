@@ -1,3 +1,5 @@
+package vib;
+
 import ij.plugin.filter.ThresholdToSelection;
 import ij.plugin.filter.PlugInFilter;
 import ij.ImagePlus;

@@ -9,61 +9,110 @@ import ij.plugin.*;
 import ij.plugin.filter.*;
 import vib.TransformedImage;
 
+import java.util.ArrayList;
+
 public class Overlay_Registered implements PlugIn {
+
+	public static float[] getValuesRange(ImagePlus imagePlus) {
 	
+		int stackSize      = imagePlus.getStackSize();
+		ImageStack stack      = imagePlus.getStack();
+		int bitDepth      = imagePlus.getBitDepth();
+
+		float minValue = Float.MAX_VALUE;
+		float maxValue = Float.MIN_VALUE;
+
+		int z;
+		for( z = 0; z < stackSize; ++z ) {
+			if( 8 == bitDepth) {
+				byte [] pixels = (byte[])stack.getPixels(z+1);
+				for( int i = 0; i < pixels.length; ++i ) {
+					int value = pixels[i] & 0xFF;
+					if( value > maxValue )
+						maxValue = value;
+					if( value < minValue )
+						minValue = value;
+				}
+			} else if( 16 == bitDepth ) {
+				short [] pixels = (short[])stack.getPixels(z+1);
+				for( int i = 0; i < pixels.length; ++i ) {
+					short value = pixels[i];
+					if( value > maxValue )
+						maxValue = value;
+					if( value < minValue )
+						minValue = value;
+				}
+			}
+		}
+
+		float [] result = new float[2];
+
+		result[0] = minValue;
+		result[1] = maxValue;
+
+		return result;
+	}
+
 	public void run(String ignored) {
+	
+		String macroOptions = Macro.getOptions();
+
+		String mustHaveSubstring = "";
 
                 String titleSubstring = null;
                 boolean closeAllOthers = false;
                 
-                String macroOptions = Macro.getOptions();
 		if (macroOptions != null) {
-                        titleSubstring = Macro.getValue(macroOptions, "substring", null);
-                        if( null != Macro.getValue(macroOptions,"close",null) ) {
-                            closeAllOthers = true;
-                        }
-                }
-		
-		System.out.println("Thread in plugin is: "+Thread.currentThread());
-		
-                if (titleSubstring == null)
-                        titleSubstring = "";
-                
+			String value = Macro.getValue(macroOptions, "substring", null);
+			if( value != null ) {
+				mustHaveSubstring = value;
+			}
+			value = Macro.getValue(macroOptions, "keep", null);
+			if( value != null ) {
+				System.out.println("Got keep!: '"+value+"'");
+			}
+			value = Macro.getValue(macroOptions, "close", null);
+			if( value != null ) {
+				System.out.println("Got close!: '"+value+"'");
+			}
+		}
+
 		int[] wList = WindowManager.getIDList();
 		if (wList == null) {
 			IJ.error("No images are open.");
 			return;
 		}
+		if (wList.length < 2 ) {
+			IJ.error("Must have at least two images open.");
+			return;
+		}
 
-                String [] matchingTitles=new String[wList.length];
+		ArrayList<String> matchingTitles = new ArrayList<String>();
+		ArrayList<ImagePlus> matchingImages = new ArrayList<ImagePlus>();
+
                 ImagePlus [] matchingImagePlus=new ImagePlus[wList.length];
                 ImagePlus [] allImages=new ImagePlus[wList.length];
                 
                 int totalMatchingTitles = 0;
 		for (int i = 0; i < wList.length; i++) {
 			ImagePlus imp = WindowManager.getImage(wList[i]);
-                        String title = (imp == null) ? "" : imp.getTitle();
-                        if(title.indexOf(titleSubstring) >= 0) {
-                            matchingTitles[totalMatchingTitles] = title;
-                            matchingImagePlus[totalMatchingTitles] = imp;
-                            ++totalMatchingTitles;
-                        }
-                        allImages[i] = imp;
+			String title = imp != null ? imp.getTitle() : "";
+			if ( title.indexOf(mustHaveSubstring) >= 0 ) {
+				System.out.println("Yes, matched: "+title);
+				matchingTitles.add(title);
+				matchingImages.add(imp);
+			} else
+				System.out.println("No, didn't match '"+"' in: "+title);
 		}
-                
-                if( totalMatchingTitles < 2 ) {
-                    IJ.error("There are only "+totalMatchingTitles+" matching images; need at least 2.");
-                    return;
-                }
-                
-                String [] onlyMatchingTitles = new String[totalMatchingTitles];
-                System.arraycopy(matchingTitles,0,onlyMatchingTitles,0,totalMatchingTitles);
-                ImagePlus [] onlyMatchingImagePlus = new ImagePlus[totalMatchingTitles];
-                System.arraycopy(matchingImagePlus, 0, onlyMatchingImagePlus, 0, totalMatchingTitles);
+
+		if( matchingTitles.size() < 2 ) {
+			IJ.error("Fewer than two images matched the substring '"+mustHaveSubstring+"'");
+			return;
+		}
 
 		GenericDialog gd = new GenericDialog("Overlay Transformed");
-		gd.addChoice("A:", onlyMatchingTitles, onlyMatchingTitles[0]);
-		gd.addChoice("B:", onlyMatchingTitles, onlyMatchingTitles[1]);
+		gd.addChoice("A:", (String[])matchingTitles.toArray(new String[1]), matchingTitles.get(0));
+		gd.addChoice("B:", (String[])matchingTitles.toArray(new String[1]), matchingTitles.get(1));
 		gd.addCheckbox("Keep source images", true);
 		gd.showDialog();
 		if (gd.wasCanceled()) {
@@ -76,8 +125,8 @@ public class Overlay_Registered implements PlugIn {
 
 		ImagePlus [] sourceImages = new ImagePlus[2];
 		
-		sourceImages[0] = onlyMatchingImagePlus[index[0]];
-		sourceImages[1] = onlyMatchingImagePlus[index[1]];
+		sourceImages[0] = matchingImages.get(index[0]);
+		sourceImages[1] = matchingImages.get(index[1]);
 		
                 float[] valueRange;
                 {
@@ -114,9 +163,14 @@ public class Overlay_Registered implements PlugIn {
 		
 		int bitDepth;
 
+		float [] range0 = getValuesRange(sourceImages[0]);
+		float [] range1 = getValuesRange(sourceImages[1]);
+		
+		sourceImages[0].getProcessor().setMinAndMax(range0[0],range0[1]);
 		StackConverter converter=new StackConverter(sourceImages[0]);
 		converter.convertToGray8();
 
+		sourceImages[1].getProcessor().setMinAndMax(range1[0],range1[1]);
 		converter=new StackConverter(sourceImages[1]);
 		converter.convertToGray8();
 
