@@ -51,7 +51,6 @@ import java.util.Arrays;
 
 public class BatchOpener {
 
-
 	public static class NoSuchChannelException extends Exception {
 
 		NoSuchChannelException(String message) {
@@ -248,9 +247,10 @@ public class BatchOpener {
 					ImagePlus [] result;
 					Object invokeResult = m.invoke(newInstance,parameters);
 
-					if( invokeResult instanceof CompositeImage )
-						result = ((CompositeImage)invokeResult).splitChannels(true);
-					else
+					if( invokeResult instanceof CompositeImage ) {
+						CompositeImage composite = (CompositeImage)invokeResult;
+						result = splitChannelsToArray(composite,true);
+					} else
 						result = (ImagePlus [])invokeResult;
 
 					return new ChannelsAndLoader(result,loaderUsed);
@@ -575,6 +575,46 @@ public class BatchOpener {
 			} catch( IllegalAccessException iae ) { }
 		}
 		return imp;
+	}
+
+	/*
+           Hopefully this will go into ImageJ so it doesn't need to be
+	   here, see:
+
+             http://www.nabble.com/Re%3A-How-do-I-disable-the-automatic-generation-of-Hyperstacks--p18027821.html
+	*/
+
+	public static ImagePlus[] splitChannelsToArray(ImagePlus imp, boolean closeAfter) {
+		if(!imp.isComposite()) {
+			String error="splitChannelsToArray was called "+
+				"on a non-composite image";
+			IJ.error(error);
+			return null;
+		}
+		int width = imp.getWidth();
+		int height = imp.getHeight();
+		int channels = imp.getNChannels();
+		int slices = imp.getNSlices();
+		int frames = imp.getNFrames();
+		int bitDepth = imp.getBitDepth();
+		int size = slices*frames;
+		ImagePlus[] result=new ImagePlus[channels];
+		HyperStackReducer reducer = new HyperStackReducer(imp);
+		for (int c=1; c<=channels; c++) {
+			ImageStack stack2 = new ImageStack(width, height, size); // create empty stack
+			stack2.setPixels(imp.getProcessor().getPixels(), 1); // can't create ImagePlus will null 1st image
+			ImagePlus imp2 = new ImagePlus("C"+c+"-"+imp.getTitle(), stack2);
+			stack2.setPixels(null, 1);
+			imp.setPosition(c, 1, 1);
+			imp2.setDimensions(1, slices, frames);
+			reducer.reduce(imp2);
+			imp2.setOpenAsHyperStack(true);
+			result[c-1]=imp2;
+		}
+		imp.changes = false;
+		if (closeAfter)
+			imp.close();
+		return result;
 	}
 
 	private static boolean findLSMTag(RandomAccessFile in, boolean littleEndian) throws IOException {
