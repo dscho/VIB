@@ -18,7 +18,9 @@ import java.util.Arrays;
        one per channel, without calling show() on any of them.
 
      * Files are identified as particular types by their content,
-       (magic numbers, etc.) never by their file extension.
+       (magic numbers, etc.) rather then their file extension.  (The
+       exception to this is the TorstenRaw_GZ_Reader, since the image
+       files are raw and have no distinctive header.)
 
      * The method doesn't rely on plugins being present at compile
        time - instead it uses reflection to check whether the required
@@ -146,21 +148,23 @@ public class BatchOpener {
 
 		String loaderUsed = null;
 
-		/* Read a few bytes from the beginning of the file into a
-		   buffer to look for magic numbers and so on: */
+		File file = new File(path);
+
+		/* Read a few bytes from the beginning of the file
+		   into a buffer in order to look for magic
+		   numbers: */
+
+		byte[] buf = new byte[132];
 
 		InputStream is;
-		byte[] buf = new byte[132];
 		try {
 			is = new FileInputStream(path);
 			is.read(buf, 0, 132);
 			is.close();
 		} catch (IOException e) {
-			// Couldn't open the file for reading
 			return null;
 		}
 
-		File file = new File(path);
 		String name = file.getName();
 		String nameLowerCase = name.toLowerCase();
 
@@ -319,7 +323,9 @@ public class BatchOpener {
 
 					/* This unfortunate ugliness is because at
 					   compile time we can't be sure that
-					   leica.Leica_SP_Reader is in the classpath. */
+					   leica.Leica_SP_Reader is in the classpath,
+					   but we can't just use runPlugin, since we
+					   need to call particular methods*/
 
 					Class<?> c = loader.loadClass("leica.Leica_SP_Reader");
 					Object newInstance = c.newInstance();
@@ -388,10 +394,9 @@ public class BatchOpener {
 			ImagePlus[] i = new ImagePlus[1];
 			i[0] = IJ.openImage(path);
 			return new ChannelsAndLoader(i,loaderUsed);
-
 		}
 
-		ImagePlus imp;
+		ImagePlus imp = null;
 
 		// MHL: the code below is essentially the same as in
 		// HandleExtraFileTypes.  I've just dropped those
@@ -432,7 +437,10 @@ public class BatchOpener {
 		if (buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 3) {
 			// Ok we've identified the file type - now load it
 			loaderUsed = "DM3_Reader";
-			imp = (ImagePlus) IJ.runPlugIn("DM3_Reader", path);
+			String [] possibleClassNames = {
+				"DM3_Reader",
+				"io.DM3_Reader" };
+			imp = findAndRunPlugIn(possibleClassNames,path);
 			if (imp == null) {
 				return null;
 			}
@@ -449,24 +457,10 @@ public class BatchOpener {
 		// Little-endian IPLab files start with "iiii" or "mmmm".
 		if ((buf[0] == 105 && buf[1] == 105 && buf[2] == 105 && buf[3] == 105) || (buf[0] == 109 && buf[1] == 109 && buf[2] == 109 && buf[3] == 109)) {
 			loaderUsed = "IPLab_Reader";
-			imp = (ImagePlus) IJ.runPlugIn("IPLab_Reader", path);
-			if (imp == null) {
-				return null;
-			}
-			if (imp != null && imp.getWidth() == 0) {
-				return null;
-			}
-			ImagePlus[] i = new ImagePlus[1];
-			i[0] = IJ.openImage(path);
-			return new ChannelsAndLoader(i,loaderUsed);
-		}
-
-		// Packard InstantImager format (.img) handler -> check HERE before Analyze check below!
-		// Note that the InstantImager_Reader plugin extends the ImagePlus class.
-		// Check extension and signature bytes KAJ_
-		if (buf[0] == 75 && buf[1] == 65 && buf[2] == 74 && buf[3] == 0) {
-			loaderUsed = "InstantImager_Reader";
-			imp = (ImagePlus) IJ.runPlugIn("InstantImager_Reader", path);
+			String [] possibleClassNames = {
+				"IPLab_Reader",
+				"io.IPLab_Reader" };
+			imp = findAndRunPlugIn(possibleClassNames,path);
 			if (imp == null) {
 				return null;
 			}
@@ -498,7 +492,10 @@ public class BatchOpener {
 		// Check extension and signature bytes KAJ_
 		if (buf[0] == 75 && buf[1] == 65 && buf[2] == 74 && buf[3] == 0) {
 			loaderUsed = "InstantImager_Reader";
-			imp = (ImagePlus) IJ.runPlugIn("InstantImager_Reader", path);
+			String [] possibleClassNames = {
+				"InstantImager_Reader",
+				"io.InstantImager_Reader" };
+			imp = findAndRunPlugIn(possibleClassNames,path);
 			if (imp == null) {
 				return null;
 			}
@@ -506,13 +503,78 @@ public class BatchOpener {
 				return null;
 			}
 			ImagePlus[] i = new ImagePlus[1];
-			i[0] = IJ.openImage(path);
+			i[0] = imp;
 			return new ChannelsAndLoader(i,loaderUsed);
+		}
+
+		/* Try to detect if a file is output from the
+		   registration algorithm used by the registration
+		   algorithm from http://flybrain.stanford.edu/
+
+		   This is slightly awkward, since the image files
+		   themselves are just raw data files.  We check that
+		   the filename ends in .bin or .bin.gz and check that
+		   the name of the directory that contains the file is
+		   alongside a corresponding .study directory that has
+		   an "images" file with metadata.
+
+		   This code is taken from the plugin's
+		   "getHeaderFile" method.
+		 */
+
+		if (name.endsWith(".bin") || name.endsWith(".bin.gz")) {
+			File imageFile = new File(directory,name);
+			File imageDir = new File(imageFile.getParent());
+			File commonDir = new File(imageDir.getParent());
+			String[] list = commonDir.list();
+			if (list!=null) {
+				for (int e=0; e<list.length; e++) {
+					File f = new File(commonDir.getPath(),list[e]);
+					if (f.isDirectory() &&
+					    f.getName().equals(imageDir.getName()+".study")) {
+						File headerFile=new File(f.getPath(),"images");
+						if (headerFile.exists()){
+							// Now we can run the plugin:
+							loaderUsed = "TorstenRaw_GZ_Reader";
+							ImagePlus[] i = new ImagePlus[1];
+							// But we have to find it.  Look for the class names
+							// io.TorstenRaw_GZ_Reader or TorstenRaw_GZ_Reader
+							String [] possibleClassNames = {
+								"io.TorstenRaw_GZ_Reader",
+								"TorstenRaw_GZ_Reader" };
+							imp = findAndRunPlugIn(possibleClassNames,path);
+							if( imp == null ) {
+								return null;
+							} else {
+								i[0] = imp;
+								return new ChannelsAndLoader(i,loaderUsed);
+							}
+						}
+					}
+				}
+			}
 		}
 
 		// [FIXME: add detection of more file types here]
 
 		return null;
+	}
+
+	static private ImagePlus findAndRunPlugIn( String [] possibleClassNames, String path ) {
+		ImagePlus imp = null;
+		for( int si = 0; si < possibleClassNames.length; ++si ) {
+			String className = possibleClassNames[si];
+			try {
+				Class c = Class.forName(className);
+				PlugIn p = (PlugIn)c.newInstance();
+				p.run(path);
+				imp = (ImagePlus)p;
+				break;
+			} catch( ClassNotFoundException cnfe ) {
+			} catch( InstantiationException ie ) {
+			} catch( IllegalAccessException iae ) { }
+		}
+		return imp;
 	}
 
 	private static boolean findLSMTag(RandomAccessFile in, boolean littleEndian) throws IOException {
