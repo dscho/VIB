@@ -36,9 +36,9 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
         OrderedTransformations transformation;
 
         static double scoreFromAllLandmarks(OrderedTransformations t,
-					  ArrayList<String> common,
-					  ArrayList<NamedPoint> inImage0,
-					  ArrayList<NamedPoint> inImage1) {
+					    ArrayList<String> common,
+					    NamedPointSet inImage0,
+					    NamedPointSet inImage1) {
 
                 double sum_squared_differences = 0.0;
 
@@ -200,11 +200,9 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
         }
 
 
-        public static FastMatrixTransform bestBetweenPoints( ArrayList<NamedPoint> points0, ArrayList<NamedPoint> points1 ) {
+        public static FastMatrixTransform bestBetweenPoints( NamedPointSet points0, NamedPointSet points1 ) {
 
-                ArrayList<String> commonPointNames = NamedPoint.pointsInBoth(
-                        points0,
-                        points1);
+                ArrayList<String> commonPointNames = points0.namesSharedWith( points1 );
 
                 int n = commonPointNames.size();
 
@@ -323,8 +321,8 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 
         public OrderedTransformations register() {
 
-                ArrayList<NamedPoint> points0 = NamedPoint.pointsForImage(sourceImages[0]);
-                ArrayList<NamedPoint> points1 = NamedPoint.pointsForImage(sourceImages[1]);
+		NamedPointSet points0 = NamedPointSet.forImage(sourceImages[0]);
+		NamedPointSet points1 = NamedPointSet.forImage(sourceImages[1]);
 
                 if(points0==null) {
                         IJ.error("No corresponding .points file found "+

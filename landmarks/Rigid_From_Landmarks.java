@@ -24,6 +24,7 @@ import vib.transforms.FastMatrixTransform;
 import landmarks.NamedPoint;
 import vib.FastMatrix;
 import vib.transforms.OrderedTransformations;
+import vib.oldregistration.RegistrationAlgorithm;
 
 import util.CombinationGenerator;
 
@@ -38,9 +39,9 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
         static double lowestScoreOnRegistration=Double.MAX_VALUE;
 
         static double scoreFromAllLandmarks(OrderedTransformations t,
-                                   ArrayList<String> common,
-                                   ArrayList<NamedPoint> inImage0,
-                                   ArrayList<NamedPoint> inImage1) {
+					    ArrayList<String> common,
+					    NamedPointSet inImage0,
+					    NamedPointSet inImage1) {
 
                 double sum_squared_differences = 0.0;
 
@@ -217,11 +218,9 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
         }
 
 
-        public static FastMatrixTransform bestBetweenPoints( ArrayList<NamedPoint> points0, ArrayList<NamedPoint> points1 ) {
+        public static FastMatrixTransform bestBetweenPoints( NamedPointSet points0, NamedPointSet points1 ) {
 
-                ArrayList<String> commonPointNames = NamedPoint.pointsInBoth(
-                        points0,
-                        points1);
+                ArrayList<String> commonPointNames = points0.namesSharedWith(points1);
 
                 int n = commonPointNames.size();
 
@@ -351,8 +350,8 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
 
         public OrderedTransformations register() {
 
-                ArrayList<NamedPoint> points0 = NamedPoint.pointsForImage(sourceImages[0]);
-                ArrayList<NamedPoint> points1 = NamedPoint.pointsForImage(sourceImages[1]);
+                NamedPointSet points0 = NamedPointSet.forImage(sourceImages[0]);
+                NamedPointSet points1 = NamedPointSet.forImage(sourceImages[1]);
 
                 if(points0==null) {
                         IJ.error("No corresponding .points file found "+
@@ -375,8 +374,8 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
                 FastMatrixTransform toAspect1=FastMatrixTransform.fromCalibrationWithoutOrigin(sourceImages[1]);
                 FastMatrixTransform fromAspect0=toAspect0.inverse();
 
-                NamedPoint.correctWithCalibration(points0,c0);
-                NamedPoint.correctWithCalibration(points1,c1);
+                points0.correctWithCalibration(c0);
+                points1.correctWithCalibration(c1);
 
                 FastMatrixTransform affine=bestBetweenPoints(points0,points1);
 
