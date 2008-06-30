@@ -355,7 +355,8 @@ public class DiffusionInterpol2_ implements PlugInFilter {
 		propagateInitial();
 	}
 
-	private void debugDisplace() {
+    public ImagePlus[] getDisplacementField( ) {
+        ImagePlus[] results = new ImagePlus[3];
 		ImageStack[] stack = new ImageStack[3];
 		for (int i = 0; i < 3; i++)
 			stack[i] = new ImageStack(template.w, template.h);
@@ -371,8 +372,14 @@ public class DiffusionInterpol2_ implements PlugInFilter {
 				stack[i].addSlice("", slice[i]);
 		}
 		for (int i = 0; i < 3; i++)
-			new ImagePlus("displace "+i, stack[i]).show();
-		throw new RuntimeException("debugDisplace");
+			results[i] = new ImagePlus("displace "+i, stack[i]);
+        return results;
+    }
+
+	private void debugDisplace() {
+        ImagePlus [] xyz = getDisplacementField();
+        for( int i = 0; i < 3; ++i )
+            xyz[i].show();
+		throw new RuntimeException("debugDisplace");        
 	}
 }
-

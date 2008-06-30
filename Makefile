@@ -3,13 +3,14 @@
 JAVAS=$(shell find * -name \*.java | grep -v ^tempdir)
 
 # if no Java3d is available, do not attempt to compile the corresponding plugins
-JAVA3DS=$(wildcard util/Meshes_From_Label_File.java marchingcubes/*.java voltex/*.java ij3d/*.java isosurface/*.java orthoslice/*.java ImageJ_3D_Viewer.java MC_Test.java Test_Java3D.java)
+JAVA3DS=$(wildcard util/Meshes_From_Label_File.java marchingcubes/*.java voltex/*.java ij3d/*.java isosurface/*.java orthoslice/*.java ImageJ_3D_Viewer.java MC_Test.java Test_Java3D.java view4d/*.java surfaceplot/*.java)
 FILTEROUT=$(JAVA3DS)
 ifneq ($(JAVA_HOME),)
 	ifneq ($(wildcard $(JAVA_HOME)/jre/lib/ext/j3dcore.jar),)
-	ifneq ($(wildcard $(JAVA_HOME)/Home/lib/ext/j3dcore.jar),)
 		FILTEROUT=
 	endif
+	ifneq ($(wildcard $(JAVA_HOME)/Home/lib/ext/j3dcore.jar),)
+		FILTEROUT=
 	endif
 else
 	ifneq ($(wildcard /System/Library/Java/Extensions/j3dcore.jar),)
@@ -33,7 +34,7 @@ else
 endif
 
 JAVACOPTSCOMPAT= -source 1.5 -target 1.5
-JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(JUNIT4JAR) $(JAVACOPTSCOMPAT)
+JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar $(JAVACOPTSCOMPAT)
 
 all: $(CLASSES)
 
@@ -42,10 +43,10 @@ show:
 
 JUNIT4JAR=$(shell pwd)/junit-4.4.jar
 
-TESTCLASSES=distance.TestMutualInformation \
+TESTCLASSES=math3d.TestEigenvalueDecompositions \
+	distance.TestMutualInformation \
 	distance.TestEuclidean \
-	distance.TestCorrelation \
-	vib.TestRigidRegistration
+	distance.TestCorrelation
 
 TESTMEM=512m
 
@@ -60,28 +61,39 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	tracing/PathAndFillManager.java \
 	tracing/PathAndFillListener.java \
 	tracing/Simple_Neurite_Tracer.java \
+	tracing/Auto_Tracer.java \
+	tracing/AutoSearchThread.java \
+	tracing/AutoPoint.java \
+	tracing/SinglePathsGraph.java \
+	tracing/AutoTracerCanvas.java \
 	tracing/NeuriteTracerResultsDialog.java \
 	tracing/PointInImage.java \
 	tracing/TracerCanvas.java \
+	tracing/InteractiveTracerCanvas.java \
 	tracing/Fill.java \
 	tracing/FillerThread.java \
 	tracing/FillerProgressCallback.java \
 	tracing/NormalPlaneCanvas.java \
+	tracing/TraceLoaderListener.java \
 	$(wildcard pal/math/*.java) \
 	features/ComputeCurvatures.java \
 	features/GaussianGenerationCallback.java \
+	features/TubenessProcessor.java \
+	features/HessianEvalueProcessor.java \
 	client/ArchiveClient.java \
-	util/Arrow.java \
-	util/ArrowDisplayer.java \
+	util/BatchOpener.java \
+	util/RGB_to_Luminance.java \
 	tracing/README tracing/COPYING \
 	math3d/JacobiDouble.java \
+	math3d/JacobiFloat.java \
 	math3d/FastMatrixN.java \
+	math3d/FloatMatrixN.java \
 	amira/AmiraParameters.java \
 	amira/AmiraMeshDecoder.java \
 	amira/AmiraTable.java
 
 test :
-	java -Xmx$(TESTMEM) -classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR) org.junit.runner.JUnitCore $(TESTCLASSES)
+	java -Xmx$(TESTMEM) -classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar org.junit.runner.JUnitCore $(TESTCLASSES)
 
 %.class: %.java
 	javac -O $(JAVACOPTS) "$<"
@@ -98,6 +110,12 @@ math3d/FloatMatrixN.java: math3d/FastMatrixN.java
 
 math3d/JacobiFloat.java: math3d/JacobiDouble.java
 	sed -e "s/double/float/g" -e "s/FastMatrix/FloatMatrix/g" -e "s/Double/Float/g" < $< > $@
+
+math3d/Eigensystem3x3Float.java: math3d/Eigensystem3x3Double.java
+	sed -e "s,/\\*change\\*/double,float,g" -e "s/Double/Float/g" < $< > $@
+
+math3d/Eigensystem2x2Float.java: math3d/Eigensystem2x2Double.java
+	sed -e "s,/\\*change\\*/double,float,g" -e "s/Double/Float/g" < $< > $@
 
 FibonacciHeapInt.java: FibonacciHeap.java Makefile
 	sed -e "s/FibonacciHeap/FibonacciHeapInt/g" -e "s/ implements Comparable//" -e "s/Comparable/int/g" -e "s/\.compareTo(\([^)]*\))/- \1/g" -e "s/Object other/int other/g" -e "s/heap.add(p, p);/heap.add((int)prios[i], new Double((int)prios[i]));/" -e "s/Node(null/Node(0/" < $< > $@
@@ -152,6 +170,9 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
 	$(wildcard orthoslice/*.java) \
 	$(wildcard javax/media/j3d/*.java) \
 	$(wildcard math3d/*.java) \
+	$(wildcard view4d/*.java) $(wildcard view4d/icons/*.png) \
+	$(wildcard surfaceplot/*.java) \
+	vib/segment/ImageButton.java vib/segment/Border.java \
 	vib/Resample_.java vib/InterpolatedImage.java \
 	vib/PointList.java vib/BenesNamedPoint.java \
 	amira/AmiraParameters.java amira/AmiraTable.java \
@@ -191,7 +212,18 @@ Find_Connected_Regions.jar: SOURCES=util/Find_Connected_Regions.java \
 Mask_Of_Nearby_Points.jar: SOURCES=util/Mask_Of_Nearby_Points.java \
 	util/COPYING
 
-Simple_Neurite_Tracer.jar: SOURCES=$(TRACERSOURCES)
+Tubeness_.jar: SOURCES=features/Tubeness_.java \
+	features/HessianEvalueProcessor.java \
+	features/ComputeCurvatures.java \
+	features/TubenessProcessor.java \
+	features/GaussianGenerationCallback.java \
+	math3d/JacobiFloat.java \
+	math3d/JacobiDouble.java \
+	math3d/Point3d.java \
+	math3d/FloatMatrixN.java \
+	math3d/FastMatrixN.java
+
+Simple_Neurite_Tracer.jar: SOURCES=$(filter-out tracing/Auto_Tracer.java tracing/AutoTraceThread.java tracing/AutoSearchThread.java tracing/AutoTracerCanvas.java,$(TRACERSOURCES))
 
 ExportMesh_.jar: SOURCES=marchingcubes/ExportMesh_.java \
 	marchingcubes/MCTriangulator.java \

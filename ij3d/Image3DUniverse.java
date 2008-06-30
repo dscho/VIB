@@ -41,6 +41,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private RegistrationMenubar registrationMenubar;
 	private ImageCanvas3D canvas;
 
+	private Executer executer;
+
 	private Point3f globalMin = new Point3f();
 	private Point3f globalMax = new Point3f();
 	private Point3f globalCenter = new Point3f();
@@ -50,6 +52,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
+		executer = new Executer(this);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -108,6 +111,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		contents = null;
 	}
 
+	public Executer getExecuter() {
+		return executer;
+	}
+
 	public void setStatus(String text) {
 		win.getStatusLabel().setText("  " + text);
 	}
@@ -145,7 +152,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Content addContent(ImagePlus image, Color3f color, String name,
 		int thresh, boolean[] channels, int resf, int type) {
-		if(contents.contains(name)) {
+		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
@@ -212,7 +219,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addMesh(List mesh,
 			Color3f color, String name, int threshold) {
 		// check if exists already
-		if(contents.contains(name)) {
+		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
@@ -229,10 +236,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void removeAllContents() {
-		for(Iterator it = contents.keySet().iterator(); it.hasNext();) {
-			String name = (String)it.next();
-			removeContent(name);
-		}
+		String[] names = new String[contents.size()];
+		contents.keySet().toArray(names);
+		for (int i=0; i<names.length; i++)
+			removeContent(names[i]);
 	}
 
 	public void removeContent(String name) {

@@ -13,12 +13,12 @@ import com.sun.j3d.utils.behaviors.mouse.*;
 abstract public class Renderer implements VolRendConstants {
 
 	protected ImagePlus image;
-	protected Volume volume;
 	protected int threshold = 0;
+	protected Volume volume;
 
 	public Renderer(ImagePlus image) {
 		this.image = image;
-		this.volume = new Volume(image);
+		volume = new Volume(image, Volume.TRANSLUCENT);
 	}
 
 	public int  getThreshold() {
@@ -44,7 +44,7 @@ abstract public class Renderer implements VolRendConstants {
 
 	abstract public void setTransparency(float transparency);
 
-	abstract public void setColorModel(IndexColorModel cmodel);
+	abstract public void setChannels(boolean[] channels);
 
 	abstract public void setColor(Color3f color);
 

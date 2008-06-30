@@ -41,6 +41,8 @@ public abstract class ContentNode extends BranchGroup {
 
 	public abstract void transparencyUpdated();
 
+	public abstract void shadeUpdated();
+
 	public abstract void eyePtChanged(View view);
 
 	public abstract void calculateMinMaxCenterPoint();

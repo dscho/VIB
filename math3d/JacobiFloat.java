@@ -90,7 +90,7 @@ public class JacobiFloat {
 		for(int sweeps=0;sweeps<maxSweeps;sweeps++) {
 			float sum=offDiagonalSum();
 			// This should be the normal way out
-			if(sum==0.0)
+			if(sum==0.0f)
 				return;
 
 			float thresh=0;
