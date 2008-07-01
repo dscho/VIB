@@ -16,6 +16,8 @@ import java.io.File;
 import java.io.*;
 
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.awt.Rectangle;
 import java.awt.Polygon;
 import java.awt.Panel;
@@ -35,6 +37,7 @@ import java.awt.geom.PathIterator;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.Area;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -43,6 +46,38 @@ public class Edit_Video implements PlugIn, ActionListener {
 
 	private VideoStack stack;
 	private ImagePlus preview;
+	private int speed = 10;
+	private int color = (255 & 0xff) << 16;
+	private int alpha = 128;
+	private int linewidth = 2;
+
+	public void setColor(int c) {
+		color = c;
+	}
+
+	public int getColor() {
+		return color;
+	}
+
+	public int getSpeed() {
+		return speed;
+	}
+
+	public void setSpeed(int speed) {
+		this.speed = speed;
+	}
+
+	public void setLinewidth(int l) {
+		linewidth = l;
+	}
+
+	public int getLinewidth() {
+		return linewidth;
+	}
+
+	public VideoStack getStack() {
+		return stack;
+	}
 
 	public void run(String arg) {
 		GenericDialog gd = new GenericDialog("Video editing");
@@ -88,7 +123,7 @@ public class Edit_Video implements PlugIn, ActionListener {
 		all.add(p);
 
 		p = new BorderPanel();
-		p.setLayout(new GridLayout(5, 2));
+		p.setLayout(new GridLayout(6, 2));
 		p.add(new Label("Fade over"));
 		b = new Button("Fade over");
 		b.addActionListener(this);
@@ -103,6 +138,10 @@ public class Edit_Video implements PlugIn, ActionListener {
 		p.add(b);
 		p.add(new Label("Draw Roi"));
 		b = new Button("Draw Roi");
+		b.addActionListener(this);
+		p.add(b);
+		p.add(new Label("Fill Roi transparent"));
+		b = new Button("Fill Roi transparent");
 		b.addActionListener(this);
 		p.add(b);
 		p.add(new Label("Move Selection"));
@@ -133,110 +172,206 @@ public class Edit_Video implements PlugIn, ActionListener {
 	}
 
 	public void actionPerformed(ActionEvent e) {
-		if(e.getActionCommand().equals("Open")) {
+		if(e.getActionCommand().equals("Open"))
+			open();
+		else if(e.getActionCommand().equals("Add Frame"))
+			addFrame();
+		else if(e.getActionCommand().equals("Copy Frame"))
+			copyFrame();
+		else if(e.getActionCommand().equals("Open Frame"))
+			openFrame();
+		else if(e.getActionCommand().equals("Set Frame"))
+			setFrame();
+		else if(e.getActionCommand().equals("Delete Frame"))
+			deleteFrame();
+		else if(e.getActionCommand().equals("Fade over"))
+			fadeOver();
+		else if(e.getActionCommand().equals("Draw Line"))
+			drawLine();
+		else if(e.getActionCommand().equals("Draw Roi"))
+			drawRoi();
+		else if(e.getActionCommand().equals("Fill Roi transparent"))
+			fillRoiTransparent();
+		else if(e.getActionCommand().equals("Draw Oval"))
+			drawOval();
+		else if(e.getActionCommand().equals("Move Selection"))
+			moveSelection();
+		else if(e.getActionCommand().equals("Create AVI"))
+			createAVI();
+		else if(e.getActionCommand().equals("Play AVI"))
+			playAVI();
+		System.out.println("done");
+	}
+
+	public void open() {
 			stack = new VideoStack();
 			String dir = 
-			"/home/bene/Desktop/sandbox/createMovieFromFrames";
+			"/home/bene/Desktop/video";
 			String basename = "template";
 			String ending = "png";
 			stack.open(dir, basename, ending);
 			preview = new ImagePlus("Preview", stack.getPreview());
 			preview.show();
-		} else if(e.getActionCommand().equals("Add Frame")) {
-			int index = preview.getCurrentSlice();
-			stack.addSlice(index, null);
-			preview.setSlice(index + 1);
-			preview.updateAndDraw();
-		} else if(e.getActionCommand().equals("Copy Frame")) {
-			int index = preview.getCurrentSlice();
-			ImageProcessor ip = stack.getProcessor(index);
-			stack.addSlice(index, ip);
-			preview.setSlice(index + 1);
-			preview.updateAndDraw();
-		} else if(e.getActionCommand().equals("Open Frame")) {
-			int index = preview.getCurrentSlice();
-			ImageProcessor ip = stack.getProcessor(index);
-			new ImagePlus(stack.getPreview().
-				getSliceLabel(index), ip).show();
-		} else if(e.getActionCommand().equals("Set Frame")) {
-			int index = preview.getCurrentSlice();
-			if(!IJ.getImage().getTitle().equals(
-				stack.getPreview().getSliceLabel(index)))
-				return;
-			ImageProcessor ip = IJ.getImage().getProcessor();
-			stack.setSlice(index, ip);
-			IJ.getImage().changes = false;
-			IJ.getImage().close();
-			preview.setStack(null, stack.getPreview());
-			preview.setSlice(index);
-		} else if(e.getActionCommand().equals("Delete Frame")) {
-			int index = preview.getCurrentSlice();
-			stack.deleteSlice(index);
-			preview.setStack(null, stack.getPreview());
-			preview.setSlice(index);
-		} else if(e.getActionCommand().equals("Fade over")) {
-			fade(20);
-		} else if(e.getActionCommand().equals("Draw Line")) {
-			int index = preview.getCurrentSlice();
-			if(!IJ.getImage().getTitle().equals(
-				stack.getPreview().getSliceLabel(index)))
-				return;
-			Roi roi = IJ.getImage().getRoi();
-			if(roi == null || roi.getType() != Roi.LINE)
-				return;
-			Line line = (Line)roi;
-			int i = drawLine(line.x1, line.y1, line.x2, line.y2, 5);
-			System.out.println(i + " slices inserted");
-			preview.setSlice(index + i);
-			IJ.getImage().changes = false;
-			IJ.getImage().close();
-		} else if(e.getActionCommand().equals("Draw Roi")) {
-			int index = preview.getCurrentSlice();
-			if(!IJ.getImage().getTitle().equals(
-				stack.getPreview().getSliceLabel(index)))
-				return;
-			Roi roi = IJ.getImage().getRoi();
-			if(roi == null || !(roi	instanceof PolygonRoi))
-				return;
-			drawRoi(roi, 5);
-			IJ.getImage().changes = false;
-			IJ.getImage().close();
-		} else if(e.getActionCommand().equals("Draw Oval")) {
-			int index = preview.getCurrentSlice();
-			if(!IJ.getImage().getTitle().equals(
-				stack.getPreview().getSliceLabel(index)))
-				return;
-			Roi roi = IJ.getImage().getRoi();
-			if(roi == null || roi.getType() != Roi.OVAL)
-				return;
-			Rectangle r = roi.getBounds();
-			drawCircle(r.x, r.y, r.width, r.height);
-			IJ.getImage().changes = false;
-			IJ.getImage().close();
-		} else if(e.getActionCommand().equals("Move Selection")) {
-			int index = preview.getCurrentSlice();
-			if(!IJ.getImage().getTitle().equals(
-				stack.getPreview().getSliceLabel(index)))
-				return;
-			Roi roi = IJ.getImage().getRoi();
-			if(roi == null)
-				return;
-			GenericDialog gd = new GenericDialog("Move selection");
-			gd.addNumericField("dx", 0, 0);
-			gd.addNumericField("dy", 0, 0);
-			gd.showDialog();
-			if(gd.wasCanceled())
-				return;
-			moveSelection(roi, (int)gd.getNextNumber(),
-				(int)gd.getNextNumber());
-			IJ.getImage().changes = false;
-			IJ.getImage().close();
-		} else if(e.getActionCommand().equals("Create AVI")) {
-			createAVI();
-		} else if(e.getActionCommand().equals("Play AVI")) {
-			playAVI();
+	}
+	
+	public void addFrame() {
+		int index = preview.getCurrentSlice();
+		stack.addSlice(index, null);
+		preview.setSlice(index + 1);
+		preview.updateAndDraw();
+	}
+
+	public void copyFrame() {
+		int index = preview.getCurrentSlice();
+		ImageProcessor ip = stack.getProcessor(index);
+		stack.addSlice(index, ip);
+		preview.setSlice(index + 1);
+		preview.updateAndDraw();
+	}
+
+	public void openFrame() {
+		int index = preview.getCurrentSlice();
+		ImageProcessor ip = stack.getProcessor(index);
+		new ImagePlus(stack.getPreview().
+			getSliceLabel(index), ip).show();
+	}
+
+	public void setFrame() {
+		int index = preview.getCurrentSlice();
+		if(!IJ.getImage().getTitle().equals(
+			stack.getPreview().getSliceLabel(index)))
+			return;
+		ImageProcessor ip = IJ.getImage().getProcessor();
+		stack.setSlice(index, ip);
+		IJ.getImage().changes = false;
+		IJ.getImage().close();
+		preview.setStack(null, stack.getPreview());
+		preview.setSlice(index);
+	}
+
+	public void deleteFrame() {
+		int index = preview.getCurrentSlice();
+		stack.deleteSlice(index);
+		preview.setStack(null, stack.getPreview());
+		preview.setSlice(index);
+	}
+
+	public void fadeOver() {
+		fade(20);
+	}
+
+	public void drawLine() {
+		int index = preview.getCurrentSlice();
+		ImagePlus frame = IJ.getImage();
+		if(!frame.getTitle().equals(
+			stack.getPreview().getSliceLabel(index)))
+			return;
+		Roi roi = frame.getRoi();
+		if(roi == null || roi.getType() != Roi.LINE)
+			return;
+		Line line = (Line)roi;
+		int i = drawLine(line.x1, line.y1, line.x2, line.y2, speed);
+		preview.setSlice(index + i);
+		frame.changes = false;
+		frame.close();
+	}
+
+	public void drawRoi() {
+		int index = preview.getCurrentSlice();
+		ImagePlus frame = IJ.getImage();
+		if(!frame.getTitle().equals(
+			stack.getPreview().getSliceLabel(index))) {
+			IJ.error("frame name and preview slice are not the same");
+			return;
 		}
-		System.out.println("done");
+		Roi roi = frame.getRoi();
+		if(roi == null) {
+			IJ.error("Selection required");
+			return;
+		}
+		Roi[] rois = null;
+		if(roi.getType() == Roi.COMPOSITE) {
+			rois = ((ShapeRoi)roi).getRois();
+		} else if(roi instanceof PolygonRoi) {
+			rois = new Roi[] {roi};
+		} else {
+			IJ.error("Composite or polygon roi required");
+			return;
+		}
+		int c = 0;
+		for(int i = 0; i < rois.length; i++) {
+			if(!(rois[i] instanceof PolygonRoi))
+				continue;
+			c += drawRoi(rois[i], speed);
+			preview.setSlice(index + c);
+		}
+		frame.changes = false;
+		frame.close();
+	}
+
+	public void fillRoiTransparent() {
+		int index = preview.getCurrentSlice();
+		ImagePlus frame = IJ.getImage();
+		if(!frame.getTitle().equals(
+			stack.getPreview().getSliceLabel(index)))
+			return;
+		Roi roi = frame.getRoi();
+		if(roi == null) {
+			IJ.error("Selection required");
+			return;
+		}
+		Roi[] rois = null;
+		if(roi.getType() == Roi.COMPOSITE) {
+			rois = ((ShapeRoi)roi).getRois();
+		} else if(roi instanceof PolygonRoi) {
+			rois = new Roi[] {roi};
+		} else {
+			IJ.error("Composite or polygon roi required");
+			return;
+		}
+		for(int i = 0; i < rois.length; i++) {
+			if(!(rois[i] instanceof PolygonRoi))
+				continue;
+			fillRoiTransparent(rois[i]);
+		}
+		frame.changes = false;
+		frame.close();
+	}
+
+	public void drawOval() {
+		int index = preview.getCurrentSlice();
+		ImagePlus frame = IJ.getImage();
+		if(!frame.getTitle().equals(
+			stack.getPreview().getSliceLabel(index)))
+			return;
+		Roi roi = frame.getRoi();
+		if(roi == null || roi.getType() != Roi.OVAL)
+			return;
+		Rectangle r = roi.getBounds();
+		drawCircle(r.x, r.y, r.width, r.height);
+		frame.changes = false;
+		frame.close();
+	}
+
+	public void moveSelection() {
+		int index = preview.getCurrentSlice();
+		ImagePlus frame = IJ.getImage();
+		if(!frame.getTitle().equals(
+			stack.getPreview().getSliceLabel(index)))
+			return;
+		Roi roi = frame.getRoi();
+		if(roi == null)
+			return;
+		GenericDialog gd = new GenericDialog("Move selection");
+		gd.addNumericField("dx", 0, 0);
+		gd.addNumericField("dy", 0, 0);
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		moveSelection(roi, (int)gd.getNextNumber(),
+			(int)gd.getNextNumber());
+		frame.changes = false;
+		frame.close();
 	}
 
 	public void moveSelection(Roi roi, int dx, int dy) {
@@ -266,8 +401,6 @@ public class Edit_Video implements PlugIn, ActionListener {
 
 	public void drawCircle(int x, int y, int w, int h) {
 		int index = preview.getCurrentSlice();
-		int red = (255 & 0xff) << 16;
-		int lw = 3;
 		Ellipse2D e = new Ellipse2D.Float(x, y, w, h);
 		float[] v = new float[6];
 		boolean finished = false;
@@ -275,8 +408,8 @@ public class Edit_Video implements PlugIn, ActionListener {
 		ImageProcessor ip = stack.getProcessor(index);
 		for(int z = 0; !finished; z++) {
 			ip = ip.convertToRGB();
-			ip.setValue(red);
-			ip.setLineWidth(lw);
+			ip.setValue(color);
+			ip.setLineWidth(linewidth);
 			FlatteningPathIterator it = new FlatteningPathIterator(
 						e.getPathIterator(null), 1);
 			it.currentSegment(v);
@@ -293,71 +426,101 @@ public class Edit_Video implements PlugIn, ActionListener {
 		}
 	}
 
-	public void drawRoi(Roi roi, int speed) {
+	public int drawRoi(Roi roi, int speed) {
 		int index = preview.getCurrentSlice();
-		int red = (255 & 0xff) << 16;
-		int lw = 3;
 		Polygon poly = ((PolygonRoi)roi).getPolygon();
 		int n = poly.npoints;
 		int[] x = poly.xpoints;
 		int[] y = poly.ypoints;
-		boolean finished = false;
+		int x_last = x[0], y_last = y[0];
 
+		ImageProcessor ip = stack.getProcessor(index);
+		ip = ip.convertToRGB();
+
+		LineIterator li = new LineIterator();
+		int c = -1;
+		int slicesInserted = 0;
 		for(int z = 0; z < n; z++) {
-			int sl = drawLine(x[z], y[z], 
-				x[(z+1)%n], y[(z+1)%n], speed);
-			preview.setSlice(preview.getCurrentSlice() + sl);
+			li.init(x[z], y[z], x[(z+1)%n], y[(z+1)%n]);
+			while(li.next() != null) {
+				c++;
+				ip.setValue(color);
+				ip.setLineWidth(linewidth);
+				ip.moveTo(x_last, y_last);
+				x_last = (int)li.x;
+				y_last = (int)li.y;
+				ip.lineTo(x_last, y_last);
+				if(speed == -1 || c % speed != 0)
+					continue;
+				if(!stack.addSlice(index + slicesInserted, ip))
+					break;
+				slicesInserted++;
+				ip = ip.duplicate();
+			}
 		}
+		// maybe the last one was not added (in case c % speed was 0)
+		if(speed == -1) {
+			stack.setSlice(index, ip);
+			return 0;
+		}
+		if(c % speed != 0)
+			if(stack.addSlice(index + slicesInserted, ip))
+				slicesInserted++;
+		return slicesInserted;
 	}
 
 	public int drawLine(int x1, int y1, int x2, int y2, int speed) {
 		int index = preview.getCurrentSlice();
-System.out.println("Draw line at slice " + preview.getCurrentSlice());
-		int red = (255 & 0xff) << 16;
-		int lw = 3;
-		int dx = x2 - x1;
-		int dy = y2 - y1;
-
-		int dt = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-		dt = Math.abs(dt);
-		if(dt == 0)
-			dt = 1;
-
-		double dx_dt = (double)dx/dt;
-		double dy_dt = (double)dy/dt;
-
-		dx = Math.abs(dx);
-		dy = Math.abs(dy);
-
-		boolean finished = false;
-		double x = x1, y = y1;
 		int slicesInserted = 0;
 
 		ImageProcessor ip = stack.getProcessor(index);
 		ip = ip.convertToRGB();
-		ip.setValue(red);
-		ip.setLineWidth(lw);
-		for(int z = 0; !finished; z++) {
-			ip.setValue(red);
-			ip.setLineWidth(lw);
-			ip.moveTo((int)x, (int)y);
-			x = x1 + (z + 1) * dx_dt;
-			y = y1 + (z + 1) * dy_dt;
-			finished = Math.abs((int)x - x1) >= dx &&
-				Math.abs((int)y - y1) >= dy;
-			if(finished) {
-				x = x2;
-				y = y2;
-			}
-			ip.lineTo((int)x, (int)y);
-			if(z % speed != 0)
+		ip.setValue(color);
+		ip.setLineWidth(linewidth);
+
+		LineIterator li = new LineIterator(x1, y1, x2, y2);
+		int z = -1;
+		int x_last = x1, y_last = y1;
+		while(li.next() != null) {
+			z++;
+			ip.setValue(color);
+			ip.setLineWidth(linewidth);
+			ip.moveTo(x_last, y_last);
+			x_last = (int)li.x;
+			y_last = (int)li.y;
+			ip.lineTo(x_last, y_last);
+			if(speed == -1 || z % speed != 0)
 				continue;
 			if(!stack.addSlice(index + slicesInserted, ip))
 				break;
 			slicesInserted++;
 			ip = ip.duplicate();
 		}
+		// maybe the last one was not added (in case c % speed was 0)
+		if(speed == -1) {
+			stack.setSlice(index, ip);
+			return 0;
+		}
+		if(z % speed != 0)
+			if(stack.addSlice(index + slicesInserted, ip))
+				slicesInserted++;
 		return slicesInserted;
+	}
+
+	public void fillRoiTransparent(Roi roi) {
+		int index = preview.getCurrentSlice();
+		Polygon poly = ((PolygonRoi)roi).getPolygon();
+
+		ImageProcessor ip = stack.getProcessor(index);
+		ip = ip.convertToRGB();
+		BufferedImage bi = (BufferedImage)ip.createImage();
+		Graphics2D g = bi.createGraphics();
+		Color col = new Color(color);
+		col = new Color(col.getRed(), col.getGreen(), col.getBlue(), alpha);
+		g.setColor(col);
+		g.fill(poly);
+		g.dispose();
+		stack.setSlice(index, ip);
 	}
 
 	public void fade(int numSlices) {
@@ -381,6 +544,7 @@ System.out.println("Draw line at slice " + preview.getCurrentSlice());
 			if(!stack.addSlice(index + z - 1, bp))
 				break;
 		}
+		preview.setSlice(preview.getCurrentSlice() + numSlices);
 	}
 
 	public void createAVI() {
@@ -499,14 +663,86 @@ System.out.println("Draw line at slice " + preview.getCurrentSlice());
 				 	(float)xCoords[0], (float)yCoords[0]);
 				 for (int i=1; i<nCoords; i++)
 					 ((GeneralPath)shape).lineTo(
-							(float)xCoords[i],
-							(float)yCoords[i]);
+						 (float)xCoords[i],
+						 (float)yCoords[i]);
 				 break;
+			case Roi.POINT:
+				 ImageProcessor mask = roi.getMask();
+				 byte[] maskPixels = (byte[])mask.getPixels();
+				 Rectangle maskBounds = roi.getBounds();
+				 int maskWidth = mask.getWidth();
+				 Area area = new Area();
+				 for (int y = 0; y < mask.getHeight(); y++) {
+					 int yOffset = y * maskWidth;
+					 for (int x = 0; x < maskWidth; x++) {
+						 if (maskPixels[x + yOffset] != 0)
+							 area.add(new Area(new Rectangle(
+							 	x + maskBounds.x,
+								y + maskBounds.y, 1, 1)));
+					 }
+				 }
+				 shape = area;
+				 break;
+// 			case Roi.COMPOSITE:
+// 				shape = ShapeRoi.cloneShape(((ShapeRoi)roi).getShape());
+// 				break;
 			default:
-				throw new IllegalArgumentException(
-						"Roi type not supported");
+				 throw new IllegalArgumentException(
+						 "Roi type not supported");
 		}
 		return shape;
+	}
+
+	private class LineIterator {
+
+		int x1, y1;
+		int x2, y2;
+		int dx, dy;
+		boolean finished;
+		double x, y, dx_dt, dy_dt;
+
+		public LineIterator() {}
+
+		public LineIterator(int x1, int y1, int x2, int y2) {
+			init(x1, y1, x2, y2);
+		}
+
+		public void init(int x1, int y1, int x2, int y2) {
+			this.x1 = x1; this.x2 = x2;
+			this.y1 = y1; this.y2 = y2;
+			this.x = x1;
+			this.y = y1;
+
+			dx = x2 - x1;
+			dy = y2 - y1;
+
+			int dt = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+			dt = Math.abs(dt);
+			if(dt == 0)
+				dt = 1;
+
+			dx_dt = (double)dx/dt;
+			dy_dt = (double)dy/dt;
+
+			dx = Math.abs(dx);
+			dy = Math.abs(dy);
+
+			finished = false;
+		}
+
+		public LineIterator next() {
+			if(finished)
+				return null;
+			x += dx_dt;
+			y += dy_dt;
+			finished = Math.abs((int)x - x1) >= dx &&
+				Math.abs((int)y - y1) >= dy;
+			if(finished) {
+				x = x2;
+				y = y2;
+			}
+			return this;
+		}
 	}
 
 	private class BorderPanel extends Panel {
@@ -520,7 +756,7 @@ System.out.println("Draw line at slice " + preview.getCurrentSlice());
 		public void update(Graphics g) {
 			paint(g);
 		}
-		
+
 		public void paint(Graphics g) {
 			super.paint(g);
 			if(getWidth() == 0 || getHeight() == 0)

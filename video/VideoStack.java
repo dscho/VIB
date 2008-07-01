@@ -28,6 +28,21 @@ public class VideoStack {
 		this.basename = basename;
 		this.ending = ending;
 		this.dir = dir;
+
+		File prev = new File(dir, "Preview.tif");
+		if(prev.exists()) {
+System.out.println("Loading existing preview stack");
+			preview = IJ.openImage(dir + "/Preview.tif").getStack();
+			w_prev = preview.getWidth();
+			h_prev = preview.getHeight();
+			String one = preview.getSliceLabel(1);
+			ImagePlus tmp = IJ.openImage(dir + "/" + one);
+			w_org = tmp.getWidth();
+			h_org = tmp.getHeight();
+			d = preview.getSize();
+			return;
+		}
+
 		String[] files = new File(dir).list();
 		if(files.length == 0)
 			return;
@@ -57,7 +72,6 @@ System.out.println("opening " + files[i]);
 			preview.addSlice(files[i], ip);
 		}
 		d = preview.getSize();
-// 		rebaseImages();
 	}
 
 	public ImageProcessor getProcessor(int index) {
@@ -76,6 +90,9 @@ System.out.println("opening " + files[i]);
 
 	
 	DecimalFormat df = new DecimalFormat("00000000");
+	/*
+	 * index: the index AFTER which the slice is inserted
+	 */
 	public boolean addSlice(int index, ImageProcessor ip) {
 		if(ip == null)
 			ip = new ColorProcessor(w_org, h_org);
@@ -87,21 +104,11 @@ System.out.println("opening " + files[i]);
 						basename.length() + DIGITS);
 		int dig = DIGITS;
 		String name = "";
-// 		while(name_a.charAt(dig-1)=='0' && name_b.charAt(dig-1)=='0')
-// 			dig--;
-// 		for(; dig <= DIGITS; dig++) {
-			int a = Integer.parseInt(name_a.substring(0, dig));
-			int b = Integer.parseInt(name_b.substring(0, dig));
-System.out.println("a = " + a);
-System.out.println("b = " + b);
-			if(a > b+1) {
-// 				name = Integer.toString(b+1);
-				name = df.format(b+1);
-// 				while(name.length() < dig)
-// 					name = '0' + name;
-// 				break;
-			}
-// 		}
+		int a = Integer.parseInt(name_a.substring(0, dig));
+		int b = Integer.parseInt(name_b.substring(0, dig));
+		if(a > b+1)
+			name = df.format(b+1);
+
 		if(name.isEmpty()) {
 			try {
 				if(!rebaseImages())
@@ -117,7 +124,6 @@ System.out.println("b = " + b);
 		while(name.length() < DIGITS)
 			name += '0';
 		name = basename + name + "." + ending;
-System.out.println("new name = " + name);
 		ImagePlus imp = new ImagePlus(name, ip);
 		new FileSaver(imp).saveAsPng(dir + "/" + name);
 
@@ -180,6 +186,7 @@ System.out.println("rebase images");
 		for(int i = 0; i < tmpfiles.length; i++)
 			tmpfiles[i].delete();
 		tmpdir.delete();
+System.out.println("rebased");
 		return true;
 	}
 
