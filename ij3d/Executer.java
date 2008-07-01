@@ -626,19 +626,25 @@ public class Executer {
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			public void windowClosed(WindowEvent e) {
-				if(gd.wasCanceled()) {
-					c.setThreshold(oldTr);
-					univ.fireContentChanged(c);
-					return;
-				} else {
-					record(SET_THRESHOLD, 
-						Integer.toString(
-							c.threshold));
+				try {
+					if(gd.wasCanceled()) {
+						c.setThreshold(oldTr);
+						univ.fireContentChanged(c);
+						return;
+					} else {
+						record(SET_THRESHOLD, 
+							Integer.toString(
+								c.threshold));
+					}
+				} finally {
+					// [ This code block executes even when
+					//   calling return above ]
+					//
+					// clean up
+					if (null != thresh_adjuster)
+						thresh_adjuster.quit();
+					univ.clearSelection();
 				}
-				// clean up
-				if (null != thresh_adjuster)
-					thresh_adjuster.quit();
-				univ.clearSelection();
 			}
 		});
 		gd.showDialog();

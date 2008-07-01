@@ -221,27 +221,44 @@ public class Path implements Cloneable {
 			expandTo( points + other.points );
 		}
 
+		int toSkip = 0;
+
+		/* We may want to skip some points at the beginning of
+		   the next path if they're the same as the last point
+		   on this path: */
+
+		if( points > 0 ) {
+			int last_x = x_positions[points-1];
+			int last_y = y_positions[points-1];
+			int last_z = z_positions[points-1];
+			while((other.x_positions[toSkip] == last_x) &&
+			      (other.y_positions[toSkip] == last_y) &&
+			      (other.z_positions[toSkip] == last_z)) {
+				++toSkip;
+			}
+		}
+
 		System.arraycopy( other.x_positions,
-				  0,
+				  toSkip,
 				  x_positions,
 				  points,
-				  other.points );
+				  other.points - toSkip );
 
 		System.arraycopy( other.y_positions,
-				  0,
+				  toSkip,
 				  y_positions,
 				  points,
-				  other.points );
+				  other.points - toSkip );
 
 		System.arraycopy( other.z_positions,
-				  0,
+				  toSkip,
 				  z_positions,
 				  points,
-				  other.points );
+				  other.points - toSkip );
 
 		setJoin( Path.PATH_END, other.endJoins, other.endJoinsIndex );
 
-		points = points + other.points;
+		points = points + (other.points - toSkip);
 	}
 
 	Path reversed( ) {
