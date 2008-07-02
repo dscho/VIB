@@ -250,6 +250,9 @@ public class BatchOpener {
 					if( invokeResult instanceof CompositeImage ) {
 						CompositeImage composite = (CompositeImage)invokeResult;
 						result = splitChannelsToArray(composite,true);
+					} else if( invokeResult instanceof ImagePlus ) {
+						result = new ImagePlus[1];
+						result[0] = (ImagePlus)invokeResult;
 					} else
 						result = (ImagePlus [])invokeResult;
 
