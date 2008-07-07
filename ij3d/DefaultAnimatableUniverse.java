@@ -139,6 +139,15 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		stopRecording().show();
 	}
 
+	public void rotateY(double rad) {
+		rotationsTG.getTransform(rotate);
+		getCanvas().getView().stopView();
+		rotate.rotY(rad);
+		rotationsTG.setTransform(rotate);
+		transformChanged(-1, rotationsTG);
+		getCanvas().getView().startView();
+	}
+
 	public void startRecording() {
 		ImageProcessor ip = win.getImagePlus().getProcessor();
 		stack = new ImageStack(ip.getWidth(), ip.getHeight());
