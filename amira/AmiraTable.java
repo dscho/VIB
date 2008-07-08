@@ -10,6 +10,9 @@ import java.util.Properties;
 public class AmiraTable extends TextWindow {
 	Properties properties;
 
+	// variable to avoid automatic showing when the constructor is called
+	private boolean show = false;
+
 	public AmiraTable(String title, String headings, String data) {
 		this(title, headings, data, false);
 	}
@@ -17,6 +20,7 @@ public class AmiraTable extends TextWindow {
 	public AmiraTable(String title, String headings, String data,
 			boolean initParameters) {
 		super(title, headings, data, 500, 400);
+		show = true;
 		properties = new Properties();
 		if (initParameters) {
 			int rowCount = getTextPanel().getLineCount();
@@ -64,7 +68,7 @@ public class AmiraTable extends TextWindow {
 	}
 
 	public void show() {
-		if (!Interpreter.isBatchMode())
+		if (!Interpreter.isBatchMode() && show)
 			super.show();
 	}
 }
