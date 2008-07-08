@@ -83,7 +83,7 @@ public class ProgressIndicator implements ModuleListener {
 	public void showDialog() {
 		garten = new Garten();
 		garten.image.show();
-
+		garten.draw();
 	}
 	
 	class Garten  {
