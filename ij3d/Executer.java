@@ -31,6 +31,8 @@ import isosurface.MeshExporter;
 import isosurface.MeshEditor;
 
 import javax.vecmath.Color3f;
+import javax.vecmath.Point3f;
+import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix4d;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
@@ -111,6 +113,27 @@ public class Executer {
 	public void resetView() {
 		univ.resetView();
 		record(RESET_VIEW);
+	}
+
+	public void centerSelected(Content c) {
+		if(!checkSel(c))
+			return;
+		Point3f min = c.getContent().min;
+		Point3f max = c.getContent().max;
+		Point3f center = new Point3f();
+		center.x = min.x + (max.x - min.x)/2;
+		center.y = min.y + (max.y - min.y)/2;
+		center.z = min.z + (max.z - min.z)/2;
+
+		Point3f globalC = univ.getGlobalCenterPoint();
+		center.x -= globalC.x;
+		center.y -= globalC.y;
+		center.z -= globalC.z;
+		
+		Transform3D transform = new Transform3D();
+		transform.setTranslation(new Vector3f(
+				-center.x, -center.y, -center.z));
+		univ.getGlobalTranslate().setTransform(transform);
 	}
 
 	public void perspectiveProjection(boolean b) {
