@@ -245,11 +245,15 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard vib/app/gui/*.java) \
 	$(wildcard vib/app/module/*.java) \
 	$(wildcard vib/segment/*.java) \
+	$(wildcard vib/segment/materials/*) \
+	$(wildcard vib/segment/icons/*.png) \
 	$(wildcard distance/*.java) \
 	$(wildcard leica/*.java) \
 	$(wildcard amira/*.java) \
 	$(wildcard math3d/*.java) \
 	$(wildcard pal/math/*.java) \
+	util/BatchOpener.java \
+	util/StupidLog.java \
 	vib/DiffusionInterpol2_.java \
 	vib/Resample_.java \
 	vib/InterpolatedImage.java \
@@ -264,6 +268,7 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	vib/VIB.java \
 	vib/BatchLog_.java \
 	vib/IDT_Interpolate_Binary.java \
+	vib/Local_Threshold.java \
 	VIB_Protocol.java
 
 Average_Color.jar: SOURCES=Average_Color.java CIELAB.java
