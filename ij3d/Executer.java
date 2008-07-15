@@ -187,9 +187,18 @@ public class Executer {
 	}
 
 	public void load4D() {
+		if(!univ.getContents().isEmpty()) {
+			// showMessage...() is false if Canceled
+			if(!IJ.showMessageWithCancel(
+				"Loading 4D data...",
+				"All current 3D objects are removed from\n" +
+				"the view! Continue?")) {
+				return;
+			}
+		}
 		Viewer4D view4d = new Viewer4D(univ);
-		view4d.loadContents();
-		new Viewer4DController(view4d);
+		if(view4d.loadContents())
+			new Viewer4DController(view4d);
 	}
 
 	public void close() {
