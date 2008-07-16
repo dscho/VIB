@@ -24,7 +24,8 @@ all-jars[] <- simple_jars jars
 
 simple_jars[] <- Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar Install_Java3D.jar \
-	Seam_Remover.jar Triangle_Algorithm.jar Menu_Font.jar
+	Seam_Remover.jar Triangle_Algorithm.jar Menu_Font.jar \
+	Thread_Killer.jar
 
 *.jar <- *.java
 
