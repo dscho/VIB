@@ -164,11 +164,15 @@ SOURCES(VIB_Protocol.jar)=vib/app/*.java \
 	vib/app/gui/*.java \
 	vib/app/module/*.java \
 	vib/segment/*.java \
+	vib/segment/materials/* \
+	vib/segment/icons/*.png \
 	distance/*.java \
 	leica/*.java \
 	amira/*.java \
 	math3d/*.java \
 	pal/math/*.java \
+	util/BatchOpener.java \
+	util/StupidLog.java \
 	vib/DiffusionInterpol2_.java \
 	vib/Resample_.java \
 	vib/InterpolatedImage.java \
@@ -183,6 +187,7 @@ SOURCES(VIB_Protocol.jar)=vib/app/*.java \
 	vib/VIB.java \
 	vib/BatchLog_.java \
 	vib/IDT_Interpolate_Binary.java \
+	vib/Local_Threshold.java \
 	VIB_Protocol.java
 SOURCES(Average_Color.jar)=Average_Color.java CIELAB.java
 SOURCES(Bilateral_Filter.jar)=Bilateral_Filter.java \
