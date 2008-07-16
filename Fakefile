@@ -5,7 +5,9 @@ CLASSPATH=$CLASSPATH:junit-4.4.jar:.
 VIB_.jar <- **/*.java \
 	vib/FloatMatrix.java math3d/FloatMatrixN.java FibonacciHeapInt.java \
 	math3d/JacobiFloat.java math3d/Eigensystem3x3Float.java \
-	math3d/Eigensystem2x2Float.java
+	math3d/Eigensystem2x2Float.java \
+	vib/segment/materials/* \
+	vib/segment/icons/*.png view4d/icons/*.png
 
 # pre-Java5 generics ;-)
 
