@@ -126,7 +126,7 @@ public class Viewer4D {
 		univ.setStatus("");
 	}
 
-	public void loadContents() {
+	public boolean loadContents() {
 
 		// remove all contents from the universe
 		univ.removeAllContents();
@@ -162,7 +162,7 @@ public class Viewer4D {
 
 		gd.showDialog();
 		if(gd.wasCanceled())
-			return;
+			return false;
 
 		directory = folder.getText();
 		directory = directory.replace('\\', '/');
@@ -174,7 +174,7 @@ public class Viewer4D {
 		
 		File dir = new File(directory);
 		if(!dir.exists())
-			return;
+			return false;
 
 		// get the file names
 		String[] names = dir.list(new FilenameFilter() {
@@ -185,7 +185,7 @@ public class Viewer4D {
 
 		if (names.length == 0) {
 			IJ.showMessage("No files!");
-			return;
+			return false;
 		}
 		Arrays.sort(names);
 		Content[] c = new Content[names.length];
@@ -210,5 +210,7 @@ public class Viewer4D {
 		System.arraycopy(c, 0, contents, 0, contents.length);
 		univ.setStatus("");
 		current = 0;
+		
+		return true;
 	}
 }

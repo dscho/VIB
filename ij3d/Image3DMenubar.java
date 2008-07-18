@@ -84,6 +84,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem displayAsSurface;
 	private MenuItem displayAsSurfacePlot;
 	private MenuItem pl_load;
+	private MenuItem center;
 	private MenuItem regist;
 	private CheckboxMenuItem shaded;
 	private MenuItem pl_save;
@@ -160,6 +161,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		resetView = new MenuItem("Reset view");
 		resetView.addActionListener(this);
 		view.add(resetView);
+
+		center = new MenuItem("Center selected");
+		center.addActionListener(this);
+		view.add(center);
 
 		perspective = new CheckboxMenuItem(
 					"Perspective Projection", false);
@@ -429,6 +434,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.delete(univ.getSelected());
 		else if(src == resetView)
 			executer.resetView();
+		else if(src == center)
+			executer.centerSelected(univ.getSelected());
 		else if(src == windowSize)
 			executer.setWindowSize();
 		else if(src == startRecord)
