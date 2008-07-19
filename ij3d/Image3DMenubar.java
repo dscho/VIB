@@ -62,7 +62,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem slices;
 	private MenuItem delete;
 	private MenuItem properties;
-	private MenuItem windowSize;
 	private MenuItem resetView;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
@@ -93,7 +92,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private CheckboxMenuItem pl_show;
 	private MenuItem j3dproperties;
 	private MenuItem viewer4d;
-	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
 	private CheckboxMenuItem lock;
 	private CheckboxMenuItem show;
@@ -292,6 +290,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		view.addSeparator();
 
+		scalebar = new MenuItem("Edit Scalebar");
+		scalebar.addActionListener(this);
+		view.add(scalebar);
+
+		view.addSeparator();
+
 		viewPreferences = new MenuItem("View Preferences");
 		viewPreferences.addActionListener(this);
 		view.add(viewPreferences);
@@ -426,8 +430,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.resetView();
 		else if(src == center)
 			executer.centerSelected(univ.getSelected());
-		else if(src == windowSize)
-			executer.setWindowSize();
 		else if(src == startRecord)
 			executer.startRecording();
 		else if(src == stopRecord)
@@ -479,6 +481,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.smoothMesh(univ.getSelected());
 		else if (src == smoothAllMeshes)
 			executer.smoothAllMeshes();
+		else if (src == viewPreferences)
+			executer.viewPreferences();
 		else if(src == j3dproperties)
 			executer.j3dproperties();
 	}
@@ -486,11 +490,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void itemStateChanged(ItemEvent e) {
 		Object src = e.getSource();
 		Content c = univ.getSelected();
-		if(src == perspective)
-			executer.perspectiveProjection(perspective.getState());
-		else if(src == coordinateSystem)
+		if(src == coordinateSystem)
 			executer.showCoordinateSystem(
-						c, coordinateSystem.getState());
+				c, coordinateSystem.getState());
 		else if(src == show)
 			executer.showContent(c, show.getState());
 		else if(src == lock)
