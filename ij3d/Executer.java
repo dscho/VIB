@@ -479,7 +479,7 @@ public class Executer {
 	public void displayAs(Content c, int type) {
 		if(!checkSel(c))
 			return;
-		c.displayAs(Content.VOLUME);
+		c.displayAs(type);
 		univ.clearSelection();
 	}
 
