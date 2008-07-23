@@ -424,6 +424,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.changeTransparency(univ.getSelected());
 		else if(src == add)
 			executer.addContent(null, -1);
+		else if(src == regist)
+			executer.register();
 		else if(src == delete)
 			executer.delete(univ.getSelected());
 		else if(src == resetView)
@@ -544,7 +546,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		exportDXF.setEnabled(c != null);
 		fill.setEnabled(c != null);
 		smoothMesh.setEnabled(c != null);
-		regist.setEnabled(c != null);
 
 		displayAsVolume.setEnabled(c != null);
 		displayAsSurface.setEnabled(c != null);
