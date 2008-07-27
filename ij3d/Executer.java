@@ -83,134 +83,6 @@ public class Executer {
 	/* **********************************************************
 	 * File menu
 	 * *********************************************************/
-	public void saveAsDXF() {
-		MeshExporter.saveAsDXF(univ.getContents());
-	}
-
-	public void saveAsWaveFront() {
-		MeshExporter.saveAsWaveFront(univ.getContents());
-	}
-
-
-
-	/* **********************************************************
-	 * View menu
-	 * *********************************************************/
-	public void setWindowSize() {
-		final GenericDialog gd = new GenericDialog(
-					"Window size...", univ.getWindow());
-		Dimension d = univ.getSize();
-		if(d == null)
-			return;
-		gd.addNumericField("width", d.width, 0);
-		gd.addNumericField("height", d.height, 0);
-		gd.showDialog();
-		if(gd.wasCanceled())
-			return;
-		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
-	}
-
-	public void resetView() {
-		univ.resetView();
-		record(RESET_VIEW);
-	}
-
-	public void centerSelected(Content c) {
-		if(!checkSel(c))
-			return;
-		Point3f min = c.getContent().min;
-		Point3f max = c.getContent().max;
-		Point3f center = new Point3f();
-		center.x = min.x + (max.x - min.x)/2;
-		center.y = min.y + (max.y - min.y)/2;
-		center.z = min.z + (max.z - min.z)/2;
-
-		Point3f globalC = univ.getGlobalCenterPoint();
-		center.x -= globalC.x;
-		center.y -= globalC.y;
-		center.z -= globalC.z;
-		
-		Transform3D transform = new Transform3D();
-		transform.setTranslation(new Vector3f(
-				-center.x, -center.y, -center.z));
-		univ.getGlobalTranslate().setTransform(transform);
-	}
-
-	public void perspectiveProjection(boolean b) {
-		univ.getViewer().getView().setProjectionPolicy(b 
-			? View.PERSPECTIVE_PROJECTION 
-			: View.PARALLEL_PROJECTION);
-	}
-
-	public void startRecording() {
-		univ.startRecording();
-		record(START_RECORD);
-	}
-
-	public void stopRecording() {
-		ImagePlus movie = univ.stopRecording();
-		if(movie != null)
-			movie.show();
-		record(STOP_RECORD);
-	}
-
-	public void startAnimation() {
-		univ.startAnimation();
-		record(START_ANIMATE);
-	}
-
-	public void stopAnimation() {
-		univ.pauseAnimation();
-		record(STOP_ANIMATE);
-	}
-
-	public void editScalebar() {
-		Scalebar sc = univ.getScalebar();
-		final GenericDialog gd = new GenericDialog(
-				"Edit scalebar...", univ.getWindow());
-		gd.addNumericField("x position", sc.getX(), 2);
-		gd.addNumericField("y position", sc.getY(), 2);
-		gd.addNumericField("length", sc.getLength(), 2);
-		gd.addStringField("Units", sc.getUnit(), 5);
-		gd.addChoice("Color", ColorTable.colorNames, 
-				ColorTable.getColorName(sc.getColor()));
-		gd.addCheckbox("show", sc.isVisible());
-		gd.showDialog();
-		if(gd.wasCanceled())
-			return;
-		sc.setPosition((float)gd.getNextNumber(), 
-				(float)gd.getNextNumber());
-		sc.setLength((float)gd.getNextNumber());
-		sc.setUnit(gd.getNextString());
-		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
-		sc.setVisible(gd.getNextBoolean());
-	}
-
-	public void load4D() {
-		if(!univ.getContents().isEmpty()) {
-			// showMessage...() is false if Canceled
-			if(!IJ.showMessageWithCancel(
-				"Loading 4D data...",
-				"All current 3D objects are removed from\n" +
-				"the view! Continue?")) {
-				return;
-			}
-		}
-		Viewer4D view4d = new Viewer4D(univ);
-		if(view4d.loadContents())
-			new Viewer4DController(view4d);
-	}
-
-	public void close() {
-		univ.close();
-		record(CLOSE);
-	}
-
-
-
-	/* ***********************************************************
-	 * Contents menu
-	 * **********************************************************/
 	public void addContent(final ImagePlus image, final int type) {
 		new Thread() {
 			public void run() {
@@ -330,55 +202,38 @@ public class Executer {
 		record(DELETE);
 	}
 
-	public void select(String name) {
-		Content c = univ.getContent(name);
-		if(c != null)
-			univ.select(c);
+	public void load4D() {
+		if(!univ.getContents().isEmpty()) {
+			// showMessage...() is false if Canceled
+			if(!IJ.showMessageWithCancel(
+				"Loading 4D data...",
+				"All current 3D objects are removed from\n" +
+				"the view! Continue?")) {
+				return;
+			}
+		}
+		Viewer4D view4d = new Viewer4D(univ);
+		if(view4d.loadContents())
+			new Viewer4DController(view4d);
 	}
 
-	public void register() {
-		// Select the contents used for registration
-		Collection contents = univ.getContents();
-		if(contents.size() < 2) {
-			IJ.error("At least two bodies are " +
-				"required for registration");
-			return;
-		}
-		RegistrationMenubar rm = univ.getRegistrationMenubar();
-		univ.setMenubar(rm);
-		rm.register();
+	public void saveAsDXF() {
+		MeshExporter.saveAsDXF(univ.getContents());
 	}
 
-	public void smoothAllMeshes() {
-		// process each Mesh in a separate thread
-		final Collection all = univ.getContents();
-		final Content[] c = new Content[all.size()];
-		all.toArray(c);
-		final AtomicInteger ai = new AtomicInteger(0);
-		final Thread[] thread = new Thread[
-			Runtime.getRuntime().availableProcessors()];
-		for (int i = 0; i<thread.length; i++) {
-			thread[i] = new Thread() {
-				public void run() {
-					try {
-						for (int k=ai.getAndIncrement();
-						k < c.length;
-						k = ai.getAndIncrement()) {
-							MeshEditor.
-							smooth(c[k], 0.25f);
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-			};
-			thread[i].start();
-		}
+	public void saveAsWaveFront() {
+		MeshExporter.saveAsWaveFront(univ.getContents());
 	}
+
+	public void close() {
+		univ.close();
+		record(CLOSE);
+	}
+
 
 
 	/* **********************************************************
-	 * Selected Content menu
+	 * Edit menu
 	 * *********************************************************/
 	public void changeSlices(final Content c) {
 		if(!checkSel(c))
@@ -472,6 +327,33 @@ public class Executer {
 		MeshEditor.smooth(c, 0.25f);
 	}
 
+	public void smoothAllMeshes() {
+		// process each Mesh in a separate thread
+		final Collection all = univ.getContents();
+		final Content[] c = new Content[all.size()];
+		all.toArray(c);
+		final AtomicInteger ai = new AtomicInteger(0);
+		final Thread[] thread = new Thread[
+			Runtime.getRuntime().availableProcessors()];
+		for (int i = 0; i<thread.length; i++) {
+			thread[i] = new Thread() {
+				public void run() {
+					try {
+						for (int k=ai.getAndIncrement();
+						k < c.length;
+						k = ai.getAndIncrement()) {
+							MeshEditor.
+							smooth(c[k], 0.25f);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			thread[i].start();
+		}
+	}
+
 
 	/* ----------------------------------------------------------
 	 * Display As submenu
@@ -479,7 +361,7 @@ public class Executer {
 	public void displayAs(Content c, int type) {
 		if(!checkSel(c))
 			return;
-		c.displayAs(Content.VOLUME);
+		c.displayAs(type);
 		univ.clearSelection();
 	}
 
@@ -757,10 +639,51 @@ public class Executer {
 		c.showPointList(b);
 	}
 
+	public void register() {
+		// Select the contents used for registration
+		Collection contents = univ.getContents();
+		if(contents.size() < 2) {
+			IJ.error("At least two bodies are " +
+				"required for registration");
+			return;
+		}
+		RegistrationMenubar rm = univ.getRegistrationMenubar();
+		univ.setMenubar(rm);
+		rm.register();
+	}
 
-	/* ----------------------------------------------------------
-	 * Transformation submenu
-	 * --------------------------------------------------------*/
+	public void contentProperties(Content c) {
+		if(!checkSel(c))
+			return;
+		TextWindow tw = new TextWindow(c.getName(), 
+			" \tx\ty\tz",
+			"min\t" + (float)c.getContent().min.x + "\t"
+				+ (float)c.getContent().min.y + "\t"
+				+ (float)c.getContent().min.z + "\n" +
+			"max\t" + (float)c.getContent().max.x + "\t"
+				+ (float)c.getContent().max.y + "\t"
+				+ (float)c.getContent().max.z + "\n" +
+			"cog\t" + (float)c.getContent().center.x + "\t"
+				+ (float)c.getContent().center.y + "\t"
+				+ (float)c.getContent().center.z + "\n\n" +
+			"volume\t" + c.getContent().getVolume(),
+			512, 512);
+	}
+
+
+
+	/* **********************************************************
+	 * Select menu
+	 * *********************************************************/
+	public void select(String name) {
+		Content c = univ.getContent(name);
+		if(c != null)
+			univ.select(c);
+	}
+
+	/* **********************************************************
+	 * Transformation menu
+	 * *********************************************************/
 	public void setLocked(Content c, boolean b) {
 		if(!checkSel(c))
 			return;
@@ -873,25 +796,105 @@ public class Executer {
 	}
 
 
-	/* ----------------------------------------------------------
-	 * Properties submenu
-	 * --------------------------------------------------------*/
-	public void contentProperties(Content c) {
+
+
+	/* **********************************************************
+	 * View menu
+	 * *********************************************************/
+	public void resetView() {
+		univ.resetView();
+		record(RESET_VIEW);
+	}
+
+	public void centerSelected(Content c) {
 		if(!checkSel(c))
 			return;
-		TextWindow tw = new TextWindow(c.getName(), 
-			" \tx\ty\tz",
-			"min\t" + (float)c.getContent().min.x + "\t"
-				+ (float)c.getContent().min.y + "\t"
-				+ (float)c.getContent().min.z + "\n" +
-			"max\t" + (float)c.getContent().max.x + "\t"
-				+ (float)c.getContent().max.y + "\t"
-				+ (float)c.getContent().max.z + "\n" +
-			"cog\t" + (float)c.getContent().center.x + "\t"
-				+ (float)c.getContent().center.y + "\t"
-				+ (float)c.getContent().center.z + "\n\n" +
-			"volume\t" + c.getContent().getVolume(),
-			512, 512);
+		Point3f min = c.getContent().min;
+		Point3f max = c.getContent().max;
+		Point3f center = new Point3f();
+		center.x = min.x + (max.x - min.x)/2;
+		center.y = min.y + (max.y - min.y)/2;
+		center.z = min.z + (max.z - min.z)/2;
+
+		Point3f globalC = univ.getGlobalCenterPoint();
+		center.x -= globalC.x;
+		center.y -= globalC.y;
+		center.z -= globalC.z;
+		
+		Transform3D transform = new Transform3D();
+		transform.setTranslation(new Vector3f(
+				-center.x, -center.y, -center.z));
+		univ.getGlobalTranslate().setTransform(transform);
+	}
+
+	public void startRecording() {
+		univ.startRecording();
+		record(START_RECORD);
+	}
+
+	public void stopRecording() {
+		ImagePlus movie = univ.stopRecording();
+		if(movie != null)
+			movie.show();
+		record(STOP_RECORD);
+	}
+
+	public void startAnimation() {
+		univ.startAnimation();
+		record(START_ANIMATE);
+	}
+
+	public void stopAnimation() {
+		univ.pauseAnimation();
+		record(STOP_ANIMATE);
+	}
+
+	public void viewPreferences() {
+		GenericDialog gd = new GenericDialog(
+				"View Preferences", univ.getWindow());
+		gd.addMessage("Window size:");
+		Dimension d = univ.getSize();
+		if(d == null)
+			return;
+		gd.addNumericField("width", d.width, 0);
+		gd.addNumericField("height", d.height, 0);
+
+		String[] choice = new String[] {"PARALLEL", "PERSPECTIVE"};
+		int v[] = new int[] {View.PARALLEL_PROJECTION,
+					View.PERSPECTIVE_PROJECTION};
+		String def = univ.getViewer().getView().getProjectionPolicy()
+			== v[0] ? choice[0] : choice[1];
+		gd.addChoice("Projection", choice, def);
+
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+
+		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
+		univ.getViewer().getView().setProjectionPolicy(
+					v[gd.getNextChoiceIndex()]);
+	}
+
+	public void editScalebar() {
+		Scalebar sc = univ.getScalebar();
+		final GenericDialog gd = new GenericDialog(
+				"Edit scalebar...", univ.getWindow());
+		gd.addNumericField("x position", sc.getX(), 2);
+		gd.addNumericField("y position", sc.getY(), 2);
+		gd.addNumericField("length", sc.getLength(), 2);
+		gd.addStringField("Units", sc.getUnit(), 5);
+		gd.addChoice("Color", ColorTable.colorNames, 
+				ColorTable.getColorName(sc.getColor()));
+		gd.addCheckbox("show", sc.isVisible());
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		sc.setPosition((float)gd.getNextNumber(), 
+				(float)gd.getNextNumber());
+		sc.setLength((float)gd.getNextNumber());
+		sc.setUnit(gd.getNextString());
+		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
+		sc.setVisible(gd.getNextBoolean());
 	}
 
 

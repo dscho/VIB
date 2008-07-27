@@ -62,12 +62,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem slices;
 	private MenuItem delete;
 	private MenuItem properties;
-	private MenuItem windowSize;
 	private MenuItem resetView;
 	private MenuItem startRecord;
 	private MenuItem stopRecord;
 	private MenuItem startAnimation;
 	private MenuItem stopAnimation;
+	private MenuItem viewPreferences;
 	private MenuItem close;
 	private MenuItem setTransform;
 	private MenuItem resetTransform;
@@ -83,30 +83,27 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem displayAsOrtho;
 	private MenuItem displayAsSurface;
 	private MenuItem displayAsSurfacePlot;
-	private MenuItem pl_load;
 	private MenuItem center;
 	private MenuItem regist;
 	private CheckboxMenuItem shaded;
+	private MenuItem pl_load;
 	private MenuItem pl_save;
 	private MenuItem pl_size;
+	private CheckboxMenuItem pl_show;
 	private MenuItem j3dproperties;
 	private MenuItem viewer4d;
-	private CheckboxMenuItem pl_show;
-	private CheckboxMenuItem perspective;
 	private CheckboxMenuItem coordinateSystem;
 	private CheckboxMenuItem lock;
 	private CheckboxMenuItem show;
 
-	private Menu selectedMenu;
-	private Menu selectSubMenu;
+	private Menu transformMenu;
+	private Menu editMenu;
+	private Menu selectMenu;
 	private Menu viewMenu;
-	private Menu contentsMenu;
 	private Menu fileMenu;
 	private Menu helpMenu;
 
-
 	private SelectionListener selListener = new SelectionListener();
-
 
 	public Image3DMenubar(Image3DUniverse univ) {
 		super();
@@ -118,131 +115,106 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		fileMenu = createFileMenu();
 		this.add(fileMenu);
 
+		editMenu = createEditMenu();
+		this.add(editMenu);
+
+		selectMenu = createSelectMenu();
+		this.add(selectMenu);
+
+		transformMenu = createTransformMenu();
+		this.add(transformMenu);
+
 		viewMenu = createViewMenu();
 		this.add(viewMenu);
-		contentsMenu = createContentsMenu();
-		this.add(contentsMenu);
-		selectedMenu = createSelectedMenu();
+
 		helpMenu = createHelpMenu();
 		this.add(helpMenu);
 		this.setHelpMenu(helpMenu);
+
+		contentSelected(null);
 	}
 
 	public Menu createFileMenu() {
 		Menu file = new Menu("File");
 
-		exportObj = new MenuItem("Export as WaveFront");
-		exportObj.addActionListener(this);
-		file.add(exportObj);
-
-		exportDXF = new MenuItem("Export as DXF");
-		exportDXF.addActionListener(this);
-		file.add(exportDXF);
-
-		return file;
-	}
-
-	public Menu createHelpMenu() {
-		Menu help = new Menu("Help");
-		j3dproperties = new MenuItem("Java 3D Properties");
-		j3dproperties.addActionListener(this);
-		help.add(j3dproperties);
-		return help;
-	}
-
-	public Menu createViewMenu() {
-		// Viewer
-		Menu view = new Menu("View");
-
-		windowSize = new MenuItem("Set window size");
-		windowSize.addActionListener(this);
-		view.add(windowSize);
-
-		resetView = new MenuItem("Reset view");
-		resetView.addActionListener(this);
-		view.add(resetView);
-
-		center = new MenuItem("Center selected");
-		center.addActionListener(this);
-		view.add(center);
-
-		perspective = new CheckboxMenuItem(
-					"Perspective Projection", false);
-		perspective.addItemListener(this);
-		view.add(perspective);
-
-		view.addSeparator();
-
-		startRecord = new MenuItem("Start recording");
-		startRecord.addActionListener(this);
-		view.add(startRecord);
-
-		stopRecord = new MenuItem("Stop recording");
-		stopRecord.addActionListener(this);
-		view.add(stopRecord);
-
-		view.addSeparator();
-
-		startAnimation = new MenuItem("Start animation");
-		startAnimation.addActionListener(this);
-		view.add(startAnimation);
-
-		stopAnimation = new MenuItem("Stop animation");
-		stopAnimation.addActionListener(this);
-		view.add(stopAnimation);
-
-		view.addSeparator();
-
-		scalebar = new MenuItem("Scalebar");
-		scalebar.addActionListener(this);
-		view.add(scalebar);
-
-		view.addSeparator();
-
-		viewer4d = new MenuItem("Load 4D data");
-		viewer4d.addActionListener(this);
-		view.add(viewer4d);
-
-		view.addSeparator();
-
-		close = new MenuItem("Close");
-		close.addActionListener(this);
-		view.add(close);
-
-		return view;
-	}
-
-	public Menu createContentsMenu() {
-		// Universe
-		Menu universe = new Menu("Contents");
 		add = new MenuItem("Add content");
 		add.addActionListener(this);
-		universe.add(add);
+		file.add(add);
 
 		delete = new MenuItem("Delete");
 		delete.setEnabled(false);
 		delete.addActionListener(this);
-		universe.add(delete);
+		file.add(delete);
 
-		universe.addSeparator();
+		file.addSeparator();
 
-		selectSubMenu = createSelectSubMenu();
-		universe.add(selectSubMenu);
+		viewer4d = new MenuItem("Load 4D data");
+		viewer4d.addActionListener(this);
+		file.add(viewer4d);
 
-		universe.addSeparator();
+		file.addSeparator();
 
-		regist = new MenuItem("Register");
-		regist.addActionListener(this);
-		universe.add(regist);
+		Menu subMenu = new Menu("Export surfaces as");
+		file.add(subMenu);
+		exportObj = new MenuItem("WaveFront");
+		exportObj.addActionListener(this);
+		subMenu.add(exportObj);
+
+		exportDXF = new MenuItem("DXF");
+		exportDXF.addActionListener(this);
+		subMenu.add(exportDXF);
+
+		file.addSeparator();
+
+		close = new MenuItem("Quit");
+		close.addActionListener(this);
+		file.add(close);
+
+		return file;
+	}
+
+	public Menu createEditMenu() {
+		Menu edit = new Menu("Edit");
+		
+		slices = new MenuItem("Adjust slices");
+		slices.addActionListener(this);
+		edit.add(slices);
+		
+		fill = new MenuItem("Fill selection");
+		fill.addActionListener(this);
+		edit.add(fill);
+
+		smoothMesh = new MenuItem("Smooth mesh");
+		smoothMesh.addActionListener(this);
+		edit.add(smoothMesh);
 
 		smoothAllMeshes = new MenuItem("Smooth all meshes");
 		smoothAllMeshes.addActionListener(this);
-		universe.add(smoothAllMeshes);
+		edit.add(smoothAllMeshes);
 
-		return universe;
+		edit.addSeparator();
+		
+		edit.add(createDisplayAsSubMenu());
+		edit.add(createAttributesSubMenu());
+		edit.add(createHideSubMenu());
+		edit.add(createPLSubMenu());
+	
+		edit.addSeparator();
+
+		regist = new MenuItem("Register");
+		regist.addActionListener(this);
+		edit.add(regist);
+
+		edit.addSeparator();
+
+		properties = new MenuItem("Object Properties");
+		properties.addActionListener(this);
+		edit.add(properties);
+
+		return edit;
 	}
 
-	public Menu createSelectSubMenu() {
+	public Menu createSelectMenu() {
 		Menu select = new Menu("Select");
 		if(univ == null)
 			return select;
@@ -254,32 +226,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return select;
 	}
 
-	public Menu createPLSubMenu() {
-		Menu pl = new Menu("Point list");
-		if(univ == null)
-			return pl;
-		pl_load = new MenuItem("Load Point List");
-		pl_load.addActionListener(this);
-		pl.add(pl_load);
-
-		pl_save = new MenuItem("Save Point List");
-		pl_save.addActionListener(this);
-		pl.add(pl_save);
-
-		pl_show = new CheckboxMenuItem("Show Point List");
-		pl_show.addItemListener(this);
-		pl.add(pl_show);
-
-		pl.addSeparator();
-
-		pl_size = new MenuItem("Point size");
-		pl_size.addActionListener(this);
-		pl.add(pl_size);
-
-		return pl;
-	}
-
-	public Menu createTransformSubMenu() {
+	public Menu createTransformMenu() {
 		Menu transform = new Menu("Transformation");
 
 		lock = new CheckboxMenuItem("Lock");
@@ -310,6 +257,86 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		return transform;
 	}
+	public Menu createViewMenu() {
+		Menu view = new Menu("View");
+
+		resetView = new MenuItem("Reset view");
+		resetView.addActionListener(this);
+		view.add(resetView);
+
+		center = new MenuItem("Center selected");
+		center.addActionListener(this);
+		view.add(center);
+
+		view.addSeparator();
+
+		startRecord = new MenuItem("Start recording");
+		startRecord.addActionListener(this);
+		view.add(startRecord);
+
+		stopRecord = new MenuItem("Stop recording");
+		stopRecord.addActionListener(this);
+		view.add(stopRecord);
+
+		view.addSeparator();
+
+		startAnimation = new MenuItem("Start animation");
+		startAnimation.addActionListener(this);
+		view.add(startAnimation);
+
+		stopAnimation = new MenuItem("Stop animation");
+		stopAnimation.addActionListener(this);
+		view.add(stopAnimation);
+
+		view.addSeparator();
+
+		scalebar = new MenuItem("Edit Scalebar");
+		scalebar.addActionListener(this);
+		view.add(scalebar);
+
+		view.addSeparator();
+
+		viewPreferences = new MenuItem("View Preferences");
+		viewPreferences.addActionListener(this);
+		view.add(viewPreferences);
+
+		return view;
+	}
+
+	public Menu createHelpMenu() {
+		Menu help = new Menu("Help");
+		j3dproperties = new MenuItem("Java 3D Properties");
+		j3dproperties.addActionListener(this);
+		help.add(j3dproperties);
+		return help;
+	}
+
+
+	public Menu createPLSubMenu() {
+		Menu pl = new Menu("Point list");
+		if(univ == null)
+			return pl;
+		pl_load = new MenuItem("Load Point List");
+		pl_load.addActionListener(this);
+		pl.add(pl_load);
+
+		pl_save = new MenuItem("Save Point List");
+		pl_save.addActionListener(this);
+		pl.add(pl_save);
+
+		pl_show = new CheckboxMenuItem("Show Point List");
+		pl_show.addItemListener(this);
+		pl.add(pl_show);
+
+		pl.addSeparator();
+
+		pl_size = new MenuItem("Point size");
+		pl_size.addActionListener(this);
+		pl.add(pl_size);
+
+		return pl;
+	}
+
 
 	public Menu createHideSubMenu() {
 		Menu hide = new Menu("Hide/Show");
@@ -376,39 +403,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		return display;
 	}
 
-	public Menu createSelectedMenu() {
-		// Contents
-		Menu content = new Menu("Content");
-		
-		slices = new MenuItem("Adjust slices");
-		slices.addActionListener(this);
-		content.add(slices);
-		
-		fill = new MenuItem("Fill selection");
-		fill.addActionListener(this);
-		content.add(fill);
-
-		smoothMesh = new MenuItem("Smooth mesh");
-		smoothMesh.addActionListener(this);
-		content.add(smoothMesh);
-
-		content.addSeparator();
-		
-		content.add(createDisplayAsSubMenu());
-		content.add(createAttributesSubMenu());
-		content.add(createHideSubMenu());
-		content.add(createPLSubMenu());
-		content.add(createTransformSubMenu());
-
-		content.addSeparator();
-
-		properties = new MenuItem("Properties");
-		properties.addActionListener(this);
-		content.add(properties);
-
-		return content;
-	}
-
 	private class SelectionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			executer.select(e.getActionCommand());
@@ -436,8 +430,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.resetView();
 		else if(src == center)
 			executer.centerSelected(univ.getSelected());
-		else if(src == windowSize)
-			executer.setWindowSize();
 		else if(src == startRecord)
 			executer.startRecording();
 		else if(src == stopRecord)
@@ -489,6 +481,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.smoothMesh(univ.getSelected());
 		else if (src == smoothAllMeshes)
 			executer.smoothAllMeshes();
+		else if (src == viewPreferences)
+			executer.viewPreferences();
 		else if(src == j3dproperties)
 			executer.j3dproperties();
 	}
@@ -496,11 +490,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void itemStateChanged(ItemEvent e) {
 		Object src = e.getSource();
 		Content c = univ.getSelected();
-		if(src == perspective)
-			executer.perspectiveProjection(perspective.getState());
-		else if(src == coordinateSystem)
+		if(src == coordinateSystem)
 			executer.showCoordinateSystem(
-						c, coordinateSystem.getState());
+				c, coordinateSystem.getState());
 		else if(src == show)
 			executer.showContent(c, show.getState());
 		else if(src == lock)
@@ -530,16 +522,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			return;
 		MenuItem item = new MenuItem(c.getName());
 		item.addActionListener(selListener);
-		selectSubMenu.add(item);
+		selectMenu.add(item);
 	}
 
 	public void contentRemoved(Content c) {
 		if(c == null)
 			return;
-		for(int i = 0; i < selectSubMenu.getItemCount(); i++) {
-			MenuItem item = selectSubMenu.getItem(i);
+		for(int i = 0; i < selectMenu.getItemCount(); i++) {
+			MenuItem item = selectMenu.getItem(i);
 			if(item.getLabel().equals(c.getName())) {
-				selectSubMenu.remove(i);
+				selectMenu.remove(i);
 				return;
 			}
 		}
@@ -547,19 +539,52 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	public void contentSelected(Content c) {
 		delete.setEnabled(c != null);
-		if(c == null) {
-			remove(selectedMenu);
+		center.setEnabled(c != null);
+		exportObj.setEnabled(c != null);
+		exportDXF.setEnabled(c != null);
+		fill.setEnabled(c != null);
+		smoothMesh.setEnabled(c != null);
+		regist.setEnabled(c != null);
+
+		displayAsVolume.setEnabled(c != null);
+		displayAsSurface.setEnabled(c != null);
+		displayAsSurfacePlot.setEnabled(c != null);
+		displayAsOrtho.setEnabled(c != null);
+		properties.setEnabled(c != null);
+
+		color.setEnabled(c != null);
+		transparency.setEnabled(c != null);
+		threshold.setEnabled(c != null);
+		channels.setEnabled(c != null);
+		shaded.setEnabled(c != null);
+
+		show.setEnabled(c != null);
+		coordinateSystem.setEnabled(c != null);
+
+		pl_load.setEnabled(c != null);
+		pl_save.setEnabled(c != null);
+		pl_show.setEnabled(c != null);
+		pl_size.setEnabled(c != null);
+
+		lock.setEnabled(c != null);
+		setTransform.setEnabled(c != null);
+		applyTransform.setEnabled(c != null);
+		resetTransform.setEnabled(c != null);
+		saveTransform.setEnabled(c != null);
+		exportTransformed.setEnabled(c != null);
+
+
+		if(c == null)
 			return;
-		}	
 		int t = c.getType();
-		selectedMenu.setLabel(c.getName());
-		if(!containsSelectedMenu())
-			add(selectedMenu);
 		
 		slices.setEnabled(t == Content.ORTHO);
 		fill.setEnabled(t == Content.VOLUME);
 		shaded.setEnabled(t == Content.SURFACE_PLOT2D ||
 			t == Content.SURFACE);
+		exportObj.setEnabled(t == Content.SURFACE);
+		exportDXF.setEnabled(t == Content.SURFACE);
+		smoothMesh.setEnabled(t == Content.SURFACE);
 
 		coordinateSystem.setState(c.hasCoord());
 		lock.setState(c.isLocked());
@@ -572,15 +597,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		displayAsOrtho.setEnabled(t != Content.ORTHO);
 		displayAsSurface.setEnabled(t != Content.SURFACE);
 		displayAsSurfacePlot.setEnabled(t != Content.SURFACE_PLOT2D);
-	}
-
-	private boolean containsSelectedMenu() {
-		for(int i = 0; i < getMenuCount(); i++) {
-			if(getMenu(i) == selectedMenu) {
-				return true;
-			}
-		}
-		return false;
 	}
 }
 
