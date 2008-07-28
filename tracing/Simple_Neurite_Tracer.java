@@ -1155,6 +1155,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 							    channels,
 							    2, // resampling factor
 							    Content.VOLUME);
+				c.setLocked(true);
 				c.setTransparency(0.5f);
 			}
 

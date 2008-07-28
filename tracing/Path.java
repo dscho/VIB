@@ -820,6 +820,7 @@ public class Path implements Cloneable {
 			     1); // threshold
 
 		content3D = univ.getContent(title);
+		content3D.setLocked(true);
 		return content3D;
 	}
 
