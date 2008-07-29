@@ -1020,10 +1020,10 @@ public class ComputeCurvatures implements Runnable
         float temp = 2 * laPlace.get(x, y);
 
         // xx
-        hessianMatrix[0][0] = (laPlace.get(x + 1, y) - temp + laPlace.get(x - 1, y)) / (2*sepX);
+        hessianMatrix[0][0] = (laPlace.get(x + 1, y) - temp + laPlace.get(x - 1, y)) / (sepX*sepX);
 
         // yy
-        hessianMatrix[1][1] = (laPlace.get(x, y + 1) - temp + laPlace.get(x, y - 1)) / (2*sepX);
+        hessianMatrix[1][1] = (laPlace.get(x, y + 1) - temp + laPlace.get(x, y - 1)) / (sepY*sepY);
 
         // xy
         hessianMatrix[0][1] = hessianMatrix[1][0] =
@@ -1067,13 +1067,13 @@ public class ComputeCurvatures implements Runnable
         double temp = 2 * img.get(x, y, z);
 
         // xx
-        hessianMatrix[0][0] = (img.get(x + 1, y, z) - temp + img.get(x - 1, y, z)) / (2*sepX);
+        hessianMatrix[0][0] = (img.get(x + 1, y, z) - temp + img.get(x - 1, y, z)) / (sepX*sepX);
 
         // yy
-        hessianMatrix[1][1] = (img.get(x, y + 1, z) - temp + img.get(x, y - 1, z)) / (2*sepY);
+        hessianMatrix[1][1] = (img.get(x, y + 1, z) - temp + img.get(x, y - 1, z)) / (sepY*sepY);
 
         // zz
-        hessianMatrix[2][2] = (img.get(x, y, z + 1) - temp + img.get(x, y, z - 1)) / (2*sepZ);
+        hessianMatrix[2][2] = (img.get(x, y, z + 1) - temp + img.get(x, y, z - 1)) / (sepZ*sepZ);
 
         // xy
         hessianMatrix[0][1] = hessianMatrix[1][0] =
@@ -1133,13 +1133,13 @@ public class ComputeCurvatures implements Runnable
         float temp = 2 * img.get(x, y, z);
 
         // xx
-        hessianMatrix[0][0] = (img.get(x + 1, y, z) - temp + img.get(x - 1, y, z)) / (2*sepX);
+        hessianMatrix[0][0] = (img.get(x + 1, y, z) - temp + img.get(x - 1, y, z)) / (sepX*sepX);
 
         // yy
-        hessianMatrix[1][1] = (img.get(x, y + 1, z) - temp + img.get(x, y - 1, z)) / (2*sepY);
+        hessianMatrix[1][1] = (img.get(x, y + 1, z) - temp + img.get(x, y - 1, z)) / (sepY*sepY);
 
         // zz
-        hessianMatrix[2][2] = (img.get(x, y, z + 1) - temp + img.get(x, y, z - 1)) / (2*sepZ);
+        hessianMatrix[2][2] = (img.get(x, y, z + 1) - temp + img.get(x, y, z - 1)) / (sepZ*sepZ);
 
         // xy
         hessianMatrix[0][1] = hessianMatrix[1][0] =
