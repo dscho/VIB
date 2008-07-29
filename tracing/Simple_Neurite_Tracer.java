@@ -1454,6 +1454,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				if( yncd.cancelPressed() ) {
 					hessianEnabled = false;
 					resultsDialog.preprocess.setState(false);
+					resultsDialog.setPreprocessLabelSigma(-1);
 					return;
 				} else if( yncd.yesPressed() )  {
 					hessian = null;
@@ -1477,6 +1478,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					}
 				}
 				resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
+				resultsDialog.setPreprocessLabelSigma(sigma);
 				resultsDialog.preprocess.setEnabled(false);
 				lastGaussianSigma = sigma;
 				hessian = new ComputeCurvatures( xy, sigma, this, true );
@@ -1484,6 +1486,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			}
 			hessianEnabled = true;
 		} else {
+			resultsDialog.setPreprocessLabelSigma(-1);
 			hessianEnabled = false;
 		}
 	}
