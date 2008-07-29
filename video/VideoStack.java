@@ -109,7 +109,7 @@ System.out.println("opening " + files[i]);
 		if(a > b+1)
 			name = df.format(b+1);
 
-		if(name.isEmpty()) {
+		if(name == null || name.equals("")) {
 			try {
 				if(!rebaseImages())
 					return false;
