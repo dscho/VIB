@@ -1430,6 +1430,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	boolean hessianEnabled = false;
 	ComputeCurvatures hessian = null;
+	double lastGaussianSigma = -1;
 
 	// Even better, we might have a "tubeness" file already there:
 
@@ -1437,7 +1438,28 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	public synchronized void enableHessian( boolean enable ) {
 		if( enable ) {
-			if( hessian == null && tubeness == null ) {
+			if ( tubeness != null ) {
+				hessianEnabled = true;
+				return;
+			}
+			if( hessian != null ) {
+				// So we have previously done a
+				// Gaussian convolution:
+				YesNoCancelDialog yncd =
+					new YesNoCancelDialog(IJ.getInstance(),
+							      "Recalculate Gaussian?",
+							      "Previously you chose to look for structures with\n"+
+							      "approximate radius "+lastGaussianSigma+". Would you like to\n"+
+							      "use a different value this time?");
+				if( yncd.cancelPressed() ) {
+					hessianEnabled = false;
+					resultsDialog.preprocess.setState(false);
+					return;
+				} else if( yncd.yesPressed() )  {
+					hessian = null;
+				}
+			}
+			if( hessian == null ) {
 				double sigma = -1;
 				double minimumSeparation = Math.min(x_spacing,Math.min(y_spacing,z_spacing));
 				while( sigma <= 0 ) {
@@ -1456,6 +1478,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				}
 				resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
 				resultsDialog.preprocess.setEnabled(false);
+				lastGaussianSigma = sigma;
 				hessian = new ComputeCurvatures( xy, sigma, this, true );
 				new Thread(hessian).start();
 			}
