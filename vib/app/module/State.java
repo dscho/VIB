@@ -140,7 +140,7 @@ public class State {
 
 	public String getStatisticsPath(int index) {
 		return statisticsPath + File.separator
-			+ getBaseName(index) + ".statisticss";
+			+ getBaseName(index) + ".statistics";
 	}
 
 	public ImageMetaData getStatistics(int index) {

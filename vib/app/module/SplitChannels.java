@@ -1,8 +1,12 @@
 package vib.app.module;
 
 import ij.ImagePlus;
+import ij.ImageStack;
+import ij.process.ImageProcessor;
+import ij.process.StackConverter;
 
 import java.io.File;
+import java.awt.image.ColorModel;
 
 import leica.Leica_SP_Reader;
 
@@ -38,6 +42,9 @@ public class SplitChannels extends Module {
 			return;
 		
 		ImagePlus [] allChannels = BatchOpener.open(path);
+		for(int i = 0; i < allChannels.length; i++) {
+			new StackConverter(allChannels[i]).convertToGray8();
+		}
 		
 		int channelsInFile = allChannels.length;
 		

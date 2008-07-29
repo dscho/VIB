@@ -75,8 +75,11 @@ public class Local_Threshold implements PlugInFilter {
 		Rectangle roiCopyR = roiCopy.getBounds();
 		if(tmp.getRoi() != null) {
 			Rectangle roiTempR = tmp.getRoi().getBounds();
-			tmp.getRoi().setLocation(roiCopyR.x + roiTempR.x, 
-						roiCopyR.y + roiTempR.y);
+			int xl = roiCopyR.x > 0 ? roiCopyR.x : 0;
+			if(roiTempR.x > 0) xl += roiTempR.x;
+			int yl = roiCopyR.y > 0 ? roiCopyR.y : 0;
+			if(roiTempR.y > 0) yl += roiTempR.y;
+			tmp.getRoi().setLocation(xl, yl);
 			image.setRoi(tmp.getRoi());
 		}
 	}
@@ -92,12 +95,20 @@ public class Local_Threshold implements PlugInFilter {
 			 copy = ip.duplicate();
 		}
 
-		Rectangle r = roi.getBounds();
 		byte[] p = (byte[])ip.getPixels();
 		byte[] c = (byte[])copy.getPixels();
 
-		for(int y = r.y; y < r.y+r.height; y++) {
-			for(int x = r.x; x < r.x+r.width; x++) {
+		int w = ip.getWidth(), h = ip.getHeight();
+
+		Rectangle bounds = roi.getBoundingRect();
+		int x1 = bounds.x > 0 ? bounds.x : 0;
+		int y1 = bounds.y > 0 ? bounds.y : 0;
+		int x2 = x1 + bounds.width <= w ? x1 + bounds.width : w;
+		int y2 = y1 + bounds.height <= h ? y1 + bounds.height : h;
+
+
+		for(int y = y1; y < y2; y++) {
+			for(int x = x1; x < x2; x++) {
 				if(!roi.contains(x, y))
 					continue;
 				int index = y*ip.getWidth() + x;

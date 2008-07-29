@@ -113,7 +113,6 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 
 	public boolean close() {
 		boolean b = super.close();
-		universe.removeUniverseListener(this);
 		return b;
 	}
 
@@ -249,7 +248,13 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 
 	public void windowClosing(WindowEvent e) {
 		super.windowClosing(e);
+		universe.removeUniverseListener(this);
 		universe.close();
+		ImageJ ij = IJ.getInstance();
+		if (null != ij) {
+			removeKeyListener(ij);
+			canvas3D.removeKeyListener(ij);
+		}
 	}
 
 	/*

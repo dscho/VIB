@@ -122,7 +122,7 @@ FibonacciHeapInt.java: FibonacciHeap.java Makefile
 
 VIB_compat.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java process3d/*.java tracing/*.java oldsegmenters/*.java client/*.java features/*.java Compute_Curvatures.java), $(JAVAS))) vib/segment/icons/*.png
 
-VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java tracing/*.java oldsegmenters/*.java client/*.java util/Bookstein_FromMarkers.java), $(JAVAS))) vib/segment/icons/*.png $(TRACERSOURCES)
+VIB_.jar: SOURCES=$(filter-out $(FILTEROUT), $(filter-out $(wildcard vib/transforms/*.java vib/oldregistration/*.java landmarks/*.java tracing/*.java oldsegmenters/*.java client/*.java util/Bookstein_FromMarkers.java), $(JAVAS))) vib/segment/icons/*.png $(TRACERSOURCES) $(wildcard vib/segment/materials/*) $(wildcard view4d/icons/*.png)
 
 Segmentation_Editor_compat.jar: SOURCES=amira/*.java \
 	vib/InterpolatedImage.java math3d/Point3d.java \
@@ -245,11 +245,15 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard vib/app/gui/*.java) \
 	$(wildcard vib/app/module/*.java) \
 	$(wildcard vib/segment/*.java) \
+	$(wildcard vib/segment/materials/*) \
+	$(wildcard vib/segment/icons/*.png) \
 	$(wildcard distance/*.java) \
 	$(wildcard leica/*.java) \
 	$(wildcard amira/*.java) \
 	$(wildcard math3d/*.java) \
 	$(wildcard pal/math/*.java) \
+	util/BatchOpener.java \
+	util/StupidLog.java \
 	vib/DiffusionInterpol2_.java \
 	vib/Resample_.java \
 	vib/InterpolatedImage.java \
@@ -264,6 +268,7 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	vib/VIB.java \
 	vib/BatchLog_.java \
 	vib/IDT_Interpolate_Binary.java \
+	vib/Local_Threshold.java \
 	VIB_Protocol.java
 
 Average_Color.jar: SOURCES=Average_Color.java CIELAB.java
