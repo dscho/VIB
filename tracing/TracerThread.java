@@ -202,14 +202,14 @@ public class TracerThread extends SearchThread {
 
 					double [] hessianEigenValues = new double[2];
 
-					hessian.hessianEigenvaluesAtPoint2D( new_x, new_y,
-									     true, hessianEigenValues, false, true, x_spacing, y_spacing );
+					boolean real = hessian.hessianEigenvaluesAtPoint2D( new_x, new_y,
+											    true, hessianEigenValues, false, true, x_spacing, y_spacing );
 
 					// Just use the absolute value
 					// of the largest eigenvalue
 					// (if they're < 0)
 
-					if( (hessianEigenValues[0] < 0) && (hessianEigenValues[1] < 0) ) {
+					if( real && (hessianEigenValues[0] < 0) && (hessianEigenValues[1] < 0) ) {
 
 						double measure = Math.abs( hessianEigenValues[1] );
 						if( measure == 0 ) // This should never happen in practice...
@@ -227,8 +227,8 @@ public class TracerThread extends SearchThread {
 
 					double [] hessianEigenValues = new double[3];
 
-					hessian.hessianEigenvaluesAtPoint3D( new_x, new_y, new_z,
-									     true, hessianEigenValues, false, true, x_spacing, y_spacing, z_spacing );
+					boolean real = hessian.hessianEigenvaluesAtPoint3D( new_x, new_y, new_z,
+											    true, hessianEigenValues, false, true, x_spacing, y_spacing, z_spacing );
 
 					/* FIXME: there's lots of literature on how to
 					   pick this rule (see Sato et al,
@@ -241,7 +241,7 @@ public class TracerThread extends SearchThread {
 					double e1 = hessianEigenValues[1];
 					double e2 = hessianEigenValues[2];
 
-					if( (hessianEigenValues[1] < 0) && (hessianEigenValues[2] < 0) ) {
+					if( real && (hessianEigenValues[1] < 0) && (hessianEigenValues[2] < 0) ) {
 
 						double measure = Math.sqrt( hessianEigenValues[1] * hessianEigenValues[2] );
 
