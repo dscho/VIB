@@ -250,6 +250,7 @@ public class OrderedTransformations {
 		return new Point3d( result[0], result[1], result[2] );
 	}
 	
+/*
 	public double scoreTransformationSmoothed( ImagePlus image0,
 						   ImagePlus image1,
 						   int skipPixelsInTemplate ) {
@@ -275,6 +276,7 @@ public class OrderedTransformations {
 		
 		return scoreTransformation(image0,image1,skipPixelsInTemplate);
 	}
+*/
 	
 	public double scoreTransformation( ImagePlus image0,
 					   ImagePlus image1,
