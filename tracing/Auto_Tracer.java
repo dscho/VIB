@@ -186,9 +186,9 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 			double minimumSeparation = 1;
 			if( calibration != null )
-				minimumSeparation = Math.min(calibration.pixelWidth,
-							     Math.min(calibration.pixelHeight,
-								      calibration.pixelDepth));
+				minimumSeparation = Math.min(Math.abs(calibration.pixelWidth),
+							     Math.min(Math.abs(calibration.pixelHeight),
+								      Math.abs(calibration.pixelDepth)));
 
 			TubenessProcessor tubifier=new TubenessProcessor(minimumSeparation,true);
 			tubenessImage=tubifier.generateImage(image);
@@ -265,9 +265,9 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		SinglePathsGraph completePaths = new SinglePathsGraph(width,
 								      height,
 								      depth,
-								      calibration.pixelWidth,
-								      calibration.pixelHeight,
-								      calibration.pixelDepth);
+								      Math.abs(calibration.pixelWidth),
+								      Math.abs(calibration.pixelHeight),
+								      Math.abs(calibration.pixelDepth));
 
 		int maxLoops = -1;
 		int loopsDone = 0;
