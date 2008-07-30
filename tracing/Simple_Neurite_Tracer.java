@@ -71,7 +71,7 @@ import amira.AmiraParameters;
 public class Simple_Neurite_Tracer extends ThreePanes
 	implements PlugIn, SearchProgressCallback, FillerProgressCallback, GaussianGenerationCallback {
 
-	public static final String PLUGIN_VERSION = "1.2.2";
+	public static final String PLUGIN_VERSION = "1.2.3";
 	static final boolean verbose = false;
 
 	PathAndFillManager pathAndFillManager;
