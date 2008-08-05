@@ -41,7 +41,7 @@ import ij.gui.*;
 import ij.plugin.PlugIn;
 
 
-import vib.oldregistration.Bookstein_FromMarkers;
+import landmarks.Bookstein_From_Landmarks;
 
 import vib.transforms.OrderedTransformations;
 
@@ -91,7 +91,7 @@ public class CreateTracingVolume_ implements PlugIn {
 		manager.load(tracesFileName);
 		ArrayList< Path > allPaths=manager.getAllPaths();
 		
-                Bookstein_FromMarkers matcher=new Bookstein_FromMarkers();
+                Bookstein_From_Landmarks matcher=new Bookstein_From_Landmarks();
                 matcher.loadImages(standardBrainFC,realImageFC);
                 OrderedTransformations transformation=matcher.register();
 		

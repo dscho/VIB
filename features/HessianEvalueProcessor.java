@@ -61,15 +61,17 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 			for (int y = 1; y < height - 1; ++y) {
 				for (int x = 1; x < width - 1; ++x) {
 
-					c.hessianEigenvaluesAtPoint2D(x, y,
-								      true, // order absolute
-								      evalues,
-								      normalize,
-								      false,
-								      sepX,
-								      sepY);
+					boolean real = c.hessianEigenvaluesAtPoint2D(x, y,
+										     true, // order absolute
+										     evalues,
+										     normalize,
+										     false,
+										     sepX,
+										     sepY);
 					int index = y * width + x;
-					float value = measureFromEvalues2D(evalues);
+					float value = 0;
+					if( real )
+						value = measureFromEvalues2D(evalues);
 					slice[index] = value;
 					if( value < minResult )
 						minResult = value;
@@ -94,16 +96,18 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 					for (int y = 1; y < height - 1; ++y) {
 						for (int x = 1; x < width - 1; ++x) {
 
-							c.hessianEigenvaluesAtPoint3D(x, y, z,
-										      true, // order absolute
-										      evalues,
-										      normalize,
-										      false,
-										      sepX,
-										      sepY,
-										      sepZ);
+							boolean real = c.hessianEigenvaluesAtPoint3D(x, y, z,
+												     true, // order absolute
+												     evalues,
+												     normalize,
+												     false,
+												     sepX,
+												     sepY,
+												     sepZ);
 							int index = y * width + x;
-							float value = measureFromEvalues3D(evalues);
+							float value = 0;
+							if( real )
+								value = measureFromEvalues3D(evalues);
 							slice[index] = value;
 							if( value < minResult )
 								minResult = value;

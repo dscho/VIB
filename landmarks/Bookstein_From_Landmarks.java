@@ -1,6 +1,6 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
-package vib.oldregistration;
+package landmarks;
 
 import ij.*;
 import ij.process.*;
@@ -8,22 +8,28 @@ import ij.gui.*;
 import ij.plugin.*;
 import ij.plugin.filter.*;
 
+import ij.measure.Calibration;
 
+import java.awt.Color;
 import java.io.*;
 
 import math3d.Point3d;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.ListIterator;
+import java.util.Comparator;
 
+import vib.FastMatrix;
 import vib.transforms.OrderedTransformations;
 import vib.transforms.FastMatrixTransform;
 import vib.transforms.BooksteinTransform;
-
 import landmarks.NamedPoint;
-import landmarks.NamedPointSet;
+import vib.oldregistration.RegistrationAlgorithm;
 
-public class Bookstein_FromMarkers extends RegistrationAlgorithm implements PlugIn {
+public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements PlugIn {
+
+        OrderedTransformations transformation;
 
         static int test_column_x;
         static int test_column_y;
@@ -69,21 +75,19 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
                 if(points0==null) {
                         IJ.error("No corresponding .points file found "+
                                  "for image: \""+sourceImages[0].getTitle()+"\"");
-                        System.out.println("for 0 in Bookstein_FromMarkers.register()");
+                        System.out.println("for 0 in Bookstein_From_Landmarks.register()");
                         return null;
                 }
 
                 if(points1==null) {
                         IJ.error("No corresponding .points file found "+
                                  "for image: \""+sourceImages[1].getTitle()+"\"");
-                        System.out.println("for 1 in Bookstein_FromMarkers.register()");
+                        System.out.println("for 1 in Bookstein_From_Landmarks.register()");
                         return null;
                 }
 
                 ArrayList<String> commonPointNames = points0.namesSharedWith(points1);
 
-		System.out.println("found "+commonPointNames.size()+" points in common.");
-		
                 Point3d[] domainPoints=new Point3d[commonPointNames.size()];
                 Point3d[] templatePoints=new Point3d[commonPointNames.size()];
 
@@ -136,8 +140,8 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
                         ++i_index;
                 }
 
-                Bookstein_FromMarkers.test_column_x=(int)templatePoints[1].x;
-                Bookstein_FromMarkers.test_column_y=(int)templatePoints[1].x;
+                Bookstein_From_Landmarks.test_column_x=(int)templatePoints[1].x;
+                Bookstein_From_Landmarks.test_column_y=(int)templatePoints[1].x;
 
                 BooksteinTransform b=new BooksteinTransform(domainPoints,templatePoints);
 
@@ -157,7 +161,7 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
 
                 int[] wList = WindowManager.getIDList();
                 if (wList==null) {
-                        IJ.error("Bookstein_FromMarkers.run(): No images are open");
+                        IJ.error("Bookstein_From_Landmarks.run(): No images are open");
                         return;
                 }
 
@@ -170,7 +174,7 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
                 String none = "*None*";
                 titles[wList.length] = none;
 
-                GenericDialog gd = new GenericDialog("Thin Plate Spline Registration from Markers");
+                GenericDialog gd = new GenericDialog("Thin Plate Spline Registration from Landmarks");
                 gd.addChoice("Template stack:", titles, titles[0]);
                 gd.addChoice("Stack to transform:", titles, titles[1]);
 

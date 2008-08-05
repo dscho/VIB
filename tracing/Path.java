@@ -820,16 +820,19 @@ public class Path implements Cloneable {
 			     1); // threshold
 
 		content3D = univ.getContent(title);
+		content3D.setLocked(true);
 		return content3D;
 	}
 
 	public void setSelected(boolean newSelectedStatus) {
 		if( newSelectedStatus != selected ) {
 			selected = newSelectedStatus;
-			if( selected )
-				content3D.setColor(new Color3f(Color.green));
-			else
-				content3D.setColor(new Color3f(Color.magenta));
+			if( content3D != null ) {
+				if( selected )
+					content3D.setColor(new Color3f(Color.green));
+				else
+					content3D.setColor(new Color3f(Color.magenta));
+			}
 		}
 	}
 

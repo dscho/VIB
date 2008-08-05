@@ -160,6 +160,14 @@ class NeuriteTracerResultsDialog
 		changeState(preGaussianState);
 	}
 
+	public void setPreprocessLabelSigma( double sigma ) {
+		String basic = "Hessian-based analysis";
+		if( sigma < 0 )
+			preprocess.setLabel(basic);
+		else
+			preprocess.setLabel(basic+" (\u03C2="+sigma+")");
+	}
+
 	public void exitRequested() {
 
 		// FIXME: check that everything is saved...
@@ -471,7 +479,8 @@ class NeuriteTracerResultsDialog
 			nearbyPanel.add(nearbyField,BorderLayout.CENTER);
 			nearbyPanel.add(new Label("slices to each side)"),BorderLayout.EAST);
 
-			preprocess = new Checkbox("Hessian-based analysis");
+			preprocess = new Checkbox();
+			setPreprocessLabelSigma(-1);
 			preprocess.addItemListener( this );
 			showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
 

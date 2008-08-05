@@ -71,7 +71,7 @@ import amira.AmiraParameters;
 public class Simple_Neurite_Tracer extends ThreePanes
 	implements PlugIn, SearchProgressCallback, FillerProgressCallback, GaussianGenerationCallback {
 
-	public static final String PLUGIN_VERSION = "1.2.2";
+	public static final String PLUGIN_VERSION = "1.2.3";
 	static final boolean verbose = false;
 
 	PathAndFillManager pathAndFillManager;
@@ -924,7 +924,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		try {
 
-			ImagePlus currentImage = WindowManager.getCurrentImage();
+			ImagePlus currentImage = IJ.getImage();
 
 			if( currentImage == null ) {
 				IJ.error( "There's no current image to trace." );
@@ -957,9 +957,15 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			Calibration calibration = currentImage.getCalibration();
 			if( calibration != null ) {
-				x_spacing = calibration.pixelWidth;
-				y_spacing = calibration.pixelHeight;
-				z_spacing = calibration.pixelDepth;
+				double pw = calibration.pixelWidth;
+				double ph = calibration.pixelHeight;
+				double pd = calibration.pixelDepth;
+				if (pw < 0 || ph < 0 || pd < 0) {
+					IJ.error("Warning: some dimensions in calibration information [ "+pw+", "+ph+", "+pd+" ] are negative - treating them as absolute values.");
+				}
+				x_spacing = Math.abs(pw);
+				y_spacing = Math.abs(ph);
+				z_spacing = Math.abs(pd);
 				spacing_units = calibration.getUnits();
 				if( spacing_units == null || spacing_units.length() == 0 )
 					spacing_units = "" + calibration.getUnit();
@@ -1033,7 +1039,13 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				GenericDialog gd = new GenericDialog("Simple Neurite Tracer (v" +
 								     PLUGIN_VERSION + ")");
 				gd.addMessage("Tracing the image: "+currentImage.getTitle());
-				gd.addCheckbox("Use three pane view?", true);
+				String extraMemoryNeeded = " (will use an extra: ";
+				int bitDepth = currentImage.getBitDepth();
+				int byteDepth = bitDepth == 24 ? 4 : bitDepth / 8;
+				long megaBytesExtra = ( ((long)width) * height * depth * byteDepth * 2 ) / (1024 * 1024);
+				extraMemoryNeeded += megaBytesExtra + "MiB of memory)";
+
+				gd.addCheckbox("Use three pane view?"+extraMemoryNeeded, true);
 
 				if( ! java3DAvailable ) {
 					gd.addMessage("(Java3D classes don't seem to be available, so no 3D viewer option is available.)");
@@ -1041,7 +1053,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					gd.addMessage("(3D viewer option is only currently available for 8 bit images)");
 				} else {
 					showed3DViewerOption = true;
-					gd.addCheckbox("Use 3D viewer? (Experimental)",true);
+					gd.addCheckbox("Use 3D viewer? (Experimental)",false);
 				}
 
 				gd.showDialog();
@@ -1142,7 +1154,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			if( use3DViewer ) {
 
 				String title = "Original image for tracing";
-				
+
 				univ = new Image3DUniverse(512, 512);
 				univ.addUniverseListener(pathAndFillManager);
 				univ.show();
@@ -1155,6 +1167,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 							    channels,
 							    2, // resampling factor
 							    Content.VOLUME);
+				c.setLocked(true);
 				c.setTransparency(0.5f);
 			}
 
@@ -1417,6 +1430,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	boolean hessianEnabled = false;
 	ComputeCurvatures hessian = null;
+	double lastGaussianSigma = -1;
 
 	// Even better, we might have a "tubeness" file already there:
 
@@ -1424,14 +1438,55 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	public synchronized void enableHessian( boolean enable ) {
 		if( enable ) {
-			if( hessian == null && tubeness == null ) {
+			if ( tubeness != null ) {
+				hessianEnabled = true;
+				return;
+			}
+			if( hessian != null ) {
+				// So we have previously done a
+				// Gaussian convolution:
+				YesNoCancelDialog yncd =
+					new YesNoCancelDialog(IJ.getInstance(),
+							      "Recalculate Gaussian?",
+							      "Previously you chose to look for structures with\n"+
+							      "approximate radius "+lastGaussianSigma+". Would you like to\n"+
+							      "use a different value this time?");
+				if( yncd.cancelPressed() ) {
+					hessianEnabled = false;
+					resultsDialog.preprocess.setState(false);
+					resultsDialog.setPreprocessLabelSigma(-1);
+					return;
+				} else if( yncd.yesPressed() )  {
+					hessian = null;
+				}
+			}
+			if( hessian == null ) {
+				double sigma = -1;
+				double minimumSeparation = Math.min(x_spacing,Math.min(y_spacing,z_spacing));
+				while( sigma <= 0 ) {
+					GenericDialog gd = new GenericDialog("Select Scale of Structures");
+					gd.addMessage("Please enter the approximate radius of the structures you are looking for:");
+					gd.addNumericField("Sigma: ", minimumSeparation, 4);
+					gd.addMessage("(The default value is the minimum voxel separation.)");
+					gd.showDialog();
+					if( gd.wasCanceled() )
+						return;
+
+					sigma = gd.getNextNumber();
+					if( sigma <= 0 ) {
+						IJ.error("The value of sigma must be positive");
+					}
+				}
 				resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
+				resultsDialog.setPreprocessLabelSigma(sigma);
 				resultsDialog.preprocess.setEnabled(false);
-				hessian = new ComputeCurvatures( xy, x_spacing, this, true );
+				lastGaussianSigma = sigma;
+				hessian = new ComputeCurvatures( xy, sigma, this, true );
 				new Thread(hessian).start();
 			}
 			hessianEnabled = true;
 		} else {
+			resultsDialog.setPreprocessLabelSigma(-1);
 			hessianEnabled = false;
 		}
 	}
