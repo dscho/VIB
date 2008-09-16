@@ -49,6 +49,8 @@ import org.xml.sax.SAXException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.awt.Color;
+
 import javax.media.j3d.View;
 import ij3d.Content;
 import ij3d.UniverseListener;
@@ -872,6 +874,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		if( qName.equals("path") ) {
 
 			allPaths.add( current_path );
+			if( plugin.use3DViewer ) {
+				current_path.addTo3DViewer(plugin.univ,x_spacing,y_spacing,z_spacing,Color.MAGENTA);
+			}
 
 		} else if( qName.equals("fill") ) {
 
