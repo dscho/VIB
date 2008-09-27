@@ -210,6 +210,9 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 			win.close();
 			win = null;
 		}
+		// Flush native resources used by this universe:
+		super.removeAllLocales();
+		super.cleanup();
 	}
 
 	public ImageWindow3D getWindow() {
