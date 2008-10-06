@@ -165,6 +165,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		Calibration calibration = image.getCalibration();
 
 		FileInfo originalFileInfo = image.getOriginalFileInfo();
+		
 		String originalFileName=originalFileInfo.fileName;
 		System.out.println("originalFileName is "+originalFileName);
 		int lastDot=originalFileName.lastIndexOf(".");
@@ -216,9 +217,9 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			tubenessThreshold = p.tubenessThreshold;
 			minimumRollingMean = p.minimumRollingMean;
 		} else {
-			if (true)
+/*			if (true)
 				throw new RuntimeException("Tried to create a generic dialog!");
-			// Pop up a GenericDialog to ask:
+*/			// Pop up a GenericDialog to ask:
 			GenericDialog gd = new GenericDialog("Auto Tracer");
 			gd.addNumericField( "Tubeness threshold for destinations", tubenessThreshold, 2 );
 			gd.addNumericField( "Minimum rolling mean tubeness", minimumRollingMean, 2 );
