@@ -1,10 +1,10 @@
 import ij.*;
 import ij.io.*;
 import ij.util.Tools;
-import ij.process.*;
 import ij.plugin.*;
 import java.io.*;
-import java.util.*;
+import java.util.zip.GZIPInputStream;
+
 import ij.measure.*;
 import java.awt.image.*;
 
@@ -12,6 +12,11 @@ import java.awt.image.*;
     confocal microscope.  The width, height and number of images are
     extracted from the first 3 16-bit word in the 76 byte header.
     Use Image/Show Info to display the header information.
+
+    See statements flagged // ghj 4/3/06
+    for modifications by "Greg Joss" <gjoss@bio.mq.edu.au>
+    to open 16-bit little-endian (Intel) Biorad files from "Winnok De Vos (ir.)" <winnok.devos@ugent.be>
+    some if (IJ.debugMode)IJ.log(statements were also added.
 */
 
 public class Biorad_Reader extends ImagePlus implements PlugIn {
@@ -38,26 +43,37 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
 	    return;
 	}
 	if (fi!=null) {
-	    FileOpener fo = new FileOpener(fi);
-	    ImagePlus imp = fo.open(false);
-	    if (imp==null)
-		return;
+
+		if(fileName.toLowerCase().endsWith(".gz") && IJ.getVersion().compareTo("1.38s")<0) {
+			IJ.error("ImageJ 1.38s or later required to open gzipped Biorad PIC files");
+			return;
+		}
+
+		FileOpener fo = new FileOpener(fi);
+		ImagePlus imp = fo.open(false);
+		if(IJ.debugMode)IJ.log("imp="+imp);
+		if (imp==null)
+			return;
 	    
-	    setStack(fileName, imp.getStack());
-	    
-	    try {
-		Calibration BioRadCal = 
-		    getBioRadCalibration(fi.width, fi.height, fi.nImages);
-		setCalibration(BioRadCal);
-	    }
-	    catch (Exception e) {
-	        IJ.showStatus("");
-               String msg = e.getMessage();
-               if (e==null) msg = ""+e;
-               if (msg.indexOf("EOF")==-1)
-	            IJ.showMessage("BioradReader", msg);
-	        return;
-	    }
+		setStack(fileName, imp.getStack());
+		setFileInfo(fi);
+		if(IJ.debugMode) IJ.log("FileInfo="+fi);
+		try {
+			int pixelLength=1;
+			switch (fi.fileType) {	// ghj 4/3/06
+				case FileInfo.GRAY8: pixelLength=1; break;
+				case FileInfo.GRAY16_UNSIGNED:pixelLength=2; break;
+			}
+			Calibration BioRadCal = getBioRadCalibration(fi.width, fi.height, fi.nImages, pixelLength);			// ghj 4/3/0
+			setCalibration(BioRadCal);
+		} catch (Exception e) {
+			IJ.showStatus("");
+			String msg = e.getMessage();
+			if (e==null) msg = ""+e;
+			if (msg.indexOf("EOF")==-1)
+				IJ.showMessage("BioradReader", msg);
+			return;
+		}
 	    
 	    boolean hasLut = false;
 	    
@@ -80,9 +96,10 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
 	    
 	    if (!notes.equals(""))
 		setProperty("Info", notes);
-	    
+	    if(IJ.debugMode)IJ.log("arg=|"+arg+"|");
 	    if (arg.equals("")) show();
 	}
+	if(IJ.debugMode)IJ.log("done");
     }
 
     int getByte() throws IOException {
@@ -104,8 +121,15 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
     }
 
     void openFile() throws IOException {
-	f = new BufferedInputStream(new FileInputStream(directory+fileName));
-    }
+		// Note that this has been changed to cope with gzipped files
+		if (fileName.toLowerCase().endsWith(".pic.gz") ) {
+			// gzipped pic file
+			f = new BufferedInputStream(new GZIPInputStream(new FileInputStream(directory+fileName)));
+		} else {
+			// regular PIC file 
+			f = new BufferedInputStream(new FileInputStream(directory+fileName));
+		}
+	}
 
     FileInfo getHeaderInfo() throws IOException {
 	openFile();
@@ -125,7 +149,7 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
 	    throw new IOException(notBioradPicFile);
 	
 	FileInfo fi = new FileInfo();
-	fi.fileFormat = fi.RAW;
+	fi.fileFormat = FileInfo.RAW;
 	fi.fileName = fileName;
 	fi.directory = directory;
 	fi.width = width;
@@ -134,20 +158,21 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
 	fi.offset = 76;
    		
 	switch (byte_format) {
-	case 1:
-	    fi.fileType = fi.GRAY8;
-	    break;
-	case 0:
-	    fi.fileType = fi.GRAY16_UNSIGNED;
-	    break;
+		case 1:
+			fi.fileType = FileInfo.GRAY8;
+			break;
+		case 0:
+			fi.fileType = FileInfo.GRAY16_UNSIGNED;
+			fi.intelByteOrder = true;	// ghj 4/3/06
+			break;
 	}
-		
+	if(IJ.debugMode)IJ.log("fileType ("+FileInfo.GRAY8+","+FileInfo.GRAY16_UNSIGNED+")="+fi.fileType);
 	return fi;
     }
 
     /** Extracts the calibration info from the ASCII "notes" at the
 	end of Biorad pic files. */
-    Calibration getBioRadCalibration(int width, int height, int nImages) 
+    Calibration getBioRadCalibration(int width, int height, int nImages,int pixelLength) // ghj 4/3/06
 	throws IOException {
 	Calibration BioRadCal = new Calibration();
 	int NoteFlag, NoteType, Offset;
@@ -158,10 +183,10 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
 	double ScaleZ=0, framesPerSecond = 0, frameInterval = 0;
 	boolean xyt = false;
 		
-	Offset = 76 + height * width * nImages;
+	Offset = 76 + height * width * nImages*pixelLength;	// ghj 4/3/06
 	openFile();
 	f.skip(Offset);
-
+	if(IJ.debugMode)IJ.log("getBioRadCalibration");
 	/** Do ... While : cycle through notes until you reach the last
 	    note (indicated by bytes 2-5) For each note, different from
 	    'live note', see if it contains axis calibration data.  of
@@ -230,9 +255,11 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
 		    BioRadCal.frameInterval = frameInterval;
 		}											
 	    }
+	if(IJ.debugMode)IJ.log("Offset ="+Offset );
 	    Offset += NOTE_SIZE; // Jump to next note
 	    // stop if this was the last note
 	} while ( NoteFlag != 0 &  f.available()>=NOTE_SIZE); 
+	if(IJ.debugMode)IJ.log("lut?");
 	/** A LUT can optionally follow the notes as a raw 768 byte
 	    LUT, save the current offset and latter we will try to read
 	    the LUT */
@@ -246,6 +273,7 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
 	    BioRadCal.pixelDepth = frameInterval;
 	} 
 	f.close();
+	if(IJ.debugMode)IJ.log("BioRadCal"+BioRadCal);
 	return  BioRadCal; // return the filled biorad calibration
     }
 
