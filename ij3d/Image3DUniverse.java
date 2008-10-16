@@ -136,9 +136,9 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		if(cmax.x > globalMax.x) globalMax.x = cmax.x;
 		if(cmax.y > globalMax.y) globalMax.y = cmax.y;
 		if(cmax.z > globalMax.z) globalMax.z = cmax.z;
-		globalCenter.x = (globalMax.x - globalMin.x)/2;
-		globalCenter.y = (globalMax.y - globalMin.y)/2;
-		globalCenter.z = (globalMax.z - globalMin.z)/2;
+		globalCenter.x = globalMin.x + (globalMax.x - globalMin.x)/2;
+		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y)/2;
+		globalCenter.z = globalMin.z + (globalMax.z - globalMin.z)/2;
 
 		Transform3D transform = new Transform3D();
 		transform.setTranslation(new Vector3f(
@@ -171,6 +171,11 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		fireContentAdded(content);
 		this.addUniverseListener(content);
 		return content;
+	}
+
+	public Content addVoltex(ImagePlus image) {
+		return addVoltex(image, null, image.getTitle(), 0,
+			new boolean[] {true, true, true}, 1);
 	}
 
 	public Content addVoltex(ImagePlus image, Color3f color,
@@ -251,6 +256,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		if(selected == content)
 			clearSelection();
 		fireContentRemoved(content);
+		this.removeUniverseListener(content);
 	}
 
 	public Iterator contents() {

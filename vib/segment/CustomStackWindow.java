@@ -248,11 +248,17 @@ public class CustomStackWindow extends StackWindow
 			return;			
 		if (roi == null)
 			return;
+		int w = labels.getWidth(), h = labels.getHeight();
 		ImageProcessor labP = labels.getStack().getProcessor(slice);
 		labP.setRoi(roi);
 		Rectangle bounds = roi.getBoundingRect();
-		for(int i=bounds.x;i<=bounds.x+bounds.width;i++){
-			for(int j=bounds.y;j<=bounds.y+bounds.height;j++){
+		int x1 = bounds.x > 0 ? bounds.x : 0;
+		int y1 = bounds.y > 0 ? bounds.y : 0;
+		int x2 = x1 + bounds.width <= w ? x1 + bounds.width : w;
+		int y2 = y1 + bounds.height <= h ? y1 + bounds.height : h;
+
+		for(int i = x1; i < x2; i++){
+			for(int j = y1; j < y2; j++) {
 				if(roi.contains(i,j)) {
 					int oldID = labP.get(i, j);
 					if(!sidebar.getMaterials().
@@ -273,11 +279,18 @@ public class CustomStackWindow extends StackWindow
 			return;
 		if (sidebar.getMaterials().isLocked(materialID))
 			return;
+		int w = labels.getWidth(), h = labels.getHeight();
 		ImageProcessor labP = labels.getStack().getProcessor(slice);
 		labP.setRoi(roi);
 		Rectangle bounds = roi.getBoundingRect();
-		for(int i=bounds.x;i<=bounds.x+bounds.width;i++){
-			for(int j=bounds.y;j<=bounds.y+bounds.height;j++){
+
+		int x1 = bounds.x > 0 ? bounds.x : 0;
+		int y1 = bounds.y > 0 ? bounds.y : 0;
+		int x2 = x1 + bounds.width <= w ? x1 + bounds.width : w;
+		int y2 = y1 + bounds.height <= h ? y1 + bounds.height : h;
+
+		for(int i = x1; i < x2; i++){
+			for(int j = y1; j < y2; j++) {
 				if(roi.contains(i,j) && labP.get(i,j)==materialID){ 
 					labP.set(i,j,sidebar.getMaterials().getDefaultMaterialID());
 				}
@@ -434,6 +447,14 @@ public class CustomStackWindow extends StackWindow
 			processPlusButton();
 		} else if (ch == '-'){
 			processMinusButton();
-		}			
+		} else if (ch == 'i') {
+			processInterpolateButton();
+		} else if (ch == 't') {
+			processThresholdButton();
+		} else if (ch == 'o') {
+			processOpenButton();
+		} else if (ch == 'c') {
+			processCloseButton();
+		}
 	}
 }

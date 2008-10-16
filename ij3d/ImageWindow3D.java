@@ -53,6 +53,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	ImageCanvas3D canvas3D;
 	Label status = new Label("");
 	private boolean noOffScreen = false;
+	private ErrorListener error_listener;
 
 	public ImageWindow3D(String title, DefaultUniverse universe) {
 		super(title);
@@ -63,7 +64,8 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		this.universe = universe;
 		this.canvas3D = (ImageCanvas3D)universe.getCanvas();
 
-		new ErrorListener().addTo(universe);
+		error_listener = new ErrorListener();
+		error_listener.addTo(universe);
 
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
@@ -113,7 +115,6 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 
 	public boolean close() {
 		boolean b = super.close();
-		universe.removeUniverseListener(this);
 		return b;
 	}
 
@@ -249,7 +250,23 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 
 	public void windowClosing(WindowEvent e) {
 		super.windowClosing(e);
+		universe.removeUniverseListener(this);
+
+		// Must remove the listener so this instance can be garbage collected and removed from the Canvas3D, overcomming the limit of 32 total Canvas3D instances.
+		try {
+			Method m = SimpleUniverse.class.getMethod("removeRenderingErrorListener", new Class[]{RenderingErrorListener.class});
+			if (null != m) m.invoke(universe, new Object[]{error_listener});
+		} catch (Exception ex) {
+			System.out.println("Could NOT remove the RenderingErrorListener!");
+			ex.printStackTrace();
+		}
+
 		universe.close();
+		ImageJ ij = IJ.getInstance();
+		if (null != ij) {
+			removeKeyListener(ij);
+			canvas3D.removeKeyListener(ij);
+		}
 	}
 
 	/*

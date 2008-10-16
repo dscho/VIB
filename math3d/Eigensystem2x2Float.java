@@ -56,12 +56,17 @@ public class Eigensystem2x2Float {
 
 		double discriminant = b * b - 4 * a * c;
 		if( discriminant < 0 ) {
+			/*
 			String problemMatrix =
 				"[" + A + ", " + B + "]\n" +
 				"[" + B + ", " + C + "]\n";
 
 			throw new RuntimeException( "(BUG) Some complex roots found for matrix:\n" + problemMatrix +
 						    "\ndiscriminant was: "+discriminant);
+			*/
+
+			return false;
+
 		} else {
 			eigenValues[0] = (float)( ( - b + Math.sqrt(discriminant) ) / (2 * a) );
 			eigenValues[1] = (float)( ( - b - Math.sqrt(discriminant) ) / (2 * a) );

@@ -23,7 +23,7 @@ import ij.process.ByteProcessor;
 import vib.transforms.OrderedTransformations;
 
 import util.FileAndChannel;
-import vib.oldregistration.Bookstein_FromMarkers;
+import landmarks.Bookstein_From_Landmarks;
 
 import util.BatchOpener;
 
@@ -451,7 +451,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			FileAndChannel fc=new FileAndChannel(originalImageFileName, 0 );
 			FileAndChannel standardBrainFC=new FileAndChannel(standardBrainFileName,0);
 			
-			Bookstein_FromMarkers matcher=new Bookstein_FromMarkers();
+			Bookstein_From_Landmarks matcher=new Bookstein_From_Landmarks();
 			matcher.loadImages(standardBrainFC,fc);
 			OrderedTransformations transformation=matcher.register();
 		

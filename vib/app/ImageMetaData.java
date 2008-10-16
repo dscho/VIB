@@ -7,6 +7,8 @@ import amira.AmiraMeshDecoder;
 import amira.AmiraTableEncoder;
 
 import ij.text.TextPanel;
+import ij.macro.Interpreter;
+import ij.IJ;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -101,17 +103,18 @@ public class ImageMetaData {
 
 	public void loadFrom(String path) {
 		statisticsPath = path;
-		AmiraMeshDecoder decoder = new AmiraMeshDecoder();
-		AmiraTable table;
 		if (!(new File(path).exists()))
 			return;
+
+		AmiraMeshDecoder decoder = new AmiraMeshDecoder();
+		final AmiraTable table;
+
 		if (decoder.open(path) &&
-				decoder.isTable())
+				decoder.isTable()) {
 			table = decoder.getTable();
-		else
+		} else
 			return;
-		table.hide();
-		table.setVisible(false);
+
 		TextPanel panel = table.getTextPanel();
 		materials = new Material[panel.getLineCount()];
 		for (int i = 0; i < materials.length; i++) {
@@ -157,10 +160,11 @@ public class ImageMetaData {
 				m.count + "\t" + m.volume + "\t" + m.centerX +
 				"\t" + m.centerY + "\t" + m.centerZ + "\n";
 		}
-		AmiraTable table = new AmiraTable("Statistics for " + path,
-			AMIRA_HEADINGS, data, true);
-		table.hide();
-		table.setVisible(false);
+
+		// prevent table from showing
+		AmiraTable table = new AmiraTable("Statistics for " +
+			path, AMIRA_HEADINGS, data, true);
+
 		Hashtable p = table.getParameters();
 		for (int i = 0; i < transformations.length; i++) {
 			Transformation t = transformations[i];

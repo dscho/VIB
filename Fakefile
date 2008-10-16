@@ -5,7 +5,9 @@ CLASSPATH=$CLASSPATH:junit-4.4.jar:.
 VIB_.jar <- **/*.java \
 	vib/FloatMatrix.java math3d/FloatMatrixN.java FibonacciHeapInt.java \
 	math3d/JacobiFloat.java math3d/Eigensystem3x3Float.java \
-	math3d/Eigensystem2x2Float.java
+	math3d/Eigensystem2x2Float.java \
+	vib/segment/materials/* \
+	vib/segment/icons/*.png view4d/icons/*.png
 
 # clean up from "make"
 
@@ -28,7 +30,8 @@ all-jars[] <- simple_jars jars
 
 simple_jars[] <- Two_Point_Correlation.jar Scrollable_StackWindow.jar \
 	Align_Image.jar Moving_Least_Squares.jar Install_Java3D.jar \
-	Seam_Remover.jar Triangle_Algorithm.jar Menu_Font.jar
+	Seam_Remover.jar Triangle_Algorithm.jar Menu_Font.jar \
+	Thread_Killer.jar
 
 *.jar <- *.java
 
@@ -167,11 +170,15 @@ SOURCES(VIB_Protocol.jar)=vib/app/*.java \
 	vib/app/gui/*.java \
 	vib/app/module/*.java \
 	vib/segment/*.java \
+	vib/segment/materials/* \
+	vib/segment/icons/*.png \
 	distance/*.java \
 	leica/*.java \
 	amira/*.java \
 	math3d/*.java \
 	pal/math/*.java \
+	util/BatchOpener.java \
+	util/StupidLog.java \
 	vib/DiffusionInterpol2_.java \
 	vib/Resample_.java \
 	vib/InterpolatedImage.java \
@@ -186,6 +193,7 @@ SOURCES(VIB_Protocol.jar)=vib/app/*.java \
 	vib/VIB.java \
 	vib/BatchLog_.java \
 	vib/IDT_Interpolate_Binary.java \
+	vib/Local_Threshold.java \
 	VIB_Protocol.java
 SOURCES(Average_Color.jar)=Average_Color.java CIELAB.java
 SOURCES(Bilateral_Filter.jar)=Bilateral_Filter.java \

@@ -118,6 +118,7 @@ public class Eigensystem3x3Double {
 			   never happen, since this is a real
 			   symmetric matrix. */
 
+			/*
 			String problemMatrix =
 				"[" + A + ", " + B + ", " + C +"]\n" +
 				"[" + B + ", " + D + ", " + E +"]\n" +
@@ -125,6 +126,9 @@ public class Eigensystem3x3Double {
 
 			throw new RuntimeException( "(BUG) Some complex roots found for matrix:\n" + problemMatrix +
 				"\ndiscriminant was: "+discriminant);
+			*/
+
+			return false;
 
 		} else if( discriminant < 0 ) {
 

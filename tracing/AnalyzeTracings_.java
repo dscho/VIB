@@ -17,12 +17,11 @@ import ij.io.*;
 import ij.gui.*;
 import ij.plugin.PlugIn;
 
+import landmarks.Bookstein_From_Landmarks;
+
 import vib.transforms.OrderedTransformations;
 
 import util.FileAndChannel;
-import vib.oldregistration.Bookstein_FromMarkers;
-
-
 import util.BatchOpener;
 
 class PointInPath {
@@ -122,7 +121,7 @@ public class AnalyzeTracings_ implements PlugIn {
                 String standardBrainLabelsFileName="/media/WD USB 2/standard-brain/data/vib-drosophila/CantonM43c.labels";
                 FileAndChannel standardBrainFC=new FileAndChannel(standardBrainFileName,0);
 		
-		Bookstein_FromMarkers matcher=new Bookstein_FromMarkers();
+		Bookstein_From_Landmarks matcher=new Bookstein_From_Landmarks();
 		matcher.loadImages(standardBrainFC,fc);
 		OrderedTransformations transformation=matcher.register();
 		
