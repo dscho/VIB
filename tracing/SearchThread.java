@@ -319,9 +319,9 @@ public abstract class SearchThread extends Thread {
 
 		Calibration calibration = imagePlus.getCalibration();
 
-		x_spacing = (float)calibration.pixelWidth;
-		y_spacing = (float)calibration.pixelHeight;
-		z_spacing = (float)calibration.pixelDepth;
+		x_spacing = (float)Math.abs(calibration.pixelWidth);
+		y_spacing = (float)Math.abs(calibration.pixelHeight);
+		z_spacing = (float)Math.abs(calibration.pixelDepth);
 		spacing_units = calibration.getUnit();
 
 		if( (x_spacing == 0.0) ||

@@ -217,6 +217,10 @@ Tubeness_.jar: SOURCES=features/Tubeness_.java \
 	features/ComputeCurvatures.java \
 	features/TubenessProcessor.java \
 	features/GaussianGenerationCallback.java \
+	math3d/Eigensystem2x2Double.java \
+	math3d/Eigensystem2x2Float.java \
+	math3d/Eigensystem3x3Double.java \
+	math3d/Eigensystem3x3Float.java \
 	math3d/JacobiFloat.java \
 	math3d/JacobiDouble.java \
 	math3d/Point3d.java \

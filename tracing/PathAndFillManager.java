@@ -49,6 +49,8 @@ import org.xml.sax.SAXException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.awt.Color;
+
 import javax.media.j3d.View;
 import ij3d.Content;
 import ij3d.UniverseListener;
@@ -77,9 +79,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		this();
 		this.imagePlus = imagePlus;
 		Calibration c = imagePlus.getCalibration();
-		this.x_spacing = c.pixelWidth;
-		this.y_spacing = c.pixelHeight;
-		this.z_spacing = c.pixelDepth;
+		this.x_spacing = Math.abs(c.pixelWidth);
+		this.y_spacing = Math.abs(c.pixelHeight);
+		this.z_spacing = Math.abs(c.pixelDepth);
 		this.spacing_units = c.getUnit();
 		if( this.spacing_units == null || this.spacing_units.length() == 0 )
 			this.spacing_units = "" + c.getUnit();
@@ -872,6 +874,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		if( qName.equals("path") ) {
 
 			allPaths.add( current_path );
+			if( plugin.use3DViewer ) {
+				current_path.addTo3DViewer(plugin.univ,x_spacing,y_spacing,z_spacing,Color.MAGENTA);
+			}
 
 		} else if( qName.equals("fill") ) {
 

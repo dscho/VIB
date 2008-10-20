@@ -591,6 +591,11 @@ public class Executer {
 			univ.clearSelection();
 	}
 
+	public void showAllCoordinateSystems(boolean b) {
+		for (Iterator it = univ.contents(); it.hasNext(); )
+			((Content)it.next()).showCoordinateSystem(b);
+	}
+
 
 	/* ----------------------------------------------------------
 	 * Point list submenu
