@@ -23,7 +23,7 @@ import java.util.LinkedList;
 public class Flood_Fill implements PlugIn {
 	
 	private static boolean debug = false;
-	private static int tol = 10;
+	private static int tol = 0;
 
 	public static final String MACRO_CMD =
 		"var leftClick=16, alt=9;\n" +
@@ -48,55 +48,78 @@ public class Flood_Fill implements PlugIn {
 				Integer.parseInt(z));
 	}
 
-	public synchronized static void fill(int x, int y, int z) {
-		Point p = new Point(x, y, z);
-		Vector v = new Vector();
-		v.add(p);
-		fill(v);
+	public synchronized static void fill(int sx, int sy, int sz) {
+		fill(IJ.getImage(), sx, sy, sz, (byte)Toolbar.getForegroundColor().getRGB());
 	}
 
-	public synchronized static void fill(Vector seedpoints) {
-		ImagePlus imp = IJ.getImage();
+	public synchronized static void fill(ImagePlus imp, int sx, int sy, int sz, byte color) {
 		IJ.showStatus("Flood fill");
-		byte color = (byte)Toolbar.getForegroundColor().getRGB();
 		int w = imp.getWidth(), h = imp.getHeight();
 		int d = imp.getStackSize();
+		int wh = w * h;
 		byte[][] b = new byte[d][];
 		for(int z = 0; z < d; z++) {
 			b[z] = (byte[])imp.getStack().
 					getProcessor(z+1).getPixels();
 		}
-		Point pt = (Point)seedpoints.get(0);
-		byte colorToFill = b[pt.z][pt.y * w + pt.x];
+		int colorToFill = (int)(b[sz][sy * w + sx] & 0xff);
 
-		LinkedList queue = new LinkedList();
-		queue.addAll(seedpoints);
-		while(!queue.isEmpty()) {
-			IJ.showProgress(1, queue.size());
-			Point p = (Point)queue.removeLast();
-			int by = (int)(b[p.z][p.z*w+p.x]);
+		Stack stack = new Stack();
+		stack.push(sz * wh + sy * w + sx);
+		while(!stack.isEmpty()) {
+			int p = stack.pop();
+			int pz = p / wh;
+			int pi = p % wh;
+			int py = pi / w;
+			int px = pi % w;
 
-			if(Math.abs((int)(colorToFill&0xff)-by) > tol) {
+			int by = (int)(b[pz][pi] & 0xff);
+			if(Math.abs(colorToFill - by) > tol)
 				continue;
-			}
-			b[p.z][p.y*w+p.x] = color;
 
-			if(p.x>0)   queue.addFirst(new Point(p.x-1,p.y,p.z));
-			if(p.x<w-1) queue.addFirst(new Point(p.x+1,p.y,p.z));
-			if(p.y>0)   queue.addFirst(new Point(p.x,p.y-1,p.z));
-			if(p.y<h-1) queue.addFirst(new Point(p.x,p.y+1,p.z));
-			if(p.z>0)   queue.addFirst(new Point(p.x,p.y,p.z-1));
-			if(p.z<d-1) queue.addFirst(new Point(p.x,p.y,p.z+1));
+			b[pz][pi] = color;
+
+			int pzwh = pz * wh;
+			if(pz > 0)     stack.push((pz - 1) * wh + pi);
+			if(pz < d - 1) stack.push((pz + 1) * wh + pi);
+			if(py > 0)     stack.push(pzwh + pi - w);
+			if(py < h- 1)  stack.push(pzwh + pi + w);
+			if(px > 0)     stack.push(pzwh + pi - 1);
+			if(px < w - 1) stack.push(pzwh + pi + 1);
 		}
 		imp.updateAndDraw();
 	}
 
-	private static class Point {
-		int x, y, z;
-		public Point(int x, int y, int z) {
-			this.x = x;
-			this.y = y;
-			this.z = z;
+	static final class Stack {
+		private int[] array;
+		private int size;
+		
+		Stack() {
+			array = new int[1000000];
+			size = 0;
+		}
+
+		public void push(int n) {
+			if(size == array.length) {
+				int[] tmp = new int[array.length + 1000000];
+				System.arraycopy(array, 0, tmp, 0, array.length);
+				array = tmp;
+			}
+			array[size] = n;
+			size++;
+		}
+
+		public int pop() {
+			size--;
+			return array[size];
+		}
+
+		public int size() {
+			return size;
+		}
+
+		public boolean isEmpty() {
+			return size == 0;
 		}
 	}
 }
