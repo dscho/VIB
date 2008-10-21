@@ -48,7 +48,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordX(int i) {
-		double curX = i * volume.xSpace;
+		double curX = i * volume.xSpace + volume.minCoord.x;
 		quadCoords[0] = curX;
 		quadCoords[3] = curX;
 		quadCoords[6] = curX;
@@ -56,7 +56,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordY(int i) {
-		double curY = i * volume.ySpace;
+		double curY = i * volume.ySpace + volume.minCoord.y;
 		quadCoords[1] = curY;
 		quadCoords[4] = curY;
 		quadCoords[7] = curY;
@@ -64,7 +64,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordZ(int i) {
-		double curZ = i * volume.zSpace;
+		double curZ = i * volume.zSpace + volume.minCoord.z;
 		quadCoords[2] = curZ;
 		quadCoords[5] = curZ;
 		quadCoords[8] = curZ;

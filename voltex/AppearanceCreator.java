@@ -141,9 +141,9 @@ public class AppearanceCreator implements VolRendConstants {
 			textures = zTextures = new Texture2D[rSize];
 			zTg = new TexCoordGeneration();
 			zTg.setPlaneS(new Vector4f(
-					volume.xTexGenScale, 0f, 0f, 0f));
+					volume.xTexGenScale, 0f, 0f, -(float)(volume.xTexGenScale * volume.minCoord.x)));
 			zTg.setPlaneT(new Vector4f(
-					0f, volume.yTexGenScale, 0f, 0f));
+					0f, volume.yTexGenScale, 0f, -(float)(volume.yTexGenScale * volume.minCoord.y)));
 			break;
 		  case Y_AXIS:
 			rSize = volume.yDim;
@@ -152,9 +152,9 @@ public class AppearanceCreator implements VolRendConstants {
 			textures = yTextures = new Texture2D[rSize];
 			yTg = new TexCoordGeneration();
 			yTg.setPlaneS(new Vector4f(
-					volume.xTexGenScale, 0f, 0f, 0f));
+					volume.xTexGenScale, 0f, 0f, -(float)(volume.xTexGenScale * volume.minCoord.x)));
 			yTg.setPlaneT(new Vector4f(
-					0f, 0f, volume.zTexGenScale, 0f));
+					0f, 0f, volume.zTexGenScale, -(float)(volume.zTexGenScale * volume.minCoord.z)));
 			break;
 		  case X_AXIS:
 			rSize = volume.xDim;
@@ -163,9 +163,9 @@ public class AppearanceCreator implements VolRendConstants {
 			textures = xTextures = new Texture2D[rSize];
 			xTg = new TexCoordGeneration();
 			xTg.setPlaneS(new Vector4f(
-					0f, volume.yTexGenScale, 0f, 0f));
+					0f, volume.yTexGenScale, 0f, -(float)(volume.yTexGenScale * volume.minCoord.y)));
 			xTg.setPlaneT(new Vector4f(
-					0f, 0f, volume.zTexGenScale, 0f));
+					0f, 0f, volume.zTexGenScale, -(float)(volume.zTexGenScale * volume.minCoord.z)));
 			break;
 		}
 
