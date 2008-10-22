@@ -3,6 +3,8 @@ package ij3d;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 import javax.media.j3d.J3DGraphics2D;
 import javax.media.j3d.Canvas3D;
+import javax.media.j3d.Background;
+import javax.vecmath.Color3f;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseListener;
@@ -39,6 +41,7 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 	private RoiImagePlus roiImagePlus;
 	private ImageCanvas roiImageCanvas;
 	private Map<Integer, Long> pressed, released; 
+	private Background background = new Background(new Color3f(0, 0, 0)); // black by default
 
 	private class RoiImagePlus extends ImagePlus {
 		public RoiImagePlus(String title, ByteProcessor ip) {
@@ -67,10 +70,16 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 		};
 		roiImageCanvas.removeKeyListener(ij.IJ.getInstance());
 		roiImageCanvas.disablePopupMenu(true);
-		
+
+		getGraphicsContext3D().setBackground(background);
+
 		addListeners();
 		addMouseListener(roiImageCanvas);
 		addMouseMotionListener(roiImageCanvas);
+	}
+
+	public Background getBG() { //can't use getBackground()
+		return background;
 	}
 
 	public void killRoi() {
@@ -122,6 +131,11 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 
 	public Roi getRoi() {
 		return roiImagePlus.getRoi();
+	}
+
+	public void preRender() {
+		super.getGraphicsContext3D().clear(); // so background is painted
+		super.preRender();
 	}
 
 	public void render() {
