@@ -29,6 +29,8 @@ public class AmiraMeshReader_ extends ImagePlus implements PlugIn {
 		if(d.open(dir+arg)) {
 			if (d.isTable()) {
 				TextWindow table = d.getTable();
+				if(showIt)
+					table.show();
 			} else {
 				FileInfo fi=new FileInfo();
 				File file = new File(dir+arg);

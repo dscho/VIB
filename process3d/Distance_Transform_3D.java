@@ -1,3 +1,5 @@
+package process3d;
+
 import ij.gui.GenericDialog;
 import java.awt.Scrollbar;
 import java.awt.event.AdjustmentListener;
@@ -25,7 +27,6 @@ public class Distance_Transform_3D implements PlugInFilter {
 
 	private ImagePlus image;
 	private int w, h, d;
-	private byte[][] pixels;
 	private float[][] dist;
 	private float maxVal;
 	private int fg = 255;
@@ -43,17 +44,26 @@ public class Distance_Transform_3D implements PlugInFilter {
 		return toFloat();
 	}
 
+	public float[][] getDistances() {
+		return dist;
+	}
+
+	public void init(float[][]dist, int w, int h, int d) {
+		this.dist = dist;
+		this.w = w; this.h = h; this.d = d;
+		maxVal = (float)Math.sqrt(w*w + h*h + d*d);
+	}
+
 	public void init() {
 		w = image.getWidth(); h = image.getHeight();
 		d = image.getStackSize();
 		maxVal = (float)Math.sqrt(w*w + h*h + d*d);
 		dist = new float[d][w*h];
-		pixels = new byte[d][];
 		for(int z = 0; z < d; z++) {
-			pixels[z] = (byte[])image.getStack()
+			byte[] pixels = (byte[])image.getStack()
 					.getProcessor(z+1).getPixels();
 			for(int i = 0; i < w*h; i++) {
-				if((int)(pixels[z][i]&0xff) == fg)
+				if((int)(pixels[i]&0xff) == fg)
 					dist[z][i] = 0;
 				else
 					dist[z][i] = maxVal;

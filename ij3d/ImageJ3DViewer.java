@@ -38,7 +38,6 @@ public class ImageJ3DViewer implements PlugIn {
 			univ.show();
 			GUI.center(univ.getWindow());
 			int type = -1;
-			Image3DMenubar menu = univ.getMenuBar();
 			if(image != null)
 				univ.getExecuter().addContent(image, type);
 

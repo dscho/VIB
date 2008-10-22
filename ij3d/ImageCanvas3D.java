@@ -21,6 +21,7 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 
 import java.awt.GraphicsConfiguration;
+import java.awt.Dimension;
 import java.awt.Polygon;
 import java.awt.Point;
 import java.awt.Color;
@@ -58,7 +59,7 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 
 	public ImageCanvas3D(int width,int height) {
 		super(SimpleUniverse.getPreferredConfiguration());
-		setSize(width, height);
+		setPreferredSize(new Dimension(width, height));
 		ByteProcessor ip = new ByteProcessor(width, height);
 		roiImagePlus = new RoiImagePlus("RoiImage", ip); 
 		roiImageCanvas = new ImageCanvas(roiImagePlus) {
