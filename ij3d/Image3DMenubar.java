@@ -55,6 +55,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	private MenuItem add;
 	private MenuItem color;
+	private MenuItem bgColor;
 	private MenuItem channels;
 	private MenuItem transparency;
 	private MenuItem threshold;
@@ -93,6 +94,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem j3dproperties;
 	private MenuItem viewer4d;
 	private CheckboxMenuItem coordinateSystem;
+	private CheckboxMenuItem allCoordinateSystems;
 	private CheckboxMenuItem lock;
 	private CheckboxMenuItem show;
 
@@ -300,6 +302,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		viewPreferences.addActionListener(this);
 		view.add(viewPreferences);
 
+		bgColor = new MenuItem("Change background color");
+		bgColor.addActionListener(this);
+		view.add(bgColor);
+
 		return view;
 	}
 
@@ -350,6 +356,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 					"Show coordinate system", true);
 		coordinateSystem.addItemListener(this);
 		hide.add(coordinateSystem);
+
+		allCoordinateSystems = new CheckboxMenuItem(
+				"Show all coordinate systems", true);
+		allCoordinateSystems.addItemListener(this);
+		hide.add(allCoordinateSystems);
 
 		return hide;
 	}
@@ -414,6 +425,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(src == color)
 			executer.changeColor(univ.getSelected());
+		else if (src == bgColor)
+			executer.changeBackgroundColor();
 		else if(src == scalebar)
 			executer.editScalebar();
 		else if(src == viewer4d)
@@ -424,6 +437,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.changeTransparency(univ.getSelected());
 		else if(src == add)
 			executer.addContent(null, -1);
+		else if(src == regist)
+			executer.register();
 		else if(src == delete)
 			executer.delete(univ.getSelected());
 		else if(src == resetView)
@@ -493,6 +508,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		if(src == coordinateSystem)
 			executer.showCoordinateSystem(
 				c, coordinateSystem.getState());
+		else if (src == allCoordinateSystems)
+			executer.showAllCoordinateSystems(
+				allCoordinateSystems.getState());
 		else if(src == show)
 			executer.showContent(c, show.getState());
 		else if(src == lock)
@@ -544,7 +562,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		exportDXF.setEnabled(c != null);
 		fill.setEnabled(c != null);
 		smoothMesh.setEnabled(c != null);
-		regist.setEnabled(c != null);
 
 		displayAsVolume.setEnabled(c != null);
 		displayAsSurface.setEnabled(c != null);

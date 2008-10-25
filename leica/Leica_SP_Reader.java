@@ -85,7 +85,7 @@ public class Leica_SP_Reader extends ImagePlus implements PlugIn {
 		return images[i];
 	}
 
-	FileInfo[] getFileInfo(String directory, String name) throws IOException {
+	public FileInfo[] getFileInfo(String directory, String name) throws IOException {
 		LeicaTiffDecoder td = new LeicaTiffDecoder(directory, name);
 		if (IJ.debugMode) td.enableDebugging();
 		FileInfo[] info = td.getTiffInfo();

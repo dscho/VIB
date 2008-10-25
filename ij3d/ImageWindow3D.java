@@ -70,12 +70,12 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
 
-		add(canvas3D);
+		add(canvas3D, -1);
 		status.setText("");
 		status.setForeground(Color.WHITE);
 		status.setBackground(Color.BLACK);
 		status.setFont(new Font("Verdana", Font.PLAIN, 20));
-		add(status, BorderLayout.SOUTH);
+		add(status, BorderLayout.SOUTH, -1);
 
 		pack();
 
@@ -93,29 +93,15 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		updateImagePlus();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
 		show();
-
-		/*
-		 * Fixes a problem occurring on some machines: It happened
-		 * from time to time that the window has a size of zero or
-		 * at least very very small. Circumvent this behaviour by
-		 * the following lines from Albert Cardona:
-		 *
-		 * Must be run after calls to pack() and show() above.
-		 */
-		java.awt.EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				Rectangle box = ImageWindow3D.this.canvas3D.getBounds();
-				int min_width = box.width < 512 ? 512 : box.width;
-				int min_height = box.height < 512 ? 512 : box.height;
-				ImageWindow3D.this.setMinimumSize(new Dimension(min_width, min_height));
-				ImageWindow3D.this.setPreferredSize(new Dimension(min_width, min_height));
-			}
-		});
 	}
 
 	public boolean close() {
 		boolean b = super.close();
 		return b;
+	}
+
+	public DefaultUniverse getUniverse() {
+		return universe;
 	}
 
 	public ImageCanvas getCanvas() {
@@ -129,7 +115,24 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	/* prevent ImageWindow from painting */
 	public void drawInfo(Graphics g) { }
 	public void paint(Graphics g) { }
-	public Insets getInsets() { return new Insets(0, 0, 0, 0); }
+	public Insets getInsets() {
+		// pretend to have a canvas to avoid a NullPointerException
+		// when calling the super method
+		ic = getCanvas();
+		Insets insets = super.getInsets();
+		ic = null;
+		double mag = 1;
+		int extraWidth = (int)((MIN_WIDTH - imp.getWidth()*mag) / 2.0);
+		if (extraWidth < 0) extraWidth = 0;
+		int extraHeight = (int)((MIN_HEIGHT - imp.getHeight()*mag)/2.0);
+		if (extraHeight < 0) extraHeight = 0;
+		insets = new Insets(
+			insets.top - 10 /* TEXT_GAP */ - extraHeight,
+			insets.left - extraWidth,
+			insets.bottom - extraHeight,
+			insets.right - extraWidth);
+		return insets;
+	}
 
 	/* off-screen rendering stuff */
 	private Canvas3D offScreenCanvas3D;
@@ -170,7 +173,8 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		return imp;
 	}
 
-	private int top = 25, bottom = 4, left = 4, right = 4;
+// 	private int top = 25, bottom = 4, left = 4, right = 4;
+	private int top = 0, bottom = 0, left = 0, right = 0;
 	private ImagePlus getNewImagePlus() {
 		if (getWidth() <= 0 || getHeight() <= 0)
 			return makeDummyImagePlus();

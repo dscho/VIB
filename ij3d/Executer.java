@@ -36,6 +36,7 @@ import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix4d;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
+import javax.media.j3d.Background;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -440,6 +441,59 @@ public class Executer {
 		gd.showDialog();
 	}
 
+	/** Adjust the background color in place. */
+	public void changeBackgroundColor() {
+		final GenericDialog gd = 
+			new GenericDialog("Adjust background color ...", univ.getWindow());
+
+		final Background background = ((ImageCanvas3D)univ.getCanvas()).getBG();
+		final Color3f oldC = new Color3f();
+		background.getColor(oldC);
+
+		gd.addSlider("Red",0,255,oldC == null ? 255 : oldC.x*255);
+		gd.addSlider("Green",0,255,oldC == null ? 0 : oldC.y*255);
+		gd.addSlider("Blue",0,255,oldC == null ? 0 : oldC.z*255);
+
+		final Scrollbar rSlider = (Scrollbar)gd.getSliders().get(0);
+		final Scrollbar gSlider = (Scrollbar)gd.getSliders().get(1);
+		final Scrollbar bSlider = (Scrollbar)gd.getSliders().get(2);
+
+		rSlider.setEnabled(oldC != null);
+		gSlider.setEnabled(oldC != null);
+		bSlider.setEnabled(oldC != null);
+
+		AdjustmentListener listener = new AdjustmentListener() {
+			public void adjustmentValueChanged(AdjustmentEvent e) {
+				background.setColor(rSlider.getValue() / 255.0f,
+						    gSlider.getValue() / 255.0f,
+						    bSlider.getValue() / 255.0f);
+				((ImageCanvas3D)univ.getCanvas()).render();
+			}
+		};
+		rSlider.addAdjustmentListener(listener);
+		gSlider.addAdjustmentListener(listener);
+		bSlider.addAdjustmentListener(listener);
+
+		gd.setModal(false);
+		gd.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if(gd.wasCanceled()) {
+					background.setColor(oldC);
+					((ImageCanvas3D)univ.getCanvas()).render();
+					return;
+				} else {
+					// TODO macro record
+					// Apply:
+					background.setColor(rSlider.getValue() / 255.0f,
+							    gSlider.getValue() / 255.0f,
+							    bSlider.getValue() / 255.0f);
+					((ImageCanvas3D)univ.getCanvas()).render();
+				}
+			}
+		});
+		gd.showDialog();
+	}
+
 	public void changeChannels(Content c) {
 		if(!checkSel(c))
 			return;
@@ -589,6 +643,11 @@ public class Executer {
 		univ.getSelected().setVisible(b);
 		if(!b)
 			univ.clearSelection();
+	}
+
+	public void showAllCoordinateSystems(boolean b) {
+		for (Iterator it = univ.contents(); it.hasNext(); )
+			((Content)it.next()).showCoordinateSystem(b);
 	}
 
 
