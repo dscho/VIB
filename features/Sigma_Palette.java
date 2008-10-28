@@ -12,8 +12,9 @@ import ij.process.FloatProcessor;
 import ij.process.ByteProcessor;
 import ij.plugin.PlugIn;
 import ij.gui.Roi;
-import ij.gui.ImageCanvas;
 import ij.gui.StackWindow;
+import ij.gui.ImageCanvas;
+import ij.gui.ImageWindow;
 
 import stacks.ThreePaneCrop;
 import ij.plugin.filter.Duplicater;
@@ -22,10 +23,38 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Polygon;
 import java.awt.Image;
+import java.awt.event.*;
+
+import util.Limits;
 
 public class Sigma_Palette implements PlugIn {
 
-	public class PaletteCanvas extends ImageCanvas {
+	public static interface SigmaPaletteListener {
+		public void sigmaSelected( double sigma );
+	}
+
+	public static class PaletteStackWindow extends StackWindow {
+
+		Sigma_Palette owner = null;
+
+		public PaletteStackWindow(ImagePlus imp) {
+			super(imp);
+		}
+
+		public PaletteStackWindow(ImagePlus imp, ImageCanvas ic, Sigma_Palette owner) {
+			super(imp,ic);
+			this.owner = owner;
+		}
+
+		public void windowClosing(WindowEvent e) {
+			System.out.println("Got a window closing event...");
+			if( owner != null )
+				owner.sigmaSelected(-1);
+			super.windowClosing(e);
+		}
+	}
+
+	public static class PaletteCanvas extends ImageCanvas {
 
 		Sigma_Palette owner;
 
@@ -38,6 +67,30 @@ public class Sigma_Palette implements PlugIn {
 			this.croppedHeight = croppedHeight;
 			this.sigmasAcross = sigmasAcross;
 			this.sigmasDown = sigmasDown;
+		}
+
+		public void mouseMoved(MouseEvent e) {
+			int sx = e.getX();
+			int sy = e.getY();
+			int ox = offScreenX(sx);
+			int oy = offScreenY(sy);
+			int sigmaX = ox / (owner.croppedWidth + 1);
+			int sigmaY = oy / (owner.croppedHeight + 1);
+			if( sigmaX == 0 && sigmaY == 0 ) {
+				IJ.showStatus("No \u03C3 (original image)");
+			} else {
+				int sigmaIndex = (sigmaY * sigmasAcross + sigmaX) - 1;
+				if( sigmaIndex >= 0 && sigmaIndex < owner.sigmaValues.length ) {
+					double sigmaValue = owner.sigmaValues[sigmaIndex];
+					IJ.showStatus("\u03C3 = "+sigmaValue);
+				} else {
+					IJ.showStatus("No  \u03C3 (unused entry)");
+				}
+			}
+		}
+
+		public void mouseClicked(MouseEvent e) {
+
 		}
 
 		/* Keep another Graphics for double-buffering: */
@@ -59,7 +112,7 @@ public class Sigma_Palette implements PlugIn {
 				backBufferImage.flush();
 				backBufferImage=null;
 			}
-		
+
 			backBufferWidth=getSize().width;
 			backBufferHeight=getSize().height;
 
@@ -74,14 +127,14 @@ public class Sigma_Palette implements PlugIn {
 			   backBufferImage==null ||
 			   backBufferGraphics==null)
 				resetBackBuffer();
-		
+
 			super.paint(backBufferGraphics);
 			drawOverlay(backBufferGraphics);
 			g.drawImage(backBufferImage,0,0,this);
 		}
-	
+
 		protected void drawOverlay( Graphics g ) {
-		
+
 			g.setColor( java.awt.Color.MAGENTA );
 
 			int width = imp.getWidth();
@@ -103,6 +156,19 @@ public class Sigma_Palette implements PlugIn {
 		}
 	}
 
+	public void sigmaSelected( double sigma ) {
+		if( listener != null )
+			listener.sigmaSelected( sigma );
+	}
+
+	double [] sigmaValues = null;
+
+	int croppedWidth;
+	int croppedHeight;
+	int croppedDepth;
+
+	SigmaPaletteListener listener;
+
 	public float makePalette( ImagePlus original,
 				  int x_min,
 				  int x_max,
@@ -113,7 +179,12 @@ public class Sigma_Palette implements PlugIn {
 				  HessianEvalueProcessor hep,
 				  double [] sigmaValues,
 				  int sigmasAcross,
-				  int sigmasDown ) {
+				  int sigmasDown,
+				  int initial_z,
+				  SigmaPaletteListener listener ) {
+
+		this.sigmaValues = sigmaValues;
+		this.listener = listener;
 
 		int originalWidth = original.getWidth();
 		int originalHeight = original.getHeight();
@@ -121,9 +192,9 @@ public class Sigma_Palette implements PlugIn {
 
 		ImagePlus cropped = ThreePaneCrop.performCrop( original, x_min, x_max, y_min, y_max, z_min, z_max, false );
 
-		int croppedWidth  = (x_max - x_min) + 1;
-		int croppedHeight = (y_max - y_min) + 1;
-		int croppedDepth  = (z_max - z_min) + 1;
+		croppedWidth  = (x_max - x_min) + 1;
+		croppedHeight = (y_max - y_min) + 1;
+		croppedDepth  = (z_max - z_min) + 1;
 
 		if( sigmaValues.length > sigmasAcross * sigmasDown ) {
 			IJ.error( "A "+sigmasAcross+"x"+sigmasDown+" layout is not large enough for "+sigmaValues+" + 1 images" );
@@ -140,10 +211,10 @@ public class Sigma_Palette implements PlugIn {
 		}
 		ImagePlus paletteImage = new ImagePlus("palette",newStack);
 		PaletteCanvas paletteCanvas = new PaletteCanvas( paletteImage, this, croppedWidth, croppedHeight, sigmasAcross, sigmasDown );
-		new StackWindow( paletteImage, paletteCanvas );
+		new PaletteStackWindow( paletteImage, paletteCanvas, this );
 
-		paletteImage.setSlice( croppedDepth / 2 );
-		
+		paletteImage.setSlice( (initial_z - z_min) + 1 );
+
 		for( int fakeSigmaIndex = 0; fakeSigmaIndex < sigmaValues.length + 1; ++fakeSigmaIndex ) {
 			int sigmaY = fakeSigmaIndex / sigmasAcross;
 			int sigmaX = fakeSigmaIndex % sigmasAcross;
@@ -151,14 +222,14 @@ public class Sigma_Palette implements PlugIn {
 			int offsetY = sigmaY * croppedHeight + 1;
 			if( fakeSigmaIndex == 0 ) {
 				Duplicater duplicater = new Duplicater();
-				ImagePlus duplicated = duplicater.duplicateStack( cropped );
+				ImagePlus duplicated = duplicater.duplicateStack( cropped, "ignore" );
 				copyIntoPalette( duplicated, paletteImage, offsetX, offsetY );
 			} else {
 				int sigmaIndex = fakeSigmaIndex - 1;
 				double sigma = sigmaValues[sigmaIndex];
-				
-
-				// copyIntoPalette( processed, paletteImage, offsetX, offsetY );
+				hep.setSigma(sigma);
+				ImagePlus processed = hep.generateImage(cropped);
+				copyIntoPalette( processed, paletteImage, offsetX, offsetY );
 			}
 			paletteImage.updateAndDraw();
 		}
@@ -166,8 +237,29 @@ public class Sigma_Palette implements PlugIn {
 		return -1;
 	}
 
-	public void copyIntoPalette( ImagePlus smallImagePlus, ImagePlus paletteImage, int offsetX, int offsetY ) {
-		
+	public void copyIntoPalette( ImagePlus smallImage, ImagePlus paletteImage, int offsetX, int offsetY ) {
+		int largerWidth = paletteImage.getWidth();
+		int largerHeight = paletteImage.getHeight();
+		int depth = paletteImage.getStackSize();
+		if( depth != smallImage.getStackSize() )
+			throw new RuntimeException("In copyIntoPalette(), depths don't match");
+		int smallWidth = smallImage.getWidth();
+		int smallHeight = smallImage.getHeight();
+		float [] limits = Limits.getStackLimits( smallImage );
+		ImageStack paletteStack = paletteImage.getStack();
+		ImageStack smallStack = smallImage.getStack();
+		// Make sure the minimum and maximum are sensible in the small stack:
+		for( int z = 0; z < depth; ++z ) {
+			ImageProcessor smallImageProcessor = smallStack.getProcessor(z+1);
+			smallImageProcessor = smallImageProcessor.convertToByte(true);
+			smallImageProcessor.setMinAndMax( limits[0], limits[1] );
+			byte [] smallPixels = (byte[])smallImageProcessor.getPixels();
+			byte [] palettePixels = (byte[])paletteStack.getProcessor(z+1).getPixels();
+			for( int y = 0; y < smallHeight; ++y ) {
+				int smallIndex = y * smallWidth;
+				System.arraycopy( smallPixels, smallIndex, palettePixels, (offsetY + y) * largerWidth + offsetX, smallWidth );
+			}
+		}
 	}
 
 	public void run( String ignoredArguments ) {
@@ -177,6 +269,13 @@ public class Sigma_Palette implements PlugIn {
 			IJ.error("There is no current image");
 			return;
 		}
+
+		Calibration calibration = image.getCalibration();
+                double minimumSeparation = 1;
+                if( calibration != null )
+                        minimumSeparation = Math.min(calibration.pixelWidth,
+                                                     Math.min(calibration.pixelHeight,
+                                                              calibration.pixelDepth));
 
 		Roi roi = image.getRoi();
 		if( roi == null ) {
@@ -197,10 +296,6 @@ public class Sigma_Palette implements PlugIn {
 		}
 
 		ImageProcessor processor = image.getProcessor();
-		/*
-		  Calibration cal = imp.getCalibration();
-		  ip.setCalibrationTable(cal.getCTable());
-		*/
 
 		int x = p.xpoints[0];
 		int y = p.ypoints[0];
@@ -232,9 +327,12 @@ public class Sigma_Palette implements PlugIn {
 		if( z_max >= originalDepth )
 			z_max = originalDepth - 1;
 
-		double [] sigmas = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0 };
+		double [] sigmas = new double[8];
+		for( int i = 0; i < sigmas.length; ++i ) {
+			sigmas[i] = ((i + 1) * minimumSeparation) / 2;
+		}
 
-		makePalette( image, x_min, x_max, y_min, y_max, z_min, z_max, new TubenessProcessor(2,true), sigmas, 3, 4 );
+		makePalette( image, x_min, x_max, y_min, y_max, z_min, z_max, new TubenessProcessor(true), sigmas, 3, 3, z, null );
 
 	}
 }
