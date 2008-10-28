@@ -13,6 +13,7 @@ import ij.process.ByteProcessor;
 import ij.plugin.PlugIn;
 import ij.gui.Roi;
 import ij.gui.ImageCanvas;
+import ij.gui.StackWindow;
 
 import stacks.ThreePaneCrop;
 import ij.plugin.filter.Duplicater;
@@ -67,7 +68,7 @@ public class Sigma_Palette implements PlugIn {
 		}
 
 		public void paint(Graphics g) {
-		
+
 			if(backBufferWidth!=getSize().width ||
 			   backBufferHeight!=getSize().height ||
 			   backBufferImage==null ||
@@ -110,7 +111,7 @@ public class Sigma_Palette implements PlugIn {
 				  int z_min,
 				  int z_max,
 				  HessianEvalueProcessor hep,
-				  float [] sigmaValues,
+				  double [] sigmaValues,
 				  int sigmasAcross,
 				  int sigmasDown ) {
 
@@ -123,8 +124,6 @@ public class Sigma_Palette implements PlugIn {
 		int croppedWidth  = (x_max - x_min) + 1;
 		int croppedHeight = (y_max - y_min) + 1;
 		int croppedDepth  = (z_max - z_min) + 1;
-
-		Duplicater duplicater = new Duplicater();
 
 		if( sigmaValues.length > sigmasAcross * sigmasDown ) {
 			IJ.error( "A "+sigmasAcross+"x"+sigmasDown+" layout is not large enough for "+sigmaValues+" + 1 images" );
@@ -140,11 +139,35 @@ public class Sigma_Palette implements PlugIn {
 			newStack.addSlice("",bp);
 		}
 		ImagePlus paletteImage = new ImagePlus("palette",newStack);
-		new PaletteCanvas( paletteImage, this, croppedWidth, croppedHeight, sigmasAcross, sigmasDown );
+		PaletteCanvas paletteCanvas = new PaletteCanvas( paletteImage, this, croppedWidth, croppedHeight, sigmasAcross, sigmasDown );
+		new StackWindow( paletteImage, paletteCanvas );
 
-		paletteImage.show();
+		paletteImage.setSlice( croppedDepth / 2 );
+		
+		for( int fakeSigmaIndex = 0; fakeSigmaIndex < sigmaValues.length + 1; ++fakeSigmaIndex ) {
+			int sigmaY = fakeSigmaIndex / sigmasAcross;
+			int sigmaX = fakeSigmaIndex % sigmasAcross;
+			int offsetX = sigmaX * croppedWidth + 1;
+			int offsetY = sigmaY * croppedHeight + 1;
+			if( fakeSigmaIndex == 0 ) {
+				Duplicater duplicater = new Duplicater();
+				ImagePlus duplicated = duplicater.duplicateStack( cropped );
+				copyIntoPalette( duplicated, paletteImage, offsetX, offsetY );
+			} else {
+				int sigmaIndex = fakeSigmaIndex - 1;
+				double sigma = sigmaValues[sigmaIndex];
+				
+
+				// copyIntoPalette( processed, paletteImage, offsetX, offsetY );
+			}
+			paletteImage.updateAndDraw();
+		}
 
 		return -1;
+	}
+
+	public void copyIntoPalette( ImagePlus smallImagePlus, ImagePlus paletteImage, int offsetX, int offsetY ) {
+		
 	}
 
 	public void run( String ignoredArguments ) {
@@ -183,7 +206,7 @@ public class Sigma_Palette implements PlugIn {
 		int y = p.ypoints[0];
 		int z = image.getCurrentSlice() - 1;
 
-		int either_side = 10;
+		int either_side = 40;
 
 		int x_min = x - either_side;
 		int x_max = x + either_side;
@@ -209,10 +232,9 @@ public class Sigma_Palette implements PlugIn {
 		if( z_max >= originalDepth )
 			z_max = originalDepth - 1;
 
-		float [] sigmas = { 2.0f, 3.0f };
+		double [] sigmas = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0 };
 
-		makePalette( image, x_max, x_max, y_min, y_min, z_min, z_max, new TubenessProcessor(2,true), sigmas, 3, 4 );
-
+		makePalette( image, x_min, x_max, y_min, y_max, z_min, z_max, new TubenessProcessor(2,true), sigmas, 3, 4 );
 
 	}
 }
