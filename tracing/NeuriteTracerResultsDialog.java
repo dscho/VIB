@@ -165,7 +165,7 @@ class NeuriteTracerResultsDialog
 		if( sigma < 0 )
 			preprocess.setLabel(basic);
 		else
-			preprocess.setLabel(basic+" (\u03C2="+sigma+")");
+			preprocess.setLabel(basic+" (\u03C3="+sigma+")");
 	}
 
 	public void exitRequested() {
