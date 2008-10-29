@@ -805,6 +805,8 @@ public class Path implements Cloneable {
 							diameters,
 							4,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
 							12);     // "parallels" (12 means cross-sections are dodecagons)
+		if( allPoints == null )
+			return null;
 
 		java.util.List triangles = Pipe.generateTriangles(allPoints,
 								  1); // scale
