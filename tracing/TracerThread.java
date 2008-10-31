@@ -248,6 +248,8 @@ public class TracerThread extends SearchThread {
 						if( measure == 0 ) // This should never happen in practice...
 							measure = 0.2;
 
+						measure *= 4;
+
 						cost = 1 / measure;
 
 					} else {

@@ -121,6 +121,8 @@ class NeuriteTracerResultsDialog
 
 	Button quitButton;
 
+	Button showOrHidePathList;
+
 	public void setPathList( String [] newList ) {
 		pathList.removeAll();
 		for( int i = 0; i < newList.length; ++i )
@@ -507,6 +509,10 @@ class NeuriteTracerResultsDialog
 			c.gridy = 2;
 			add(otherOptionsPanel,c);
 		}
+
+		showOrHidePathList = new Button("Show / Hide Path List");
+		add( showOrHidePathList );
+		showOrHidePathList.addActionListener(this);
 
 		{ /* Add the panel with the path list. */
 
@@ -954,6 +960,10 @@ class NeuriteTracerResultsDialog
 			}
 
 			plugin.fitCircles(indices[0],true,40);
+
+		}  else if( source == showOrHidePathList ) {
+			PathWindow pw = new PathWindow();
+			System.out.println("created PathWindow: "+pw);
 
 		}
 
