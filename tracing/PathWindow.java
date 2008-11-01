@@ -28,14 +28,14 @@ import ij.io.*;
 
 import javax.swing.*;
 
-public class PathWindow extends JWindow {
+public class PathWindow extends JFrame {
 
+	JTree tree;
 
-    public PathWindow() {
-        setBounds(60,60,100,100);
-
-        setVisible(true);
-    }
-
+	public PathWindow() {
+		setBounds(60,60,400,300);		
+		tree = new JTree();
+		add(tree);
+	}
 
 }

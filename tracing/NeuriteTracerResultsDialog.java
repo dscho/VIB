@@ -37,6 +37,8 @@ class NeuriteTracerResultsDialog
 
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
+	PathWindow pw = new PathWindow();
+
 	// These are the states that the UI can be in:
 
 	static final int WAITING_TO_START_PATH = 0;
@@ -962,7 +964,7 @@ class NeuriteTracerResultsDialog
 			plugin.fitCircles(indices[0],true,40);
 
 		}  else if( source == showOrHidePathList ) {
-			PathWindow pw = new PathWindow();
+			pw.setVisible(!pw.isVisible());
 			System.out.println("created PathWindow: "+pw);
 
 		}
