@@ -30,5 +30,7 @@ public interface PathAndFillListener {
 	void setFillList( String [] fillList );
 
 	void setSelectedPaths( int [] selectedIndices );
+
+	void setPathListStructured( Path [] primaryPaths );
 	
 }

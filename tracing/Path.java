@@ -43,6 +43,16 @@ import javax.vecmath.Color3f;
 
 public class Path implements Cloneable {
 
+	/* The path's ID should be assigned by the PathAndFillManager
+	   when it's added: */
+	private int id = -1;
+	public int getID() {
+		return id;
+	}
+	void setID( int id ) {
+		this.id = id;
+	}
+
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
 	boolean selected;
@@ -68,6 +78,16 @@ public class Path implements Cloneable {
 		return name;
 	}
 
+	/* This is a symmetrical relationship, showing all the other
+	   paths this one is joined to... */
+	ArrayList<Path> somehowJoins;
+
+	/* We sometimes impose a tree structure on the Path graph,
+	   which is largely for display purposes.  When this is done,
+	   we regerated this list.  This should always be a subset of
+	   'somehowJoins'... */
+	ArrayList<Path> children;
+
 	public double getRealLength( double x_spacing, double y_spacing, double z_spacing ) {
 		double totalLength = 0;
 		for( int i = 1; i < points; ++i  ) {
@@ -84,6 +104,14 @@ public class Path implements Cloneable {
 
 	public String getRealLengthString( double x_spacing, double y_spacing, double z_spacing ) {
 		return String.format( "%.4f", getRealLength( x_spacing, y_spacing, z_spacing ) );
+	}
+
+	boolean primary = false;
+	void setPrimary( boolean primary ) {
+		this.primary = primary;
+	}
+	boolean getPrimary( ) {
+		return primary;
 	}
 
 	/* To unset a join, make 'other' null */
@@ -108,14 +136,18 @@ public class Path implements Cloneable {
 		x_positions = new int[maxPoints];
 		y_positions = new int[maxPoints];
 		z_positions = new int[maxPoints];
+		somehowJoins = new ArrayList<Path>();
+		children = new ArrayList<Path>();
 	}
 
-	Path(  int reserve ) {
+	Path( int reserve ) {
 		points = 0;
 		maxPoints = reserve;
 		x_positions = new int[maxPoints];
 		y_positions = new int[maxPoints];
 		z_positions = new int[maxPoints];
+		somehowJoins = new ArrayList<Path>();
+		children = new ArrayList<Path>();
 	}
 
 	public int points;
@@ -141,6 +173,7 @@ public class Path implements Cloneable {
 		p[2] = z_positions[i];
 	}
 
+/* FIXME:
 	@Override
 	public Path clone() {
 
@@ -174,6 +207,7 @@ public class Path implements Cloneable {
 
 		return result;
 	}
+*/
 
 	PointInImage lastPoint( ) {
 		if( points < 1 )

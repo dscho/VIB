@@ -28,14 +28,70 @@ import ij.io.*;
 
 import javax.swing.*;
 
-public class PathWindow extends JFrame {
+import java.awt.BorderLayout;
+
+import javax.swing.tree.DefaultMutableTreeNode;
+
+public class PathWindow extends JFrame implements PathAndFillListener {
+
+	public static class PathTreeNode extends DefaultMutableTreeNode {
+
+	}
 
 	JTree tree;
+	DefaultMutableTreeNode root;
 
-	public PathWindow() {
-		setBounds(60,60,400,300);		
-		tree = new JTree();
-		add(tree);
+	JPanel buttonPanel;
+
+	JButton renameButton;
+	JButton fillOutButton;
+	JButton makePrimaryButton;
+
+	PathAndFillManager pathAndFillManager;
+
+	public PathWindow(PathAndFillManager pathAndFillManager) {
+
+		this.pathAndFillManager = pathAndFillManager;
+		
+		setBounds(60,60,400,300);
+		root = new DefaultMutableTreeNode("All Paths");
+		tree = new JTree(root);
+		add(tree, BorderLayout.CENTER);
+
+		buttonPanel = new JPanel();
+
+		renameButton = new JButton("Rename");
+		fillOutButton = new JButton("Fill Out");
+		makePrimaryButton = new JButton("Make Primary");
+
+		buttonPanel.add(renameButton);
+		buttonPanel.add(fillOutButton);
+		buttonPanel.add(makePrimaryButton);
+
+		add(buttonPanel, BorderLayout.PAGE_END);
+
 	}
+
+	HashMap<Path,DefaultMutableTreeNode> pathToNode;
+
+	void setPathList( String [] pathList ) {
+		/* Ignore the arguments and get the real path list
+		   from the PathAndFillManager:
+
+                   Go through the whole list and pick candidate
+                   primary neurons - these are those with no "starts
+                   on" defined and for which no "ends on" is defined.
+                   In some cases a neuron might be marked as primary
+
+
+		 
+		*/
+	}
+	
+	void setFillList( String [] fillList ) {
+		
+	}
+
+	void setSelectedPaths( int [] selectedIndices );
 
 }
