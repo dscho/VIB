@@ -2,6 +2,7 @@ package ij3d;
 
 import ij.process.ImageProcessor;
 import ij.ImagePlus;
+import ij.Macro;
 import ij.plugin.PlugIn;
 import ij.gui.GenericDialog;
 import ij.measure.Calibration;
@@ -38,7 +39,9 @@ public class ImageJ3DViewer implements PlugIn {
 			univ.show();
 			GUI.center(univ.getWindow());
 			int type = -1;
-			if(image != null)
+			// only when there is an image and we are not called
+			// from a macro
+			if(image != null && !IJ.isMacro())
 				univ.getExecuter().addContent(image, type);
 
 		} catch(Exception e) {
