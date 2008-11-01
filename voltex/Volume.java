@@ -72,13 +72,13 @@ public class Volume {
 		zSpace = (float)pd;
 
 		// real coords
-		minCoord.x = c.xOrigin * xSpace;
-		minCoord.y = c.yOrigin * ySpace;
-		minCoord.z = c.zOrigin * zSpace;
+		minCoord.x = (c.xOrigin) * xSpace;
+		minCoord.y = (c.yOrigin) * ySpace;
+		minCoord.z = (c.zOrigin) * zSpace;
 
-		maxCoord.x = minCoord.x + xDim * xSpace;
-		maxCoord.y = minCoord.y + yDim * ySpace;
-		maxCoord.z = minCoord.z + zDim * zSpace;
+		maxCoord.x = minCoord.x + (xDim) * xSpace;
+		maxCoord.y = minCoord.y + (yDim) * ySpace;
+		maxCoord.z = minCoord.z + (zDim) * zSpace;
 
 		// xTexSize is the pixel dim of the file in x-dir, e.g. 256
 		// xSpace is the normalised length of a pixel

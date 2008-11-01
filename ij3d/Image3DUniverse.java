@@ -150,6 +150,23 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return globalCenter;
 	}
 
+	public voltex.VolumeOctree addOctree(ImagePlus image, String name) {
+		if(contents.containsKey(name)) {
+			IJ.error("Name exists already");
+			return null;
+		}
+		ensureScale(image);
+		voltex.VolumeOctree octree = new voltex.VolumeOctree(image);
+		try {
+			octree.create();
+			scene.addChild(octree.getRoot().getNode());
+			octree.getRoot().display();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		return octree;
+	}
+
 	public Content addContent(ImagePlus image, Color3f color, String name,
 		int thresh, boolean[] channels, int resf, int type) {
 		if(contents.containsKey(name)) {
@@ -165,6 +182,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.resamplingF = resf;
 		content.setPointListDialog(pld);
 		content.displayAs(type);
+		content.compile();
 		scene.addChild(content);
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
