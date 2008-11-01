@@ -150,6 +150,35 @@ public class Content extends BranchGroup implements UniverseListener {
 		// update type
 		this.type = type;
 	}
+
+	public static int getDefaultThreshold(ImagePlus imp, int type) {
+		if(type != SURFACE)
+			return 0;
+		ImageStack stack = imp.getStack();
+		int d = imp.getStackSize();
+		// compute stack histogram
+		int[] h = stack.getProcessor(1).getHistogram();
+		for(int z = 1; z < d; z++) {
+			int[] tmp = stack.getProcessor(z+1).getHistogram();
+			for(int i = 0; i < h.length; i++)
+				h[i] += tmp[i];
+
+		}
+		return imp.getProcessor().getAutoThreshold(h);
+	}
+
+	public static int getDefaultResamplingFactor(ImagePlus imp, int type) {
+		int w = imp.getWidth(), h = imp.getHeight();
+		int d = imp.getStackSize();
+		int max = Math.max(w, Math.max(h, d));
+		switch(type) {
+			case SURFACE: return (int)Math.ceil(max / 128f);
+			case VOLUME:  return (int)Math.ceil(max / 256f);
+			case ORTHO:   return (int)Math.ceil(max / 256f);
+			case SURFACE_PLOT2D: return (int)Math.ceil(max / 128f);
+		}
+		return 1;
+	}
 	
 	public void displayMesh(List mesh) {
 		// remove everything if possible
