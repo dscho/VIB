@@ -31,13 +31,15 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 
+import java.util.HashSet;
+
 class NeuriteTracerResultsDialog
 	extends Dialog
 	implements ActionListener, WindowListener, ItemListener, PathAndFillListener, TextListener, FillerProgressCallback {
 
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
-	PathWindow pw = new PathWindow();
+	PathWindow pw;
 
 	// These are the states that the UI can be in:
 
@@ -125,7 +127,7 @@ class NeuriteTracerResultsDialog
 
 	Button showOrHidePathList;
 
-	public void setPathList( String [] newList ) {
+	public void setPathList( String [] newList, Path justAdded ) {
 		pathList.removeAll();
 		for( int i = 0; i < newList.length; ++i )
 			pathList.add( newList[i] );
@@ -137,11 +139,16 @@ class NeuriteTracerResultsDialog
 			fillList.add( newList[i] );
 	}
 
-	public void setSelectedPaths( int [] selectedIndices ) {
+	public void setSelectedPaths( HashSet selectedPathsSet, Object source ) {
+		if( source == this )
+			return;
 		int items = pathList.getItemCount();
 		boolean [] itemStates = new boolean[items];
-		for( int i = 0; i < selectedIndices.length; ++i )
-			itemStates[selectedIndices[i]] = true;
+		for( int i = 0; i < pathAndFillManager.size(); ++i ) {
+			Path p = pathAndFillManager.getPath(i);
+			if( selectedPathsSet.contains(p) )
+				itemStates[i] = true;
+		}
 		for( int i = 0; i < items; ++i ) {
 			if( itemStates[i] ) {
 				if( ! pathList.isIndexSelected(i) )
@@ -368,7 +375,13 @@ class NeuriteTracerResultsDialog
 		pack();
 
 		int [] selectedIndices = pathList.getSelectedIndexes();
-		pathAndFillManager.setSelected( selectedIndices );
+		HashSet<Path> selectedPaths = new HashSet<Path>();
+		for( int i = 0; i < selectedIndices.length; ++i ) {
+			int selectedIndex = selectedIndices[i];
+			Path p = pathAndFillManager.getPath(selectedIndex);
+			selectedPaths.add(p);
+		}
+		pathAndFillManager.setSelected( selectedPaths.toArray(new Path[]{}), this );
 		plugin.repaintAllPanes();
 
 		currentState = newState;
@@ -405,6 +418,7 @@ class NeuriteTracerResultsDialog
 		this.launchedByArchive = launchedByArchive;
 
 		pathAndFillManager = plugin.getPathAndFillManager();
+		pw = new PathWindow(pathAndFillManager);
 
 		addWindowListener(this);
 
@@ -991,7 +1005,13 @@ class NeuriteTracerResultsDialog
 
 			// Show in green the selected ones....
 			int [] selectedIndices = pathList.getSelectedIndexes();
-			pathAndFillManager.setSelected( selectedIndices );
+			HashSet<Path> selectedPaths = new HashSet<Path>();
+			for( int i = 0; i < selectedIndices.length; ++i ) {
+				int selectedIndex = selectedIndices[i];
+				Path p = pathAndFillManager.getPath(selectedIndex);
+				selectedPaths.add(p);
+			}
+			pathAndFillManager.setSelected( selectedPaths.toArray(new Path[]{}), this );
 			plugin.repaintAllPanes();
 
 		} else if( source == transparent ) {

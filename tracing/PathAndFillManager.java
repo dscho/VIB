@@ -28,6 +28,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.TreeSet;
 
 import java.io.*;
 
@@ -74,7 +75,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		allPaths = new ArrayList< Path >();
 		allFills = new ArrayList< Fill >();
 		listeners = new ArrayList< PathAndFillListener >();
-		selectedPaths = new boolean[0];
+		selectedPathsSet = new HashSet();
 	}
 
 	public PathAndFillManager( ImagePlus imagePlus ) {
@@ -130,7 +131,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	ArrayList< PathAndFillListener > listeners;
 
-	boolean [] selectedPaths;
+	HashSet< Path > selectedPathsSet;
 
 	public int size() {
 		return allPaths.size();
@@ -156,50 +157,24 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
                (b) All the registered PathAndFillListener objects.
 	*/
-	public synchronized void setSelected( int [] selectedIndices ) {
-		selectedPaths = new boolean[allPaths.size()];
-		for( int i = 0; i < selectedPaths.length; ++i ) {
-			selectedPaths[i] = false;
-			allPaths.get(i);
-		}
-		for( int i = 0; i < selectedIndices.length; ++i ) {
-			selectedPaths[selectedIndices[i]] = true;
-		}
-		for( int i = 0; i < selectedPaths.length; ++i ) {
-			// Update the selected flag in the Path class,
-			// which will change the colour of the Path in
-			// the 3D viewer if necessary:
-			allPaths.get(i).setSelected(selectedPaths[i]);
-		}
+	public synchronized void setSelected( Path [] selectedPaths, Object sourceOfMessage ) {
+		selectedPathsSet.clear();
+		for( int i = 0; i < selectedPaths.length; ++i )
+			selectedPathsSet.add( selectedPaths[i] );
 		for( Iterator<PathAndFillListener> i = listeners.iterator(); i.hasNext(); ) {
-			i.next().setSelectedPaths( selectedIndices );
+			PathAndFillListener pafl = i.next();
+			if( pafl != sourceOfMessage )
+				// The source of the message already knows the states:
+				pafl.setSelectedPaths( selectedPathsSet, this );
 		}
 	}
 
-	public synchronized boolean isSelected( int pathIndex ) {
-		return selectedPaths[pathIndex];
+	public synchronized boolean isSelected( Path path ) {
+		return selectedPathsSet.contains(path);
 	}
 
 	public boolean anySelected( ) {
-		for( int i = 0; i < selectedPaths.length; ++i )
-			if( selectedPaths[i] )
-				return true;
-		return false;
-	}
-
-	public static PathForTree extends Path {
-
-		public PathForTree() {
-			super();
-			somehowJoins = new ArrayList<PathForTree>();
-		}
-
-		public PathForTree( int reserve ) {
-			super( reserve );
-			somehowJoins = new ArrayList<PathForTree>();
-		}
-
-
+		return selectedPathsSet.size() > 0;
 	}
 
 	/* This method returns an array of the "primary paths", which
@@ -208,7 +183,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
            The paths actually form a graph, of course, but most UIs
            will want to display the graph as a tree. */
 
-	public synchronized PathForTree [] getPathsStructured() {
+	public synchronized Path [] getPathsStructured() {
+
+		ArrayList<Path> primaryPaths=new ArrayList<Path>();
 
 		/* Some paths may be explicitly marked as primary, so
 		   extract those and everything connected to them
@@ -216,53 +193,71 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		   primary when exploring from these then that's an
 		   error... */
 
-		Queue<Path> pathsLeft = new Queue<Path>();
-		for( int i = 0; i < allPaths.length; ++i ) {
+		TreeSet<Path> pathsLeft = new TreeSet<Path>();
+
+		for( int i = 0; i < allPaths.size(); ++i ) {
 			pathsLeft.add(allPaths.get(i));
 		}
+
+		int markedAsPrimary = 0;
 
 		/* This is horrendously inefficent but with the number
 		   of paths that anyone might reasonably add by hand
 		   (I hope!) it's acceptable. */
 
-		while( pathsLeft.size() > 0 ) {
+		Iterator<Path> pi = pathsLeft.iterator();
+		Path primaryPath = null;
+		while( pi.hasNext() ) {
+			Path p = pi.next();
+			if( p.getPrimary() ) {
+				pi.remove();
+				primaryPaths.add(p);
+				++ markedAsPrimary;
+			}
+		}
 
-			Iterator<Path> pi = pathsLeft.iterator();
-			Path primaryPath = null;
+		for( int i = 0; i < primaryPaths.size(); ++i ) {
+		        primaryPath = primaryPaths.get(i);
+			System.out.println("Calling setChildren on primaryPath");
+			primaryPath.setChildren(pathsLeft);
+		}
+
+		System.out.println("Now looking at each path left that has no start join");
+
+		// Start with each one left that doesn't start on another:
+		boolean foundOne = true;
+		while( foundOne ) {
+			foundOne = false;
+			System.out.println("pathsLeft.size() is: "+pathsLeft.size());
+			pi = pathsLeft.iterator();
 			while( pi.hasNext() ) {
 				Path p = pi.next();
-				if( p.getPrimary() ) {
+				if( p.startJoins == null ) {
+					foundOne = true;
 					pi.remove();
-					primaryPath = p;
-				} else {
+					primaryPaths.add(p);
+					p.setChildren(pathsLeft);
 					break;
 				}
 			}
-
-			int level = 1;
-			ArrayList< Path > exploreAtThisLevel = new ArrayList<>();
-			ArrayList< Path > exploreAtNextLevel = new ArrayList<>();
-			
-
-			while( true ) {
-
-				for( 
-
-
-
-
-
-			}
-
-
 		}
 
+		System.out.println("Now looking at each path that's left");
 
-	      
+		// If there's anything left, start with that:
+		while( pathsLeft.size() > 0 ) {
+			pi = pathsLeft.iterator();
+			Path p = pi.next();
+			pi.remove();
+			primaryPaths.add(p);
+			p.setChildren(pathsLeft);
+		}
+
+		return primaryPaths.toArray(new Path[]{});
 	}
 
 
-	public synchronized void resetListeners( ) {
+	public synchronized void resetListeners( Path justAdded ) {
 
 		Hashtable< Path, Integer > pathIndicesHash = new Hashtable< Path, Integer >();
 
@@ -288,17 +283,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			if( p.endJoins != null ) {
 				name += ", ends on " + p.endJoins.getName();
 			}
-			name += " [" + p.getRealLengthString( x_spacing,
-							      y_spacing,
-							      z_spacing ) +
-				" " + spacing_units + "]";
+			name += " [" + p.getRealLengthString() + " " + spacing_units + "]";
 			pathListEntries[i] = name;
 		}
 
 		for( Iterator i = listeners.iterator(); i.hasNext(); ) {
 			PathAndFillListener listener = (PathAndFillListener)(i.next());
-			listener.setPathList( pathListEntries );
-			listener.setPathListStructured( getPathsStructured() );
+			listener.setPathList( pathListEntries, justAdded );
 		}
 
 		int fills = allFills.size();
@@ -371,10 +362,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			p.setName(suggestedName);
 		}
 		allPaths.add(p);
-		boolean [] newSelectedPaths = new boolean[allPaths.size()];
-		System.arraycopy(selectedPaths,0,newSelectedPaths,0,selectedPaths.length);
-		selectedPaths = newSelectedPaths;
-		resetListeners();
+		resetListeners( p );
 	}
 
 	/* Find the default name for a new path, making sure it
@@ -411,17 +399,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			}
 		}
 
-		int paths = allPaths.size();
-		boolean [] newSelectedPaths = new boolean[paths];
-
-		System.arraycopy(selectedPaths, 0, newSelectedPaths, 0, index );
-		if( index < (paths - 1) )
-			System.arraycopy(selectedPaths, index + 1, newSelectedPaths, index, paths - index - 1 );
-
-		selectedPaths = newSelectedPaths;
+		selectedPathsSet.remove(deleted);
 
 		if( updateInterface )
-			resetListeners();
+			resetListeners( null );
 	}
 
 	public void deletePaths( int [] indices ) {
@@ -432,13 +413,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			deletePath( indices[i], false );
 		}
 
-		resetListeners();
+		resetListeners( null );
 	}
 
 	public void addFill( Fill fill ) {
 
 		allFills.add(fill);
-		resetListeners();
+		resetListeners( null );
 	}
 
 	public void deleteFills( int [] indices ) {
@@ -449,7 +430,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			deleteFill( indices[i], false );
 		}
 
-		resetListeners();
+		resetListeners( null );
 	}
 
 	public void deleteFill( int index ) {
@@ -461,7 +442,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		allFills.remove( index );
 
 		if( updateInterface )
-			resetListeners();
+			resetListeners( null );
 	}
 
 	public void reloadFill( int index ) {
@@ -581,11 +562,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					pw.print( " name=\""+p.name+"\"" );
 				}
 
-				pw.print(" reallength=\"" +
-					 p.getRealLength(
-						 x_spacing,
-						 y_spacing,
-						 z_spacing ) + "\"");
+				pw.print(" reallength=\"" + p.getRealLength( ) + "\"");
 
 				pw.println( ">" );
 
@@ -671,7 +648,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	Path current_path;
 
 	ArrayList< Integer > startJoins;
+	ArrayList< Integer > startJoinsIndices;
 	ArrayList< Integer > endJoins;
+	ArrayList< Integer > endJoinsIndices;
 
 	ArrayList< int [] > sourcePathIndicesForFills;
 
@@ -679,7 +658,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	int last_fill_id;
 
-	HashSet< int > foundIDs;
+	HashSet< Integer > foundIDs;
 
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws TracesFileFormatException {
@@ -687,10 +666,12 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		if( qName.equals("tracings") ) {
 
 			startJoins = new ArrayList< Integer >();
+			startJoinsIndices = new ArrayList< Integer >();
 			endJoins = new ArrayList< Integer >();
+			endJoinsIndices = new ArrayList< Integer >();
 
 			sourcePathIndicesForFills = new ArrayList< int [] >();
-			foundIDs = new HashSet< int >();
+			foundIDs = new HashSet< Integer >();
 
 			last_fill_id = -1;
 
@@ -766,10 +747,12 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			int startson, startsindex, endson, endsindex;
 
-			current_path = new Path();
+			current_path = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
 
 			Integer startsOnInteger = null;
+			Integer startsIndexInteger = null;
 			Integer endsOnInteger = null;
+			Integer endsIndexInteger = null;
 
 			try {
 
@@ -777,8 +760,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				if( foundIDs.contains(id) ) {
 					throw new TracesFileFormatException("There is more than one path with ID "+id);
 				}
-				p.setID(id);
-
+				current_path.setID(id);
+				
 				if( startsonString == null )
 					startson = startsindex = -1;
 				else {
@@ -786,7 +769,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					startsindex = Integer.parseInt(startsindexString);
 
 					startsOnInteger = new Integer( startson );
-					current_path.startJoinsIndex = startsindex;
+					startsIndexInteger = new Integer( startsindexString );
 				}
 
 				if( endsonString == null )
@@ -796,7 +779,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					endsindex = Integer.parseInt(endsindexString);
 
 					endsOnInteger = new Integer( endson );
-					current_path.endJoinsIndex = endsindex;
+					endsIndexInteger = new Integer( endsindex );
 				}
 
 			} catch( NumberFormatException e ) {
@@ -929,7 +912,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			allPaths.add( current_path );
 			if( plugin.use3DViewer ) {
-				current_path.addTo3DViewer(plugin.univ,x_spacing,y_spacing,z_spacing,Color.MAGENTA);
+				current_path.addTo3DViewer(plugin.univ,Color.MAGENTA);
 			}
 
 		} else if( qName.equals("fill") ) {
@@ -943,16 +926,16 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			for( int i = 0; i < allPaths.size(); ++i ) {
 				Path p = allPaths.get(i);
 				Integer startInteger = startJoins.get(i);
+				Integer startIndexInteger = startJoinsIndices.get(i);
 				Integer endInteger = endJoins.get(i);
+				Integer endIndexInteger = endJoinsIndices.get(i);
 				if( startInteger != null ) {
-					int start = startInteger.intValue();
-					Path startPath = allPaths.get(start);
-					p.startJoins = startPath;
+					Path startPath = allPaths.get(startInteger);
+					p.setStartJoin( startPath, startIndexInteger );
 				}
 				if( endInteger != null ) {
-					int end = endInteger.intValue();
-					Path endPath = allPaths.get(end);
-					p.endJoins = endPath;
+					Path endPath = allPaths.get(endInteger);
+					p.setEndJoin( endPath, endIndexInteger );
 				}
 			}
 
@@ -968,8 +951,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				f.setSourcePaths( realSourcePaths );
 			}
 
-			setSelected( new int[0] );
-			resetListeners();
+			setSelected( new Path[0], this );
+			resetListeners( null );
 			plugin.repaintAllPanes();
 		}
 
@@ -1033,7 +1016,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			maxUsedID = -1;
 			allPaths.clear();
 			allFills.clear();
-			resetListeners();		
+			resetListeners( null );
 	}
 
 	public boolean load( String filename ) {
@@ -1273,10 +1256,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		for( int s = 0; s < paths; ++s ) {
 
-			if( ! selectedPaths[s] )
-				continue;
-
 			Path p = allPaths.get(s);
+
+			if( selectedPathsSet.contains(s) )
+				continue;
 
 			for( int i = 0; i < p.size(); ++i ) {
 
@@ -1319,21 +1302,19 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	/* If someone selects a path in the 3D viewer, it would be
 	   good to update the path list's selections with that: */
 	public void contentSelected(Content c) {
-		int selectedIndex = -1;
-		int i = 0;
+		Path selectedPath = null;
 		for( Iterator<Path> j = allPaths.iterator(); j.hasNext(); ) {
 			Path p = j.next();
 			if( p.content3D == c )
-				selectedIndex = i;
-			++i;
+				selectedPath = p;
 		}
-		if( selectedIndex >= 0 ) {
-			int [] newSelected = new int[1];
-			newSelected[0] = selectedIndex;
-			setSelected(newSelected);
-		} else {
+		if( selectedPath == null ) {
 			// This is probably someone accidentally
 			// selecting the original image...
+		} else {
+			Path [] newSelectedPaths = new Path[1];
+			newSelectedPaths[0] = selectedPath;
+			setSelected(newSelectedPaths, this);
 		}
 	}
 	public void canvasResized() { }

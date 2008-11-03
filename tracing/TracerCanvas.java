@@ -95,7 +95,7 @@ public class TracerCanvas extends ThreePanesCanvas {
 					continue;
 			
 				Color color = Color.MAGENTA;
-				if( pathAndFillManager.isSelected(i) ) {
+				if( pathAndFillManager.isSelected(p) ) {
 					color = Color.GREEN;
 				}
 			

@@ -258,11 +258,11 @@ public class FillerThread extends SearchThread {
                 sourcePaths = new ArrayList< Path >();
 		
                 for( int i = 0; i < pathAndFillManager.size(); ++i ) {
-			
-                        if( ! pathAndFillManager.selectedPaths[i] )
-                                continue;
-			
+
                         Path p = pathAndFillManager.getPath(i);
+						
+                        if( ! pathAndFillManager.isSelected(p) )
+                                continue;
 			
                         sourcePaths.add(p);
 			

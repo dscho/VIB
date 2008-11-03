@@ -31,14 +31,63 @@ import javax.swing.*;
 import java.awt.BorderLayout;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.MutableTreeNode;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeModel;
 
-public class PathWindow extends JFrame implements PathAndFillListener {
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.event.TreeSelectionEvent;
 
-	public static class PathTreeNode extends DefaultMutableTreeNode {
+import java.util.HashSet;
+import java.util.Iterator;
+
+public class PathWindow extends JFrame implements PathAndFillListener, TreeSelectionListener {
+
+	public static class HelpfulJTree extends JTree {
+
+		public HelpfulJTree(TreeNode root) {
+			super( root );
+		}
+
+		public boolean isExpanded( Object [] path ) {
+			TreePath tp = new TreePath( path );
+			return isExpanded( tp );
+		}
+
+		public void setExpanded( Object [] path, boolean expanded ) {
+			TreePath tp = new TreePath( path );
+			System.out.println("  setExpandedState ("+expanded+") for "+tp);
+			setExpandedState( tp, expanded );
+		}
+
+		public void setSelected( Object [] path ) {
+			TreePath tp = new TreePath( path );
+			setSelectionPath( tp );
+		}
 
 	}
 
-	JTree tree;
+	public void valueChanged( TreeSelectionEvent e ) {
+		System.out.println("Got TreeSelectionEvent: "+e);
+		TreePath [] selectedPaths = tree.getSelectionPaths();
+		Path [] paths = new Path[selectedPaths.length];
+		for( int i = 0; i < selectedPaths.length; ++i ) {
+			TreePath tp = selectedPaths[i];
+			DefaultMutableTreeNode node =
+				(DefaultMutableTreeNode)(tp.getLastPathComponent());
+			paths[i] = (Path)node.getUserObject();
+		}
+		pathAndFillManager.setSelected(paths,this);
+	}
+
+	public static class PathTreeNode extends DefaultMutableTreeNode {
+	}
+
+	JScrollPane scrollPane;
+
+	HelpfulJTree tree;
 	DefaultMutableTreeNode root;
 
 	JPanel buttonPanel;
@@ -46,52 +95,157 @@ public class PathWindow extends JFrame implements PathAndFillListener {
 	JButton renameButton;
 	JButton fillOutButton;
 	JButton makePrimaryButton;
+	JButton deleteButton;
 
 	PathAndFillManager pathAndFillManager;
 
 	public PathWindow(PathAndFillManager pathAndFillManager) {
+		super("All Paths");
 
 		this.pathAndFillManager = pathAndFillManager;
 		
 		setBounds(60,60,400,300);
 		root = new DefaultMutableTreeNode("All Paths");
-		tree = new JTree(root);
-		add(tree, BorderLayout.CENTER);
+		tree = new HelpfulJTree(root);
+		// tree.setRootVisible(false);
+		tree.addTreeSelectionListener(this);
+		scrollPane = new JScrollPane();
+		scrollPane.getViewport().add(tree);
+		add(scrollPane, BorderLayout.CENTER);
 
 		buttonPanel = new JPanel();
 
 		renameButton = new JButton("Rename");
 		fillOutButton = new JButton("Fill Out");
 		makePrimaryButton = new JButton("Make Primary");
+		deleteButton = new JButton("Delete");
 
 		buttonPanel.add(renameButton);
 		buttonPanel.add(fillOutButton);
 		buttonPanel.add(makePrimaryButton);
+		buttonPanel.add(deleteButton);
 
 		add(buttonPanel, BorderLayout.PAGE_END);
 
 	}
 
-	HashMap<Path,DefaultMutableTreeNode> pathToNode;
+	void getExpandedPaths( HelpfulJTree tree, TreeModel model, MutableTreeNode node, HashSet set ) {
+		int count = model.getChildCount(node);
+		for( int i = 0; i < count;  i++ ) {
+			DefaultMutableTreeNode child = (DefaultMutableTreeNode) model.getChild( node, i );
+			Path p = (Path)child.getUserObject();
+			if( tree.isExpanded( (Object[])(child.getPath()) ) ) {
+				set.add(p);
+			}
+			if( ! model.isLeaf(child) )
+				getExpandedPaths( tree, model, child, set );
+		}
+	}
 
-	void setPathList( String [] pathList ) {
-		/* Ignore the arguments and get the real path list
-		   from the PathAndFillManager:
+	void setExpandedPaths( HelpfulJTree tree, TreeModel model, MutableTreeNode node, HashSet set, Path justAdded ) {
+		int count = model.getChildCount(node);
+		for( int i = 0; i < count;  i++ ) {
+			DefaultMutableTreeNode child = (DefaultMutableTreeNode) model.getChild( node, i );
+			Path p = (Path)child.getUserObject();
+			if( set.contains(p) || ((justAdded != null) && (justAdded == p)) ) {
+				System.out.println("---- Setting "+p+" to be expanded");
+				tree.setExpanded( (Object[])(child.getPath()), true );
+			} else {
+				System.out.println("---- Not expanding: "+p);
+			}
+			if( ! model.isLeaf(child) )
+				setExpandedPaths( tree, model, child, set, justAdded );
+		}
 
-                   Go through the whole list and pick candidate
-                   primary neurons - these are those with no "starts
-                   on" defined and for which no "ends on" is defined.
-                   In some cases a neuron might be marked as primary
-
-
-		 
-		*/
 	}
 	
-	void setFillList( String [] fillList ) {
-		
+	public void setSelectedPaths( HashSet selectedPaths, Object source ) {
+		if( source == this )
+			return;
+		TreePath [] noTreePaths = {};
+		tree.setSelectionPaths( noTreePaths );
+		setSelectedPaths( tree, tree.getModel(), root, selectedPaths );
 	}
 
-	void setSelectedPaths( int [] selectedIndices );
+	void setSelectedPaths( HelpfulJTree tree, TreeModel model, MutableTreeNode node, HashSet set ) {
+		int count = model.getChildCount(node);
+		for( int i = 0; i < count;  i++ ) {
+			DefaultMutableTreeNode child = (DefaultMutableTreeNode) model.getChild( node, i );
+			Path p = (Path)child.getUserObject();
+			if( set.contains(p) ) {
+				System.out.println("---- Setting "+p+" to be expanded");
+				tree.setSelected( (Object[])(child.getPath()) );
+			} else {
+				System.out.println("---- Not expanding: "+p);
+			}
+			if( ! model.isLeaf(child) )
+				setSelectedPaths( tree, model, child, set );
+		}
 
+	}
+
+	public void setPathList( String [] pathList, Path justAdded ) {
+
+		// Save the selection state:
+		
+		TreePath [] selectedBefore = tree.getSelectionPaths();
+		HashSet selectedPathsBefore = new HashSet();
+		HashSet expandedPathsBefore = new HashSet();
+
+		if( selectedBefore != null )
+			for( int i = 0; i < selectedBefore.length; ++i ) {
+				TreePath tp = selectedBefore[i];
+				System.out.println("=== TreePath is: "+tp);
+				DefaultMutableTreeNode dmtn = (DefaultMutableTreeNode)tp.getLastPathComponent();
+				Path p = (Path)dmtn.getUserObject();
+				selectedPathsBefore.add(p);
+			}
+
+		// Save the expanded state:
+		getExpandedPaths( tree, tree.getModel(), root, expandedPathsBefore );
+
+		/* Ignore the arguments and get the real path list
+		   from the PathAndFillManager: */
+		
+		DefaultMutableTreeNode newRoot = new DefaultMutableTreeNode("All Paths");
+		DefaultTreeModel model = new DefaultTreeModel(newRoot);
+		// DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+		Path [] primaryPaths = pathAndFillManager.getPathsStructured();
+		System.out.println("Got primaryPaths of length: "+primaryPaths.length);
+		for( int i = 0; i < primaryPaths.length; ++i ) {
+			Path primaryPath = primaryPaths[i];
+			addNode( newRoot, primaryPath, model );
+			System.out.println("  added the path: "+primaryPath);
+		}
+		root = newRoot;
+		tree.setModel(model);
+
+		model.reload();
+
+		// Set back the expanded state:
+		setExpandedPaths( tree, model, root, expandedPathsBefore, justAdded );
+
+		setSelectedPaths( tree, model, root, selectedPathsBefore );
+
+	}
+
+	public void addNode( MutableTreeNode parent, Path childPath, DefaultTreeModel model ) {
+		MutableTreeNode newNode = new DefaultMutableTreeNode(childPath);
+		System.out.println("Inserting node: "+newNode+" into parent "+parent);
+		model.insertNodeInto(newNode, parent, parent.getChildCount());
+		Iterator<Path> ci = childPath.children.iterator();
+		while( ci.hasNext() ) {
+			Path p = ci.next();
+			System.out.println("Now adding for child path: "+p);
+			addNode( newNode, p, model );
+		}
+	}
+
+	public void setFillList( String [] fillList ) {
+
+	}
+
+	public void setSelectedPaths( int [] selectedIndices ) {
+
+	}
 }

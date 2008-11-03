@@ -174,7 +174,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					IJ.error("Bug! Succeeded, but null result.");
 					return;
 				}
-				result.setJoin( Path.PATH_END, endJoin, endJoinIndex );
+				if( endJoin != null ) {
+					System.out.println("Calling setEndJoin in finished()");
+					result.setEndJoin( endJoin, endJoinIndex );
+				}
 				setTemporaryPath( result );
 
 				resultsDialog.changeState(NeuriteTracerResultsDialog.QUERY_KEEP);
@@ -512,7 +515,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				oldTemporaryPath.removeFrom3DViewer(univ);
 			}
 			if( temporaryPath != null )
-				temporaryPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing,Color.BLUE);
+				temporaryPath.addTo3DViewer(univ,Color.BLUE);
 		}
 	}
 
@@ -535,7 +538,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				oldCurrentPath.removeFrom3DViewer(univ);
 			}
 			if( currentPath != null )
-				currentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing,Color.RED);
+				currentPath.addTo3DViewer(univ,Color.RED);
 		}
 	}
 
@@ -753,7 +756,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		pathAndFillManager.addPath( savedCurrentPath, true );
 		if( use3DViewer )
-			savedCurrentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing);
+			savedCurrentPath.addTo3DViewer(univ);
 		setCurrentPath( null );
 
 		unsavedPaths = true;
@@ -844,7 +847,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		setPathUnfinished( true );
 		lastStartPointSet = true;
 
-		Path path = new Path();
+		Path path = new Path(x_spacing,y_spacing,z_spacing,spacing_units);
 
 		if( joinPoint == null ) {
 			last_start_point_x = p[0];
@@ -854,7 +857,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			last_start_point_x = joinPoint.x;
 			last_start_point_y = joinPoint.y;
 			last_start_point_z = joinPoint.z;
-			path.setJoin( Path.PATH_START, joinPoint.onPath, joinPoint.onPathIndex );
+			path.setStartJoin( joinPoint.onPath, joinPoint.onPathIndex );
 		}
 
 		setCurrentPath( path );
@@ -1077,6 +1080,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 									applet != null );
 
 			pathAndFillManager.addPathAndFillListener(resultsDialog);
+			pathAndFillManager.addPathAndFillListener(resultsDialog.pw);
 
 			if( (x_spacing == 0.0) ||
 			    (y_spacing == 0.0) ||
