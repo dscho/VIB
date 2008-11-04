@@ -72,14 +72,19 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 	public void valueChanged( TreeSelectionEvent e ) {
 		System.out.println("Got TreeSelectionEvent: "+e);
 		TreePath [] selectedPaths = tree.getSelectionPaths();
-		Path [] paths = new Path[selectedPaths.length];
-		for( int i = 0; i < selectedPaths.length; ++i ) {
-			TreePath tp = selectedPaths[i];
-			DefaultMutableTreeNode node =
-				(DefaultMutableTreeNode)(tp.getLastPathComponent());
-			paths[i] = (Path)node.getUserObject();
+		if( selectedPaths == null ) {
+			pathAndFillManager.setSelected(new Path[]{},this);
+		} else {
+			Path [] paths = new Path[selectedPaths.length];
+			for( int i = 0; i < selectedPaths.length; ++i ) {
+				TreePath tp = selectedPaths[i];
+				DefaultMutableTreeNode node =
+					(DefaultMutableTreeNode)(tp.getLastPathComponent());
+				if( node != root )
+					paths[i] = (Path)node.getUserObject();
+			}
+			pathAndFillManager.setSelected(paths,this);
 		}
-		pathAndFillManager.setSelected(paths,this);
 	}
 
 	public static class PathTreeNode extends DefaultMutableTreeNode {
