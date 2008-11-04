@@ -78,7 +78,7 @@ public class Biorad_Writer implements PlugIn {
 		// This saves problems when loading - the mu seems to flummox
 		// the reader (which is set up only to accept ASCII chars
 		// also allow um as an alternative form indicating microns
-		if(fi.unit.equals("µm") || fi.unit.equals("um")) fi.unit="microns";
+		if(fi.unit.equals("Âµm") || fi.unit.equals("um")) fi.unit="microns";
 
 		if (IJ.debugMode) IJ.log("FileInfo: "+fi);
 
