@@ -33,8 +33,12 @@ public class Bilateral_Filter implements PlugInFilter {
 
 		final InterpolatedImage orig = new InterpolatedImage(image);
 		InterpolatedImage res = orig.cloneDimensionsOnly();
-		final float[] spatial = makeKernel(gd.getNextNumber());
-		final float[] range = makeKernel(gd.getNextNumber());
+		double spatialRadius = gd.getNextNumber();
+		double rangeRadius = gd.getNextNumber();
+		final float[] spatial = makeKernel(spatialRadius);
+		final float[] range = makeKernel(rangeRadius);
+		res.image.setTitle(orig.image.getTitle()
+				+ "-" + spatialRadius + "-" + rangeRadius);
 
 		InterpolatedImage.Iterator iter = res.iterator(true);
 		InterpolatedImage o = orig;
