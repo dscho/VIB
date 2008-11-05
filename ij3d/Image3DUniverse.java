@@ -169,6 +169,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
 		fireContentAdded(content);
+		fireTransformationFinished();
 		this.addUniverseListener(content);
 		return content;
 	}

@@ -136,7 +136,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		// only create the point list when it does not exist already
 		if(pointlist == null)
 			pointlist = new PointListShape(name);
-		pointlist.setPickable(false);
+// 		pointlist.setPickable(false);
 		bbSwitch.addChild(pointlist);
 
 
@@ -460,6 +460,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		eyePtChanged(view);
 	}
 	public void transformationFinished(View view) {
+		eyePtChanged(view);
 	}
 
 	public void eyePtChanged(View view) {
