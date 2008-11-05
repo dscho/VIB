@@ -777,6 +777,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			joinPoint = pathAndFillManager.nearestJoinPointOnSelectedPaths( p[0], p[1], p[2] );
 		}
 
+		if( resultsDialog == null )
+			return;
+
 		// FIXME: in some of the states this doesn't make sense; check for them:
 
 		if( currentSearchThread != null )
