@@ -43,6 +43,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.Iterator;
+import java.util.HashSet;
 
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
@@ -425,6 +426,19 @@ public class Path implements Comparable {
 		}
 
 		points = points + (other.points - toSkip);
+	}
+
+	void unsetPrimaryForConnected( HashSet<Path> pathsExplored ) {
+		System.out.println("Called unsetPrimaryForConnected on "+this);
+		Iterator<Path> i = somehowJoins.iterator();
+		while( i.hasNext() ) {
+			Path p = i.next();
+			if( pathsExplored.contains(p) )
+				continue;
+			p.setPrimary(false);
+			pathsExplored.add(p);
+			p.unsetPrimaryForConnected(pathsExplored);
+		}
 	}
 
 	Path reversed( ) {

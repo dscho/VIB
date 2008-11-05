@@ -40,10 +40,13 @@ import javax.swing.tree.TreeModel;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
 
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+
 import java.util.HashSet;
 import java.util.Iterator;
 
-public class PathWindow extends JFrame implements PathAndFillListener, TreeSelectionListener {
+public class PathWindow extends JFrame implements PathAndFillListener, TreeSelectionListener, ActionListener {
 
 	public static class HelpfulJTree extends JTree {
 
@@ -67,6 +70,40 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			setSelectionPath( tp );
 		}
 
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		Object source = e.getSource();
+		if( source == deleteButton ) {
+			TreePath [] selectedPaths = tree.getSelectionPaths();
+			if( selectedPaths == null || selectedPaths.length == 0 ) {
+				IJ.error("No paths were selected for deletion");
+				return;
+			}
+			for( int i = 0; i < selectedPaths.length; ++i ) {
+				TreePath tp = selectedPaths[i];
+				DefaultMutableTreeNode node =
+					(DefaultMutableTreeNode)(tp.getLastPathComponent());
+				if( node != root ) {
+					Path p = (Path)node.getUserObject();
+					p.disconnectFromAll();
+					pathAndFillManager.deletePath( p );
+				}
+			}
+		} else if( source == makePrimaryButton ) {
+			System.out.println("Got makePrimaryButton event");
+			TreePath [] selectedPaths = tree.getSelectionPaths();
+			if( selectedPaths == null || selectedPaths.length != 1 ) {
+				IJ.error("You must have exactly one path selected");
+				return;
+			}
+			Path p = (Path)(((DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent())).getUserObject());
+			HashSet<Path> pathsExplored = new HashSet<Path>();
+			p.setPrimary(true);
+			pathsExplored.add(p);
+			p.unsetPrimaryForConnected(pathsExplored);
+			pathAndFillManager.resetListeners(null);
+		}
 	}
 
 	public void valueChanged( TreeSelectionEvent e ) {
@@ -129,6 +166,11 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		buttonPanel.add(fillOutButton);
 		buttonPanel.add(makePrimaryButton);
 		buttonPanel.add(deleteButton);
+
+		deleteButton.addActionListener(this);
+		makePrimaryButton.addActionListener(this);
+		fillOutButton.addActionListener(this);
+		renameButton.addActionListener(this);
 
 		add(buttonPanel, BorderLayout.PAGE_END);
 

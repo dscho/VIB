@@ -378,6 +378,22 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		deletePath( index, true );
 	}
 
+	public synchronized void deletePath( Path p ) {
+		int i = getPathIndex( p );
+		if( i < 0 )
+			throw new RuntimeException("Trying to delete a non-existent path");
+		deletePath( i );
+	}
+
+	public synchronized int getPathIndex( Path p ) {
+		int i = 0;
+		for( i = 0; i < allPaths.size(); ++i ) {
+			if( p == allPaths.get( i ) )
+				return i;
+		}
+		return -1;
+	}
+
 	private synchronized void deletePath( int index, boolean updateInterface ) {
 
 		// if (verbose) System.out.println("About to remove index: "+index+", leaving: "+allPaths.size()+" items.");
