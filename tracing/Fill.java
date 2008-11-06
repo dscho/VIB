@@ -56,14 +56,19 @@ public class Fill {
                 nodeList.add(n);
         }
 	
-        ArrayList< Path > sourcePaths;
+        Set< Path > sourcePaths;
 	
-        public void setSourcePaths( Path [] sourcePaths ) {
-                this.sourcePaths = new ArrayList< Path >();
-                for( int i = 0; i < sourcePaths.length; ++i ) {
-                        this.sourcePaths.add( sourcePaths[i] );
+        public void setSourcePaths( Path [] newSourcePaths ) {
+                sourcePaths = new HashSet< Path >();
+                for( int i = 0; i < newSourcePaths.length; ++i ) {
+                        sourcePaths.add( newSourcePaths[i] );
                 }
         }
+
+	public void setSourcePaths( Set<Path> newSourcePaths ) {
+		sourcePaths = new HashSet<Path>();
+		sourcePaths.addAll(newSourcePaths);
+	}
 	
         public String metric;
 	
@@ -106,4 +111,30 @@ public class Fill {
                                     "distance=\"" + n.distance + "\" status=\"" + (n.open ? "open" : "closed") + "\"/>" );
                 }
         }
+
+	public void writeXML( PrintWriter pw, int fillIndex, Map<Path,Integer> pathToID ) {
+		pw.print( "  <fill id=\"" + fillIndex + "\""  );
+		if( (sourcePaths != null) && (sourcePaths.size() > 0) ) {
+			pw.print( " frompaths=\"" );
+			Iterator<Path> pi = sourcePaths.iterator();
+			boolean first = true;
+			while( pi.hasNext() ) {
+				Path p = pi.next();
+				if( first ) {
+					first = false;
+				} else
+					pw.print( ", " );
+
+				Integer fromPath = pathToID.get( p );
+				if( fromPath == null )
+					pw.print( "-1" );
+				else
+					pw.print( "" + fromPath.intValue() );
+			}
+			pw.print( "\"" );
+		}
+		pw.println( " metric=\"" + getMetric() + "\" threshold=\"" + getThreshold() + "\">" );
+		writeNodesXML( pw );
+		pw.println( "  </fill>" );
+	}
 }

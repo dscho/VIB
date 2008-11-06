@@ -46,6 +46,8 @@ import java.awt.image.IndexColorModel;
 
 import java.io.*;
 
+import java.util.Set;
+
 import client.ArchiveClient;
 
 import stacks.ThreePanes;
@@ -108,9 +110,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		return new InteractiveTracerCanvas( imagePlus, this, plane, pathAndFillManager );
 	}
 
-	public void cancelSearch( ) {
+	public void cancelSearch( boolean cancelFillToo ) {
 		if( currentSearchThread != null )
 			currentSearchThread.requestStop();
+		if( cancelFillToo && filler != null )
+			filler.requestStop();
 	}
 
 	public void threadStatus( SearchThread source, int status ) {
@@ -886,8 +890,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	String spacing_units = "";
 
-	public void viewFillIn3D( ) {
-		ImagePlus imagePlus = filler.fillAsImagePlus( ! resultsDialog.createMask() );
+	public void viewFillIn3D( boolean asMask ) {
+		ImagePlus imagePlus = filler.fillAsImagePlus( asMask );
 		imagePlus.show();
 	}
 
@@ -1084,6 +1088,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			pathAndFillManager.addPathAndFillListener(resultsDialog);
 			pathAndFillManager.addPathAndFillListener(resultsDialog.pw);
+			pathAndFillManager.addPathAndFillListener(resultsDialog.fw);
 
 			if( (x_spacing == 0.0) ||
 			    (y_spacing == 0.0) ||
@@ -1193,6 +1198,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		filler.addProgressListener(this);
 		filler.addProgressListener(resultsDialog);
+		filler.addProgressListener(resultsDialog.fw);
 
 		addThreadToDraw(filler);
 
@@ -1206,7 +1212,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	// (FIXME: check that that is true)
 	FillerThread filler = null;
 
-	synchronized public void startFillingPaths( ) {
+	synchronized public void startFillingPaths( Set<Path> fromPaths ) {
+
+		// currentlyFilling = true;
+		resultsDialog.pauseOrRestartFilling.setLabel("Pause");
+		resultsDialog.fw.pauseOrRestartFilling.setLabel("Pause");
 
 		filler = new FillerThread( xy,
 					   stackMin,
@@ -1220,8 +1230,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		filler.addProgressListener( this );
 		filler.addProgressListener( resultsDialog );
+		filler.addProgressListener( resultsDialog.fw );
 
-		filler.getSourcePathsFromPlugin(this);
+		filler.setSourcePaths( fromPaths );
+
+		resultsDialog.setFillListVisible(true);
 
 		filler.start();
 

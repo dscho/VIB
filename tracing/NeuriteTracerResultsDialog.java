@@ -40,6 +40,7 @@ class NeuriteTracerResultsDialog
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
 	PathWindow pw;
+	FillWindow fw;
 
 	// These are the states that the UI can be in:
 
@@ -126,6 +127,7 @@ class NeuriteTracerResultsDialog
 	Button quitButton;
 
 	Button showOrHidePathList;
+	Button showOrHideFillList;
 
 	public void setPathList( String [] newList, Path justAdded ) {
 		pathList.removeAll();
@@ -193,13 +195,17 @@ class NeuriteTracerResultsDialog
 
 		}
 
-		plugin.cancelSearch();
-		// What if we're filling?
+		plugin.cancelSearch( true );
+		pw.dispose();
+		fw.dispose();
 		dispose();
 		plugin.closeAndReset();
 	}
 
 	public void disableEverything() {
+
+		fw.setEnabledNone();
+
 		statusText.setEnabled(false);
 		keepSegment.setEnabled(false);
 		junkSegment.setEnabled(false);
@@ -262,6 +268,8 @@ class NeuriteTracerResultsDialog
 
 			pathList.setEnabled(true);
 			deletePaths.setEnabled(true);
+
+			fw.setEnabledWhileNotFilling();
 
 			fillList.setEnabled(true);
 			deleteFills.setEnabled(true);
@@ -341,6 +349,8 @@ class NeuriteTracerResultsDialog
 			statusText.setText("Filling out from neuron...");
 			disableEverything();
 
+			fw.setEnabledWhileFilling();
+
 			thresholdField.setEnabled(true);
 			maxThreshold.setEnabled(true);
 			setThreshold.setEnabled(true);
@@ -418,7 +428,6 @@ class NeuriteTracerResultsDialog
 		this.launchedByArchive = launchedByArchive;
 
 		pathAndFillManager = plugin.getPathAndFillManager();
-		pw = new PathWindow(pathAndFillManager);
 
 		addWindowListener(this);
 
@@ -473,7 +482,7 @@ class NeuriteTracerResultsDialog
 			pathActionPanel.add(cancelPath);
 
 			c.gridx = 0;
-			c.gridy = 1;
+			++ c.gridy;
 			add(pathActionPanel,c);
 		}
 
@@ -522,14 +531,18 @@ class NeuriteTracerResultsDialog
 			otherOptionsPanel.add(preprocess,co);
 
 			c.gridx = 0;
-			c.gridy = 2;
+			++ c.gridy;
 			add(otherOptionsPanel,c);
 		}
 
-		showOrHidePathList = new Button("Show / Hide Path List");
-		add( showOrHidePathList );
-		showOrHidePathList.addActionListener(this);
+		{
+			++ c.gridy;
+			showOrHidePathList = new Button("Show / Hide Path List");
+			add( showOrHidePathList, c);
+			showOrHidePathList.addActionListener(this);
+		}
 
+		boolean addPathInterface = true;
 		{ /* Add the panel with the path list. */
 
 			Panel pathListPanel = new Panel();
@@ -563,19 +576,31 @@ class NeuriteTracerResultsDialog
 				pathListPanel.add(buttonsForListPanel,BorderLayout.SOUTH);
 			}
 
-			c.gridx = 0;
-			c.gridy = 3;
-			c.fill = GridBagConstraints.HORIZONTAL;
-			add(pathListPanel,c);
+			if( addPathInterface ) {
+				c.gridx = 0;
+				++ c.gridy;
+				c.fill = GridBagConstraints.HORIZONTAL;
+				add(pathListPanel,c);
+			}
 		}
 
+		{
+			++ c.gridy;
+			showOrHideFillList = new Button("Show / Hide Fill List");
+			add( showOrHideFillList, c);
+			showOrHideFillList.addActionListener(this);
+		}
+
+		boolean addFillInterface = false;
 		{
 			c.insets = new Insets( 8, 8, 1, 8 );
 			fillList = new List(3);
 			c.gridx = 0;
-			c.gridy = 4;
 			c.fill = GridBagConstraints.HORIZONTAL;
-			add(fillList,c);
+			if( addFillInterface ) {
+				++ c.gridy;
+				add(fillList,c);
+			}
 
 			Panel fillListCommandsPanel = new Panel();
 			fillListCommandsPanel.setLayout(new BorderLayout());
@@ -590,9 +615,10 @@ class NeuriteTracerResultsDialog
 
 			c.insets = new Insets( 1, 8, 8, 8 );
 			c.gridx = 0;
-			c.gridy = 5;
-
-			add(fillListCommandsPanel,c);
+			if( addFillInterface ) {
+				++ c.gridy;
+				add(fillListCommandsPanel,c);
+			}
 		}
 
 		{ /* The panel with options for filling out neurons... */
@@ -694,9 +720,11 @@ class NeuriteTracerResultsDialog
 			}
 
 			c.gridx = 0;
-			c.gridy = 6;
 			c.insets = new Insets( 8, 8, 8, 8 );
-			add(fillingOptionsPanel,c);
+			if( addFillInterface ) {
+				++ c.gridy;
+				add(fillingOptionsPanel,c);
+			}
 		}
 
 		{ /* The panel with options for saving, loading, network storage, etc. */
@@ -725,7 +753,7 @@ class NeuriteTracerResultsDialog
 			}
 
 			c.gridx = 0;
-			c.gridy = 7;
+			++ c.gridy;
 			c.anchor = GridBagConstraints.CENTER;
 			c.fill = GridBagConstraints.NONE;
 
@@ -745,7 +773,7 @@ class NeuriteTracerResultsDialog
 			traceFileOptionsPanel.add( loadButton, ct );
 
 			c.gridx = 0;
-			c.gridy = 8;
+			++ c.gridy;
 			add(traceFileOptionsPanel,c);
 
 		}
@@ -755,23 +783,41 @@ class NeuriteTracerResultsDialog
 		quitButton = new Button("Quit Tracer");
 		quitButton.addActionListener(this);
 		c.gridx = 0;
-		c.gridy = 9;
+		++ c.gridy;
 		c.anchor = GridBagConstraints.CENTER;
 		add(quitButton,c);
 
+		pack();
+
+		pw = new PathWindow(
+			pathAndFillManager,
+			plugin,
+			getX() + getWidth(),
+			getY() );
+
+		fw = new FillWindow(
+			pathAndFillManager,
+			plugin,
+			getX() + getWidth(),
+			getY() + pw.getHeight() );
+
 		changeState( WAITING_TO_START_PATH );
 
-		pack();
 		setVisible( true );
 
+		setPathListVisible( true );
+		setFillListVisible( false );
 	}
 
 	public void showMouseThreshold( float t ) {
+		String newStatus = null;
 		if( t < 0 ) {
-			fillStatus.setText( "Not reached by search yet" );
+			newStatus = "Not reached by search yet";
 		} else {
-			fillStatus.setText( "Distance from path is: " + t );
+			newStatus = "Distance from path is: " + t;
 		}
+		fillStatus.setText( newStatus );
+		fw.fillStatus.setText( newStatus );
 	}
 
 	public boolean createMask() {
@@ -861,7 +907,7 @@ class NeuriteTracerResultsDialog
 
 			if( currentState == SEARCHING ) {
 				statusText.setText("Cancelling path search...");
-				plugin.cancelSearch();
+				plugin.cancelSearch( false );
 			} else if( currentState == CALCULATING_GAUSSIAN ) {
 				statusText.setText("Cancelling Gaussian generation...");
 				plugin.cancelGaussian();
@@ -925,9 +971,11 @@ class NeuriteTracerResultsDialog
 				return;
 			}
 
-			currentlyFilling = true;
-			pauseOrRestartFilling.setLabel("Pause");
-			plugin.startFillingPaths();
+			HashSet<Path> selectedSet = new HashSet<Path>();
+			for( int i = 0; i < selectedIndices.length; ++i )
+				selectedSet.add( pathAndFillManager.getPath(i) );
+
+			plugin.startFillingPaths( selectedSet );
 
 		} else if( source == quitButton ) {
 
@@ -965,7 +1013,7 @@ class NeuriteTracerResultsDialog
 
 		} else if( source == view3D ) {
 
-			plugin.viewFillIn3D();
+			plugin.viewFillIn3D( ! createMask() );
 
 		} else if( source == fitCircles ) {
 
@@ -978,14 +1026,53 @@ class NeuriteTracerResultsDialog
 			plugin.fitCircles(indices[0],true,40);
 
 		}  else if( source == showOrHidePathList ) {
-			pw.setVisible(!pw.isVisible());
-			System.out.println("created PathWindow: "+pw);
+
+			togglePathListVisibility();
+
+		}  else if( source == showOrHideFillList ) {
+
+			toggleFillListVisibility();
 
 		}
 
 	}
 
+	public void setPathListVisible(boolean makeVisible) {
+		if( makeVisible ) {
+			showOrHidePathList.setLabel("Hide Path List");
+			pw.setVisible(true);
+			pw.toFront();
+		} else {
+			showOrHidePathList.setLabel("Show Path List");
+			pw.setVisible(false);
+		}
+	}
+
+	public void togglePathListVisibility() {
+		synchronized (pw) {
+			setPathListVisible( ! pw.isVisible() );
+		}
+	}
+
+	public void setFillListVisible(boolean makeVisible) {
+		if( makeVisible ) {
+			showOrHideFillList.setLabel("Hide Fill List");
+			fw.setVisible(true);
+			fw.toFront();
+		} else {
+			showOrHideFillList.setLabel("Show Fill List");
+			fw.setVisible(false);
+		}
+	}
+
+	public void toggleFillListVisibility() {
+		synchronized (fw) {
+			setFillListVisible( ! fw.isVisible() );
+		}
+	}
+
 	public void thresholdChanged( double f ) {
+		fw.thresholdChanged(f);
 		thresholdField.setText(""+f);
 	}
 
@@ -1017,7 +1104,6 @@ class NeuriteTracerResultsDialog
 		} else if( source == transparent ) {
 
 			plugin.setFillTransparent( transparent.getState() );
-
 
 		} else if( source == preprocess ) {
 
@@ -1079,7 +1165,7 @@ class NeuriteTracerResultsDialog
 		if (verbose) System.out.println("threadStatus reported as: "+threadStatus);
 		switch(threadStatus) {
 		case FillerThread.STOPPING:
-			pauseOrRestartFilling.setLabel("Stopping..");
+			pauseOrRestartFilling.setLabel("Stopped");
 			pauseOrRestartFilling.setEnabled(false);
 			break;
 		case FillerThread.PAUSED:

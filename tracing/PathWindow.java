@@ -43,6 +43,7 @@ import javax.swing.event.TreeSelectionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
+import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -72,6 +73,24 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 	}
 
+	public Set<Path> getSelectedPaths() {
+		HashSet<Path> result = new HashSet<Path>();
+		TreePath [] selectedPaths = tree.getSelectionPaths();
+		if( selectedPaths == null || selectedPaths.length == 0 ) {
+			return result;
+		}
+		for( int i = 0; i < selectedPaths.length; ++i ) {
+			TreePath tp = selectedPaths[i];
+			DefaultMutableTreeNode node =
+				(DefaultMutableTreeNode)(tp.getLastPathComponent());
+			if( node != root ) {
+				Path p = (Path)node.getUserObject();
+				result.add(p);
+			}
+		}
+		return result;
+	}
+
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
 		if( source == deleteButton ) {
@@ -97,12 +116,26 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				IJ.error("You must have exactly one path selected");
 				return;
 			}
-			Path p = (Path)(((DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent())).getUserObject());
+			DefaultMutableTreeNode node =
+				(DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent());
+			if( node == root )
+				return;
+			Path p = (Path)node.getUserObject();
 			HashSet<Path> pathsExplored = new HashSet<Path>();
 			p.setPrimary(true);
 			pathsExplored.add(p);
 			p.unsetPrimaryForConnected(pathsExplored);
 			pathAndFillManager.resetListeners(null);
+		} else if( source == fillOutButton ) {
+			Set<Path> selectedPaths = getSelectedPaths();
+			if( selectedPaths.size() < 1 ) {
+				IJ.error("You must have one or more paths in the list selected");
+				return;
+			}
+			plugin.startFillingPaths(selectedPaths);
+		} else {
+			IJ.error("Unexpectedly got an event from an unknown source");
+			return;
 		}
 	}
 
@@ -139,14 +172,20 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 	JButton makePrimaryButton;
 	JButton deleteButton;
 
+	Simple_Neurite_Tracer plugin;
 	PathAndFillManager pathAndFillManager;
 
-	public PathWindow(PathAndFillManager pathAndFillManager) {
+	public PathWindow(PathAndFillManager pathAndFillManager, Simple_Neurite_Tracer plugin) {
+		this( pathAndFillManager, plugin, 200, 60 );
+	}
+
+	public PathWindow(PathAndFillManager pathAndFillManager, Simple_Neurite_Tracer plugin, int x, int y) {
 		super("All Paths");
 
 		this.pathAndFillManager = pathAndFillManager;
+		this.plugin = plugin;
 		
-		setBounds(60,60,400,300);
+		setBounds(x,y,400,300);
 		root = new DefaultMutableTreeNode("All Paths");
 		tree = new HelpfulJTree(root);
 		// tree.setRootVisible(false);
@@ -244,8 +283,10 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				TreePath tp = selectedBefore[i];
 				System.out.println("=== TreePath is: "+tp);
 				DefaultMutableTreeNode dmtn = (DefaultMutableTreeNode)tp.getLastPathComponent();
-				Path p = (Path)dmtn.getUserObject();
-				selectedPathsBefore.add(p);
+				if( dmtn != root ) {
+					Path p = (Path)dmtn.getUserObject();
+					selectedPathsBefore.add(p);
+				}
 			}
 
 		// Save the expanded state:

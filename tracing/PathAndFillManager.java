@@ -259,24 +259,23 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	public synchronized void resetListeners( Path justAdded ) {
 
-		Hashtable< Path, Integer > pathIndicesHash = new Hashtable< Path, Integer >();
+		Hashtable< Path, Integer > pathToID = new Hashtable< Path, Integer >();
 
-		int paths = allPaths.size();
+		ArrayList<String> pathListEntries = new ArrayList<String>();
 
-		String [] pathListEntries = new String[paths];
-		// String [] pathNames = new String[paths];
-
-		for( int i = 0; i < paths; ++i ) {
-			Path p = allPaths.get(i);
+		Iterator<Path> pi = allPaths.iterator();
+		while( pi.hasNext() ) {
+			Path p = pi.next();
+			int pathID = p.getID();
 			// if (verbose) System.out.println("path " + i + " is " + (Object)p );
-			pathIndicesHash.put(p,new Integer(i));
+			pathToID.put(p,new Integer(pathID));
 			if( p == null ) {
-				if (verbose) System.out.println("path was null with i "+i+" out of "+paths );
+				throw new RuntimeException("BUG: A path in allPaths was null!");
 			}
 			String pathName;
 			String name = p.getName();
 			if( name == null )
-				name = "Path [" + i + "]";
+				name = "Path [" + pathID + "]";
 			if( p.startJoins != null ) {
 				name += ", starts on " + p.startJoins.getName();
 			}
@@ -284,12 +283,12 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				name += ", ends on " + p.endJoins.getName();
 			}
 			name += " [" + p.getRealLengthString() + " " + spacing_units + "]";
-			pathListEntries[i] = name;
+			pathListEntries.add( name );
 		}
 
 		for( Iterator i = listeners.iterator(); i.hasNext(); ) {
 			PathAndFillListener listener = (PathAndFillListener)(i.next());
-			listener.setPathList( pathListEntries, justAdded );
+			listener.setPathList( pathListEntries.toArray( new String[]{} ), justAdded );
 		}
 
 		int fills = allFills.size();
@@ -310,25 +309,19 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 				name += " from paths: ";
 
-				for( int j = 0; j < f.sourcePaths.size(); ++j ) {
+				Path [] sortedSourcePaths =f.sourcePaths.toArray( new Path[]{} );
+				Arrays.sort( sortedSourcePaths );
 
-					Path p = f.sourcePaths.get(j);
-
-					if( j != 0 ) {
+				for( int j = 0; j < sortedSourcePaths.length; ++j ) {
+					Path p = sortedSourcePaths[j];
+					if( j != 0 )
 						name += ", ";
-					}
-
 					// if (verbose) System.out.println("source path " + j + " is " + (Object)p );
-
-					Integer fromPath = pathIndicesHash.get( p );
-
-					if( fromPath == null ) {
-						// if (verbose) System.out.println("from unknown path");
+					Integer fromPath = pathToID.get( p );
+					if( fromPath == null )
 						name += "(unknown)";
-					} else {
+					else
 						name += "(" + fromPath.intValue() + ")";
-					}
-
 				}
 			}
 			fillListEntries[i] = name;
@@ -538,7 +531,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			pw.println("  <imagesize width=\"" + width + "\" height=\"" + height + "\" depth=\"" + depth + "\"/>" );
 
-			Hashtable< Path, Integer > h =
+			Hashtable< Path, Integer > pathToID =
 				new Hashtable< Path, Integer >();
 
 			for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
@@ -546,105 +539,48 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				int id = p.getID();
 				if( id < 0 )
 					throw new RuntimeException("In writeXML() there was a path with a negative ID (BUG)");
-				h.put( p, id );
+				pathToID.put( p, id );
 			}
 
 			for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
 				Path p = (Path)j.next();
-
 				// This probably should be a String returning
 				// method of Path.
-
 				pw.print("  <path id=\"" + p.getID() + "\"" );
-
 				String startsString = "";
 				String endsString = "";
-
 				if( p.startJoins != null ) {
-					int startPathIndex = ((h.get(p.startJoins))).intValue();
+					int startPathIndex = ((pathToID.get(p.startJoins))).intValue();
 					startsString = " startson=\"" + startPathIndex + "\"" +
 						" startsindex=\"" + p.startJoinsIndex + "\"";
 				}
 				if( p.endJoins != null ) {
-					int endPathIndex = ((h.get(p.endJoins))).intValue();
+					int endPathIndex = ((pathToID.get(p.endJoins))).intValue();
 					endsString = " endson=\"" + endPathIndex + "\"" +
 						" endsindex=\"" + p.endJoinsIndex + "\"";
 				}
-
 				pw.print(startsString);
 				pw.print(endsString);
-
 				if( p.name != null ) {
 					pw.print( " name=\""+p.name+"\"" );
 				}
-
 				pw.print(" reallength=\"" + p.getRealLength( ) + "\"");
-
 				pw.println( ">" );
-
 				for( int i = 0; i < p.size(); ++i ) {
-
 					pw.println("    <point x=\"" +
 						   p.x_positions[i] + "\" " +
 						   "y=\"" + p.y_positions[i] + "\" z=\"" +
 						   p.z_positions[i] + "\"/>");
-
 				}
-
 				pw.println( "  </path>" );
 			}
-
 			// Now output the fills:
-
 			int fillIndex = 0;
-
 			for( Iterator j = allFills.iterator(); j.hasNext(); ) {
-
 				Fill f = (Fill) j.next();
-
-				// This should probably be a method of Fill...
-
-				pw.print( "  <fill id=\"" + fillIndex + "\""  );
-
-				if( (f.sourcePaths != null) && (f.sourcePaths.size() > 0) ) {
-
-					pw.print( " frompaths=\"" );
-
-
-					for( int k = 0; k < f.sourcePaths.size(); ++k ) {
-
-						Path p = f.sourcePaths.get(k);
-
-						if( k != 0 ) {
-							pw.print( ", " );
-						}
-
-						Integer fromPath = h.get( p );
-
-						if( fromPath == null ) {
-							pw.print( "-1" );
-						} else {
-							pw.print( "" + fromPath.intValue() );
-						}
-
-					}
-
-					pw.print( "\"" );
-
-
-
-				}
-
-				pw.println( " metric=\"" + f.getMetric() + "\" threshold=\"" + f.getThreshold() + "\">" );
-
-				f.writeNodesXML( pw );
-
-				pw.println( "  </fill>" );
-
+				f.writeXML( pw, fillIndex, pathToID );
 			}
-
 			pw.println("</tracings>");
-
 		} finally {
 			pw.close();
 		}
