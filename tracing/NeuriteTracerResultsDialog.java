@@ -148,8 +148,12 @@ class NeuriteTracerResultsDialog
 		boolean [] itemStates = new boolean[items];
 		for( int i = 0; i < pathAndFillManager.size(); ++i ) {
 			Path p = pathAndFillManager.getPath(i);
-			if( selectedPathsSet.contains(p) )
+			if( selectedPathsSet.contains(p) ) {
 				itemStates[i] = true;
+				p.setSelected( true );
+			} else {
+				p.setSelected( false );
+			}
 		}
 		for( int i = 0; i < items; ++i ) {
 			if( itemStates[i] ) {
