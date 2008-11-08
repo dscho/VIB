@@ -1197,11 +1197,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		PointInImage result = null;
 
-		if( ! anySelected() ) {
-			IJ.error( "There are no paths selected, so you can't join (you're holding 'Control')" );
-			return null;
-		}
-
 		int minimumDistanceSquared = Integer.MAX_VALUE;
 
 		int paths = allPaths.size();
