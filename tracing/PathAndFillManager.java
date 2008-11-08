@@ -1205,7 +1205,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			Path p = allPaths.get(s);
 
-			if( selectedPathsSet.contains(s) )
+			if( ! selectedPathsSet.contains(p) )
 				continue;
 
 			for( int i = 0; i < p.size(); ++i ) {
