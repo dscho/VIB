@@ -546,7 +546,7 @@ class NeuriteTracerResultsDialog
 			showOrHidePathList.addActionListener(this);
 		}
 
-		boolean addPathInterface = true;
+		boolean addPathInterface = false;
 		{ /* Add the panel with the path list. */
 
 			Panel pathListPanel = new Panel();
