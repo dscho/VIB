@@ -437,7 +437,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		y = p[1];
 		z = p[2];
 
-		if( join_modifier_down ) {
+		if( join_modifier_down && pathAndFillManager.anySelected() ) {
 
 			PointInImage pointInImage = pathAndFillManager.nearestJoinPointOnSelectedPaths( x, y, z );
 			if( pointInImage != null ) {
