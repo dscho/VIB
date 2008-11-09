@@ -270,7 +270,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 	}
 
-	public void setPathList( String [] pathList, Path justAdded ) {
+	public void setPathList( String [] pathList, Path justAdded, boolean expandAll ) {
 
 		// Save the selection state:
 		
@@ -311,7 +311,11 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		model.reload();
 
 		// Set back the expanded state:
-		setExpandedPaths( tree, model, root, expandedPathsBefore, justAdded );
+		if( expandAll ) {
+			for( int i = 0; i < tree.getRowCount(); ++i )
+				tree.expandRow(i);
+		} else
+			setExpandedPaths( tree, model, root, expandedPathsBefore, justAdded );
 
 		setSelectedPaths( tree, model, root, selectedPathsBefore );
 

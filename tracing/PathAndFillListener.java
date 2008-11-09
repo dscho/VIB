@@ -27,7 +27,7 @@ import java.util.HashSet;
 
 public interface PathAndFillListener {
 
-	void setPathList( String [] pathList, Path justAdded );
+	void setPathList( String [] pathList, Path justAdded, boolean expandAll );
 
 	void setFillList( String [] fillList );
 

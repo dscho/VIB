@@ -129,7 +129,7 @@ class NeuriteTracerResultsDialog
 	Button showOrHidePathList;
 	Button showOrHideFillList;
 
-	public void setPathList( String [] newList, Path justAdded ) {
+	public void setPathList( String [] newList, Path justAdded, boolean expandAll ) {
 		pathList.removeAll();
 		for( int i = 0; i < newList.length; ++i )
 			pathList.add( newList[i] );

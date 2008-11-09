@@ -256,8 +256,11 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return primaryPaths.toArray(new Path[]{});
 	}
 
-
 	public synchronized void resetListeners( Path justAdded ) {
+		resetListeners( justAdded, false );
+	}
+
+	public synchronized void resetListeners( Path justAdded, boolean expandAll ) {
 
 		Hashtable< Path, Integer > pathToID = new Hashtable< Path, Integer >();
 
@@ -288,7 +291,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		for( Iterator i = listeners.iterator(); i.hasNext(); ) {
 			PathAndFillListener listener = (PathAndFillListener)(i.next());
-			listener.setPathList( pathListEntries.toArray( new String[]{} ), justAdded );
+			listener.setPathList( pathListEntries.toArray( new String[]{} ), justAdded, expandAll );
 		}
 
 		int fills = allFills.size();
@@ -906,7 +909,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			}
 
 			setSelected( new Path[0], this );
-			resetListeners( null );
+			resetListeners( null, true );
 			plugin.repaintAllPanes();
 		}
 
