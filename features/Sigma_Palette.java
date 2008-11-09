@@ -32,7 +32,8 @@ import util.Limits;
 public class Sigma_Palette implements PlugIn {
 
 	public static interface SigmaPaletteListener {
-		public void sigmaSelected( double sigma );
+		public void newSigmaSelected( double sigma );
+		public void newMaximum( double max );
 	}
 
 	public static class PaletteStackWindow extends StackWindow {
@@ -81,12 +82,6 @@ public class Sigma_Palette implements PlugIn {
 			super(imp,ic);
 			this.owner = owner;
 			addExtraScrollbar();
-		}
-
-		public void windowClosing(WindowEvent e) {
-			if( owner != null )
-				owner.sigmaSelected(-1);
-			super.windowClosing(e);
 		}
 	}
 
@@ -220,11 +215,6 @@ public class Sigma_Palette implements PlugIn {
 		}
 	}
 
-	public void sigmaSelected( double sigma ) {
-		if( listener != null )
-			listener.sigmaSelected( sigma );
-	}
-
 	double [] sigmaValues = null;
 
 	int croppedWidth;
@@ -232,6 +222,10 @@ public class Sigma_Palette implements PlugIn {
 	int croppedDepth;
 
 	SigmaPaletteListener listener;
+
+	public void setListener( SigmaPaletteListener newListener ) {
+		listener = newListener;
+	}
 
 	ImagePlus paletteImage;
 
@@ -246,6 +240,8 @@ public class Sigma_Palette implements PlugIn {
 			paletteImage.getProcessor().setMinAndMax(0,max);
 			paletteImage.updateAndDraw();
 		}
+		if( listener != null )
+			listener.newMaximum( max );
 	}
 
 	int selectedSigmaIndex = -1;
@@ -255,6 +251,8 @@ public class Sigma_Palette implements PlugIn {
 
 	public void setSelectedSigmaIndex( int selectedSigmaIndex ) {
 		this.selectedSigmaIndex = selectedSigmaIndex;
+		if( listener != null )
+			listener.newSigmaSelected( sigmaValues[selectedSigmaIndex] );
 		paletteImage.updateAndDraw();
 	}
 
