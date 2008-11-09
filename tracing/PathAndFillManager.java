@@ -600,7 +600,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				pw.print(startsString);
 				pw.print(endsString);
 				if( p.name != null ) {
-					pw.print( " name=\""+p.name+"\"" );
+					pw.print( " name=\""+escapeForXMLAttributeValue(p.name)+"\"" );
 				}
 				pw.print(" reallength=\"" + p.getRealLength( ) + "\"");
 				pw.println( ">" );

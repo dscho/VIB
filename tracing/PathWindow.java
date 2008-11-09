@@ -131,6 +131,43 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				return;
 			}
 			plugin.startFillingPaths(selectedPaths);
+		} else if( source == renameButton ) {
+			TreePath [] selectedPaths = tree.getSelectionPaths();
+			if( selectedPaths == null || selectedPaths.length != 1 ) {
+				IJ.error("You must have exactly one path selected");
+				return;
+			}
+			DefaultMutableTreeNode node =
+				(DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent());
+			if( node == root )
+				return;
+			Path p = (Path)node.getUserObject();
+
+			// Pop up the rename dialog:
+			String s = (String)JOptionPane.showInputDialog(
+				this,
+				"Rename this path to:",
+				"Rename Path",
+				JOptionPane.PLAIN_MESSAGE,
+				null,
+				null,
+				p.getName() );
+
+			if( s == null )
+				return;
+			if( s.length() == 0 ) {
+				IJ.error("The new name cannot be empty");
+				return;
+			}
+			synchronized( pathAndFillManager) {
+				if( pathAndFillManager.getPathFromName( s, false ) != null ) {
+					IJ.error("There is already a path with that name ('"+s+"')");
+					return;
+				}
+				// Otherwise this is OK, change the name:
+				p.setName(s);
+				pathAndFillManager.resetListeners(null);
+			}
 		} else {
 			IJ.error("Unexpectedly got an event from an unknown source");
 			return;
