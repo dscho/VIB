@@ -91,7 +91,13 @@ public class Path implements Comparable {
 		this.name = newName;
 	}
 
+	public void setDefaultName() {
+		this.name = "Path "+id;
+	}
+
 	public String getName() {
+		if( name == null )
+			throw new RuntimeException("In Path.getName() for id "+id+", name was null");
 		return name;
 	}
 

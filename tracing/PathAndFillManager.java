@@ -738,7 +738,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				throw new TracesFileFormatException("There was an invalid attribute in <path/>: "+e);
 			}
 
-			if( nameString != null )
+			if( nameString == null )
+				current_path.setDefaultName();
+			else
 				current_path.setName(nameString);
 
 			startJoins.add( startsOnInteger );
