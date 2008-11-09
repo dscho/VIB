@@ -62,7 +62,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 		public void setExpanded( Object [] path, boolean expanded ) {
 			TreePath tp = new TreePath( path );
-			System.out.println("  setExpandedState ("+expanded+") for "+tp);
 			setExpandedState( tp, expanded );
 		}
 
@@ -110,7 +109,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				}
 			}
 		} else if( source == makePrimaryButton ) {
-			System.out.println("Got makePrimaryButton event");
 			TreePath [] selectedPaths = tree.getSelectionPaths();
 			if( selectedPaths == null || selectedPaths.length != 1 ) {
 				IJ.error("You must have exactly one path selected");
@@ -140,7 +138,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 	}
 
 	public void valueChanged( TreeSelectionEvent e ) {
-		System.out.println("Got TreeSelectionEvent: "+e);
 		TreePath [] selectedPaths = tree.getSelectionPaths();
 		if( selectedPaths == null ) {
 			pathAndFillManager.setSelected(new Path[]{},this);
@@ -234,10 +231,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			DefaultMutableTreeNode child = (DefaultMutableTreeNode) model.getChild( node, i );
 			Path p = (Path)child.getUserObject();
 			if( set.contains(p) || ((justAdded != null) && (justAdded == p)) ) {
-				System.out.println("---- Setting "+p+" to be expanded");
 				tree.setExpanded( (Object[])(child.getPath()), true );
-			} else {
-				System.out.println("---- Not expanding: "+p);
 			}
 			if( ! model.isLeaf(child) )
 				setExpandedPaths( tree, model, child, set, justAdded );
@@ -259,10 +253,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			DefaultMutableTreeNode child = (DefaultMutableTreeNode) model.getChild( node, i );
 			Path p = (Path)child.getUserObject();
 			if( set.contains(p) ) {
-				System.out.println("---- Setting "+p+" to be expanded");
 				tree.setSelected( (Object[])(child.getPath()) );
-			} else {
-				System.out.println("---- Not expanding: "+p);
 			}
 			if( ! model.isLeaf(child) )
 				setSelectedPaths( tree, model, child, set );
@@ -281,7 +272,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		if( selectedBefore != null )
 			for( int i = 0; i < selectedBefore.length; ++i ) {
 				TreePath tp = selectedBefore[i];
-				System.out.println("=== TreePath is: "+tp);
 				DefaultMutableTreeNode dmtn = (DefaultMutableTreeNode)tp.getLastPathComponent();
 				if( dmtn != root ) {
 					Path p = (Path)dmtn.getUserObject();
@@ -299,11 +289,9 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		DefaultTreeModel model = new DefaultTreeModel(newRoot);
 		// DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
 		Path [] primaryPaths = pathAndFillManager.getPathsStructured();
-		System.out.println("Got primaryPaths of length: "+primaryPaths.length);
 		for( int i = 0; i < primaryPaths.length; ++i ) {
 			Path primaryPath = primaryPaths[i];
 			addNode( newRoot, primaryPath, model );
-			System.out.println("  added the path: "+primaryPath);
 		}
 		root = newRoot;
 		tree.setModel(model);
@@ -323,12 +311,10 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 	public void addNode( MutableTreeNode parent, Path childPath, DefaultTreeModel model ) {
 		MutableTreeNode newNode = new DefaultMutableTreeNode(childPath);
-		System.out.println("Inserting node: "+newNode+" into parent "+parent);
 		model.insertNodeInto(newNode, parent, parent.getChildCount());
 		Iterator<Path> ci = childPath.children.iterator();
 		while( ci.hasNext() ) {
 			Path p = ci.next();
-			System.out.println("Now adding for child path: "+p);
 			addNode( newNode, p, model );
 		}
 	}

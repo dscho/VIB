@@ -115,23 +115,18 @@ public class Path implements Comparable {
 		// Set the children of this path in a breadth first fashion:
 		children.clear();
 		Iterator<Path> ci = somehowJoins.iterator();
-		System.out.println("somehowJoins.size(): "+somehowJoins.size());
 		while( ci.hasNext() ) {
 			Path c = ci.next();
-			System.out.println("Got path "+c);
-			System.out.println("Checking if it's in pathsLeft: "+pathsLeft);
 			if( pathsLeft.contains(c) ) {
 				children.add(c);
 				pathsLeft.remove(c);
 			}
 		}
-		System.out.println("children.size(): "+children.size());
 		ci = children.iterator();
 		while( ci.hasNext() ) {
 			Path c = ci.next();
 			c.setChildren( pathsLeft );
 		}
-		System.out.println("called for all children");
 	}
 
 /*
@@ -220,34 +215,27 @@ public class Path implements Comparable {
 		if( other == null ) {
 			throw new RuntimeException("BUG: setJoin now should never take a null other path");
 		}
-		System.out.println("setJoin called");
 		if( startOrEnd == PATH_START ) {
 			// If there was an existing path, that's an error:
 			if( startJoins != null )
 				throw new RuntimeException("BUG: setJoin for START should not replace another join");
-			System.out.println("setJoin PATH_START");
 			startJoins = other;
 			startJoinsIndex = indexInOther;
 		} else if( startOrEnd == PATH_END ) {
 			if( endJoins != null )
 				throw new RuntimeException("BUG: setJoin for END should not replace another join");
-			System.out.println("setJoin PATH_END");
 			endJoins = other;
 			endJoinsIndex = indexInOther;
 		} else {
 			IJ.error( "BUG: unknown first parameter to setJoin" );
 		}
 		// Also update the somehowJoins list:
-		System.out.println("Trying to add a joined path");
 		if( somehowJoins.indexOf(other) < 0 ) {
-			System.out.println("Adding other path: "+other);
 			somehowJoins.add(other);
 		}
 		if( other.somehowJoins.indexOf(this) < 0 ) {
-			System.out.println("And adding the reverse: "+this);
 			other.somehowJoins.add(this);
 		}
-		System.out.println("somehowJoins.size() = "+somehowJoins.size()+" for path "+this);
 	}
 
 	double x_spacing;
@@ -435,7 +423,6 @@ public class Path implements Comparable {
 	}
 
 	void unsetPrimaryForConnected( HashSet<Path> pathsExplored ) {
-		System.out.println("Called unsetPrimaryForConnected on "+this);
 		Iterator<Path> i = somehowJoins.iterator();
 		while( i.hasNext() ) {
 			Path p = i.next();
