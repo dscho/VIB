@@ -518,6 +518,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			pw.println("  <!ATTLIST imagesize      depth         CDATA           #REQUIRED>");
 			pw.println("  <!ATTLIST path           id            CDATA           #REQUIRED>");
 			pw.println("  <!ATTLIST path           primary       CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           name          CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           startson      CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           startsindex   CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           endson        CDATA           #IMPLIED>");
