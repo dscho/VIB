@@ -145,7 +145,7 @@ public class FillWindow extends JFrame implements PathAndFillListener, ActionLis
 		super("All Fills");
 		this.plugin = plugin;
 		this.pathAndFillManager = pathAndFillManager;		
-		setBounds(x,y,400,600);
+		setBounds(x,y,400,400);
 
 		setLayout(new GridBagLayout());
 
@@ -290,8 +290,6 @@ public class FillWindow extends JFrame implements PathAndFillListener, ActionLis
 
 		deleteFills.addActionListener(this);
 		reloadFill.addActionListener(this);
-
-		pack();
 	}
 
 	public void setPathList( String [] pathList, Path justAdded ) { }
