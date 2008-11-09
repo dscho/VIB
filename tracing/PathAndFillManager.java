@@ -49,6 +49,7 @@ import org.xml.sax.SAXException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.HashMap;
 
 import java.awt.Color;
 
@@ -146,6 +147,19 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	public synchronized Path getPath( int i ) {
 		return allPaths.get(i);
+	}
+
+	public synchronized Path getPathFromID( int id ) {
+		Iterator<Path> pi = allPaths.iterator();
+		while( pi.hasNext() ) {
+			Path p = pi.next();
+			System.out.println("        comparing with ID "+id+" ("+p+")");
+			if( id == p.getID() ) {
+				System.out.println("          Found it!");
+				return p;
+			}
+		}
+		return null;
 	}
 
 	/* This is called to update the PathAndFillManager's idea of
@@ -503,6 +517,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			pw.println("  <!ATTLIST imagesize      height        CDATA           #REQUIRED>");
 			pw.println("  <!ATTLIST imagesize      depth         CDATA           #REQUIRED>");
 			pw.println("  <!ATTLIST path           id            CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST path           primary       CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           startson      CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           startsindex   CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           endson        CDATA           #IMPLIED>");
@@ -562,6 +577,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					endsString = " endson=\"" + endPathIndex + "\"" +
 						" endsindex=\"" + p.endJoinsIndex + "\"";
 				}
+				if( p.getPrimary() )
+					pw.print(" primary=\"true\"");
 				pw.print(startsString);
 				pw.print(endsString);
 				if( p.name != null ) {
@@ -602,12 +619,12 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	Fill current_fill;
 	Path current_path;
 
-	ArrayList< Integer > startJoins;
-	ArrayList< Integer > startJoinsIndices;
-	ArrayList< Integer > endJoins;
-	ArrayList< Integer > endJoinsIndices;
+	HashMap< Integer, Integer > startJoins;
+	HashMap< Integer, Integer > startJoinsIndices;
+	HashMap< Integer, Integer > endJoins;
+	HashMap< Integer, Integer > endJoinsIndices;
 
-	ArrayList< int [] > sourcePathIndicesForFills;
+	ArrayList< int [] > sourcePathIDForFills;
 
 	int last_fill_node_id;
 
@@ -620,12 +637,12 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		if( qName.equals("tracings") ) {
 
-			startJoins = new ArrayList< Integer >();
-			startJoinsIndices = new ArrayList< Integer >();
-			endJoins = new ArrayList< Integer >();
-			endJoinsIndices = new ArrayList< Integer >();
+			startJoins        = new HashMap< Integer, Integer >();
+			startJoinsIndices = new HashMap< Integer, Integer >();
+			endJoins          = new HashMap< Integer, Integer >();
+			endJoinsIndices   = new HashMap< Integer, Integer >();
 
-			sourcePathIndicesForFills = new ArrayList< int [] >();
+			sourcePathIDForFills = new ArrayList< int [] >();
 			foundIDs = new HashSet< Integer >();
 
 			last_fill_id = -1;
@@ -690,6 +707,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			String nameString = attributes.getValue("name");
 
+			String primaryString = attributes.getValue("primary");
+
 			if( (startsonString == null && startsindexString != null) ||
 			    (startsonString != null && startsindexString == null) ) {
 				throw new TracesFileFormatException("If startson is specified for a path, then startsindex must also be specified.");
@@ -709,9 +728,14 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			Integer endsOnInteger = null;
 			Integer endsIndexInteger = null;
 
+			if( primaryString != null && primaryString.equals("true") )
+				current_path.setPrimary(true);
+
+			int id = -1;
+
 			try {
 
-				int id = Integer.parseInt(idString);
+				id = Integer.parseInt(idString);
 				if( foundIDs.contains(id) ) {
 					throw new TracesFileFormatException("There is more than one path with ID "+id);
 				}
@@ -746,8 +770,15 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			else
 				current_path.setName(nameString);
 
-			startJoins.add( startsOnInteger );
-			endJoins.add( endsOnInteger );
+			if( startsOnInteger != null )
+				startJoins.put( id, startsOnInteger );
+			if( endsOnInteger != null )
+				endJoins.put( id, endsOnInteger );
+
+			if( startsIndexInteger != null )
+				startJoinsIndices.put( id, startsIndexInteger );
+			if( endsIndexInteger != null )
+				endJoinsIndices.put( id, endsIndexInteger );
 
 		} else if( qName.equals("point") ) {
 
@@ -801,7 +832,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				for( int i = 0; i < sourcePaths.length; ++i )
 					sourcePathIndices[i] = Integer.parseInt(sourcePaths[i]);
 
-				sourcePathIndicesForFills.add( sourcePathIndices );
+				sourcePathIDForFills.add( sourcePathIndices );
 
 				last_fill_id = fill_id;
 
@@ -882,28 +913,38 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			for( int i = 0; i < allPaths.size(); ++i ) {
 				Path p = allPaths.get(i);
-				Integer startInteger = startJoins.get(i);
-				Integer startIndexInteger = startJoinsIndices.get(i);
-				Integer endInteger = endJoins.get(i);
-				Integer endIndexInteger = endJoinsIndices.get(i);
-				if( startInteger != null ) {
-					Path startPath = allPaths.get(startInteger);
+				System.out.println("Going path "+i+", which is: "+p);
+
+				Integer startID = startJoins.get(p.getID());
+				Integer startIndexInteger = startJoinsIndices.get(p.getID());
+				Integer endID = endJoins.get(p.getID());
+				Integer endIndexInteger = endJoinsIndices.get(p.getID());
+
+				System.out.println("  startID: "+startID);
+				System.out.println("  startIndexInteger: "+startIndexInteger);
+				System.out.println("  endID: "+endID);
+				System.out.println("  endIndexInteger: "+endIndexInteger);
+				if( startID != null ) {
+					Path startPath = getPathFromID(startID);
+					System.out.println("    Got startPath: "+startPath);
 					p.setStartJoin( startPath, startIndexInteger );
 				}
-				if( endInteger != null ) {
-					Path endPath = allPaths.get(endInteger);
+				if( endID != null ) {
+					Path endPath = getPathFromID(endID);
+					System.out.println("    Got endPath: "+endPath);
 					p.setEndJoin( endPath, endIndexInteger );
 				}
+				System.out.println("=== path is now: "+p);
 			}
 
 			// Now turn the source paths into real paths...
 
 			for( int i = 0; i < allFills.size(); ++i ) {
 				Fill f = allFills.get(i);
-				int [] sourcePathIndices = sourcePathIndicesForFills.get(i);
-				Path [] realSourcePaths = new Path[sourcePathIndices.length];
-				for( int j = 0; j < sourcePathIndices.length; ++j ) {
-					realSourcePaths[j] = allPaths.get(sourcePathIndices[j]);
+				int [] sourcePathIDs = sourcePathIDForFills.get(i);
+				Path [] realSourcePaths = new Path[sourcePathIDs.length];
+				for( int j = 0; j < sourcePathIDs.length; ++j ) {
+					realSourcePaths[j] = getPathFromID(sourcePathIDs[j]);
 				}
 				f.setSourcePaths( realSourcePaths );
 			}
