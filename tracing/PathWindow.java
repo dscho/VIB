@@ -181,7 +181,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 		this.pathAndFillManager = pathAndFillManager;
 		this.plugin = plugin;
-		
+
 		setBounds(x,y,400,300);
 		root = new DefaultMutableTreeNode("All Paths");
 		tree = new HelpfulJTree(root);
@@ -238,7 +238,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		}
 
 	}
-	
+
 	public void setSelectedPaths( HashSet selectedPaths, Object source ) {
 		if( source == this )
 			return;
@@ -264,7 +264,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 	public void setPathList( String [] pathList, Path justAdded, boolean expandAll ) {
 
 		// Save the selection state:
-		
+
 		TreePath [] selectedBefore = tree.getSelectionPaths();
 		HashSet selectedPathsBefore = new HashSet();
 		HashSet expandedPathsBefore = new HashSet();
@@ -284,7 +284,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 		/* Ignore the arguments and get the real path list
 		   from the PathAndFillManager: */
-		
+
 		DefaultMutableTreeNode newRoot = new DefaultMutableTreeNode("All Paths");
 		DefaultTreeModel model = new DefaultTreeModel(newRoot);
 		// DefaultTreeModel model = (DefaultTreeModel)tree.getModel();

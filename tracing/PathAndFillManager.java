@@ -171,9 +171,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		Iterator<Path> pi = allPaths.iterator();
 		while( pi.hasNext() ) {
 			Path p = pi.next();
-			System.out.println("        comparing with ID "+id+" ("+p+")");
 			if( id == p.getID() ) {
-				System.out.println("          Found it!");
 				return p;
 			}
 		}
@@ -501,6 +499,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	}
 
+	// FIXME: should probably use XMLStreamWriter instead of this ad-hoc approach:
 	synchronized public void writeXML( String fileName,
 					   Simple_Neurite_Tracer plugin,
 					   boolean compress ) throws IOException {
@@ -759,7 +758,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					throw new TracesFileFormatException("There is more than one path with ID "+id);
 				}
 				current_path.setID(id);
-				
+
 				if( startsonString == null )
 					startson = startsindex = -1;
 				else {
