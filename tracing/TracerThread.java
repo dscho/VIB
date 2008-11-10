@@ -44,6 +44,7 @@ public class TracerThread extends SearchThread {
         boolean reciprocal;
 
         ComputeCurvatures hessian;
+	double multiplier;
 
         Path result;
 
@@ -100,6 +101,7 @@ public class TracerThread extends SearchThread {
 			     boolean reciprocal,
 			     boolean singleSlice,
 			     ComputeCurvatures hessian,
+			     double multiplier,
 			     float [][] tubeness,
 			     boolean useHessian ) {
 
@@ -115,6 +117,8 @@ public class TracerThread extends SearchThread {
                 this.reciprocal = reciprocal;
 		this.singleSlice = singleSlice;
                 this.hessian = hessian;
+		this.tubeness = tubeness;
+		this.multiplier = multiplier;
 		// need to do this again since it needs to know if hessian is set...
 		minimum_cost_per_unit_distance = minimumCostPerUnitDistance();
 
@@ -215,6 +219,10 @@ public class TracerThread extends SearchThread {
 						if( measure == 0 ) // This should never happen in practice...
 							measure = 0.2;
 
+						measure *= multiplier;
+						if( measure > 256 )
+							measure = 256;
+
 						cost = 1 / measure;
 
 					} else {
@@ -248,7 +256,9 @@ public class TracerThread extends SearchThread {
 						if( measure == 0 ) // This should never happen in practice...
 							measure = 0.2;
 
-						measure *= 4;
+						measure *= multiplier;
+						if( measure > 256 )
+							measure = 256;
 
 						cost = 1 / measure;
 

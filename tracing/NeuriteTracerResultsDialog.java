@@ -33,9 +33,14 @@ import java.io.*;
 
 import java.util.HashSet;
 
+import features.Sigma_Palette;
+import ij.gui.GenericDialog;
+
+import java.text.DecimalFormat;
+
 class NeuriteTracerResultsDialog
 	extends Dialog
-	implements ActionListener, WindowListener, ItemListener, PathAndFillListener, TextListener, FillerProgressCallback {
+	implements ActionListener, WindowListener, ItemListener, PathAndFillListener, TextListener, FillerProgressCallback, Sigma_Palette.SigmaPaletteListener {
 
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
@@ -44,14 +49,18 @@ class NeuriteTracerResultsDialog
 
 	// These are the states that the UI can be in:
 
-	static final int WAITING_TO_START_PATH = 0;
-	static final int PARTIAL_PATH          = 1;
-	static final int SEARCHING             = 2;
-	static final int QUERY_KEEP            = 3;
-	static final int LOGGING_POINTS        = 4;
-	static final int DISPLAY_EVS           = 5;
-	static final int FILLING_PATHS         = 6;
-	static final int CALCULATING_GAUSSIAN  = 7;
+	static final int WAITING_TO_START_PATH    = 0;
+	static final int PARTIAL_PATH             = 1;
+	static final int SEARCHING                = 2;
+	static final int QUERY_KEEP               = 3;
+	static final int LOGGING_POINTS           = 4;
+	static final int DISPLAY_EVS              = 5;
+	static final int FILLING_PATHS            = 6;
+	static final int CALCULATING_GAUSSIAN     = 7;
+	static final int WAITING_FOR_SIGMA_POINT  = 8;
+	static final int WAITING_FOR_SIGMA_CHOICE = 9;
+	static final int SAVING                   = 10;
+	static final int LOADING                  = 11;
 
 	static final String [] stateNames = { "WAITING_TO_START_PATH",
 					      "PARTIAL_PATH",
@@ -60,7 +69,11 @@ class NeuriteTracerResultsDialog
 					      "LOGGING_POINTS",
 					      "DISPLAY_EVS",
 					      "FILLING_PATHS",
-					      "CALCULATING_GAUSSIAN" };
+					      "CALCULATING_GAUSSIAN",
+					      "WAITING_FOR_SIGMA_POINT",
+					      "WAITING_FOR_SIGMA_CHOICE",
+					      "SAVING",
+					      "LOADING" };
 
 	static final String SEARCHING_STRING = "Searching for path between points...";
 
@@ -84,7 +97,15 @@ class NeuriteTracerResultsDialog
 	TextField nearbyField;
 
 	Checkbox preprocess;
-	Checkbox showEVs;
+	Checkbox usePreprocessed;
+
+	double currentSigma;
+	double currentMultiplier;
+
+	Label currentSigmaAndMultiplierLabel;
+
+	Button editSigma;
+	Button sigmaWizard;
 
 	List pathList;
 
@@ -129,6 +150,17 @@ class NeuriteTracerResultsDialog
 	Button showOrHidePathList;
 	Button showOrHideFillList;
 
+	public void newSigmaSelected( double sigma ) {
+		setSigma( sigma );
+	}
+
+	public void newMaximum( double max ) {
+		System.out.println("newMaximum called with: "+max);
+		double multiplier = 256 / max;
+		System.out.println("setting multiplier to:  "+multiplier);
+		setMultiplier( multiplier );
+	}
+
 	public void setPathList( String [] newList, Path justAdded, boolean expandAll ) {
 		pathList.removeAll();
 		for( int i = 0; i < newList.length; ++i )
@@ -170,6 +202,7 @@ class NeuriteTracerResultsDialog
 	// ------------------------------------------------------------------------
 
 	int preGaussianState;
+	int preSigmaPaletteState;
 
 	public void gaussianCalculated(boolean succeeded) {
 		if( !succeeded )
@@ -177,12 +210,40 @@ class NeuriteTracerResultsDialog
 		changeState(preGaussianState);
 	}
 
-	public void setPreprocessLabelSigma( double sigma ) {
-		String basic = "Hessian-based analysis";
-		if( sigma < 0 )
-			preprocess.setLabel(basic);
+	public void setMultiplier( double multiplier ) {
+		currentMultiplier = multiplier;
+		updateLabel( );
+	}
+
+	public void setSigma( double sigma ) {
+		currentSigma = sigma;
+		updateLabel( );
+	}
+
+	DecimalFormat threeDecimalPlaces = new DecimalFormat("0.0000");
+	DecimalFormat threeDecimalPlacesScientific = new DecimalFormat("0.00E00");
+
+	public String formatDouble( double value ) {
+		double absValue = Math.abs( value );
+		if( absValue < 0.01 || absValue >= 1000 )
+			return threeDecimalPlacesScientific.format(value);
 		else
-			preprocess.setLabel(basic+" (\u03C3="+sigma+")");
+			return threeDecimalPlaces.format(value);
+	}
+
+	public void updateLabel( ) {
+		currentSigmaAndMultiplierLabel.setText(
+			"\u03C3 = " +
+			formatDouble( currentSigma ) +
+			", multiplier = " + formatDouble( currentMultiplier ) );
+	}
+
+	public double getSigma( ) {
+		return currentSigma;
+	}
+
+	public double getMultiplier( ) {
+		return currentMultiplier;
 	}
 
 	public void exitRequested() {
@@ -216,6 +277,9 @@ class NeuriteTracerResultsDialog
 		cancelSearch.setEnabled(false);
 		completePath.setEnabled(false);
 		cancelPath.setEnabled(false);
+
+		editSigma.setEnabled(false);
+		sigmaWizard.setEnabled(false);
 
 		viewPathChoice.setEnabled(false);
 		preprocess.setEnabled(false);
@@ -270,6 +334,9 @@ class NeuriteTracerResultsDialog
 			viewPathChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
+			editSigma.setEnabled(true);
+			sigmaWizard.setEnabled(true);
+
 			pathList.setEnabled(true);
 			deletePaths.setEnabled(true);
 
@@ -312,6 +379,9 @@ class NeuriteTracerResultsDialog
 
 			viewPathChoice.setEnabled(true);
 			preprocess.setEnabled(true);
+
+			editSigma.setEnabled(true);
+			sigmaWizard.setEnabled(true);
 
 			pathList.setEnabled(true);
 
@@ -381,6 +451,16 @@ class NeuriteTracerResultsDialog
 
 			break;
 
+		case WAITING_FOR_SIGMA_POINT:
+			statusText.setText("Click on a neuron in the image");
+			disableEverything();
+			break;
+
+		case WAITING_FOR_SIGMA_CHOICE:
+			statusText.setText("Close the sigma palette window to continue");
+			disableEverything();
+			break;
+
 		default:
 			IJ.error("BUG: switching to an unknown state");
 			return;
@@ -400,6 +480,10 @@ class NeuriteTracerResultsDialog
 
 		currentState = newState;
 
+	}
+
+	public int getState() {
+		return currentState;
 	}
 
 	// ------------------------------------------------------------------------
@@ -510,11 +594,6 @@ class NeuriteTracerResultsDialog
 			nearbyPanel.add(nearbyField,BorderLayout.CENTER);
 			nearbyPanel.add(new Label("slices to each side)"),BorderLayout.EAST);
 
-			preprocess = new Checkbox();
-			setPreprocessLabelSigma(-1);
-			preprocess.addItemListener( this );
-			showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
-
 			co.gridx = 0;
 			co.gridy = 0;
 			otherOptionsPanel.add(new Label("View paths: "),co);
@@ -528,11 +607,43 @@ class NeuriteTracerResultsDialog
 			co.anchor = GridBagConstraints.LINE_END;
 			otherOptionsPanel.add(nearbyPanel,co);
 
+			preprocess = new Checkbox("Hessian-based analysis");
+			preprocess.addItemListener( this );
+
 			co.gridx = 0;
-			co.gridy = 2;
+			++ co.gridy;
 			co.gridwidth = 2;
 			co.anchor = GridBagConstraints.LINE_START;
 			otherOptionsPanel.add(preprocess,co);
+
+			++ co.gridy;
+			usePreprocessed = new Checkbox("Use preprocessed image");
+			usePreprocessed.addItemListener( this );
+			usePreprocessed.setEnabled( plugin.tubeness != null );
+			otherOptionsPanel.add(usePreprocessed,co);
+
+			co.fill = GridBagConstraints.HORIZONTAL;
+
+			currentSigmaAndMultiplierLabel = new Label();
+			++ co.gridy;
+			otherOptionsPanel.add(currentSigmaAndMultiplierLabel,co);
+			setSigma( plugin.getMinimumSeparation() );
+			setMultiplier( 4 );
+			updateLabel( );
+			++ co.gridy;
+
+			Panel sigmaButtonPanel = new Panel( );
+
+			editSigma = new Button( "Pick Sigma Manually" );
+			editSigma.addActionListener( this );
+			sigmaButtonPanel.add(editSigma);
+
+			sigmaWizard = new Button( "Pick Sigma Visually" );
+			sigmaWizard.addActionListener( this );
+			sigmaButtonPanel.add(sigmaWizard);
+
+			++ co.gridy;
+			otherOptionsPanel.add(sigmaButtonPanel,co);
 
 			c.gridx = 0;
 			++ c.gridy;
@@ -1037,8 +1148,45 @@ class NeuriteTracerResultsDialog
 
 			toggleFillListVisibility();
 
-		}
+		} else if( source == editSigma ) {
 
+			double newSigma = -1;
+			double newMultiplier = -1;
+			while( newSigma <= 0 ) {
+				GenericDialog gd = new GenericDialog("Select Scale of Structures");
+				gd.addMessage("Please enter the approximate radius of the structures you are looking for:");
+				gd.addNumericField("Sigma: ", plugin.getMinimumSeparation(), 4);
+				gd.addMessage("(The default value is the minimum voxel separation.)");
+				gd.addMessage("Please enter the scaling factor to apply:");
+				gd.addNumericField("Multiplier: ", 4, 4);
+				gd.addMessage("(If you're not sure, just leave this at 4.)");
+				gd.showDialog();
+				if( gd.wasCanceled() )
+					return;
+
+				newSigma = gd.getNextNumber();
+				if( newSigma <= 0 ) {
+					IJ.error("The value of sigma must be positive");
+				}
+
+				newMultiplier = gd.getNextNumber();
+				if( newMultiplier <= 0 ) {
+					IJ.error("The value of the multiplier must be positive");
+				}
+			}
+
+			setSigma(newSigma);
+			setMultiplier( newMultiplier );
+
+		} else if( source == sigmaWizard ) {
+
+			preSigmaPaletteState = currentState;
+			changeState( WAITING_FOR_SIGMA_POINT );
+		}
+	}
+
+	public void sigmaPaletteClosing() {
+		changeState(preSigmaPaletteState);
 	}
 
 	public void setPathListVisible(boolean makeVisible) {
@@ -1112,11 +1260,21 @@ class NeuriteTracerResultsDialog
 		} else if( source == preprocess ) {
 
 			if( preprocess.getState() ) {
+				// It's now enable:
 				preGaussianState = currentState;
 				plugin.enableHessian(true);
+				if( usePreprocessed.isEnabled() ){
+					usePreprocessed.setState(false);
+				}
 			} else {
 				plugin.enableHessian(false);
 				changeState(preGaussianState);
+			}
+
+		} else if( source == usePreprocessed ) {
+
+			if( usePreprocessed.getState() ) {
+				preprocess.setState(false);
 			}
 
 		}

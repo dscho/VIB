@@ -29,11 +29,12 @@ import java.awt.event.*;
 
 import util.Limits;
 
-public class Sigma_Palette implements PlugIn {
+public class Sigma_Palette extends Thread implements PlugIn {
 
 	public static interface SigmaPaletteListener {
 		public void newSigmaSelected( double sigma );
 		public void newMaximum( double max );
+		public void sigmaPaletteClosing( );
 	}
 
 	public static class PaletteStackWindow extends StackWindow {
@@ -42,14 +43,11 @@ public class Sigma_Palette implements PlugIn {
 		Label label;
 		Scrollbar maxValueScrollbar;
 
-		private void addExtraScrollbar() {
-			double maxValue = 80;
-			if( owner != null )
-				maxValue = owner.getMax();
+		private void addExtraScrollbar( double defaultMaxValue ) {
 			label = new Label("");
 			add(label);
-			updateLabel( maxValue );
-			maxValueScrollbar = new Scrollbar( Scrollbar.HORIZONTAL, (int)maxValue, 1, 1, 350 );
+			updateLabel( defaultMaxValue );
+			maxValueScrollbar = new Scrollbar( Scrollbar.HORIZONTAL, (int)defaultMaxValue, 1, 1, 350 );
 			maxValueScrollbar.addAdjustmentListener(
 				new AdjustmentListener()  {
 					public void adjustmentValueChanged(AdjustmentEvent e) {
@@ -73,15 +71,22 @@ public class Sigma_Palette implements PlugIn {
 			}
 		}
 
-		public PaletteStackWindow(ImagePlus imp) {
-			super(imp);
-			addExtraScrollbar();
+		public void windowClosing(WindowEvent e) {
+			if( owner != null && owner.listener != null ) {
+				owner.listener.sigmaPaletteClosing();
+			}
+			super.windowClosing(e);
 		}
 
-		public PaletteStackWindow(ImagePlus imp, ImageCanvas ic, Sigma_Palette owner) {
+		public PaletteStackWindow(ImagePlus imp) {
+			super(imp);
+			addExtraScrollbar(80);
+		}
+
+		public PaletteStackWindow(ImagePlus imp, ImageCanvas ic, Sigma_Palette owner, double defaultMax ) {
 			super(imp,ic);
 			this.owner = owner;
-			addExtraScrollbar();
+			addExtraScrollbar(defaultMax);
 		}
 	}
 
@@ -215,7 +220,7 @@ public class Sigma_Palette implements PlugIn {
 		}
 	}
 
-	double [] sigmaValues = null;
+	double [] sigmaValues;
 
 	int croppedWidth;
 	int croppedHeight;
@@ -251,33 +256,62 @@ public class Sigma_Palette implements PlugIn {
 
 	public void setSelectedSigmaIndex( int selectedSigmaIndex ) {
 		this.selectedSigmaIndex = selectedSigmaIndex;
-		if( listener != null )
+		if( listener != null && selectedSigmaIndex >= 0 )
 			listener.newSigmaSelected( sigmaValues[selectedSigmaIndex] );
 		paletteImage.updateAndDraw();
 	}
 
-	public float makePalette( ImagePlus original,
-				  int x_min,
-				  int x_max,
-				  int y_min,
-				  int y_max,
-				  int z_min,
-				  int z_max,
-				  HessianEvalueProcessor hep,
-				  double [] sigmaValues,
-				  int sigmasAcross,
-				  int sigmasDown,
-				  int initial_z,
-				  SigmaPaletteListener listener ) {
+	int x_min, x_max, y_min, y_max, z_min, z_max;
+	HessianEvalueProcessor hep;
+	double defaultMax;
+	int sigmasAcross;
+	int sigmasDown;
+	int initial_z;
+
+	public void makePalette( ImagePlus image,
+				 int x_min,
+				 int x_max,
+				 int y_min,
+				 int y_max,
+				 int z_min,
+				 int z_max,
+				 HessianEvalueProcessor hep,
+				 double [] sigmaValues,
+				 double defaultMax,
+				 int sigmasAcross,
+				 int sigmasDown,
+				 int initial_z ) {
+
+		this.image = image;
+
+		this.x_min = x_min;
+		this.x_max = x_max;
+		this.y_min = y_min;
+		this.y_max = y_max;
+		this.z_min = z_min;
+		this.z_max = z_max;
+
+		this.hep = hep;
 
 		this.sigmaValues = sigmaValues;
-		this.listener = listener;
+		this.defaultMax = defaultMax;
 
-		int originalWidth = original.getWidth();
-		int originalHeight = original.getHeight();
-		int originalDepth = original.getStackSize();
+		this.sigmasAcross = sigmasAcross;
+		this.sigmasDown = sigmasDown;
 
-		ImagePlus cropped = ThreePaneCrop.performCrop( original, x_min, x_max, y_min, y_max, z_min, z_max, false );
+		this.initial_z = initial_z;
+
+		int originalWidth = image.getWidth();
+		int originalHeight = image.getHeight();
+		int originalDepth = image.getStackSize();
+
+		start();
+
+	}
+
+	public void run( ) {
+
+		ImagePlus cropped = ThreePaneCrop.performCrop( image, x_min, x_max, y_min, y_max, z_min, z_max, false );
 
 		croppedWidth  = (x_max - x_min) + 1;
 		croppedHeight = (y_max - y_min) + 1;
@@ -285,7 +319,7 @@ public class Sigma_Palette implements PlugIn {
 
 		if( sigmaValues.length > sigmasAcross * sigmasDown ) {
 			IJ.error( "A "+sigmasAcross+"x"+sigmasDown+" layout is not large enough for "+sigmaValues+" + 1 images" );
-			return -1;
+			return;
 		}
 
 		int paletteWidth = croppedWidth * sigmasAcross + (sigmasAcross + 1);
@@ -297,10 +331,10 @@ public class Sigma_Palette implements PlugIn {
 			newStack.addSlice("",fp);
 		}
 		paletteImage = new ImagePlus("Pick Sigma and Maximum",newStack);
-		setMax(80);
+		setMax(defaultMax);
 
 		PaletteCanvas paletteCanvas = new PaletteCanvas( paletteImage, this, croppedWidth, croppedHeight, sigmasAcross, sigmasDown );
-		new PaletteStackWindow( paletteImage, paletteCanvas, this );
+		new PaletteStackWindow( paletteImage, paletteCanvas, this, defaultMax );
 
 		paletteImage.setSlice( (initial_z - z_min) + 1 );
 
@@ -315,8 +349,6 @@ public class Sigma_Palette implements PlugIn {
 			copyIntoPalette( processed, paletteImage, offsetX, offsetY );
 			paletteImage.updateAndDraw();
 		}
-
-		return -1;
 	}
 
 	public void copyIntoPalette( ImagePlus smallImage, ImagePlus paletteImage, int offsetX, int offsetY ) {
@@ -341,9 +373,11 @@ public class Sigma_Palette implements PlugIn {
 		}
 	}
 
+	ImagePlus image;
+
 	public void run( String ignoredArguments ) {
 
-		ImagePlus image = IJ.getImage();
+		image = IJ.getImage();
 		if( image == null ) {
 			IJ.error("There is no current image");
 			return;
@@ -411,7 +445,6 @@ public class Sigma_Palette implements PlugIn {
 			sigmas[i] = ((i + 1) * minimumSeparation) / 2;
 		}
 
-		makePalette( image, x_min, x_max, y_min, y_max, z_min, z_max, new TubenessProcessor(true), sigmas, 3, 3, z, null );
-
+		makePalette( image, x_min, x_max, y_min, y_max, z_min, z_max, new TubenessProcessor(true), sigmas, 4, 3, 3, z );
 	}
 }
