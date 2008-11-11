@@ -705,6 +705,7 @@ public class Pipe {
 				v3_PR = v3_PR.normalize(v3_PR);
 				if (null == v3_PR) {
 					System.out.println("vp_3r is null: most likely a point was repeated in the list, and thus the vector has length zero.");
+					return null;
 				}
 				v3_PR = v3_PR.scale(
 						p_width_i[i],

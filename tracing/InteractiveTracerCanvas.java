@@ -49,6 +49,10 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 	private Simple_Neurite_Tracer tracerPlugin;
 
+	public Simple_Neurite_Tracer getTracerPlugin() {
+		return tracerPlugin;
+	}
+
 	InteractiveTracerCanvas( ImagePlus imp, Simple_Neurite_Tracer plugin, int plane, PathAndFillManager pathAndFillManager ) {
 		super(imp,plugin,plane,pathAndFillManager);
 		tracerPlugin = plugin;

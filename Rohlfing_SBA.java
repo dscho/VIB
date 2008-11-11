@@ -13,6 +13,8 @@ import ij.io.Opener;
 import vib.app.FileGroup;
 import vib.app.gui.FileGroupDialog;
 
+import process3d.Distance_Transform_3D;
+
 /**
  * Rohlfing, Maurer (2007): Shape-based averaging
  */
