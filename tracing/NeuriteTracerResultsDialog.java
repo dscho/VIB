@@ -155,9 +155,7 @@ class NeuriteTracerResultsDialog
 	}
 
 	public void newMaximum( double max ) {
-		System.out.println("newMaximum called with: "+max);
 		double multiplier = 256 / max;
-		System.out.println("setting multiplier to:  "+multiplier);
 		setMultiplier( multiplier );
 	}
 

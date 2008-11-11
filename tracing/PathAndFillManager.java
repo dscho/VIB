@@ -248,17 +248,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		for( int i = 0; i < primaryPaths.size(); ++i ) {
 		        primaryPath = primaryPaths.get(i);
-			System.out.println("Calling setChildren on primaryPath");
 			primaryPath.setChildren(pathsLeft);
 		}
-
-		System.out.println("Now looking at each path left that has no start join");
 
 		// Start with each one left that doesn't start on another:
 		boolean foundOne = true;
 		while( foundOne ) {
 			foundOne = false;
-			System.out.println("pathsLeft.size() is: "+pathsLeft.size());
 			pi = pathsLeft.iterator();
 			while( pi.hasNext() ) {
 				Path p = pi.next();
@@ -271,8 +267,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				}
 			}
 		}
-
-		System.out.println("Now looking at each path that's left");
 
 		// If there's anything left, start with that:
 		while( pathsLeft.size() > 0 ) {
@@ -507,15 +501,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		PrintWriter pw = null;
 
 		try {
-			if( compress ) {
-				System.out.println("Creating, with compression...");
+			if( compress )
 				pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(fileName)),"UTF-8"));
-				System.out.println("Created, pw is: "+pw);
-			} else {
-				System.out.println("Creating, without compression...");
+			else
 				pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName),"UTF-8"));
-				System.out.println("Created, pw is: "+pw);
-			}
 
 			pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 			pw.println("<!DOCTYPE tracings [");
@@ -931,28 +920,20 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			for( int i = 0; i < allPaths.size(); ++i ) {
 				Path p = allPaths.get(i);
-				System.out.println("Going path "+i+", which is: "+p);
 
 				Integer startID = startJoins.get(p.getID());
 				Integer startIndexInteger = startJoinsIndices.get(p.getID());
 				Integer endID = endJoins.get(p.getID());
 				Integer endIndexInteger = endJoinsIndices.get(p.getID());
 
-				System.out.println("  startID: "+startID);
-				System.out.println("  startIndexInteger: "+startIndexInteger);
-				System.out.println("  endID: "+endID);
-				System.out.println("  endIndexInteger: "+endIndexInteger);
 				if( startID != null ) {
 					Path startPath = getPathFromID(startID);
-					System.out.println("    Got startPath: "+startPath);
 					p.setStartJoin( startPath, startIndexInteger );
 				}
 				if( endID != null ) {
 					Path endPath = getPathFromID(endID);
-					System.out.println("    Got endPath: "+endPath);
 					p.setEndJoin( endPath, endIndexInteger );
 				}
-				System.out.println("=== path is now: "+p);
 			}
 
 			// Now turn the source paths into real paths...
