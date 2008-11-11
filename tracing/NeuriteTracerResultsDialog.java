@@ -459,6 +459,16 @@ class NeuriteTracerResultsDialog
 			disableEverything();
 			break;
 
+		case LOADING:
+			statusText.setText("Loading...");
+			disableEverything();
+			break;
+
+		case SAVING:
+			statusText.setText("Saving...");
+			disableEverything();
+			break;
+
 		default:
 			IJ.error("BUG: switching to an unknown state");
 			return;
@@ -989,14 +999,15 @@ class NeuriteTracerResultsDialog
 
 			IJ.showStatus("Saving traces to "+savePath);
 
+			int preSavingState = currentState;
+			changeState( SAVING );
 			try {
-
 				pathAndFillManager.writeXML( savePath, plugin, true );
-
 			} catch( IOException ioe ) {
 				IJ.error("Writing traces to '"+savePath+"' failed: "+ioe);
 				return;
 			}
+			changeState( preSavingState );
 
 			plugin.unsavedPaths = false;
 
@@ -1010,7 +1021,10 @@ class NeuriteTracerResultsDialog
 					return;
 			}
 
+			int preLoadingState = currentState;
+			changeState( LOADING );
 			plugin.loadTracings();
+			changeState( preLoadingState );
 
 		} else if( source == loadLabelsButton ) {
 

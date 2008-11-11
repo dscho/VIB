@@ -148,7 +148,13 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 	public void mouseClicked( MouseEvent e ) {
 
 		int currentState = tracerPlugin.resultsDialog.getState();
-		if( currentState == NeuriteTracerResultsDialog.WAITING_FOR_SIGMA_POINT ) {
+
+		if( currentState == NeuriteTracerResultsDialog.LOADING ||
+		    currentState == NeuriteTracerResultsDialog.SAVING ) {
+
+			// Do nothing
+
+		} else if( currentState == NeuriteTracerResultsDialog.WAITING_FOR_SIGMA_POINT ) {
 
 			tracerPlugin.launchPaletteAround(
 				offScreenX(e.getX()),

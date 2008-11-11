@@ -295,7 +295,6 @@ public class FillWindow extends JFrame implements PathAndFillListener, ActionLis
 	public void setPathList( String [] pathList, Path justAdded, boolean expandAll ) { }
 
 	public void setFillList( String [] newList ) {
-		System.out.println("setFillList called with list of length "+newList.length);
 		listModel.removeAllElements();
 		for( int i = 0; i < newList.length; ++i )
 			listModel.addElement( newList[i] );
