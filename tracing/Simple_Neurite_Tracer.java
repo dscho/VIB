@@ -690,12 +690,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		currentPath.add( temporaryPath );
 
-		PointInImage last = temporaryPath.lastPoint();
+		PointInImage last = currentPath.lastPoint();
 		last_start_point_x = last.x;
 		last_start_point_y = last.y;
 		last_start_point_z = last.z;
 
-		if( temporaryPath.endJoins == null ) {
+		if( currentPath.endJoins == null ) {
 			setTemporaryPath( null );
 			resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 			repaintAllPanes( );
