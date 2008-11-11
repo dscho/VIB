@@ -38,10 +38,37 @@ import ij3d.Content;
 import ij3d.Pipe;
 import javax.vecmath.Color3f;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.Iterator;
+import java.util.HashSet;
+
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
 
-public class Path implements Cloneable {
+public class Path implements Comparable {
+
+	public int compareTo(Object o) {
+		Path casted = (Path)o;
+		if( id == casted.id )
+			return 0;
+		if( id < casted.id )
+			return -1;
+		else
+			return 1;
+	}
+
+	/* The path's ID should be assigned by the PathAndFillManager
+	   when it's added: */
+	private int id = -1;
+	public int getID() {
+		return id;
+	}
+	void setID( int id ) {
+		this.id = id;
+	}
 
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
@@ -64,11 +91,56 @@ public class Path implements Cloneable {
 		this.name = newName;
 	}
 
+	public void setDefaultName() {
+		this.name = "Path "+id;
+	}
+
 	public String getName() {
+		if( name == null )
+			throw new RuntimeException("In Path.getName() for id "+id+", name was null");
 		return name;
 	}
 
-	public double getRealLength( double x_spacing, double y_spacing, double z_spacing ) {
+	/* This is a symmetrical relationship, showing all the other
+	   paths this one is joined to... */
+	ArrayList<Path> somehowJoins;
+
+	/* We sometimes impose a tree structure on the Path graph,
+	   which is largely for display purposes.  When this is done,
+	   we regerated this list.  This should always be a subset of
+	   'somehowJoins'... */
+	ArrayList<Path> children;
+
+	public void setChildren( Set<Path> pathsLeft ) {
+		// Set the children of this path in a breadth first fashion:
+		children.clear();
+		Iterator<Path> ci = somehowJoins.iterator();
+		while( ci.hasNext() ) {
+			Path c = ci.next();
+			if( pathsLeft.contains(c) ) {
+				children.add(c);
+				pathsLeft.remove(c);
+			}
+		}
+		ci = children.iterator();
+		while( ci.hasNext() ) {
+			Path c = ci.next();
+			c.setChildren( pathsLeft );
+		}
+	}
+
+/*
+	public DefaultMutableTreeNode getNode( ) {
+		DefaultMutableTreeNode thisNode = new DefaultMutableTreeNode( this );
+		for( int i = 0; i < children.size(); ++i ) {
+			DefaultMutableTreeNode childNode = new DefaultMutableTreeNode( children.get(i) );
+			thisNode.add( childNode );
+		}
+		return thisNode;
+	}
+*/
+
+	public double getRealLength( ) {
 		double totalLength = 0;
 		for( int i = 1; i < points; ++i  ) {
 			double xdiff = (x_positions[i] - x_positions[i-1]) * x_spacing;
@@ -82,40 +154,121 @@ public class Path implements Cloneable {
 		return totalLength;
 	}
 
-	public String getRealLengthString( double x_spacing, double y_spacing, double z_spacing ) {
-		return String.format( "%.4f", getRealLength( x_spacing, y_spacing, z_spacing ) );
+	public String getRealLengthString( ) {
+		return String.format( "%.4f", getRealLength() );
 	}
 
-	/* To unset a join, make 'other' null */
+	boolean primary = false;
+	void setPrimary( boolean primary ) {
+		this.primary = primary;
+	}
+	boolean getPrimary( ) {
+		return primary;
+	}
 
+	/* We call this if we're going to delete the path represented
+	   by this object */
+
+	void disconnectFromAll( ) {
+		/* This path can be connected to other ones either if:
+		      - this starts on other
+		      - this ends on other
+		      - other starts on this
+		      - other ends on this
+		   In any of these cases, we need to also remove this
+		   from other's somehowJoins and other from this's
+		   somehowJoins.
+		*/
+		Iterator<Path> i = somehowJoins.iterator();
+		while( i.hasNext() ) {
+			Path other = i.next();
+			if( other.startJoins != null && other.startJoins == this ) {
+				other.startJoins = null;
+				other.startJoinsIndex = -1;
+			}
+			if( other.endJoins != null && other.endJoins == this ) {
+				other.endJoins = null;
+				other.endJoinsIndex = -1;
+			}
+			int indexInOtherSomehowJoins = other.somehowJoins.indexOf( this );
+			if( indexInOtherSomehowJoins >= 0 )
+				other.somehowJoins.remove( indexInOtherSomehowJoins );
+		}
+		somehowJoins.clear();
+		startJoins = null;
+		startJoinsIndex = -1;
+		endJoins = null;
+		endJoinsIndex = -1;
+	}
+
+	void setStartJoin( Path other, int indexInOther ) {
+		setJoin( PATH_START, other, indexInOther );
+	}
+
+	void setEndJoin( Path other, int indexInOther ) {
+		setJoin( PATH_END, other, indexInOther );
+	}
+
+	/* This should be the only method that links one path to
+	   another */
 	void setJoin( int startOrEnd, Path other, int indexInOther ) {
-		if( other == null )
-			indexInOther = -1;
+		if( other == null ) {
+			throw new RuntimeException("BUG: setJoin now should never take a null other path");
+		}
 		if( startOrEnd == PATH_START ) {
+			// If there was an existing path, that's an error:
+			if( startJoins != null )
+				throw new RuntimeException("BUG: setJoin for START should not replace another join");
 			startJoins = other;
 			startJoinsIndex = indexInOther;
 		} else if( startOrEnd == PATH_END ) {
+			if( endJoins != null )
+				throw new RuntimeException("BUG: setJoin for END should not replace another join");
 			endJoins = other;
 			endJoinsIndex = indexInOther;
 		} else {
 			IJ.error( "BUG: unknown first parameter to setJoin" );
 		}
+		// Also update the somehowJoins list:
+		if( somehowJoins.indexOf(other) < 0 ) {
+			somehowJoins.add(other);
+		}
+		if( other.somehowJoins.indexOf(this) < 0 ) {
+			other.somehowJoins.add(this);
+		}
 	}
 
-	Path( ) {
+	double x_spacing;
+	double y_spacing;
+	double z_spacing;
+	String spacing_units;
+
+	Path( double x_spacing, double y_spacing, double z_spacing, String spacing_units ) {
+		this.x_spacing = x_spacing;
+		this.y_spacing = y_spacing;
+		this.z_spacing = z_spacing;
+		this.spacing_units = spacing_units;
 		points = 0;
 		maxPoints = 128;
 		x_positions = new int[maxPoints];
 		y_positions = new int[maxPoints];
 		z_positions = new int[maxPoints];
+		somehowJoins = new ArrayList<Path>();
+		children = new ArrayList<Path>();
 	}
 
-	Path(  int reserve ) {
+	Path( double x_spacing, double y_spacing, double z_spacing, String spacing_units, int reserve ) {
+		this.x_spacing = x_spacing;
+		this.y_spacing = y_spacing;
+		this.z_spacing = z_spacing;
+		this.spacing_units = spacing_units;
 		points = 0;
 		maxPoints = reserve;
 		x_positions = new int[maxPoints];
 		y_positions = new int[maxPoints];
 		z_positions = new int[maxPoints];
+		somehowJoins = new ArrayList<Path>();
+		children = new ArrayList<Path>();
 	}
 
 	public int points;
@@ -141,6 +294,7 @@ public class Path implements Cloneable {
 		p[2] = z_positions[i];
 	}
 
+/* FIXME:
 	@Override
 	public Path clone() {
 
@@ -174,6 +328,7 @@ public class Path implements Cloneable {
 
 		return result;
 	}
+*/
 
 	PointInImage lastPoint( ) {
 		if( points < 1 )
@@ -256,13 +411,31 @@ public class Path implements Cloneable {
 				  points,
 				  other.points - toSkip );
 
-		setJoin( Path.PATH_END, other.endJoins, other.endJoinsIndex );
+		if( endJoins != null )
+			throw new RuntimeException("BUG: we should never be adding to a path that already endJoins");
+
+		if( other.endJoins != null ) {
+			setEndJoin( other.endJoins, other.endJoinsIndex );
+			other.disconnectFromAll();
+		}
 
 		points = points + (other.points - toSkip);
 	}
 
+	void unsetPrimaryForConnected( HashSet<Path> pathsExplored ) {
+		Iterator<Path> i = somehowJoins.iterator();
+		while( i.hasNext() ) {
+			Path p = i.next();
+			if( pathsExplored.contains(p) )
+				continue;
+			p.setPrimary(false);
+			pathsExplored.add(p);
+			p.unsetPrimaryForConnected(pathsExplored);
+		}
+	}
+
 	Path reversed( ) {
-		Path c = new Path( points );
+		Path c = new Path( x_spacing, y_spacing, z_spacing, spacing_units, points );
 		c.points = points;
 		for( int i = 0; i < points; ++i ) {
 			c.x_positions[i] = x_positions[ (points-1) - i ];
@@ -485,7 +658,7 @@ public class Path implements Cloneable {
 
 	public Path fitCircles( int side, Simple_Neurite_Tracer plugin, boolean display ) {
 
-		Path fitted = new Path();
+		Path fitted = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
 
 		// if (verbose) System.out.println("Generating normal planes stack.");
 
@@ -757,6 +930,23 @@ public class Path implements Cloneable {
 
 	@Override
 	public String toString() {
+		String pathName;
+		String name = getName();
+		if( name == null )
+			name = "Path " + id;
+		name += " [" + getRealLengthString( ) + " " + spacing_units + "]";
+		if( startJoins != null ) {
+			name += ", starts on " + startJoins.getName();
+		}
+		if( endJoins != null ) {
+			name += ", ends on " + endJoins.getName();
+		}
+		return name;
+	}
+
+/*
+	@Override
+	public String toString() {
 		int n = size();
 		String result = "";
 		if( name != null )
@@ -768,6 +958,7 @@ public class Path implements Cloneable {
 		}
 		return result;
 	}
+*/
 
 
 	Content content3D;
@@ -776,11 +967,11 @@ public class Path implements Cloneable {
 		univ.removeContent(getName());
 	}
 
-	public Content addTo3DViewer(Image3DUniverse univ, double x_spacing, double y_spacing, double z_spacing) {
-		return addTo3DViewer( univ, x_spacing, y_spacing, z_spacing, null );
+	public Content addTo3DViewer(Image3DUniverse univ) {
+		return addTo3DViewer( univ, null );
 	}
 
-	public Content addTo3DViewer(Image3DUniverse univ, double x_spacing, double y_spacing, double z_spacing, Color c) {
+	public Content addTo3DViewer(Image3DUniverse univ, Color c) {
 
 		if(points <= 1) {
 			content3D = null;

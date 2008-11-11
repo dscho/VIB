@@ -477,7 +477,7 @@ public abstract class SearchThread extends Thread {
 
 			if( definedGoal && (p != null) && atGoal( p.x, p.y, p.z ) ) {
 				if (verbose) System.out.println( "Found the goal! (from start to end)" );
-				foundGoal( p.asPath() );
+				foundGoal( p.asPath( x_spacing, y_spacing, z_spacing, spacing_units ) );
 				setExitReason(SUCCESS);
 				reportFinished( true );
 				return;
@@ -487,7 +487,7 @@ public abstract class SearchThread extends Thread {
 
 			if( bidirectional && definedGoal && (q != null) && atStart( q.x, q.y, q.z ) ) {
 				if (verbose) System.out.println( "Found the goal! (from end to start)" );
-				foundGoal( q.asPathReversed() );
+				foundGoal( q.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
 				setExitReason(SUCCESS);
 				reportFinished( true );
 				return;
@@ -609,9 +609,9 @@ public abstract class SearchThread extends Thread {
 											 (alreadyThere.searchStatus == CLOSED_FROM_GOAL)) ) {
 
 										if (verbose) System.out.println("Trying to add a new node from start, found a node in the goal search already there.");
-										result = e.asPath();
-										if (verbose) System.out.println("e.asPath() is: "+e.asPath());
-										Path fromGoalReversed = alreadyThere.asPathReversed();
+										result = e.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
+										if (verbose) System.out.println("e.asPath() is: "+e.asPath( x_spacing, y_spacing, z_spacing, spacing_units ));
+										Path fromGoalReversed = alreadyThere.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units );
 										if (verbose) System.out.println("fromGoalReversed is: "+fromGoalReversed);
 										result.add( fromGoalReversed );
 										if (verbose) System.out.println("added, that is: "+result);
@@ -622,10 +622,10 @@ public abstract class SearchThread extends Thread {
 
 
 										if (verbose) System.out.println("Trying to add a new node from goal, found a node in the start search already there.");
-										result = alreadyThere.asPath();
-										if (verbose) System.out.println("alreadyThere.asPath() is "+alreadyThere.asPath());
-										if (verbose) System.out.println("now the path from goal reversed is: "+e.asPathReversed());
-										result.add( e.asPathReversed() );
+										result = alreadyThere.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
+										if (verbose) System.out.println("alreadyThere.asPath() is "+alreadyThere.asPath( x_spacing, y_spacing, z_spacing, spacing_units ));
+										if (verbose) System.out.println("now the path from goal reversed is: "+e.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ));
+										result.add( e.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
 										if (verbose) System.out.println("added, that is: "+result);
 										done = true;
 									}

@@ -147,7 +147,19 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 	@Override
 	public void mouseClicked( MouseEvent e ) {
 
-		if( tracerPlugin.setupTrace ) {
+		int currentState = tracerPlugin.resultsDialog.getState();
+		if( currentState == NeuriteTracerResultsDialog.WAITING_FOR_SIGMA_POINT ) {
+
+			tracerPlugin.launchPaletteAround(
+				offScreenX(e.getX()),
+				offScreenY(e.getY()),
+				imp.getCurrentSlice() - 1 );
+
+		} else if( currentState == NeuriteTracerResultsDialog.WAITING_FOR_SIGMA_CHOICE	) {
+
+			IJ.error( "You must close the sigma palette to continue" );
+
+		} else if( tracerPlugin.setupTrace ) {
 			boolean join = IJ.isMacintosh() ? e.isAltDown() : e.isControlDown();
 			tracerPlugin.clickForTrace( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
 		} else

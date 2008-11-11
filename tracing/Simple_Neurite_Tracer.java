@@ -46,6 +46,8 @@ import java.awt.image.IndexColorModel;
 
 import java.io.*;
 
+import java.util.Set;
+
 import client.ArchiveClient;
 
 import stacks.ThreePanes;
@@ -59,6 +61,9 @@ import features.ComputeCurvatures;
 import amira.AmiraMeshDecoder;
 import amira.AmiraParameters;
 
+import features.Sigma_Palette;
+import features.TubenessProcessor;
+
 /* Note on terminology:
 
       "traces" files are made up of "paths".  Paths are non-branching
@@ -71,7 +76,7 @@ import amira.AmiraParameters;
 public class Simple_Neurite_Tracer extends ThreePanes
 	implements PlugIn, SearchProgressCallback, FillerProgressCallback, GaussianGenerationCallback {
 
-	public static final String PLUGIN_VERSION = "1.2.3";
+	public static final String PLUGIN_VERSION = "1.3.0";
 	static final boolean verbose = false;
 
 	PathAndFillManager pathAndFillManager;
@@ -108,9 +113,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		return new InteractiveTracerCanvas( imagePlus, this, plane, pathAndFillManager );
 	}
 
-	public void cancelSearch( ) {
+	public void cancelSearch( boolean cancelFillToo ) {
 		if( currentSearchThread != null )
 			currentSearchThread.requestStop();
+		if( cancelFillToo && filler != null )
+			filler.requestStop();
 	}
 
 	public void threadStatus( SearchThread source, int status ) {
@@ -174,7 +181,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					IJ.error("Bug! Succeeded, but null result.");
 					return;
 				}
-				result.setJoin( Path.PATH_END, endJoin, endJoinIndex );
+				if( endJoin != null ) {
+					System.out.println("Calling setEndJoin in finished()");
+					result.setEndJoin( endJoin, endJoinIndex );
+				}
 				setTemporaryPath( result );
 
 				resultsDialog.changeState(NeuriteTracerResultsDialog.QUERY_KEEP);
@@ -430,7 +440,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		y = p[1];
 		z = p[2];
 
-		if( join_modifier_down ) {
+		if( join_modifier_down && pathAndFillManager.anySelected() ) {
 
 			PointInImage pointInImage = pathAndFillManager.nearestJoinPointOnSelectedPaths( x, y, z );
 			if( pointInImage != null ) {
@@ -512,7 +522,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				oldTemporaryPath.removeFrom3DViewer(univ);
 			}
 			if( temporaryPath != null )
-				temporaryPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing,Color.BLUE);
+				temporaryPath.addTo3DViewer(univ,Color.BLUE);
 		}
 	}
 
@@ -535,7 +545,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				oldCurrentPath.removeFrom3DViewer(univ);
 			}
 			if( currentPath != null )
-				currentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing,Color.RED);
+				currentPath.addTo3DViewer(univ,Color.RED);
 		}
 	}
 
@@ -600,7 +610,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			newStack.addSlice( null, thisSlice );
 		}
 
-		ImagePlus ip = new ImagePlus( "Paths endered in a Stack", newStack );
+		ImagePlus ip = new ImagePlus( "Paths rendered in a Stack", newStack );
 		ip.show( );
 	}
 
@@ -656,6 +666,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			true, // reciprocal
 			singleSlice,
 			(hessianEnabled ? hessian : null),
+			resultsDialog.getMultiplier(),
 			tubeness,
 			hessianEnabled );
 
@@ -753,7 +764,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		pathAndFillManager.addPath( savedCurrentPath, true );
 		if( use3DViewer )
-			savedCurrentPath.addTo3DViewer(univ,x_spacing,y_spacing,z_spacing);
+			savedCurrentPath.addTo3DViewer(univ);
 		setCurrentPath( null );
 
 		unsavedPaths = true;
@@ -773,6 +784,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			findPointInStack( x_in_pane, y_in_pane, plane, p );
 			joinPoint = pathAndFillManager.nearestJoinPointOnSelectedPaths( p[0], p[1], p[2] );
 		}
+
+		if( resultsDialog == null )
+			return;
 
 		// FIXME: in some of the states this doesn't make sense; check for them:
 
@@ -844,7 +858,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		setPathUnfinished( true );
 		lastStartPointSet = true;
 
-		Path path = new Path();
+		Path path = new Path(x_spacing,y_spacing,z_spacing,spacing_units);
 
 		if( joinPoint == null ) {
 			last_start_point_x = p[0];
@@ -854,7 +868,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			last_start_point_x = joinPoint.x;
 			last_start_point_y = joinPoint.y;
 			last_start_point_z = joinPoint.z;
-			path.setJoin( Path.PATH_START, joinPoint.onPath, joinPoint.onPathIndex );
+			path.setStartJoin( joinPoint.onPath, joinPoint.onPathIndex );
 		}
 
 		setCurrentPath( path );
@@ -880,8 +894,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	String spacing_units = "";
 
-	public void viewFillIn3D( ) {
-		ImagePlus imagePlus = filler.fillAsImagePlus( ! resultsDialog.createMask() );
+	public void viewFillIn3D( boolean asMask ) {
+		ImagePlus imagePlus = filler.fillAsImagePlus( asMask );
 		imagePlus.show();
 	}
 
@@ -1077,6 +1091,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 									applet != null );
 
 			pathAndFillManager.addPathAndFillListener(resultsDialog);
+			pathAndFillManager.addPathAndFillListener(resultsDialog.pw);
+			pathAndFillManager.addPathAndFillListener(resultsDialog.fw);
 
 			if( (x_spacing == 0.0) ||
 			    (y_spacing == 0.0) ||
@@ -1180,12 +1196,54 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 	}
 
+	public void launchPaletteAround( int x, int y, int z ) {
+
+		int either_side = 40;
+
+		int x_min = x - either_side;
+		int x_max = x + either_side;
+		int y_min = y - either_side;
+		int y_max = y + either_side;
+		int z_min = z - either_side;
+		int z_max = z + either_side;
+
+		int originalWidth = xy.getWidth();
+		int originalHeight = xy.getHeight();
+		int originalDepth = xy.getStackSize();
+
+		if( x_min < 0 )
+			x_min = 0;
+		if( y_min < 0 )
+			y_min = 0;
+		if( z_min < 0 )
+			z_min = 0;
+		if( x_max >= originalWidth )
+			x_max = originalWidth - 1;
+		if( y_max >= originalHeight )
+			y_max = originalHeight - 1;
+		if( z_max >= originalDepth )
+			z_max = originalDepth - 1;
+
+		double [] sigmas = new double[9];
+		for( int i = 0; i < sigmas.length; ++i ) {
+			sigmas[i] = ((i + 1) * getMinimumSeparation()) / 2;
+		}
+
+		resultsDialog.changeState( NeuriteTracerResultsDialog.WAITING_FOR_SIGMA_CHOICE );
+
+		Sigma_Palette sp = new Sigma_Palette();
+		sp.setListener( resultsDialog );
+		sp.makePalette( xy, x_min, x_max, y_min, y_max, z_min, z_max, new TubenessProcessor(true), sigmas, 256 / resultsDialog.getMultiplier(), 3, 3, z );
+
+	}
+
 	public void startFillerThread( FillerThread filler ) {
 
 		this.filler = filler;
 
 		filler.addProgressListener(this);
 		filler.addProgressListener(resultsDialog);
+		filler.addProgressListener(resultsDialog.fw);
 
 		addThreadToDraw(filler);
 
@@ -1199,7 +1257,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	// (FIXME: check that that is true)
 	FillerThread filler = null;
 
-	synchronized public void startFillingPaths( ) {
+	synchronized public void startFillingPaths( Set<Path> fromPaths ) {
+
+		// currentlyFilling = true;
+		resultsDialog.pauseOrRestartFilling.setLabel("Pause");
+		resultsDialog.fw.pauseOrRestartFilling.setLabel("Pause");
 
 		filler = new FillerThread( xy,
 					   stackMin,
@@ -1213,8 +1275,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		filler.addProgressListener( this );
 		filler.addProgressListener( resultsDialog );
+		filler.addProgressListener( resultsDialog.fw );
 
-		filler.getSourcePathsFromPlugin(this);
+		filler.setSourcePaths( fromPaths );
+
+		resultsDialog.setFillListVisible(true);
 
 		filler.start();
 
@@ -1428,66 +1493,50 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		pathAndFillManager.addPath( fitted );
 	}
 
+	public double getMinimumSeparation() {
+		return Math.min(x_spacing,Math.min(y_spacing,z_spacing));
+	}
+
 	boolean hessianEnabled = false;
 	ComputeCurvatures hessian = null;
-	double lastGaussianSigma = -1;
+	/* This variable just stores the sigma which the current
+	   'hessian' ComputeCurvatures was / is being calculated
+	   (or -1 if 'hessian' is null) ... */
+	double hessianSigma = -1;
 
-	// Even better, we might have a "tubeness" file already there:
+	public void startHessian() {
+		if( hessian == null ) {
+			resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
+			hessianSigma = resultsDialog.getSigma();
+			hessian = new ComputeCurvatures( xy, hessianSigma, this, true );
+			new Thread(hessian).start();
+		} else {
+			double newSigma = resultsDialog.getSigma();
+			if( newSigma != hessianSigma ) {
+				resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
+				hessianSigma = newSigma;
+				hessian = new ComputeCurvatures( xy, hessianSigma, this, true );
+				new Thread(hessian).start();
+			}
+		}
+	}
+
+	// Even better, we might have a "tubeness" file already there.
+	// If this is non-null then we found the "tubeness" file
+	// (called foo.tubes.tif) on startup and loaded it
+	// successfully.
 
 	float [][] tubeness;
 
 	public synchronized void enableHessian( boolean enable ) {
+		hessianEnabled = enable;
 		if( enable ) {
-			if ( tubeness != null ) {
-				hessianEnabled = true;
-				return;
-			}
-			if( hessian != null ) {
-				// So we have previously done a
-				// Gaussian convolution:
-				YesNoCancelDialog yncd =
-					new YesNoCancelDialog(IJ.getInstance(),
-							      "Recalculate Gaussian?",
-							      "Previously you chose to look for structures with\n"+
-							      "approximate radius "+lastGaussianSigma+". Would you like to\n"+
-							      "use a different value this time?");
-				if( yncd.cancelPressed() ) {
-					hessianEnabled = false;
-					resultsDialog.preprocess.setState(false);
-					resultsDialog.setPreprocessLabelSigma(-1);
-					return;
-				} else if( yncd.yesPressed() )  {
-					hessian = null;
-				}
-			}
-			if( hessian == null ) {
-				double sigma = -1;
-				double minimumSeparation = Math.min(x_spacing,Math.min(y_spacing,z_spacing));
-				while( sigma <= 0 ) {
-					GenericDialog gd = new GenericDialog("Select Scale of Structures");
-					gd.addMessage("Please enter the approximate radius of the structures you are looking for:");
-					gd.addNumericField("Sigma: ", minimumSeparation, 4);
-					gd.addMessage("(The default value is the minimum voxel separation.)");
-					gd.showDialog();
-					if( gd.wasCanceled() )
-						return;
-
-					sigma = gd.getNextNumber();
-					if( sigma <= 0 ) {
-						IJ.error("The value of sigma must be positive");
-					}
-				}
-				resultsDialog.changeState(NeuriteTracerResultsDialog.CALCULATING_GAUSSIAN);
-				resultsDialog.setPreprocessLabelSigma(sigma);
-				resultsDialog.preprocess.setEnabled(false);
-				lastGaussianSigma = sigma;
-				hessian = new ComputeCurvatures( xy, sigma, this, true );
-				new Thread(hessian).start();
-			}
-			hessianEnabled = true;
+			startHessian();
+			resultsDialog.editSigma.setEnabled(false);
+			resultsDialog.sigmaWizard.setEnabled(false);
 		} else {
-			resultsDialog.setPreprocessLabelSigma(-1);
-			hessianEnabled = false;
+			resultsDialog.editSigma.setEnabled(true);
+			resultsDialog.sigmaWizard.setEnabled(true);
 		}
 	}
 
@@ -1503,6 +1552,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		if( proportion < 0 ) {
 			hessianEnabled = false;
 			hessian = null;
+			hessianSigma = -1;
 			resultsDialog.gaussianCalculated(false);
 			IJ.showProgress(1.0);
 			return;

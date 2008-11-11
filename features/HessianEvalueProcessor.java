@@ -23,6 +23,10 @@ public abstract class HessianEvalueProcessor implements GaussianGenerationCallba
 	protected double sigma = 1.0;
 	protected boolean useCalibration = false;
 
+	public void setSigma( double newSigma ) {
+		sigma = newSigma;
+	}
+
 	public ImagePlus generateImage(ImagePlus original) {
 
 		Calibration calibration=original.getCalibration();
