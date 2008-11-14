@@ -537,11 +537,11 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 
 		currentPath = path;
-
 		if( currentPath != null )
 			currentPath.setName("Current Path");
+
 		if( use3DViewer ) {
-			if( oldCurrentPath != null ) {
+			if( oldCurrentPath != null && oldCurrentPath.content3D != null ) {
 				oldCurrentPath.removeFrom3DViewer(univ);
 			}
 			if( currentPath != null )
