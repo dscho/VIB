@@ -974,16 +974,32 @@ public class Path implements Comparable {
 			return null;
 		}
 
+		int pointsToUse = -1;
+
 		double [] x_points_d = new double[points];
 		double [] y_points_d = new double[points];
 		double [] z_points_d = new double[points];
 		double [] diameters = new double[points];
 
-		for(int i=0; i<points; ++i) {
-			x_points_d[i] = x_spacing * x_positions[i];
-			y_points_d[i] = y_spacing * y_positions[i];
-			z_points_d[i] = z_spacing * z_positions[i];
-			diameters[i] = x_spacing * 3;
+		if( hasCircles() ) {
+			int added = 0;
+			for( int i = 2; i < points; ++i ) {
+				if( /* add this one */ true ) {
+					x_points_d[added] = x_spacing * x_positions[i];
+					y_points_d[added] = y_spacing * y_positions[i];
+					z_points_d[added] = z_spacing * z_positions[i];
+					diameters[added] = 2 * radiuses[i];
+					++ added;
+				}
+			}
+			pointsToUse = added;
+		} else {
+			for(int i=0; i<points; ++i) {
+				x_points_d[i] = x_spacing * x_positions[i];
+				y_points_d[i] = y_spacing * y_positions[i];
+				z_points_d[i] = z_spacing * z_positions[i];
+				diameters[i] = x_spacing * 3;
+			}
 		}
 
 		double [][][] allPoints = Pipe.makeTube(x_points_d,

@@ -142,7 +142,13 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			if( node == root )
 				return;
 			Path p = (Path)node.getUserObject();
-			p.fitCircles( 40, plugin, true );
+			Path fitted = p.fitCircles( 40, plugin, true );
+			pathAndFillManager.addPath( fitted );
+			if( plugin.use3DViewer ) {
+				System.out.println("Adding fitted to the 3D viewere");
+				fitted.addTo3DViewer(plugin.univ);
+			}
+			pathAndFillManager.resetListeners(null);
 		} else if( source == renameButton ) {
 			TreePath [] selectedPaths = tree.getSelectionPaths();
 			if( selectedPaths == null || selectedPaths.length != 1 ) {
