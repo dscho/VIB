@@ -886,6 +886,13 @@ public class Path implements Comparable {
 
 		}
 
+		if( startJoins != null )
+			fitted.setStartJoin( startJoins, startJoinsIndex );
+		if( endJoins != null )
+			fitted.setEndJoin( endJoins, endJoinsIndex );
+
+		fitted.setName( "Fitted Path ["+getID()+"]");
+
 		return fitted;
 	}
 
