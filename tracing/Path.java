@@ -711,28 +711,15 @@ public class Path implements Comparable {
 
 			if( (last_x < 0) || (second_last_x < 0) ) {
 
-				if( last_x >= 0 ) {
+				fitted.addPoint( x, y, z );
 
-					/* Then this is the first real
-					   point.  We won't generate a
-					   normal plane, since we
-					   can't trust the normal
-					   vector(well, maybe) but add
-					   an empty slice so
-					   everything is in sync. */
+				if( verbose )
+					System.out.println("Adding empty slice.");
 
-					fitted.addPoint( last_x, last_y, last_z );
-
-					if( verbose )
-						System.out.println("Adding empty slice.");
-
-					byte [] empty = new byte[side*side];
-					ByteProcessor bp = new ByteProcessor( side, side );
-					bp.setPixels(empty);
-					stack.addSlice(null,bp);
-
-				}
-
+				byte [] empty = new byte[side*side];
+				ByteProcessor bp = new ByteProcessor( side, side );
+				bp.setPixels(empty);
+				stack.addSlice(null,bp);
 
 			} else {
 
