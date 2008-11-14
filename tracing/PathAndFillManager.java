@@ -437,6 +437,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		selectedPathsSet.remove(deleted);
 
+		if( plugin.use3DViewer && deleted.content3D != null ) {
+			deleted.removeFrom3DViewer(plugin.univ);
+		}
+
 		if( updateInterface )
 			resetListeners( null );
 	}
