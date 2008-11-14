@@ -182,7 +182,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					return;
 				}
 				if( endJoin != null ) {
-					System.out.println("Calling setEndJoin in finished()");
 					result.setEndJoin( endJoin, endJoinIndex );
 				}
 				setTemporaryPath( result );
