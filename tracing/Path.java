@@ -949,9 +949,11 @@ public class Path implements Comparable {
 
 
 	Content content3D;
+	String nameWhenAddedToViewer;
 
 	public void removeFrom3DViewer(Image3DUniverse univ) {
-		univ.removeContent(getName());
+		System.out.println( "Trying to remove the path with name: "+nameWhenAddedToViewer );
+		univ.removeContent( nameWhenAddedToViewer );
 	}
 
 	public Content addTo3DViewer(Image3DUniverse univ) {
@@ -990,6 +992,9 @@ public class Path implements Comparable {
 								  1); // scale
 
 		String title = getName();
+		nameWhenAddedToViewer = title;
+
+		System.out.println("Adding path to 3D viewer with name: "+nameWhenAddedToViewer);
 
 		univ.resetView();
 
