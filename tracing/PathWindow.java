@@ -131,6 +131,18 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				return;
 			}
 			plugin.startFillingPaths(selectedPaths);
+		} else if( source == fitVolumeButton ) {
+			TreePath [] selectedPaths = tree.getSelectionPaths();
+			if( selectedPaths == null || selectedPaths.length != 1 ) {
+				IJ.error("You must have exactly one path selected");
+				return;
+			}
+			DefaultMutableTreeNode node =
+				(DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent());
+			if( node == root )
+				return;
+			Path p = (Path)node.getUserObject();
+			p.fitCircles( 40, plugin, true );
 		} else if( source == renameButton ) {
 			TreePath [] selectedPaths = tree.getSelectionPaths();
 			if( selectedPaths == null || selectedPaths.length != 1 ) {
@@ -202,6 +214,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 	JPanel buttonPanel;
 
 	JButton renameButton;
+	JButton fitVolumeButton;
 	JButton fillOutButton;
 	JButton makePrimaryButton;
 	JButton deleteButton;
@@ -219,7 +232,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		this.pathAndFillManager = pathAndFillManager;
 		this.plugin = plugin;
 
-		setBounds(x,y,400,300);
+		setBounds(x,y,420,300);
 		root = new DefaultMutableTreeNode("All Paths");
 		tree = new HelpfulJTree(root);
 		// tree.setRootVisible(false);
@@ -231,19 +244,22 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		buttonPanel = new JPanel();
 
 		renameButton = new JButton("Rename");
+		fitVolumeButton = new JButton("Fit Volume");
 		fillOutButton = new JButton("Fill Out");
 		makePrimaryButton = new JButton("Make Primary");
 		deleteButton = new JButton("Delete");
 
 		buttonPanel.add(renameButton);
+		buttonPanel.add(fitVolumeButton);
 		buttonPanel.add(fillOutButton);
 		buttonPanel.add(makePrimaryButton);
 		buttonPanel.add(deleteButton);
 
-		deleteButton.addActionListener(this);
-		makePrimaryButton.addActionListener(this);
-		fillOutButton.addActionListener(this);
 		renameButton.addActionListener(this);
+		fitVolumeButton.addActionListener(this);
+		fillOutButton.addActionListener(this);
+		makePrimaryButton.addActionListener(this);
+		deleteButton.addActionListener(this);
 
 		add(buttonPanel, BorderLayout.PAGE_END);
 
