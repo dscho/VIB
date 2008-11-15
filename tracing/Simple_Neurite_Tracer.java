@@ -764,7 +764,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		pathAndFillManager.addPath( savedCurrentPath, true );
 		if( use3DViewer )
 			savedCurrentPath.addTo3DViewer(univ);
-		setCurrentPath( null );
 
 		unsavedPaths = true;
 
