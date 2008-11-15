@@ -667,17 +667,11 @@ public class Path implements Comparable {
 		if( verbose )
 			System.out.println("There are: "+totalPoints+ " in the stack.");
 
-		int last_x = -1;
-		int last_y = -1;
-		int last_z = -1;
-
-		int second_last_x = -1;
-		int second_last_y = -1;
-		int second_last_z = -1;
-
 		double x_spacing = plugin.x_spacing;
 		double y_spacing = plugin.y_spacing;
 		double z_spacing = plugin.z_spacing;
+
+		int pointsEitherSide = 4;
 
 		if( verbose )
 			System.out.println("Using spacing: "+x_spacing+","+y_spacing+","+z_spacing);
@@ -698,7 +692,25 @@ public class Path implements Comparable {
 		double [] ts_y = new double[totalPoints];
 		double [] ts_z = new double[totalPoints];
 
-		for( int i = 0; i < size(); ++i ) {
+		double [] optimized_x = new double[totalPoints];
+		double [] optimized_y = new double[totalPoints];
+		double [] optimized_z = new double[totalPoints];
+
+		double [] scores = new double[totalPoints];
+
+		for( int i = 0; i < totalPoints; ++i ) {
+
+			int min_index = i - pointsEitherSide;
+			if( min_index < 0 )
+				min_index = 0;
+
+			int max_index = i + pointsEitherSide;
+			if( max_index >= totalPoints )
+				max_index = totalPoints - 1;
+
+			int x_diff = x_positions[max_index] - x_positions[min_index];
+			int y_diff = y_positions[max_index] - y_positions[min_index];
+			int z_diff = z_positions[max_index] - z_positions[min_index];
 
 			IJ.showProgress( i / (float)totalPoints );
 
@@ -706,167 +718,128 @@ public class Path implements Comparable {
 			int y = y_positions[i];
 			int z = z_positions[i];
 
+			double [] x_basis_in_plane = new double[3];
+			double [] y_basis_in_plane = new double[3];
+
+			byte [] normalPlane = plugin.squareNormalToVector(
+				side,
+				x_spacing,   // step is in the same units as the _spacing, etc. variables.
+				x,      // These are are *not* yet scaled in z
+				y,      // They're just sample point differences
+				z,
+				x_diff,
+				y_diff,
+				z_diff,
+				x_basis_in_plane,
+				y_basis_in_plane );
+
+			/* Now at this stage, try to optimize
+			   a circle in there... */
+
+			// n.b. thes aren't normalized
+			ts_x[i] = x_diff * x_spacing;
+			ts_y[i] = y_diff * y_spacing;
+			ts_z[i] = z_diff * z_spacing;
+
+			ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
+			// optimizer.prin = 2; // debugging information on
+			optimizer.step = side / 4.0;
+
+			double [] startValues = new double[3];
+			startValues[0] = (side - 1) / 2.0;
+			startValues[1] = (side - 1) / 2.0;
+			startValues[2] = 3.0;
+
 			if( verbose )
-				System.out.println("Considering point: "+last_x+","+last_y+","+last_z);
+				System.out.println("start search at: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
 
-			if( (last_x < 0) || (second_last_x < 0) ) {
-
-				fitted.addPoint( x, y, z );
-
-				if( verbose )
-					System.out.println("Adding empty slice.");
-
-				byte [] empty = new byte[side*side];
-				ByteProcessor bp = new ByteProcessor( side, side );
-				bp.setPixels(empty);
-				stack.addSlice(null,bp);
-
-			} else {
-
-				/* Then the last two points were
-				   valid, so assume the tanget vector
-				   at last_* is the difference
-				   between this point and
-				   second_last_x... */
-
-				int x_diff = x - second_last_x;
-				int y_diff = y - second_last_y;
-				int z_diff = z - second_last_z;
-
-				// These are returned; they *are*
-				// scaled with the _scaling variables
-
-				double [] x_basis_in_plane = new double[3];
-				double [] y_basis_in_plane = new double[3];
-
-				byte [] normalPlane = plugin.squareNormalToVector(
-					side,
-					x_spacing,   // step is in the same units as the _spacing, etc. variables.
-					last_x,      // These are are *not* yet scaled in z
-					last_y,      // They're just sample point differences
-					last_z,
-					x_diff,
-					y_diff,
-					z_diff,
-					x_basis_in_plane,
-					y_basis_in_plane );
-
-				/* Now at this stage, try to optimize
-				   a circle in there... */
-
-				// n.b. thes aren't normalized
-				ts_x[i] = x_diff * x_spacing;
-				ts_y[i] = y_diff * y_spacing;
-				ts_z[i] = z_diff * z_spacing;
-
-				ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
-				// optimizer.prin = 2; // debugging information on
-				optimizer.step = side / 4.0;
-
-				double [] startValues = new double[3];
-				startValues[0] = (side - 1) / 2.0;
-				startValues[1] = (side - 1) / 2.0;
-				startValues[2] = 3.0;
-
-				if( verbose )
-					System.out.println("start search at: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
-
-				int maxValueInSquare = 0;
-				for( int j = 0; j < (side * side); ++j ) {
-					int value = normalPlane[j]&0xFF;
-					if( value > maxValueInSquare )
-						maxValueInSquare = value;
-				}
-
-				CircleAttempt attempt = new CircleAttempt(
-					startValues,
-					normalPlane,
-					maxValueInSquare,
-					side );
-
-				optimizer.optimize( attempt, startValues, 2, 2 );
-
-				if( verbose )
-					// System.out.println("u is: "+u[0]+","+u[1]+","+u[2]);
-					System.out.println("search optimized to: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
-
-				centre_x_positions[i] = startValues[0];
-				centre_y_positions[i] = startValues[1];
-				rs[i] = startValues[2];
-
-				// Now we calculate the real co-ordinates of the new centre:
-
-				double x_from_centre_in_plane = startValues[0] - (side / 2.0);
-				double y_from_centre_in_plane = startValues[1] - (side / 2.0);
-
-				if( verbose )
-					System.out.println("vector to new centre from original: "+x_from_centre_in_plane+","+y_from_centre_in_plane);
-
-				double centre_real_x = (last_x * x_spacing);
-				double centre_real_y = (last_y * y_spacing);
-				double centre_real_z = (last_z * z_spacing);
-
-				if( verbose )
-					System.out.println("original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
-
-				// FIXME: I really think these should be +=, but it seems clear from the results that I've got a sign wrong somewhere :(
-
-				centre_real_x -= x_basis_in_plane[0] * x_from_centre_in_plane + y_basis_in_plane[0] * y_from_centre_in_plane;
-				centre_real_y -= x_basis_in_plane[1] * x_from_centre_in_plane + y_basis_in_plane[1] * y_from_centre_in_plane;
-				centre_real_z -= x_basis_in_plane[2] * x_from_centre_in_plane + y_basis_in_plane[2] * y_from_centre_in_plane;
-
-				if( verbose )
-					System.out.println("adjusted original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
-
-				int x_in_image = (int)Math.round( centre_real_x / x_spacing );
-				int y_in_image = (int)Math.round( centre_real_y / y_spacing );
-				int z_in_image = (int)Math.round( centre_real_z / z_spacing );
-
-				if( verbose )
-					System.out.println("gives in image co-ordinates: "+x_in_image+","+y_in_image+","+z_in_image);
-
-				if( x_in_image < 0 ) x_in_image = 0; if( x_in_image >= width) x_in_image = width - 1;
-				if( y_in_image < 0 ) y_in_image = 0; if( y_in_image >= height) y_in_image = height - 1;
-				if( z_in_image < 0 ) z_in_image = 0; if( z_in_image >= depth) z_in_image = depth - 1;
-
-				if( verbose )
-					System.out.println("addingPoint: "+x_in_image+","+y_in_image+","+z_in_image);
-
-				fitted.addPoint( x_in_image, y_in_image, z_in_image );
-
-				if( verbose )
-					System.out.println("Adding a real slice.");
-
-				ByteProcessor bp = new ByteProcessor( side, side );
-				bp.setPixels(normalPlane);
-				stack.addSlice(null,bp);
-
+			int maxValueInSquare = 0;
+			for( int j = 0; j < (side * side); ++j ) {
+				int value = normalPlane[j]&0xFF;
+				if( value > maxValueInSquare )
+					maxValueInSquare = value;
 			}
 
-			second_last_x = last_x;
-			second_last_y = last_y;
-			second_last_z = last_z;
+			CircleAttempt attempt = new CircleAttempt(
+				startValues,
+				normalPlane,
+				maxValueInSquare,
+				side );
 
-			last_x = x;
-			last_y = y;
-			last_z = z;
+			optimizer.optimize( attempt, startValues, 2, 2 );
+
+			if( verbose )
+				// System.out.println("u is: "+u[0]+","+u[1]+","+u[2]);
+				System.out.println("search optimized to: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
+
+			centre_x_positions[i] = startValues[0];
+			centre_y_positions[i] = startValues[1];
+			rs[i] = startValues[2];
+
+			scores[i] = attempt.min;
+
+			// Now we calculate the real co-ordinates of the new centre:
+
+			double x_from_centre_in_plane = startValues[0] - (side / 2.0);
+			double y_from_centre_in_plane = startValues[1] - (side / 2.0);
+
+			if( verbose )
+				System.out.println("vector to new centre from original: "+x_from_centre_in_plane+","+y_from_centre_in_plane);
+
+			double centre_real_x = (x * x_spacing);
+			double centre_real_y = (y * y_spacing);
+			double centre_real_z = (z * z_spacing);
+
+			if( verbose )
+				System.out.println("original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
+
+			// FIXME: I really think these should be +=, but it seems clear from the results that I've got a sign wrong somewhere :(
+
+			centre_real_x -= x_basis_in_plane[0] * x_from_centre_in_plane + y_basis_in_plane[0] * y_from_centre_in_plane;
+			centre_real_y -= x_basis_in_plane[1] * x_from_centre_in_plane + y_basis_in_plane[1] * y_from_centre_in_plane;
+			centre_real_z -= x_basis_in_plane[2] * x_from_centre_in_plane + y_basis_in_plane[2] * y_from_centre_in_plane;
+
+			if( verbose )
+				System.out.println("adjusted original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
+
+			optimized_x[i] = centre_real_x;
+			optimized_y[i] = centre_real_y;
+			optimized_z[i] = centre_real_z;
+
+			int x_in_image = (int)Math.round( centre_real_x / x_spacing );
+			int y_in_image = (int)Math.round( centre_real_y / y_spacing );
+			int z_in_image = (int)Math.round( centre_real_z / z_spacing );
+
+			if( verbose )
+				System.out.println("gives in image co-ordinates: "+x_in_image+","+y_in_image+","+z_in_image);
+
+			if( x_in_image < 0 ) x_in_image = 0; if( x_in_image >= width) x_in_image = width - 1;
+			if( y_in_image < 0 ) y_in_image = 0; if( y_in_image >= height) y_in_image = height - 1;
+			if( z_in_image < 0 ) z_in_image = 0; if( z_in_image >= depth) z_in_image = depth - 1;
+
+			if( verbose )
+				System.out.println("addingPoint: "+x_in_image+","+y_in_image+","+z_in_image);
+
+			fitted.addPoint( x_in_image, y_in_image, z_in_image );
+
+			if( verbose )
+				System.out.println("Adding a real slice.");
+
+			ByteProcessor bp = new ByteProcessor( side, side );
+			bp.setPixels(normalPlane);
+			stack.addSlice(null,bp);
 		}
-
-		// Add an extra empty slice for the final one:
-
-		if (verbose) System.out.println("Adding empty slice at the end.");
-
-		byte [] empty = new byte[side*side];
-		ByteProcessor bp = new ByteProcessor( side, side );
-		bp.setPixels(empty);
-		stack.addSlice(null,bp);
 
 		IJ.showProgress( 1.0 );
 
 		fitted.setFittedCircles( ts_x,
 					 ts_y,
 					 ts_z,
-					 rs                );
+					 rs,
+					 optimized_x,
+					 optimized_y,
+					 optimized_z,
+					 scores );
 
 		if( display ) {
 
@@ -878,6 +851,7 @@ public class Path implements Comparable {
 				centre_x_positions,
 				centre_y_positions,
 				rs,
+				scores,
 				fitted  );
 
 			new StackWindow( imp, normalCanvas );
@@ -902,6 +876,12 @@ public class Path implements Comparable {
 	private double [] tangents_y;
 	private double [] tangents_z;
 
+	private double [] optimized_x;
+	private double [] optimized_y;
+	private double [] optimized_z;
+
+	private double [] scores;
+
 	public boolean hasCircles() {
 		return radiuses != null;
 	}
@@ -909,7 +889,11 @@ public class Path implements Comparable {
 	public void setFittedCircles( double [] tangents_x,
 				      double [] tangents_y,
 				      double [] tangents_z,
-				      double [] radiuses ) {
+				      double [] radiuses,
+				      double [] optimized_x,
+				      double [] optimized_y,
+				      double [] optimized_z,
+				      double [] scores ) {
 
 		this.tangents_x = new double[tangents_x.length];
 		System.arraycopy( tangents_x, 0, this.tangents_x, 0, tangents_x.length );
@@ -919,7 +903,14 @@ public class Path implements Comparable {
 		System.arraycopy( tangents_z, 0, this.tangents_z, 0, tangents_z.length );
 		this.radiuses = new double[radiuses.length];
 		System.arraycopy( radiuses, 0, this.radiuses, 0, radiuses.length );
-
+		this.optimized_x = new double[optimized_x.length];
+		System.arraycopy( optimized_x, 0, this.optimized_x, 0, optimized_x.length );
+		this.optimized_y = new double[optimized_y.length];
+		System.arraycopy( optimized_y, 0, this.optimized_y, 0, optimized_y.length );
+		this.optimized_z = new double[optimized_z.length];
+		System.arraycopy( optimized_z, 0, this.optimized_z, 0, optimized_z.length );
+		this.scores = new double[scores.length];
+		System.arraycopy( scores, 0, this.scores, 0, scores.length );
 	}
 
 	@Override
@@ -983,11 +974,11 @@ public class Path implements Comparable {
 
 		if( hasCircles() ) {
 			int added = 0;
-			for( int i = 2; i < points; ++i ) {
+			for( int i = 0; i < points; i += 2 ) {
 				if( /* add this one */ true ) {
-					x_points_d[added] = x_spacing * x_positions[i];
-					y_points_d[added] = y_spacing * y_positions[i];
-					z_points_d[added] = z_spacing * z_positions[i];
+					x_points_d[added] = optimized_x[i];
+					y_points_d[added] = optimized_y[i];
+					z_points_d[added] = optimized_z[i];
 					diameters[added] = 2 * radiuses[i];
 					++ added;
 				}
@@ -1000,12 +991,23 @@ public class Path implements Comparable {
 				z_points_d[i] = z_spacing * z_positions[i];
 				diameters[i] = x_spacing * 3;
 			}
+			pointsToUse = points;
 		}
 
-		double [][][] allPoints = Pipe.makeTube(x_points_d,
-							y_points_d,
-							z_points_d,
-							diameters,
+		double [] x_points_d_trimmed = new double[pointsToUse];
+		double [] y_points_d_trimmed = new double[pointsToUse];
+		double [] z_points_d_trimmed = new double[pointsToUse];
+		double [] diameters_trimmed = new double[pointsToUse];
+
+		System.arraycopy( x_points_d, 0, x_points_d_trimmed, 0, pointsToUse );
+		System.arraycopy( y_points_d, 0, y_points_d_trimmed, 0, pointsToUse );
+		System.arraycopy( z_points_d, 0, z_points_d_trimmed, 0, pointsToUse );
+		System.arraycopy( diameters, 0, diameters_trimmed, 0, pointsToUse );
+
+		double [][][] allPoints = Pipe.makeTube(x_points_d_trimmed,
+							y_points_d_trimmed,
+							z_points_d_trimmed,
+							diameters_trimmed,
 							4,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
 							12);     // "parallels" (12 means cross-sections are dodecagons)
 		if( allPoints == null )

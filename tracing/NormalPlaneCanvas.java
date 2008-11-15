@@ -37,20 +37,33 @@ class NormalPlaneCanvas extends ImageCanvas {
 				  double [] centre_x_positions,
 				  double [] centre_y_positions,
 				  double [] radiuses,
+				  double [] scores,
 				  Path fittedPath ) {
 		super(imp);
 		tracerPlugin = plugin;
 		this.centre_x_positions = centre_x_positions;
 		this.centre_y_positions = centre_y_positions;
 		this.radiuses = radiuses;
+		this.scores = scores;
 		this.fittedPath = fittedPath;
 		System.out.println("Created NormalPlaneCanvas");
+		int slices = imp.getStackSize();
+		System.out.println("slices in ImagePlus: "+slices);
+		System.out.println("centre_x_positions.length: "+centre_x_positions.length);
+		System.out.println("centre_y_positions.length: "+centre_y_positions.length);
+		System.out.println("radiuses.length: "+radiuses.length);
+		for( int i = 0; i < scores.length; ++i )
+			if( scores[i] > maxScore )
+				maxScore = scores[i];
 	}
-	
+
+	double maxScore = -1;
+
 	double [] centre_x_positions;
 	double [] centre_y_positions;
 	double [] radiuses;
-	
+	double [] scores;
+
 	Path fittedPath;
 	
 	Simple_Neurite_Tracer tracerPlugin;
@@ -109,20 +122,29 @@ class NormalPlaneCanvas extends ImageCanvas {
 			tracerPlugin.setCrosshair( point[0], point[1], point[2] );
 			last_slice = z;
 		}
-		
+
 		g.setColor(Color.RED);
-		
+
 		int x_top_left = screenXD( centre_x_positions[z] - radiuses[z] );
 		int y_top_left = screenYD( centre_y_positions[z] - radiuses[z] );
-		
+
 		g.fillRect( screenXD(centre_x_positions[z])-2,
-			    screenXD(centre_y_positions[z])-2,
+			    screenYD(centre_y_positions[z])-2,
 			    5,
 			    5 );
-		
+
 		int diameter = screenXD(centre_x_positions[z] + radiuses[z]) - screenXD(centre_x_positions[z] - radiuses[z]);
-		
+
 		g.drawOval( x_top_left, y_top_left, diameter, diameter );
+
+		double proportion = scores[z] / maxScore;
+		int drawToX = (int)( proportion * ( imp.getWidth() - 1 ) );
+		g.setColor(Color.GREEN);
+		g.fillRect( screenX(0),
+			    screenY(0),
+			    screenX(drawToX) - screenX(0),
+			    screenY(2) - screenY(0) );
+
 	}
-	
+
 }
