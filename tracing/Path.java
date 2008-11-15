@@ -651,11 +651,6 @@ public class Path implements Comparable {
 
 	}
 
-
-	public void optimizeCircle( double start_x, double start_y, double start_r ) {
-
-	}
-
 	public Path fitCircles( int side, Simple_Neurite_Tracer plugin, boolean display ) {
 
 		Path fitted = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
