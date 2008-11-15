@@ -857,6 +857,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		lastStartPointSet = true;
 
 		Path path = new Path(x_spacing,y_spacing,z_spacing,spacing_units);
+		path.setName("New Path");
 
 		if( joinPoint == null ) {
 			last_start_point_x = p[0];
