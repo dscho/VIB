@@ -124,10 +124,15 @@ class NormalPlaneCanvas extends ImageCanvas {
 			last_slice = z;
 		}
 
-		if( valid[z] )
+		if( valid[z] ) {
 			g.setColor(Color.RED);
-		else
+			System.out.print("valid ");
+		} else {
 			g.setColor(Color.MAGENTA);
+			System.out.print("      ");
+		}
+
+		System.out.println("radiuses[z] is: "+radiuses[z]);
 
 		int x_top_left = screenXD( centre_x_positions[z] - radiuses[z] );
 		int y_top_left = screenYD( centre_y_positions[z] - radiuses[z] );

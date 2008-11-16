@@ -886,11 +886,47 @@ public class Path implements Comparable {
 			valid[i] = moved[i] < modeRadiusesUnscaled[i];
 		}
 
+		int lastValidIndex = 0;
+
 		for( int i = 0; i < totalPoints; ++i ) {
 
-			if( valid[i] )
-				fitted.addPoint( xs_in_image[i], ys_in_image[i], zs_in_image[i] );
+			boolean firstOrLast = (i == 0 || i == (points-1));
 
+			if( ! valid[i] ) {
+				// The if we're gone too far without a
+				// successfully optimized datapoint,
+				// add the original one:
+				boolean goneTooFar = i - lastValidIndex >= noMoreThanOneEvery;
+				boolean nextValid = false;
+				if( i < (points - 1) )
+					if( valid[i+1] )
+						nextValid = true;
+
+				if( (goneTooFar && ! nextValid) || firstOrLast ) {
+					valid[i] = true;
+					xs_in_image[i] = x_positions[i];
+					ys_in_image[i] = y_positions[i];
+					zs_in_image[i] = z_positions[i];
+					optimized_x[i] = x_spacing * x_positions[i];
+					optimized_y[i] = y_spacing * y_positions[i];
+					optimized_z[i] = z_spacing * z_positions[i];
+					rsUnscaled[i] = 1;
+					rs[i] = scaleInNormalPlane;
+					modeRadiusesUnscaled[i] = 1;
+					modeRadiuses[i] = scaleInNormalPlane;
+					centre_x_positionsUnscaled[i] = side / 2.0;
+					centre_y_positionsUnscaled[i] = side / 2.0;
+				}
+			}
+
+			if( valid[i] ) {
+				if( rs[i] < scaleInNormalPlane ) {
+					rsUnscaled[i] = 1;
+					rs[i] = scaleInNormalPlane;
+				}
+				lastValidIndex = i;
+			}
+			fitted.addPoint( xs_in_image[i], ys_in_image[i], zs_in_image[i] );
 		}
 
 		fitted.setFittedCircles( ts_x,
@@ -1016,6 +1052,8 @@ public class Path implements Comparable {
 	Content content3D;
 	String nameWhenAddedToViewer;
 
+	public static final int noMoreThanOneEvery = 2;
+
 	public void removeFrom3DViewer(Image3DUniverse univ) {
 		System.out.println( "Trying to remove the path with name: "+nameWhenAddedToViewer );
 		univ.removeContent( nameWhenAddedToViewer );
@@ -1039,18 +1077,16 @@ public class Path implements Comparable {
 		double [] z_points_d = new double[points];
 		double [] diameters = new double[points];
 
-		int noMoreThanOneEvery = 2;
-
 		if( hasCircles() ) {
 			int added = 0;
 			int lastIndexAdded = - noMoreThanOneEvery;
 			for( int i = 0; i < points; ++i ) {
-				boolean firstOrLast = (i == 0 || i == (points-1));
-				if( firstOrLast || (valid[i] && (i - lastIndexAdded >= noMoreThanOneEvery)) ) {
+				if( valid[i] && (i - lastIndexAdded >= noMoreThanOneEvery) ) {
 					x_points_d[added] = optimized_x[i];
 					y_points_d[added] = optimized_y[i];
 					z_points_d[added] = optimized_z[i];
 					diameters[added] = 2 * radiuses[i];
+					System.out.println("point["+added+"] use diameter: "+diameters[added]+" at x="+optimized_x[i]+", y="+optimized_y[i]+", z="+optimized_z[i]);
 					lastIndexAdded = i;
 					++ added;
 				}
