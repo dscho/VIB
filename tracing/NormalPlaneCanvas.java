@@ -143,6 +143,7 @@ class NormalPlaneCanvas extends ImageCanvas {
 			    5 );
 
 		int diameter = screenXD(centre_x_positions[z] + radiuses[z]) - screenXD(centre_x_positions[z] - radiuses[z]);
+		System.out.println("diameter to draw is: "+diameter);
 
 		g.drawOval( x_top_left, y_top_left, diameter, diameter );
 

@@ -924,21 +924,46 @@ public class Path implements Comparable {
 					rsUnscaled[i] = 1;
 					rs[i] = scaleInNormalPlane;
 				}
+				fitted.addPoint( xs_in_image[i], ys_in_image[i], zs_in_image[i] );
 				lastValidIndex = i;
 			}
-			fitted.addPoint( xs_in_image[i], ys_in_image[i], zs_in_image[i] );
 		}
 
-		fitted.setFittedCircles( ts_x,
-					 ts_y,
-					 ts_z,
-					 rs,
-					 optimized_x,
-					 optimized_y,
-					 optimized_z,
-					 scores,
-					 modeRadiuses,
-					 valid );
+		int fittedLength = fitted.size();
+
+		double [] fitted_ts_x = new double[fittedLength];
+		double [] fitted_ts_y = new double[fittedLength];
+		double [] fitted_ts_z = new double[fittedLength];
+		double [] fitted_rs = new double[fittedLength];
+		double [] fitted_optimized_x = new double[fittedLength];
+		double [] fitted_optimized_y = new double[fittedLength];
+		double [] fitted_optimized_z = new double[fittedLength];
+
+		int added = 0;
+
+		for( int i = 0; i < points; ++i ) {
+			if( ! valid[i] )
+				continue;
+			fitted_ts_x[added] = ts_x[i];
+			fitted_ts_y[added] = ts_y[i];
+			fitted_ts_z[added] = ts_z[i];
+			fitted_rs[added] = rs[i];
+			fitted_optimized_x[added] = optimized_x[i];
+			fitted_optimized_y[added] = optimized_y[i];
+			fitted_optimized_z[added] = optimized_z[i];
+			++ added;
+		}
+
+		if( added != fittedLength )
+			throw new RuntimeException( "Mismatch of lengths, added="+added+" and fittedLength="+fittedLength);
+
+		fitted.setFittedCircles( fitted_ts_x,
+					 fitted_ts_y,
+					 fitted_ts_z,
+					 fitted_rs,
+					 fitted_optimized_x,
+					 fitted_optimized_y,
+					 fitted_optimized_z );
 
 		if( display ) {
 
@@ -981,11 +1006,6 @@ public class Path implements Comparable {
 	private double [] optimized_y;
 	private double [] optimized_z;
 
-	private double [] scores;
-
-	private double [] modeRadiuses;
-	private boolean [] valid;
-
 	public boolean hasCircles() {
 		return radiuses != null;
 	}
@@ -996,10 +1016,7 @@ public class Path implements Comparable {
 				      double [] radiuses,
 				      double [] optimized_x,
 				      double [] optimized_y,
-				      double [] optimized_z,
-				      double [] scores,
-				      double [] modeRadiuses,
-				      boolean [] valid ) {
+				      double [] optimized_z ) {
 
 		this.tangents_x = tangents_x.clone();
 		this.tangents_y = tangents_y.clone();
@@ -1010,10 +1027,6 @@ public class Path implements Comparable {
 		this.optimized_x = optimized_x.clone();
 		this.optimized_y = optimized_y.clone();
 		this.optimized_z = optimized_z.clone();
-
-		this.scores = scores.clone();
-		this.modeRadiuses = modeRadiuses.clone();
-		this.valid = valid.clone();
 	}
 
 	@Override
@@ -1081,7 +1094,7 @@ public class Path implements Comparable {
 			int added = 0;
 			int lastIndexAdded = - noMoreThanOneEvery;
 			for( int i = 0; i < points; ++i ) {
-				if( valid[i] && (i - lastIndexAdded >= noMoreThanOneEvery) ) {
+				if( i - lastIndexAdded >= noMoreThanOneEvery ) {
 					x_points_d[added] = optimized_x[i];
 					y_points_d[added] = optimized_y[i];
 					z_points_d[added] = optimized_z[i];
