@@ -1129,7 +1129,7 @@ public class Path implements Comparable {
 							y_points_d_trimmed,
 							z_points_d_trimmed,
 							diameters_trimmed,
-							4,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
+							2,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
 							12);     // "parallels" (12 means cross-sections are dodecagons)
 		if( allPoints == null )
 			return null;
