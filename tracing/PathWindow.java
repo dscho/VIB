@@ -271,6 +271,14 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 	}
 
+	void setButtonsEnabled( boolean enable ) {
+		renameButton.setEnabled(enable);
+		fitVolumeButton.setEnabled(enable);
+		fillOutButton.setEnabled(enable);
+		makePrimaryButton.setEnabled(enable);
+		deleteButton.setEnabled(enable);
+	}
+
 	void getExpandedPaths( HelpfulJTree tree, TreeModel model, MutableTreeNode node, HashSet set ) {
 		int count = model.getChildCount(node);
 		for( int i = 0; i < count;  i++ ) {

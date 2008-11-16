@@ -268,6 +268,7 @@ class NeuriteTracerResultsDialog
 	public void disableEverything() {
 
 		fw.setEnabledNone();
+		pw.setButtonsEnabled(false);
 
 		statusText.setEnabled(false);
 		keepSegment.setEnabled(false);
@@ -324,6 +325,7 @@ class NeuriteTracerResultsDialog
 		case WAITING_TO_START_PATH:
 			statusText.setText("Click somewhere to start a new path...");
 			disableEverything();
+			pw.setButtonsEnabled(true);
 
 			cancelSearch.setVisible(false);
 			keepSegment.setVisible(false);
