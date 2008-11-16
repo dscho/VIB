@@ -689,9 +689,10 @@ public class Path implements Comparable {
 
 		// We assume that the first and the last in the stack are fine;
 
-		double [] centre_x_positions = new double[totalPoints];
-		double [] centre_y_positions = new double[totalPoints];
+		double [] centre_x_positionsUnscaled = new double[totalPoints];
+		double [] centre_y_positionsUnscaled = new double[totalPoints];
 		double [] rs = new double[totalPoints];
+		double [] rsUnscaled = new double[totalPoints];
 
 		double [] ts_x = new double[totalPoints];
 		double [] ts_y = new double[totalPoints];
@@ -706,6 +707,12 @@ public class Path implements Comparable {
 		double [] moved = new double[totalPoints];
 
 		boolean [] valid = new boolean[totalPoints];
+
+		int [] xs_in_image = new int[totalPoints];
+		int [] ys_in_image = new int[totalPoints];
+		int [] zs_in_image = new int[totalPoints];
+
+		double scaleInNormalPlane = plugin.getMinimumSeparation();
 
 		for( int i = 0; i < totalPoints; ++i ) {
 
@@ -732,7 +739,7 @@ public class Path implements Comparable {
 
 			byte [] normalPlane = plugin.squareNormalToVector(
 				side,
-				x_spacing,   // step is in the same units as the _spacing, etc. variables.
+				scaleInNormalPlane,   // This is in the same units as the _spacing, etc. variables.
 				x,      // These are are *not* yet scaled in z
 				y,      // They're just sample point differences
 				z,
@@ -755,9 +762,9 @@ public class Path implements Comparable {
 			optimizer.step = side / 4.0;
 
 			double [] startValues = new double[3];
-			startValues[0] = (side - 1) / 2.0;
-			startValues[1] = (side - 1) / 2.0;
-			startValues[2] = 3.0;
+			startValues[0] = side / 2.0;
+			startValues[1] = side / 2.0;
+			startValues[2] = 3;
 
 			if( verbose )
 				System.out.println("start search at: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
@@ -781,9 +788,10 @@ public class Path implements Comparable {
 				// System.out.println("u is: "+u[0]+","+u[1]+","+u[2]);
 				System.out.println("search optimized to: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
 
-			centre_x_positions[i] = startValues[0];
-			centre_y_positions[i] = startValues[1];
-			rs[i] = startValues[2];
+			centre_x_positionsUnscaled[i] = startValues[0];
+			centre_y_positionsUnscaled[i] = startValues[1];
+			rsUnscaled[i] = startValues[2];
+			rs[i] = scaleInNormalPlane * rsUnscaled[i];
 
 			scores[i] = attempt.min;
 
@@ -792,8 +800,8 @@ public class Path implements Comparable {
 			double x_from_centre_in_plane = startValues[0] - (side / 2.0);
 			double y_from_centre_in_plane = startValues[1] - (side / 2.0);
 
-			moved[i] = Math.sqrt( x_from_centre_in_plane * x_from_centre_in_plane +
-					      y_from_centre_in_plane * y_from_centre_in_plane );
+			moved[i] = scaleInNormalPlane * Math.sqrt( x_from_centre_in_plane * x_from_centre_in_plane +
+								   y_from_centre_in_plane * y_from_centre_in_plane );
 
 			if( verbose )
 				System.out.println("vector to new centre from original: "+x_from_centre_in_plane+","+y_from_centre_in_plane);
@@ -832,7 +840,9 @@ public class Path implements Comparable {
 			if( verbose )
 				System.out.println("addingPoint: "+x_in_image+","+y_in_image+","+z_in_image);
 
-			fitted.addPoint( x_in_image, y_in_image, z_in_image );
+			xs_in_image[i] = x_in_image;
+			ys_in_image[i] = y_in_image;
+			zs_in_image[i] = z_in_image;
 
 			if( verbose )
 				System.out.println("Adding a real slice.");
@@ -848,6 +858,7 @@ public class Path implements Comparable {
 		   mode of the radiuses in the nearby region: */
 
 		int modeEitherSide = 4;
+		double [] modeRadiusesUnscaled = new double[totalPoints];
 		double [] modeRadiuses = new double[totalPoints];
 		double [] valuesForMode = new double[modeEitherSide * 2 + 1];
 
@@ -860,14 +871,26 @@ public class Path implements Comparable {
 					valuesForMode[c] = Double.MIN_VALUE;
 				else if( modeIndex >= totalPoints )
 					valuesForMode[c] = Double.MAX_VALUE;
-				else
-					valuesForMode[c] = rs[modeIndex];
+				else {
+					if( rsUnscaled[modeIndex] < 1 )
+						valuesForMode[c] = 1;
+					else
+						valuesForMode[c] = rsUnscaled[modeIndex];
+				}
 				++c;
 			}
 			Arrays.sort( valuesForMode );
-			modeRadiuses[i] = valuesForMode[modeEitherSide];
+			modeRadiusesUnscaled[i] = valuesForMode[modeEitherSide];
+			modeRadiuses[i] = scaleInNormalPlane * modeRadiusesUnscaled[i];
 
-			valid[i] = moved[i] < modeRadiuses[i];
+			valid[i] = moved[i] < modeRadiusesUnscaled[i];
+		}
+
+		for( int i = 0; i < totalPoints; ++i ) {
+
+			if( valid[i] )
+				fitted.addPoint( xs_in_image[i], ys_in_image[i], zs_in_image[i] );
+
 		}
 
 		fitted.setFittedCircles( ts_x,
@@ -888,11 +911,11 @@ public class Path implements Comparable {
 			NormalPlaneCanvas normalCanvas = new NormalPlaneCanvas(
 				imp,
 				plugin,
-				centre_x_positions,
-				centre_y_positions,
-				rs,
+				centre_x_positionsUnscaled,
+				centre_y_positionsUnscaled,
+				rsUnscaled,
 				scores,
-				modeRadiuses,
+				modeRadiusesUnscaled,
 				valid,
 				fitted  );
 
@@ -1016,13 +1039,14 @@ public class Path implements Comparable {
 		double [] z_points_d = new double[points];
 		double [] diameters = new double[points];
 
-		int noMoreThanOneEvery = 1;
+		int noMoreThanOneEvery = 2;
 
 		if( hasCircles() ) {
 			int added = 0;
 			int lastIndexAdded = - noMoreThanOneEvery;
 			for( int i = 0; i < points; ++i ) {
-				if( valid[i] && (i - lastIndexAdded >= noMoreThanOneEvery) ) {
+				boolean firstOrLast = (i == 0 || i == (points-1));
+				if( firstOrLast || (valid[i] && (i - lastIndexAdded >= noMoreThanOneEvery)) ) {
 					x_points_d[added] = optimized_x[i];
 					y_points_d[added] = optimized_y[i];
 					z_points_d[added] = optimized_z[i];
