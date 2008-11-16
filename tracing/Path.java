@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.Iterator;
 import java.util.HashSet;
+import java.util.Arrays;
 
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
@@ -617,6 +618,26 @@ public class Path implements Comparable {
 			return badness;
 		}
 
+		public double penalty( double x, double y, double r, double side, double maxPenalty ) {
+
+			double penalty = 0;
+
+			if( (x + r) >= side ) {
+				penalty = maxPenalty;
+			}
+			if( (x - r) < 0 ) {
+				penalty = maxPenalty;
+			}
+			if( (y + r) >= side ) {
+				penalty = maxPenalty;
+	                       }
+			if( (y - r) < 0 ) {
+				penalty = maxPenalty;
+			}
+
+			return penalty;
+		}
+
 		public double evaluateCircle( double x, double y, double r ) {
 
 			double badness = 0;
@@ -631,18 +652,7 @@ public class Path implements Comparable {
 				}
 			}
 
-			if( (x + r) >= side ) {
-				badness += maxValueInData * maxValueInData;
-			}
-			if( (x + r) < 0 ) {
-				badness += maxValueInData * maxValueInData;
-			}
-			if( (y + r) >= side ) {
-				badness += maxValueInData * maxValueInData;
-			}
-			if( (y + r) < 0 ) {
-				badness += maxValueInData * maxValueInData;
-			}
+			badness += penalty( x, y, r, side, maxValueInData * maxValueInData );
 
 			badness /= (side * side);
 
@@ -692,6 +702,10 @@ public class Path implements Comparable {
 		double [] optimized_z = new double[totalPoints];
 
 		double [] scores = new double[totalPoints];
+
+		double [] moved = new double[totalPoints];
+
+		boolean [] valid = new boolean[totalPoints];
 
 		for( int i = 0; i < totalPoints; ++i ) {
 
@@ -778,6 +792,9 @@ public class Path implements Comparable {
 			double x_from_centre_in_plane = startValues[0] - (side / 2.0);
 			double y_from_centre_in_plane = startValues[1] - (side / 2.0);
 
+			moved[i] = Math.sqrt( x_from_centre_in_plane * x_from_centre_in_plane +
+					      y_from_centre_in_plane * y_from_centre_in_plane );
+
 			if( verbose )
 				System.out.println("vector to new centre from original: "+x_from_centre_in_plane+","+y_from_centre_in_plane);
 
@@ -827,6 +844,32 @@ public class Path implements Comparable {
 
 		IJ.showProgress( 1.0 );
 
+		/* Now at each point along the path we calculate the
+		   mode of the radiuses in the nearby region: */
+
+		int modeEitherSide = 4;
+		double [] modeRadiuses = new double[totalPoints];
+		double [] valuesForMode = new double[modeEitherSide * 2 + 1];
+
+		for( int i = 0; i < totalPoints; ++i ) {
+			int minIndex = i - modeEitherSide;
+			int maxIndex = i + modeEitherSide;
+			int c = 0;
+			for( int modeIndex = minIndex; modeIndex <= maxIndex; ++modeIndex ) {
+				if( modeIndex < 0 )
+					valuesForMode[c] = Double.MIN_VALUE;
+				else if( modeIndex >= totalPoints )
+					valuesForMode[c] = Double.MAX_VALUE;
+				else
+					valuesForMode[c] = rs[modeIndex];
+				++c;
+			}
+			Arrays.sort( valuesForMode );
+			modeRadiuses[i] = valuesForMode[modeEitherSide];
+
+			valid[i] = moved[i] < modeRadiuses[i];
+		}
+
 		fitted.setFittedCircles( ts_x,
 					 ts_y,
 					 ts_z,
@@ -834,7 +877,9 @@ public class Path implements Comparable {
 					 optimized_x,
 					 optimized_y,
 					 optimized_z,
-					 scores );
+					 scores,
+					 modeRadiuses,
+					 valid );
 
 		if( display ) {
 
@@ -847,6 +892,8 @@ public class Path implements Comparable {
 				centre_y_positions,
 				rs,
 				scores,
+				modeRadiuses,
+				valid,
 				fitted  );
 
 			new StackWindow( imp, normalCanvas );
@@ -877,6 +924,9 @@ public class Path implements Comparable {
 
 	private double [] scores;
 
+	private double [] modeRadiuses;
+	private boolean [] valid;
+
 	public boolean hasCircles() {
 		return radiuses != null;
 	}
@@ -888,24 +938,23 @@ public class Path implements Comparable {
 				      double [] optimized_x,
 				      double [] optimized_y,
 				      double [] optimized_z,
-				      double [] scores ) {
+				      double [] scores,
+				      double [] modeRadiuses,
+				      boolean [] valid ) {
 
-		this.tangents_x = new double[tangents_x.length];
-		System.arraycopy( tangents_x, 0, this.tangents_x, 0, tangents_x.length );
-		this.tangents_y = new double[tangents_y.length];
-		System.arraycopy( tangents_y, 0, this.tangents_y, 0, tangents_y.length );
-		this.tangents_z = new double[tangents_z.length];
-		System.arraycopy( tangents_z, 0, this.tangents_z, 0, tangents_z.length );
-		this.radiuses = new double[radiuses.length];
-		System.arraycopy( radiuses, 0, this.radiuses, 0, radiuses.length );
-		this.optimized_x = new double[optimized_x.length];
-		System.arraycopy( optimized_x, 0, this.optimized_x, 0, optimized_x.length );
-		this.optimized_y = new double[optimized_y.length];
-		System.arraycopy( optimized_y, 0, this.optimized_y, 0, optimized_y.length );
-		this.optimized_z = new double[optimized_z.length];
-		System.arraycopy( optimized_z, 0, this.optimized_z, 0, optimized_z.length );
-		this.scores = new double[scores.length];
-		System.arraycopy( scores, 0, this.scores, 0, scores.length );
+		this.tangents_x = tangents_x.clone();
+		this.tangents_y = tangents_y.clone();
+		this.tangents_z = tangents_z.clone();
+
+		this.radiuses = radiuses.clone();
+
+		this.optimized_x = optimized_x.clone();
+		this.optimized_y = optimized_y.clone();
+		this.optimized_z = optimized_z.clone();
+
+		this.scores = scores.clone();
+		this.modeRadiuses = modeRadiuses.clone();
+		this.valid = valid.clone();
 	}
 
 	@Override
@@ -967,14 +1016,18 @@ public class Path implements Comparable {
 		double [] z_points_d = new double[points];
 		double [] diameters = new double[points];
 
+		int noMoreThanOneEvery = 1;
+
 		if( hasCircles() ) {
 			int added = 0;
-			for( int i = 0; i < points; i += 2 ) {
-				if( /* add this one */ true ) {
+			int lastIndexAdded = - noMoreThanOneEvery;
+			for( int i = 0; i < points; ++i ) {
+				if( valid[i] && (i - lastIndexAdded >= noMoreThanOneEvery) ) {
 					x_points_d[added] = optimized_x[i];
 					y_points_d[added] = optimized_y[i];
 					z_points_d[added] = optimized_z[i];
 					diameters[added] = 2 * radiuses[i];
+					lastIndexAdded = i;
 					++ added;
 				}
 			}

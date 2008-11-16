@@ -38,6 +38,8 @@ class NormalPlaneCanvas extends ImageCanvas {
 				  double [] centre_y_positions,
 				  double [] radiuses,
 				  double [] scores,
+				  double [] modeRadiuses,
+				  boolean [] valid,
 				  Path fittedPath ) {
 		super(imp);
 		tracerPlugin = plugin;
@@ -45,13 +47,10 @@ class NormalPlaneCanvas extends ImageCanvas {
 		this.centre_y_positions = centre_y_positions;
 		this.radiuses = radiuses;
 		this.scores = scores;
+		this.modeRadiuses = modeRadiuses;
+		this.valid = valid;
 		this.fittedPath = fittedPath;
-		System.out.println("Created NormalPlaneCanvas");
 		int slices = imp.getStackSize();
-		System.out.println("slices in ImagePlus: "+slices);
-		System.out.println("centre_x_positions.length: "+centre_x_positions.length);
-		System.out.println("centre_y_positions.length: "+centre_y_positions.length);
-		System.out.println("radiuses.length: "+radiuses.length);
 		for( int i = 0; i < scores.length; ++i )
 			if( scores[i] > maxScore )
 				maxScore = scores[i];
@@ -63,6 +62,8 @@ class NormalPlaneCanvas extends ImageCanvas {
 	double [] centre_y_positions;
 	double [] radiuses;
 	double [] scores;
+	double [] modeRadiuses;
+	boolean [] valid;
 
 	Path fittedPath;
 
@@ -123,7 +124,10 @@ class NormalPlaneCanvas extends ImageCanvas {
 			last_slice = z;
 		}
 
-		g.setColor(Color.RED);
+		if( valid[z] )
+			g.setColor(Color.RED);
+		else
+			g.setColor(Color.MAGENTA);
 
 		int x_top_left = screenXD( centre_x_positions[z] - radiuses[z] );
 		int y_top_left = screenYD( centre_y_positions[z] - radiuses[z] );
@@ -144,6 +148,16 @@ class NormalPlaneCanvas extends ImageCanvas {
 			    screenY(0),
 			    screenX(drawToX) - screenX(0),
 			    screenY(2) - screenY(0) );
+
+		int modeOvalX = screenXD( imp.getWidth() / 2.0 - modeRadiuses[z] );
+		int modeOvalY = screenYD( imp.getHeight() / 2.0 - modeRadiuses[z] );
+		int modeOvalDiameter = screenXD( imp.getWidth() / 2.0 + modeRadiuses[z] ) - modeOvalX;
+
+		g.setColor(Color.YELLOW);
+		g.drawOval( modeOvalX,
+			    modeOvalY,
+			    modeOvalDiameter,
+			    modeOvalDiameter );
 
 	}
 
