@@ -1,6 +1,10 @@
 package voltex;
 
+import javax.media.j3d.View;
 import vib.Resample_;
+
+import ij3d.UniverseListener;
+import ij3d.Content;
 
 import java.io.File;
 
@@ -11,15 +15,29 @@ import ij.process.ByteProcessor;
 import ij.io.FileSaver;
 
 import ij.measure.Calibration;
+import javax.media.j3d.BranchGroup;
+import javax.media.j3d.Canvas3D;
+import javax.media.j3d.Transform3D;
+import javax.vecmath.Point3d;
+import javax.vecmath.Vector3d;
 
-public class VolumeOctree {
+public class VolumeOctree implements UniverseListener, VolRendConstants {
 
-	public static final int SIZE = 32;
+	public static final int SIZE = 64;
 
 	private String outdir;
 	private ImagePlus imp;
 
 	private Cube root;
+	private BranchGroup bg;
+	private ShapeContainer cont;
+
+	private int curAxis = Z_AXIS;
+	private int curDir = FRONT;
+
+	private final int xdim, ydim, zdim;
+	private final double pw, ph, pd;
+	private final Point3d refPt;
 
 	public VolumeOctree(ImagePlus imp) {
 		this.imp = imp;
@@ -30,15 +48,53 @@ public class VolumeOctree {
 		dir.mkdir();
 		outdir = dir.getAbsolutePath();
 
+		xdim = nextPow2(imp.getWidth());
+		ydim = nextPow2(imp.getHeight());
+		zdim = nextPow2(imp.getStackSize());
+
+		Calibration c = imp.getCalibration();
+		pw = c.pixelWidth;
+		ph = c.pixelHeight;
+		pd = c.pixelDepth;
+
+		refPt = new Point3d(xdim*pw / 2, ydim*ph / 2, zdim*pd / 2);
+
+		cont = new ShapeContainer(xdim, ydim, zdim, pw, ph, pd);
+
+		bg = new BranchGroup();
+		bg.addChild(cont.axisSwitch);
+		bg.setCapability(BranchGroup.ALLOW_DETACH);
+		bg.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
+
+		cont.setAxis(curAxis, curDir);
+	}
+	
+	private Transform3D volumeToImagePlate = new Transform3D();
+	private Transform3D tmp = new Transform3D();
+	public void display(Canvas3D canvas) {
+		canvas.getImagePlateToVworld(volumeToImagePlate);
+		volumeToImagePlate.invert();
+		bg.getLocalToVworld(tmp);
+		volumeToImagePlate.mul(tmp);
+		System.out.println("display: volumeToImagePlate = " + volumeToImagePlate);
+		// recursively display the cubes
+		root.display(canvas, volumeToImagePlate);
+		// sort the actually displayed cubes according to z-order
+		cont.sort();
 	}
 
-	public Cube getRoot() {
+	public BranchGroup getRootBranchGroup() {
+		return bg;
+	}
+
+	public Cube getRootCube() {
 		return root;
 	}
 
 	public void create() {
 		int l = createFiles();
-		root = new Cube(outdir, 0, 0, 0, l);
+		imp.close();
+		root = new Cube(cont, outdir, 0, 0, 0, l);
 		root.createChildren();
 	}
 
@@ -52,14 +108,17 @@ public class VolumeOctree {
 			for(int z = 0; z < d; z += SIZE) {
 				for(int y = 0; y < h; y += SIZE) {
 					for(int x = 0; x < w; x += SIZE) {
-						ImagePlus tmp = createSubvolume(x, y, z, l);
-						new FileSaver(tmp).saveAsTiffStack(outdir + "/" + tmp.getTitle() + ".tif");
+						String path = outdir + "/" + (x*l) + "_" + (y*l) + "_" + (z*l) + "_" + l + ".tif";
+						if(new File(path).exists())
+							continue;
+						ImagePlus tmp = createSubvolume(x, y, z);
+						new FileSaver(tmp).saveAsTiffStack(path);
 					}
 				}
 			}
-			int factorX = w > 32 ? 2 : 1;
-			int factorY = h > 32 ? 2 : 1;
-			int factorZ = d > 32 ? 2 : 1;
+			int factorX = w > SIZE ? 2 : 1;
+			int factorY = h > SIZE ? 2 : 1;
+			int factorZ = d > SIZE ? 2 : 1;
 			if(factorX == 1 && factorY == 1 && factorZ == 1)
 				break;
 			imp = Resample_.resample(imp, factorX, factorY, factorZ);
@@ -71,7 +130,7 @@ public class VolumeOctree {
 		return l;
 	}
 
-	private ImagePlus createSubvolume(int x, int y, int z, int l) {
+	private ImagePlus createSubvolume(int x, int y, int z) {
 		int w = imp.getWidth(), h = imp.getHeight();
 		int d = imp.getStackSize();
 
@@ -84,11 +143,12 @@ public class VolumeOctree {
 			byte[] p_old = (byte[])oldStack.getPixels(z + zi + 1);
 			byte[] p_new = new byte[SIZE * SIZE];
 			for(int yi = 0; yi < SIZE; yi++) {
-				System.arraycopy(p_old, (yi + y) * w + x, p_new, yi * SIZE, SIZE);
+				System.arraycopy(p_old, (yi + y) * w + x, 
+					  p_new, yi * SIZE, SIZE);
 			}
 			newStack.addSlice("", p_new);
 		}
-		ImagePlus ret = new ImagePlus("" + (x*l) + "_" + (y*l) + "_" + (z*l) + "_" + l, newStack);
+		ImagePlus ret = new ImagePlus("", newStack);
 		Calibration cal = imp.getCalibration().copy();
 		cal.xOrigin = x;
 		cal.yOrigin = y;
@@ -133,5 +193,46 @@ public class VolumeOctree {
 		}
 		return retval;
 	}
+
+	private Vector3d eyeVec = new Vector3d();
+	public void transformationUpdated(View view){
+		Point3d eyePt = Renderer.getViewPosInLocal(view, bg);
+		if (eyePt == null)
+			return;
+		eyeVec.sub(eyePt, refPt);
+
+		// select the axis with the greatest magnitude
+		int axis = X_AXIS;
+		double value = eyeVec.x;
+		double max = Math.abs(eyeVec.x);
+		if (Math.abs(eyeVec.y) > max) {
+			axis = Y_AXIS;
+			value = eyeVec.y;
+			max = Math.abs(eyeVec.y);
+		}
+		if (Math.abs(eyeVec.z) > max) {
+			axis = Z_AXIS;
+			value = eyeVec.z;
+			max = Math.abs(eyeVec.z);
+		}
+
+		// select the direction based on the sign of the magnitude
+		int dir = value > 0.0 ? FRONT : BACK;
+		
+		if ((axis != curAxis) || (dir != curDir)) {
+			curAxis = axis;
+			curDir = dir;
+			cont.setAxis(axis, dir);
+		}
+	}
+
+	public void transformationStarted(View view){}
+	public void transformationFinished(View view){}
+	public void contentAdded(Content c){}
+	public void contentRemoved(Content c){}
+	public void contentChanged(Content c){}
+	public void contentSelected(Content c){}
+	public void canvasResized(){}
+	public void universeClosed(){}
 }
 
