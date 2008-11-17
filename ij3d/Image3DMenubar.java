@@ -1,50 +1,11 @@
 package ij3d;
 
-import ij.gui.GenericDialog;
-import ij.gui.MultiLineLabel;
-import ij.IJ;
-import ij.WindowManager;
-import ij.ImagePlus;
-import ij.text.TextWindow;
-import ij.gui.Toolbar;
-import ij.process.StackConverter;
-import ij.process.ImageConverter;
-
-import view4d.Viewer4D;
-import view4d.Viewer4DController;
-
-import math3d.Transform_IO;
-
-import java.text.DecimalFormat;
-
 import java.awt.event.*;
 import java.awt.*;
-import java.util.Vector;
 import java.util.Iterator;
-import java.util.Collection;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
 
-import vib.PointList;
-import vib.BenesNamedPoint;
-import vib.InterpolatedImage;
-import vib.FastMatrix;
-
-import orthoslice.OrthoGroup;
-import voltex.VoltexGroup;
-import voltex.Renderer;
-import isosurface.MeshGroup;
-import isosurface.MeshExporter;
-import isosurface.MeshEditor;
-
-import javax.vecmath.Color3f;
-import javax.vecmath.Matrix4d;
 import javax.media.j3d.View;
-import javax.media.j3d.Transform3D;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.Collection;
 
 public class Image3DMenubar extends MenuBar implements ActionListener, 
 					 		ItemListener,
@@ -300,6 +261,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		viewPreferences = new MenuItem("View Preferences");
 		viewPreferences.addActionListener(this);
 		view.add(viewPreferences);
+
+		MenuItem tmp = new MenuItem("Update Octree");
+		tmp.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				univ.updateOctree();
+			}
+		});
+		view.add(tmp);
 
 		return view;
 	}

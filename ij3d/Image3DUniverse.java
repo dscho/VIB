@@ -1,23 +1,9 @@
 package ij3d;
 
 import ij.ImagePlus;
-import ij.process.ImageProcessor;
-import ij.ImageStack;
 import ij.IJ;
 
-import ij3d.ImageWindow3D;
-import ij3d.ImageCanvas3D;
-
-import isosurface.Triangulator;
-import isosurface.MeshGroup;
-
-import voltex.VoltexGroup;
-
-import orthoslice.OrthoGroup;
-
 import java.awt.MenuBar;
-import java.awt.Menu;
-import java.awt.MenuItem;
 import java.awt.event.*;
 
 import java.util.List;
@@ -150,17 +136,24 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return globalCenter;
 	}
 
+	public void updateOctree() {
+		octree.display(canvas);
+	}
+
+	private voltex.VolumeOctree octree = null;
 	public voltex.VolumeOctree addOctree(ImagePlus image, String name) {
 		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
 		ensureScale(image);
-		voltex.VolumeOctree octree = new voltex.VolumeOctree(image);
+		octree = new voltex.VolumeOctree(image);
 		try {
 			octree.create();
-			scene.addChild(octree.getRoot().getNode());
-			octree.getRoot().display();
+			octree.display(canvas);
+			octree.getRootBranchGroup().compile();
+			scene.addChild(octree.getRootBranchGroup());
+			this.addUniverseListener(octree);
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
