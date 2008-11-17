@@ -1,7 +1,12 @@
 package voltex;
 
+import ij.IJ;
+import ij.ImagePlus;
+import javax.media.j3d.Appearance;
+import javax.media.j3d.GeometryArray;
 import javax.media.j3d.Group;
 import javax.media.j3d.OrderedGroup;
+import javax.media.j3d.Shape3D;
 import javax.media.j3d.Switch;
 
 public class ShapeContainer implements VolRendConstants {
@@ -66,32 +71,43 @@ public class ShapeContainer implements VolRendConstants {
 		System.out.println("display cube " + c);
 		if(c.isDisplayed())
 			return;
-		ShapeGroup[] shapes;
 
-		// z-direction
-		shapes = c.getZFrontShapes();
-		for(ShapeGroup s : shapes)
-			((OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT])).addChild(s);
-		shapes = c.getZBackShapes();
-		for(ShapeGroup s : shapes)
-			((OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK])).addChild(s);
+		ImagePlus imp = IJ.openImage(c.path);
+		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
+		AppearanceCreator appCreator = new AppearanceCreator(volume);
+		GeometryCreator geomCreator = new GeometryCreator(volume);
 
-		// y-direction
-		shapes = c.getYFrontShapes();
-		for(ShapeGroup s : shapes)
-			((OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT])).addChild(s);
-		shapes = c.getYBackShapes();
-		for(ShapeGroup s : shapes)
-			((OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK])).addChild(s);
+		OrderedGroup og;
+		float pos;
+		for(int i = 0; i < volume.xDim; i++) {
+			GeometryArray g = geomCreator.getQuad(X_AXIS, i);
+			Appearance a = appCreator.getAppearance(X_AXIS, i);
+			pos = geomCreator.getPos();
+			og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
+			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+			og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
+			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+		}
 
-		// x-direction
-		shapes = c.getXFrontShapes();
-		for(ShapeGroup s : shapes)
-			((OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT])).addChild(s);
-		shapes = c.getXBackShapes();
-		for(ShapeGroup s : shapes)
-			((OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK])).addChild(s);
+		for(int i = 0; i < volume.yDim; i++) {
+			GeometryArray g = geomCreator.getQuad(Y_AXIS, i);
+			Appearance a = appCreator.getAppearance(Y_AXIS, i);
+			pos = geomCreator.getPos();
+			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
+			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
+			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+		}
 
+		for(int i = 0; i < volume.zDim; i++) {
+			GeometryArray g = geomCreator.getQuad(Z_AXIS, i);
+			Appearance a = appCreator.getAppearance(Z_AXIS, i);
+			pos = geomCreator.getPos();
+			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
+			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
+			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+		}
 	}
 
 	public void undisplayCube(Cube c) {
@@ -110,37 +126,6 @@ public class ShapeContainer implements VolRendConstants {
 			}
 		}
 	}
-//	public void undisplayCube(Cube c) {
-//		System.out.println("undisplay cube " + c);
-//		if(!c.isDisplayed())
-//			return;
-//		ShapeGroup[] shapes;
-//
-//		// z-direction
-//		shapes = c.getZFrontShapes();
-//		for(ShapeGroup s : shapes)
-//			((OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT])).removeChild(s);
-//		shapes = c.getZBackShapes();
-//		for(ShapeGroup s : shapes)
-//			((OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK])).removeChild(s);
-//
-//		// y-direction
-//		shapes = c.getYFrontShapes();
-//		for(ShapeGroup s : shapes)
-//			((OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT])).removeChild(s);
-//		shapes = c.getYBackShapes();
-//		for(ShapeGroup s : shapes)
-//			((OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK])).removeChild(s);
-//
-//		// x-direction
-//		shapes = c.getXFrontShapes();
-//		for(ShapeGroup s : shapes)
-//			((OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT])).removeChild(s);
-//		shapes = c.getXBackShapes();
-//		for(ShapeGroup s : shapes)
-//			((OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK])).removeChild(s);
-//
-//	}
 
 	public void sort() {
 		OrderedGroup og;

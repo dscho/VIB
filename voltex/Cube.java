@@ -30,14 +30,6 @@ public class Cube implements VolRendConstants {
 	private String dir;
 	private boolean displayed = false;
 
-	private ShapeGroup[] xFrontShapes;
-	private ShapeGroup[] yFrontShapes;
-	private ShapeGroup[] zFrontShapes;
-
-	private ShapeGroup[] xBackShapes;
-	private ShapeGroup[] yBackShapes;
-	private ShapeGroup[] zBackShapes;
-
 	private ShapeContainer cont;
 
 	public Cube(ShapeContainer cont, String dir, int x, int y, int z, int l) {
@@ -64,13 +56,6 @@ public class Cube implements VolRendConstants {
 			corners[6] = new Point3d(corners[0].x, corners[7].y, corners[7].z);
 		}
 	}
-
-	public ShapeGroup[] getXFrontShapes() {return xFrontShapes;}
-	public ShapeGroup[] getYFrontShapes() {return yFrontShapes;}
-	public ShapeGroup[] getZFrontShapes() {return zFrontShapes;}
-	public ShapeGroup[] getXBackShapes() {return xBackShapes;}
-	public ShapeGroup[] getYBackShapes() {return yBackShapes;}
-	public ShapeGroup[] getZBackShapes() {return zBackShapes;}
 
 	public boolean exists() {
 		return new File(path).exists();
@@ -117,12 +102,6 @@ public class Cube implements VolRendConstants {
 
 	private void undisplaySelf() {
 		cont.undisplayCube(this);
-		xFrontShapes = null;
-		yFrontShapes = null;
-		zFrontShapes = null;
-		xBackShapes = null;
-		yBackShapes = null;
-		zBackShapes = null;
 		displayed = false;
 	}
 
@@ -130,39 +109,6 @@ public class Cube implements VolRendConstants {
 		if(displayed)
 			return;
 		undisplaySubtree();
-		ImagePlus imp = IJ.openImage(path);
-		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
-		AppearanceCreator appCreator = new AppearanceCreator(volume);
-		GeometryCreator geomCreator = new GeometryCreator(volume);
-
-		xFrontShapes = new ShapeGroup[volume.xDim];
-		yFrontShapes = new ShapeGroup[volume.yDim];
-		zFrontShapes = new ShapeGroup[volume.zDim];
-
-		xBackShapes = new ShapeGroup[volume.xDim];
-		yBackShapes = new ShapeGroup[volume.yDim];
-		zBackShapes = new ShapeGroup[volume.zDim];
-
-		for(int i = 0; i < xBackShapes.length; i++) {
-			GeometryArray quadArray = geomCreator.getQuad(X_AXIS, i);
-			Appearance a = appCreator.getAppearance(X_AXIS, i);
-			xFrontShapes[i] = new ShapeGroup(new Shape3D(quadArray, a), geomCreator.getPos(), name);
-			xBackShapes[i]  = new ShapeGroup(new Shape3D(quadArray, a), geomCreator.getPos(), name);
-		}
-
-		for(int i = 0; i < yBackShapes.length; i++) {
-			GeometryArray quadArray = geomCreator.getQuad(Y_AXIS, i);
-			Appearance a = appCreator.getAppearance(Y_AXIS, i);
-			yFrontShapes[i] = new ShapeGroup(new Shape3D(quadArray, a), geomCreator.getPos(), name);
-			yBackShapes[i]  = new ShapeGroup(new Shape3D(quadArray, a), geomCreator.getPos(), name);
-		}
-
-		for(int i = 0; i < zBackShapes.length; i++) {
-			GeometryArray quadArray = geomCreator.getQuad(Z_AXIS, i);
-			Appearance a = appCreator.getAppearance(Z_AXIS, i);
-			zFrontShapes[i] = new ShapeGroup(new Shape3D(quadArray, a), geomCreator.getPos(), name);
-			zBackShapes[i]  = new ShapeGroup(new Shape3D(quadArray, a), geomCreator.getPos(), name);
-		}
 
 		cont.displayCube(this);
 		displayed = true;
