@@ -48,29 +48,25 @@ abstract public class Renderer implements VolRendConstants {
 
 	abstract public void setColor(Color3f color);
 
-
 	/** 
 	 * return the eye's position in <node>'s coordinate space
 	 */
-	Point3d getViewPosInLocal(View view, Node node) {
+	private static Transform3D parentInv = new Transform3D();
+	private static Point3d viewPosition = new Point3d();
+	private static Transform3D t = new Transform3D();
 
-		Point3d viewPosition = new Point3d();
-		Vector3d translate = new Vector3d();
-		if (node == null ){
+	static Point3d getViewPosInLocal(View view, Node node) {
+		if (node == null )
 			return null;
-		}
-		if (!node.isLive()) {
+		if (!node.isLive()) 
 			return null;
-		}
 		//  get viewplatforms's location in virutal world
 		Canvas3D canvas = (Canvas3D)view.getCanvas3D(0);
 		canvas.getCenterEyeInImagePlate(viewPosition);
-		Transform3D t = new Transform3D();
 		canvas.getImagePlateToVworld(t);
 		t.transform(viewPosition);
 
 		// get parent transform
-		Transform3D parentInv = new Transform3D();
 		node.getLocalToVworld(parentInv);
 		parentInv.invert();
 
