@@ -1,5 +1,7 @@
 import java.io.File;
 
+import process3d.Distance_Transform_3D;
+
 import ij.gui.GenericDialog;
 import ij.plugin.ImageCalculator;
 import ij.plugin.PlugIn;
