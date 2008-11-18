@@ -13,7 +13,7 @@ public class Cube implements VolRendConstants {
 	public static final int RESOLUTION_UNSUFFICIENT = 1;
 	public static final int OUTSIDE_CANVAS          = 2;
 
-	public static final double RES_THRESHOLD = VolumeOctree.SIZE * 2;//Math.sqrt(3);
+	public static final double RES_THRESHOLD = VolumeOctree.SIZE * 3;//Math.sqrt(3);
 
 	final int x, y, z, level;
 	final String path;
@@ -23,7 +23,8 @@ public class Cube implements VolRendConstants {
 	private Point3d[] corners;
 
 	private String dir;
-	private boolean displayed = false;
+	/* the axis in which this cube is displayed. -1 for undisplayed */
+	private int displayed = -1;
 
 	private ShapeContainer cont;
 
@@ -56,30 +57,28 @@ public class Cube implements VolRendConstants {
 		return new File(path).exists();
 	}
 
-	public boolean isDisplayed() {
-		return displayed;
-	}
-
 	public int checkResolution(Canvas3D canvas, Transform3D volToIP) {
-		System.out.print("... checkResolution");
+		System.out.print("... checkResolution...");
 		double max, v;
 		max = lengthInCanvas(canvas, volToIP, corners[0], corners[7]);
 		v = lengthInCanvas(canvas, volToIP, corners[1], corners[6]); if(v > max) max = v;
 		v = lengthInCanvas(canvas, volToIP, corners[2], corners[5]); if(v > max) max = v;
 		v = lengthInCanvas(canvas, volToIP, corners[3], corners[4]); if(v > max) max = v;
-		if(max < 0) // outside canvas
+		if(max < 0) {// outside canvas
+			System.out.println("outside of canvas");
 			return OUTSIDE_CANVAS;
+		}
 		return max <= RES_THRESHOLD ? RESOLUTION_SUFFICIENT : RESOLUTION_UNSUFFICIENT;
 	}
 
-	public void display(Canvas3D canvas, Transform3D volToIP) {
+	public void display(Canvas3D canvas, Transform3D volToIP, int axis) {
 		int state = checkResolution(canvas, volToIP);
 		if(state == OUTSIDE_CANVAS)
 			return;
 		if(state == RESOLUTION_UNSUFFICIENT && children != null && children.length != 0)
-			displayChildren(canvas, volToIP);
+			displayChildren(canvas, volToIP, axis);
 		else
-			displaySelf();
+			displaySelf(axis);
 	}
 
 	private void undisplaySubtree() {
@@ -87,35 +86,38 @@ public class Cube implements VolRendConstants {
 			return;
 		for(Cube c : children) {
 			if(c != null) {
-				if(c.displayed)
-					c.undisplaySelf();
+				c.undisplaySelf();
 				c.undisplaySubtree();
 			}
 		}
 	}
 
 	private void undisplaySelf() {
-		cont.undisplayCube(this);
-		displayed = false;
+		if(displayed != -1) {
+			cont.undisplayCube(this);
+			displayed = -1;
+		}
 	}
 
-	private void displaySelf() {
-		if(displayed)
+	private void displaySelf(int axis) {
+		System.out.println("display self");
+		if(displayed == axis)
 			return;
-		undisplaySubtree();
+		if(displayed == -1)
+			undisplaySubtree();
 
-		cont.displayCube(this);
-		displayed = true;
+		displayed = cont.displayCube(this);
 	}
 
-	private void displayChildren(Canvas3D canvas, Transform3D volToIP) {
+	private void displayChildren(Canvas3D canvas, Transform3D volToIP, int axis) {
+		System.out.println("display children");
 		if(children == null)
 			return;
-		if(displayed)
+		if(displayed != -1)
 			undisplaySelf();
 		for(Cube c : children)
 			if(c != null)
-				c.display(canvas, volToIP);
+				c.display(canvas, volToIP, axis);
 	}
 
 	public void createChildren() {

@@ -66,32 +66,38 @@ public class ShapeContainer implements VolRendConstants {
 	private int curAxis = Z_AXIS;
 	private int curDir = FRONT;
 
-	public void displayCube(Cube c) {
+	public int displayCube(Cube c) {
 		System.out.println("display cube " + c);
-		if(c.isDisplayed())
-			return;
+		int whichChild = axisIndex[curAxis][curDir];
+		System.out.println("displayCube: whichChild = " + whichChild);
 
 		ImagePlus imp = IJ.openImage(c.path);
 		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
 		AppearanceCreator appCreator = new AppearanceCreator(volume);
 		GeometryCreator geomCreator = new GeometryCreator(volume);
 
-		OrderedGroup og;
+		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(whichChild);
 		float pos;
-		int dim = Z_AXIS;
+		int dim = volume.zDim;
 		switch(curAxis) {
 			case Z_AXIS: dim = volume.zDim; break;
 			case Y_AXIS: dim = volume.yDim; break;
 			case X_AXIS: dim = volume.xDim; break;
 		}
+		axisSwitch.setWhichChild(whichChild);
+
 		for(int i = 0; i < dim; i++) {
 			GeometryArray g = geomCreator.getQuad(curAxis, i);
 			Appearance a = appCreator.getAppearance(curAxis, i);
 			pos = geomCreator.getPos();
-			og = (OrderedGroup)axisSwitch.getChild(axisIndex[curAxis][curDir]);
-			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+			ShapeGroup sg = new ShapeGroup(new Shape3D(g, a), pos, c.name);
+			if(curDir == FRONT)
+				insertAscending(og, sg, 0, og.numChildren()-1);
+			else
+				insertDescending(og, sg, 0, og.numChildren()-1);
+//			og.addChild(sg);
 		}
-		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
+		return whichChild;
 
 //		for(int i = 0; i < volume.xDim; i++) {
 //			GeometryArray g = geomCreator.getQuad(X_AXIS, i);
@@ -126,20 +132,16 @@ public class ShapeContainer implements VolRendConstants {
 
 	public void undisplayCube(Cube c) {
 		System.out.println("undisplay cube " + c);
-		if(!c.isDisplayed())
-			return;
-
-//		for(int i = 0; i < 6; i++) {
-//			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
-		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(axisIndex[curAxis][curDir]);
-		int n = og.numChildren();
-		for(int k = n-1; k >= 0; k--) {
-			ShapeGroup sg = (ShapeGroup)og.getChild(k);
-			if(sg.getName().equals(c.name)) {
-				og.removeChild(sg);
+		for(int i = 0; i < 6; i++) {
+			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
+			int n = og.numChildren();
+			for(int k = n-1; k >= 0; k--) {
+				ShapeGroup sg = (ShapeGroup)og.getChild(k);
+				if(sg.getName().equals(c.name)) {
+					og.removeChild(sg);
+				}
 			}
 		}
-//		}
 	}
 
 	public void sort() {
@@ -209,6 +211,40 @@ public class ShapeContainer implements VolRendConstants {
 		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
 		og.setCapability(OrderedGroup.ALLOW_CHILD_INDEX_ORDER_WRITE);
 		return og;
+	}
+
+	private static final void insertDescending(OrderedGroup shapes, ShapeGroup s, int left, int right) {
+		if(shapes.numChildren() == 0 || s.pos >= ((ShapeGroup)shapes.getChild(left)).pos)
+			shapes.insertChild(s, left);
+		else if(s.pos <= ((ShapeGroup)shapes.getChild(right)).pos)
+			shapes.insertChild(s, right+1);
+		else {
+			int piv = (left + right) / 2;
+			float pivpos = ((ShapeGroup)shapes.getChild(piv)).pos;
+			if(pivpos > s.pos)
+				insertDescending(shapes, s, piv+1, right);
+			else if(pivpos < s.pos)
+				insertDescending(shapes, s, left, piv-1);
+			else if(pivpos == s.pos)
+				shapes.insertChild(s, piv);
+		}
+	}
+
+	private static final void insertAscending(OrderedGroup shapes, ShapeGroup s, int left, int right) {
+		if(shapes.numChildren() == 0 || s.pos <= ((ShapeGroup)shapes.getChild(left)).pos)
+			shapes.insertChild(s, left);
+		else if(s.pos >= ((ShapeGroup)shapes.getChild(right)).pos)
+			shapes.insertChild(s, right+1);
+		else {
+			int piv = (left + right) / 2;
+			float pivpos = ((ShapeGroup)shapes.getChild(piv)).pos;
+			if(pivpos < s.pos)
+				insertAscending(shapes, s, piv+1, right);
+			else if(pivpos > s.pos)
+				insertAscending(shapes, s, left, piv-1);
+			else if(pivpos == s.pos)
+				shapes.insertChild(s, piv);
+		}
 	}
 
 	private static final void sortDescending(OrderedGroup shapes, int[] indices, int left, int right) {

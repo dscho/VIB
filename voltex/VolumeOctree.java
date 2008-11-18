@@ -25,6 +25,8 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 
 	public static final int SIZE = 64;
 
+	private static final int[][] axisIndex = new int[3][2];
+
 	private String outdir;
 	private ImagePlus imp;
 
@@ -57,6 +59,13 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		ph = c.pixelHeight;
 		pd = c.pixelDepth;
 
+		axisIndex[X_AXIS][FRONT] = 0;
+		axisIndex[X_AXIS][BACK]  = 1;
+		axisIndex[Y_AXIS][FRONT] = 2;
+		axisIndex[Y_AXIS][BACK]  = 3;
+		axisIndex[Z_AXIS][FRONT] = 4;
+		axisIndex[Z_AXIS][BACK]  = 5;
+
 		refPt = new Point3d(xdim*pw / 2, ydim*ph / 2, zdim*pd / 2);
 
 		cont = new ShapeContainer(xdim, ydim, zdim, pw, ph, pd);
@@ -78,9 +87,10 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		volumeToImagePlate.mul(tmp);
 		System.out.println("display: volumeToImagePlate = " + volumeToImagePlate);
 		// recursively display the cubes
-		root.display(canvas, volumeToImagePlate);
+		System.out.println("display: axisIndex[" + curAxis + "][" + curDir+ "] = " + axisIndex[curAxis][curDir]);
+		root.display(canvas, volumeToImagePlate, axisIndex[curAxis][curDir]);
 		// sort the actually displayed cubes according to z-order
-		cont.sort();
+//		cont.sort();
 	}
 
 	public BranchGroup getRootBranchGroup() {
@@ -92,13 +102,17 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	}
 
 	public void create() {
-		int l = createFiles();
+		// For now, skip the creation of files, since I'm testing
+		// with the same file over and over again.
+//		int l = createFiles();
+		int l = 16;
 		imp.close();
 		root = new Cube(cont, outdir, 0, 0, 0, l);
 		root.createChildren();
 	}
 
 	public int createFiles() {
+		System.out.println("create Files");
 		makePowerOfTwo();
 		int w = imp.getWidth(), h = imp.getHeight();
 		int d = imp.getStackSize();
@@ -127,10 +141,12 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 			d = imp.getStackSize();
 			l = l << 1;
 		}
+		System.out.println("Finished create files");
 		return l;
 	}
 
 	private ImagePlus createSubvolume(int x, int y, int z) {
+		System.out.println("create Subvolume("+x+","+y+","+z+")");
 		int w = imp.getWidth(), h = imp.getHeight();
 		int d = imp.getStackSize();
 
