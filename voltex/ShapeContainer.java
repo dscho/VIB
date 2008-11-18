@@ -144,69 +144,8 @@ public class ShapeContainer implements VolRendConstants {
 		}
 	}
 
-	public void sort() {
-		OrderedGroup og;
-		int n;
-		int[] indices;
-		// z-dir
-		og = (OrderedGroup)axisSwitch.getChild(axisIndex[curAxis][curDir]);
-		n = og.numChildren();
-		indices = new int[n];
-		for(int i = 0; i < n; i++)
-			indices[i] = i;
-		if(curDir == FRONT)
-			sortAscending(og, indices, 0, n-1);
-		else
-			sortDescending(og, indices, 0, n-1);
-		og.setChildIndexOrder(indices);
-
-//		// z-dir
-//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
-//		n = og.numChildren();
-//		indices = new int[n];
-//		for(int i = 0; i < n; i++)
-//			indices[i] = i;
-//		sortAscending(og, indices, 0, n-1);
-//		og.setChildIndexOrder(indices);
-//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
-//		for(int i = 0; i < n; i++)
-//			indices[i] = i;
-//		sortDescending(og, indices, 0, n-1);
-//		og.setChildIndexOrder(indices);
-//
-//		// y-dir
-//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
-//		n = og.numChildren();
-//		indices = new int[n];
-//		for(int i = 0; i < n; i++)
-//			indices[i] = i;
-//		sortAscending(og, indices, 0, n-1);
-//		og.setChildIndexOrder(indices);
-//		for(int i = 0; i < n; i++)
-//			indices[i] = i;
-//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
-//		sortDescending(og, indices, 0, n-1);
-//		og.setChildIndexOrder(indices);
-//
-//		// x-dir
-//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
-//		n = og.numChildren();
-//		indices = new int[n];
-//		for(int i = 0; i < n; i++)
-//			indices[i] = i;
-//		sortAscending(og, indices, 0, n-1);
-//		og.setChildIndexOrder(indices);
-//		for(int i = 0; i < n; i++)
-//			indices[i] = i;
-//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
-//		sortDescending(og, indices, 0, n-1);
-//		og.setChildIndexOrder(indices);
-
-	}
-
 	private final Group getOrderedGroup() {
 		OrderedGroup og = new OrderedGroup();
-//		og.setCapability(Group.ALLOW_CHILDREN_READ);
 		og.setCapability(Group.ALLOW_CHILDREN_WRITE);
 		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
 		og.setCapability(OrderedGroup.ALLOW_CHILD_INDEX_ORDER_WRITE);
@@ -245,57 +184,5 @@ public class ShapeContainer implements VolRendConstants {
 			else if(pivpos == s.pos)
 				shapes.insertChild(s, piv);
 		}
-	}
-
-	private static final void sortDescending(OrderedGroup shapes, int[] indices, int left, int right) {
-	     if(right > left) {
-		     int piv = (left + right) / 2;
-		     int pivNew = partitionDescending(shapes, indices, left, right, piv);
-		     sortDescending(shapes, indices, left, pivNew - 1);
-		     sortDescending(shapes, indices, pivNew + 1, right);
-	     }
-	}
-
-	private static final int partitionDescending(OrderedGroup shapes, int[] indices, int left, int right, int piv) {
-		float pivValue = ((ShapeGroup)shapes.getChild(indices[piv])).pos;
-		swap(indices, piv, right);
-		int storeIndex = left;
-		for(int i = left; i < right; i++) {
-			if(((ShapeGroup)shapes.getChild(indices[i])).pos >= pivValue) {
-				swap(indices, i, storeIndex);
-				storeIndex++;
-			}
-		}
-		swap(indices, storeIndex, right);
-		return storeIndex;
-	}
-
-	private static final void sortAscending(OrderedGroup shapes, int[] indices, int left, int right) {
-	     if(right > left) {
-		     int piv = (left + right) / 2;
-		     int pivNew = partitionAscending(shapes, indices, left, right, piv);
-		     sortAscending(shapes, indices, left, pivNew - 1);
-		     sortAscending(shapes, indices, pivNew + 1, right);
-	     }
-	}
-
-	private static final int partitionAscending(OrderedGroup shapes, int[] indices, int left, int right, int piv) {
-		float pivValue = ((ShapeGroup)shapes.getChild(indices[piv])).pos;
-		swap(indices, piv, right);
-		int storeIndex = left;
-		for(int i = left; i < right; i++) {
-			if(((ShapeGroup)shapes.getChild(indices[i])).pos <= pivValue) {
-				swap(indices, i, storeIndex);
-				storeIndex++;
-			}
-		}
-		swap(indices, storeIndex, right);
-		return storeIndex;
-	}
-
-	private static final void swap(int[] array, int ind1, int ind2) {
-		int tmp = array[ind1];
-		array[ind1] = array[ind2];
-		array[ind2] = tmp;
 	}
 }
