@@ -59,7 +59,6 @@ public class ShapeContainer implements VolRendConstants {
 	}
 
 	public void setAxis(int axis, int dir){
-//		axisSwitch.setWhichChild(axisIndex[axis][dir]);
 		this.curAxis = axis;
 		this.curDir = dir;
 	}
@@ -79,35 +78,50 @@ public class ShapeContainer implements VolRendConstants {
 
 		OrderedGroup og;
 		float pos;
-		for(int i = 0; i < volume.xDim; i++) {
-			GeometryArray g = geomCreator.getQuad(X_AXIS, i);
-			Appearance a = appCreator.getAppearance(X_AXIS, i);
+		int dim = Z_AXIS;
+		switch(curAxis) {
+			case Z_AXIS: dim = volume.zDim; break;
+			case Y_AXIS: dim = volume.yDim; break;
+			case X_AXIS: dim = volume.xDim; break;
+		}
+		for(int i = 0; i < dim; i++) {
+			GeometryArray g = geomCreator.getQuad(curAxis, i);
+			Appearance a = appCreator.getAppearance(curAxis, i);
 			pos = geomCreator.getPos();
-			og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
-			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-			og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
+			og = (OrderedGroup)axisSwitch.getChild(axisIndex[curAxis][curDir]);
 			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
 		}
+		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 
-		for(int i = 0; i < volume.yDim; i++) {
-			GeometryArray g = geomCreator.getQuad(Y_AXIS, i);
-			Appearance a = appCreator.getAppearance(Y_AXIS, i);
-			pos = geomCreator.getPos();
-			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
-			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
-			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-		}
-
-		for(int i = 0; i < volume.zDim; i++) {
-			GeometryArray g = geomCreator.getQuad(Z_AXIS, i);
-			Appearance a = appCreator.getAppearance(Z_AXIS, i);
-			pos = geomCreator.getPos();
-			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
-			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
-			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-		}
+//		for(int i = 0; i < volume.xDim; i++) {
+//			GeometryArray g = geomCreator.getQuad(X_AXIS, i);
+//			Appearance a = appCreator.getAppearance(X_AXIS, i);
+//			pos = geomCreator.getPos();
+//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
+//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
+//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+//		}
+//
+//		for(int i = 0; i < volume.yDim; i++) {
+//			GeometryArray g = geomCreator.getQuad(Y_AXIS, i);
+//			Appearance a = appCreator.getAppearance(Y_AXIS, i);
+//			pos = geomCreator.getPos();
+//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
+//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
+//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+//		}
+//
+//		for(int i = 0; i < volume.zDim; i++) {
+//			GeometryArray g = geomCreator.getQuad(Z_AXIS, i);
+//			Appearance a = appCreator.getAppearance(Z_AXIS, i);
+//			pos = geomCreator.getPos();
+//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
+//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
+//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+//		}
 	}
 
 	public void undisplayCube(Cube c) {
@@ -115,64 +129,76 @@ public class ShapeContainer implements VolRendConstants {
 		if(!c.isDisplayed())
 			return;
 
-		for(int i = 0; i < 6; i++) {
-			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
-			int n = og.numChildren();
-			for(int k = n-1; k >= 0; k--) {
-				ShapeGroup sg = (ShapeGroup)og.getChild(k);
-				if(sg.getName().equals(c.name)) {
-					og.removeChild(sg);
-				}
+//		for(int i = 0; i < 6; i++) {
+//			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
+		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(axisIndex[curAxis][curDir]);
+		int n = og.numChildren();
+		for(int k = n-1; k >= 0; k--) {
+			ShapeGroup sg = (ShapeGroup)og.getChild(k);
+			if(sg.getName().equals(c.name)) {
+				og.removeChild(sg);
 			}
 		}
+//		}
 	}
 
 	public void sort() {
 		OrderedGroup og;
 		int n;
 		int[] indices;
-
 		// z-dir
-		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
+		og = (OrderedGroup)axisSwitch.getChild(axisIndex[curAxis][curDir]);
 		n = og.numChildren();
 		indices = new int[n];
 		for(int i = 0; i < n; i++)
 			indices[i] = i;
-		sortAscending(og, indices, 0, n-1);
-		og.setChildIndexOrder(indices);
-		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
-		for(int i = 0; i < n; i++)
-			indices[i] = i;
-		sortDescending(og, indices, 0, n-1);
+		if(curDir == FRONT)
+			sortAscending(og, indices, 0, n-1);
+		else
+			sortDescending(og, indices, 0, n-1);
 		og.setChildIndexOrder(indices);
 
-		// y-dir
-		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
-		n = og.numChildren();
-		indices = new int[n];
-		for(int i = 0; i < n; i++)
-			indices[i] = i;
-		sortAscending(og, indices, 0, n-1);
-		og.setChildIndexOrder(indices);
-		for(int i = 0; i < n; i++)
-			indices[i] = i;
-		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
-		sortDescending(og, indices, 0, n-1);
-		og.setChildIndexOrder(indices);
-
-		// x-dir
-		og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
-		n = og.numChildren();
-		indices = new int[n];
-		for(int i = 0; i < n; i++)
-			indices[i] = i;
-		sortAscending(og, indices, 0, n-1);
-		og.setChildIndexOrder(indices);
-		for(int i = 0; i < n; i++)
-			indices[i] = i;
-		og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
-		sortDescending(og, indices, 0, n-1);
-		og.setChildIndexOrder(indices);
+//		// z-dir
+//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
+//		n = og.numChildren();
+//		indices = new int[n];
+//		for(int i = 0; i < n; i++)
+//			indices[i] = i;
+//		sortAscending(og, indices, 0, n-1);
+//		og.setChildIndexOrder(indices);
+//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
+//		for(int i = 0; i < n; i++)
+//			indices[i] = i;
+//		sortDescending(og, indices, 0, n-1);
+//		og.setChildIndexOrder(indices);
+//
+//		// y-dir
+//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
+//		n = og.numChildren();
+//		indices = new int[n];
+//		for(int i = 0; i < n; i++)
+//			indices[i] = i;
+//		sortAscending(og, indices, 0, n-1);
+//		og.setChildIndexOrder(indices);
+//		for(int i = 0; i < n; i++)
+//			indices[i] = i;
+//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
+//		sortDescending(og, indices, 0, n-1);
+//		og.setChildIndexOrder(indices);
+//
+//		// x-dir
+//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
+//		n = og.numChildren();
+//		indices = new int[n];
+//		for(int i = 0; i < n; i++)
+//			indices[i] = i;
+//		sortAscending(og, indices, 0, n-1);
+//		og.setChildIndexOrder(indices);
+//		for(int i = 0; i < n; i++)
+//			indices[i] = i;
+//		og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
+//		sortDescending(og, indices, 0, n-1);
+//		og.setChildIndexOrder(indices);
 
 	}
 

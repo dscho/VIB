@@ -2,12 +2,7 @@ package voltex;
 
 import java.io.File;
 
-import ij.ImagePlus;
-import ij.IJ;
-import javax.media.j3d.Appearance;
 import javax.media.j3d.Canvas3D;
-import javax.media.j3d.GeometryArray;
-import javax.media.j3d.Shape3D;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
@@ -18,7 +13,7 @@ public class Cube implements VolRendConstants {
 	public static final int RESOLUTION_UNSUFFICIENT = 1;
 	public static final int OUTSIDE_CANVAS          = 2;
 
-	public static final double RES_THRESHOLD = VolumeOctree.SIZE * 4;//Math.sqrt(3);
+	public static final double RES_THRESHOLD = VolumeOctree.SIZE * 2;//Math.sqrt(3);
 
 	final int x, y, z, level;
 	final String path;
@@ -81,7 +76,6 @@ public class Cube implements VolRendConstants {
 		int state = checkResolution(canvas, volToIP);
 		if(state == OUTSIDE_CANVAS)
 			return;
-//		displaySelf();
 		if(state == RESOLUTION_UNSUFFICIENT && children != null && children.length != 0)
 			displayChildren(canvas, volToIP);
 		else
