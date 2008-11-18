@@ -15,7 +15,7 @@ public class ShapeContainer implements VolRendConstants {
 	final double pw, ph, pd;
 	final int CUBE_SIZE = VolumeOctree.SIZE;
 
-	private static final int[][] axisIndex = new int[3][2];
+//	private static final int[][] axisIndex = new int[3][2];
 
 	final Switch axisSwitch;
 
@@ -34,12 +34,12 @@ public class ShapeContainer implements VolRendConstants {
 		System.out.println("zdim = " + zdim);
 
 
-		axisIndex[X_AXIS][FRONT] = 0;
-		axisIndex[X_AXIS][BACK]  = 1;
-		axisIndex[Y_AXIS][FRONT] = 2;
-		axisIndex[Y_AXIS][BACK]  = 3;
-		axisIndex[Z_AXIS][FRONT] = 4;
-		axisIndex[Z_AXIS][BACK]  = 5;
+//		axisIndex[X_AXIS][FRONT] = 0;
+//		axisIndex[X_AXIS][BACK]  = 1;
+//		axisIndex[Y_AXIS][FRONT] = 2;
+//		axisIndex[Y_AXIS][BACK]  = 3;
+//		axisIndex[Z_AXIS][FRONT] = 4;
+//		axisIndex[Z_AXIS][BACK]  = 5;
 
 		axisSwitch = new Switch();
 		axisSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
@@ -55,20 +55,32 @@ public class ShapeContainer implements VolRendConstants {
 
 		axisSwitch.addChild(getOrderedGroup());
 		axisSwitch.addChild(getOrderedGroup());
-		axisSwitch.setWhichChild(axisIndex[Z_AXIS][FRONT]);
+//		axisSwitch.setWhichChild(axisIndex[Z_AXIS][FRONT]);
 	}
 
-	public void setAxis(int axis, int dir){
-		this.curAxis = axis;
-		this.curDir = dir;
+//	public void setAxis(int axis, int dir){
+//		this.curAxis = axis;
+//		this.curDir = dir;
+//	}
+
+//	private int curAxis = Z_AXIS;
+//	private int curDir = FRONT;
+
+	public int countShapeGroups() {
+		int sum = 0;
+		for(int i = 0; i < 6; i++) {
+			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
+			sum += og.numChildren();
+		}
+		return sum;
 	}
 
-	private int curAxis = Z_AXIS;
-	private int curDir = FRONT;
 
-	public int displayCube(Cube c) {
+	public int displayCube(Cube c, int whichChild) {
+		int curAxis = whichChild / 2;
+		int curDir = whichChild % 2;
 		System.out.println("display cube " + c);
-		int whichChild = axisIndex[curAxis][curDir];
+//		int whichChild = axisIndex[curAxis][curDir];
 		System.out.println("displayCube: whichChild = " + whichChild);
 
 		ImagePlus imp = IJ.openImage(c.path);
@@ -79,7 +91,8 @@ public class ShapeContainer implements VolRendConstants {
 		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(whichChild);
 		float pos;
 		int dim = volume.zDim;
-		switch(curAxis) {
+//		switch(curAxis) {
+		switch(whichChild / 2) {
 			case Z_AXIS: dim = volume.zDim; break;
 			case Y_AXIS: dim = volume.yDim; break;
 			case X_AXIS: dim = volume.xDim; break;
@@ -130,17 +143,17 @@ public class ShapeContainer implements VolRendConstants {
 //		}
 	}
 
-	public void undisplayCube(Cube c) {
+	public void undisplayCube(Cube c, int axishint) {
 		System.out.println("undisplay cube " + c);
-		for(int i = 0; i < 6; i++) {
-			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
-			int n = og.numChildren();
-			for(int k = n-1; k >= 0; k--) {
-				ShapeGroup sg = (ShapeGroup)og.getChild(k);
-				if(sg.getName().equals(c.name)) {
-					og.removeChild(sg);
-				}
-			}
+//		for(int i = 0; i < 6; i++) {
+//			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
+		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(axishint);
+		int n = og.numChildren();
+		for(int k = n-1; k >= 0; k--) {
+			ShapeGroup sg = (ShapeGroup)og.getChild(k);
+			if(sg.getName().equals(c.name))
+				og.removeChild(sg);
+//		}
 		}
 	}
 

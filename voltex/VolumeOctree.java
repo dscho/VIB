@@ -75,7 +75,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		bg.setCapability(BranchGroup.ALLOW_DETACH);
 		bg.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
 
-		cont.setAxis(curAxis, curDir);
+//		cont.setAxis(curAxis, curDir);
 	}
 	
 	private Transform3D volumeToImagePlate = new Transform3D();
@@ -91,6 +91,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		root.display(canvas, volumeToImagePlate, axisIndex[curAxis][curDir]);
 		// sort the actually displayed cubes according to z-order
 //		cont.sort();
+		System.out.println("# shapes: " + cont.countShapeGroups());
 	}
 
 	public BranchGroup getRootBranchGroup() {
@@ -238,7 +239,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		if ((axis != curAxis) || (dir != curDir)) {
 			curAxis = axis;
 			curDir = dir;
-			cont.setAxis(axis, dir);
+//			cont.setAxis(axis, dir);
 		}
 	}
 

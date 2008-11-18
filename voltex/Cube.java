@@ -73,8 +73,11 @@ public class Cube implements VolRendConstants {
 
 	public void display(Canvas3D canvas, Transform3D volToIP, int axis) {
 		int state = checkResolution(canvas, volToIP);
-		if(state == OUTSIDE_CANVAS)
+		if(state == OUTSIDE_CANVAS) {
+			undisplaySelf();
+			undisplaySubtree();
 			return;
+		}
 		if(state == RESOLUTION_UNSUFFICIENT && children != null && children.length != 0)
 			displayChildren(canvas, volToIP, axis);
 		else
@@ -94,7 +97,7 @@ public class Cube implements VolRendConstants {
 
 	private void undisplaySelf() {
 		if(displayed != -1) {
-			cont.undisplayCube(this);
+			cont.undisplayCube(this, displayed);
 			displayed = -1;
 		}
 	}
@@ -105,8 +108,10 @@ public class Cube implements VolRendConstants {
 			return;
 		if(displayed == -1)
 			undisplaySubtree();
+		else
+			undisplaySelf();
 
-		displayed = cont.displayCube(this);
+		displayed = cont.displayCube(this, axis);
 	}
 
 	private void displayChildren(Canvas3D canvas, Transform3D volToIP, int axis) {
