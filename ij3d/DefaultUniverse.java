@@ -1,45 +1,19 @@
 package ij3d;
 
 import ij.gui.Toolbar;
-import ij.ImagePlus;
-import ij.process.ImageProcessor;
-import ij.ImageStack;
-import ij.IJ;
 
-import ij3d.ImageWindow3D;
-import ij3d.ImageCanvas3D;
-
-import isosurface.Triangulator;
-import isosurface.MeshGroup;
-
-import voltex.VoltexGroup;
-
-import marchingcubes.MCTriangulator;
-
-import java.awt.Panel;
 import java.awt.Dimension;
-import java.awt.BorderLayout;
-import java.awt.Frame;
 import java.awt.event.*;
-import java.awt.GraphicsConfiguration;
 
-import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.Iterator;
 
 import com.sun.j3d.utils.picking.behaviors.PickingCallback;
-import com.sun.j3d.utils.picking.behaviors.PickRotateBehavior;
-import com.sun.j3d.utils.picking.behaviors.PickTranslateBehavior;
-import com.sun.j3d.utils.picking.PickCanvas;
-import com.sun.j3d.utils.picking.PickResult;
 
 import com.sun.j3d.utils.behaviors.keyboard.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import com.sun.j3d.utils.universe.*;
-import com.sun.j3d.utils.geometry.ColorCube;
-import com.sun.j3d.utils.geometry.Sphere;
 
 import javax.media.j3d.*;
 import javax.vecmath.*;
@@ -147,7 +121,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 		getCanvas().addMouseListener(new MouseAdapter() {
 			public void mouseReleased(MouseEvent e) {
-				if(Toolbar.getToolId() == Toolbar.HAND) {
+				int id = Toolbar.getToolId();
+				if(id == Toolbar.HAND || id == Toolbar.MAGNIFIER) {
 					if(transformed) 
 						fireTransformationFinished();
 					transformed = false;
@@ -156,7 +131,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		});
 		getCanvas().addMouseMotionListener(new MouseMotionAdapter() {
 			public void mouseDragged(MouseEvent e) {
-				if(Toolbar.getToolId() == Toolbar.HAND) {
+				int id = Toolbar.getToolId();
+				if(id == Toolbar.HAND || id == Toolbar.MAGNIFIER) {
 					if(!transformed)
 						fireTransformationStarted();
 					transformed = true;
@@ -272,7 +248,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public void fireContentRemoved(Content c) {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.contentRemoved(c);;
+			l.contentRemoved(c);
 		}
 	}
 
