@@ -1,4 +1,4 @@
-package voltex;
+package octree;
 
 import ij.ImagePlus;
 import javax.media.j3d.Appearance;
@@ -7,6 +7,10 @@ import javax.media.j3d.Group;
 import javax.media.j3d.OrderedGroup;
 import javax.media.j3d.Shape3D;
 import javax.media.j3d.Switch;
+import voltex.AppearanceCreator;
+import voltex.GeometryCreator;
+import voltex.VolRendConstants;
+import voltex.Volume;
 
 public class ShapeContainer implements VolRendConstants {
 	
@@ -101,8 +105,6 @@ public class ShapeContainer implements VolRendConstants {
 
 		ImagePlus imp = CubeOpener.openCube(c.dir, c.name + ".tif");
 		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
-		AppearanceCreator appCreator = new AppearanceCreator(volume);
-		GeometryCreator geomCreator = new GeometryCreator(volume);
 
 		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
 		float pos;
@@ -114,11 +116,7 @@ public class ShapeContainer implements VolRendConstants {
 		}
 
 		for(int i = 0; i < dim; i++) {
-			GeometryArray g = geomCreator.getQuad(curAxis, i);
-			Appearance a = appCreator.getAppearance(curAxis, i);
-			pos = geomCreator.getPos();
-			ShapeGroup sg = new ShapeGroup(new Shape3D(g, a), pos, c.name);
-
+			ShapeGroup sg = ShapeGroupRecycler.instance().newShapeGroup(volume, curAxis, i, c.name);
 			if(curDir == FRONT)
 				insertAscending(og, sg, 0, og.numChildren()-1);
 			else
@@ -134,8 +132,10 @@ public class ShapeContainer implements VolRendConstants {
 		int n = og.numChildren();
 		for(int k = n-1; k >= 0; k--) {
 			ShapeGroup sg = (ShapeGroup)og.getChild(k);
-			if(sg.getName().equals(c.name))
+			if(sg.getName().equals(c.name)) {
 				og.removeChild(sg);
+				ShapeGroupRecycler.instance().deleteShapeGroup(sg);
+			}
 		}
 	}
 

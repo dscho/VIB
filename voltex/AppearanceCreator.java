@@ -16,9 +16,14 @@ public class AppearanceCreator implements VolRendConstants {
 	private Object xData, yData, zData;
 
 	private Volume volume;
+	private static boolean[] defaultChannels = new boolean[]{true, true, true};
+
+	public AppearanceCreator() {
+		initAttributes(null, 0.1f);
+	}
 
 	public AppearanceCreator(Volume volume) {
-		this(volume, null, 0.1f, new boolean[] {true, true, true});
+		this(volume, null, 0.1f, defaultChannels);
 	}
 
 	public AppearanceCreator(Volume volume,
@@ -32,6 +37,10 @@ public class AppearanceCreator implements VolRendConstants {
 		volume = null;
 		xImage = null; yImage = null; zImage = null;
 		xData = null; yData = null; zData = null;
+	}
+
+	public void setVolume(Volume v) {
+		setVolume(v, defaultChannels);
 	}
 
 	public void setVolume(Volume v, boolean[] ch) {
@@ -109,6 +118,7 @@ public class AppearanceCreator implements VolRendConstants {
 
 	public Texture2D getTexture(int axis, int index) {
 		boolean byRef = false;
+//		boolean byRef = true;
 		boolean yUp = true;
 		int sSize = 0, tSize = 0;
 		BufferedImage bImage = null;

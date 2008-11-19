@@ -1,4 +1,4 @@
-package voltex;
+package octree;
 
 import java.io.File;
 
@@ -6,6 +6,7 @@ import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
+import voltex.VolRendConstants;
 
 public class Cube implements VolRendConstants {
 

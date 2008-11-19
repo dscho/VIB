@@ -8,6 +8,8 @@ public class GeometryCreator implements VolRendConstants {
 	private Volume volume;
 	private float pos;
 
+	public GeometryCreator() {}
+
 	public GeometryCreator(Volume volume) {
 		this.volume = volume;
 	}

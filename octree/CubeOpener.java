@@ -1,4 +1,4 @@
-package voltex;
+package octree;
 
 import ij.ImagePlus;
 import ij.ImageStack;

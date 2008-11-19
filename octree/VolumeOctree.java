@@ -1,4 +1,4 @@
-package voltex;
+package octree;
 
 import javax.media.j3d.View;
 import vib.Resample_;
@@ -21,6 +21,8 @@ import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
+import voltex.VolRendConstants;
+import voltex.Renderer;
 
 public class VolumeOctree implements UniverseListener, VolRendConstants {
 
@@ -92,6 +94,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	public void displayInitial(Canvas3D canvas) {
 		cont.displayRoughCube(root);
 		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
+		ShapeGroupRecycler.instance().clearAll();
 		System.out.println("# shapes: " + cont.countShapeGroups());
 	}
 	

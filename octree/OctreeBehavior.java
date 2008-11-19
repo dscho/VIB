@@ -1,4 +1,4 @@
-package voltex;
+package octree;
 
 import ij3d.*;
 

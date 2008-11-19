@@ -140,14 +140,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		octree.update();
 	}
 
-	private voltex.VolumeOctree octree = null;
-	public voltex.VolumeOctree addOctree(ImagePlus image, String name) {
+	private octree.VolumeOctree octree = null;
+	public octree.VolumeOctree addOctree(ImagePlus image, String name) {
 		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
 		ensureScale(image);
-		octree = new voltex.VolumeOctree(image, canvas);
+		octree = new octree.VolumeOctree(image, canvas);
 		try {
 			octree.create();
 			octree.getRootBranchGroup().compile();

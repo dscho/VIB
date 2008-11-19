@@ -55,7 +55,7 @@ abstract public class Renderer implements VolRendConstants {
 	private static Point3d viewPosition = new Point3d();
 	private static Transform3D t = new Transform3D();
 
-	static Point3d getViewPosInLocal(View view, Node node) {
+	public static Point3d getViewPosInLocal(View view, Node node) {
 		if (node == null )
 			return null;
 		if (!node.isLive()) 

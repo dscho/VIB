@@ -1,11 +1,11 @@
-package voltex;
+package octree;
 
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Shape3D;
 
 public class ShapeGroup extends BranchGroup {
 
-	final float pos;
+	float pos;
 
 	public ShapeGroup(Shape3D shape, float pos, String name) {
 		super();
