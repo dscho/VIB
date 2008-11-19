@@ -18,25 +18,25 @@ public class Cube implements VolRendConstants {
 	final int x, y, z, level;
 	final String path;
 	final String name;
+	final String dir;
 
 	private Cube[] children;
 	private Point3d[] corners;
 
-	private String dir;
 	/* the axis in which this cube is displayed. -1 for undisplayed */
 	private int displayed = -1;
 
 	private ShapeContainer cont;
 
 	public Cube(ShapeContainer cont, String dir, int x, int y, int z, int l) {
-		this.dir = dir;
+		this.dir = dir + "/";
 		this.cont = cont;
 		this.x = x;
 		this.y = y;
 		this.z = z;
 		this.level = l;
 		this.name = x + "_" + y + "_" + z + "_" + l;
-		this.path = dir + "/" + name + ".tif";
+		this.path = this.dir + name + ".tif";
 		if(exists()) {
 			double lx = cont.CUBE_SIZE * cont.pw * l;
 			double ly = cont.CUBE_SIZE * cont.ph * l;

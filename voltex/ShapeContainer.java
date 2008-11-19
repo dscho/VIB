@@ -1,6 +1,5 @@
 package voltex;
 
-import ij.IJ;
 import ij.ImagePlus;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.GeometryArray;
@@ -83,7 +82,7 @@ public class ShapeContainer implements VolRendConstants {
 //		int whichChild = axisIndex[curAxis][curDir];
 		System.out.println("displayCube: whichChild = " + whichChild);
 
-		ImagePlus imp = IJ.openImage(c.path);
+		ImagePlus imp = CubeOpener.openCube(c.dir, c.name + ".tif");
 		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
 		AppearanceCreator appCreator = new AppearanceCreator(volume);
 		GeometryCreator geomCreator = new GeometryCreator(volume);
