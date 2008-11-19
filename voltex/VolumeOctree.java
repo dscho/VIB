@@ -88,10 +88,19 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	public void update() {
 		behavior.postId(OctreeBehavior.TRIGGER_ID);
 	}
+
+	public void displayInitial(Canvas3D canvas) {
+		cont.displayRoughCube(root);
+		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
+		System.out.println("# shapes: " + cont.countShapeGroups());
+	}
 	
 	private Transform3D volumeToImagePlate = new Transform3D();
 	private Transform3D tmp = new Transform3D();
-	public void display(Canvas3D canvas) {
+	/*
+	 * This method should only be called from OctreeBehavior
+	 */
+	void display(Canvas3D canvas) {
 		canvas.getImagePlateToVworld(volumeToImagePlate);
 		volumeToImagePlate.invert();
 		bg.getLocalToVworld(tmp);
@@ -246,12 +255,17 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		if ((axis != curAxis) || (dir != curDir)) {
 			curAxis = axis;
 			curDir = dir;
-//			cont.setAxis(axis, dir);
+			cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 		}
 	}
 
-	public void transformationStarted(View view){}
-	public void transformationFinished(View view){}
+	public void transformationStarted(View view){
+		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
+	}
+	public void transformationFinished(View view){
+		update();
+		cont.axisSwitch.setWhichChild(ShapeContainer.DETAIL_AXIS);
+	}
 	public void contentAdded(Content c){}
 	public void contentRemoved(Content c){}
 	public void contentChanged(Content c){}

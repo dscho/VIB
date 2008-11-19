@@ -14,7 +14,9 @@ public class ShapeContainer implements VolRendConstants {
 	final double pw, ph, pd;
 	final int CUBE_SIZE = VolumeOctree.SIZE;
 
-//	private static final int[][] axisIndex = new int[3][2];
+	static final int DETAIL_AXIS = 6;
+
+	private static final int[][] axisIndex = new int[3][2];
 
 	final Switch axisSwitch;
 
@@ -33,12 +35,12 @@ public class ShapeContainer implements VolRendConstants {
 		System.out.println("zdim = " + zdim);
 
 
-//		axisIndex[X_AXIS][FRONT] = 0;
-//		axisIndex[X_AXIS][BACK]  = 1;
-//		axisIndex[Y_AXIS][FRONT] = 2;
-//		axisIndex[Y_AXIS][BACK]  = 3;
-//		axisIndex[Z_AXIS][FRONT] = 4;
-//		axisIndex[Z_AXIS][BACK]  = 5;
+		axisIndex[X_AXIS][FRONT] = 0;
+		axisIndex[X_AXIS][BACK]  = 1;
+		axisIndex[Y_AXIS][FRONT] = 2;
+		axisIndex[Y_AXIS][BACK]  = 3;
+		axisIndex[Z_AXIS][FRONT] = 4;
+		axisIndex[Z_AXIS][BACK]  = 5;
 
 		axisSwitch = new Switch();
 		axisSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
@@ -54,105 +56,86 @@ public class ShapeContainer implements VolRendConstants {
 
 		axisSwitch.addChild(getOrderedGroup());
 		axisSwitch.addChild(getOrderedGroup());
-//		axisSwitch.setWhichChild(axisIndex[Z_AXIS][FRONT]);
+
+		axisSwitch.addChild(getOrderedGroup());
 	}
-
-//	public void setAxis(int axis, int dir){
-//		this.curAxis = axis;
-//		this.curDir = dir;
-//	}
-
-//	private int curAxis = Z_AXIS;
-//	private int curDir = FRONT;
 
 	public int countShapeGroups() {
 		int sum = 0;
-		for(int i = 0; i < 6; i++) {
+		for(int i = 0; i < 7; i++) {
 			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
 			sum += og.numChildren();
 		}
 		return sum;
 	}
 
+	public void displayRoughCube(Cube c) {
+		ImagePlus imp = CubeOpener.openCube(c.dir, c.name + ".tif");
+		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
+		AppearanceCreator appCreator = new AppearanceCreator(volume);
+		GeometryCreator geomCreator = new GeometryCreator(volume);
+		OrderedGroup fg, bg;
+		float pos;
+		int[] axis = new int[] {X_AXIS, Y_AXIS, Z_AXIS};
+		int[] dim  = new int[] {volume.xDim, volume.yDim, volume.zDim};
+
+		for(int ai = 0; ai < 3; ai++) {
+			fg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][FRONT]);
+			bg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][BACK]);
+			for(int i = 0; i < dim[ai]; i++) {
+				GeometryArray g = geomCreator.getQuad(axis[ai], i);
+				Appearance a = appCreator.getAppearance(axis[ai], i);
+				pos = geomCreator.getPos();
+				fg.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+				bg.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+				insertAscending(fg, new ShapeGroup(new Shape3D(g, a), pos, c.name), 0, fg.numChildren()-1);
+				insertDescending(bg, new ShapeGroup(new Shape3D(g, a), pos, c.name), 0, bg.numChildren()-1);
+			}
+		}
+	}
 
 	public int displayCube(Cube c, int whichChild) {
 		int curAxis = whichChild / 2;
 		int curDir = whichChild % 2;
 		System.out.println("display cube " + c);
-//		int whichChild = axisIndex[curAxis][curDir];
-		System.out.println("displayCube: whichChild = " + whichChild);
 
 		ImagePlus imp = CubeOpener.openCube(c.dir, c.name + ".tif");
 		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
 		AppearanceCreator appCreator = new AppearanceCreator(volume);
 		GeometryCreator geomCreator = new GeometryCreator(volume);
 
-		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(whichChild);
+		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
 		float pos;
 		int dim = volume.zDim;
-//		switch(curAxis) {
-		switch(whichChild / 2) {
+		switch(curAxis) {
 			case Z_AXIS: dim = volume.zDim; break;
 			case Y_AXIS: dim = volume.yDim; break;
 			case X_AXIS: dim = volume.xDim; break;
 		}
-		axisSwitch.setWhichChild(whichChild);
 
 		for(int i = 0; i < dim; i++) {
 			GeometryArray g = geomCreator.getQuad(curAxis, i);
 			Appearance a = appCreator.getAppearance(curAxis, i);
 			pos = geomCreator.getPos();
 			ShapeGroup sg = new ShapeGroup(new Shape3D(g, a), pos, c.name);
+
 			if(curDir == FRONT)
 				insertAscending(og, sg, 0, og.numChildren()-1);
 			else
 				insertDescending(og, sg, 0, og.numChildren()-1);
-//			og.addChild(sg);
 		}
 		return whichChild;
-
-//		for(int i = 0; i < volume.xDim; i++) {
-//			GeometryArray g = geomCreator.getQuad(X_AXIS, i);
-//			Appearance a = appCreator.getAppearance(X_AXIS, i);
-//			pos = geomCreator.getPos();
-//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][FRONT]);
-//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[X_AXIS][BACK]);
-//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-//		}
-//
-//		for(int i = 0; i < volume.yDim; i++) {
-//			GeometryArray g = geomCreator.getQuad(Y_AXIS, i);
-//			Appearance a = appCreator.getAppearance(Y_AXIS, i);
-//			pos = geomCreator.getPos();
-//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][FRONT]);
-//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Y_AXIS][BACK]);
-//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-//		}
-//
-//		for(int i = 0; i < volume.zDim; i++) {
-//			GeometryArray g = geomCreator.getQuad(Z_AXIS, i);
-//			Appearance a = appCreator.getAppearance(Z_AXIS, i);
-//			pos = geomCreator.getPos();
-//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][FRONT]);
-//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-//			og = (OrderedGroup)axisSwitch.getChild(axisIndex[Z_AXIS][BACK]);
-//			og.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-//		}
 	}
 
 	public void undisplayCube(Cube c, int axishint) {
 		System.out.println("undisplay cube " + c);
-//		for(int i = 0; i < 6; i++) {
-//			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
-		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(axishint);
+//		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(axishint);
+		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
 		int n = og.numChildren();
 		for(int k = n-1; k >= 0; k--) {
 			ShapeGroup sg = (ShapeGroup)og.getChild(k);
 			if(sg.getName().equals(c.name))
 				og.removeChild(sg);
-//		}
 		}
 	}
 
