@@ -137,7 +137,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void updateOctree() {
-		octree.display(canvas);
+		octree.update();
 	}
 
 	private voltex.VolumeOctree octree = null;
@@ -147,12 +147,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			return null;
 		}
 		ensureScale(image);
-		octree = new voltex.VolumeOctree(image);
+		octree = new voltex.VolumeOctree(image, canvas);
 		try {
 			octree.create();
-			octree.display(canvas);
 			octree.getRootBranchGroup().compile();
 			scene.addChild(octree.getRootBranchGroup());
+			octree.display(canvas);
 			this.addUniverseListener(octree);
 		} catch(Exception e) {
 			e.printStackTrace();

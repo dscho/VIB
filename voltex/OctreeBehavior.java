@@ -2,61 +2,38 @@ package voltex;
 
 import ij3d.*;
 
-import java.awt.event.*;
-import java.awt.*;
-
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import ij.gui.Toolbar;
 import java.util.Enumeration;
 
 public class OctreeBehavior extends Behavior {
 
-	private DefaultUniverse univ;
+	public static final int TRIGGER_ID = 1;
 
-	private WakeupOnAWTEvent[] mouseEvents;
-	private WakeupCondition wakeupCriterion;
+	private WakeupOnBehaviorPost postCrit;
 
-	private int toolID;
+	private Canvas3D canvas;
+	private VolumeOctree octree;
 
-	public OctreeBehavior(DefaultUniverse univ) {
-		this.univ = univ;
-		mouseEvents = new WakeupOnAWTEvent[5];
+
+	public OctreeBehavior(Canvas3D canvas, VolumeOctree octree) {
+		this.canvas = canvas;
+		this.octree = octree;
+		postCrit = new WakeupOnBehaviorPost(null, TRIGGER_ID);
 	}
 
 	public void initialize() {
-		mouseEvents[0]= new WakeupOnAWTEvent(MouseEvent.MOUSE_DRAGGED);
-		mouseEvents[1]= new WakeupOnAWTEvent(MouseEvent.MOUSE_PRESSED);
-		mouseEvents[2]= new WakeupOnAWTEvent(MouseEvent.MOUSE_RELEASED);
-		mouseEvents[3]= new WakeupOnAWTEvent(MouseEvent.MOUSE_WHEEL);
-		mouseEvents[4]= new WakeupOnAWTEvent(AWTEvent.KEY_EVENT_MASK);
-		wakeupCriterion = new WakeupOr(mouseEvents);
-		this.wakeupOn(wakeupCriterion);
+		wakeupOn(postCrit);
 	}
 
 	public void processStimulus(Enumeration criteria) {
-		toolID = Toolbar.getToolId();
-		if(toolID != Toolbar.HAND && toolID != Toolbar.MAGNIFIER &&
-				toolID != Toolbar.POINT) {
-			wakeupOn (wakeupCriterion);
-			return;
-		}
-		WakeupOnAWTEvent wakeup;
-		AWTEvent[] events;
-		AWTEvent evt;
+		WakeupOnBehaviorPost wakeup;
 		while(criteria.hasMoreElements()) {
-			wakeup = (WakeupOnAWTEvent)criteria.nextElement();
-			events = (AWTEvent[])wakeup.getAWTEvent();
-			if(events.length > 0) {
-				evt = events[events.length -1];
-				if(evt instanceof MouseEvent)
-					;//doProcess((MouseEvent)evt);
-				if(evt instanceof KeyEvent)
-					;//doProcess((KeyEvent)evt);
-			}
+			wakeup = (WakeupOnBehaviorPost)criteria.nextElement();
+			octree.display(canvas);
 		}
-		wakeupOn(wakeupCriterion);
+		wakeupOn(postCrit);
 	}
 }
 

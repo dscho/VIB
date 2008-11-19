@@ -15,6 +15,7 @@ import ij.process.ByteProcessor;
 import ij.io.FileSaver;
 
 import ij.measure.Calibration;
+import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Transform3D;
@@ -40,8 +41,9 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	private final int xdim, ydim, zdim;
 	private final double pw, ph, pd;
 	private final Point3d refPt;
+	private OctreeBehavior behavior;
 
-	public VolumeOctree(ImagePlus imp) {
+	public VolumeOctree(ImagePlus imp, Canvas3D canvas) {
 		this.imp = imp;
 		String basename = imp.getTitle();
 		if(basename.toLowerCase().endsWith(".tif"))
@@ -75,7 +77,16 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		bg.setCapability(BranchGroup.ALLOW_DETACH);
 		bg.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
 
+		behavior = new OctreeBehavior(canvas, this);
+		behavior.setSchedulingBounds(new BoundingSphere());
+		behavior.setEnable(true);
+		bg.addChild(behavior);
+
 //		cont.setAxis(curAxis, curDir);
+	}
+
+	public void update() {
+		behavior.postId(OctreeBehavior.TRIGGER_ID);
 	}
 	
 	private Transform3D volumeToImagePlate = new Transform3D();
@@ -85,12 +96,8 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		volumeToImagePlate.invert();
 		bg.getLocalToVworld(tmp);
 		volumeToImagePlate.mul(tmp);
-		System.out.println("display: volumeToImagePlate = " + volumeToImagePlate);
 		// recursively display the cubes
-		System.out.println("display: axisIndex[" + curAxis + "][" + curDir+ "] = " + axisIndex[curAxis][curDir]);
 		root.display(canvas, volumeToImagePlate, axisIndex[curAxis][curDir]);
-		// sort the actually displayed cubes according to z-order
-//		cont.sort();
 		System.out.println("# shapes: " + cont.countShapeGroups());
 	}
 
