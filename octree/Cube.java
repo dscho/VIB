@@ -26,6 +26,7 @@ public class Cube implements VolRendConstants {
 
 	/* the axis in which this cube is displayed. -1 for undisplayed */
 	private int displayed = -1;
+	private CubeData cdata;
 
 	private ShapeContainer cont;
 
@@ -58,15 +59,17 @@ public class Cube implements VolRendConstants {
 		return new File(path).exists();
 	}
 
+	public CubeData getCubeData() {
+		return cdata;
+	}
+
 	public int checkResolution(Canvas3D canvas, Transform3D volToIP) {
-		System.out.print("... checkResolution...");
 		double max, v;
 		max = lengthInCanvas(canvas, volToIP, corners[0], corners[7]);
 		v = lengthInCanvas(canvas, volToIP, corners[1], corners[6]); if(v > max) max = v;
 		v = lengthInCanvas(canvas, volToIP, corners[2], corners[5]); if(v > max) max = v;
 		v = lengthInCanvas(canvas, volToIP, corners[3], corners[4]); if(v > max) max = v;
 		if(max < 0) {// outside canvas
-			System.out.println("outside of canvas");
 			return OUTSIDE_CANVAS;
 		}
 		return max <= RES_THRESHOLD ? RESOLUTION_SUFFICIENT : RESOLUTION_UNSUFFICIENT;
@@ -99,12 +102,13 @@ public class Cube implements VolRendConstants {
 	private void undisplaySelf() {
 		if(displayed != -1) {
 			cont.undisplayCube(this, displayed);
+			// TODO recycle
+			cdata = null;
 			displayed = -1;
 		}
 	}
 
 	private void displaySelf(int axis) {
-		System.out.println("display self");
 		if(displayed == axis)
 			return;
 		if(displayed == -1)
@@ -112,11 +116,18 @@ public class Cube implements VolRendConstants {
 		else
 			undisplaySelf();
 
-		displayed = cont.displayCube(this, axis);
+		cdata = new CubeData(path, x * cont.pw, y * cont.ph, z * cont.pd);
+		try {
+			cdata.loadZData();
+			cdata.createXData();
+			cdata.createYData();
+			displayed = cont.displayCube(this, axis);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void displayChildren(Canvas3D canvas, Transform3D volToIP, int axis) {
-		System.out.println("display children");
 		if(children == null)
 			return;
 		if(displayed != -1)
