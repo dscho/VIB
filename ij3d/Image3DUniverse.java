@@ -152,7 +152,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			octree.create();
 			octree.getRootBranchGroup().compile();
 			scene.addChild(octree.getRootBranchGroup());
-			octree.displayInitial(canvas);
+			octree.displayInitial();
 			this.addUniverseListener(octree);
 		} catch(Exception e) {
 			e.printStackTrace();

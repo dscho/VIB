@@ -1,5 +1,6 @@
 package octree;
 
+import ij.IJ;
 import javax.media.j3d.View;
 import vib.Resample_;
 
@@ -12,9 +13,9 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ByteProcessor;
 
-import ij.io.FileSaver;
-
 import ij.measure.Calibration;
+import java.io.FileWriter;
+import java.util.Properties;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
@@ -41,7 +42,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	private int curDir = FRONT;
 
 	private final int xdim, ydim, zdim;
-	private final double pw, ph, pd;
+	private final float pw, ph, pd;
 	private final Point3d refPt;
 	private OctreeBehavior behavior;
 
@@ -59,9 +60,9 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		zdim = nextPow2(imp.getStackSize());
 
 		Calibration c = imp.getCalibration();
-		pw = c.pixelWidth;
-		ph = c.pixelHeight;
-		pd = c.pixelDepth;
+		pw = (float)c.pixelWidth;
+		ph = (float)c.pixelHeight;
+		pd = (float)c.pixelDepth;
 
 		axisIndex[X_AXIS][FRONT] = 0;
 		axisIndex[X_AXIS][BACK]  = 1;
@@ -91,7 +92,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		behavior.postId(OctreeBehavior.TRIGGER_ID);
 	}
 
-	public void displayInitial(Canvas3D canvas) {
+	public void displayInitial() {
 		cont.displayRoughCube(root);
 		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 		ShapeGroupRecycler.instance().clearAll();
@@ -145,8 +146,9 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 						String path = outdir + "/" + (x*l) + "_" + (y*l) + "_" + (z*l) + "_" + l + ".tif";
 						if(new File(path).exists())
 							continue;
-						ImagePlus tmp = createSubvolume(x, y, z);
-						new FileSaver(tmp).saveAsTiffStack(path);
+						ImagePlus im = createSubvolume(x, y, z);
+//						new FileSaver(tmp).saveAsTiffStack(path);
+						saveCube(im, path);
 					}
 				}
 			}
@@ -163,6 +165,22 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		}
 		System.out.println("Finished create files");
 		return l;
+	}
+
+	private void saveCube(ImagePlus image, String path) {
+		byte[][] data = new byte[SIZE][];
+		ImageStack stack = image.getStack();
+		Calibration cal = image.getCalibration();
+		for(int z = 0; z < SIZE; z++)
+			data[z] = (byte[])stack.getPixels(z+1);
+		try {
+			CubeData.writeZData(path, data, 
+				(float)cal.pixelWidth,
+				(float)cal.pixelHeight,
+				(float)cal.pixelDepth);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	private ImagePlus createSubvolume(int x, int y, int z) {
