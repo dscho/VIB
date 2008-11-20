@@ -28,9 +28,8 @@ public class OctreeBehavior extends Behavior {
 	}
 
 	public void processStimulus(Enumeration criteria) {
-		WakeupOnBehaviorPost wakeup;
 		while(criteria.hasMoreElements()) {
-			wakeup = (WakeupOnBehaviorPost)criteria.nextElement();
+			criteria.nextElement();
 			octree.display(canvas);
 		}
 		wakeupOn(postCrit);

@@ -101,7 +101,7 @@ public class Cube implements VolRendConstants {
 
 	private void undisplaySelf() {
 		if(displayed != -1) {
-			cont.undisplayCube(this, displayed);
+			cont.undisplayCube(this);
 			// TODO recycle
 			cdata = null;
 			displayed = -1;
