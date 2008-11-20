@@ -1,21 +1,15 @@
 package octree;
 
 import ij.ImagePlus;
-import javax.media.j3d.Appearance;
-import javax.media.j3d.GeometryArray;
 import javax.media.j3d.Group;
 import javax.media.j3d.OrderedGroup;
-import javax.media.j3d.Shape3D;
 import javax.media.j3d.Switch;
-import voltex.AppearanceCreator;
-import voltex.GeometryCreator;
 import voltex.VolRendConstants;
-import voltex.Volume;
 
 public class ShapeContainer implements VolRendConstants {
 	
 	final int xdim, ydim, zdim;
-	final double pw, ph, pd;
+	final float pw, ph, pd;
 	final int CUBE_SIZE = VolumeOctree.SIZE;
 
 	static final int DETAIL_AXIS = 6;
@@ -25,7 +19,7 @@ public class ShapeContainer implements VolRendConstants {
 	final Switch axisSwitch;
 
 	public ShapeContainer(int xdim, int ydim, int zdim,
-			double pw, double ph, double pd) {
+			float pw, float ph, float pd) {
 		this.xdim = xdim;
 		this.ydim = ydim;
 		this.zdim = zdim;
@@ -74,26 +68,36 @@ public class ShapeContainer implements VolRendConstants {
 	}
 
 	public void displayRoughCube(Cube c) {
-		ImagePlus imp = CubeOpener.openCube(c.dir, c.name + ".tif");
-		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
-		AppearanceCreator appCreator = new AppearanceCreator(volume);
-		GeometryCreator geomCreator = new GeometryCreator(volume);
+//		ImagePlus imp = CubeOpener.openCube(c.dir, c.name + ".tif");
+//		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
+//		AppearanceCreator appCreator = new AppearanceCreator(volume);
+//		GeometryCreator geomCreator = new GeometryCreator(volume);
 		OrderedGroup fg, bg;
-		float pos;
+//		float pos;
 		int[] axis = new int[] {X_AXIS, Y_AXIS, Z_AXIS};
-		int[] dim  = new int[] {volume.xDim, volume.yDim, volume.zDim};
+		CubeData cdata = new CubeData(c.path, pw * c.x, ph * c.y, pd * c.z);
+		try {
+			cdata.loadZData();
+			cdata.createXData();
+			cdata.createYData();
+		} catch(Exception e) {
+			e.printStackTrace();
+			return;
+		}
 
 		for(int ai = 0; ai < 3; ai++) {
 			fg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][FRONT]);
 			bg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][BACK]);
-			for(int i = 0; i < dim[ai]; i++) {
-				GeometryArray g = geomCreator.getQuad(axis[ai], i);
-				Appearance a = appCreator.getAppearance(axis[ai], i);
-				pos = geomCreator.getPos();
-				fg.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-				bg.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
-				insertAscending(fg, new ShapeGroup(new Shape3D(g, a), pos, c.name), 0, fg.numChildren()-1);
-				insertDescending(bg, new ShapeGroup(new Shape3D(g, a), pos, c.name), 0, bg.numChildren()-1);
+			for(int i = 0; i < CUBE_SIZE; i++) {
+//				GeometryArray g = geomCreator.getQuad(axis[ai], i);
+//				Appearance a = appCreator.getAppearance(axis[ai], i);
+//				pos = geomCreator.getPos();
+//				fg.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+//				bg.addChild(new ShapeGroup(new Shape3D(g, a), pos, c.name));
+//				insertAscending(fg, new ShapeGroup(new Shape3D(g, a), pos, c.name), 0, fg.numChildren()-1);
+//				insertDescending(bg, new ShapeGroup(new Shape3D(g, a), pos, c.name), 0, bg.numChildren()-1);
+				insertAscending(fg, new ShapeGroup(cdata, axis[ai], i, c.name), 0, fg.numChildren()-1);
+				insertDescending(bg, new ShapeGroup(cdata, axis[ai], i, c.name), 0, bg.numChildren()-1);
 			}
 		}
 	}
@@ -104,19 +108,19 @@ public class ShapeContainer implements VolRendConstants {
 		System.out.println("display cube " + c);
 
 		ImagePlus imp = CubeOpener.openCube(c.dir, c.name + ".tif");
-		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
+//		Volume volume = new Volume(imp, Volume.TRANSLUCENT);
 
 		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
-		float pos;
-		int dim = volume.zDim;
-		switch(curAxis) {
-			case Z_AXIS: dim = volume.zDim; break;
-			case Y_AXIS: dim = volume.yDim; break;
-			case X_AXIS: dim = volume.xDim; break;
-		}
+//		int dim = volume.zDim;
+//		switch(curAxis) {
+//			case Z_AXIS: dim = volume.zDim; break;
+//			case Y_AXIS: dim = volume.yDim; break;
+//			case X_AXIS: dim = volume.xDim; break;
+//		}
 
-		for(int i = 0; i < dim; i++) {
-			ShapeGroup sg = ShapeGroupRecycler.instance().newShapeGroup(volume, curAxis, i, c.name);
+		for(int i = 0; i < CUBE_SIZE; i++) {
+//			ShapeGroup sg = ShapeGroupRecycler.instance().newShapeGroup(volume, curAxis, i, c.name);
+			ShapeGroup sg = ShapeGroupRecycler.instance().newShapeGroup(c.getCubeData(), curAxis, i, c.name);
 			if(curDir == FRONT)
 				insertAscending(og, sg, 0, og.numChildren()-1);
 			else
