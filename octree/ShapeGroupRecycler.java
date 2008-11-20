@@ -36,6 +36,10 @@ public class ShapeGroupRecycler {
 		return instance;
 	}
 
+	public ShapeGroup newShapeGroup(CubeData cdata, int axis, int index, String name) {
+		return new ShapeGroup(cdata, axis, index, name);
+	}
+
 	public ShapeGroup newShapeGroup(Volume volume, int axis, int index, String name) {
 		if(lastVolume == null || volume != lastVolume) {
 			geomCreator.setVolume(volume);
