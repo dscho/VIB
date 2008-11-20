@@ -60,7 +60,7 @@ public class AppearanceCreator implements VolRendConstants {
 		colAttr.setColor(c);
 	}
 
-	private Texture2D getTexture(CubeData cdata, int axis, int index) {
+	Texture2D getTexture(CubeData cdata, int axis, int index) {
 		BufferedImage bImage = null;
 		switch (axis) {
 			case Z_AXIS: bImage = cdata.zImages[index]; break;
@@ -81,7 +81,7 @@ public class AppearanceCreator implements VolRendConstants {
 		return tex;
 	}
 
-	private TexCoordGeneration getTg(CubeData cdata, int axis, int index) {
+	TexCoordGeneration getTg(CubeData cdata, int axis, int index) {
 		switch(axis) {
 			case X_AXIS: return cdata.xTg;
 			case Y_AXIS: return cdata.yTg;

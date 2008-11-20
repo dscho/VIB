@@ -63,6 +63,18 @@ public class Cube implements VolRendConstants {
 		return cdata;
 	}
 
+	public void setAllUndisplayed() {
+		if(displayed != -1) {
+			CubeDataRecycler.instance().deleteCubeData(cdata);
+			cdata = null;
+			displayed = -1;
+		}
+		if(children != null)
+			for(Cube c : children)
+				if(c != null)
+					c.setAllUndisplayed();
+	}
+
 	public int checkResolution(Canvas3D canvas, Transform3D volToIP) {
 		double max, v;
 		max = lengthInCanvas(canvas, volToIP, corners[0], corners[7]);
@@ -102,7 +114,7 @@ public class Cube implements VolRendConstants {
 	private void undisplaySelf() {
 		if(displayed != -1) {
 			cont.undisplayCube(this);
-			// TODO recycle
+			CubeDataRecycler.instance().deleteCubeData(cdata);
 			cdata = null;
 			displayed = -1;
 		}

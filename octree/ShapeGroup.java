@@ -1,11 +1,14 @@
 package octree;
 
+import java.awt.image.BufferedImage;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.GeometryArray;
+import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Shape3D;
+import voltex.VolRendConstants;
 
-public class ShapeGroup extends BranchGroup {
+public class ShapeGroup extends BranchGroup implements VolRendConstants {
 
 	float pos;
 
@@ -21,7 +24,18 @@ public class ShapeGroup extends BranchGroup {
 
 	void setCubeData(CubeData cdata, int axis, int index, String name) {
 		Shape3D shape = (Shape3D)this.getChild(0);
-		shape.setGeometry(createGeometry(cdata, axis, index));
+		((GeometryArray)shape.getGeometry()).setCoordinates(0, 
+			GeometryCreator.instance().getQuadCoordinates(cdata, axis, index));
+		this.pos = GeometryCreator.instance().getPos();
+		Appearance app = shape.getAppearance();
+		app.setTexCoordGeneration(AppearanceCreator.instance().getTg(cdata, axis, index));
+		BufferedImage img = null;
+		switch(axis) {
+			case X_AXIS: img = cdata.xImages[index];
+			case Y_AXIS: img = cdata.yImages[index];
+			case Z_AXIS: img = cdata.zImages[index];
+		}
+		((ImageComponent2D)app.getTexture().getImage(0)).set(img);
 		shape.setAppearance(createAppearance(cdata, axis, index));
 		this.setName(name);
 	}

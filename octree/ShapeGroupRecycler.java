@@ -1,13 +1,12 @@
 package octree;
 
 import java.util.LinkedList;
-import java.util.List;
 
 public class ShapeGroupRecycler {
 	
 	private static ShapeGroupRecycler instance = null;
 	
-	private List<ShapeGroup> pool;
+	private LinkedList<ShapeGroup> pool;
 
 	private ShapeGroupRecycler() {
 		pool = new LinkedList<ShapeGroup>();
@@ -24,7 +23,11 @@ public class ShapeGroupRecycler {
 	}
 
 	public ShapeGroup newShapeGroup(CubeData cdata, int axis, int index, String name) {
-		return new ShapeGroup(cdata, axis, index, name);
+		ShapeGroup sg = pool.pollFirst();
+		if(sg == null)
+			return new ShapeGroup(cdata, axis, index, name);
+		sg.setCubeData(cdata, axis, index, name);
+		return sg;
 	}
 
 	public void deleteShapeGroup(ShapeGroup sg) {

@@ -67,6 +67,10 @@ public class ShapeContainer implements VolRendConstants {
 		return sum;
 	}
 
+	void removeAllCubes() {
+		((OrderedGroup)axisSwitch.getChild(DETAIL_AXIS)).removeAllChildren();
+	}
+
 	public void displayRoughCube(Cube c) {
 		OrderedGroup fg, bg;
 		int[] axis = new int[] {X_AXIS, Y_AXIS, Z_AXIS};

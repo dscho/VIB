@@ -5,7 +5,7 @@ import voltex.VolRendConstants;
 
 public class GeometryCreator implements VolRendConstants {
 
-	private double[] quadCoords = new double[12];
+	private float[] quadCoords = new float[12];
 	private float pos;
 	private static GeometryCreator instance;
 
@@ -31,6 +31,11 @@ public class GeometryCreator implements VolRendConstants {
 		return quadArray;
 	}
 
+	public float[] getQuadCoordinates(CubeData cdata, int axis, int index) {
+		calculateQuad(cdata, axis, index);
+		return quadCoords;
+	}
+
 	private void calculateQuad(CubeData cdata, int axis, int index) {
 		switch(axis) {
 			case X_AXIS: 	
@@ -52,7 +57,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordX(int i, CubeData cdata) {
-		double curX = i * cdata.pw + cdata.minX;
+		float curX = i * cdata.pw + cdata.minX;
 		pos = (float)curX;
 		quadCoords[0] = curX;
 		quadCoords[3] = curX;
@@ -61,7 +66,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordY(int i, CubeData cdata) {
-		double curY = i * cdata.ph + cdata.minY;
+		float curY = i * cdata.ph + cdata.minY;
 		pos = (float)curY;
 		quadCoords[1] = curY;
 		quadCoords[4] = curY;
@@ -70,7 +75,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordZ(int i, CubeData cdata) {
-		double curZ = i * cdata.pd + cdata.minZ;
+		float curZ = i * cdata.pd + cdata.minZ;
 		pos = (float)curZ;
 		quadCoords[2] = curZ;
 		quadCoords[5] = curZ;
