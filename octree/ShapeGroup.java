@@ -9,14 +9,6 @@ public class ShapeGroup extends BranchGroup {
 
 	float pos;
 
-	public ShapeGroup(Shape3D shape, float pos, String name) {
-		super();
-		this.setCapability(ALLOW_DETACH);
-		this.addChild(shape);
-		this.setName(name);
-		this.pos = pos;
-	}
-
 	public ShapeGroup(CubeData cdata, int axis, int index, String name) {
 		super();
 		this.setCapability(ALLOW_DETACH);

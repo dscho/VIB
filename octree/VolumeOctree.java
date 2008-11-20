@@ -1,6 +1,5 @@
 package octree;
 
-import ij.IJ;
 import javax.media.j3d.View;
 import vib.Resample_;
 
@@ -84,8 +83,6 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		behavior.setSchedulingBounds(new BoundingSphere());
 		behavior.setEnable(true);
 		bg.addChild(behavior);
-
-//		cont.setAxis(curAxis, curDir);
 	}
 
 	public void update() {
@@ -147,7 +144,6 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 						if(new File(path).exists())
 							continue;
 						ImagePlus im = createSubvolume(x, y, z);
-//						new FileSaver(tmp).saveAsTiffStack(path);
 						saveCube(im, path);
 					}
 				}
