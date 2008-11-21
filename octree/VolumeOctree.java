@@ -87,6 +87,11 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		behavior.postId(OctreeBehavior.TRIGGER_ID);
 	}
 
+	public void cancel() {
+		if(!isUpdateFinished())
+			cont.setCancelUpdating(true);
+	}
+
 	public void displayInitial() {
 		cont.displayRoughCube(root);
 		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
@@ -100,7 +105,9 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	/*
 	 * This method should only be called from OctreeBehavior
 	 */
+	private boolean updateFinished = true;
 	void display(Canvas3D canvas) {
+		setUpdateFinished(false);
 		canvas.getImagePlateToVworld(volumeToImagePlate);
 		volumeToImagePlate.invert();
 		bg.getLocalToVworld(tmp);
@@ -109,7 +116,17 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		cont.removeAllCubes();
 		root.setAllUndisplayed();
 		root.display(canvas, volumeToImagePlate, axisIndex[curAxis][curDir]);
+		setUpdateFinished(true);
+		cont.setCancelUpdating(false);
 		System.out.println("# shapes: " + cont.countShapeGroups());
+	}
+
+	public synchronized boolean isUpdateFinished() {
+		return updateFinished;
+	}
+
+	public synchronized void setUpdateFinished(boolean b) {
+		this.updateFinished = b;
 	}
 
 	public BranchGroup getRootBranchGroup() {
@@ -278,6 +295,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	}
 
 	public void transformationStarted(View view){
+		cancel();
 		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 	}
 	public void transformationFinished(View view){

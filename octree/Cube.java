@@ -88,6 +88,8 @@ public class Cube implements VolRendConstants {
 	}
 
 	public void display(Canvas3D canvas, Transform3D volToIP, int axis) {
+		if(cont.isCancelUpdating())
+			return;
 		int state = checkResolution(canvas, volToIP);
 		if(state == OUTSIDE_CANVAS) {
 			undisplaySelf();

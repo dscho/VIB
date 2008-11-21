@@ -15,6 +15,8 @@ public class ShapeContainer implements VolRendConstants {
 
 	private static final int[][] axisIndex = new int[3][2];
 
+	private boolean cancelUpdating = false;
+
 	final Switch axisSwitch;
 
 	public ShapeContainer(int xdim, int ydim, int zdim,
@@ -57,6 +59,14 @@ public class ShapeContainer implements VolRendConstants {
 		axisSwitch.addChild(getOrderedGroup());
 	}
 
+	public synchronized boolean isCancelUpdating() {
+		return cancelUpdating;
+	}
+
+	public synchronized void setCancelUpdating(boolean b) {
+		cancelUpdating = b;
+	}
+
 	public int countShapeGroups() {
 		int sum = 0;
 		for(int i = 0; i < 7; i++) {
@@ -95,7 +105,7 @@ public class ShapeContainer implements VolRendConstants {
 	}
 
 	public int displayCube(Cube c, int whichChild) {
-		System.out.println("display cube " + c);
+//		System.out.println("display cube " + c);
 		int curAxis = whichChild / 2;
 		int curDir = whichChild % 2;
 
@@ -112,7 +122,7 @@ public class ShapeContainer implements VolRendConstants {
 	}
 
 	public void undisplayCube(Cube c) {
-		System.out.println("undisplay cube " + c);
+//		System.out.println("undisplay cube " + c);
 		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
 		int n = og.numChildren();
 		for(int k = n-1; k >= 0; k--) {
