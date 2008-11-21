@@ -95,7 +95,6 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	public void displayInitial() {
 		cont.displayRoughCube(root);
 		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
-		CubeDataRecycler.instance().clearAll();
 		System.out.println("# shapes: " + cont.countShapeGroups());
 	}
 	
@@ -113,6 +112,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		volumeToImagePlate.mul(tmp);
 		// recursively display the cubes
 		root.display(canvas, volumeToImagePlate, curAxis, curDir);
+		CubeDataRecycler.instance().clearAll();
 		setUpdateFinished(true);
 		if(cont.isCancelUpdating())
 			cont.setCancelUpdating(false);
