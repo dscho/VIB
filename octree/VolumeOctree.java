@@ -117,7 +117,10 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		root.setAllUndisplayed();
 		root.display(canvas, volumeToImagePlate, axisIndex[curAxis][curDir]);
 		setUpdateFinished(true);
-		cont.setCancelUpdating(false);
+		if(cont.isCancelUpdating())
+			cont.setCancelUpdating(false);
+		else
+			new Thread() {public void run() {System.gc();}}.start();
 		System.out.println("# shapes: " + cont.countShapeGroups());
 	}
 
