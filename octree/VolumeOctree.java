@@ -13,8 +13,6 @@ import ij.ImageStack;
 import ij.process.ByteProcessor;
 
 import ij.measure.Calibration;
-import java.io.FileWriter;
-import java.util.Properties;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
@@ -26,7 +24,7 @@ import voltex.Renderer;
 
 public class VolumeOctree implements UniverseListener, VolRendConstants {
 
-	public static final int SIZE = 64;
+	public static final int SIZE = 128;
 
 	private static final int[][] axisIndex = new int[3][2];
 
@@ -126,7 +124,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		// For now, skip the creation of files, since I'm testing
 		// with the same file over and over again.
 //		int l = createFiles();
-		int l = 16;
+		int l = 8;
 		imp.close();
 		root = new Cube(cont, outdir, 0, 0, 0, l);
 		root.createChildren();
