@@ -24,7 +24,7 @@ public class Cube implements VolRendConstants {
 	private Cube[] children;
 	private Point3d[] corners;
 
-	/* the axis in which this cube is displayed. -1 for undisplayed */
+	/* the direction in which this cube is displayed. -1 for undisplayed */
 	private int displayed = -1;
 	private CubeData cdata;
 
@@ -87,7 +87,7 @@ public class Cube implements VolRendConstants {
 		return max <= RES_THRESHOLD ? RESOLUTION_SUFFICIENT : RESOLUTION_UNSUFFICIENT;
 	}
 
-	public void display(Canvas3D canvas, Transform3D volToIP, int axis) {
+	public void display(Canvas3D canvas, Transform3D volToIP, int axis, int dir) {
 		if(cont.isCancelUpdating())
 			return;
 		int state = checkResolution(canvas, volToIP);
@@ -97,9 +97,9 @@ public class Cube implements VolRendConstants {
 			return;
 		}
 		if(state == RESOLUTION_UNSUFFICIENT && children != null && children.length != 0)
-			displayChildren(canvas, volToIP, axis);
+			displayChildren(canvas, volToIP, axis, dir);
 		else
-			displaySelf(axis);
+			displaySelf(axis, dir);
 	}
 
 	private void undisplaySubtree() {
@@ -122,8 +122,8 @@ public class Cube implements VolRendConstants {
 		}
 	}
 
-	private void displaySelf(int axis) {
-		if(displayed == axis)
+	private void displaySelf(int axis, int dir) {
+		if(displayed == dir)
 			return;
 		if(displayed == -1)
 			undisplaySubtree();
@@ -132,26 +132,26 @@ public class Cube implements VolRendConstants {
 
 		cdata = new CubeData(path, x * cont.pw, y * cont.ph, z * cont.pd);
 		try {
-			int curAxis = axis / 2;
-			switch(curAxis) {
+			switch(axis) {
 				case Z_AXIS: cdata.createZData(); break;
 				case Y_AXIS: cdata.createYData(); break;
 				case X_AXIS: cdata.createXData(); break;
 			}
-			displayed = cont.displayCube(this, axis);
+			cont.displayCube(this, dir);
+			displayed = dir;
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void displayChildren(Canvas3D canvas, Transform3D volToIP, int axis) {
+	private void displayChildren(Canvas3D canvas, Transform3D volToIP, int axis, int dir) {
 		if(children == null)
 			return;
 		if(displayed != -1)
 			undisplaySelf();
 		for(Cube c : children)
 			if(c != null)
-				c.display(canvas, volToIP, axis);
+				c.display(canvas, volToIP, axis, dir);
 	}
 
 	public void createChildren() {

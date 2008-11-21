@@ -104,21 +104,19 @@ public class ShapeContainer implements VolRendConstants {
 		}
 	}
 
-	public int displayCube(Cube c, int whichChild) {
+	public void displayCube(Cube c, int dir) {
 //		System.out.println("display cube " + c);
-		int curAxis = whichChild / 2;
-		int curDir = whichChild % 2;
 
 		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
+		CubeData cdata = c.getCubeData();
 
 		for(int i = 0; i < CUBE_SIZE; i++) {
-			ShapeGroup sg = c.getCubeData().shapes[i];
-			if(curDir == FRONT)
+			ShapeGroup sg = cdata.shapes[i];
+			if(dir == FRONT)
 				insertAscending(og, sg, 0, og.numChildren()-1);
 			else
 				insertDescending(og, sg, 0, og.numChildren()-1);
 		}
-		return whichChild;
 	}
 
 	public void undisplayCube(Cube c) {

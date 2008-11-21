@@ -115,7 +115,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		// recursively display the cubes
 		cont.removeAllCubes();
 		root.setAllUndisplayed();
-		root.display(canvas, volumeToImagePlate, axisIndex[curAxis][curDir]);
+		root.display(canvas, volumeToImagePlate, curAxis, curDir);
 		setUpdateFinished(true);
 		if(cont.isCancelUpdating())
 			cont.setCancelUpdating(false);

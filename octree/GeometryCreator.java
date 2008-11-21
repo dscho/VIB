@@ -21,8 +21,8 @@ public class GeometryCreator implements VolRendConstants {
 		return pos;
 	}
 
-	public GeometryArray getQuad(CubeData cdata, int axis, int index) {
-		calculateQuad(cdata, axis, index);
+	public GeometryArray getQuad(CubeData cdata, int index) {
+		calculateQuad(cdata, index);
 		QuadArray quadArray = new QuadArray(4, 
 					GeometryArray.COORDINATES);
 
@@ -31,13 +31,13 @@ public class GeometryCreator implements VolRendConstants {
 		return quadArray;
 	}
 
-	public float[] getQuadCoordinates(CubeData cdata, int axis, int index) {
-		calculateQuad(cdata, axis, index);
+	public float[] getQuadCoordinates(CubeData cdata, int index) {
+		calculateQuad(cdata, index);
 		return quadCoords;
 	}
 
-	private void calculateQuad(CubeData cdata, int axis, int index) {
-		switch(axis) {
+	private void calculateQuad(CubeData cdata, int index) {
+		switch(cdata.axis) {
 			case X_AXIS: 	
 				setCoordsY(cdata);
 				setCoordsZ(cdata);

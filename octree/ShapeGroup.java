@@ -13,12 +13,12 @@ public class ShapeGroup extends BranchGroup implements VolRendConstants {
 
 	private ShapeGroup() {}
 
-	public ShapeGroup(CubeData cdata, int axis, int index) {
+	public ShapeGroup(CubeData cdata, int index) {
 		super();
 		this.setCapability(ALLOW_DETACH);
 		Shape3D shape = new Shape3D(
-			createGeometry(cdata, axis, index),
-			createAppearance(cdata, axis, index));
+			createGeometry(cdata, index),
+			createAppearance(cdata, index));
 		this.addChild(shape);
 	}
 
@@ -30,23 +30,23 @@ public class ShapeGroup extends BranchGroup implements VolRendConstants {
 	}
 
 	// TODO maybe not needed any more
-	void setCubeData(CubeData cdata, int axis, int index) {
+	void setCubeData(CubeData cdata, int index) {
 		Shape3D shape = (Shape3D)this.getChild(0);
 		((GeometryArray)shape.getGeometry()).setCoordinates(0, 
-			GeometryCreator.instance().getQuadCoordinates(cdata, axis, index));
+			GeometryCreator.instance().getQuadCoordinates(cdata, index));
 		this.pos = GeometryCreator.instance().getPos();
 		Appearance app = shape.getAppearance();
 		app.setTexCoordGeneration(cdata.tg);
 		((ImageComponent2D)app.getTexture().getImage(0)).set(cdata.images[index]);
 	}
 
-	GeometryArray createGeometry(CubeData cdata, int axis, int index) {
-		GeometryArray arr = GeometryCreator.instance().getQuad(cdata, axis, index);
+	GeometryArray createGeometry(CubeData cdata, int index) {
+		GeometryArray arr = GeometryCreator.instance().getQuad(cdata, index);
 		this.pos = GeometryCreator.instance().getPos();
 		return arr;
 	}
 
-	Appearance createAppearance(CubeData cdata, int axis, int index) {
+	Appearance createAppearance(CubeData cdata, int index) {
 		return AppearanceCreator.instance().getAppearance(cdata, index);
 	}
 }

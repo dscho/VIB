@@ -18,6 +18,7 @@ public class CubeData {
 	float pw, ph, pd;
 	float minX, minY, minZ;
 	float maxX, maxY, maxZ;
+	int axis;
 
 	BufferedImage[] images;
 	byte[][] pixels;
@@ -45,14 +46,14 @@ public class CubeData {
 		minZ = oz;
 	}
 
-	private void createShapes(int axis) {
+	private void createShapes() {
 		if(shapes == null) {
 			shapes = new ShapeGroup[SIZE];
 			for(int i = 0; i < SIZE; i++)
-				shapes[i] = new ShapeGroup(this, axis, i);
+				shapes[i] = new ShapeGroup(this, i);
 		} else {
 			for(int i = 0; i < SIZE; i++)
-				shapes[i].setCubeData(this, axis, i);
+				shapes[i].setCubeData(this, i);
 		}
 	}
 
@@ -63,7 +64,8 @@ public class CubeData {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
 		tg.setPlaneT(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
-		createShapes(VolRendConstants.Z_AXIS);
+		axis = VolRendConstants.Z_AXIS;
+		createShapes();
 	}
 
 	void createXData() throws Exception {
@@ -84,7 +86,8 @@ public class CubeData {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
 		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
-		createShapes(VolRendConstants.X_AXIS);
+		axis = VolRendConstants.X_AXIS;
+		createShapes();
 	}
 
 	void createYData() throws Exception {
@@ -102,7 +105,8 @@ public class CubeData {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
 		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
-		createShapes(VolRendConstants.Y_AXIS);
+		axis = VolRendConstants.Y_AXIS;
+		createShapes();
 	}
 
 	private void loadZData() throws Exception {
