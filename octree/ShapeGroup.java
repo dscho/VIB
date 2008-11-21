@@ -1,6 +1,5 @@
 package octree;
 
-import java.awt.image.BufferedImage;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.GeometryArray;
@@ -12,6 +11,8 @@ public class ShapeGroup extends BranchGroup implements VolRendConstants {
 
 	float pos;
 
+	private ShapeGroup() {}
+
 	public ShapeGroup(CubeData cdata, int axis, int index, String name) {
 		super();
 		this.setCapability(ALLOW_DETACH);
@@ -22,6 +23,15 @@ public class ShapeGroup extends BranchGroup implements VolRendConstants {
 		this.setName(name);
 	}
 
+	public ShapeGroup(ShapeGroup sg) {
+		this.setCapability(ALLOW_DETACH);
+		Shape3D sgShape = (Shape3D)sg.getChild(0);
+		this.addChild(new Shape3D(sgShape.getGeometry(), sgShape.getAppearance()));
+		this.setName(sg.getName());
+		this.pos = sg.pos;
+	}
+
+	// TODO maybe not needed any more
 	void setCubeData(CubeData cdata, int axis, int index, String name) {
 		Shape3D shape = (Shape3D)this.getChild(0);
 		((GeometryArray)shape.getGeometry()).setCoordinates(0, 

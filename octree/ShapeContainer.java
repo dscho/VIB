@@ -98,8 +98,8 @@ public class ShapeContainer implements VolRendConstants {
 			fg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][FRONT]);
 			bg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][BACK]);
 			for(int i = 0; i < CUBE_SIZE; i++) {
-				insertAscending(fg, new ShapeGroup(cdata, axis[ai], i, c.name), 0, fg.numChildren()-1);
-				insertDescending(bg, new ShapeGroup(cdata, axis[ai], i, c.name), 0, bg.numChildren()-1);
+				insertAscending(fg, new ShapeGroup(cdata.shapes[i]), 0, fg.numChildren()-1);
+				insertDescending(bg, cdata.shapes[i], 0, bg.numChildren()-1);
 			}
 		}
 	}
@@ -112,7 +112,7 @@ public class ShapeContainer implements VolRendConstants {
 		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
 
 		for(int i = 0; i < CUBE_SIZE; i++) {
-			ShapeGroup sg = ShapeGroupRecycler.instance().newShapeGroup(c.getCubeData(), curAxis, i, c.name);
+			ShapeGroup sg = c.getCubeData().shapes[i];
 			if(curDir == FRONT)
 				insertAscending(og, sg, 0, og.numChildren()-1);
 			else

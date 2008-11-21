@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import javax.media.j3d.TexCoordGeneration;
 import javax.vecmath.Vector4f;
+import voltex.VolRendConstants;
 
 public class CubeData {
 
@@ -21,6 +22,7 @@ public class CubeData {
 	BufferedImage[] images;
 	byte[][] pixels;
 	TexCoordGeneration tg;
+	ShapeGroup[] shapes;
 
 	public CubeData(String path, float ox, float oy, float oz) {
 		this();
@@ -43,6 +45,17 @@ public class CubeData {
 		minZ = oz;
 	}
 
+	private void createShapes(int axis) {
+		if(shapes == null) {
+			shapes = new ShapeGroup[SIZE];
+			for(int i = 0; i < SIZE; i++)
+				shapes[i] = new ShapeGroup(this, axis, i, "");
+		} else {
+			for(int i = 0; i < SIZE; i++)
+				shapes[i].setCubeData(this, axis, i, "");
+		}
+	}
+
 	void createZData() throws Exception {
 		loadZData();
 		float xTexGenScale = (float)(1.0 / (pw * SIZE));
@@ -50,6 +63,7 @@ public class CubeData {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
 		tg.setPlaneT(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
+		createShapes(VolRendConstants.Z_AXIS);
 	}
 
 	void createXData() throws Exception {
@@ -70,6 +84,7 @@ public class CubeData {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
 		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
+		createShapes(VolRendConstants.X_AXIS);
 	}
 
 	void createYData() throws Exception {
@@ -87,6 +102,7 @@ public class CubeData {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
 		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
+		createShapes(VolRendConstants.Y_AXIS);
 	}
 
 	private void loadZData() throws Exception {
