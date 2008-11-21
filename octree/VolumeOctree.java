@@ -95,7 +95,6 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	public void displayInitial() {
 		cont.displayRoughCube(root);
 		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
-		ShapeGroupRecycler.instance().clearAll();
 		CubeDataRecycler.instance().clearAll();
 		System.out.println("# shapes: " + cont.countShapeGroups());
 	}
