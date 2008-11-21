@@ -1,5 +1,6 @@
 package octree;
 
+import java.util.LinkedList;
 import javax.media.j3d.Group;
 import javax.media.j3d.OrderedGroup;
 import javax.media.j3d.Switch;
@@ -18,6 +19,8 @@ public class ShapeContainer implements VolRendConstants {
 	private boolean cancelUpdating = false;
 
 	final Switch axisSwitch;
+
+	private LinkedList<Cube> displayedCubes = new LinkedList<Cube>();
 
 	public ShapeContainer(int xdim, int ydim, int zdim,
 			float pw, float ph, float pd) {
@@ -78,6 +81,7 @@ public class ShapeContainer implements VolRendConstants {
 
 	void removeAllCubes() {
 		((OrderedGroup)axisSwitch.getChild(DETAIL_AXIS)).removeAllChildren();
+		displayedCubes.clear();
 	}
 
 	public void displayRoughCube(Cube c) {
@@ -117,6 +121,7 @@ public class ShapeContainer implements VolRendConstants {
 			else
 				insertDescending(og, sg, 0, og.numChildren()-1);
 		}
+		displayedCubes.add(c);
 	}
 
 	public void undisplayCube(Cube c) {
@@ -125,6 +130,7 @@ public class ShapeContainer implements VolRendConstants {
 		CubeData cdata = c.getCubeData();
 		for(ShapeGroup sg : cdata.shapes)
 			og.removeChild(sg);
+		displayedCubes.remove(c);
 	}
 
 	private final Group getOrderedGroup() {
