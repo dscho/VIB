@@ -124,14 +124,9 @@ public class ShapeContainer implements VolRendConstants {
 	public void undisplayCube(Cube c) {
 //		System.out.println("undisplay cube " + c);
 		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
-		int n = og.numChildren();
-		for(int k = n-1; k >= 0; k--) {
-			ShapeGroup sg = (ShapeGroup)og.getChild(k);
-			if(sg.getName().equals(c.name)) {
-				og.removeChild(sg);
-				ShapeGroupRecycler.instance().deleteShapeGroup(sg);
-			}
-		}
+		CubeData cdata = c.getCubeData();
+		for(ShapeGroup sg : cdata.shapes)
+			og.removeChild(sg);
 	}
 
 	private final Group getOrderedGroup() {

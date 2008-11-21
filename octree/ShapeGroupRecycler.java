@@ -22,11 +22,11 @@ public class ShapeGroupRecycler {
 		return instance;
 	}
 
-	public ShapeGroup newShapeGroup(CubeData cdata, int axis, int index, String name) {
+	public ShapeGroup newShapeGroup(CubeData cdata, int axis, int index) {
 		ShapeGroup sg = pool.pollFirst();
 		if(sg == null)
-			return new ShapeGroup(cdata, axis, index, name);
-		sg.setCubeData(cdata, axis, index, name);
+			return new ShapeGroup(cdata, axis, index);
+		sg.setCubeData(cdata, axis, index);
 		return sg;
 	}
 

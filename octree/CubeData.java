@@ -49,10 +49,10 @@ public class CubeData {
 		if(shapes == null) {
 			shapes = new ShapeGroup[SIZE];
 			for(int i = 0; i < SIZE; i++)
-				shapes[i] = new ShapeGroup(this, axis, i, "");
+				shapes[i] = new ShapeGroup(this, axis, i);
 		} else {
 			for(int i = 0; i < SIZE; i++)
-				shapes[i].setCubeData(this, axis, i, "");
+				shapes[i].setCubeData(this, axis, i);
 		}
 	}
 

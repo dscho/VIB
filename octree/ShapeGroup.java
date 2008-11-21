@@ -13,26 +13,24 @@ public class ShapeGroup extends BranchGroup implements VolRendConstants {
 
 	private ShapeGroup() {}
 
-	public ShapeGroup(CubeData cdata, int axis, int index, String name) {
+	public ShapeGroup(CubeData cdata, int axis, int index) {
 		super();
 		this.setCapability(ALLOW_DETACH);
 		Shape3D shape = new Shape3D(
 			createGeometry(cdata, axis, index),
 			createAppearance(cdata, axis, index));
 		this.addChild(shape);
-		this.setName(name);
 	}
 
 	public ShapeGroup(ShapeGroup sg) {
 		this.setCapability(ALLOW_DETACH);
 		Shape3D sgShape = (Shape3D)sg.getChild(0);
 		this.addChild(new Shape3D(sgShape.getGeometry(), sgShape.getAppearance()));
-		this.setName(sg.getName());
 		this.pos = sg.pos;
 	}
 
 	// TODO maybe not needed any more
-	void setCubeData(CubeData cdata, int axis, int index, String name) {
+	void setCubeData(CubeData cdata, int axis, int index) {
 		Shape3D shape = (Shape3D)this.getChild(0);
 		((GeometryArray)shape.getGeometry()).setCoordinates(0, 
 			GeometryCreator.instance().getQuadCoordinates(cdata, axis, index));
@@ -40,7 +38,6 @@ public class ShapeGroup extends BranchGroup implements VolRendConstants {
 		Appearance app = shape.getAppearance();
 		app.setTexCoordGeneration(cdata.tg);
 		((ImageComponent2D)app.getTexture().getImage(0)).set(cdata.images[index]);
-		this.setName(name);
 	}
 
 	GeometryArray createGeometry(CubeData cdata, int axis, int index) {
