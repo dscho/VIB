@@ -116,8 +116,6 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		setUpdateFinished(true);
 		if(cont.isCancelUpdating())
 			cont.setCancelUpdating(false);
-		else
-			new Thread() {public void run() {System.gc();}}.start();
 		System.out.println("# shapes: " + cont.countShapeGroups());
 	}
 
@@ -295,8 +293,8 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	}
 
 	public void transformationStarted(View view){
-		cancel();
 		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
+		cancel();
 	}
 	public void transformationFinished(View view){
 		update();
