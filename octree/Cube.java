@@ -111,24 +111,45 @@ public class Cube implements VolRendConstants {
 	}
 
 	private void displaySelf(int axis, int dir) {
+		// axis and direction are already right, so the cube is
+		// already displayed correctly
 		if(displayed == dir && axis == cdata.axis)
 			return;
-		if(displayed == -1)
+		if(displayed == -1) {
+			// The cube was not displayed at all; create new data
+			// and display it
 			undisplaySubtree();
-		else
-			undisplaySelf();
-
-		cdata = new CubeData(path, x * cont.pw, y * cont.ph, z * cont.pd);
-		try {
-			switch(axis) {
-				case Z_AXIS: cdata.createZData(); break;
-				case Y_AXIS: cdata.createYData(); break;
-				case X_AXIS: cdata.createXData(); break;
+			cdata = new CubeData(path, x * cont.pw, y * cont.ph, z * cont.pd);
+			try {
+				switch(axis) {
+					case Z_AXIS: cdata.createZData(); break;
+					case Y_AXIS: cdata.createYData(); break;
+					case X_AXIS: cdata.createXData(); break;
+				}
+				cont.displayCube(this, dir);
+				displayed = dir;
+			} catch(Exception e) {
+				e.printStackTrace();
 			}
+		} else if(cdata.axis == axis) {
+			// the CubeData is fine, just need to display it
+			cont.undisplayCube(this);
 			cont.displayCube(this, dir);
 			displayed = dir;
-		} catch(Exception e) {
-			e.printStackTrace();
+		} else {
+			// CubeData exists, but has the wrong data. Reload it.
+			cont.undisplayCube(this);
+			try {
+				switch(axis) {
+					case Z_AXIS: cdata.createZData(); break;
+					case Y_AXIS: cdata.createYData(); break;
+					case X_AXIS: cdata.createXData(); break;
+				}
+				cont.displayCube(this, dir);
+				displayed = dir;
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
