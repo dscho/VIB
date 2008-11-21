@@ -32,7 +32,7 @@ public class AppearanceCreator implements VolRendConstants {
 		return instance;
 	}
 
-	public Appearance getAppearance(CubeData cdata, int axis, int index) {
+	public Appearance getAppearance(CubeData cdata, int index) {
 		Appearance a = new Appearance();
 		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
 		a.setCapability(Appearance.ALLOW_TEXGEN_WRITE);
@@ -42,8 +42,8 @@ public class AppearanceCreator implements VolRendConstants {
 		a.setColoringAttributes(colAttr);
 		a.setRenderingAttributes(rendAttr);
 
-		a.setTexture(getTexture(cdata, axis, index));
-		a.setTexCoordGeneration(getTg(cdata, axis, index));
+		a.setTexture(getTexture(cdata, index));
+		a.setTexCoordGeneration(cdata.tg);
 		a.setTextureAttributes(texAttr);
 		return a;
 	}
@@ -60,13 +60,8 @@ public class AppearanceCreator implements VolRendConstants {
 		colAttr.setColor(c);
 	}
 
-	Texture2D getTexture(CubeData cdata, int axis, int index) {
-		BufferedImage bImage = null;
-		switch (axis) {
-			case Z_AXIS: bImage = cdata.zImages[index]; break;
-			case Y_AXIS: bImage = cdata.yImages[index]; break;
-			case X_AXIS: bImage = cdata.xImages[index]; break;
-		}
+	private Texture2D getTexture(CubeData cdata, int index) {
+		BufferedImage bImage = cdata.images[index];
 		Texture2D tex = new Texture2D(Texture.BASE_LEVEL, TEX_MODE, SIZE, SIZE);
 		ImageComponent2D pArray = new ImageComponent2D(COMP_TYPE, SIZE, SIZE, BY_REF, Y_UP);
 		pArray.set(bImage);
@@ -79,15 +74,6 @@ public class AppearanceCreator implements VolRendConstants {
 		tex.setBoundaryModeS(Texture.CLAMP);
 		tex.setBoundaryModeT(Texture.CLAMP);
 		return tex;
-	}
-
-	TexCoordGeneration getTg(CubeData cdata, int axis, int index) {
-		switch(axis) {
-			case X_AXIS: return cdata.xTg;
-			case Y_AXIS: return cdata.yTg;
-			case Z_AXIS: return cdata.zTg;
-		}
-		return null;
 	}
 
 	private void initAttributes(Color3f color, float transparency) {

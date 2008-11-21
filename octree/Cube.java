@@ -130,9 +130,12 @@ public class Cube implements VolRendConstants {
 
 		cdata = new CubeData(path, x * cont.pw, y * cont.ph, z * cont.pd);
 		try {
-			cdata.loadZData();
-			cdata.createXData();
-			cdata.createYData();
+			int curAxis = axis / 2;
+			switch(curAxis) {
+				case Z_AXIS: cdata.createZData(); break;
+				case Y_AXIS: cdata.createYData(); break;
+				case X_AXIS: cdata.createXData(); break;
+			}
 			displayed = cont.displayCube(this, axis);
 		} catch(Exception e) {
 			e.printStackTrace();

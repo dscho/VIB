@@ -18,17 +18,9 @@ public class CubeData {
 	float minX, minY, minZ;
 	float maxX, maxY, maxZ;
 
-	BufferedImage[] xImages;
-	BufferedImage[] yImages;
-	BufferedImage[] zImages;
-
-	byte[][] xPixels;
-	byte[][] yPixels;
-	byte[][] zPixels;
-
-	TexCoordGeneration xTg;
-	TexCoordGeneration yTg;
-	TexCoordGeneration zTg;
+	BufferedImage[] images;
+	byte[][] pixels;
+	TexCoordGeneration tg;
 
 	public CubeData(String path, float ox, float oy, float oz) {
 		this();
@@ -36,22 +28,11 @@ public class CubeData {
 	}
 
 	public CubeData() {
-		xImages = new BufferedImage[SIZE];
-		yImages = new BufferedImage[SIZE];
-		zImages = new BufferedImage[SIZE];
-
-		xPixels = new byte[SIZE][];
-		yPixels = new byte[SIZE][];
-		zPixels = new byte[SIZE][];
-
+		images = new BufferedImage[SIZE];
+		pixels = new byte[SIZE][];
 		for(int i = 0; i < SIZE; i++) {
-			xImages[i] = new BufferedImage(SIZE, SIZE, B_IMG_TYPE);
-			yImages[i] = new BufferedImage(SIZE, SIZE, B_IMG_TYPE);
-			zImages[i] = new BufferedImage(SIZE, SIZE, B_IMG_TYPE);
-
-			xPixels[i] = ((DataBufferByte) xImages[i].getRaster().getDataBuffer()).getData();
-			yPixels[i] = ((DataBufferByte) yImages[i].getRaster().getDataBuffer()).getData();
-			zPixels[i] = ((DataBufferByte) zImages[i].getRaster().getDataBuffer()).getData();
+			images[i] = new BufferedImage(SIZE, SIZE, B_IMG_TYPE);
+			pixels[i] = ((DataBufferByte) images[i].getRaster().getDataBuffer()).getData();
 		}
 	}
 
@@ -62,31 +43,22 @@ public class CubeData {
 		minZ = oz;
 	}
 
-	private void update() {
-		maxX = minX + SIZE * pw;
-		maxY = minY + SIZE * ph;
-		maxZ = minZ + SIZE * pd;
-
+	void createZData() throws Exception {
+		loadZData();
 		float xTexGenScale = (float)(1.0 / (pw * SIZE));
 		float yTexGenScale = (float)(1.0 / (ph * SIZE));
-		float zTexGenScale = (float)(1.0 / (pd * SIZE));
-
-		zTg = new TexCoordGeneration();
-		zTg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
-		zTg.setPlaneT(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
-		yTg = new TexCoordGeneration();
-		yTg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
-		yTg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
-		xTg = new TexCoordGeneration();
-		xTg.setPlaneS(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
-		xTg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
+		tg = new TexCoordGeneration();
+		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
+		tg.setPlaneT(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
 	}
 
-	void createXData() {
+	void createXData() throws Exception {
+		loadZData();
+		byte[][] tmp = new byte[SIZE][pixels[0].length];
 		for(int x = 0; x < SIZE; x++) {
-			byte[] dst = xPixels[x];
+			byte[] dst = tmp[x];
 			for (int z = 0; z < SIZE; z++){
-				byte[] src = zPixels[z];
+				byte[] src = pixels[z];
 				int offsDst = z * SIZE;
 				for (int y = 0; y < SIZE; y++){
 					int offsSrc = y * SIZE + x;
@@ -94,40 +66,54 @@ public class CubeData {
 				}
 			}
 		}
+		for(int i = 0; i < SIZE; i++)
+			System.arraycopy(tmp[i], 0, pixels[i], 0, tmp[i].length);
+		float yTexGenScale = (float)(1.0 / (ph * SIZE));
+		float zTexGenScale = (float)(1.0 / (pd * SIZE));
+		tg = new TexCoordGeneration();
+		tg.setPlaneS(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
+		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
 	}
 
-	void createYData() {
+	void createYData() throws Exception {
+		loadZData();
+		byte[][] tmp = new byte[SIZE][pixels[0].length];
 		for(int y = 0; y < SIZE; y++) {
-			byte[] dst = yPixels[y];
+			byte[] dst = tmp[y];
 			for (int z = 0; z < SIZE; z++){
-				byte[] src = zPixels[z];
+				byte[] src = pixels[z];
 				int offsSrc = y * SIZE;
 				int offsDst = z * SIZE;
 				System.arraycopy(src, offsSrc, dst, offsDst, SIZE);
 			}
 		}
+		for(int i = 0; i < SIZE; i++)
+			System.arraycopy(tmp[i], 0, pixels[i], 0, tmp[i].length);
+		float xTexGenScale = (float)(1.0 / (pw * SIZE));
+		float zTexGenScale = (float)(1.0 / (pd * SIZE));
+		tg = new TexCoordGeneration();
+		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
+		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
 	}
 
-	void loadZData() throws Exception {
+	private void loadZData() throws Exception {
 		File f = new File(path);
 		FileInputStream in = new FileInputStream(f);
 		pw = readFloat(in);
 		ph = readFloat(in);
 		pd = readFloat(in);
-		for (int i = 0; i < SIZE; i++) {
-			byte[] pixels = zPixels[i];
-			int nPixels = pixels.length;
+		for (int z = 0; z < SIZE; z++) {
+			byte[] pix= pixels[z];
+			int nPixels = pix.length;
 			int read = 0;
 			while (read < nPixels) {
-				read += in.read(pixels, read, nPixels - read);
+				read += in.read(pix, read, nPixels - read);
 			}
 		}
 		in.close();
-		update();
-	}
-
-	void writeZData() throws Exception {
-		writeZData(path, zPixels, pw, ph, pd);
+		maxX = minX + SIZE * pw;
+		maxY = minY + SIZE * ph;
+		maxZ = minZ + SIZE * pd;
 	}
 
 	public static final void writeZData(String path, byte[][] data, float pw, float ph, float pd) throws Exception {

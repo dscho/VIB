@@ -1,6 +1,5 @@
 package octree;
 
-import ij.ImagePlus;
 import javax.media.j3d.Group;
 import javax.media.j3d.OrderedGroup;
 import javax.media.j3d.Switch;
@@ -74,17 +73,18 @@ public class ShapeContainer implements VolRendConstants {
 	public void displayRoughCube(Cube c) {
 		OrderedGroup fg, bg;
 		int[] axis = new int[] {X_AXIS, Y_AXIS, Z_AXIS};
-		CubeData cdata = new CubeData(c.path, pw * c.x, ph * c.y, pd * c.z);
-		try {
-			cdata.loadZData();
-			cdata.createXData();
-			cdata.createYData();
-		} catch(Exception e) {
-			e.printStackTrace();
-			return;
-		}
 
 		for(int ai = 0; ai < 3; ai++) {
+			CubeData cdata = new CubeData(c.path, pw * c.x, ph * c.y, pd * c.z);
+			try {
+				switch(axis[ai]) {
+					case Z_AXIS: cdata.createZData(); break;
+					case Y_AXIS: cdata.createYData(); break;
+					case X_AXIS: cdata.createXData(); break;
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
 			fg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][FRONT]);
 			bg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][BACK]);
 			for(int i = 0; i < CUBE_SIZE; i++) {

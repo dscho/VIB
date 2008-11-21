@@ -28,15 +28,8 @@ public class ShapeGroup extends BranchGroup implements VolRendConstants {
 			GeometryCreator.instance().getQuadCoordinates(cdata, axis, index));
 		this.pos = GeometryCreator.instance().getPos();
 		Appearance app = shape.getAppearance();
-		app.setTexCoordGeneration(AppearanceCreator.instance().getTg(cdata, axis, index));
-		BufferedImage img = null;
-		switch(axis) {
-			case X_AXIS: img = cdata.xImages[index];
-			case Y_AXIS: img = cdata.yImages[index];
-			case Z_AXIS: img = cdata.zImages[index];
-		}
-		((ImageComponent2D)app.getTexture().getImage(0)).set(img);
-		shape.setAppearance(createAppearance(cdata, axis, index));
+		app.setTexCoordGeneration(cdata.tg);
+		((ImageComponent2D)app.getTexture().getImage(0)).set(cdata.images[index]);
 		this.setName(name);
 	}
 
@@ -47,6 +40,6 @@ public class ShapeGroup extends BranchGroup implements VolRendConstants {
 	}
 
 	Appearance createAppearance(CubeData cdata, int axis, int index) {
-		return AppearanceCreator.instance().getAppearance(cdata, axis, index);
+		return AppearanceCreator.instance().getAppearance(cdata, index);
 	}
 }
