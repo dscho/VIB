@@ -111,7 +111,7 @@ public class Cube implements VolRendConstants {
 	}
 
 	private void displaySelf(int axis, int dir) {
-		if(displayed == dir)
+		if(displayed == dir && axis == cdata.axis)
 			return;
 		if(displayed == -1)
 			undisplaySubtree();
