@@ -55,17 +55,14 @@ public class CubeData {
 	void createXData() throws Exception {
 		loadZData();
 		byte[][] tmp = new byte[SIZE][pixels[0].length];
-		for(int x = 0; x < SIZE; x++) {
-			byte[] dst = tmp[x];
-			for (int z = 0; z < SIZE; z++){
-				byte[] src = pixels[z];
-				int offsDst = z * SIZE;
-				for (int y = 0; y < SIZE; y++){
-					int offsSrc = y * SIZE + x;
-					dst[offsDst + y] = src[offsSrc];
+		for(int z = 0, offsDst = 0; z < SIZE; z++) {
+			for(int y = 0, offsSrc = 0; y < SIZE; y++, offsDst++) {
+				for(int x = 0; x < SIZE; x++, offsSrc++) {
+					tmp[x][offsDst] = pixels[z][offsSrc];
 				}
 			}
 		}
+
 		for(int i = 0; i < SIZE; i++)
 			System.arraycopy(tmp[i], 0, pixels[i], 0, tmp[i].length);
 		float yTexGenScale = (float)(1.0 / (ph * SIZE));
@@ -78,13 +75,9 @@ public class CubeData {
 	void createYData() throws Exception {
 		loadZData();
 		byte[][] tmp = new byte[SIZE][pixels[0].length];
-		for(int y = 0; y < SIZE; y++) {
-			byte[] dst = tmp[y];
-			for (int z = 0; z < SIZE; z++){
-				byte[] src = pixels[z];
-				int offsSrc = y * SIZE;
-				int offsDst = z * SIZE;
-				System.arraycopy(src, offsSrc, dst, offsDst, SIZE);
+		for(int y = 0, offsSrc = 0; y < SIZE; y++, offsSrc += SIZE) {
+			for (int z = 0, offsDst = 0; z < SIZE; z++, offsDst += SIZE){
+				System.arraycopy(pixels[z], offsSrc, tmp[y], offsDst, SIZE);
 			}
 		}
 		for(int i = 0; i < SIZE; i++)
