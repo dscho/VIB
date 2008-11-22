@@ -137,7 +137,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		// add the ShapeGroups of the collected cubes to the scenegraph
 		displayShapes(shapes, curDir);
 
-//		CubeDataRecycler.instance().clearAll();
+		CubeDataRecycler.instance().clearAll();
 		setUpdateFinished(true);
 		if(cont.isCancelUpdating())
 			cont.setCancelUpdating(false);

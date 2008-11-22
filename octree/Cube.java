@@ -147,7 +147,7 @@ public class Cube implements VolRendConstants {
 
 	private void undisplaySelf() {
 		if(cdata != null) {
-//			CubeDataRecycler.instance().deleteCubeData(cdata);
+			CubeDataRecycler.instance().deleteCubeData(cdata);
 			cdata = null;
 		}
 	}

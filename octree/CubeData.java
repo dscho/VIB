@@ -45,7 +45,7 @@ public class CubeData implements VolRendConstants {
 			shapes[i].pos = min[axis] + cal[axis] * i;
 	}
 
-	private void setCube(Cube c) {
+	public void setCube(Cube c) {
 		this.cube = c;
 		this.path = c.path;
 		min[0] = (float)c.corners[0].x;
