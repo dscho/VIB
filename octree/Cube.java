@@ -29,11 +29,11 @@ public class Cube implements VolRendConstants {
 	private CubeData cdata;
 	private boolean updateNeeded = true;
 
-	private ShapeContainer cont;
+	private VolumeOctree octree;
 
-	public Cube(ShapeContainer cont, String dir, int x, int y, int z, int l) {
+	public Cube(VolumeOctree octree, String dir, int x, int y, int z, int l) {
 		this.dir = dir + "/";
-		this.cont = cont;
+		this.octree = octree;
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -45,11 +45,11 @@ public class Cube implements VolRendConstants {
 			pw = cal[0];
 			ph = cal[1];
 			pd = cal[2];
-			double lx = cont.CUBE_SIZE * pw;
-			double ly = cont.CUBE_SIZE * ph;
-			double lz = cont.CUBE_SIZE * pd;
+			double lx = VolumeOctree.SIZE * pw;
+			double ly = VolumeOctree.SIZE * ph;
+			double lz = VolumeOctree.SIZE * pd;
 			corners = new Point3d[8];
-			corners[0] = new Point3d(x * cont.pw, y * cont.ph, z * cont.pd);
+			corners[0] = new Point3d(x * octree.pw, y * octree.ph, z * octree.pd);
 			corners[7] = new Point3d(corners[0].x + lx, corners[0].y + ly, corners[0].z + lz);
 			corners[1] = new Point3d(corners[7].x, corners[0].y, corners[0].z);
 			corners[2] = new Point3d(corners[0].x, corners[7].y, corners[0].z);
@@ -156,16 +156,16 @@ public class Cube implements VolRendConstants {
 		if(level == 1)
 			return;
 		int l = level >> 1;
-		int s = cont.CUBE_SIZE;
+		int s = VolumeOctree.SIZE;
 		children = new Cube[8];
-		children[0] = new Cube(cont, dir, x,     y,     z,     l); if(!children[0].exists()) children[0] = null;
-		children[1] = new Cube(cont, dir, x+l*s, y,     z,     l); if(!children[1].exists()) children[1] = null;
-		children[2] = new Cube(cont, dir, x,     y+l*s, z,     l); if(!children[2].exists()) children[2] = null;
-		children[3] = new Cube(cont, dir, x+l*s, y+l*s, z,     l); if(!children[3].exists()) children[3] = null;
-		children[4] = new Cube(cont, dir, x,     y,     z+l*s, l); if(!children[4].exists()) children[4] = null;
-		children[5] = new Cube(cont, dir, x+l*s, y,     z+l*s, l); if(!children[5].exists()) children[5] = null;
-		children[6] = new Cube(cont, dir, x,     y+l*s, z+l*s, l); if(!children[6].exists()) children[6] = null;
-		children[7] = new Cube(cont, dir, x+l*s, y+l*s, z+l*s, l); if(!children[7].exists()) children[7] = null;
+		children[0] = new Cube(octree, dir, x,     y,     z,     l); if(!children[0].exists()) children[0] = null;
+		children[1] = new Cube(octree, dir, x+l*s, y,     z,     l); if(!children[1].exists()) children[1] = null;
+		children[2] = new Cube(octree, dir, x,     y+l*s, z,     l); if(!children[2].exists()) children[2] = null;
+		children[3] = new Cube(octree, dir, x+l*s, y+l*s, z,     l); if(!children[3].exists()) children[3] = null;
+		children[4] = new Cube(octree, dir, x,     y,     z+l*s, l); if(!children[4].exists()) children[4] = null;
+		children[5] = new Cube(octree, dir, x+l*s, y,     z+l*s, l); if(!children[5].exists()) children[5] = null;
+		children[6] = new Cube(octree, dir, x,     y+l*s, z+l*s, l); if(!children[6].exists()) children[6] = null;
+		children[7] = new Cube(octree, dir, x+l*s, y+l*s, z+l*s, l); if(!children[7].exists()) children[7] = null;
 		// children should create their children too
 		for(Cube cube : children)
 			if(cube != null)
