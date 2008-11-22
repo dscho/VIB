@@ -1,5 +1,6 @@
 package octree;
 
+import ij.IJ;
 import javax.media.j3d.View;
 import vib.Resample_;
 
@@ -13,9 +14,13 @@ import ij.ImageStack;
 import ij.process.ByteProcessor;
 
 import ij.measure.Calibration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
+import javax.media.j3d.OrderedGroup;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
@@ -95,7 +100,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	public void displayInitial() {
 		cont.displayRoughCube(root);
 		cont.axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
-		System.out.println("# shapes: " + cont.countShapeGroups());
+		System.out.println("# shapes: " + cont.countInitialShapes());
 	}
 	
 	private Transform3D volumeToImagePlate = new Transform3D();
@@ -106,17 +111,64 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	private boolean updateFinished = true;
 	void display(Canvas3D canvas) {
 		setUpdateFinished(false);
+
+		// calculate the current view parameters
 		canvas.getImagePlateToVworld(volumeToImagePlate);
 		volumeToImagePlate.invert();
 		bg.getLocalToVworld(tmp);
 		volumeToImagePlate.mul(tmp);
-		// recursively display the cubes
-		root.display(canvas, volumeToImagePlate, curAxis, curDir);
-		CubeDataRecycler.instance().clearAll();
+
+		// collect the cubes which should be displayed
+		List<Cube> cubes = new ArrayList<Cube>();
+		root.collectCubesToDisplay(cubes, canvas, volumeToImagePlate, curAxis, curDir);
+		System.out.println("Found " + cubes.size() + " cubes to display");
+		ShapeGroup[] shapes = new ShapeGroup[cubes.size() * SIZE];
+		System.out.println("This gives " + shapes.length + " shapes");
+		int i = 0;
+		for(Cube c : cubes) {
+			CubeData cdata = c.getCubeData();
+			for(ShapeGroup sg : cdata.shapes)
+				shapes[i++] = sg;
+		}
+
+		// sort according to z-order
+		Arrays.sort(shapes);
+
+		// add the ShapeGroups of the collected cubes to the scenegraph
+		displayShapes(shapes, curDir);
+
+//		CubeDataRecycler.instance().clearAll();
 		setUpdateFinished(true);
 		if(cont.isCancelUpdating())
 			cont.setCancelUpdating(false);
-		System.out.println("# shapes: " + cont.countShapeGroups());
+		System.out.println("# shapes: " + cont.countDetailShapes());
+	}
+
+	void displayShapes(ShapeGroup[] shapes, int dir) {
+		OrderedGroup og = (OrderedGroup)cont.axisSwitch.getChild(ShapeContainer.DETAIL_AXIS);
+		og.removeAllChildren();
+		if(dir == FRONT) {
+			for(int i = 0; i < shapes.length; i++) {
+				ShapeGroup sg = shapes[i];
+				Cube c = sg.cube;
+				if(!c.cubeDataUpToDate()) {
+					c.updateCubeData();
+				}
+				og.addChild(sg);
+				if(i % 50 == 0) IJ.showProgress(i, shapes.length);
+			}
+		} else {
+			for(int i = shapes.length - 1; i >= 0; i--) {
+				ShapeGroup sg = shapes[i];
+				Cube c = sg.cube;
+				if(!c.cubeDataUpToDate()) {
+					c.updateCubeData();
+				}
+				og.addChild(sg);
+				if(i % 50 == 0) IJ.showProgress(i, shapes.length);
+			}
+		}
+		IJ.showProgress(1);
 	}
 
 	public synchronized boolean isUpdateFinished() {

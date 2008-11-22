@@ -2,6 +2,7 @@ package octree;
 
 import java.io.File;
 
+import java.util.List;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Point2d;
@@ -23,11 +24,10 @@ public class Cube implements VolRendConstants {
 	final String dir;
 
 	private Cube[] children;
-	private Point3d[] corners;
+	final Point3d[] corners;
 
-	/* the direction in which this cube is displayed. -1 for undisplayed */
-	private int displayed = -1;
 	private CubeData cdata;
+	private boolean updateNeeded = true;
 
 	private ShapeContainer cont;
 
@@ -58,7 +58,9 @@ public class Cube implements VolRendConstants {
 			corners[5] = new Point3d(corners[7].x, corners[0].y, corners[7].z);
 			corners[6] = new Point3d(corners[0].x, corners[7].y, corners[7].z);
 		} else {
-			pw = ph = pd = 1;
+			// such an object is hopefully never used.
+			pw = ph = pd = -1;
+			corners = null;
 		}
 	}
 
@@ -66,8 +68,58 @@ public class Cube implements VolRendConstants {
 		return new File(path).exists();
 	}
 
+	public Cube[] getChildren() {
+		return children;
+	}
+
+	public boolean cubeDataUpToDate() {
+		return !updateNeeded;
+	}
+
 	public CubeData getCubeData() {
 		return cdata;
+	}
+
+	public void updateCubeData() {
+		try {
+			cdata.createData();
+			updateNeeded = false;
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void collectCubesToDisplay(List<Cube> cubes, Canvas3D canvas, Transform3D volToIP, int axis, int dir) {
+		int state = checkResolution(canvas, volToIP);
+		if(state == Cube.OUTSIDE_CANVAS) {
+			undisplaySelf();
+			undisplaySubtree();
+			return;
+		}
+		if(state == Cube.RESOLUTION_UNSUFFICIENT && children != null) {
+			// display children
+			undisplaySelf();
+			for(Cube c : children)
+				if(c != null)
+					c.collectCubesToDisplay(cubes, canvas, volToIP, axis, dir);
+		} else {
+			// display self
+			if(cdata == null) {
+				// The cube was not displayed at all; create new data
+				undisplaySubtree();
+				cdata = new CubeData(this);
+				cdata.prepareForAxis(axis);
+				updateNeeded = true;
+			} else if(axis == cdata.axis) {
+				// the CubeData is fine, just need to display it
+				updateNeeded = false;
+			} else {
+				// CubeData exists, but has the wrong data. Reload it.
+				cdata.prepareForAxis(axis);
+				updateNeeded = true;
+			}
+			cubes.add(this);
+		}
 	}
 
 	public int checkResolution(Canvas3D canvas, Transform3D volToIP) {
@@ -82,21 +134,6 @@ public class Cube implements VolRendConstants {
 		return max <= RES_THRESHOLD ? RESOLUTION_SUFFICIENT : RESOLUTION_UNSUFFICIENT;
 	}
 
-	public void display(Canvas3D canvas, Transform3D volToIP, int axis, int dir) {
-		if(cont.isCancelUpdating())
-			return;
-		int state = checkResolution(canvas, volToIP);
-		if(state == OUTSIDE_CANVAS) {
-			undisplaySelf();
-			undisplaySubtree();
-			return;
-		}
-		if(state == RESOLUTION_UNSUFFICIENT && children != null && children.length != 0)
-			displayChildren(canvas, volToIP, axis, dir);
-		else
-			displaySelf(axis, dir);
-	}
-
 	private void undisplaySubtree() {
 		if(children == null)
 			return;
@@ -109,68 +146,10 @@ public class Cube implements VolRendConstants {
 	}
 
 	private void undisplaySelf() {
-		if(displayed != -1) {
-			cont.undisplayCube(this);
-			CubeDataRecycler.instance().deleteCubeData(cdata);
+		if(cdata != null) {
+//			CubeDataRecycler.instance().deleteCubeData(cdata);
 			cdata = null;
-			displayed = -1;
 		}
-	}
-
-	private void displaySelf(int axis, int dir) {
-		// axis and direction are already right, so the cube is
-		// already displayed correctly
-		if(displayed == dir && axis == cdata.axis)
-			return;
-		if(displayed == -1) {
-			// The cube was not displayed at all; create new data
-			// and display it
-			undisplaySubtree();
-//			cdata = new CubeData(path, x * cont.pw, y * cont.ph, z * cont.pd);
-			cdata = new CubeData(path,
-				(float)corners[0].x, (float)corners[0].y, (float)corners[0].z,
-				pw, ph, pd);
-			try {
-				switch(axis) {
-					case Z_AXIS: cdata.createZData(); break;
-					case Y_AXIS: cdata.createYData(); break;
-					case X_AXIS: cdata.createXData(); break;
-				}
-				cont.displayCube(this, dir);
-				displayed = dir;
-			} catch(Exception e) {
-				e.printStackTrace();
-			}
-		} else if(cdata.axis == axis) {
-			// the CubeData is fine, just need to display it
-			cont.undisplayCube(this);
-			cont.displayCube(this, dir);
-			displayed = dir;
-		} else {
-			// CubeData exists, but has the wrong data. Reload it.
-			cont.undisplayCube(this);
-			try {
-				switch(axis) {
-					case Z_AXIS: cdata.createZData(); break;
-					case Y_AXIS: cdata.createYData(); break;
-					case X_AXIS: cdata.createXData(); break;
-				}
-				cont.displayCube(this, dir);
-				displayed = dir;
-			} catch(Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private void displayChildren(Canvas3D canvas, Transform3D volToIP, int axis, int dir) {
-		if(children == null)
-			return;
-		if(displayed != -1)
-			undisplaySelf();
-		for(Cube c : children)
-			if(c != null)
-				c.display(canvas, volToIP, axis, dir);
 	}
 
 	public void createChildren() {

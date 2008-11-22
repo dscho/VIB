@@ -9,69 +9,78 @@ import javax.media.j3d.TexCoordGeneration;
 import javax.vecmath.Vector4f;
 import voltex.VolRendConstants;
 
-public class CubeData {
+public class CubeData implements VolRendConstants {
 
 	private static final int SIZE = VolumeOctree.SIZE;
 	private static final int B_IMG_TYPE = BufferedImage.TYPE_BYTE_GRAY;
 
 	String path;
-	float pw, ph, pd;
-	float minX, minY, minZ;
-	float maxX, maxY, maxZ;
+	float[] cal = new float[3];
+	float[] min = new float[3];
+	float[] max = new float[3];
 	int axis;
 
 	BufferedImage[] images;
 	byte[][] pixels;
 	TexCoordGeneration tg;
 	ShapeGroup[] shapes;
+	Cube cube;
 
-	public CubeData(String path, float ox, float oy, float oz, float pw, float ph, float pd) {
-		this();
-		set(path, ox, oy, oz, pw, ph, pd);
-	}
+	public CubeData(Cube c) {
+		setCube(c);
 
-	public CubeData() {
 		images = new BufferedImage[SIZE];
 		pixels = new byte[SIZE][];
+		shapes = new ShapeGroup[SIZE];
 		for(int i = 0; i < SIZE; i++) {
 			images[i] = new BufferedImage(SIZE, SIZE, B_IMG_TYPE);
 			pixels[i] = ((DataBufferByte) images[i].getRaster().getDataBuffer()).getData();
+			shapes[i] = new ShapeGroup(c);
 		}
 	}
 
-	public void set(String path, float ox, float oy, float oz, float pw, float ph, float pd) {
-		this.path = path;
-		minX = ox;
-		minY = oy;
-		minZ = oz;
-		this.pw = pw;
-		this.ph = ph;
-		this.pd = pd;
+	public void prepareForAxis(int axis) {
+		this.axis = axis;
+		for(int i = 0; i < SIZE; i++)
+			shapes[i].pos = min[axis] + cal[axis] * i;
+	}
+
+	private void setCube(Cube c) {
+		this.cube = c;
+		this.path = c.path;
+		min[0] = (float)c.corners[0].x;
+		min[1] = (float)c.corners[0].y;
+		min[2] = (float)c.corners[0].z;
+		cal[0] = c.pw;
+		cal[1] = c.ph;
+		cal[2] = c.pd;
+	}
+
+	public void createData() throws Exception {
+		switch(axis) {
+			case X_AXIS: createXData(); break;
+			case Y_AXIS: createYData(); break;
+			case Z_AXIS: createZData(); break;
+		}
 	}
 
 	private void createShapes() {
-		if(shapes == null) {
-			shapes = new ShapeGroup[SIZE];
-			for(int i = 0; i < SIZE; i++)
-				shapes[i] = new ShapeGroup(this, i);
-		} else {
-			for(int i = 0; i < SIZE; i++)
-				shapes[i].setCubeData(this, i);
-		}
+		for(int i = 0; i < SIZE; i++)
+			shapes[i].setCubeData(cube, this, i);
 	}
 
-	void createZData() throws Exception {
+	private final void createZData() throws Exception {
 		loadZData();
-		float xTexGenScale = (float)(1.0 / (pw * SIZE));
-		float yTexGenScale = (float)(1.0 / (ph * SIZE));
+		float xTexGenScale = (float)(1.0 / (cal[0] * SIZE));
+		float yTexGenScale = (float)(1.0 / (cal[1] * SIZE));
 		tg = new TexCoordGeneration();
-		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
-		tg.setPlaneT(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
+		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * min[0])));
+		tg.setPlaneT(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * min[1])));
 		axis = VolRendConstants.Z_AXIS;
 		createShapes();
 	}
 
-	void createXData() throws Exception {
+	private final void createXData() throws Exception {
 		loadZData();
 		byte[][] tmp = new byte[SIZE][pixels[0].length];
 		for(int z = 0, offsDst = 0; z < SIZE; z++) {
@@ -84,16 +93,16 @@ public class CubeData {
 
 		for(int i = 0; i < SIZE; i++)
 			System.arraycopy(tmp[i], 0, pixels[i], 0, tmp[i].length);
-		float yTexGenScale = (float)(1.0 / (ph * SIZE));
-		float zTexGenScale = (float)(1.0 / (pd * SIZE));
+		float yTexGenScale = (float)(1.0 / (cal[1] * SIZE));
+		float zTexGenScale = (float)(1.0 / (cal[2] * SIZE));
 		tg = new TexCoordGeneration();
-		tg.setPlaneS(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * minY)));
-		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
+		tg.setPlaneS(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * min[1])));
+		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * min[2])));
 		axis = VolRendConstants.X_AXIS;
 		createShapes();
 	}
 
-	void createYData() throws Exception {
+	private final void createYData() throws Exception {
 		loadZData();
 		byte[][] tmp = new byte[SIZE][pixels[0].length];
 		for(int y = 0, offsSrc = 0; y < SIZE; y++, offsSrc += SIZE) {
@@ -103,33 +112,13 @@ public class CubeData {
 		}
 		for(int i = 0; i < SIZE; i++)
 			System.arraycopy(tmp[i], 0, pixels[i], 0, tmp[i].length);
-		float xTexGenScale = (float)(1.0 / (pw * SIZE));
-		float zTexGenScale = (float)(1.0 / (pd * SIZE));
+		float xTexGenScale = (float)(1.0 / (cal[0] * SIZE));
+		float zTexGenScale = (float)(1.0 / (cal[2] * SIZE));
 		tg = new TexCoordGeneration();
-		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * minX)));
-		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * minZ)));
+		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * min[0])));
+		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * min[2])));
 		axis = VolRendConstants.Y_AXIS;
 		createShapes();
-	}
-
-	private void loadZData() throws Exception {
-		File f = new File(path);
-		FileInputStream in = new FileInputStream(f);
-		pw = readFloat(in);
-		ph = readFloat(in);
-		pd = readFloat(in);
-		for (int z = 0; z < SIZE; z++) {
-			byte[] pix= pixels[z];
-			int nPixels = pix.length;
-			int read = 0;
-			while (read < nPixels) {
-				read += in.read(pix, read, nPixels - read);
-			}
-		}
-		in.close();
-		maxX = minX + SIZE * pw;
-		maxY = minY + SIZE * ph;
-		maxZ = minZ + SIZE * pd;
 	}
 
 	public static final float[] readCalibration(String path, float[] ret) {
@@ -163,6 +152,26 @@ public class CubeData {
 		}
 		out.flush();
 		out.close();
+	}
+
+	private void loadZData() throws Exception {
+		File f = new File(path);
+		FileInputStream in = new FileInputStream(f);
+		cal[0] = readFloat(in);
+		cal[1] = readFloat(in);
+		cal[2] = readFloat(in);
+		for (int z = 0; z < SIZE; z++) {
+			byte[] pix= pixels[z];
+			int nPixels = pix.length;
+			int read = 0;
+			while (read < nPixels) {
+				read += in.read(pix, read, nPixels - read);
+			}
+		}
+		in.close();
+		max[0] = min[0] + SIZE * cal[0];
+		max[1] = min[1] + SIZE * cal[1];
+		max[2] = min[2] + SIZE * cal[2];
 	}
 
 	private static final float readFloat(FileInputStream in) throws Exception {

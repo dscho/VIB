@@ -6,7 +6,6 @@ import voltex.VolRendConstants;
 public class GeometryCreator implements VolRendConstants {
 
 	private float[] quadCoords = new float[12];
-	private float pos;
 	private static GeometryCreator instance;
 
 	private GeometryCreator() {}
@@ -15,10 +14,6 @@ public class GeometryCreator implements VolRendConstants {
 		if(instance == null)
 			instance = new GeometryCreator();
 		return instance;
-	}
-
-	public float getPos() {
-		return pos;
 	}
 
 	public GeometryArray getQuad(CubeData cdata, int index) {
@@ -57,8 +52,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordX(int i, CubeData cdata) {
-		float curX = i * cdata.pw + cdata.minX;
-		pos = (float)curX;
+		float curX = i * cdata.cal[0] + cdata.min[0];
 		quadCoords[0] = curX;
 		quadCoords[3] = curX;
 		quadCoords[6] = curX;
@@ -66,8 +60,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordY(int i, CubeData cdata) {
-		float curY = i * cdata.ph + cdata.minY;
-		pos = (float)curY;
+		float curY = i * cdata.cal[1] + cdata.min[1];
 		quadCoords[1] = curY;
 		quadCoords[4] = curY;
 		quadCoords[7] = curY;
@@ -75,8 +68,7 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordZ(int i, CubeData cdata) {
-		float curZ = i * cdata.pd + cdata.minZ;
-		pos = (float)curZ;
+		float curZ = i * cdata.cal[2] + cdata.min[2];
 		quadCoords[2] = curZ;
 		quadCoords[5] = curZ;
 		quadCoords[8] = curZ;
@@ -85,46 +77,46 @@ public class GeometryCreator implements VolRendConstants {
 
 	private void setCoordsX(CubeData cdata) {
 		// lower left
-		quadCoords[1] = cdata.minY;
-		quadCoords[2] = cdata.minZ;
+		quadCoords[1] = cdata.min[1];
+		quadCoords[2] = cdata.min[2];
 		// lower right
-		quadCoords[4] = cdata.maxY;
-		quadCoords[5] = cdata.minZ;
+		quadCoords[4] = cdata.max[1];
+		quadCoords[5] = cdata.min[2];
 		// upper right
-		quadCoords[7] = cdata.maxY;
-		quadCoords[8] = cdata.maxZ;
+		quadCoords[7] = cdata.max[1];
+		quadCoords[8] = cdata.max[2];
 		// upper left
-		quadCoords[10] = cdata.minY;
-		quadCoords[11] = cdata.maxZ;
+		quadCoords[10] = cdata.min[1];
+		quadCoords[11] = cdata.max[2];
 	}
 
 	private void setCoordsY(CubeData cdata) {
 		// lower left
-		quadCoords[0] = cdata.minX;
-		quadCoords[2] = cdata.minZ;
+		quadCoords[0] = cdata.min[0];
+		quadCoords[2] = cdata.min[2];
 		// lower right
-		quadCoords[3] = cdata.minX;
-		quadCoords[5] = cdata.maxZ;
+		quadCoords[3] = cdata.min[0];
+		quadCoords[5] = cdata.max[2];
 		// upper right
-		quadCoords[6] = cdata.maxX;
-		quadCoords[8] = cdata.maxZ;
+		quadCoords[6] = cdata.max[0];
+		quadCoords[8] = cdata.max[2];
 		// upper left
-		quadCoords[9] = cdata.maxX;
-		quadCoords[11] = cdata.minZ;
+		quadCoords[9] = cdata.max[0];
+		quadCoords[11] = cdata.min[2];
 	}
 
 	private void setCoordsZ(CubeData cdata) {
 		// lower left
-		quadCoords[0] = cdata.minX;
-		quadCoords[1] = cdata.minY;
+		quadCoords[0] = cdata.min[0];
+		quadCoords[1] = cdata.min[1];
 		// lower right
-		quadCoords[3] = cdata.maxX;
-		quadCoords[4] = cdata.minY;
+		quadCoords[3] = cdata.max[0];
+		quadCoords[4] = cdata.min[1];
 		// upper right
-		quadCoords[6] = cdata.maxX;
-		quadCoords[7] = cdata.maxY;
+		quadCoords[6] = cdata.max[0];
+		quadCoords[7] = cdata.max[1];
 		// upper left
-		quadCoords[9] = cdata.minX;
-		quadCoords[10] = cdata.maxY;
+		quadCoords[9] = cdata.min[0];
+		quadCoords[10] = cdata.max[1];
 	}
 }

@@ -1,5 +1,6 @@
 package octree;
 
+import java.util.Arrays;
 import javax.media.j3d.Group;
 import javax.media.j3d.OrderedGroup;
 import javax.media.j3d.Switch;
@@ -67,13 +68,17 @@ public class ShapeContainer implements VolRendConstants {
 		cancelUpdating = b;
 	}
 
-	public int countShapeGroups() {
+	public int countInitialShapes() {
 		int sum = 0;
-		for(int i = 0; i < 7; i++) {
+		for(int i = 0; i < 6; i++) {
 			OrderedGroup og = (OrderedGroup)axisSwitch.getChild(i);
 			sum += og.numChildren();
 		}
 		return sum;
+	}
+
+	public int countDetailShapes() {
+		return ((Group)axisSwitch.getChild(DETAIL_AXIS)).numChildren();
 	}
 
 	public void displayRoughCube(Cube c) {
@@ -81,46 +86,21 @@ public class ShapeContainer implements VolRendConstants {
 		int[] axis = new int[] {X_AXIS, Y_AXIS, Z_AXIS};
 
 		for(int ai = 0; ai < 3; ai++) {
-			CubeData cdata = new CubeData(c.path, pw * c.x, ph * c.y, pd * c.z, pw, ph, pd);
+			CubeData cdata = new CubeData(c);
+			cdata.prepareForAxis(axis[ai]);
 			try {
-				switch(axis[ai]) {
-					case Z_AXIS: cdata.createZData(); break;
-					case Y_AXIS: cdata.createYData(); break;
-					case X_AXIS: cdata.createXData(); break;
-				}
+				cdata.createData();
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
+			Arrays.sort(cdata.shapes);
 			fg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][FRONT]);
 			bg = (OrderedGroup)axisSwitch.getChild(axisIndex[axis[ai]][BACK]);
 			for(int i = 0; i < CUBE_SIZE; i++) {
-				insertAscending(fg, new ShapeGroup(cdata.shapes[i]), 0, fg.numChildren()-1);
-				insertDescending(bg, cdata.shapes[i], 0, bg.numChildren()-1);
+				fg.addChild(new ShapeGroup(cdata.shapes[i]));
+				bg.insertChild(cdata.shapes[i], 0);
 			}
 		}
-	}
-
-	public void displayCube(Cube c, int dir) {
-//		System.out.println("display cube " + c);
-
-		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
-		CubeData cdata = c.getCubeData();
-
-		for(int i = 0; i < CUBE_SIZE; i++) {
-			ShapeGroup sg = cdata.shapes[i];
-			if(dir == FRONT)
-				insertAscending(og, sg, 0, og.numChildren()-1);
-			else
-				insertDescending(og, sg, 0, og.numChildren()-1);
-		}
-	}
-
-	public void undisplayCube(Cube c) {
-//		System.out.println("undisplay cube " + c);
-		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
-		CubeData cdata = c.getCubeData();
-		for(ShapeGroup sg : cdata.shapes)
-			og.removeChild(sg);
 	}
 
 	private final Group getOrderedGroup() {
@@ -129,39 +109,5 @@ public class ShapeContainer implements VolRendConstants {
 		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
 		og.setCapability(OrderedGroup.ALLOW_CHILD_INDEX_ORDER_WRITE);
 		return og;
-	}
-
-	private static final void insertDescending(OrderedGroup shapes, ShapeGroup s, int left, int right) {
-		if(shapes.numChildren() == 0 || s.pos >= ((ShapeGroup)shapes.getChild(left)).pos)
-			shapes.insertChild(s, left);
-		else if(s.pos <= ((ShapeGroup)shapes.getChild(right)).pos)
-			shapes.insertChild(s, right+1);
-		else {
-			int piv = (left + right) / 2;
-			float pivpos = ((ShapeGroup)shapes.getChild(piv)).pos;
-			if(pivpos > s.pos)
-				insertDescending(shapes, s, piv+1, right);
-			else if(pivpos < s.pos)
-				insertDescending(shapes, s, left, piv-1);
-			else if(pivpos == s.pos)
-				shapes.insertChild(s, piv);
-		}
-	}
-
-	private static final void insertAscending(OrderedGroup shapes, ShapeGroup s, int left, int right) {
-		if(shapes.numChildren() == 0 || s.pos <= ((ShapeGroup)shapes.getChild(left)).pos)
-			shapes.insertChild(s, left);
-		else if(s.pos >= ((ShapeGroup)shapes.getChild(right)).pos)
-			shapes.insertChild(s, right+1);
-		else {
-			int piv = (left + right) / 2;
-			float pivpos = ((ShapeGroup)shapes.getChild(piv)).pos;
-			if(pivpos < s.pos)
-				insertAscending(shapes, s, piv+1, right);
-			else if(pivpos > s.pos)
-				insertAscending(shapes, s, left, piv-1);
-			else if(pivpos == s.pos)
-				shapes.insertChild(s, piv);
-		}
 	}
 }
