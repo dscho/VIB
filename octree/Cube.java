@@ -17,6 +17,7 @@ public class Cube implements VolRendConstants {
 	public static final double RES_THRESHOLD = VolumeOctree.SIZE * 3;//Math.sqrt(3);
 
 	final int x, y, z, level;
+	final float pw, ph, pd;
 	final String path;
 	final String name;
 	final String dir;
@@ -40,9 +41,13 @@ public class Cube implements VolRendConstants {
 		this.name = x + "_" + y + "_" + z + "_" + l;
 		this.path = this.dir + name + ".tif";
 		if(exists()) {
-			double lx = cont.CUBE_SIZE * cont.pw * l;
-			double ly = cont.CUBE_SIZE * cont.ph * l;
-			double lz = cont.CUBE_SIZE * cont.pd * l;
+			float[] cal = CubeData.readCalibration(path, null);
+			pw = cal[0];
+			ph = cal[1];
+			pd = cal[2];
+			double lx = cont.CUBE_SIZE * pw;
+			double ly = cont.CUBE_SIZE * ph;
+			double lz = cont.CUBE_SIZE * pd;
 			corners = new Point3d[8];
 			corners[0] = new Point3d(x * cont.pw, y * cont.ph, z * cont.pd);
 			corners[7] = new Point3d(corners[0].x + lx, corners[0].y + ly, corners[0].z + lz);
@@ -52,6 +57,8 @@ public class Cube implements VolRendConstants {
 			corners[4] = new Point3d(corners[0].x, corners[0].y, corners[7].z);
 			corners[5] = new Point3d(corners[7].x, corners[0].y, corners[7].z);
 			corners[6] = new Point3d(corners[0].x, corners[7].y, corners[7].z);
+		} else {
+			pw = ph = pd = 1;
 		}
 	}
 
@@ -119,7 +126,10 @@ public class Cube implements VolRendConstants {
 			// The cube was not displayed at all; create new data
 			// and display it
 			undisplaySubtree();
-			cdata = new CubeData(path, x * cont.pw, y * cont.ph, z * cont.pd);
+//			cdata = new CubeData(path, x * cont.pw, y * cont.ph, z * cont.pd);
+			cdata = new CubeData(path,
+				(float)corners[0].x, (float)corners[0].y, (float)corners[0].z,
+				pw, ph, pd);
 			try {
 				switch(axis) {
 					case Z_AXIS: cdata.createZData(); break;

@@ -22,11 +22,11 @@ public class CubeDataRecycler {
 		return instance;
 	}
 
-	public CubeData newCubeData(String path, float ox, float oy, float oz) {
+	public CubeData newCubeData(String path, float ox, float oy, float oz, float pw, float ph, float pd) {
 		CubeData cdata = pool.pollFirst();
 		if(cdata == null)
-			return new CubeData(path, ox, oy, oz);
-		cdata.set(path, ox, oy, oz);
+			return new CubeData(path, ox, oy, oz, pw, ph, pd);
+		cdata.set(path, ox, oy, oz, pw, ph, pd);
 		return cdata;
 	}
 

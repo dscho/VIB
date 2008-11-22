@@ -81,7 +81,7 @@ public class ShapeContainer implements VolRendConstants {
 		int[] axis = new int[] {X_AXIS, Y_AXIS, Z_AXIS};
 
 		for(int ai = 0; ai < 3; ai++) {
-			CubeData cdata = new CubeData(c.path, pw * c.x, ph * c.y, pd * c.z);
+			CubeData cdata = new CubeData(c.path, pw * c.x, ph * c.y, pd * c.z, pw, ph, pd);
 			try {
 				switch(axis[ai]) {
 					case Z_AXIS: cdata.createZData(); break;

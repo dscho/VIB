@@ -25,9 +25,9 @@ public class CubeData {
 	TexCoordGeneration tg;
 	ShapeGroup[] shapes;
 
-	public CubeData(String path, float ox, float oy, float oz) {
+	public CubeData(String path, float ox, float oy, float oz, float pw, float ph, float pd) {
 		this();
-		set(path, ox, oy, oz);
+		set(path, ox, oy, oz, pw, ph, pd);
 	}
 
 	public CubeData() {
@@ -39,11 +39,14 @@ public class CubeData {
 		}
 	}
 
-	public void set(String path, float ox, float oy, float oz) {
+	public void set(String path, float ox, float oy, float oz, float pw, float ph, float pd) {
 		this.path = path;
 		minX = ox;
 		minY = oy;
 		minZ = oz;
+		this.pw = pw;
+		this.ph = ph;
+		this.pd = pd;
 	}
 
 	private void createShapes() {
@@ -127,6 +130,26 @@ public class CubeData {
 		maxX = minX + SIZE * pw;
 		maxY = minY + SIZE * ph;
 		maxZ = minZ + SIZE * pd;
+	}
+
+	public static final float[] readCalibration(String path, float[] ret) {
+		if(ret == null)
+			ret = new float[3];
+		File f = new File(path);
+		FileInputStream in = null;
+		try {
+			in = new FileInputStream(f);
+			if(in == null)
+				return null;
+			ret[0] = readFloat(in);
+			ret[1] = readFloat(in);
+			ret[2] = readFloat(in);
+			in.close();
+		} catch(Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+		return ret;
 	}
 
 	public static final void writeZData(String path, byte[][] data, float pw, float ph, float pd) throws Exception {
