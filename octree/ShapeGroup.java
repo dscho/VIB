@@ -18,6 +18,7 @@ public class ShapeGroup extends BranchGroup implements Comparable {
 	}
 
 	public ShapeGroup(ShapeGroup sg) {
+		super();
 		this.setCapability(ALLOW_DETACH);
 		Shape3D sgShape = (Shape3D)sg.getChild(0);
 		this.addChild(new Shape3D(sgShape.getGeometry(), sgShape.getAppearance()));
