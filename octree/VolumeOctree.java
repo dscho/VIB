@@ -54,6 +54,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	private OctreeBehavior behavior;
 
 	private boolean cancelUpdating = false;
+	private CubeUpdater updater = new CubeUpdater();
 
 	public VolumeOctree(ImagePlus imp, Canvas3D canvas) {
 		this.imp = imp;
@@ -107,8 +108,10 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	}
 
 	public void cancel() {
-		if(!isUpdateFinished())
+		if(!isUpdateFinished()) {
 			setCancelUpdating(true);
+			updater.cancel();
+		}
 	}
 
 	private int countInitialShapes() {
@@ -193,39 +196,39 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 
 		// sort according to z-order
 		Arrays.sort(shapes);
+		final OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
+		og.removeAllChildren();
+		updater.updateCubes(cubes);
 
 		// add the ShapeGroups of the collected cubes to the scenegraph
-		displayShapes(shapes, curDir);
-
+		displayShapes(og, shapes, curDir);
 		CubeDataRecycler.instance().clearAll();
 		setUpdateFinished(true);
-		if(isCancelUpdating())
+		if(isCancelUpdating()) {
+			System.out.println("Aborted");
+			root.cleanup();
 			setCancelUpdating(false);
-		System.out.println("# shapes: " + countDetailShapes());
+		} else {
+			System.out.println("# shapes: " + countDetailShapes());
+		}
 	}
 
-	void displayShapes(ShapeGroup[] shapes, int dir) {
-		OrderedGroup og = (OrderedGroup)axisSwitch.getChild(DETAIL_AXIS);
-		og.removeAllChildren();
+	void displayShapes(OrderedGroup og, ShapeGroup[] shapes, int dir) {
 		if(dir == FRONT) {
 			for(int i = 0; i < shapes.length; i++) {
-				ShapeGroup sg = shapes[i];
-				Cube c = sg.cube;
-				if(!c.cubeDataUpToDate()) {
-					c.updateCubeData();
-				}
-				og.addChild(sg);
-				if(i % 50 == 0) IJ.showProgress(i, shapes.length);
+				if(isCancelUpdating())
+					break;
+				og.addChild(shapes[i]);
+				if(i % 50 == 0)
+					IJ.showProgress(i, shapes.length);
 			}
 		} else {
 			for(int i = shapes.length - 1; i >= 0; i--) {
-				ShapeGroup sg = shapes[i];
-				Cube c = sg.cube;
-				if(!c.cubeDataUpToDate()) {
-					c.updateCubeData();
-				}
-				og.addChild(sg);
-				if(i % 50 == 0) IJ.showProgress(i, shapes.length);
+				if(isCancelUpdating())
+					break;
+				og.addChild(shapes[i]);
+				if(i % 50 == 0)
+					IJ.showProgress(shapes.length - i, shapes.length);
 			}
 		}
 		IJ.showProgress(1);

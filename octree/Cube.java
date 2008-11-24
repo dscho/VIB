@@ -76,6 +76,18 @@ public class Cube implements VolRendConstants {
 		return !updateNeeded;
 	}
 
+	public void cleanup() {
+		if(cdata != null && updateNeeded) {
+			CubeDataRecycler.instance().deleteCubeData(cdata);
+			cdata = null;
+		}
+		if(children == null)
+			return;
+		for(Cube c : children)
+			if(c != null)
+				c.cleanup();
+	}
+
 	public CubeData getCubeData() {
 		return cdata;
 	}
@@ -107,7 +119,7 @@ public class Cube implements VolRendConstants {
 			if(cdata == null) {
 				// The cube was not displayed at all; create new data
 				undisplaySubtree();
-				cdata = new CubeData(this);
+				cdata = CubeDataRecycler.instance().newCubeData(this);
 				cdata.prepareForAxis(axis);
 				updateNeeded = true;
 			} else if(axis == cdata.axis) {
