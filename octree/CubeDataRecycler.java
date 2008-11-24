@@ -5,15 +5,20 @@ import java.util.LinkedList;
 public class CubeDataRecycler {
 	
 	private static CubeDataRecycler instance = null;
+	private static int CACHE_SIZE;
 	
-	private LinkedList<CubeData> pool;
+	private CubeData[] pool;
+	private int size;
 
 	private CubeDataRecycler() {
-		pool = new LinkedList<CubeData>();
+		pool = new CubeData[CACHE_SIZE];
+		size = 0;
 	}
 
 	public void clearAll() {
-		pool.clear();
+		for(int i = 0; i < size; i++)
+			pool[i] = null;
+		size = 0;
 	}
 
 	public static CubeDataRecycler instance() {
@@ -23,14 +28,16 @@ public class CubeDataRecycler {
 	}
 
 	public CubeData newCubeData(Cube cube) {
-		CubeData cdata = pool.pollFirst();
-		if(cdata == null)
+		if(size == 0)
 			return new CubeData(cube);
+		size--;
+		CubeData cdata = pool[size];
 		cdata.setCube(cube);
 		return cdata;
 	}
 
 	public void deleteCubeData(CubeData cdata) {
-		pool.add(cdata);
+		if(size < CACHE_SIZE)
+			pool[size++] = cdata;
 	}
 }
