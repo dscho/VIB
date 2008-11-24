@@ -127,7 +127,9 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			Path p = new Path( spacing_x, spacing_y, spacing_z, "" /* FIXME: get the real spacing_units */, path.size() );
 			for( int i = 0; i < path.size(); ++i ) {
 				NewGraphNode n = path.get(i);
-				p.addPoint(n.x,n.y,n.z);
+				p.addPointDouble( n.x * spacing_x,
+						  n.y * spacing_y,
+						  n.z * spacing_z );
 			}
 			return p;
 		}

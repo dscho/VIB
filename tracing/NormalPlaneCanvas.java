@@ -117,10 +117,11 @@ class NormalPlaneCanvas extends ImageCanvas {
 		int z = imp.getCurrentSlice() - 1;
 
 		if( z != last_slice ) {
-			int [] point = new int[3];
-			fittedPath.getPoint( z, point );
-			tracerPlugin.setSlicesAllPanes( point[0], point[1], point[2] );
-			tracerPlugin.setCrosshair( point[0], point[1], point[2] );
+			int px = fittedPath.getXUnscaled(z);
+			int py = fittedPath.getYUnscaled(z);
+			int pz = fittedPath.getZUnscaled(z);
+			tracerPlugin.setSlicesAllPanes( px, py, pz );
+			tracerPlugin.setCrosshair( px, py, pz );
 			last_slice = z;
 		}
 

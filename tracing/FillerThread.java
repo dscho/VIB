@@ -241,9 +241,9 @@ public class FillerThread extends SearchThread {
 		while( pi.hasNext() ) {
 			Path p = pi.next();
                         for( int k = 0; k < p.size(); ++k ) {
-                                SearchNode f = new SearchNode( p.x_positions[k],
-                                                               p.y_positions[k],
-                                                               p.z_positions[k],
+                                SearchNode f = new SearchNode( p.getXUnscaled(k),
+                                                               p.getYUnscaled(k),
+                                                               p.getZUnscaled(k),
                                                                0,
 							       0,
                                                                null,

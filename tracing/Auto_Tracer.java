@@ -332,8 +332,6 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			if ( verbose ) System.out.print("  === Destinations: "+destinations.size()+" ");
 			if ( verbose ) System.out.flush();
 
-			int [] pa = new int[3];
-
 			for( Iterator<AutoPoint> it = destinations.iterator(); it.hasNext(); ) {
 
 				if ( verbose ) System.out.print("    ");
@@ -358,9 +356,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 						if ( verbose ) System.out.print(".");
 						if ( verbose ) System.out.flush();
 
-						path.getPoint(i,pa);
+						int pax = path.getXUnscaled(i);
+						int pay = path.getYUnscaled(i);
+						int paz = path.getZUnscaled(i);
 
-						float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
+						float tubenessThere = tubeValues[paz][pay*width+pax];
 
 						rollingTubeness[nextRollingAt] = tubenessThere;
 
@@ -399,11 +399,13 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 					// If the tubeness is above threshold, add this to the list to prune:
 
-					path.getPoint(i,pa);
+					int pax = path.getXUnscaled(i);
+					int pay = path.getYUnscaled(i);
+					int paz = path.getZUnscaled(i);
 
-					float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
+					float tubenessThere = tubeValues[paz][pay*width+pax];
 
-					current = new AutoPoint(pa[0],pa[1],pa[2]);
+					current = new AutoPoint(pax,pay,paz);
 
 					if( tubenessThere > tubenessThreshold ) {
 						destinationsToPrune.add(current);

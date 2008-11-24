@@ -597,11 +597,16 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				}
 				pw.print(" reallength=\"" + p.getRealLength( ) + "\"");
 				pw.println( ">" );
+
 				for( int i = 0; i < p.size(); ++i ) {
-					pw.println("    <point x=\"" +
-						   p.x_positions[i] + "\" " +
-						   "y=\"" + p.y_positions[i] + "\" z=\"" +
-						   p.z_positions[i] + "\"/>");
+					int px = p.getXUnscaled(i);
+					int py = p.getYUnscaled(i);
+					int pz = p.getZUnscaled(i);
+					double pxd = p.precise_x_positions[i];
+					double pyd = p.precise_y_positions[i];
+					double pzd = p.precise_z_positions[i];
+					pw.println("    <point x=\"" + px + "\" " + "y=\"" + py + "\" z=\"" + pz + "\" "+
+						   "xd=\"" + pxd + "\" yd=\"" + pyd + "\" zd=\"" + pzd + "\"/>");
 				}
 				pw.println( "  </path>" );
 			}
@@ -795,15 +800,33 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			try {
 
+				double parsed_xd, parsed_yd, parsed_zd;
+
+				String xdString = attributes.getValue("xd");
+				String ydString = attributes.getValue("yd");
+				String zdString = attributes.getValue("zd");
+
 				String xString = attributes.getValue("x");
 				String yString = attributes.getValue("y");
 				String zString = attributes.getValue("z");
 
-				int parsed_x = Integer.parseInt(xString);
-				int parsed_y = Integer.parseInt(yString);
-				int parsed_z = Integer.parseInt(zString);
+				if( xdString != null &&
+				    ydString != null &&
+				    zdString != null ) {
+					parsed_xd = Double.parseDouble(xdString);
+					parsed_yd = Double.parseDouble(ydString);
+					parsed_zd = Double.parseDouble(zdString);
+				} else if( xString != null &&
+					   yString != null &&
+					   zString != null ) {
+					parsed_xd = parsed_x_spacing * Integer.parseInt(xString);
+					parsed_yd = parsed_y_spacing * Integer.parseInt(yString);
+					parsed_zd = parsed_z_spacing * Integer.parseInt(zString);
+				} else {
+					throw new TracesFileFormatException("Each point element must have at least the attributes (x, y and z) or (xd, yd, zd)");
+				}
 
-				current_path.addPoint(parsed_x,parsed_y,parsed_z);
+				current_path.addPointDouble(parsed_xd,parsed_yd,parsed_zd);
 
 			} catch( NumberFormatException e ) {
 				throw new TracesFileFormatException("There was an invalid attribute to <imagesize/>");
@@ -1071,6 +1094,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return result;
 	}
 
+/* FIXME: new format now... */
+/*
 	public boolean getTracings( boolean mineOnly, ArchiveClient archiveClient ) {
 
 		Hashtable<String,String> parameters = new Hashtable<String,String>();
@@ -1133,9 +1158,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 
 	}
+*/
 
 	// This method outputs the wrong format now.  FIXME
-
+/*
 	@Deprecated
 	public static byte [] tracesAsBytes( ArrayList< Path > all_paths ) {
 		String s = tracesAsString( all_paths );
@@ -1146,9 +1172,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			return null;
 		}
 	}
+*/
 
 	// This method outputs the wrong format now.  FIXME
-
+/*
 	@Deprecated
 	public static String tracesAsString( ArrayList< Path > all_paths ) {
 
@@ -1159,37 +1186,40 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		// if (verbose) System.out.println("Paths to draw: "+paths);
 		for( int i = 0; i < paths; ++i ) {
 
-			int last_x = -1;
-			int last_y = -1;
-			int last_z = -1;
+			double last_x = Double.MIN_VALUE;
+			double last_y = Double.MIN_VALUE;
+			double last_z = Double.MIN_VALUE;
 
 			Path path = all_paths.get(i);
 
 			for( int k = 0; k < path.size(); ++k ) {
-				int x = path.x_positions[k];
-				int y = path.y_positions[k];
-				int z = path.z_positions[k];
-				if( (last_x == x) && (last_y == y) && (last_z == z) ) {
+				double xd = path.precise_x_positions[k];
+				double yd = path.precise_y_positions[k];
+				double zd = path.precise_z_positions[k];
+				if( (last_x == xd) && (last_y == yd) && (last_z == zd) ) {
 					// Skip this, it's just the same.
 				} else {
 					String toWrite = "" + i + "\t" +
-						x + "\t" +
-						y + "\t" +
-						z + "\t" +
+						xd + "\t" +
+						yd + "\t" +
+						zd + "\t" +
 						(path.startJoins != null) + "\n";
 					// if (verbose) System.out.println( "Writing line: " + toWrite );
 					sb.append( toWrite );
 				}
-				last_x = x;
-				last_y = y;
-				last_z = z;
+				last_x = xd;
+				last_y = yd;
+				last_z = zd;
 			}
 		}
 
 		return sb.toString();
 
 	}
+*/
 
+/* FIXME: should change this to upload XML instead */
+/*
 	public boolean uploadTracings( ArchiveClient archiveClient ) {
 
 		if( archiveClient == null ) {
@@ -1227,6 +1257,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 
 	}
+*/
 
 	/* This method will set all the points in array that
 	 * correspond to points on one of the paths to 255, leaving
@@ -1236,7 +1267,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
 			Path p = (Path)j.next();
 			for( int i = 0; i < p.size(); ++i ) {
-				slices[p.z_positions[i]][p.y_positions[i] * width + p.x_positions[i]] =
+				slices[p.getZUnscaled(i)][p.getYUnscaled(i) * width + p.getXUnscaled(i)] =
 					(byte)255;
 			}
 		}
@@ -1246,7 +1277,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		PointInImage result = null;
 
-		int minimumDistanceSquared = Integer.MAX_VALUE;
+		double minimumDistanceSquared = Double.MAX_VALUE;
 
 		int paths = allPaths.size();
 
@@ -1259,15 +1290,15 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			for( int i = 0; i < p.size(); ++i ) {
 
-				int this_x = p.x_positions[i];
-				int this_y = p.y_positions[i];
-				int this_z = p.z_positions[i];
+				double this_x = p.precise_x_positions[i];
+				double this_y = p.precise_y_positions[i];
+				double this_z = p.precise_z_positions[i];
 
-				int diff_x = x - this_x;
-				int diff_y = y - this_y;
-				int diff_z = z - this_z;
+				double diff_x = x * x_spacing - this_x;
+				double diff_y = y * y_spacing - this_y;
+				double diff_z = z * z_spacing - this_z;
 
-				int thisDistanceSquared = diff_x * diff_x + diff_y * diff_y + diff_z * diff_z;
+				double thisDistanceSquared = diff_x * diff_x + diff_y * diff_y + diff_z * diff_z;
 
 				if( thisDistanceSquared < minimumDistanceSquared ) {
 					result = new PointInImage( this_x, this_y, this_z );

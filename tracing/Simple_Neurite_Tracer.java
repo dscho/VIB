@@ -443,9 +443,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			PointInImage pointInImage = pathAndFillManager.nearestJoinPointOnSelectedPaths( x, y, z );
 			if( pointInImage != null ) {
-				x = pointInImage.x;
-				y = pointInImage.y;
-				z = pointInImage.z;
+				x = (int)Math.round( pointInImage.x / x_spacing );
+				y = (int)Math.round( pointInImage.y / y_spacing );
+				z = (int)Math.round( pointInImage.z / z_spacing );
 			}
 		}
 
@@ -640,14 +640,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			x_end = p[0];
 			y_end = p[1];
 			z_end = p[2];
-
 		} else {
-			x_end = joinPoint.x;
-			y_end = joinPoint.y;
-			z_end = joinPoint.z;
+			x_end = (int)Math.round(joinPoint.x / x_spacing);
+			y_end = (int)Math.round(joinPoint.y / y_spacing);
+			z_end = (int)Math.round(joinPoint.z / z_spacing);
 			endJoin = joinPoint.onPath;
 			endJoinIndex = joinPoint.onPathIndex;
-
 		}
 
 		currentSearchThread = new TracerThread(
@@ -690,9 +688,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		currentPath.add( temporaryPath );
 
 		PointInImage last = currentPath.lastPoint();
-		last_start_point_x = last.x;
-		last_start_point_y = last.y;
-		last_start_point_z = last.z;
+		last_start_point_x = (int)Math.round(last.x / x_spacing);
+		last_start_point_y = (int)Math.round(last.y / y_spacing);
+		last_start_point_z = (int)Math.round(last.z / z_spacing);
 
 		if( currentPath.endJoins == null ) {
 			setTemporaryPath( null );
@@ -864,9 +862,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			last_start_point_y = p[1];
 			last_start_point_z = p[2];
 		} else {
-			last_start_point_x = joinPoint.x;
-			last_start_point_y = joinPoint.y;
-			last_start_point_z = joinPoint.z;
+			last_start_point_x = (int)Math.round( joinPoint.x / x_spacing );
+			last_start_point_y = (int)Math.round( joinPoint.y / y_spacing );
+			last_start_point_z = (int)Math.round( joinPoint.z / z_spacing );
 			path.setStartJoin( joinPoint.onPath, joinPoint.onPathIndex );
 		}
 
@@ -1300,26 +1298,14 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	public byte [] squareNormalToVector( int side,        // The number of samples in x and y in the plane, separated by step
 					     double step,     // step is in the same units as the _spacing, etc. variables.
-					     int original_x,      /* These are are *not* yet scaled in z    */
-					     int original_y,      /* They're just sample point differences  */
-					     int original_z,
-					     int normal_x,
-					     int normal_y,
-					     int normal_z,
+					     double ox,      /* These are scaled now */
+					     double oy,
+					     double oz,
+					     double nx,
+					     double ny,
+					     double nz,
 					     double [] x_basis_vector,    /* The basis vectors are returned here  */
 					     double [] y_basis_vector ) { /* they *are* scaled by _spacing        */
-
-		double ox = original_x * x_spacing;
-		double oy = original_y * y_spacing;
-		double oz = original_z * z_spacing;
-
-		if (verbose) System.out.println( "scaled start point is "+ox+","+oy+","+oz);
-
-		double nx = normal_x * x_spacing;
-		double ny = normal_y * y_spacing;
-		double nz = normal_z * z_spacing;
-
-		if (verbose) System.out.println( "scaled normal is "+nx+","+ny+","+nz);
 
 		byte [] result = new byte[side*side];
 
@@ -1562,17 +1548,21 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		IJ.showProgress(proportion);
 	}
 
+/*
 	public void getTracings( boolean mineOnly ) {
 		boolean result = pathAndFillManager.getTracings( mineOnly, archiveClient );
 		if( result )
 			unsavedPaths = false;
 	}
+*/
 
+/*
 	public void uploadTracings( ) {
 		boolean result = pathAndFillManager.uploadTracings( archiveClient );
 		if( result )
 			unsavedPaths = false;
 	}
+*/
 
 	public static boolean haveJava3D() {
 		ClassLoader loader = IJ.getClassLoader();

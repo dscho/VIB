@@ -201,8 +201,8 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 				int n = unconfirmedSegment.size();
 
-				int x = screenX(unconfirmedSegment.x_positions[n-1]);
-				int y = screenY(unconfirmedSegment.y_positions[n-1]);
+				int x = screenX(unconfirmedSegment.getXUnscaled(n-1));
+				int y = screenY(unconfirmedSegment.getYUnscaled(n-1));
 
 				int rectX = x - spotExtra;
 				int rectY = y - spotExtra;

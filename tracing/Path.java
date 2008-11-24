@@ -144,9 +144,9 @@ public class Path implements Comparable {
 	public double getRealLength( ) {
 		double totalLength = 0;
 		for( int i = 1; i < points; ++i  ) {
-			double xdiff = (x_positions[i] - x_positions[i-1]) * x_spacing;
-			double ydiff = (y_positions[i] - y_positions[i-1]) * y_spacing;
-			double zdiff = (z_positions[i] - z_positions[i-1]) * z_spacing;
+			double xdiff = precise_x_positions[i] - precise_x_positions[i-1];
+			double ydiff = precise_y_positions[i] - precise_y_positions[i-1];
+			double zdiff = precise_z_positions[i] - precise_z_positions[i-1];
 			totalLength += Math.sqrt(
 				xdiff * xdiff +
 				ydiff * ydiff +
@@ -251,9 +251,9 @@ public class Path implements Comparable {
 		this.spacing_units = spacing_units;
 		points = 0;
 		maxPoints = 128;
-		x_positions = new int[maxPoints];
-		y_positions = new int[maxPoints];
-		z_positions = new int[maxPoints];
+		precise_x_positions = new double[maxPoints];
+		precise_y_positions = new double[maxPoints];
+		precise_z_positions = new double[maxPoints];
 		somehowJoins = new ArrayList<Path>();
 		children = new ArrayList<Path>();
 	}
@@ -265,9 +265,9 @@ public class Path implements Comparable {
 		this.spacing_units = spacing_units;
 		points = 0;
 		maxPoints = reserve;
-		x_positions = new int[maxPoints];
-		y_positions = new int[maxPoints];
-		z_positions = new int[maxPoints];
+		precise_x_positions = new double[maxPoints];
+		precise_y_positions = new double[maxPoints];
+		precise_z_positions = new double[maxPoints];
 		somehowJoins = new ArrayList<Path>();
 		children = new ArrayList<Path>();
 	}
@@ -275,14 +275,11 @@ public class Path implements Comparable {
 	public int points;
 	public int maxPoints;
 
-	public int x_positions[];
-	public int y_positions[];
-	public int z_positions[];
-
 	public int size( ) {
 		return points;
 	}
 
+/* FIXME: put back
 	public void getPoint( int i, int [] p ) {
 
 		if( (i < 0) || i >= size() ) {
@@ -293,6 +290,36 @@ public class Path implements Comparable {
 		p[0] = x_positions[i];
 		p[1] = y_positions[i];
 		p[2] = z_positions[i];
+	}
+*/
+
+	public void getPointDouble( int i, double [] p ) {
+
+		if( (i < 0) || i >= size() ) {
+			throw new RuntimeException("BUG: getPointDouble was asked for an out-of-range point: "+i);
+		}
+
+		p[0] = precise_x_positions[i];
+		p[1] = precise_y_positions[i];
+		p[2] = precise_z_positions[i];
+	}
+
+	public int getXUnscaled( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getXUnscaled was asked for an out-of-range point: "+i);
+		return (int)Math.round( precise_x_positions[i] / x_spacing );
+	}
+
+	public int getYUnscaled( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getYUnscaled was asked for an out-of-range point: "+i);
+		return (int)Math.round( precise_y_positions[i] / y_spacing );
+	}
+
+	public int getZUnscaled( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getZUnscaled was asked for an out-of-range point: "+i);
+		return (int)Math.round( precise_z_positions[i] / z_spacing );
 	}
 
 /* FIXME:
@@ -335,34 +362,34 @@ public class Path implements Comparable {
 		if( points < 1 )
 			return null;
 		else
-			return new PointInImage( x_positions[points-1],
-						 y_positions[points-1],
-						 z_positions[points-1] );
+			return new PointInImage( precise_x_positions[points-1],
+						 precise_y_positions[points-1],
+						 precise_z_positions[points-1] );
 	}
 
 	void expandTo( int newMaxPoints  ) {
 
-		int [] new_x_positions = new int[newMaxPoints];
-		int [] new_y_positions = new int[newMaxPoints];
-		int [] new_z_positions = new int[newMaxPoints];
-		System.arraycopy( x_positions,
+		double [] new_precise_x_positions = new double[newMaxPoints];
+		double [] new_precise_y_positions = new double[newMaxPoints];
+		double [] new_precise_z_positions = new double[newMaxPoints];
+		System.arraycopy( precise_x_positions,
 				  0,
-				  new_x_positions,
-				  0,
-				  points );
-		System.arraycopy( y_positions,
-				  0,
-				  new_y_positions,
+				  new_precise_x_positions,
 				  0,
 				  points );
-		System.arraycopy( z_positions,
+		System.arraycopy( precise_y_positions,
 				  0,
-				  new_z_positions,
+				  new_precise_y_positions,
 				  0,
 				  points );
-		x_positions = new_x_positions;
-		y_positions = new_y_positions;
-		z_positions = new_z_positions;
+		System.arraycopy( precise_z_positions,
+				  0,
+				  new_precise_z_positions,
+				  0,
+				  points );
+		precise_x_positions = new_precise_x_positions;
+		precise_y_positions = new_precise_y_positions;
+		precise_z_positions = new_precise_z_positions;
 		maxPoints = newMaxPoints;
 	}
 
@@ -384,31 +411,31 @@ public class Path implements Comparable {
 		   on this path: */
 
 		if( points > 0 ) {
-			int last_x = x_positions[points-1];
-			int last_y = y_positions[points-1];
-			int last_z = z_positions[points-1];
-			while((other.x_positions[toSkip] == last_x) &&
-			      (other.y_positions[toSkip] == last_y) &&
-			      (other.z_positions[toSkip] == last_z)) {
+			double last_x = precise_x_positions[points-1];
+			double last_y = precise_y_positions[points-1];
+			double last_z = precise_z_positions[points-1];
+			while((other.precise_x_positions[toSkip] == last_x) &&
+			      (other.precise_y_positions[toSkip] == last_y) &&
+			      (other.precise_z_positions[toSkip] == last_z)) {
 				++toSkip;
 			}
 		}
 
-		System.arraycopy( other.x_positions,
+		System.arraycopy( other.precise_x_positions,
 				  toSkip,
-				  x_positions,
+				  precise_x_positions,
 				  points,
 				  other.points - toSkip );
 
-		System.arraycopy( other.y_positions,
+		System.arraycopy( other.precise_y_positions,
 				  toSkip,
-				  y_positions,
+				  precise_y_positions,
 				  points,
 				  other.points - toSkip );
 
-		System.arraycopy( other.z_positions,
+		System.arraycopy( other.precise_z_positions,
 				  toSkip,
-				  z_positions,
+				  precise_z_positions,
 				  points,
 				  other.points - toSkip );
 
@@ -439,26 +466,27 @@ public class Path implements Comparable {
 		Path c = new Path( x_spacing, y_spacing, z_spacing, spacing_units, points );
 		c.points = points;
 		for( int i = 0; i < points; ++i ) {
-			c.x_positions[i] = x_positions[ (points-1) - i ];
-			c.y_positions[i] = y_positions[ (points-1) - i ];
-			c.z_positions[i] = z_positions[ (points-1) - i ];
+			c.precise_x_positions[i] = precise_x_positions[ (points-1) - i ];
+			c.precise_y_positions[i] = precise_y_positions[ (points-1) - i ];
+			c.precise_z_positions[i] = precise_z_positions[ (points-1) - i ];
 		}
 		return c;
 	}
 
-	void addPoint( int x, int y, int z ) {
+	void addPointDouble( double x, double y, double z ) {
 		if( points >= maxPoints ) {
 			expandTo( (int)( maxPoints * 1.2 + 1 ) );
 		}
-		x_positions[points] = x;
-		y_positions[points] = y;
-		z_positions[points++] = z;
+		precise_x_positions[points] = x;
+		precise_y_positions[points] = y;
+		precise_z_positions[points++] = z;
 	}
 
 	public void drawPathAsPoints( ImageCanvas canvas, Graphics g, java.awt.Color c, int plane ) {
 		drawPathAsPoints( canvas, g, c, plane, 0, -1 );
 	}
 
+	/* FIXME: Should draw lines between points now, not just points... */
 
 	public void drawPathAsPoints( ImageCanvas canvas, Graphics g, java.awt.Color c, int plane, int z, int either_side ) {
 
@@ -484,11 +512,11 @@ public class Path implements Comparable {
 		case ThreePanes.XY_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(z_positions[i] - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
 					continue;
 
-				int x = canvas.screenX(x_positions[i]);
-				int y = canvas.screenY(y_positions[i]);
+				int x = canvas.screenXD(getXUnscaled(i));
+				int y = canvas.screenYD(getYUnscaled(i));
 
 				if( ((i == 0) && (startJoins == null)) ||
 				    ((i == points - 1) && (endJoins == null)) ) {
@@ -509,11 +537,11 @@ public class Path implements Comparable {
 		case ThreePanes.XZ_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(z_positions[i] - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
 					continue;
 
-				int x = canvas.screenX(x_positions[i]);
-				int y = canvas.screenY(z_positions[i]);
+				int x = canvas.screenXD(getXUnscaled(i));
+				int y = canvas.screenYD(getZUnscaled(i));
 
 				if( ((i == 0) && (startJoins == null)) ||
 				    ((i == points - 1) && (endJoins == null)) ) {
@@ -534,11 +562,11 @@ public class Path implements Comparable {
 		case ThreePanes.ZY_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(z_positions[i] - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
 					continue;
 
-				int x = canvas.screenX(z_positions[i]);
-				int y = canvas.screenY(y_positions[i]);
+				int x = canvas.screenXD(getZUnscaled(i));
+				int y = canvas.screenYD(getYUnscaled(i));
 
 				if( ((i == 0) && (startJoins == null)) ||
 				    ((i == points - 1) && (endJoins == null)) ) {
@@ -724,15 +752,15 @@ public class Path implements Comparable {
 			if( max_index >= totalPoints )
 				max_index = totalPoints - 1;
 
-			int x_diff = x_positions[max_index] - x_positions[min_index];
-			int y_diff = y_positions[max_index] - y_positions[min_index];
-			int z_diff = z_positions[max_index] - z_positions[min_index];
+			double x_diff_world = precise_x_positions[max_index] - precise_x_positions[min_index];
+			double y_diff_world = precise_y_positions[max_index] - precise_y_positions[min_index];
+			double z_diff_world = precise_z_positions[max_index] - precise_z_positions[min_index];
 
 			IJ.showProgress( i / (float)totalPoints );
 
-			int x = x_positions[i];
-			int y = y_positions[i];
-			int z = z_positions[i];
+			double x_world = precise_x_positions[i];
+			double y_world = precise_y_positions[i];
+			double z_world = precise_z_positions[i];
 
 			double [] x_basis_in_plane = new double[3];
 			double [] y_basis_in_plane = new double[3];
@@ -740,12 +768,12 @@ public class Path implements Comparable {
 			byte [] normalPlane = plugin.squareNormalToVector(
 				side,
 				scaleInNormalPlane,   // This is in the same units as the _spacing, etc. variables.
-				x,      // These are are *not* yet scaled in z
-				y,      // They're just sample point differences
-				z,
-				x_diff,
-				y_diff,
-				z_diff,
+				x_world,      // These are scaled now
+				y_world,
+				z_world,
+				x_diff_world,
+				y_diff_world,
+				z_diff_world,
 				x_basis_in_plane,
 				y_basis_in_plane );
 
@@ -753,9 +781,9 @@ public class Path implements Comparable {
 			   a circle in there... */
 
 			// n.b. thes aren't normalized
-			ts_x[i] = x_diff * x_spacing;
-			ts_y[i] = y_diff * y_spacing;
-			ts_z[i] = z_diff * z_spacing;
+			ts_x[i] = x_diff_world;
+			ts_y[i] = y_diff_world;
+			ts_z[i] = z_diff_world;
 
 			ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
 			// optimizer.prin = 2; // debugging information on
@@ -806,9 +834,9 @@ public class Path implements Comparable {
 			if( verbose )
 				System.out.println("vector to new centre from original: "+x_from_centre_in_plane+","+y_from_centre_in_plane);
 
-			double centre_real_x = (x * x_spacing);
-			double centre_real_y = (y * y_spacing);
-			double centre_real_z = (z * z_spacing);
+			double centre_real_x = x_world;
+			double centre_real_y = y_world;
+			double centre_real_z = z_world;
 
 			if( verbose )
 				System.out.println("original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
@@ -904,12 +932,12 @@ public class Path implements Comparable {
 
 				if( (goneTooFar && ! nextValid) || firstOrLast ) {
 					valid[i] = true;
-					xs_in_image[i] = x_positions[i];
-					ys_in_image[i] = y_positions[i];
-					zs_in_image[i] = z_positions[i];
-					optimized_x[i] = x_spacing * x_positions[i];
-					optimized_y[i] = y_spacing * y_positions[i];
-					optimized_z[i] = z_spacing * z_positions[i];
+					xs_in_image[i] = getXUnscaled(i);
+					ys_in_image[i] = getYUnscaled(i);
+					zs_in_image[i] = getZUnscaled(i);
+					optimized_x[i] = precise_x_positions[i];
+					optimized_y[i] = precise_y_positions[i];
+					optimized_z[i] = precise_z_positions[i];
 					rsUnscaled[i] = 1;
 					rs[i] = scaleInNormalPlane;
 					modeRadiusesUnscaled[i] = 1;
@@ -924,7 +952,7 @@ public class Path implements Comparable {
 					rsUnscaled[i] = 1;
 					rs[i] = scaleInNormalPlane;
 				}
-				fitted.addPoint( xs_in_image[i], ys_in_image[i], zs_in_image[i] );
+				fitted.addPointDouble( precise_x_positions[i], precise_y_positions[i], precise_z_positions[i] );
 				lastValidIndex = i;
 			}
 		}
@@ -1002,9 +1030,9 @@ public class Path implements Comparable {
 	private double [] tangents_y;
 	private double [] tangents_z;
 
-	private double [] optimized_x;
-	private double [] optimized_y;
-	private double [] optimized_z;
+	double [] precise_x_positions;
+	double [] precise_y_positions;
+        double [] precise_z_positions;
 
 	public boolean hasCircles() {
 		return radiuses != null;
@@ -1024,9 +1052,9 @@ public class Path implements Comparable {
 
 		this.radiuses = radiuses.clone();
 
-		this.optimized_x = optimized_x.clone();
-		this.optimized_y = optimized_y.clone();
-		this.optimized_z = optimized_z.clone();
+		this.precise_x_positions = optimized_x.clone();
+		this.precise_y_positions = optimized_y.clone();
+		this.precise_z_positions = optimized_z.clone();
 	}
 
 	@Override
@@ -1095,11 +1123,11 @@ public class Path implements Comparable {
 			int lastIndexAdded = - noMoreThanOneEvery;
 			for( int i = 0; i < points; ++i ) {
 				if( i - lastIndexAdded >= noMoreThanOneEvery ) {
-					x_points_d[added] = optimized_x[i];
-					y_points_d[added] = optimized_y[i];
-					z_points_d[added] = optimized_z[i];
+					x_points_d[added] = precise_x_positions[i];
+					y_points_d[added] = precise_y_positions[i];
+					z_points_d[added] = precise_z_positions[i];
 					diameters[added] = 2 * radiuses[i];
-					System.out.println("point["+added+"] use diameter: "+diameters[added]+" at x="+optimized_x[i]+", y="+optimized_y[i]+", z="+optimized_z[i]);
+					System.out.println("point["+added+"] use diameter: "+diameters[added]+" at x="+x_points_d[added]+", y="+y_points_d[added]+", z="+z_points_d[added]);
 					lastIndexAdded = i;
 					++ added;
 				}
@@ -1107,9 +1135,9 @@ public class Path implements Comparable {
 			pointsToUse = added;
 		} else {
 			for(int i=0; i<points; ++i) {
-				x_points_d[i] = x_spacing * x_positions[i];
-				y_points_d[i] = y_spacing * y_positions[i];
-				z_points_d[i] = z_spacing * z_positions[i];
+				x_points_d[i] = precise_x_positions[i];
+				y_points_d[i] = precise_y_positions[i];
+				z_points_d[i] = precise_z_positions[i];
 				diameters[i] = x_spacing * 3;
 			}
 			pointsToUse = points;

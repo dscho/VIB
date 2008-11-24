@@ -953,11 +953,11 @@ class NeuriteTracerResultsDialog
 
 		Object source = e.getSource();
 
-		if( source == uploadButton ) {
+		/* if( source == uploadButton ) {
 			plugin.uploadTracings();
 		} else if( source == fetchButton ) {
 			plugin.getTracings( true );
-		} else if( source == saveButton ) {
+		} else */ if( source == saveButton ) {
 
 			FileInfo info = plugin.file_info;
 			SaveDialog sd;
