@@ -71,9 +71,9 @@ public class Albert_Test implements PlugIn {
 		Calibration calibration = imagePlus.getCalibration();
 		double minimumSeparation = 1;
 		if( calibration != null )
-			minimumSeparation = Math.min(calibration.pixelWidth,
-						     Math.min(calibration.pixelHeight,
-							      calibration.pixelDepth));
+			minimumSeparation = Math.min(Math.abs(calibration.pixelWidth),
+						     Math.min(Math.abs(calibration.pixelHeight),
+							      Math.abs(calibration.pixelDepth)));
 
                 ComputeCurvatures hessian=null;
                 if( true )  {
