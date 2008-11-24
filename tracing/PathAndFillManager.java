@@ -537,6 +537,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			pw.println("  <!ATTLIST point          x             CDATA           #REQUIRED>");
 			pw.println("  <!ATTLIST point          y             CDATA           #REQUIRED>");
 			pw.println("  <!ATTLIST point          z             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST point          xd            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          yd            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          zd            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          tx            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          ty            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          tz            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          r             CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST fill           id            CDATA           #REQUIRED>");
 			pw.println("  <!ATTLIST fill           frompaths     CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST fill           metric        CDATA           #REQUIRED>");
@@ -605,8 +612,15 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					double pxd = p.precise_x_positions[i];
 					double pyd = p.precise_y_positions[i];
 					double pzd = p.precise_z_positions[i];
-					pw.println("    <point x=\"" + px + "\" " + "y=\"" + py + "\" z=\"" + pz + "\" "+
-						   "xd=\"" + pxd + "\" yd=\"" + pyd + "\" zd=\"" + pzd + "\"/>");
+					String attributes = "x=\"" + px + "\" " + "y=\"" + py + "\" z=\"" + pz + "\" "+
+						"xd=\"" + pxd + "\" yd=\"" + pyd + "\" zd=\"" + pzd + "\"";
+					if( p.hasCircles() ) {
+						attributes += " tx=\""+p.tangents_x[i]+"\"";
+						attributes += " ty=\""+p.tangents_y[i]+"\"";
+						attributes += " tz=\""+p.tangents_z[i]+"\"";
+						attributes += " r=\""+p.radiuses[i]+"\"";
+					}
+					pw.println("    <point "+attributes+"/>");
 				}
 				pw.println( "  </path>" );
 			}
@@ -816,17 +830,55 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					parsed_xd = Double.parseDouble(xdString);
 					parsed_yd = Double.parseDouble(ydString);
 					parsed_zd = Double.parseDouble(zdString);
+				} else if( xdString != null ||
+					   ydString != null ||
+					   zdString != null ) {
+					throw new TracesFileFormatException("If one of the attributes xd, yd or zd to the point element is specified, they all must be.");
 				} else if( xString != null &&
 					   yString != null &&
 					   zString != null ) {
 					parsed_xd = parsed_x_spacing * Integer.parseInt(xString);
 					parsed_yd = parsed_y_spacing * Integer.parseInt(yString);
 					parsed_zd = parsed_z_spacing * Integer.parseInt(zString);
+				} else if( xString != null ||
+					   yString != null ||
+					   zString != null ) {
+					throw new TracesFileFormatException("If one of the attributes x, y or z to the point element is specified, they all must be.");
 				} else {
 					throw new TracesFileFormatException("Each point element must have at least the attributes (x, y and z) or (xd, yd, zd)");
 				}
 
 				current_path.addPointDouble(parsed_xd,parsed_yd,parsed_zd);
+
+				int lastIndex = current_path.size() - 1;
+				String radiusString = attributes.getValue("r");
+				String tXString = attributes.getValue("tx");
+				String tYString = attributes.getValue("ty");
+				String tZString = attributes.getValue("tz");
+
+				if( radiusString != null &&
+				    tXString != null &&
+				    tYString != null &&
+				    tZString != null ) {
+					if( lastIndex == 0 )
+						// Then we've just started, create the arrays in Path:
+						current_path.createCircles();
+					else if( ! current_path.hasCircles() )
+						throw new TracesFileFormatException("The point at index " + lastIndex + " had a fitted circle, but none previously did");
+					current_path.tangents_x[lastIndex] = Double.parseDouble( tXString );
+					current_path.tangents_y[lastIndex] = Double.parseDouble( tYString );
+					current_path.tangents_z[lastIndex] = Double.parseDouble( tZString );
+					current_path.radiuses[lastIndex] = Double.parseDouble( radiusString );
+				} else if( radiusString != null ||
+					   tXString != null ||
+					   tYString != null ||
+					   tZString != null )
+					throw new TracesFileFormatException("If one of the r, tx, ty or tz attributes to the point element is specified, they all must be");
+				else {
+					// All circle attributes are null:
+					if( current_path.hasCircles() )
+						throw new TracesFileFormatException("The point at index " + lastIndex + " had no fitted circle, but all previously did");
+				}
 
 			} catch( NumberFormatException e ) {
 				throw new TracesFileFormatException("There was an invalid attribute to <imagesize/>");

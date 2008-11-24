@@ -159,6 +159,15 @@ public class Path implements Comparable {
 		return String.format( "%.4f", getRealLength() );
 	}
 
+	public void createCircles( ) {
+		if( tangents_x != null || tangents_y != null || tangents_z != null || radiuses != null )
+			throw new RuntimeException("BUG: Trying to create circles data arrays when at least one is already there");
+		tangents_x = new double[maxPoints];
+		tangents_y = new double[maxPoints];
+		tangents_z = new double[maxPoints];
+		radiuses = new double[maxPoints];
+	}
+
 	boolean primary = false;
 	void setPrimary( boolean primary ) {
 		this.primary = primary;
@@ -390,6 +399,32 @@ public class Path implements Comparable {
 		precise_x_positions = new_precise_x_positions;
 		precise_y_positions = new_precise_y_positions;
 		precise_z_positions = new_precise_z_positions;
+		if( hasCircles() ) {
+			double [] new_tangents_x = new double[newMaxPoints];
+			double [] new_tangents_y = new double[newMaxPoints];
+			double [] new_tangents_z = new double[newMaxPoints];
+			double [] new_radiuses = new double[newMaxPoints];
+			System.arraycopy( tangents_x,
+					  0,
+					  new_tangents_x,
+					  0,
+					  points );
+			System.arraycopy( tangents_y,
+					  0,
+					  new_tangents_y,
+					  0,
+					  points );
+			System.arraycopy( tangents_z,
+					  0,
+					  new_tangents_z,
+					  0,
+					  points );
+			System.arraycopy( radiuses,
+					  0,
+					  new_radiuses,
+					  0,
+					  points );
+		}
 		maxPoints = newMaxPoints;
 	}
 
@@ -1024,11 +1059,11 @@ public class Path implements Comparable {
 		return fitted;
 	}
 
-	private double [] radiuses;
+	double [] radiuses;
 
-	private double [] tangents_x;
-	private double [] tangents_y;
-	private double [] tangents_z;
+	double [] tangents_x;
+	double [] tangents_y;
+	double [] tangents_z;
 
 	double [] precise_x_positions;
 	double [] precise_y_positions;
