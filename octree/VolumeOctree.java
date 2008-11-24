@@ -84,10 +84,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		refPt = new Point3d(xdim*pw / 2, ydim*ph / 2, zdim*pd / 2);
 
 		axisSwitch = new Switch();
-		axisSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
 		axisSwitch.setCapability(Switch.ALLOW_SWITCH_WRITE);
-		axisSwitch.setCapability(Group.ALLOW_CHILDREN_READ);
-		axisSwitch.setCapability(Group.ALLOW_CHILDREN_WRITE);
 
 		for(int i = 0; i < 7; i++)
 			axisSwitch.addChild(getOrderedGroup());
@@ -134,7 +131,6 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		OrderedGroup og = new OrderedGroup();
 		og.setCapability(Group.ALLOW_CHILDREN_WRITE);
 		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
-		og.setCapability(OrderedGroup.ALLOW_CHILD_INDEX_ORDER_WRITE);
 		return og;
 	}
 
