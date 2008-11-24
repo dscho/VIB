@@ -985,9 +985,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		if( qName.equals("path") ) {
 
 			allPaths.add( current_path );
-			if( plugin.use3DViewer ) {
+			if( plugin.use3DViewer )
 				current_path.addTo3DViewer(plugin.univ,Color.MAGENTA);
-			}
 
 		} else if( qName.equals("fill") ) {
 
@@ -1397,7 +1396,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 	}
 	public void canvasResized() { }
-	public void universeClosed() { }
+	public void universeClosed() {
+		plugin.use3DViewer = false;
+	}
 
 	private static void replaceAll( StringBuffer s, String substring, String replacement ) {
 		int fromIndex = 0;
