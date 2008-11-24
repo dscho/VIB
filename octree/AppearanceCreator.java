@@ -34,8 +34,6 @@ public class AppearanceCreator implements VolRendConstants {
 
 	public Appearance getAppearance(CubeData cdata, int index) {
 		Appearance a = new Appearance();
-		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
-		a.setCapability(Appearance.ALLOW_TEXGEN_WRITE);
 		a.setMaterial(material);
 		a.setTransparencyAttributes(transAttr);
 		a.setPolygonAttributes(polyAttr);
