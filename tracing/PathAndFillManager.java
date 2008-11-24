@@ -83,9 +83,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		this();
 		this.imagePlus = imagePlus;
 		Calibration c = imagePlus.getCalibration();
-		this.x_spacing = Math.abs(c.pixelWidth);
-		this.y_spacing = Math.abs(c.pixelHeight);
-		this.z_spacing = Math.abs(c.pixelDepth);
+		this.x_spacing = c.pixelWidth;
+		this.y_spacing = c.pixelHeight;
+		this.z_spacing = c.pixelDepth;
 		this.spacing_units = c.getUnit();
 		if( this.spacing_units == null || this.spacing_units.length() == 0 )
 			this.spacing_units = "" + c.getUnit();

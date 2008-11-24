@@ -971,15 +971,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			Calibration calibration = currentImage.getCalibration();
 			if( calibration != null ) {
-				double pw = calibration.pixelWidth;
-				double ph = calibration.pixelHeight;
-				double pd = calibration.pixelDepth;
-				if (pw < 0 || ph < 0 || pd < 0) {
-					IJ.error("Warning: some dimensions in calibration information [ "+pw+", "+ph+", "+pd+" ] are negative - treating them as absolute values.");
-				}
-				x_spacing = Math.abs(pw);
-				y_spacing = Math.abs(ph);
-				z_spacing = Math.abs(pd);
+				x_spacing = calibration.pixelWidth;
+				y_spacing = calibration.pixelHeight;
+				z_spacing = calibration.pixelDepth;
 				spacing_units = calibration.getUnits();
 				if( spacing_units == null || spacing_units.length() == 0 )
 					spacing_units = "" + calibration.getUnit();
@@ -1494,7 +1488,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	}
 
 	public double getMinimumSeparation() {
-		return Math.min(x_spacing,Math.min(y_spacing,z_spacing));
+		return Math.min(Math.abs(x_spacing),Math.min(Math.abs(y_spacing),Math.abs(z_spacing)));
 	}
 
 	boolean hessianEnabled = false;
