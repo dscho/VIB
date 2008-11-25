@@ -1016,7 +1016,7 @@ public class Path implements Comparable {
 					rsUnscaled[i] = 1;
 					rs[i] = scaleInNormalPlane;
 				}
-				fitted.addPointDouble( precise_x_positions[i], precise_y_positions[i], precise_z_positions[i] );
+				fitted.addPointDouble( optimized_x[i], optimized_y[i], optimized_z[i] );
 				lastValidIndex = i;
 			}
 		}
