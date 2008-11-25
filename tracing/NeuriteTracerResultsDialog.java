@@ -111,7 +111,6 @@ class NeuriteTracerResultsDialog
 
 	Button deletePaths;
 	Button fillPaths;
-	Button fitCircles;
 
 	List fillList;
 	Button deleteFills;
@@ -286,7 +285,6 @@ class NeuriteTracerResultsDialog
 		pathList.setEnabled(false);
 		deletePaths.setEnabled(false);
 		fillPaths.setEnabled(false);
-		fitCircles.setEnabled(false);
 		fillStatus.setEnabled(false);
 
 		thresholdField.setEnabled(false);
@@ -347,7 +345,6 @@ class NeuriteTracerResultsDialog
 			reloadFill.setEnabled(true);
 
 			fillPaths.setEnabled(true);
-			fitCircles.setEnabled(true);
 			fillStatus.setEnabled(true);
 
 			loadLabelsButton.setEnabled(true);
@@ -691,13 +688,6 @@ class NeuriteTracerResultsDialog
 				fillPaths.addActionListener( this );
 				buttonsForListPanel.add(fillPaths,cl);
 
-				cl.gridx = 0;
-				cl.gridy = 1;
-				fitCircles = new Button("Fit Centres and Circles");
-				fitCircles.addActionListener( this );
-				/* FIXME: put this back when the smoothing works...
-				   buttonsForListPanel.add(fitCircles,cl);
-				*/
 				pathListPanel.add(buttonsForListPanel,BorderLayout.SOUTH);
 			}
 
@@ -1143,16 +1133,6 @@ class NeuriteTracerResultsDialog
 		} else if( source == view3D ) {
 
 			plugin.viewFillIn3D( ! createMask() );
-
-		} else if( source == fitCircles ) {
-
-			int [] indices = pathList.getSelectedIndexes();
-			if( indices.length != 1 ) {
-				IJ.error("You must have exactly one path selected in order to show the normal panes for it.");
-				return;
-			}
-
-			plugin.fitCircles(indices[0],true,40);
 
 		}  else if( source == showOrHidePathList ) {
 

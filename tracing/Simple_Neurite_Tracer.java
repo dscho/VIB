@@ -1464,14 +1464,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		return result;
 	}
 
-
-	synchronized public void fitCircles( int index, boolean display, int withinSide ) {
-
-		Path s = pathAndFillManager.getPath(index);
-		Path fitted = s.fitCircles( withinSide, this, display );
-		pathAndFillManager.addPath( fitted );
-	}
-
 	public double getMinimumSeparation() {
 		return Math.min(Math.abs(x_spacing),Math.min(Math.abs(y_spacing),Math.abs(z_spacing)));
 	}
