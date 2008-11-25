@@ -633,12 +633,14 @@ public class Path implements Comparable {
 		double [] initial;
 
 		byte [] data;
+		int minValueInData;
 		int maxValueInData;
 		int side;
 
-		public CircleAttempt(double [] start, byte [] data, int maxValueInData, int side ) {
+		public CircleAttempt(double [] start, byte [] data, int minValueInData, int maxValueInData, int side ) {
 
 			this.data = data;
+			this.minValueInData = minValueInData;
 			this.maxValueInData = maxValueInData;
 			this.side = side;
 
@@ -681,27 +683,9 @@ public class Path implements Comparable {
 			return badness;
 		}
 
-		public double penalty( double x, double y, double r, double side, double maxPenalty ) {
-
-			double penalty = 0;
-
-			if( (x + r) >= side ) {
-				penalty = maxPenalty;
-			}
-			if( (x - r) < 0 ) {
-				penalty = maxPenalty;
-			}
-			if( (y + r) >= side ) {
-				penalty = maxPenalty;
-	                       }
-			if( (y - r) < 0 ) {
-				penalty = maxPenalty;
-			}
-
-			return penalty;
-		}
-
 		public double evaluateCircle( double x, double y, double r ) {
+
+			double maximumPointPenalty = (maxValueInData - minValueInData) * (maxValueInData - minValueInData);
 
 			double badness = 0;
 
@@ -711,11 +695,16 @@ public class Path implements Comparable {
 					if( r * r > ((i - x) * (i - x)  + (j - y) * (j - y)) )
 						badness += (maxValueInData - value) * (maxValueInData - value);
 					else
-						badness += value * value;
+						badness += (value - minValueInData) * (value - minValueInData);
 				}
 			}
 
-			badness += penalty( x, y, r, side, maxValueInData * maxValueInData );
+			for( double ic = (x - r); ic <= (x + r); ++ic ) {
+				for( double jc = (y - r); jc <= (y + r); ++jc ) {
+					if( ic < 0 || ic > side || jc < 0 || jc > side )
+						badness += maximumPointPenalty;
+				}
+			}
 
 			badness /= (side * side);
 
@@ -832,16 +821,20 @@ public class Path implements Comparable {
 			if( verbose )
 				System.out.println("start search at: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
 
-			int maxValueInSquare = 0;
+			int minValueInSquare = Integer.MAX_VALUE;
+			int maxValueInSquare = Integer.MIN_VALUE;
 			for( int j = 0; j < (side * side); ++j ) {
 				int value = normalPlane[j]&0xFF;
 				if( value > maxValueInSquare )
 					maxValueInSquare = value;
+				if( value < minValueInSquare )
+					minValueInSquare = value;
 			}
 
 			CircleAttempt attempt = new CircleAttempt(
 				startValues,
 				normalPlane,
+				minValueInSquare,
 				maxValueInSquare,
 				side );
 
