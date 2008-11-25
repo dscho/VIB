@@ -145,7 +145,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			Path fitted = p.fitCircles( 40, plugin, true );
 			pathAndFillManager.addPath( fitted );
 			if( plugin.use3DViewer ) {
-				System.out.println("Adding fitted to the 3D viewere");
 				fitted.addTo3DViewer(plugin.univ);
 			}
 			pathAndFillManager.resetListeners(null);

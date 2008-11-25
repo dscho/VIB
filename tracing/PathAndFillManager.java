@@ -374,13 +374,25 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	public synchronized void addPath( Path p, boolean forceNewName ) {
+		if( getPathFromID( p.getID() ) != null )
+			throw new RuntimeException("Attempted to add a path with an ID that was already added");
 		if( p.getID() < 0 ) {
 			p.setID(++maxUsedID);
 		}
-		String suggestedName = getDefaultName(p);
 		if(p.getName() == null || forceNewName) {
+			String suggestedName = getDefaultName(p);
 			p.setName(suggestedName);
 		}
+		// Now check if there's already a path with this name.
+		// If so, try adding numbered suffixes:
+		String originalName = p.getName();
+		String candidateName = originalName;
+		int numberSuffix = 2;
+		while( getPathFromName( candidateName ) != null ) {
+			candidateName = originalName + " (" + numberSuffix + ")";
+			++ numberSuffix;
+		}
+		p.setName( candidateName );
 		allPaths.add(p);
 		resetListeners( p );
 	}
