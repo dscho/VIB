@@ -41,6 +41,7 @@ class NormalPlaneCanvas extends ImageCanvas {
 				  double [] radiuses,
 				  double [] scores,
 				  double [] modeRadiuses,
+				  double [] angles,
 				  boolean [] valid,
 				  Path fittedPath ) {
 		super(imp);
@@ -50,6 +51,7 @@ class NormalPlaneCanvas extends ImageCanvas {
 		this.radiuses = radiuses;
 		this.scores = scores;
 		this.modeRadiuses = modeRadiuses;
+		this.angles = angles;
 		this.valid = valid;
 		this.fittedPath = fittedPath;
 		int slices = imp.getStackSize();
@@ -73,6 +75,7 @@ class NormalPlaneCanvas extends ImageCanvas {
 	double [] scores;
 	double [] modeRadiuses;
 	boolean [] valid;
+	double [] angles;
 
 	Path fittedPath;
 
@@ -178,6 +181,25 @@ class NormalPlaneCanvas extends ImageCanvas {
 			    modeOvalDiameter,
 			    modeOvalDiameter );
 
+		// Show the angle between this one and the other two
+		// so we can see where the path is "pinched":
+		g.setColor(Color.GREEN);
+		double h = (imp.getWidth() * 3) / 8.0;
+		double centreX = imp.getWidth() / 2.0;
+		double centreY = imp.getHeight() / 2.0;
+		double halfAngle = angles[z] / 2;
+		double rightX = centreX + h * Math.sin(halfAngle);
+		double rightY = centreY - h * Math.cos(halfAngle);
+		double leftX = centreX + h * Math.sin(-halfAngle);
+		double leftY = centreX - h * Math.cos(halfAngle);
+		g.drawLine( screenXD(centreX),
+			    screenYD(centreY),
+			    screenXD(rightX),
+			    screenYD(rightY) );
+		g.drawLine( screenXD(centreX),
+			    screenYD(centreY),
+			    screenXD(leftX),
+			    screenYD(leftY) );
 	}
 
 }

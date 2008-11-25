@@ -949,6 +949,35 @@ public class Path implements Comparable {
 			valid[i] = moved[i] < modeRadiusesUnscaled[i];
 		}
 
+		// Calculate the angle between the vectors from the point to the one on either side:
+		double [] angles = new double[totalPoints];
+		// Set the end points to 180 degrees:
+		angles[0] = angles[totalPoints-1] = Math.PI;
+		for( int i = 1; i < totalPoints-1; ++i ) {
+			int previousValid = 0;
+			for( int j = 0; j < i; ++j )
+				if( valid[j] )
+					previousValid = j;
+			int nextValid = totalPoints - 1;
+			for( int j = totalPoints - 1; j > i; --j )
+				if( valid[j] )
+					nextValid = j;
+			double adiffx = optimized_x[previousValid] - optimized_x[i];
+			double adiffy = optimized_y[previousValid] - optimized_y[i];
+			double adiffz = optimized_z[previousValid] - optimized_z[i];
+			double bdiffx = optimized_x[nextValid] - optimized_x[i];
+			double bdiffy = optimized_y[nextValid] - optimized_y[i];
+			double bdiffz = optimized_z[nextValid] - optimized_z[i];
+			double adotb = adiffx * bdiffx + adiffy * bdiffy + adiffz * bdiffz;
+			double asize = Math.sqrt( adiffx*adiffx + adiffy*adiffy + adiffz*adiffz );
+			double bsize = Math.sqrt( bdiffx*bdiffx + bdiffy*bdiffy + bdiffz*bdiffz );
+			angles[i] = Math.acos( adotb / (asize * bsize) );
+			if( angles[i] < (Math.PI / 2) )
+				valid[i] = false;
+		}
+
+
+
 		int lastValidIndex = 0;
 
 		for( int i = 0; i < totalPoints; ++i ) {
@@ -1040,6 +1069,7 @@ public class Path implements Comparable {
 				rsUnscaled,
 				scores,
 				modeRadiusesUnscaled,
+				angles,
 				valid,
 				fitted  );
 
