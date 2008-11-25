@@ -32,6 +32,8 @@ import java.util.*;
 
 class NormalPlaneCanvas extends ImageCanvas {
 
+	HashMap<Integer,Integer> indexToValidIndex = new HashMap<Integer,Integer>();
+
 	public NormalPlaneCanvas( ImagePlus imp,
 				  Simple_Neurite_Tracer plugin,
 				  double [] centre_x_positions,
@@ -54,6 +56,13 @@ class NormalPlaneCanvas extends ImageCanvas {
 		for( int i = 0; i < scores.length; ++i )
 			if( scores[i] > maxScore )
 				maxScore = scores[i];
+		int a = 0;
+		for( int i = 0; i < valid.length; ++i ) {
+			if( valid[i] ) {
+				indexToValidIndex.put(i,a);
+				++a;
+			}
+		}
 	}
 
 	double maxScore = -1;
@@ -117,12 +126,15 @@ class NormalPlaneCanvas extends ImageCanvas {
 		int z = imp.getCurrentSlice() - 1;
 
 		if( z != last_slice ) {
-			int px = fittedPath.getXUnscaled(z);
-			int py = fittedPath.getYUnscaled(z);
-			int pz = fittedPath.getZUnscaled(z);
-			tracerPlugin.setSlicesAllPanes( px, py, pz );
-			tracerPlugin.setCrosshair( px, py, pz );
-			last_slice = z;
+			Integer fittedIndex = indexToValidIndex.get(z);
+			if( fittedIndex != null ) {
+				int px = fittedPath.getXUnscaled(fittedIndex.intValue());
+				int py = fittedPath.getYUnscaled(fittedIndex.intValue());
+				int pz = fittedPath.getZUnscaled(fittedIndex.intValue());
+				tracerPlugin.setSlicesAllPanes( px, py, pz );
+				tracerPlugin.setCrosshair( px, py, pz );
+				last_slice = z;
+			}
 		}
 
 		if( valid[z] ) {
