@@ -148,7 +148,7 @@ class NormalPlaneCanvas extends ImageCanvas {
 			System.out.print("      ");
 		}
 
-		System.out.println("radiuses[z] is: "+radiuses[z]);
+		System.out.println("radiuses["+z+"] is: "+radiuses[z]);
 
 		int x_top_left = screenXD( centre_x_positions[z] - radiuses[z] );
 		int y_top_left = screenYD( centre_y_positions[z] - radiuses[z] );
@@ -165,7 +165,10 @@ class NormalPlaneCanvas extends ImageCanvas {
 
 		double proportion = scores[z] / maxScore;
 		int drawToX = (int)( proportion * ( imp.getWidth() - 1 ) );
-		g.setColor(Color.GREEN);
+		if( valid[z] )
+			g.setColor(Color.GREEN);
+		else
+			g.setColor(Color.RED);
 		g.fillRect( screenX(0),
 			    screenY(0),
 			    screenX(drawToX) - screenX(0),
