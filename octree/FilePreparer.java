@@ -4,7 +4,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
-import ij.process.ByteProcessor;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Properties;
@@ -107,11 +106,7 @@ public class FilePreparer {
 		int w = image.getWidth(), h = image.getHeight();
 		int d = image.getStackSize();
 
-		int ws = nextPow2(w), hs = nextPow2(h), ds = nextPow2(d);
-
 		ImageStack newStack = new ImageStack(size, size);
-		ImageStack oldStack = image.getStack();
-
 
 		for(int zi = 0; zi < size; zi++) {
 			byte[] p_old = pixels[zi];
@@ -131,36 +126,6 @@ public class FilePreparer {
 		return ret;
 	}
 		
-
-	private void makePowerOfTwo() {
-		int w = image.getWidth(), h = image.getHeight();
-		int d = image.getStackSize();
-
-		int wn = nextPow2(w);
-		int hn = nextPow2(h);
-		int dn = nextPow2(d);
-
-		ImageStack newStack = new ImageStack(wn, hn);
-		ImageStack oldStack = image.getStack();
-
-		int z = 0;
-		for(z = 0; z < d; z++) {
-			byte[] p_old = (byte[])oldStack.getPixels(1);
-			byte[] p_new = new byte[wn * hn];
-			for(int y = 0; y < h; y++) {
-				System.arraycopy(p_old, y * w, p_new, y * wn, w);
-			}
-			oldStack.deleteSlice(1);
-			newStack.addSlice("", p_new);
-		}
-
-		// add empty slices
-		for(; z < dn; z++) {
-			newStack.addSlice("", new ByteProcessor(wn, hn));
-		}
-		image.setStack(null,newStack);
-	}
-
 	private final int nextPow2(int n) {
 		int retval = 2;
 		while (retval < n) {
