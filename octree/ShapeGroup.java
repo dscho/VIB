@@ -1,40 +1,34 @@
 package octree;
 
 import javax.media.j3d.Appearance;
-import javax.media.j3d.BranchGroup;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Shape3D;
 
-public class ShapeGroup extends BranchGroup implements Comparable {
+public class ShapeGroup implements Comparable {
 
 	float pos;
 	Cube cube;
+	Shape3D shape;
 
 	public ShapeGroup(Cube cube) {
-		super();
 		this.cube = cube;
-		this.setCapability(ALLOW_DETACH);
 	}
 
 	public ShapeGroup(ShapeGroup sg) {
-		super();
-		this.setCapability(ALLOW_DETACH);
-		Shape3D sgShape = (Shape3D)sg.getChild(0);
-		this.addChild(new Shape3D(sgShape.getGeometry(), sgShape.getAppearance()));
+		Shape3D sgShape = sg.shape;
+		this.shape = new Shape3D(sgShape.getGeometry(), sgShape.getAppearance());
 		this.cube = sg.cube;
 		this.pos = sg.pos;
 	}
 
 	void setCubeData(Cube c, CubeData cdata, int index) {
 		this.cube = c;
-		if(this.numChildren() == 0) {
-			this.addChild(new Shape3D(
-				createGeometry(cdata, index),
-				createAppearance(cdata, index)));
+		if(this.shape == null) {
+			shape = new Shape3D(createGeometry(cdata, index),
+					createAppearance(cdata, index));
 			return;
 		}
-		Shape3D shape = (Shape3D)this.getChild(0);
 		((GeometryArray)shape.getGeometry()).setCoordinates(0, 
 			GeometryCreator.instance().getQuadCoordinates(cdata, index));
 		Appearance app = shape.getAppearance();

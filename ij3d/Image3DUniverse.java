@@ -18,6 +18,9 @@ import javax.vecmath.*;
 
 import com.sun.j3d.utils.picking.PickCanvas;
 import com.sun.j3d.utils.picking.PickResult;
+import java.io.File;
+import octree.FilePreparer;
+import octree.VolumeOctree;
 
 public class Image3DUniverse extends DefaultAnimatableUniverse {
 
@@ -141,23 +144,57 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	private octree.VolumeOctree octree = null;
-	public octree.VolumeOctree addOctree(ImagePlus image, String name) {
+
+	public octree.VolumeOctree addOctree(String imageDir, String name) {
 		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
-		ensureScale(image);
-		octree = new octree.VolumeOctree(image, canvas);
 		try {
-			octree.create();
+			octree = new octree.VolumeOctree(imageDir, canvas);
 			octree.getRootBranchGroup().compile();
 			scene.addChild(octree.getRootBranchGroup());
 			octree.displayInitial();
 			this.addUniverseListener(octree);
+			ensureScale(octree.realWorldXDim());
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		return octree;
+	}
+
+	/*
+	 * Requires an empty directory.
+	 */
+	public octree.VolumeOctree createAndAddOctree(String imagePath, String dir, String name) {
+		File outdir = new File(dir);
+		if(!outdir.exists())
+			outdir.mkdir();
+		if(!outdir.isDirectory()) {
+			throw new RuntimeException("Not a directory");
+		}
+		try {
+			new FilePreparer(imagePath, VolumeOctree.SIZE, dir).createFiles();
+			return addOctree(dir, name);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+	}
+	public octree.VolumeOctree createAndAddOctree(ImagePlus image, String dir, String name) {
+		File outdir = new File(dir);
+		if(!outdir.exists())
+			outdir.mkdir();
+		if(!outdir.isDirectory()) {
+			throw new RuntimeException("Not a directory");
+		}
+		try {
+			new FilePreparer(image, VolumeOctree.SIZE, dir).createFiles();
+			return addOctree(dir, name);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
 	}
 
 	public Content addContent(ImagePlus image, Color3f color, String name,
@@ -203,14 +240,18 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 
 	private void ensureScale(ImagePlus image) {
+		ensureScale(image.getWidth() *
+				(float)image.getCalibration().pixelWidth);
+	}
+
+	private void ensureScale(float range) {
+		System.out.println("range = " + range);
 		Transform3D scale = new Transform3D();
 		scaleTG.getTransform(scale);
 		float oldXRange = (float)scale.getScale();
 
-		float xRange = image.getWidth() *
-				(float)image.getCalibration().pixelWidth;
-		if(xRange > oldXRange) {
-			scale.setScale(1/xRange);
+		if(range > oldXRange) {
+			scale.setScale(1/range);
 			scaleTG.setTransform(scale);
 		}
 	}
