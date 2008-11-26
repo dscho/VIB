@@ -1,5 +1,6 @@
 package octree;
 
+import ij.IJ;
 import java.util.List;
 
 public class CubeUpdater {
@@ -10,9 +11,13 @@ public class CubeUpdater {
 	private Thread[] threads = new WorkingThread[nThreads];
 	private Thread currentThread;
 	private boolean cancelled = false;
+	private int orgSize;
+	private int done;
 
 	public void updateCubes(List<Cube> cubes) {
 		queue = cubes;
+		orgSize = cubes.size();
+		done = 0;
 		for(int i = 0; i < nThreads; i++) {
 			threads[i] = new WorkingThread();
 			threads[i].start();
@@ -55,6 +60,9 @@ public class CubeUpdater {
 				} catch(Exception e) {
 					e.printStackTrace();
 				}
+				done++;
+				if(done % 50 == 0)
+					IJ.showProgress(done, orgSize);
 			}
 		}
 	}
