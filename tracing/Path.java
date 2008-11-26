@@ -1092,6 +1092,127 @@ public class Path implements Comparable {
 	double [] precise_y_positions;
         double [] precise_z_positions;
 
+	public boolean circlesOverlap( double n1x, double n1y, double n1z,
+				       double c1x, double c1y, double c1z,
+				       double radius1,
+				       double n2x, double n2y, double n2z,
+				       double c2x, double c2y, double c2z,
+				       double radius2 ) {
+		/* Going largely by the maths as described here:
+		      http://local.wasp.uwa.edu.au/~pbourke/geometry/planeplane/
+		 */
+		double epsilon = 0.000001;
+		/* Take the cross product of n1 and n2 to see if they
+		   are colinear, in which case there is overlap: */
+		double crossx = n1y * n2z - n1z * n2y;
+		double crossy = n1z * n2x - n1x * n2z;
+		double crossz = n1x * n2y - n1y * n2x;
+		if( Math.abs(crossx) < epsilon &&
+		    Math.abs(crossy) < epsilon &&
+		    Math.abs(crossz) < epsilon ) {
+			// Then they don't overlap unless they're in
+			// the same plane:
+			double cdiffx = c2x - c1x;
+			double cdiffy = c2y - c1y;
+			double cdiffz = c2z - c1z;
+			double cdiffdotn1 = cdiffx * n1x + cdiffy * n1y + cdiffz * n1z;
+			return cdiffdotn1 < epsilon;
+		}
+		double n1dotn1 = n1x * n1x + n1y * n1y + n1z * n1z;
+		double n2dotn2 = n2x * n2x + n2y * n2y + n2z * n2z;
+		double n1dotn2 = n1x * n2x + n1y * n2y + n1z * n2z;
+
+		double det = n1dotn1 * n2dotn2 - n1dotn2 * n1dotn2;
+
+		// A vector r in the plane is defined by:
+		//      n1 . r = (n1 . c1) = d1
+
+		double d1 = n1x * c1x + n1y * c1y + n1z * c1z;
+		double d2 = n2x * c2x + n2y * c2y + n2z * c2z;
+
+		double constant1 = ( d1 * n2dotn2 - d2 * n1dotn2 ) / det;
+		double constant2 = ( d2 * n1dotn1 - d1 * n1dotn2 ) / det;
+
+		/* So points on the line, paramaterized by u are now:
+
+		       constant1 n1 + constant2 n2 + u ( n1 x n2 )
+
+		   To find if the two circles overlap, we need to find
+		   the values of u where each crosses that line, in
+		   other words, for the first circle:
+
+                      radius1 = |constant1 n1 + constant2 n2 + u ( n1 x n2 ) - c1|
+
+                   => 0 = [ (constant1 n1 + constant2 n2 - c1).(constant1 n1 + constant2 n2 - c1) - radius1 ^ 2 ] +
+                          [ 2 * ( n1 x n2 ) . ( constant1 n1 + constant2 n2 - c1 ) ] * u
+			  [ ( n1 x n2 ) . ( n1 x n2 ) ] * u^2 ]
+
+                   So we solve that quadratic:
+
+		 */
+		double a1 = crossx * crossx + crossy * crossy + crossz * crossz;
+		double b1 = 2 * ( crossx * ( constant1 * n1x + constant2 * n2x - c1x ) +
+				  crossy * ( constant1 * n1y + constant2 * n2y - c1y ) +
+				  crossz * ( constant1 * n1z + constant2 * n2z - c1z ) );
+		double c1 =
+			( constant1 * n1x + constant2 * n2x - c1x ) * ( constant1 * n1x + constant2 * n2x - c1x ) +
+			( constant1 * n1y + constant2 * n2y - c1y ) * ( constant1 * n1y + constant2 * n2y - c1y ) +
+			( constant1 * n1z + constant2 * n2z - c1z ) * ( constant1 * n1z + constant2 * n2z - c1z ) -
+			radius1 * radius1;
+
+		double a2 = crossx * crossx + crossy * crossy + crossz * crossz;
+		double b2 = 2 * ( crossx * ( constant1 * n1x + constant2 * n2x - c2x ) +
+				  crossy * ( constant1 * n1y + constant2 * n2y - c2y ) +
+				  crossz * ( constant1 * n1z + constant2 * n2z - c2z ) );
+		double c2 =
+			( constant1 * n1x + constant2 * n2x - c2x ) * ( constant1 * n1x + constant2 * n2x - c2x ) +
+			( constant1 * n1y + constant2 * n2y - c2y ) * ( constant1 * n1y + constant2 * n2y - c2y ) +
+			( constant1 * n1z + constant2 * n2z - c2z ) * ( constant1 * n1z + constant2 * n2z - c2z ) -
+			radius2 * radius2;
+
+		// So now calculate the discriminants:
+		double discriminant1 = b1 * b1 - 4 * a1 * c1;
+		double discriminant2 = b2 * b2 - 4 * a2 * c2;
+
+		if( discriminant1 < 0 || discriminant2 < 0 ) {
+			// Then one of the circles doesn't even reach the line:
+
+			return false;
+		}
+
+		double u1_1 =   Math.sqrt( discriminant1 ) / ( 2 * a1 ) - b1 / (2 * a1);
+		double u1_2 = - Math.sqrt( discriminant1 ) / ( 2 * a1 ) - b1 / (2 * a1);
+
+		double u2_1 =   Math.sqrt( discriminant2 ) / ( 2 * a2 ) - b2 / (2 * a2);
+		double u2_2 = - Math.sqrt( discriminant2 ) / ( 2 * a2 ) - b2 / (2 * a2);
+
+		double u1_smaller = Math.min( u1_1, u1_2 );
+		double u1_larger  = Math.max( u1_1, u1_2 );
+
+		double u2_smaller = Math.min( u2_1, u2_2 );
+		double u2_larger  = Math.max( u2_1, u2_2 );
+
+		// Non-overlapping cases:
+		if( u1_larger < u2_smaller )
+			return false;
+		if( u2_larger < u1_smaller )
+			return false;
+
+		// Totally overlapping cases:
+		if( u1_smaller < u2_smaller && u2_larger < u1_larger )
+			return true;
+		if( u2_smaller < u1_smaller && u1_larger < u2_larger )
+			return true;
+
+		// Partially overlapping cases:
+		if( u1_smaller < u2_smaller && u2_smaller < u1_larger && u1_larger < u2_larger )
+			return true;
+		if( u2_smaller < u1_smaller && u1_smaller < u2_larger && u2_larger < u1_larger )
+			return true;
+
+		return false;
+	}
+
 	public boolean hasCircles() {
 		return radiuses != null;
 	}
