@@ -25,6 +25,7 @@ public class Cube implements VolRendConstants {
 
 	private Cube[] children;
 	final Point3d[] corners;
+	private Point2d[] cornersInCanvas;
 
 	private CubeData cdata;
 	private boolean updateNeeded = true;
@@ -48,6 +49,9 @@ public class Cube implements VolRendConstants {
 			double lx = VolumeOctree.SIZE * pw;
 			double ly = VolumeOctree.SIZE * ph;
 			double lz = VolumeOctree.SIZE * pd;
+			cornersInCanvas = new Point2d[8];
+			for(int i = 0; i < 8; i++)
+				cornersInCanvas[i] = new Point2d();
 			corners = new Point3d[8];
 			corners[0] = new Point3d(x * octree.pw, y * octree.ph, z * octree.pd);
 			corners[7] = new Point3d(corners[0].x + lx, corners[0].y + ly, corners[0].z + lz);
@@ -135,14 +139,18 @@ public class Cube implements VolRendConstants {
 	}
 
 	public int checkResolution(Canvas3D canvas, Transform3D volToIP) {
-		double max, v;
-		max = lengthInCanvas(canvas, volToIP, corners[0], corners[7]);
-		v = lengthInCanvas(canvas, volToIP, corners[1], corners[6]); if(v > max) max = v;
-		v = lengthInCanvas(canvas, volToIP, corners[2], corners[5]); if(v > max) max = v;
-		v = lengthInCanvas(canvas, volToIP, corners[3], corners[4]); if(v > max) max = v;
-		if(max < 0) {// outside canvas
+		for(int i = 0; i < corners.length; i++)
+			volumePointInCanvas(canvas, volToIP, corners[i], cornersInCanvas[i]);
+
+		if(outsideCanvas(canvas))
 			return OUTSIDE_CANVAS;
-		}
+
+		double v;
+		double max = cornersInCanvas[0].distance(cornersInCanvas[7]);
+		v = cornersInCanvas[1].distance(cornersInCanvas[6]); if(v > max) max = v;
+		v = cornersInCanvas[2].distance(cornersInCanvas[5]); if(v > max) max = v;
+		v = cornersInCanvas[3].distance(cornersInCanvas[4]); if(v > max) max = v;
+
 		return max <= RES_THRESHOLD ? RESOLUTION_SUFFICIENT : RESOLUTION_UNSUFFICIENT;
 	}
 
@@ -184,33 +192,56 @@ public class Cube implements VolRendConstants {
 				cube.createChildren();
 	}
 
-	private Point2d p1 = new Point2d();
-	private Point2d p2 = new Point2d();
-	private Point3d p13d = new Point3d();
-	private Point3d p23d = new Point3d();
-	private final double lengthInCanvas(Canvas3D canvas, Transform3D volToIP,
-							Point3d one, Point3d another) {
-		p13d.set(one);
-		p23d.set(another);
-		volumePointInCanvas(canvas, volToIP, p13d, p1);
-		volumePointInCanvas(canvas, volToIP, p23d, p2);
-		if(outsideCanvas(p1, canvas) && outsideCanvas(p2, canvas))
-			return -1;
-		return p1.distance(p2);
-	}
-
+	Point3d ptmp = new Point3d();
 	private final void volumePointInCanvas(Canvas3D canvas, Transform3D volToIP,
 						Point3d p, Point2d ret) {
 
-		volToIP.transform(p);
-		canvas.getPixelLocationFromImagePlate(p, ret);
+		ptmp.set(p);
+		volToIP.transform(ptmp);
+		canvas.getPixelLocationFromImagePlate(ptmp, ret);
 	}
 
-	private final boolean outsideCanvas(Point2d p, Canvas3D canvas) {
-		return p.x < 0 ||
-			p.y < 0 ||
-			p.x >= canvas.getWidth()
-			|| p.y >= canvas.getHeight();
+	private final boolean outsideCanvas(Canvas3D canvas) {
+		// check if left
+		boolean found = true;
+		for(int i = 0; i < 8; i++) {
+			if(cornersInCanvas[i].x >= 0) {
+				found = false;
+				break;
+			}
+		}
+		if(found) return true;
+		// top
+		found = true;
+		for(int i = 0; i < 8; i++) {
+			if(cornersInCanvas[i].y >= 0) {
+				found = false;
+				break;
+			}
+		}
+		if(found) return true;
+
+		int cw = canvas.getWidth(), ch = canvas.getHeight();
+		// right
+		found = true;
+		for(int i = 0; i < 8; i++) {
+			if(cornersInCanvas[i].x < cw) {
+				found = false;
+				break;
+			}
+		}
+		if(found) return true;
+
+		// left
+		found = true;
+		for(int i = 0; i < 8; i++) {
+			if(cornersInCanvas[i].y < ch) {
+				found = false;
+				break;
+			}
+		}
+		if(found) return true;
+		return false;
 	}
 
 	@Override
