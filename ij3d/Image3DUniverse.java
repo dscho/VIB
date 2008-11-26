@@ -16,8 +16,7 @@ import com.sun.j3d.utils.universe.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import com.sun.j3d.utils.picking.PickCanvas;
-import com.sun.j3d.utils.picking.PickResult;
+import com.sun.j3d.utils.pickfast.PickCanvas;
 import java.io.File;
 import octree.FilePreparer;
 import octree.VolumeOctree;
@@ -45,6 +44,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
+			@Override
 			public void mouseMoved(MouseEvent e) {
 				Content c = getContentAtCanvasPosition(
 						e.getX(), e.getY());
@@ -55,6 +55,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			}
 		});
 		canvas.addMouseListener(new MouseAdapter() {
+			@Override
 			public void mouseClicked(MouseEvent e) {
 				Content c = getContentAtCanvasPosition(
 						e.getX(), e.getY());
@@ -82,6 +83,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				"call", "ImageJ_3D_Viewer.select", c.name);
 	}
 
+	@Override
 	public void show() {
 		super.show();
 		menubar = new Image3DMenubar(this);
@@ -94,6 +96,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		win.setMenuBar(mb);
 	}
 
+	@Override
 	public void close() {
 		super.close();
 		removeAllContents();
@@ -352,20 +355,28 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Content getContentAtCanvasPosition(int x, int y) {
 		PickCanvas pickCanvas = new PickCanvas(canvas, scene);
-		pickCanvas.setMode(PickCanvas.GEOMETRY);
+		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
+		pickCanvas.setFlags(PickInfo.SCENEGRAPHPATH);
 		pickCanvas.setTolerance(4.0f);
 		pickCanvas.setShapeLocation(x, y);
-		PickResult result = null;
+		PickInfo result = null;
 		try {
-			result = pickCanvas.pickClosest();
+			result = pickCanvas.pickAny();
 			if(result == null)
 				return null;
-			Content content = (Content)result.
-					getNode(PickResult.BRANCH_GROUP);
+			SceneGraphPath path = result.getSceneGraphPath();
+			Content content = null;
+			for(int i = path.nodeCount() - 1; i >= 0; i--) {
+				if(path.getNode(i) instanceof Content) {
+					content = (Content)path.getNode(i);
+					break;
+				}
+			}
 			if(content== null)
 				return null;
 			return content;
 		} catch(Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
