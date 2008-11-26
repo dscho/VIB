@@ -9,9 +9,6 @@ import javax.vecmath.Point3d;
 import javax.media.j3d.View;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Transform3D;
-import javax.media.j3d.TransformGroup;
-import javax.media.j3d.BranchGroup;
-import com.sun.j3d.utils.behaviors.picking.PickingCallback;
 
 import ij.ImagePlus;
 import ij.IJ;
@@ -134,10 +131,10 @@ public class VoltexGroup extends ContentNode {
 	public Point2d volumePointInCanvas(Canvas3D canvas, Transform3D volToIP,
 							int x, int y, int z) {
 		
-		Volume volume = renderer.volume;
-		double px = x * volume.xSpace;
-		double py = y * volume.ySpace;
-		double pz = z * volume.zSpace;
+		Volume vol = renderer.volume;
+		double px = x * vol.xSpace;
+		double py = y * vol.ySpace;
+		double pz = z * vol.zSpace;
 		Point3d locInImagePlate = new Point3d(px, py, pz);
 		
 		volToIP.transform(locInImagePlate);

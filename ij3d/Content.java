@@ -1,26 +1,19 @@
 package ij3d;
 
-import ij.IJ;
 import ij.ImagePlus;
-import ij.ImageStack;
-import ij.process.ByteProcessor;
 import ij.io.FileInfo;
 import ij.io.OpenDialog;
 
 import vib.PointList;
 import vib.BenesNamedPoint;
-import isosurface.IsoShape;
 import isosurface.MeshGroup;
 import voltex.VoltexGroup;
 import orthoslice.OrthoGroup;
 import surfaceplot.SurfacePlotGroup;
 
-import java.awt.image.IndexColorModel;
 import java.util.BitSet;
 import java.util.List;
 
-import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
-import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 
 import javax.media.j3d.*;
 import javax.vecmath.Color3f;
@@ -51,8 +44,6 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	// entries
 	private ContentNode contentNode = null;
-	private BoundingBox bb = null;
-	private CoordinateSystem cs = null; 
 	private PointListShape pointlist = null;
 
 	// scene graph entries
@@ -252,13 +243,13 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void savePointList() {
 		String dir = OpenDialog.getDefaultDirectory();
-		String name = this.name;
+		String n = this.name;
 		if(image != null) {
 			FileInfo fi = image.getFileInfo();
 			dir = fi.directory;
-			name = fi.fileName;
+			n = fi.fileName;
 		}
-		pointlist.save(dir, name);
+		pointlist.save(dir, n);
 	}
 
 	public void addPointListPoint(Point3d p) {
@@ -274,8 +265,8 @@ public class Content extends BranchGroup implements UniverseListener {
 				point = size;
 			}
 		}
-		String name = "point" + point;
-		pointlist.addPoint(name, p.x, p.y, p.z);
+		String n = "point" + point;
+		pointlist.addPoint(n, p.x, p.y, p.z);
 		plw.update();
 	}
 	
@@ -393,7 +384,6 @@ public class Content extends BranchGroup implements UniverseListener {
 			|| !(this.color.equals(color));
 		if(!colorChanged)
 			return;
-		Color3f oldColor = this.color;
 		this.color = color;
  		pointlist.setColor(color);
 		contentNode.colorUpdated();
@@ -441,6 +431,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	 * getters
 	 *
 	 **************************************************************/
+	@Override
 	public String getName() {
 		return name;
 	}
