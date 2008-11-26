@@ -13,7 +13,9 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 
 import ij.IJ;
+import ij.ImagePlus;
 import ij.gui.Toolbar;
+import ij.measure.Calibration;
 import java.util.Enumeration;
 
 import voltex.Renderer;
@@ -44,7 +46,7 @@ public class MouseBehavior extends Behavior {
 
 
 	private Transform3D currentXform = new Transform3D();
-	private Transform3D transformX = new Transform3D(); 
+	private Transform3D transformX = new Transform3D();
 	private Transform3D transformY = new Transform3D();
 	private Vector3f transl = new Vector3f();
 
@@ -58,7 +60,7 @@ public class MouseBehavior extends Behavior {
 		int onmask = B2, onmask2 = B1;
 		int offmask = SHIFT | CTRL;
 		boolean b0 = (mask & (onmask | offmask)) == onmask;
-		boolean b1 = (toolID == Toolbar.HAND 
+		boolean b1 = (toolID == Toolbar.HAND
 				&& (mask & (onmask2|offmask)) == onmask2);
 		return b0 || b1;
 	}
@@ -67,7 +69,7 @@ public class MouseBehavior extends Behavior {
 		int onmask = B2 | SHIFT, onmask2 = B1 | SHIFT;
 		int offmask = CTRL;
 		return (mask & (onmask | offmask)) == onmask ||
-			(toolID == Toolbar.HAND 
+			(toolID == Toolbar.HAND
 				&& (mask & (onmask2|offmask)) == onmask2);
 	}
 
@@ -76,7 +78,6 @@ public class MouseBehavior extends Behavior {
 			return false;
 		int onmask = B1;
 		int offmask = SHIFT | CTRL;
-		boolean b = (mask & (onmask | offmask)) == onmask;
 		return (mask & (onmask | offmask)) == onmask;
 	}
 
@@ -139,7 +140,6 @@ public class MouseBehavior extends Behavior {
 
 		Content c = univ.getSelected();
 		int code = e.getKeyCode();
-		int mast = e.getModifiersEx();
 		int axis = -1;
 		if(ic3d.isKeyDown(KeyEvent.VK_X))
 			axis = Renderer.X_AXIS;
@@ -196,7 +196,7 @@ public class MouseBehavior extends Behavior {
 		if(id == MouseEvent.MOUSE_PRESSED) {
 			x_last = e.getX();
 			y_last = e.getY();
-			if(toolID == Toolbar.POINT) { 
+			if(toolID == Toolbar.POINT) {
 				if(c != null)
 					c.showPointList(true);
 				if(mask == PICK_POINT_MASK) {
@@ -228,17 +228,17 @@ public class MouseBehavior extends Behavior {
 				axis = Renderer.Y_AXIS;
 			else if(ic3d.isKeyDown(KeyEvent.VK_Z))
 				axis = Renderer.Z_AXIS;
-			if(c != null && c.getType() == Content.ORTHO 
+			if(c != null && c.getType() == Content.ORTHO
 								&& axis != -1) {
 				OrthoGroup og = (OrthoGroup)c.getContent();
 				MouseWheelEvent we = (MouseWheelEvent)e;
 				int units = 0;
-				if(we.getScrollType() == 
+				if(we.getScrollType() ==
 					MouseWheelEvent.WHEEL_UNIT_SCROLL)
 					units = we.getUnitsToScroll();
 				if(units > 0) og.increase(axis);
 				else if(units < 0) og.decrease(axis);
-					
+
 			} else {
 				wheel_zoom(c, e);
 			}
@@ -265,9 +265,9 @@ public class MouseBehavior extends Behavior {
 		transformX.rotX(x_angle);
 		transformY.rotY(y_angle);
 
-		TransformGroup tg = (c == null || c.isLocked()) ? 
+		TransformGroup tg = (c == null || c.isLocked()) ?
 				univ.getGlobalRotate() : c.getLocalRotate();
-		Point3f center = (c==null || c.isLocked()) ?  
+		Point3f center = (c==null || c.isLocked()) ?
 				((Image3DUniverse)univ).getGlobalCenterPoint() :
 				c.getContent().center;
 		tg.getTransform(currentXform);
@@ -277,7 +277,7 @@ public class MouseBehavior extends Behavior {
 
 		globalRotInverse.invert(globalRotate);
 		globalTransInverse.invert(globalTranslate);
-		
+
 		if(c != null && !c.isLocked()) {
 			transl.x = -center.x;
 			transl.y = -center.y;
@@ -286,7 +286,7 @@ public class MouseBehavior extends Behavior {
 			currentXform.mul(translate, currentXform);
 			currentXform.mul(globalRotate, currentXform);
 		}
-		
+
 		currentXform.mul(transformX, currentXform);
 		currentXform.mul(transformY, currentXform);
 
@@ -314,17 +314,17 @@ public class MouseBehavior extends Behavior {
 	public void translate(Content c, int dx, int dy) {
 		transl.x = dx * 1f;
 		transl.y = -dy * 1f;
-		transl.z = 0;	
+		transl.z = 0;
 		transformX.set(transl);
-		
-		TransformGroup tg = (c == null || c.isLocked()) ? 
+
+		TransformGroup tg = (c == null || c.isLocked()) ?
 			univ.getGlobalTranslate() : c.getLocalTranslate();
 
 		tg.getTransform(currentXform);
 
 		univ.getGlobalRotate().getTransform(globalRotate);
 		globalRotInverse.invert(globalRotate);
-		
+
 		currentXform.mul(globalRotate, currentXform);
 		currentXform.mul(transformX, currentXform);
 		currentXform.mul(globalRotInverse, currentXform);
@@ -344,10 +344,10 @@ public class MouseBehavior extends Behavior {
 	public void wheel_zoom(Content c, int units) {
 		double factor = 0.9;
 		if(units != 0) {
-			
+
 			transformX.setIdentity();
 
-			double scale = units > 0 ? 1f/Math.abs(factor) 
+			double scale = units > 0 ? 1f/Math.abs(factor)
 						: Math.abs(factor);
 
 			transformX.setScale(scale);
@@ -358,7 +358,7 @@ public class MouseBehavior extends Behavior {
 			tg.setTransform(currentXform);
 			transformChanged(
 				MouseBehaviorCallback.TRANSLATE, currentXform);
-		}	
+		}
 	}
 
 	public void zoom(Content c, MouseEvent e) {
@@ -387,7 +387,7 @@ public class MouseBehavior extends Behavior {
 			tg.setTransform(currentXform);
 			transformChanged(
 				MouseBehaviorCallback.TRANSLATE, currentXform);
-		}	
+		}
 	}
 
 	public void zoom_old(Content c, MouseEvent e) {
@@ -398,7 +398,7 @@ public class MouseBehavior extends Behavior {
 		transl.y = 0f;
 		transl.z = 0.5f * dy;
 		transformX.set(transl);
-		
+
 		//TransformGroup tg = univ.getGlobalRotate();
 		TransformGroup tg = univ.getViewingPlatform().getViewPlatformTransform();
 		tg.getTransform(currentXform);
@@ -406,7 +406,7 @@ public class MouseBehavior extends Behavior {
 
 		tg.setTransform(currentXform);
 		transformChanged(MouseBehaviorCallback.TRANSLATE, currentXform);
-		
+
 		x_last = e.getX();
 		y_last = y;
 	}
@@ -458,22 +458,45 @@ public class MouseBehavior extends Behavior {
 	private Point3d getPickPoint(Content c, MouseEvent e) {
 		int x = e.getX(), y = e.getY();
 		PickCanvas pickCanvas = new PickCanvas(
-					univ.getCanvas(), univ.getScene()); 
+					univ.getCanvas(), univ.getScene());
 		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
-		pickCanvas.setFlags(
-			PickInfo.NODE | PickInfo.CLOSEST_INTERSECTION_POINT);
-		pickCanvas.setTolerance(3.0f); 
-		pickCanvas.setShapeLocation(x, y); 
-		PickInfo result = null;
+		pickCanvas.setFlags(PickInfo.CLOSEST_INTERSECTION_POINT);
+		pickCanvas.setTolerance(3.0f);
+		pickCanvas.setShapeLocation(x, y);
 		try {
-			result = pickCanvas.pickClosest();
-			if(result == null) 
+			PickInfo[] result = pickCanvas.pickAllSorted();
+			if(result == null || result.length == 0)
 				return null;
-			Point3d p3d = result.getClosestIntersectionPoint();
-			return p3d;
+
+			for(int i = 0; i < result.length; i++) {
+				Point3d intersection = result[i].getClosestIntersectionPoint();
+				float v = getVolumePoint(c, intersection);
+				if(v > 20)
+					return intersection;
+			}
+			return null;
 		} catch(Exception ex) {
 			return null;
 		}
+	}
+
+	private float getVolumePoint(Content c, Point3d p) {
+
+		ImagePlus img = c.image;
+		Calibration cal = img.getCalibration();
+		double pw = cal.pixelWidth;
+		double ph = cal.pixelHeight;
+		double pd = cal.pixelDepth;
+		int ix = (int)Math.round(p.x / pw);
+		int iy = (int)Math.round(p.y / ph);
+		int iz = (int)Math.round(p.z / pd);
+		if(iz < 0 || iz >= img.getStackSize() ||
+				iy < 0 || iy >= img.getHeight() ||
+				ix < 0 || ix >= img.getWidth())
+			return 0;
+		else
+			return img.getStack().getProcessor(iz + 1).getf(ix, iy);
+
 	}
 }
 
