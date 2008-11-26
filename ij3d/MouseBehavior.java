@@ -4,7 +4,6 @@ import vib.BenesNamedPoint;
 
 import com.sun.j3d.utils.pickfast.PickCanvas;
 import javax.media.j3d.PickInfo;
-import com.sun.j3d.utils.pickfast.PickIntersection;
 
 import java.awt.event.*;
 import java.awt.*;
@@ -16,7 +15,6 @@ import javax.vecmath.*;
 import ij.IJ;
 import ij.gui.Toolbar;
 import java.util.Enumeration;
-import java.util.Iterator;
 
 import voltex.Renderer;
 import orthoslice.OrthoGroup;
