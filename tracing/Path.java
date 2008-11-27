@@ -1199,18 +1199,22 @@ public class Path implements Comparable {
 			return false;
 
 		// Totally overlapping cases:
-		if( u1_smaller < u2_smaller && u2_larger < u1_larger )
+		if( u1_smaller <= u2_smaller && u2_larger <= u1_larger )
 			return true;
-		if( u2_smaller < u1_smaller && u1_larger < u2_larger )
+		if( u2_smaller <= u1_smaller && u1_larger <= u2_larger )
 			return true;
 
 		// Partially overlapping cases:
-		if( u1_smaller < u2_smaller && u2_smaller < u1_larger && u1_larger < u2_larger )
+		if( u1_smaller <= u2_smaller && u2_smaller <= u1_larger && u1_larger <= u2_larger )
 			return true;
-		if( u2_smaller < u1_smaller && u1_smaller < u2_larger && u2_larger < u1_larger )
+		if( u2_smaller <= u1_smaller && u1_smaller <= u2_larger && u2_larger <= u1_larger )
 			return true;
 
-		return false;
+		throw new RuntimeException("BUG: some overlapping case missed: "+
+					   "u1_smaller="+u1_smaller+
+					   "u1_larger="+u1_larger+
+					   "u2_smaller="+u2_smaller+
+					   "u2_larger="+u2_larger);
 	}
 
 	public boolean hasCircles() {
