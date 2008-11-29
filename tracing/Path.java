@@ -331,6 +331,24 @@ public class Path implements Comparable {
 		return (int)Math.round( precise_z_positions[i] / z_spacing );
 	}
 
+	public double getXUnscaledDouble( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getXUnscaled was asked for an out-of-range point: "+i);
+		return precise_x_positions[i] / x_spacing;
+	}
+
+	public double getYUnscaledDouble( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getYUnscaled was asked for an out-of-range point: "+i);
+		return precise_y_positions[i] / y_spacing;
+	}
+
+	public double getZUnscaledDouble( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getZUnscaled was asked for an out-of-range point: "+i);
+		return precise_z_positions[i] / z_spacing;
+	}
+
 /* FIXME:
 	@Override
 	public Path clone() {
