@@ -560,6 +560,9 @@ public class Path implements Comparable {
 		int spotExtra = pixel_size;
 		int spotDiameter = pixel_size * 3;
 
+		boolean drawDiameter = hasCircles();
+		// boolean drawDiameter = false;
+
 		switch( plane ) {
 
 		case ThreePanes.XY_PLANE:
@@ -568,8 +571,49 @@ public class Path implements Comparable {
 				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
 					continue;
 
-				int x = canvas.screenXD(getXUnscaled(i));
-				int y = canvas.screenYD(getYUnscaled(i));
+				int x = canvas.screenXD(getXUnscaledDouble(i));
+				int y = canvas.screenYD(getYUnscaledDouble(i));
+
+				if( drawDiameter ) {
+					// Cross the tangents with a unit z vector:
+					double n_x = 0;
+					double n_y = 0;
+					double n_z = 1;
+
+					double t_x = tangents_x[i];
+					double t_y = tangents_y[i];
+					double t_z = tangents_z[i];
+
+					double cross_x = n_y * t_z - n_z * t_y;
+					double cross_y = n_z * t_x - n_x * t_z;
+					double cross_z = n_x * t_y - n_y * t_x;
+
+					double sizeInPlane = Math.sqrt( cross_x * cross_x + cross_y * cross_y );
+					double normalized_cross_x = cross_x / sizeInPlane;
+					double normalized_cross_y = cross_y / sizeInPlane;
+
+					// g.setColor( Color.RED );
+
+					double left_x = precise_x_positions[i] + normalized_cross_x * radiuses[i];
+					double left_y = precise_y_positions[i] + normalized_cross_y * radiuses[i];
+
+					double right_x = precise_x_positions[i] - normalized_cross_x * radiuses[i];
+					double right_y = precise_y_positions[i] - normalized_cross_y * radiuses[i];
+
+					int left_x_on_screen = canvas.screenXD(left_x/x_spacing);
+					int left_y_on_screen = canvas.screenYD(left_y/y_spacing);
+
+					int right_x_on_screen = canvas.screenXD(right_x/x_spacing);
+					int right_y_on_screen = canvas.screenYD(right_y/y_spacing);
+
+					int x_on_screen = canvas.screenXD( precise_x_positions[i]/x_spacing );
+					int y_on_screen = canvas.screenYD( precise_y_positions[i]/y_spacing );
+
+					g.drawLine( x_on_screen + spotExtra / 2, y_on_screen + spotExtra / 2, left_x_on_screen + spotExtra / 2, left_y_on_screen + spotExtra / 2 );
+					g.drawLine( x_on_screen + spotExtra / 2, y_on_screen + spotExtra / 2, right_x_on_screen + spotExtra / 2, right_y_on_screen + spotExtra / 2 );
+
+					g.setColor( c );
+				}
 
 				if( ((i == 0) && (startJoins == null)) ||
 				    ((i == points - 1) && (endJoins == null)) ) {
