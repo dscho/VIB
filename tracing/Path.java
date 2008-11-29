@@ -1009,10 +1009,14 @@ public class Path implements Comparable {
 		// Set the end points to 180 degrees:
 		angles[0] = angles[totalPoints-1] = Math.PI;
 		for( int i = 1; i < totalPoints-1; ++i ) {
+			// If there's no previously valid one then
+			// just use the first:
 			int previousValid = 0;
 			for( int j = 0; j < i; ++j )
 				if( valid[j] )
 					previousValid = j;
+			// If there's no next valid one then just use
+			// the first:
 			int nextValid = totalPoints - 1;
 			for( int j = totalPoints - 1; j > i; --j )
 				if( valid[j] )
@@ -1160,7 +1164,7 @@ public class Path implements Comparable {
 				       double n2x, double n2y, double n2z,
 				       double c2x, double c2y, double c2z,
 				       double radius2 ) {
-		/* Going largely by the maths as described here:
+		/* Roughly following the steps described here:
 		      http://local.wasp.uwa.edu.au/~pbourke/geometry/planeplane/
 		 */
 		double epsilon = 0.000001;
