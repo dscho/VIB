@@ -1035,7 +1035,68 @@ public class Path implements Comparable {
 				valid[i] = false;
 		}
 
-
+		/* Repeatedly build an array indicating how many other
+		   valid circles each one overlaps with, and remove
+		   the worst culprits on each run until they're all
+		   gone...  This is horrendously inefficient (O(n^3)
+		   in the worst case) but I'm more sure of its
+		   correctness than other things I've tried, and there
+		   should be few overlapping circles.
+		 */
+		int [] overlapsWith = new int[totalPoints];
+		boolean someStillOverlap = true;
+		while( someStillOverlap ) {
+			someStillOverlap = false;
+			int maximumNumberOfOverlaps = -1;
+			for( int i = 0; i < totalPoints; ++i ) {
+				overlapsWith[i] = 0;
+				if( ! valid[i] )
+					continue;
+				for( int j = 0; j < totalPoints; ++j ) {
+					if( ! valid[j] )
+						continue;
+					if( i == j )
+						continue;
+					if( circlesOverlap(
+						    ts_x[i], ts_y[i], ts_z[i],
+						    optimized_x[i], optimized_y[i], optimized_z[i],
+						    rs[i],
+						    ts_x[j], ts_y[j], ts_z[j],
+						    optimized_x[j], optimized_y[j], optimized_z[j],
+						    rs[j] ) ) {
+						++ overlapsWith[i];
+						someStillOverlap = true;
+					}
+				}
+				if( overlapsWith[i] > maximumNumberOfOverlaps )
+					maximumNumberOfOverlaps = overlapsWith[i];
+			}
+			if( maximumNumberOfOverlaps <= 0 ) {
+				break;
+			}
+			// Now we've built the array, go through and
+			// remove the worst offenders:
+			for( int i = 0; i < totalPoints; ++i ) {
+				if( ! valid[i] )
+					continue;
+				int n = totalPoints;
+				for( int j = totalPoints - 1; j > i; --j )
+					if( valid[j] )
+						n = j;
+				if( overlapsWith[i] == maximumNumberOfOverlaps ) {
+					// If the next valid one has
+					// the same number, and that
+					// has a larger radius, remove
+					// that one instead...
+					if( n < totalPoints && overlapsWith[n] == maximumNumberOfOverlaps && rs[n] > rs[i] ) {
+						valid[n] = false;
+					} else {
+						valid[i] = false;
+					}
+					break;
+				}
+			}
+		}
 
 		int lastValidIndex = 0;
 
