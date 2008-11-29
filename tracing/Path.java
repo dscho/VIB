@@ -1182,7 +1182,7 @@ public class Path implements Comparable {
 			double cdiffy = c2y - c1y;
 			double cdiffz = c2z - c1z;
 			double cdiffdotn1 = cdiffx * n1x + cdiffy * n1y + cdiffz * n1z;
-			return cdiffdotn1 < epsilon;
+			return Math.abs(cdiffdotn1) < epsilon;
 		}
 		double n1dotn1 = n1x * n1x + n1y * n1y + n1z * n1z;
 		double n2dotn2 = n2x * n2x + n2y * n2y + n2z * n2z;
