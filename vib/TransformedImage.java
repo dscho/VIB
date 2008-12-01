@@ -180,6 +180,15 @@ public class TransformedImage {
 
 		private Point3d start, stop;
 
+		/* The transformation is always linear in this class,
+		   so each line in the template maps back to a line in
+		   the model.  In order to reduce the calculations per
+		   iteration, only two points from the template space
+		   are mapped back to the model space for each line.
+		   (They're calculated whenever i gets to the end of a
+		   row.)  These points correspond to i = 0 (start) and
+		   i = x1 (stop) and the method interpolates based on
+		   these to find the other points on the line. */
                 public Object next() {
                         if (++i >= x1) {
                                 i = x0;
