@@ -782,6 +782,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					throw new TracesFileFormatException("There is more than one path with ID "+id);
 				}
 				current_path.setID(id);
+				if( id > maxUsedID )
+					maxUsedID = id;
 
 				if( startsonString == null )
 					startson = startsindex = -1;
