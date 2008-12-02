@@ -374,7 +374,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	public synchronized void addPath( Path p, boolean forceNewName ) {
-		System.out.println("addPath called with "+p);
 		if( getPathFromID( p.getID() ) != null )
 			throw new RuntimeException("Attempted to add a path with an ID that was already added");
 		if( p.getID() < 0 ) {
@@ -395,7 +394,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 		p.setName( candidateName );
 		allPaths.add(p);
-		System.out.println("Going to resetListeners with path: "+p);
 		resetListeners( p );
 	}
 
@@ -533,48 +531,51 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			pw.println("  <!ELEMENT point          EMPTY>");
 			pw.println("  <!ELEMENT fill           (node*)>");
 			pw.println("  <!ELEMENT node           EMPTY>");
-			pw.println("  <!ATTLIST samplespacing  x             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST samplespacing  y             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST samplespacing  z             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST samplespacing  units         CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST imagesize      width         CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST imagesize      height        CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST imagesize      depth         CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST path           id            CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST path           primary       CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           name          CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           startson      CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           startsindex   CDATA           #IMPLIED>"); // deprecated
-			pw.println("  <!ATTLIST path           startsx       CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           startsy       CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           startsz       CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           endson        CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           endsindex     CDATA           #IMPLIED>"); // deprecated
-			pw.println("  <!ATTLIST path           endsx         CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           endsy         CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           endsz         CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           reallength    CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          x             CDATA           #REQUIRED>"); // deprecated
-			pw.println("  <!ATTLIST point          y             CDATA           #REQUIRED>"); // deprecated
-			pw.println("  <!ATTLIST point          z             CDATA           #REQUIRED>"); // deprecated
-			pw.println("  <!ATTLIST point          xd            CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          yd            CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          zd            CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          tx            CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          ty            CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          tz            CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          r             CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST fill           id            CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST fill           frompaths     CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST fill           metric        CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST fill           threshold     CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           id            CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           x             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           y             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           z             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           previousid    CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST node           distance      CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           status        (open|closed)   #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  x                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  y                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  z                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  units             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      width             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      height            CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      depth             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST path           id                CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST path           primary           CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           name              CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startson          CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsindex       CDATA           #IMPLIED>"); // deprecated
+			pw.println("  <!ATTLIST path           startsx           CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsy           CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsz           CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endson            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsindex         CDATA           #IMPLIED>"); // deprecated
+			pw.println("  <!ATTLIST path           endsx             CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsy             CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsz             CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           reallength        CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           usefitted         (true|false)    #IMPLIED>");
+			pw.println("  <!ATTLIST path           fitted            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           fittedversionof   CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          x                 CDATA           #REQUIRED>"); // deprecated
+			pw.println("  <!ATTLIST point          y                 CDATA           #REQUIRED>"); // deprecated
+			pw.println("  <!ATTLIST point          z                 CDATA           #REQUIRED>"); // deprecated
+			pw.println("  <!ATTLIST point          xd                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          yd                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          zd                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          tx                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          ty                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          tz                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          r                 CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST fill           id                CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST fill           frompaths         CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST fill           metric            CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST fill           threshold         CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           id                CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           x                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           y                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           z                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           previousid        CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST node           distance          CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           status            (open|closed)   #REQUIRED>");
 			pw.println("]>");
 			pw.println("");
 
@@ -633,6 +634,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				}
 				if( p.getPrimary() )
 					pw.print(" primary=\"true\"");
+				pw.print(" usefitted=\""+p.getUseFitted()+"\"");
+				if( p.fitted != null ) {
+					pw.print(" fitted=\""+p.fitted.getID()+"\"");
+				}
+				if( p.fittedVersionOf != null ) {
+					pw.print(" fittedversionof=\""+p.fittedVersionOf.getID()+"\"");
+				}
 				pw.print(startsString);
 				pw.print(endsString);
 				if( p.name != null ) {
@@ -691,6 +699,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	HashMap< Integer, Integer > endJoins;
 	HashMap< Integer, Integer > endJoinsIndices;
 	HashMap< Integer, PointInImage > endJoinsPoints;
+	HashMap< Integer, Boolean > useFittedFields;
+	HashMap< Integer, Integer > fittedFields;
+	HashMap< Integer, Integer > fittedVersionOfFields;
 
 	ArrayList< int [] > sourcePathIDForFills;
 
@@ -705,12 +716,15 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		if( qName.equals("tracings") ) {
 
-			startJoins        = new HashMap< Integer, Integer >();
-			startJoinsIndices = new HashMap< Integer, Integer >();
-			startJoinsPoints  = new HashMap< Integer, PointInImage >();
-			endJoins          = new HashMap< Integer, Integer >();
-			endJoinsIndices   = new HashMap< Integer, Integer >();
-			endJoinsPoints    = new HashMap< Integer, PointInImage >();
+			startJoins            = new HashMap< Integer, Integer >();
+			startJoinsIndices     = new HashMap< Integer, Integer >();
+			startJoinsPoints      = new HashMap< Integer, PointInImage >();
+			endJoins              = new HashMap< Integer, Integer >();
+			endJoinsIndices       = new HashMap< Integer, Integer >();
+			endJoinsPoints        = new HashMap< Integer, PointInImage >();
+			useFittedFields       = new HashMap< Integer, Boolean >();
+			fittedFields          = new HashMap< Integer, Integer >();
+			fittedVersionOfFields = new HashMap< Integer, Integer >();
 
 			sourcePathIDForFills = new ArrayList< int [] >();
 			foundIDs = new HashSet< Integer >();
@@ -770,6 +784,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			String idString = attributes.getValue("id");
 			String d = attributes.getValue("d");
 
+			String useFittedString = attributes.getValue("usefitted");
+			String fittedIDString = attributes.getValue("fitted");
+			String fittedVersionOfIDString = attributes.getValue("fittedversionof");
+
 			String startsonString =  attributes.getValue("startson");
 			String startsindexString =  attributes.getValue("startsindex");
 			String startsxString = attributes.getValue("startsx");
@@ -821,6 +839,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			Integer endsIndexInteger = null;
 			PointInImage endJoinPoint = null;
 
+			Integer fittedIDInteger = null;
+			Integer fittedVersionOfIDInteger = null;
+
 			if( primaryString != null && primaryString.equals("true") )
 				current_path.setPrimary(true);
 
@@ -870,7 +891,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					}
 				}
 
+				if( fittedVersionOfIDString != null )
+					fittedVersionOfIDInteger = new Integer( Integer.parseInt(fittedVersionOfIDString) );
+				if( fittedIDString != null )
+					fittedIDInteger = new Integer( Integer.parseInt(fittedIDString) );
+
 			} catch( NumberFormatException e ) {
+				e.printStackTrace();
 				throw new TracesFileFormatException("There was an invalid attribute in <path/>: "+e);
 			}
 
@@ -893,6 +920,22 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				startJoinsIndices.put( id, startsIndexInteger );
 			if( endsIndexInteger != null )
 				endJoinsIndices.put( id, endsIndexInteger );
+
+			if( useFittedString == null )
+				useFittedFields.put( id, false );
+			else {
+				if( useFittedString.equals("true") )
+					useFittedFields.put( id, true );
+				else if( useFittedString.equals("false") )
+				        useFittedFields.put( id, false );
+				else
+					throw new TracesFileFormatException("Unknown value for 'fitted' attribute: '"+useFittedString+"'");
+			}
+
+			if( fittedIDInteger != null )
+				fittedFields.put( id, fittedIDInteger );
+			if( fittedVersionOfIDInteger != null )
+				fittedVersionOfFields.put( id, fittedVersionOfIDInteger );
 
 		} else if( qName.equals("point") ) {
 
@@ -1069,8 +1112,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		if( qName.equals("path") ) {
 
 			allPaths.add( current_path );
-			if( plugin.use3DViewer )
-				current_path.addTo3DViewer(plugin.univ,Color.MAGENTA);
 
 		} else if( qName.equals("fill") ) {
 
@@ -1089,6 +1130,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				Integer endID = endJoins.get(p.getID());
 				Integer endIndexInteger = endJoinsIndices.get(p.getID());
 				PointInImage endJoinPoint = endJoinsPoints.get(p.getID());
+				Integer fittedID = fittedFields.get(p.getID());
+				Integer fittedVersionOfID = fittedVersionOfFields.get(p.getID());
+				Boolean useFitted = useFittedFields.get(p.getID());
 
 				if( startID != null ) {
 					Path startPath = getPathFromID(startID);
@@ -1105,6 +1149,24 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 						endJoinPoint = endPath.getPointInImage(endIndexInteger.intValue());
 					}
 					p.setEndJoin( endPath, endJoinPoint );
+				}
+				if( fittedID != null ) {
+					Path fitted = getPathFromID(fittedID);
+					p.fitted = fitted;
+					p.setUseFitted(useFitted.booleanValue());
+				}
+				if( fittedVersionOfID != null ) {
+					Path fittedVersionOf = getPathFromID(fittedVersionOfID);
+					p.fittedVersionOf = fittedVersionOf;
+				}
+
+				if( plugin.use3DViewer && p.fittedVersionOf == null ) {
+					Path pathToAdd;
+					if( p.getUseFitted() )
+						pathToAdd = p.fitted;
+					else
+						pathToAdd = p;
+					pathToAdd.addTo3DViewer(plugin.univ,Color.MAGENTA);
 				}
 			}
 

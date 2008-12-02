@@ -140,13 +140,10 @@ class NormalPlaneCanvas extends ImageCanvas {
 			}
 		}
 
-		if( valid[z] ) {
+		if( valid[z] )
 			g.setColor(Color.RED);
-			System.out.print("valid ");
-		} else {
+		else
 			g.setColor(Color.MAGENTA);
-			System.out.print("      ");
-		}
 
 		System.out.println("radiuses["+z+"] is: "+radiuses[z]);
 
@@ -159,7 +156,6 @@ class NormalPlaneCanvas extends ImageCanvas {
 			    5 );
 
 		int diameter = screenXD(centre_x_positions[z] + radiuses[z]) - screenXD(centre_x_positions[z] - radiuses[z]);
-		System.out.println("diameter to draw is: "+diameter);
 
 		g.drawOval( x_top_left, y_top_left, diameter, diameter );
 

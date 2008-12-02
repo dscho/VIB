@@ -455,6 +455,10 @@ public class Path implements Comparable {
 					  new_radiuses,
 					  0,
 					  points );
+			tangents_x = new_tangents_x;
+			tangents_y = new_tangents_y;
+			tangents_z = new_tangents_z;
+			radiuses = new_radiuses;
 		}
 		maxPoints = newMaxPoints;
 	}
@@ -541,7 +545,8 @@ public class Path implements Comparable {
 
 	void addPointDouble( double x, double y, double z ) {
 		if( points >= maxPoints ) {
-			expandTo( (int)( maxPoints * 1.2 + 1 ) );
+			int newReserved = (int)( maxPoints * 1.2 + 1 );
+			expandTo( newReserved );
 		}
 		precise_x_positions[points] = x;
 		precise_y_positions[points] = y;
@@ -576,6 +581,9 @@ public class Path implements Comparable {
 
 		boolean drawDiameter = hasCircles();
 		// boolean drawDiameter = false;
+
+		Path realStartJoins = fittedVersionOf == null ? startJoins : fittedVersionOf.startJoins;
+		Path realEndJoins = fittedVersionOf == null ? endJoins : fittedVersionOf.endJoins;
 
 		switch( plane ) {
 
@@ -629,12 +637,12 @@ public class Path implements Comparable {
 					g.setColor( c );
 				}
 
-				if( ((i == 0) && (startJoins == null)) ||
-				    ((i == points - 1) && (endJoins == null)) ) {
+				if( ((i == 0) && (realStartJoins == null)) ||
+				    ((i == points - 1) && (realEndJoins == null)) ) {
 					// Then draw it as a rectangle...
 					g.fillRect( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
-				} else if( ((i == 0) && (startJoins != null)) ||
-					   ((i == points - 1) && (endJoins != null)) ) {
+				} else if( ((i == 0) && (realStartJoins != null)) ||
+					   ((i == points - 1) && (realEndJoins != null)) ) {
 					// The draw it as an oval...
 					g.fillOval( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
 				} else {
@@ -654,12 +662,12 @@ public class Path implements Comparable {
 				int x = canvas.myScreenXD(getXUnscaled(i));
 				int y = canvas.myScreenYD(getZUnscaled(i));
 
-				if( ((i == 0) && (startJoins == null)) ||
-				    ((i == points - 1) && (endJoins == null)) ) {
+				if( ((i == 0) && (realStartJoins == null)) ||
+				    ((i == points - 1) && (realEndJoins == null)) ) {
 					// Then draw it as a rectangle...
 					g.fillRect( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
-				} else if( ((i == 0) && (startJoins != null)) ||
-					   ((i == points - 1) && (endJoins != null)) ) {
+				} else if( ((i == 0) && (realStartJoins != null)) ||
+					   ((i == points - 1) && (realEndJoins != null)) ) {
 					// The draw it as an oval...
 					g.fillOval( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
 				} else {
@@ -679,12 +687,12 @@ public class Path implements Comparable {
 				int x = canvas.myScreenXD(getZUnscaled(i));
 				int y = canvas.myScreenYD(getYUnscaled(i));
 
-				if( ((i == 0) && (startJoins == null)) ||
-				    ((i == points - 1) && (endJoins == null)) ) {
+				if( ((i == 0) && (realStartJoins == null)) ||
+				    ((i == points - 1) && (realEndJoins == null)) ) {
 					// Then draw it as a rectangle...
 					g.fillRect( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
-				} else if( ((i == 0) && (startJoins != null)) ||
-					   ((i == points - 1) && (endJoins != null)) ) {
+				} else if( ((i == 0) && (realStartJoins != null)) ||
+					   ((i == points - 1) && (realEndJoins != null)) ) {
 					// The draw it as an oval...
 					g.fillOval( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
 				} else {
@@ -776,9 +784,7 @@ public class Path implements Comparable {
 		}
 
 		public double evaluate(double [] x) {
-			// System.out.println("evaluate called with: "+x[0]+","+x[1]+","+x[2]);
 			double badness = evaluateCircle(x[0],x[1],x[2]);
-			// System.out.println("   gave: "+badness);
 
 			if (badness < min) {
 				best = x.clone();
@@ -816,6 +822,45 @@ public class Path implements Comparable {
 			return badness;
 		}
 
+	}
+
+	Path fitted; // If this path has a fitted version, this is it.
+	boolean useFitted = false; // Use the fitted version in preference to this path
+	Path fittedVersionOf; // If this path is a fitted version of another one, this is the original
+
+	public void setFitted( Path p ) {
+		if( fitted != null ) {
+			throw new RuntimeException("BUG: Trying to set a fitted path when there already is one...");
+		}
+		fitted = p;
+		p.fittedVersionOf = this;
+	}
+
+	public void setUseFitted( boolean useFitted ) {
+		setUseFitted( useFitted, null );
+	}
+
+	public void setUseFitted( boolean useFitted, Simple_Neurite_Tracer plugin ) {
+
+		if( useFitted && fitted == null )
+			throw new RuntimeException("BUG: setUseFitted(true) was called, but the 'fitted' member was null");
+
+		if( plugin != null && plugin.use3DViewer ) {
+			// Swap them around in the 3D viewer:
+			if( useFitted ) {
+				removeFrom3DViewer( plugin.univ );
+				fitted.addTo3DViewer( plugin.univ );
+			} else {
+				fitted.removeFrom3DViewer( plugin.univ );
+				addTo3DViewer( plugin.univ );
+			}
+		}
+
+		this.useFitted = useFitted;
+	}
+
+	public boolean getUseFitted( ) {
+		return useFitted;
 	}
 
 	public Path fitCircles( int side, Simple_Neurite_Tracer plugin, boolean display ) {
@@ -1242,11 +1287,6 @@ public class Path implements Comparable {
 
 		}
 
-		if( startJoins != null )
-			fitted.setStartJoin( startJoins, startJoinsPoint );
-		if( endJoins != null )
-			fitted.setEndJoin( endJoins, endJoinsPoint );
-
 		fitted.setName( "Fitted Path ["+getID()+"]");
 
 		return fitted;
@@ -1412,6 +1452,8 @@ public class Path implements Comparable {
 
 	@Override
 	public String toString() {
+		if( useFitted )
+			return fitted.toString();
 		String pathName;
 		String name = getName();
 		if( name == null )
@@ -1449,7 +1491,6 @@ public class Path implements Comparable {
 	public static final int noMoreThanOneEvery = 2;
 
 	public void removeFrom3DViewer(Image3DUniverse univ) {
-		System.out.println( "Trying to remove the path with name: "+nameWhenAddedToViewer );
 		univ.removeContent( nameWhenAddedToViewer );
 	}
 
@@ -1480,7 +1521,6 @@ public class Path implements Comparable {
 					y_points_d[added] = precise_y_positions[i];
 					z_points_d[added] = precise_z_positions[i];
 					diameters[added] = 2 * radiuses[i];
-					System.out.println("point["+added+"] use diameter: "+diameters[added]+" at x="+x_points_d[added]+", y="+y_points_d[added]+", z="+z_points_d[added]);
 					lastIndexAdded = i;
 					++ added;
 				}
@@ -1521,8 +1561,6 @@ public class Path implements Comparable {
 		String title = getName();
 		nameWhenAddedToViewer = title;
 
-		System.out.println("Adding path to 3D viewer with name: "+nameWhenAddedToViewer);
-
 		univ.resetView();
 
 		univ.addMesh(triangles,
@@ -1539,11 +1577,12 @@ public class Path implements Comparable {
 	public void setSelected(boolean newSelectedStatus) {
 		if( newSelectedStatus != selected ) {
 			selected = newSelectedStatus;
-			if( content3D != null ) {
+			Path viewerPath = useFitted ? fitted : this;
+			if( viewerPath.content3D != null ) {
 				if( selected )
-					content3D.setColor(new Color3f(Color.green));
+					viewerPath.content3D.setColor(new Color3f(Color.green));
 				else
-					content3D.setColor(new Color3f(Color.magenta));
+					viewerPath.content3D.setColor(new Color3f(Color.magenta));
 			}
 		}
 	}

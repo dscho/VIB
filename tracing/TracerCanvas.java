@@ -94,15 +94,25 @@ public class TracerCanvas extends ThreePanesCanvas {
 				if( p == null )
 					continue;
 
+				if( p.fittedVersionOf != null )
+					continue;
+
+				Path drawPath = p;
+
+				// If the path suggests using the fitted version, draw that instead:
+				if( p.useFitted ) {
+					drawPath = p.fitted;
+				}
+
 				Color color = Color.MAGENTA;
 				if( pathAndFillManager.isSelected(p) ) {
 					color = Color.GREEN;
 				}
 
 				if( just_near_slices ) {
-					p.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );
+					drawPath.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );
 				} else
-					p.drawPathAsPoints( this, g, color, plane );
+					drawPath.drawPathAsPoints( this, g, color, plane );
 			}
 		}
 

@@ -142,10 +142,17 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			if( node == root )
 				return;
 			Path p = (Path)node.getUserObject();
-			Path fitted = p.fitCircles( 40, plugin, (e.getModifiers() & ActionEvent.SHIFT_MASK) > 0 );
-			pathAndFillManager.addPath( fitted );
-			if( plugin.use3DViewer ) {
-				fitted.addTo3DViewer(plugin.univ);
+			if( p.getUseFitted() ) {
+				p.setUseFitted(false, plugin);
+			} else {
+				if( p.fitted == null ) {
+					Path fitted = p.fitCircles( 40, plugin, (e.getModifiers() & ActionEvent.SHIFT_MASK) > 0 );
+					p.setFitted(fitted);
+					p.setUseFitted(true, plugin);
+					pathAndFillManager.addPath( fitted );
+				} else {
+					p.setUseFitted(true, plugin);
+				}
 			}
 			pathAndFillManager.resetListeners(null);
 		} else if( source == renameButton ) {
@@ -329,8 +336,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 	public void setPathList( String [] pathList, Path justAdded, boolean expandAll ) {
 
-		System.out.println("setPathList in pathWindow called with justAdded: "+justAdded);
-
 		// Save the selection state:
 
 		TreePath [] selectedBefore = tree.getSelectionPaths();
@@ -359,7 +364,9 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		Path [] primaryPaths = pathAndFillManager.getPathsStructured();
 		for( int i = 0; i < primaryPaths.length; ++i ) {
 			Path primaryPath = primaryPaths[i];
-			addNode( newRoot, primaryPath, model );
+			// Add the primary path if it's not just a fitted version of another:
+			if( primaryPath.fittedVersionOf == null )
+				addNode( newRoot, primaryPath, model );
 		}
 		root = newRoot;
 		tree.setModel(model);
