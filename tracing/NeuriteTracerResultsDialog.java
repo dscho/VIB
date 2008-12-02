@@ -324,6 +324,8 @@ class NeuriteTracerResultsDialog
 			statusText.setText("Click somewhere to start a new path...");
 			disableEverything();
 			pw.setButtonsEnabled(true);
+			// Fake a selection change in the path tree:
+			pw.valueChanged( null );
 
 			cancelSearch.setVisible(false);
 			keepSegment.setVisible(false);

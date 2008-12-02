@@ -198,19 +198,60 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		}
 	}
 
+	public void updateButtonsNoneSelected( ) {
+		renameButton.setEnabled(false);
+		fitVolumeButton.setText("Fit Volume");
+		fitVolumeButton.setEnabled(false);
+		fillOutButton.setEnabled(false);
+		makePrimaryButton.setEnabled(false);
+		deleteButton.setEnabled(false);
+	}
+
+	public void updateButtonsOneSelected( Path p ) {
+		renameButton.setEnabled(true);
+		if( p.getUseFitted() )
+			fitVolumeButton.setText("Un-fit Volume");
+		else
+			fitVolumeButton.setText("Fit Volume");
+		fitVolumeButton.setEnabled(true);
+		fillOutButton.setEnabled(true);
+		makePrimaryButton.setEnabled(true);
+		deleteButton.setEnabled(true);
+	}
+
+	public void updateButtonsManySelected( ) {
+		renameButton.setEnabled(false);
+		fitVolumeButton.setText("Fit Volume");
+		fitVolumeButton.setEnabled(false);
+		fillOutButton.setEnabled(true);
+		makePrimaryButton.setEnabled(false);
+		deleteButton.setEnabled(true);
+	}
+
 	public void valueChanged( TreeSelectionEvent e ) {
 		TreePath [] selectedPaths = tree.getSelectionPaths();
 		if( selectedPaths == null ) {
 			pathAndFillManager.setSelected(new Path[]{},this);
+			updateButtonsNoneSelected();
 		} else {
 			Path [] paths = new Path[selectedPaths.length];
+			int realPathsSelected = 0;
 			for( int i = 0; i < selectedPaths.length; ++i ) {
 				TreePath tp = selectedPaths[i];
 				DefaultMutableTreeNode node =
 					(DefaultMutableTreeNode)(tp.getLastPathComponent());
-				if( node != root )
+				if( node != root ) {
+					++ realPathsSelected;
 					paths[i] = (Path)node.getUserObject();
+				}
 			}
+			System.out.println("realPathsSelected is: "+realPathsSelected);
+			if( realPathsSelected == 0 )
+				updateButtonsNoneSelected();
+			else if( realPathsSelected == 1 )
+				updateButtonsOneSelected(paths[0]);
+			else
+				updateButtonsManySelected();
 			pathAndFillManager.setSelected(paths,this);
 		}
 	}
@@ -381,7 +422,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			setExpandedPaths( tree, model, root, expandedPathsBefore, justAdded );
 
 		setSelectedPaths( tree, model, root, selectedPathsBefore );
-
 	}
 
 	public void addNode( MutableTreeNode parent, Path childPath, DefaultTreeModel model ) {
