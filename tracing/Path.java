@@ -535,17 +535,18 @@ public class Path implements Comparable {
 		precise_z_positions[points++] = z;
 	}
 
-	public void drawPathAsPoints( ImageCanvas canvas, Graphics g, java.awt.Color c, int plane ) {
+	public void drawPathAsPoints( TracerCanvas canvas, Graphics g, java.awt.Color c, int plane ) {
 		drawPathAsPoints( canvas, g, c, plane, 0, -1 );
 	}
 
 	/* FIXME: Should draw lines between points now, not just points... */
 
-	public void drawPathAsPoints( ImageCanvas canvas, Graphics g, java.awt.Color c, int plane, int z, int either_side ) {
+	public void drawPathAsPoints( TracerCanvas canvas, Graphics g, java.awt.Color c, int plane, int z, int either_side ) {
 
 		/* This is slightly ugly because we have to use
-		   ImageCanvas.screenX and .screenY to find whether to
-		   actually draw on the Graphics in case we're zoomed. */
+		   InteractiveTracerCanvas.myScreenX and .myScreenY to
+		   find whether to actually draw on the Graphics in
+		   case we're zoomed. */
 
 		/* In addition, if this is a start or end point we
 		   want to represent that with a circle or a square
@@ -571,8 +572,8 @@ public class Path implements Comparable {
 				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
 					continue;
 
-				int x = canvas.screenXD(getXUnscaledDouble(i));
-				int y = canvas.screenYD(getYUnscaledDouble(i));
+				int x = canvas.myScreenXD(getXUnscaledDouble(i));
+				int y = canvas.myScreenYD(getYUnscaledDouble(i));
 
 				if( drawDiameter ) {
 					// Cross the tangents with a unit z vector:
@@ -600,14 +601,14 @@ public class Path implements Comparable {
 					double right_x = precise_x_positions[i] - normalized_cross_x * radiuses[i];
 					double right_y = precise_y_positions[i] - normalized_cross_y * radiuses[i];
 
-					int left_x_on_screen = canvas.screenXD(left_x/x_spacing);
-					int left_y_on_screen = canvas.screenYD(left_y/y_spacing);
+					int left_x_on_screen = canvas.myScreenXD(left_x/x_spacing);
+					int left_y_on_screen = canvas.myScreenYD(left_y/y_spacing);
 
-					int right_x_on_screen = canvas.screenXD(right_x/x_spacing);
-					int right_y_on_screen = canvas.screenYD(right_y/y_spacing);
+					int right_x_on_screen = canvas.myScreenXD(right_x/x_spacing);
+					int right_y_on_screen = canvas.myScreenYD(right_y/y_spacing);
 
-					int x_on_screen = canvas.screenXD( precise_x_positions[i]/x_spacing );
-					int y_on_screen = canvas.screenYD( precise_y_positions[i]/y_spacing );
+					int x_on_screen = canvas.myScreenXD( precise_x_positions[i]/x_spacing );
+					int y_on_screen = canvas.myScreenYD( precise_y_positions[i]/y_spacing );
 
 					g.drawLine( x_on_screen + spotExtra / 2, y_on_screen + spotExtra / 2, left_x_on_screen + spotExtra / 2, left_y_on_screen + spotExtra / 2 );
 					g.drawLine( x_on_screen + spotExtra / 2, y_on_screen + spotExtra / 2, right_x_on_screen + spotExtra / 2, right_y_on_screen + spotExtra / 2 );
@@ -637,8 +638,8 @@ public class Path implements Comparable {
 				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
 					continue;
 
-				int x = canvas.screenXD(getXUnscaled(i));
-				int y = canvas.screenYD(getZUnscaled(i));
+				int x = canvas.myScreenXD(getXUnscaled(i));
+				int y = canvas.myScreenYD(getZUnscaled(i));
 
 				if( ((i == 0) && (startJoins == null)) ||
 				    ((i == points - 1) && (endJoins == null)) ) {
@@ -662,8 +663,8 @@ public class Path implements Comparable {
 				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
 					continue;
 
-				int x = canvas.screenXD(getZUnscaled(i));
-				int y = canvas.screenYD(getYUnscaled(i));
+				int x = canvas.myScreenXD(getZUnscaled(i));
+				int y = canvas.myScreenYD(getYUnscaled(i));
 
 				if( ((i == 0) && (startJoins == null)) ||
 				    ((i == points - 1) && (endJoins == null)) ) {

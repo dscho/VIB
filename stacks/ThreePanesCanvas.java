@@ -31,10 +31,10 @@ import java.awt.*;
 import java.awt.event.*;
 
 public class ThreePanesCanvas extends ImageCanvas {
-	
+
 	protected PaneOwner owner;
 	protected int plane;
-	
+
 	protected ThreePanesCanvas( ImagePlus imagePlus, PaneOwner owner, int plane ) {
 		super(imagePlus);
 		this.owner = owner;
@@ -45,7 +45,7 @@ public class ThreePanesCanvas extends ImageCanvas {
 		super(imagePlus);
 		this.plane = plane;
 	}
-	
+
 	static public Object newThreePanesCanvas( ImagePlus imagePlus, PaneOwner owner, int plane ) {
 		return new ThreePanesCanvas( imagePlus, owner, plane );
 	}
@@ -53,44 +53,53 @@ public class ThreePanesCanvas extends ImageCanvas {
 	public void setPaneOwner(PaneOwner owner) {
 		this.owner = owner;
 	}
-	
+
 	protected void drawOverlay( Graphics g ) {
-		
+
 		if( draw_crosshairs ) {
-			
+
+			int ix = (int)Math.round( current_x );
+			int iy = (int)Math.round( current_y );
+			int iz = (int)Math.round( current_z );
+
 			if( plane == ThreePanes.XY_PLANE ) {
-				int x = screenX(current_x);
-				int y = screenY(current_y);
-				int x_pixel_width = screenX(current_x+1) - x;
-				int y_pixel_width = screenY(current_y+1) - y;
-				drawCrosshairs( g, Color.red, x + (x_pixel_width / 2), y + (y_pixel_width / 2) );
+				int x = myScreenXD(current_x);
+				int y = myScreenYD(current_y);
+				drawCrosshairs( g, Color.red, x, y );
 			} else if( plane == ThreePanes.XZ_PLANE ) {
-				int x = screenX(current_x);
-				int y = screenY(current_z);
-				int x_pixel_width = screenX(current_x+1) - screenX(current_x);
-				int y_pixel_width = screenY(current_z+1) - screenY(current_z);
-				drawCrosshairs( g, Color.red, x + (x_pixel_width / 2), y + (y_pixel_width / 2) );
+				int x = myScreenXD(current_x);
+				int y = myScreenYD(current_z);
+				drawCrosshairs( g, Color.red, x, y );
 			} else if( plane == ThreePanes.ZY_PLANE ) {
-				int x = screenX(current_z);
-				int y = screenY(current_y);
-				int x_pixel_width = screenX(current_z+1) - screenX(current_z);
-				int y_pixel_width = screenY(current_y+1) - screenY(current_y);
-				drawCrosshairs( g, Color.red, x + (x_pixel_width / 2), y + (y_pixel_width / 2)  );
+				int x = myScreenXD(current_z);
+				int y = myScreenYD(current_y);
+				drawCrosshairs( g, Color.red, x, y );
 			}
-			
 		}
-		
 	}
-	
+
 	public void paint(Graphics g) {
 		super.paint(g);
 		drawOverlay(g);
 	}
-	
+
 	public void mouseClicked( MouseEvent e ) {
-		
+
 	}
-	
+
+	public void mouseMoved(MouseEvent e) {
+
+		double off_screen_x = offScreenX(e.getX());
+		double off_screen_y = offScreenY(e.getY());
+
+		boolean shift_key_down = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
+
+		owner.mouseMovedTo( (int)off_screen_x, (int)off_screen_y, plane, shift_key_down );
+	}
+
+
+	// ------------------------------------------------------------------------
+
 	protected void drawCrosshairs( Graphics g, Color c, int x_on_screen, int y_on_screen ) {
 		g.setColor( c );
 		int hairLength = 8;
@@ -99,26 +108,61 @@ public class ThreePanesCanvas extends ImageCanvas {
 		g.drawLine( x_on_screen + 1, y_on_screen, x_on_screen + (hairLength - 1), y_on_screen );
 		g.drawLine( x_on_screen - 1, y_on_screen, x_on_screen - (hairLength - 1), y_on_screen );
 	}
-	
-	public void setCrosshairs( int x, int y, int z, boolean display ) {
+
+	public void setCrosshairs( double x, double y, double z, boolean display ) {
 		current_x = x;
 		current_y = y;
 		current_z = z;
 		draw_crosshairs = display;
 	}
-	
-	private int current_x, current_y, current_z;
-	boolean draw_crosshairs;
-	
-   	public void mouseMoved(MouseEvent e) {
-		
-		int off_screen_x = offScreenX(e.getX());
-		int off_screen_y = offScreenY(e.getY());
 
-		boolean shift_key_down = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
-		
-		owner.mouseMovedTo( off_screen_x, off_screen_y, plane, shift_key_down );
-		
+	private double current_x, current_y, current_z;
+	boolean draw_crosshairs;
+
+	// ------------------------------------------------------------------------
+
+	/* These are the "a pixel is not a little square" versions of
+	   these methods.  (It's not so easy to do anything about the
+	   box filter reconstruction.)
+	*/
+
+	/**Converts a screen x-coordinate to an offscreen x-coordinate.*/
+	public int myOffScreenX(int sx) {
+		return srcRect.x + (int)((sx - magnification/2)/magnification);
 	}
-	
+
+	/**Converts a screen y-coordinate to an offscreen y-coordinate.*/
+	public int myOffScreenY(int sy) {
+		return srcRect.y + (int)((sy - magnification/2)/magnification);
+	}
+
+	/**Converts a screen x-coordinate to a floating-point offscreen x-coordinate.*/
+	public double myOffScreenXD(int sx) {
+		return srcRect.x + (sx - magnification/2)/magnification;
+	}
+
+	/**Converts a screen y-coordinate to a floating-point offscreen y-coordinate.*/
+	public double myOffScreenYD(int sy) {
+		return srcRect.y + (sy - magnification/2)/magnification;
+	}
+
+	/**Converts an offscreen x-coordinate to a screen x-coordinate.*/
+	public int myScreenX(int ox) {
+		return  (int)((ox-srcRect.x)*magnification+magnification/2);
+	}
+
+	/**Converts an offscreen y-coordinate to a screen y-coordinate.*/
+	public int myScreenY(int oy) {
+		return  (int)((oy-srcRect.y)*magnification+magnification/2);
+	}
+
+	/**Converts a floating-point offscreen x-coordinate to a screen x-coordinate.*/
+	public int myScreenXD(double ox) {
+		return  (int)((ox-srcRect.x)*magnification+magnification/2);
+	}
+
+	/**Converts a floating-point offscreen x-coordinate to a screen x-coordinate.*/
+	public int myScreenYD(double oy) {
+		return  (int)((oy-srcRect.y)*magnification+magnification/2);
+	}
 }

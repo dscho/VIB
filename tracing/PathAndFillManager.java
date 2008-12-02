@@ -1336,7 +1336,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 	}
 
-	synchronized PointInImage nearestJoinPointOnSelectedPaths( int x, int y, int z ) {
+	synchronized PointInImage nearestJoinPointOnSelectedPaths( double x, double y, double z ) {
 
 		PointInImage result = null;
 

@@ -25,7 +25,6 @@ package tracing;
 
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.ImageCanvas;
 import ij.measure.Calibration;
 import ij.IJ;
 
@@ -750,7 +749,7 @@ public abstract class SearchThread extends Thread {
 
 	void drawProgressOnSlice( int plane,
 				  int currentSliceInPlane,
-				  ImageCanvas canvas,
+				  TracerCanvas canvas,
 				  Graphics g ){
 
 		for( int i = 0; i < 2; ++i ) {
@@ -785,7 +784,7 @@ public abstract class SearchThread extends Thread {
 						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status )
-							g.fillRect( canvas.screenX(x), canvas.screenY(y), pixel_size, pixel_size );
+							g.fillRect( canvas.myScreenX(x), canvas.myScreenY(y), pixel_size, pixel_size );
 					}
 			} else if( plane == ThreePanes.XZ_PLANE ) {
 				int y = currentSliceInPlane;
@@ -801,7 +800,7 @@ public abstract class SearchThread extends Thread {
 						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status )
-							g.fillRect( canvas.screenX(x), canvas.screenY(z), pixel_size, pixel_size );
+							g.fillRect( canvas.myScreenX(x), canvas.myScreenY(z), pixel_size, pixel_size );
 					}
 			} else if( plane == ThreePanes.ZY_PLANE ) {
 				int x = currentSliceInPlane;
@@ -817,7 +816,7 @@ public abstract class SearchThread extends Thread {
 						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status )
-							g.fillRect( canvas.screenX(z), canvas.screenY(y), pixel_size, pixel_size );
+							g.fillRect( canvas.myScreenX(z), canvas.myScreenY(y), pixel_size, pixel_size );
 					}
 			}
 		}

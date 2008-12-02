@@ -61,7 +61,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	}
 
 	/* Just for convenience, keep casted references to the
-	   superclass's InteractiveTracerCanvas objects */
+	   superclass's TracerCanvas objects */
 
 	AutoTracerCanvas canvas;
 

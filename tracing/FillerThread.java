@@ -25,7 +25,6 @@ package tracing;
 
 import ij.*;
 import ij.process.*;
-import ij.gui.ImageCanvas;
 
 import java.awt.*;
 import java.util.*;
@@ -357,7 +356,7 @@ public class FillerThread extends SearchThread {
 	@Override
 	void drawProgressOnSlice( int plane,
 				  int currentSliceInPlane,
-				  ImageCanvas canvas,
+				  TracerCanvas canvas,
 				  Graphics g )  {
 		
 		super.drawProgressOnSlice(plane,currentSliceInPlane,canvas,g);

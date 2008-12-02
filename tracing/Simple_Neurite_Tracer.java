@@ -239,8 +239,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	protected int width, height, depth;
 
-	int last_x, last_y, last_z;
-
 	public void justDisplayNearSlices( boolean value, int eitherSide ) {
 
 		xy_tracer_canvas.just_near_slices = value;
@@ -259,7 +257,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	}
 
-	public void setCrosshair( int new_x, int new_y, int new_z ) {
+	public void setCrosshair( double new_x, double new_y, double new_z ) {
 
 		xy_tracer_canvas.setCrosshairs( new_x, new_y, new_z, true );
 		if( ! single_pane ) {
@@ -429,28 +427,32 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		loading = false;
 	}
 
-	public void mouseMovedTo( int x_in_pane, int y_in_pane, int in_plane, boolean shift_key_down, boolean join_modifier_down ) {
+	public void mouseMovedTo( double x_in_pane, double y_in_pane, int in_plane, boolean shift_key_down, boolean join_modifier_down ) {
 
-		int x, y, z;
+		double x, y, z;
 
-		int [] p = new int[3];
-		findPointInStack( x_in_pane, y_in_pane, in_plane, p );
-		x = p[0];
-		y = p[1];
-		z = p[2];
+		double [] pd = new double[3];
+		findPointInStackPrecise( x_in_pane, y_in_pane, in_plane, pd );
+		x = pd[0];
+		y = pd[1];
+		z = pd[2];
 
 		if( join_modifier_down && pathAndFillManager.anySelected() ) {
 
 			PointInImage pointInImage = pathAndFillManager.nearestJoinPointOnSelectedPaths( x, y, z );
 			if( pointInImage != null ) {
-				x = (int)Math.round( pointInImage.x / x_spacing );
-				y = (int)Math.round( pointInImage.y / y_spacing );
-				z = (int)Math.round( pointInImage.z / z_spacing );
+				x = pointInImage.x / x_spacing;
+				y = pointInImage.y / y_spacing;
+				z = pointInImage.z / z_spacing;
 			}
 		}
 
+		int ix = (int)Math.round(x);
+		int iy = (int)Math.round(y);
+		int iz = (int)Math.round(z);
+
 		if( shift_key_down )
-			setSlicesAllPanes( x, y, z );
+			setSlicesAllPanes( ix, iy, iz );
 
 		if( (xy_tracer_canvas != null) &&
 		    ((xz_tracer_canvas != null) || single_pane) &&
@@ -459,7 +461,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			setCrosshair( x, y, z );
 			if( labelData != null ) {
 
-				byte b = labelData[z][y*width+x];
+				byte b = labelData[iz][iy*width+ix];
 				int m = b & 0xFF;
 
 				String material = materialList[m];
@@ -471,15 +473,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		if( filler != null ) {
 			synchronized (filler) {
-				float distance = filler.getDistanceAtPoint(x,y,z);
+				float distance = filler.getDistanceAtPoint(ix,iy,iz);
 				resultsDialog.showMouseThreshold(distance);
 			}
 		}
-
-		last_x = x;
-		last_y = y;
-		last_z = z;
-
 	}
 
 	boolean lastStartPointSet = false;
