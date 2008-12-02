@@ -84,7 +84,7 @@ public class Translator_1 {
 		dEyePtToPickPt = eyePtInVWorld.distance(pickPtInVWorld);
 
 		centerOld.set(((Image3DUniverse)univ).getGlobalCenterPoint());
-		univ.getGlobalTranslate().getTransform(translateOld);
+//		univ.getGlobalTranslate().getTransform(translateOld);
 	}
 
 	public void translate(Content c, MouseEvent e) {
@@ -123,7 +123,7 @@ public class Translator_1 {
 		translateNew.set(translation);
 		translateNew.mul(translateOld);
 		
-		univ.getGlobalTranslate().setTransform(translateNew);
+//		univ.getGlobalTranslate().setTransform(translateNew);
 		transformChanged(MouseBehaviorCallback.TRANSLATE, translateNew);
 
 	}

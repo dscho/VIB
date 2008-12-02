@@ -28,13 +28,8 @@ import ij3d.behaviors.Zoomer;
 public abstract class DefaultUniverse extends SimpleUniverse implements 
 					MouseBehaviorCallback, PickingCallback {
 
-	protected BranchGroup root;
 	protected BranchGroup scene;
 	protected Scalebar scalebar;
-	protected TransformGroup centerTG;
-	protected TransformGroup translateTG;
-	protected TransformGroup rotationsTG;
-	protected TransformGroup scaleTG;
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
 
@@ -49,22 +44,6 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 	public abstract Content getSelected();
 	public abstract Iterator contents();
-
-	public TransformGroup getGlobalRotate() {
-		return rotationsTG;
-	}
-
-	public TransformGroup getGlobalScale() {
-		return scaleTG;
-	}
-
-	public TransformGroup getGlobalTranslate() {
-		return translateTG;
-	}
-
-	public TransformGroup getCenterTG() {
-		return centerTG;
-	}
 
 	public Scalebar getScalebar() {
 		return scalebar;
@@ -95,49 +74,23 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		bounds = new BoundingSphere();
 		bounds.setRadius(10000.0);
 
-		root = new BranchGroup();
-		
-		scaleTG = new TransformGroup();
-		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		root.addChild(scaleTG);
-
-		scalebar = new Scalebar();
-		scaleTG.addChild(scalebar);
-
-		rotationsTG = new TransformGroup();
-		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		scaleTG.addChild(rotationsTG);
-
-		translateTG = new TransformGroup();
-		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		rotationsTG.addChild(translateTG);
-
-		centerTG = new TransformGroup();
-		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		translateTG.addChild(centerTG);
-
 		scene = new BranchGroup();
-		scene.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);
-		scene.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
-		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
-		centerTG.addChild(scene);
+		
+		scalebar = new Scalebar();
+		scene.addChild(scalebar);
 
 		// Lightening
 		AmbientLight lightA = new AmbientLight();
 		lightA.setInfluencingBounds(bounds);
 		lightA.setEnable(false);
-		root.addChild(lightA);
+		scene.addChild(lightA);
 		DirectionalLight lightD1 = new DirectionalLight();
 		lightD1.setInfluencingBounds(bounds);
-		root.addChild(lightD1);
+		scene.addChild(lightD1);
 
 		SpotLight lightS = new SpotLight();
 		lightS.setInfluencingBounds(bounds);
-		root.addChild(lightS);
+		scene.addChild(lightS);
 
 		// setup global mouse behavior
 		rotator = new Rotator(this, this);
@@ -146,7 +99,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		picker = new Picker(this);
 		mouseBehavior = new MouseBehavior(this);
 		mouseBehavior.setSchedulingBounds(bounds);
-		root.addChild(mouseBehavior);
+		scene.addChild(mouseBehavior);
 
 		getCanvas().addMouseListener(new MouseAdapter() {
 			@Override

@@ -35,22 +35,22 @@ public class Zoomer {
 	}
 
 	public void wheel_zoom(Content c, int units) {
-		double factor = 0.9;
-		if(units != 0) {
-
-			transformX.setIdentity();
-
-			double scale = units > 0 ? 1f/Math.abs(factor)
-						: Math.abs(factor);
-
-			transformX.setScale(scale);
-			TransformGroup tg = univ.getGlobalScale();
-			tg.getTransform(currentXform);
-			currentXform.mul(transformX, currentXform);
-
-			tg.setTransform(currentXform);
-			transformChanged(MouseBehaviorCallback.TRANSLATE, currentXform);
-		}
+//		double factor = 0.9;
+//		if(units != 0) {
+//
+//			transformX.setIdentity();
+//
+//			double scale = units > 0 ? 1f/Math.abs(factor)
+//						: Math.abs(factor);
+//
+//			transformX.setScale(scale);
+//			TransformGroup tg = univ.getGlobalScale();
+//			tg.getTransform(currentXform);
+//			currentXform.mul(transformX, currentXform);
+//
+//			tg.setTransform(currentXform);
+//			transformChanged(MouseBehaviorCallback.TRANSLATE, currentXform);
+//		}
 	}
 
 	public void zoom(Content c, MouseEvent e) {
@@ -63,23 +63,23 @@ public class Zoomer {
 	}
 
 	public void zoom(Content c, int dy) {
-		double factor = 0.9f;
-		double ddy = dy < 0 ? -1d : 1d;
-		ddy *= factor;
-		if(ddy != 0) {
-			transformX.setIdentity();
-			double scale = ddy > 0 ? 1f/Math.abs(ddy)
-						: Math.abs(ddy);
-
-			transformX.setScale(scale);
-			TransformGroup tg = univ.getGlobalScale();
-			tg.getTransform(currentXform);
-			currentXform.mul(transformX, currentXform);
-
-			tg.setTransform(currentXform);
-			transformChanged(
-				MouseBehaviorCallback.TRANSLATE, currentXform);
-		}
+//		double factor = 0.9f;
+//		double ddy = dy < 0 ? -1d : 1d;
+//		ddy *= factor;
+//		if(ddy != 0) {
+//			transformX.setIdentity();
+//			double scale = ddy > 0 ? 1f/Math.abs(ddy)
+//						: Math.abs(ddy);
+//
+//			transformX.setScale(scale);
+//			TransformGroup tg = univ.getGlobalScale();
+//			tg.getTransform(currentXform);
+//			currentXform.mul(transformX, currentXform);
+//
+//			tg.setTransform(currentXform);
+//			transformChanged(
+//				MouseBehaviorCallback.TRANSLATE, currentXform);
+//		}
 	}
 
 	public void zoom_old(Content c, int dy) {

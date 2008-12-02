@@ -135,7 +135,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Transform3D transform = new Transform3D();
 		transform.setTranslation(new Vector3f(
 			-globalCenter.x, -globalCenter.y, -globalCenter.z));
-		centerTG.setTransform(transform);
+//		centerTG.setTransform(transform);
 	}
 
 	public Point3f getGlobalCenterPoint() {
@@ -279,10 +279,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addMesh(List mesh, Color3f color,
 			String name, float scale, int threshold){
 		// correct global scaling transformation
-		Transform3D scaletr = new Transform3D();
-		scaleTG.getTransform(scaletr);
-		scaletr.setScale(scale);
-		scaleTG.setTransform(scaletr);
+//		Transform3D scaletr = new Transform3D();
+//		scaleTG.getTransform(scaletr);
+//		scaletr.setScale(scale);
+//		scaleTG.setTransform(scaletr);
 		// add the mesh
  		return addMesh(mesh, color, name, threshold);
 	}
@@ -343,14 +343,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void resetView() {
-		fireTransformationStarted();
-		Transform3D t = new Transform3D();
-		getViewingPlatform().setNominalViewingTransform();
-		rotationsTG.setTransform(t);
-		translateTG.setTransform(t);
-		TransformGroup tg = null;
-		fireTransformationUpdated();
-		fireTransformationFinished();
+//		fireTransformationStarted();
+//		Transform3D t = new Transform3D();
+//		getViewingPlatform().setNominalViewingTransform();
+//		rotationsTG.setTransform(t);
+//		translateTG.setTransform(t);
+//		TransformGroup tg = null;
+//		fireTransformationUpdated();
+//		fireTransformationFinished();
 	}
 
 	public Content getSelected() {

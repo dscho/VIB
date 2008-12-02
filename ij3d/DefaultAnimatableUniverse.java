@@ -51,21 +51,21 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		animation.pause();
 		animation.setStartTime(
 			java.util.Calendar.getInstance().getTimeInMillis());
-		RotationInterpolator rotpol = 
-			new RotationInterpolator(animation, rotationsTG) {
-			public void processStimulus(java.util.Enumeration e) {
-				super.processStimulus(e);
-				if(animated) {
-					TransformGroup tg = null;
-					transformChanged(0, tg);
-				}
-			}
-		};
-		rotpol.setSchedulingBounds(bounds);
-		rotationsTG.addChild(rotpol);
-
-		root.compile();
-		addBranchGraph(root);
+//		RotationInterpolator rotpol = 
+//			new RotationInterpolator(animation, rotationsTG) {
+//			public void processStimulus(java.util.Enumeration e) {
+//				super.processStimulus(e);
+//				if(animated) {
+//					TransformGroup tg = null;
+//					transformChanged(0, tg);
+//				}
+//			}
+//		};
+//		rotpol.setSchedulingBounds(bounds);
+//		rotationsTG.addChild(rotpol);
+//
+//		root.compile();
+//		addBranchGraph(root);
 		addUniverseListener(new UniverseListener() {
 			public void transformationStarted(View view) {}
 			public void transformationFinished(View view) {}
@@ -105,47 +105,47 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 	private Transform3D rotate = new Transform3D();
 	public void record360() {
-		rotationsTG.getTransform(rotate);
-		double angle = 0;
-		double deg5 = Math.toRadians(5);
-		double pi2 = Math.PI*2;
-		int circles = (int)Math.round(pi2/deg5);
-		getCanvas().getView().stopView();
-		rotate.rotY(angle);
-		rotationsTG.setTransform(rotate);
-		transformChanged(-1, rotationsTG);
-		getCanvas().getView().renderOnce();
-		try {
-			Thread.currentThread().sleep(1000);
-		} catch (Exception e) {e.printStackTrace();}
-		for(int i = 0; i < circles; i++) {
-			angle = i * deg5;
-			rotate.rotY(angle);
-			rotationsTG.setTransform(rotate);
-			transformChanged(-1, rotationsTG);
-			getCanvas().getView().renderOnce();
-			try {
-				Thread.currentThread().sleep(100);
-			} catch (Exception e) {e.printStackTrace();}
-			win.updateImagePlus();
-			ImageProcessor ip = win.getImagePlus().getProcessor();
-			int w = ip.getWidth(), h = ip.getHeight();
-			if(stack == null) 
-				stack = new ImageStack(w, h);
-			stack.addSlice("", ip);
-			angle += 0.04;
-		}
-		getCanvas().getView().startView();
-		stopRecording().show();
+//		rotationsTG.getTransform(rotate);
+//		double angle = 0;
+//		double deg5 = Math.toRadians(5);
+//		double pi2 = Math.PI*2;
+//		int circles = (int)Math.round(pi2/deg5);
+//		getCanvas().getView().stopView();
+//		rotate.rotY(angle);
+//		rotationsTG.setTransform(rotate);
+//		transformChanged(-1, rotationsTG);
+//		getCanvas().getView().renderOnce();
+//		try {
+//			Thread.currentThread().sleep(1000);
+//		} catch (Exception e) {e.printStackTrace();}
+//		for(int i = 0; i < circles; i++) {
+//			angle = i * deg5;
+//			rotate.rotY(angle);
+//			rotationsTG.setTransform(rotate);
+//			transformChanged(-1, rotationsTG);
+//			getCanvas().getView().renderOnce();
+//			try {
+//				Thread.currentThread().sleep(100);
+//			} catch (Exception e) {e.printStackTrace();}
+//			win.updateImagePlus();
+//			ImageProcessor ip = win.getImagePlus().getProcessor();
+//			int w = ip.getWidth(), h = ip.getHeight();
+//			if(stack == null) 
+//				stack = new ImageStack(w, h);
+//			stack.addSlice("", ip);
+//			angle += 0.04;
+//		}
+//		getCanvas().getView().startView();
+//		stopRecording().show();
 	}
 
 	public void rotateY(double rad) {
-		rotationsTG.getTransform(rotate);
-		getCanvas().getView().stopView();
-		rotate.rotY(rad);
-		rotationsTG.setTransform(rotate);
-		transformChanged(-1, rotationsTG);
-		getCanvas().getView().startView();
+//		rotationsTG.getTransform(rotate);
+//		getCanvas().getView().stopView();
+//		rotate.rotY(rad);
+//		rotationsTG.setTransform(rotate);
+//		transformChanged(-1, rotationsTG);
+//		getCanvas().getView().startView();
 	}
 
 	public void startRecording() {

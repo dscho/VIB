@@ -84,12 +84,12 @@ public class Rotator {
 			yStart = y;
 			// get local to vworld direct and inverse transform
 			if(c == null) {
-				localToVWorld.setIdentity();
-				localToVWorldInverse.setIdentity();
-				centerOld.set(((Image3DUniverse)univ).getGlobalCenterPoint());
-				pickPtInVWorld.set(centerOld);
-				toTransform = univ.getGlobalTranslate();
-				toTransform.getTransform(translateOld);
+//				localToVWorld.setIdentity();
+//				localToVWorldInverse.setIdentity();
+//				centerOld.set(((Image3DUniverse)univ).getGlobalCenterPoint());
+//				pickPtInVWorld.set(centerOld);
+//				toTransform = univ.getGlobalTranslate();
+//				toTransform.getTransform(translateOld);
 			} else {
 				c.getLocalToVworld(localToVWorld);
 				localToVWorldInverse.invert(localToVWorld);
