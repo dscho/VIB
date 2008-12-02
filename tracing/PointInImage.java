@@ -33,9 +33,19 @@ class PointInImage {
 		this.x = x; this.y = y; this.z = z;
 	}
 
-	// You can optionally set these two:
-
+	// You can optionally set this value:
 	public Path onPath = null;
-	public int onPathIndex = -1;
 
+	public double distanceSquaredTo( double ox,
+					 double oy,
+					 double oz ) {
+		double xdiff = x - ox;
+		double ydiff = y - oy;
+		double zdiff = z - oz;
+		return xdiff * xdiff + ydiff * ydiff + zdiff * zdiff;
+	}
+
+	public double distanceSquaredTo( PointInImage o ) {
+		return distanceSquaredTo( o.x, o.y, o.z );
+	}
 }

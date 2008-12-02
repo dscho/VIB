@@ -182,7 +182,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					return;
 				}
 				if( endJoin != null ) {
-					result.setEndJoin( endJoin, endJoinIndex );
+					result.setEndJoin( endJoin, endJoinPoint );
 				}
 				setTemporaryPath( result );
 
@@ -486,7 +486,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	int last_start_point_z;
 
 	Path endJoin;
-	int endJoinIndex;
+	PointInImage endJoinPoint;
 
 	/* If we've finished searching for a path, but the user hasn't
 	   confirmed that they want to keep it yet, temporaryPath is
@@ -642,7 +642,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			y_end = (int)Math.round(joinPoint.y / y_spacing);
 			z_end = (int)Math.round(joinPoint.z / z_spacing);
 			endJoin = joinPoint.onPath;
-			endJoinIndex = joinPoint.onPathIndex;
+			endJoinPoint = joinPoint;
 		}
 
 		currentSearchThread = new TracerThread(
@@ -838,7 +838,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	synchronized void startPath( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
 
 		endJoin = null;
-		endJoinIndex = -1;
+		endJoinPoint = null;
 
 		if( lastStartPointSet ) {
 			IJ.showStatus( "The start point has already been set; to finish a path press 'F'" );
@@ -862,7 +862,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			last_start_point_x = (int)Math.round( joinPoint.x / x_spacing );
 			last_start_point_y = (int)Math.round( joinPoint.y / y_spacing );
 			last_start_point_z = (int)Math.round( joinPoint.z / z_spacing );
-			path.setStartJoin( joinPoint.onPath, joinPoint.onPathIndex );
+			path.setStartJoin( joinPoint.onPath, joinPoint );
 		}
 
 		setCurrentPath( path );

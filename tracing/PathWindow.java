@@ -329,6 +329,8 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 	public void setPathList( String [] pathList, Path justAdded, boolean expandAll ) {
 
+		System.out.println("setPathList in pathWindow called with justAdded: "+justAdded);
+
 		// Save the selection state:
 
 		TreePath [] selectedBefore = tree.getSelectionPaths();

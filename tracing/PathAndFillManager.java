@@ -374,6 +374,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	public synchronized void addPath( Path p, boolean forceNewName ) {
+		System.out.println("addPath called with "+p);
 		if( getPathFromID( p.getID() ) != null )
 			throw new RuntimeException("Attempted to add a path with an ID that was already added");
 		if( p.getID() < 0 ) {
@@ -394,6 +395,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 		p.setName( candidateName );
 		allPaths.add(p);
+		System.out.println("Going to resetListeners with path: "+p);
 		resetListeners( p );
 	}
 
@@ -439,11 +441,11 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			Path p = (Path)i.next();
 			if( p.startJoins == p ) {
 				p.startJoins = null;
-				p.startJoinsIndex = -1;
+				p.startJoinsPoint = null;
 			}
 			if( p.endJoins == p ) {
 				p.endJoins = null;
-				p.endJoinsIndex = -1;
+				p.endJoinsPoint = null;
 			}
 		}
 
@@ -542,13 +544,19 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			pw.println("  <!ATTLIST path           primary       CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           name          CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           startson      CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           startsindex   CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsindex   CDATA           #IMPLIED>"); // deprecated
+			pw.println("  <!ATTLIST path           startsx       CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsy       CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsz       CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           endson        CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           endsindex     CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsindex     CDATA           #IMPLIED>"); // deprecated
+			pw.println("  <!ATTLIST path           endsx         CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsy         CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsz         CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST path           reallength    CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          x             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST point          y             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST point          z             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST point          x             CDATA           #REQUIRED>"); // deprecated
+			pw.println("  <!ATTLIST point          y             CDATA           #REQUIRED>"); // deprecated
+			pw.println("  <!ATTLIST point          z             CDATA           #REQUIRED>"); // deprecated
 			pw.println("  <!ATTLIST point          xd            CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST point          yd            CDATA           #IMPLIED>");
 			pw.println("  <!ATTLIST point          zd            CDATA           #IMPLIED>");
@@ -598,14 +606,30 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				String startsString = "";
 				String endsString = "";
 				if( p.startJoins != null ) {
-					int startPathIndex = ((pathToID.get(p.startJoins))).intValue();
-					startsString = " startson=\"" + startPathIndex + "\"" +
-						" startsindex=\"" + p.startJoinsIndex + "\"";
+					int startPathID = ((pathToID.get(p.startJoins))).intValue();
+					// Find the nearest index for backward compatability:
+					int nearestIndexOnStartPath = p.startJoins.indexNearestTo(
+						p.startJoinsPoint.x,
+						p.startJoinsPoint.y,
+						p.startJoinsPoint.z );
+					startsString = " startson=\"" + startPathID + "\"" +
+						" startsindex=\"" + nearestIndexOnStartPath + "\"" +
+						" startx=\"" + p.startJoinsPoint.x + "\"" +
+						" starty=\"" + p.startJoinsPoint.y + "\"" +
+						" startz=\"" + p.startJoinsPoint.z + "\"";
 				}
 				if( p.endJoins != null ) {
-					int endPathIndex = ((pathToID.get(p.endJoins))).intValue();
-					endsString = " endson=\"" + endPathIndex + "\"" +
-						" endsindex=\"" + p.endJoinsIndex + "\"";
+					int endPathID = ((pathToID.get(p.endJoins))).intValue();
+					// Find the nearest index for backward compatability:
+					int nearestIndexOnEndPath = p.endJoins.indexNearestTo(
+						p.endJoinsPoint.x,
+						p.endJoinsPoint.y,
+						p.endJoinsPoint.z );
+					endsString = " endson=\"" + endPathID + "\"" +
+						" endsindex=\"" + nearestIndexOnEndPath + "\""+
+						" endsx=\"" + p.endJoinsPoint.x + "\"" +
+						" endsy=\"" + p.endJoinsPoint.y + "\"" +
+						" endsz=\"" + p.endJoinsPoint.z + "\"";
 				}
 				if( p.getPrimary() )
 					pw.print(" primary=\"true\"");
@@ -663,8 +687,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	HashMap< Integer, Integer > startJoins;
 	HashMap< Integer, Integer > startJoinsIndices;
+	HashMap< Integer, PointInImage > startJoinsPoints;
 	HashMap< Integer, Integer > endJoins;
 	HashMap< Integer, Integer > endJoinsIndices;
+	HashMap< Integer, PointInImage > endJoinsPoints;
 
 	ArrayList< int [] > sourcePathIDForFills;
 
@@ -681,8 +707,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			startJoins        = new HashMap< Integer, Integer >();
 			startJoinsIndices = new HashMap< Integer, Integer >();
+			startJoinsPoints  = new HashMap< Integer, PointInImage >();
 			endJoins          = new HashMap< Integer, Integer >();
 			endJoinsIndices   = new HashMap< Integer, Integer >();
+			endJoinsPoints    = new HashMap< Integer, PointInImage >();
 
 			sourcePathIDForFills = new ArrayList< int [] >();
 			foundIDs = new HashSet< Integer >();
@@ -744,31 +772,54 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			String startsonString =  attributes.getValue("startson");
 			String startsindexString =  attributes.getValue("startsindex");
+			String startsxString = attributes.getValue("startsx");
+			String startsyString = attributes.getValue("startsy");
+			String startszString = attributes.getValue("startsz");
 			String endsonString =  attributes.getValue("endson");
 			String endsindexString =  attributes.getValue("endsindex");
+			String endsxString = attributes.getValue("endsx");
+			String endsyString = attributes.getValue("endsy");
+			String endszString = attributes.getValue("endsz");
 
 			String nameString = attributes.getValue("name");
 
 			String primaryString = attributes.getValue("primary");
 
-			if( (startsonString == null && startsindexString != null) ||
-			    (startsonString != null && startsindexString == null) ) {
-				throw new TracesFileFormatException("If startson is specified for a path, then startsindex must also be specified.");
+			if( startsxString == null && startsyString == null && startszString == null ) { }
+			else if( startsxString != null && startsyString != null && startszString != null ) { }
+			else {
+				throw new TracesFileFormatException("If one of starts[xyz] is specified, all of them must be.");
 			}
 
-			if( (endsonString == null && endsindexString != null) &&
-			    (endsonString != null && endsindexString == null) ) {
-				throw new TracesFileFormatException("If endson is specified for a path, then endsindex must also be specified.");
+			if( endsxString == null && endsyString == null && endszString == null ) { }
+			else if( endsxString != null && endsyString != null && endszString != null ) { }
+			else {
+				throw new TracesFileFormatException("If one of ends[xyz] is specified, all of them must be.");
+			}
+
+			boolean accurateStartProvided = startsxString != null;
+			boolean accurateEndProvided = endsxString != null;
+
+			if( startsonString != null && (startsindexString == null && ! accurateStartProvided)  ) {
+				throw new TracesFileFormatException("If startson is specified for a path, then startsindex or starts[xyz] must also be specified.");
+			}
+
+			if( endsonString != null && (endsindexString == null && ! accurateStartProvided)  ) {
+				throw new TracesFileFormatException("If endson is specified for a path, then endsindex or ends[xyz] must also be specified.");
 			}
 
 			int startson, startsindex, endson, endsindex;
+			double startsx, startsy, startsz;
+			double endsx, endsy, endsz;
 
 			current_path = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
 
 			Integer startsOnInteger = null;
 			Integer startsIndexInteger = null;
+			PointInImage startJoinPoint = null;
 			Integer endsOnInteger = null;
 			Integer endsIndexInteger = null;
+			PointInImage endJoinPoint = null;
 
 			if( primaryString != null && primaryString.equals("true") )
 				current_path.setPrimary(true);
@@ -789,20 +840,34 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					startson = startsindex = -1;
 				else {
 					startson = Integer.parseInt(startsonString);
-					startsindex = Integer.parseInt(startsindexString);
-
 					startsOnInteger = new Integer( startson );
-					startsIndexInteger = new Integer( startsindexString );
+
+					if( startsxString != null ) {
+						startJoinPoint = new PointInImage( Double.parseDouble( startsxString ),
+										   Double.parseDouble( startsyString ),
+										   Double.parseDouble( startszString ) );
+					} else {
+						// The index (older file format) was supplied:
+						startsindex = Integer.parseInt(startsindexString);
+						startsIndexInteger = new Integer( startsindexString );
+					}
 				}
 
 				if( endsonString == null )
 					endson = endsindex = -1;
 				else {
 					endson = Integer.parseInt(endsonString);
-					endsindex = Integer.parseInt(endsindexString);
-
 					endsOnInteger = new Integer( endson );
-					endsIndexInteger = new Integer( endsindex );
+
+					if( endsxString != null ) {
+						endJoinPoint = new PointInImage( Double.parseDouble( endsxString ),
+										 Double.parseDouble( endsyString ),
+										 Double.parseDouble( endszString ) );
+					} else {
+						// The index (older file format) was supplied:
+						endsindex = Integer.parseInt(endsindexString);
+						endsIndexInteger = new Integer( endsindex );
+					}
 				}
 
 			} catch( NumberFormatException e ) {
@@ -818,6 +883,11 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				startJoins.put( id, startsOnInteger );
 			if( endsOnInteger != null )
 				endJoins.put( id, endsOnInteger );
+
+			if( startJoinPoint != null )
+				startJoinsPoints.put( id, startJoinPoint );
+			if( endJoinPoint != null )
+				endJoinsPoints.put( id, endJoinPoint );
 
 			if( startsIndexInteger != null )
 				startJoinsIndices.put( id, startsIndexInteger );
@@ -1015,16 +1085,26 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 				Integer startID = startJoins.get(p.getID());
 				Integer startIndexInteger = startJoinsIndices.get(p.getID());
+				PointInImage startJoinPoint = startJoinsPoints.get(p.getID());
 				Integer endID = endJoins.get(p.getID());
 				Integer endIndexInteger = endJoinsIndices.get(p.getID());
+				PointInImage endJoinPoint = endJoinsPoints.get(p.getID());
 
 				if( startID != null ) {
 					Path startPath = getPathFromID(startID);
-					p.setStartJoin( startPath, startIndexInteger );
+					if( startJoinPoint == null ) {
+						// Then we have to get it from startIndexInteger:
+						startJoinPoint = startPath.getPointInImage(startIndexInteger.intValue());
+					}
+					p.setStartJoin( startPath, startJoinPoint );
 				}
 				if( endID != null ) {
 					Path endPath = getPathFromID(endID);
-					p.setEndJoin( endPath, endIndexInteger );
+					if( endJoinPoint == null ) {
+						// Then we have to get it from endIndexInteger:
+						endJoinPoint = endPath.getPointInImage(endIndexInteger.intValue());
+					}
+					p.setEndJoin( endPath, endJoinPoint );
 				}
 			}
 
@@ -1353,24 +1433,23 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			if( ! selectedPathsSet.contains(p) )
 				continue;
 
-			for( int i = 0; i < p.size(); ++i ) {
+			if( 0 == p.size() )
+				continue;
 
-				double this_x = p.precise_x_positions[i];
-				double this_y = p.precise_y_positions[i];
-				double this_z = p.precise_z_positions[i];
+			int i = p.indexNearestTo( x * x_spacing,
+						  y * y_spacing,
+						  z * z_spacing );
 
-				double diff_x = x * x_spacing - this_x;
-				double diff_y = y * y_spacing - this_y;
-				double diff_z = z * z_spacing - this_z;
+			PointInImage nearestOnPath = p.getPointInImage( i );
 
-				double thisDistanceSquared = diff_x * diff_x + diff_y * diff_y + diff_z * diff_z;
+			double distanceSquared = nearestOnPath.distanceSquaredTo(
+				x * x_spacing,
+				y * y_spacing,
+				z * z_spacing );
 
-				if( thisDistanceSquared < minimumDistanceSquared ) {
-					result = new PointInImage( this_x, this_y, this_z );
-					result.onPath = p;
-					result.onPathIndex = i;
-					minimumDistanceSquared = thisDistanceSquared;
-				}
+			if( distanceSquared < minimumDistanceSquared ) {
+				result = nearestOnPath;
+				minimumDistanceSquared = distanceSquared;
 			}
 		}
 

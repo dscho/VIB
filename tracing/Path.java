@@ -76,10 +76,10 @@ public class Path implements Comparable {
 	boolean selected;
 
 	Path startJoins;
-	int startJoinsIndex = -1;
+	PointInImage startJoinsPoint = null;
 
 	Path endJoins;
-	int endJoinsIndex = -1;
+	PointInImage endJoinsPoint = null;
 
 	public static final int PATH_START = 0;
 	public static final int PATH_END = 1;
@@ -194,11 +194,11 @@ public class Path implements Comparable {
 			Path other = i.next();
 			if( other.startJoins != null && other.startJoins == this ) {
 				other.startJoins = null;
-				other.startJoinsIndex = -1;
+				other.startJoinsPoint = null;
 			}
 			if( other.endJoins != null && other.endJoins == this ) {
 				other.endJoins = null;
-				other.endJoinsIndex = -1;
+				other.endJoinsPoint = null;
 			}
 			int indexInOtherSomehowJoins = other.somehowJoins.indexOf( this );
 			if( indexInOtherSomehowJoins >= 0 )
@@ -206,22 +206,22 @@ public class Path implements Comparable {
 		}
 		somehowJoins.clear();
 		startJoins = null;
-		startJoinsIndex = -1;
+		startJoinsPoint = null;
 		endJoins = null;
-		endJoinsIndex = -1;
+		endJoinsPoint = null;
 	}
 
-	void setStartJoin( Path other, int indexInOther ) {
-		setJoin( PATH_START, other, indexInOther );
+	void setStartJoin( Path other, PointInImage joinPoint ) {
+		setJoin( PATH_START, other, joinPoint );
 	}
 
-	void setEndJoin( Path other, int indexInOther ) {
-		setJoin( PATH_END, other, indexInOther );
+	void setEndJoin( Path other, PointInImage joinPoint ) {
+		setJoin( PATH_END, other, joinPoint );
 	}
 
 	/* This should be the only method that links one path to
 	   another */
-	void setJoin( int startOrEnd, Path other, int indexInOther ) {
+	void setJoin( int startOrEnd, Path other, PointInImage joinPoint ) {
 		if( other == null ) {
 			throw new RuntimeException("BUG: setJoin now should never take a null other path");
 		}
@@ -230,12 +230,12 @@ public class Path implements Comparable {
 			if( startJoins != null )
 				throw new RuntimeException("BUG: setJoin for START should not replace another join");
 			startJoins = other;
-			startJoinsIndex = indexInOther;
+			startJoinsPoint = joinPoint;
 		} else if( startOrEnd == PATH_END ) {
 			if( endJoins != null )
 				throw new RuntimeException("BUG: setJoin for END should not replace another join");
 			endJoins = other;
-			endJoinsIndex = indexInOther;
+			endJoinsPoint = joinPoint;
 		} else {
 			IJ.error( "BUG: unknown first parameter to setJoin" );
 		}
@@ -311,6 +311,19 @@ public class Path implements Comparable {
 		p[0] = precise_x_positions[i];
 		p[1] = precise_y_positions[i];
 		p[2] = precise_z_positions[i];
+	}
+
+	public PointInImage getPointInImage( int i ) {
+
+		if( (i < 0) || i >= size() ) {
+			throw new RuntimeException("BUG: getPointInImage was asked for an out-of-range point: "+i);
+		}
+
+		PointInImage result = new PointInImage( precise_x_positions[i],
+							precise_y_positions[i],
+							precise_z_positions[i] );
+		result.onPath = this;
+		return result;
 	}
 
 	public int getXUnscaled( int i ) {
@@ -496,7 +509,7 @@ public class Path implements Comparable {
 			throw new RuntimeException("BUG: we should never be adding to a path that already endJoins");
 
 		if( other.endJoins != null ) {
-			setEndJoin( other.endJoins, other.endJoinsIndex );
+			setEndJoin( other.endJoins, other.endJoinsPoint );
 			other.disconnectFromAll();
 		}
 
@@ -684,6 +697,35 @@ public class Path implements Comparable {
 
 		}
 
+	}
+
+        int indexNearestTo( double x, double y, double z ) {
+
+		if( size() < 1 )
+			throw new RuntimeException("indexNearestTo called on a Path of size() = 0");
+
+		PointInImage result = new PointInImage( Double.MIN_VALUE,
+							Double.MIN_VALUE,
+							Double.MIN_VALUE );
+
+		double minimumDistanceSquared = Double.MAX_VALUE;
+		int indexOfMinimum = -1;
+
+		for( int i = 0; i < size(); ++i ) {
+
+			double diff_x = x - precise_x_positions[i];
+			double diff_y = y - precise_y_positions[i];
+			double diff_z = z - precise_z_positions[i];
+
+			double thisDistanceSquared = diff_x * diff_x + diff_y * diff_y + diff_z * diff_z;
+
+			if( thisDistanceSquared < minimumDistanceSquared ) {
+				indexOfMinimum = i;
+				minimumDistanceSquared = thisDistanceSquared;
+			}
+		}
+
+		return indexOfMinimum;
 	}
 
 	// ------------------------------------------------------------------------
@@ -1201,9 +1243,9 @@ public class Path implements Comparable {
 		}
 
 		if( startJoins != null )
-			fitted.setStartJoin( startJoins, startJoinsIndex );
+			fitted.setStartJoin( startJoins, startJoinsPoint );
 		if( endJoins != null )
-			fitted.setEndJoin( endJoins, endJoinsIndex );
+			fitted.setEndJoin( endJoins, endJoinsPoint );
 
 		fitted.setName( "Fitted Path ["+getID()+"]");
 
