@@ -1078,6 +1078,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 									this,
 									applet != null );
 
+			// FIXME: the first could be changed to add
+			// 'this', and move the small implementation
+			// out of NeuriteTracerResultsDialog into this
+			// class.
 			pathAndFillManager.addPathAndFillListener(resultsDialog);
 			pathAndFillManager.addPathAndFillListener(resultsDialog.pw);
 			pathAndFillManager.addPathAndFillListener(resultsDialog.fw);
@@ -1230,7 +1234,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		this.filler = filler;
 
 		filler.addProgressListener(this);
-		filler.addProgressListener(resultsDialog);
 		filler.addProgressListener(resultsDialog.fw);
 
 		addThreadToDraw(filler);
@@ -1248,7 +1251,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	synchronized public void startFillingPaths( Set<Path> fromPaths ) {
 
 		// currentlyFilling = true;
-		resultsDialog.pauseOrRestartFilling.setLabel("Pause");
 		resultsDialog.fw.pauseOrRestartFilling.setLabel("Pause");
 
 		filler = new FillerThread( xy,
@@ -1262,7 +1264,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		addThreadToDraw(filler);
 
 		filler.addProgressListener( this );
-		filler.addProgressListener( resultsDialog );
 		filler.addProgressListener( resultsDialog.fw );
 
 		filler.setSourcePaths( fromPaths );
