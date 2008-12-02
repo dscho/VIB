@@ -1,5 +1,6 @@
 package ij3d;
 
+import ij3d.behaviors.MouseBehavior;
 import ij.gui.Toolbar;
 
 import java.awt.Dimension;
@@ -19,6 +20,10 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 
 import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
+import ij3d.behaviors.Picker;
+import ij3d.behaviors.Rotator;
+import ij3d.behaviors.Translator;
+import ij3d.behaviors.Zoomer;
 
 public abstract class DefaultUniverse extends SimpleUniverse implements 
 					MouseBehaviorCallback, PickingCallback {
@@ -32,7 +37,12 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	protected TransformGroup scaleTG;
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
+
 	protected MouseBehavior mouseBehavior;
+	private Translator translator;
+	private Rotator rotator;
+	private Zoomer zoomer;
+	private Picker picker;
 
 	private List listeners = new ArrayList();
 	private boolean transformed = false;
@@ -60,6 +70,22 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		return scalebar;
 	}
 
+	public Zoomer getZoomer() {
+		return zoomer;
+	}
+
+	public Rotator getRotator() {
+		return rotator;
+	}
+
+	public Translator getTranslator() {
+		return translator;
+	}
+
+	public Picker getPicker() {
+		return picker;
+	}
+
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height));
 		getViewingPlatform().setNominalViewingTransform();
@@ -67,7 +93,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 					View.PARALLEL_PROJECTION);
 
 		bounds = new BoundingSphere();
-		bounds.setRadius(10.0);
+		bounds.setRadius(10000.0);
 
 		root = new BranchGroup();
 		
@@ -113,13 +139,17 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		lightS.setInfluencingBounds(bounds);
 		root.addChild(lightS);
 
-		// setup global mouse rotation
+		// setup global mouse behavior
+		rotator = new Rotator(this, this);
+		translator = new Translator(this, this);
+		zoomer = new Zoomer(this, this);
+		picker = new Picker(this);
 		mouseBehavior = new MouseBehavior(this);
 		mouseBehavior.setSchedulingBounds(bounds);
-		mouseBehavior.setupCallback(this);
 		root.addChild(mouseBehavior);
 
 		getCanvas().addMouseListener(new MouseAdapter() {
+			@Override
 			public void mouseReleased(MouseEvent e) {
 				int id = Toolbar.getToolId();
 				if(id == Toolbar.HAND || id == Toolbar.MAGNIFIER) {
@@ -130,6 +160,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 			}
 		});
 		getCanvas().addMouseMotionListener(new MouseMotionAdapter() {
+			@Override
 			public void mouseDragged(MouseEvent e) {
 				int id = Toolbar.getToolId();
 				if(id == Toolbar.HAND || id == Toolbar.MAGNIFIER) {
@@ -141,6 +172,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		});
 
 		getCanvas().addComponentListener(new ComponentAdapter() {
+			@Override
 			public void componentResized(ComponentEvent e) {
 				fireCanvasResized();
 			}

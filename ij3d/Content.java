@@ -112,7 +112,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		// create the bounding box and add it to the switch
 		BoundingBox b = new BoundingBox(
 				contentNode.min, contentNode.max);
-		b.setPickable(false);
+		b.setPickable(true);
 		bbSwitch.addChild(b);
 
 		// create coordinate system and add it to the switch

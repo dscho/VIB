@@ -2,6 +2,8 @@ package ij3d;
 
 import javax.media.j3d.*;
 import javax.vecmath.Point3f;
+import javax.vecmath.Tuple3d;
+import javax.vecmath.Tuple3f;
 
 public abstract class ContentNode extends BranchGroup {
 
@@ -10,6 +12,14 @@ public abstract class ContentNode extends BranchGroup {
 	public ContentNode() {
 		super();
 		setCapability(BranchGroup.ALLOW_DETACH);
+	}
+
+	public void getCenter(Tuple3f p) {
+		p.set(center);
+	}
+
+	public void getCenter(Tuple3d p) {
+		p.set(center);
 	}
 
 	public abstract void channelsUpdated();

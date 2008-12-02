@@ -247,16 +247,27 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				(float)image.getCalibration().pixelWidth);
 	}
 
+	private float oldRange = 2f;
 	private void ensureScale(float range) {
 		System.out.println("range = " + range);
-		Transform3D scale = new Transform3D();
-		scaleTG.getTransform(scale);
-		float oldXRange = (float)scale.getScale();
-
-		if(range > oldXRange) {
-			scale.setScale(1/range);
-			scaleTG.setTransform(scale);
-		}
+		TransformGroup tg = getViewingPlatform().getViewPlatformTransform();
+		Transform3D viewPlatformTransform = new Transform3D();
+		tg.getTransform(viewPlatformTransform);
+		System.out.println("old view platform transform:\n" + viewPlatformTransform);
+		double d = (range) / Math.tan(Math.PI/8);
+		viewPlatformTransform.set(new Vector3d(0, 0, d));
+		getViewer().getView().setBackClipDistance(2 * d);
+		getViewer().getView().setFrontClipDistance(2 * d / 100);
+		System.out.println("new view platform transform:\n" + viewPlatformTransform);
+		tg.setTransform(viewPlatformTransform);
+//		Transform3D scale = new Transform3D();
+//		scaleTG.getTransform(scale);
+//		float oldXRange = (float)scale.getScale();
+//
+//		if(range > oldXRange) {
+//			scale.setScale(1/range);
+//			scaleTG.setTransform(scale);
+//		}
 	}
 	
 	public Content addMesh(ImagePlus image, Color3f color, String name,
