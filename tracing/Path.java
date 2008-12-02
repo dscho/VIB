@@ -541,7 +541,7 @@ public class Path implements Comparable {
 
 	/* FIXME: Should draw lines between points now, not just points... */
 
-	public void drawPathAsPoints( TracerCanvas canvas, Graphics g, java.awt.Color c, int plane, int z, int either_side ) {
+	public void drawPathAsPoints( TracerCanvas canvas, Graphics g, java.awt.Color c, int plane, int slice, int either_side ) {
 
 		/* This is slightly ugly because we have to use
 		   InteractiveTracerCanvas.myScreenX and .myScreenY to
@@ -569,7 +569,7 @@ public class Path implements Comparable {
 		case ThreePanes.XY_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - slice) > either_side) )
 					continue;
 
 				int x = canvas.myScreenXD(getXUnscaledDouble(i));
@@ -635,7 +635,7 @@ public class Path implements Comparable {
 		case ThreePanes.XZ_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getYUnscaled(i) - slice) > either_side) )
 					continue;
 
 				int x = canvas.myScreenXD(getXUnscaled(i));
@@ -660,7 +660,7 @@ public class Path implements Comparable {
 		case ThreePanes.ZY_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getXUnscaled(i) - slice) > either_side) )
 					continue;
 
 				int x = canvas.myScreenXD(getZUnscaled(i));
