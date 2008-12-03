@@ -784,7 +784,7 @@ public abstract class SearchThread extends Thread {
 						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status )
-							g.fillRect( canvas.myScreenX(x), canvas.myScreenY(y), pixel_size, pixel_size );
+							g.fillRect( canvas.myScreenX(x) - pixel_size / 2, canvas.myScreenY(y) - pixel_size / 2, pixel_size, pixel_size );
 					}
 			} else if( plane == ThreePanes.XZ_PLANE ) {
 				int y = currentSliceInPlane;
@@ -800,7 +800,7 @@ public abstract class SearchThread extends Thread {
 						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status )
-							g.fillRect( canvas.myScreenX(x), canvas.myScreenY(z), pixel_size, pixel_size );
+							g.fillRect( canvas.myScreenX(x) - pixel_size / 2, canvas.myScreenY(z) - pixel_size / 2, pixel_size, pixel_size );
 					}
 			} else if( plane == ThreePanes.ZY_PLANE ) {
 				int x = currentSliceInPlane;
@@ -816,7 +816,7 @@ public abstract class SearchThread extends Thread {
 						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
 							continue;
 						if( status == start_status || status == goal_status )
-							g.fillRect( canvas.myScreenX(z), canvas.myScreenY(y), pixel_size, pixel_size );
+							g.fillRect( canvas.myScreenX(z) - pixel_size / 2, canvas.myScreenY(y) - pixel_size / 2, pixel_size, pixel_size );
 					}
 			}
 		}

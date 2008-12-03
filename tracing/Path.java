@@ -631,8 +631,8 @@ public class Path implements Comparable {
 					int x_on_screen = canvas.myScreenXD( precise_x_positions[i]/x_spacing );
 					int y_on_screen = canvas.myScreenYD( precise_y_positions[i]/y_spacing );
 
-					g.drawLine( x_on_screen + spotExtra / 2, y_on_screen + spotExtra / 2, left_x_on_screen + spotExtra / 2, left_y_on_screen + spotExtra / 2 );
-					g.drawLine( x_on_screen + spotExtra / 2, y_on_screen + spotExtra / 2, right_x_on_screen + spotExtra / 2, right_y_on_screen + spotExtra / 2 );
+					g.drawLine( x_on_screen, y_on_screen, left_x_on_screen, left_y_on_screen );
+					g.drawLine( x_on_screen, y_on_screen, right_x_on_screen, right_y_on_screen );
 
 					g.setColor( c );
 				}
@@ -640,14 +640,14 @@ public class Path implements Comparable {
 				if( ((i == 0) && (realStartJoins == null)) ||
 				    ((i == points - 1) && (realEndJoins == null)) ) {
 					// Then draw it as a rectangle...
-					g.fillRect( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
+					g.fillRect( x - (spotDiameter / 2), y - (spotDiameter / 2), spotDiameter, spotDiameter );
 				} else if( ((i == 0) && (realStartJoins != null)) ||
 					   ((i == points - 1) && (realEndJoins != null)) ) {
 					// The draw it as an oval...
-					g.fillOval( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
+					g.fillOval( x - (spotDiameter / 2), y - (spotDiameter / 2), spotDiameter, spotDiameter );
 				} else {
 					// Just draw normally...
-					g.fillRect( x, y, spotExtra, spotExtra );
+					g.fillRect( x - (spotExtra / 2), y - (spotExtra / 2), spotExtra, spotExtra );
 				}
 			}
 		}

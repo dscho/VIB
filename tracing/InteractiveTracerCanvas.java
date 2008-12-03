@@ -194,7 +194,6 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 		if( pixel_size < 1 )
 			pixel_size = 1;
 
-		int spotExtra = 2 * pixel_size;
 		int spotDiameter = 5 * pixel_size;
 
 		if( unconfirmedSegment != null ) {
@@ -207,8 +206,8 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 				int x = myScreenX(unconfirmedSegment.getXUnscaled(n-1));
 				int y = myScreenY(unconfirmedSegment.getYUnscaled(n-1));
 
-				int rectX = x - spotExtra;
-				int rectY = y - spotExtra;
+				int rectX = x - spotDiameter / 2;
+				int rectY = y - spotDiameter / 2;
 
 				g.setColor(Color.BLUE);
 				g.fillRect( rectX, rectY, spotDiameter, spotDiameter );
@@ -231,8 +230,8 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 				int x = myScreenX(tracerPlugin.last_start_point_x);
 				int y = myScreenY(tracerPlugin.last_start_point_y);
 
-				int rectX = x - spotExtra;
-				int rectY = y - spotExtra;
+				int rectX = x - spotDiameter / 2;
+				int rectY = y - spotDiameter / 2;
 
 				g.setColor(Color.BLUE);
 				g.fillRect( rectX, rectY, spotDiameter, spotDiameter );
