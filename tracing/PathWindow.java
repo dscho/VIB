@@ -245,7 +245,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 					paths[i] = (Path)node.getUserObject();
 				}
 			}
-			System.out.println("realPathsSelected is: "+realPathsSelected);
 			if( realPathsSelected == 0 )
 				updateButtonsNoneSelected();
 			else if( realPathsSelected == 1 )
