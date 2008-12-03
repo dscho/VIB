@@ -120,7 +120,7 @@ class NeuriteTracerResultsDialog
 	Button showOrHideFillList;
 
 	public void newSigmaSelected( double sigma ) {
-		setSigma( sigma );
+		setSigma( sigma, false );
 	}
 
 	public void newMaximum( double max ) {
@@ -160,6 +160,13 @@ class NeuriteTracerResultsDialog
 		if( !succeeded )
 			preprocess.setState(false);
 		changeState(preGaussianState);
+		if( preprocess.getState() ) {
+			editSigma.setEnabled(false);
+			sigmaWizard.setEnabled(false);
+		} else {
+			editSigma.setEnabled(true);
+			sigmaWizard.setEnabled(true);
+		}
 	}
 
 	public void setMultiplier( double multiplier ) {
@@ -167,9 +174,24 @@ class NeuriteTracerResultsDialog
 		updateLabel( );
 	}
 
-	public void setSigma( double sigma ) {
+	public void setSigma( double sigma, boolean mayStartGaussian ) {
 		currentSigma = sigma;
 		updateLabel( );
+		if( mayStartGaussian && ! preprocess.getState() ) {
+			// Turn on the checkbox:
+			preprocess.setState( true );
+			/* According to the documentation this doesn't
+			   generate an event, so we do would if the
+			   option was turned on manually: */
+			turnOnHessian();
+		}
+	}
+
+	public void turnOnHessian( ) {
+		preGaussianState = currentState;
+		plugin.enableHessian(true);
+		if( usePreprocessed.isEnabled() )
+			usePreprocessed.setState(false);
 	}
 
 	DecimalFormat threeDecimalPlaces = new DecimalFormat("0.0000");
@@ -538,7 +560,7 @@ class NeuriteTracerResultsDialog
 			currentSigmaAndMultiplierLabel = new Label();
 			++ co.gridy;
 			otherOptionsPanel.add(currentSigmaAndMultiplierLabel,co);
-			setSigma( plugin.getMinimumSeparation() );
+			setSigma( plugin.getMinimumSeparation(), false );
 			setMultiplier( 4 );
 			updateLabel( );
 			++ co.gridy;
@@ -817,7 +839,7 @@ class NeuriteTracerResultsDialog
 				}
 			}
 
-			setSigma(newSigma);
+			setSigma( newSigma, true );
 			setMultiplier( newMultiplier );
 
 		} else if( source == sigmaWizard ) {
@@ -829,6 +851,7 @@ class NeuriteTracerResultsDialog
 
 	public void sigmaPaletteClosing() {
 		changeState(preSigmaPaletteState);
+		setSigma( currentSigma, true );
 	}
 
 	public void setPathListVisible(boolean makeVisible) {
@@ -883,16 +906,11 @@ class NeuriteTracerResultsDialog
 
 		} else if( source == preprocess ) {
 
-			if( preprocess.getState() ) {
-				// It's now enable:
-				preGaussianState = currentState;
-				plugin.enableHessian(true);
-				if( usePreprocessed.isEnabled() ){
-					usePreprocessed.setState(false);
-				}
-			} else {
+			if( preprocess.getState() )
+				turnOnHessian();
+			else {
 				plugin.enableHessian(false);
-				changeState(preGaussianState);
+				// changeState(preGaussianState);
 			}
 
 		} else if( source == usePreprocessed ) {
