@@ -33,7 +33,7 @@ import stacks.PaneOwner;
 import stacks.ThreePanes;
 
 public class TracerCanvas extends ThreePanesCanvas {
-	
+
 	private PathAndFillManager pathAndFillManager;
 
 	public TracerCanvas( ImagePlus imagePlus,
@@ -74,14 +74,14 @@ public class TracerCanvas extends ThreePanesCanvas {
 
 		/*
 		int current_z = -1;
-		
+
 		if( plane == ThreePanes.XY_PLANE ) {
 			current_z = imp.getCurrentSlice() - 1;
 		}
 		*/
 
 		int current_z = imp.getCurrentSlice() - 1;
-	
+
 		synchronized (searchThreads) {
 			for( Iterator<SearchThread> i = searchThreads.iterator(); i.hasNext(); )
 				i.next().drawProgressOnSlice( plane, current_z, this, g );
@@ -89,21 +89,30 @@ public class TracerCanvas extends ThreePanesCanvas {
 
 		if( pathAndFillManager != null ) {
 			for( int i = 0; i < pathAndFillManager.size(); ++i ) {
-			
+
 				Path p = pathAndFillManager.getPath(i);
 				if( p == null )
 					continue;
-			
+
+				if( p.fittedVersionOf != null )
+					continue;
+
+				Path drawPath = p;
+
+				// If the path suggests using the fitted version, draw that instead:
+				if( p.useFitted ) {
+					drawPath = p.fitted;
+				}
+
 				Color color = Color.MAGENTA;
 				if( pathAndFillManager.isSelected(p) ) {
 					color = Color.GREEN;
 				}
-			
+
 				if( just_near_slices ) {
-					p.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );
+					drawPath.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );
 				} else
-					p.drawPathAsPoints( this, g, color, plane );
-			
+					drawPath.drawPathAsPoints( this, g, color, plane );
 			}
 		}
 
@@ -112,44 +121,43 @@ public class TracerCanvas extends ThreePanesCanvas {
 	}
 
 	/* Keep another Graphics for double-buffering... */
-	
+
 	private int backBufferWidth;
 	private int backBufferHeight;
-	
+
 	private Graphics backBufferGraphics;
 	private Image backBufferImage;
-	
+
 	private void resetBackBuffer() {
-		
+
 		if(backBufferGraphics!=null){
 			backBufferGraphics.dispose();
 			backBufferGraphics=null;
 		}
-		
+
 		if(backBufferImage!=null){
 			backBufferImage.flush();
 			backBufferImage=null;
 		}
-		
+
 		backBufferWidth=getSize().width;
 		backBufferHeight=getSize().height;
-		
+
 		backBufferImage=createImage(backBufferWidth,backBufferHeight);
 	        backBufferGraphics=backBufferImage.getGraphics();
 	}
-	
+
 	@Override
 	public void paint(Graphics g) {
-		
+
 		if(backBufferWidth!=getSize().width ||
 		   backBufferHeight!=getSize().height ||
 		   backBufferImage==null ||
 		   backBufferGraphics==null)
 			resetBackBuffer();
-		
+
 		super.paint(backBufferGraphics);
 		drawOverlay(backBufferGraphics);
 		g.drawImage(backBufferImage,0,0,this);
 	}
-
 }

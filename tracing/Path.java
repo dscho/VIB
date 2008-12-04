@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.Iterator;
 import java.util.HashSet;
+import java.util.Arrays;
 
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
@@ -75,10 +76,10 @@ public class Path implements Comparable {
 	boolean selected;
 
 	Path startJoins;
-	int startJoinsIndex = -1;
+	PointInImage startJoinsPoint = null;
 
 	Path endJoins;
-	int endJoinsIndex = -1;
+	PointInImage endJoinsPoint = null;
 
 	public static final int PATH_START = 0;
 	public static final int PATH_END = 1;
@@ -143,9 +144,9 @@ public class Path implements Comparable {
 	public double getRealLength( ) {
 		double totalLength = 0;
 		for( int i = 1; i < points; ++i  ) {
-			double xdiff = (x_positions[i] - x_positions[i-1]) * x_spacing;
-			double ydiff = (y_positions[i] - y_positions[i-1]) * y_spacing;
-			double zdiff = (z_positions[i] - z_positions[i-1]) * z_spacing;
+			double xdiff = precise_x_positions[i] - precise_x_positions[i-1];
+			double ydiff = precise_y_positions[i] - precise_y_positions[i-1];
+			double zdiff = precise_z_positions[i] - precise_z_positions[i-1];
 			totalLength += Math.sqrt(
 				xdiff * xdiff +
 				ydiff * ydiff +
@@ -156,6 +157,15 @@ public class Path implements Comparable {
 
 	public String getRealLengthString( ) {
 		return String.format( "%.4f", getRealLength() );
+	}
+
+	public void createCircles( ) {
+		if( tangents_x != null || tangents_y != null || tangents_z != null || radiuses != null )
+			throw new RuntimeException("BUG: Trying to create circles data arrays when at least one is already there");
+		tangents_x = new double[maxPoints];
+		tangents_y = new double[maxPoints];
+		tangents_z = new double[maxPoints];
+		radiuses = new double[maxPoints];
 	}
 
 	boolean primary = false;
@@ -184,11 +194,11 @@ public class Path implements Comparable {
 			Path other = i.next();
 			if( other.startJoins != null && other.startJoins == this ) {
 				other.startJoins = null;
-				other.startJoinsIndex = -1;
+				other.startJoinsPoint = null;
 			}
 			if( other.endJoins != null && other.endJoins == this ) {
 				other.endJoins = null;
-				other.endJoinsIndex = -1;
+				other.endJoinsPoint = null;
 			}
 			int indexInOtherSomehowJoins = other.somehowJoins.indexOf( this );
 			if( indexInOtherSomehowJoins >= 0 )
@@ -196,22 +206,22 @@ public class Path implements Comparable {
 		}
 		somehowJoins.clear();
 		startJoins = null;
-		startJoinsIndex = -1;
+		startJoinsPoint = null;
 		endJoins = null;
-		endJoinsIndex = -1;
+		endJoinsPoint = null;
 	}
 
-	void setStartJoin( Path other, int indexInOther ) {
-		setJoin( PATH_START, other, indexInOther );
+	void setStartJoin( Path other, PointInImage joinPoint ) {
+		setJoin( PATH_START, other, joinPoint );
 	}
 
-	void setEndJoin( Path other, int indexInOther ) {
-		setJoin( PATH_END, other, indexInOther );
+	void setEndJoin( Path other, PointInImage joinPoint ) {
+		setJoin( PATH_END, other, joinPoint );
 	}
 
 	/* This should be the only method that links one path to
 	   another */
-	void setJoin( int startOrEnd, Path other, int indexInOther ) {
+	void setJoin( int startOrEnd, Path other, PointInImage joinPoint ) {
 		if( other == null ) {
 			throw new RuntimeException("BUG: setJoin now should never take a null other path");
 		}
@@ -220,12 +230,12 @@ public class Path implements Comparable {
 			if( startJoins != null )
 				throw new RuntimeException("BUG: setJoin for START should not replace another join");
 			startJoins = other;
-			startJoinsIndex = indexInOther;
+			startJoinsPoint = joinPoint;
 		} else if( startOrEnd == PATH_END ) {
 			if( endJoins != null )
 				throw new RuntimeException("BUG: setJoin for END should not replace another join");
 			endJoins = other;
-			endJoinsIndex = indexInOther;
+			endJoinsPoint = joinPoint;
 		} else {
 			IJ.error( "BUG: unknown first parameter to setJoin" );
 		}
@@ -250,9 +260,9 @@ public class Path implements Comparable {
 		this.spacing_units = spacing_units;
 		points = 0;
 		maxPoints = 128;
-		x_positions = new int[maxPoints];
-		y_positions = new int[maxPoints];
-		z_positions = new int[maxPoints];
+		precise_x_positions = new double[maxPoints];
+		precise_y_positions = new double[maxPoints];
+		precise_z_positions = new double[maxPoints];
 		somehowJoins = new ArrayList<Path>();
 		children = new ArrayList<Path>();
 	}
@@ -264,9 +274,9 @@ public class Path implements Comparable {
 		this.spacing_units = spacing_units;
 		points = 0;
 		maxPoints = reserve;
-		x_positions = new int[maxPoints];
-		y_positions = new int[maxPoints];
-		z_positions = new int[maxPoints];
+		precise_x_positions = new double[maxPoints];
+		precise_y_positions = new double[maxPoints];
+		precise_z_positions = new double[maxPoints];
 		somehowJoins = new ArrayList<Path>();
 		children = new ArrayList<Path>();
 	}
@@ -274,14 +284,11 @@ public class Path implements Comparable {
 	public int points;
 	public int maxPoints;
 
-	public int x_positions[];
-	public int y_positions[];
-	public int z_positions[];
-
 	public int size( ) {
 		return points;
 	}
 
+/* FIXME: put back
 	public void getPoint( int i, int [] p ) {
 
 		if( (i < 0) || i >= size() ) {
@@ -292,6 +299,67 @@ public class Path implements Comparable {
 		p[0] = x_positions[i];
 		p[1] = y_positions[i];
 		p[2] = z_positions[i];
+	}
+*/
+
+	public void getPointDouble( int i, double [] p ) {
+
+		if( (i < 0) || i >= size() ) {
+			throw new RuntimeException("BUG: getPointDouble was asked for an out-of-range point: "+i);
+		}
+
+		p[0] = precise_x_positions[i];
+		p[1] = precise_y_positions[i];
+		p[2] = precise_z_positions[i];
+	}
+
+	public PointInImage getPointInImage( int i ) {
+
+		if( (i < 0) || i >= size() ) {
+			throw new RuntimeException("BUG: getPointInImage was asked for an out-of-range point: "+i);
+		}
+
+		PointInImage result = new PointInImage( precise_x_positions[i],
+							precise_y_positions[i],
+							precise_z_positions[i] );
+		result.onPath = this;
+		return result;
+	}
+
+	public int getXUnscaled( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getXUnscaled was asked for an out-of-range point: "+i);
+		return (int)Math.round( precise_x_positions[i] / x_spacing );
+	}
+
+	public int getYUnscaled( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getYUnscaled was asked for an out-of-range point: "+i);
+		return (int)Math.round( precise_y_positions[i] / y_spacing );
+	}
+
+	public int getZUnscaled( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getZUnscaled was asked for an out-of-range point: "+i);
+		return (int)Math.round( precise_z_positions[i] / z_spacing );
+	}
+
+	public double getXUnscaledDouble( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getXUnscaled was asked for an out-of-range point: "+i);
+		return precise_x_positions[i] / x_spacing;
+	}
+
+	public double getYUnscaledDouble( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getYUnscaled was asked for an out-of-range point: "+i);
+		return precise_y_positions[i] / y_spacing;
+	}
+
+	public double getZUnscaledDouble( int i ) {
+		if( (i < 0) || i >= size() )
+			throw new RuntimeException("BUG: getZUnscaled was asked for an out-of-range point: "+i);
+		return precise_z_positions[i] / z_spacing;
 	}
 
 /* FIXME:
@@ -334,34 +402,64 @@ public class Path implements Comparable {
 		if( points < 1 )
 			return null;
 		else
-			return new PointInImage( x_positions[points-1],
-						 y_positions[points-1],
-						 z_positions[points-1] );
+			return new PointInImage( precise_x_positions[points-1],
+						 precise_y_positions[points-1],
+						 precise_z_positions[points-1] );
 	}
 
 	void expandTo( int newMaxPoints  ) {
 
-		int [] new_x_positions = new int[newMaxPoints];
-		int [] new_y_positions = new int[newMaxPoints];
-		int [] new_z_positions = new int[newMaxPoints];
-		System.arraycopy( x_positions,
+		double [] new_precise_x_positions = new double[newMaxPoints];
+		double [] new_precise_y_positions = new double[newMaxPoints];
+		double [] new_precise_z_positions = new double[newMaxPoints];
+		System.arraycopy( precise_x_positions,
 				  0,
-				  new_x_positions,
-				  0,
-				  points );
-		System.arraycopy( y_positions,
-				  0,
-				  new_y_positions,
+				  new_precise_x_positions,
 				  0,
 				  points );
-		System.arraycopy( z_positions,
+		System.arraycopy( precise_y_positions,
 				  0,
-				  new_z_positions,
+				  new_precise_y_positions,
 				  0,
 				  points );
-		x_positions = new_x_positions;
-		y_positions = new_y_positions;
-		z_positions = new_z_positions;
+		System.arraycopy( precise_z_positions,
+				  0,
+				  new_precise_z_positions,
+				  0,
+				  points );
+		precise_x_positions = new_precise_x_positions;
+		precise_y_positions = new_precise_y_positions;
+		precise_z_positions = new_precise_z_positions;
+		if( hasCircles() ) {
+			double [] new_tangents_x = new double[newMaxPoints];
+			double [] new_tangents_y = new double[newMaxPoints];
+			double [] new_tangents_z = new double[newMaxPoints];
+			double [] new_radiuses = new double[newMaxPoints];
+			System.arraycopy( tangents_x,
+					  0,
+					  new_tangents_x,
+					  0,
+					  points );
+			System.arraycopy( tangents_y,
+					  0,
+					  new_tangents_y,
+					  0,
+					  points );
+			System.arraycopy( tangents_z,
+					  0,
+					  new_tangents_z,
+					  0,
+					  points );
+			System.arraycopy( radiuses,
+					  0,
+					  new_radiuses,
+					  0,
+					  points );
+			tangents_x = new_tangents_x;
+			tangents_y = new_tangents_y;
+			tangents_z = new_tangents_z;
+			radiuses = new_radiuses;
+		}
 		maxPoints = newMaxPoints;
 	}
 
@@ -383,31 +481,31 @@ public class Path implements Comparable {
 		   on this path: */
 
 		if( points > 0 ) {
-			int last_x = x_positions[points-1];
-			int last_y = y_positions[points-1];
-			int last_z = z_positions[points-1];
-			while((other.x_positions[toSkip] == last_x) &&
-			      (other.y_positions[toSkip] == last_y) &&
-			      (other.z_positions[toSkip] == last_z)) {
+			double last_x = precise_x_positions[points-1];
+			double last_y = precise_y_positions[points-1];
+			double last_z = precise_z_positions[points-1];
+			while((other.precise_x_positions[toSkip] == last_x) &&
+			      (other.precise_y_positions[toSkip] == last_y) &&
+			      (other.precise_z_positions[toSkip] == last_z)) {
 				++toSkip;
 			}
 		}
 
-		System.arraycopy( other.x_positions,
+		System.arraycopy( other.precise_x_positions,
 				  toSkip,
-				  x_positions,
+				  precise_x_positions,
 				  points,
 				  other.points - toSkip );
 
-		System.arraycopy( other.y_positions,
+		System.arraycopy( other.precise_y_positions,
 				  toSkip,
-				  y_positions,
+				  precise_y_positions,
 				  points,
 				  other.points - toSkip );
 
-		System.arraycopy( other.z_positions,
+		System.arraycopy( other.precise_z_positions,
 				  toSkip,
-				  z_positions,
+				  precise_z_positions,
 				  points,
 				  other.points - toSkip );
 
@@ -415,7 +513,7 @@ public class Path implements Comparable {
 			throw new RuntimeException("BUG: we should never be adding to a path that already endJoins");
 
 		if( other.endJoins != null ) {
-			setEndJoin( other.endJoins, other.endJoinsIndex );
+			setEndJoin( other.endJoins, other.endJoinsPoint );
 			other.disconnectFromAll();
 		}
 
@@ -438,32 +536,35 @@ public class Path implements Comparable {
 		Path c = new Path( x_spacing, y_spacing, z_spacing, spacing_units, points );
 		c.points = points;
 		for( int i = 0; i < points; ++i ) {
-			c.x_positions[i] = x_positions[ (points-1) - i ];
-			c.y_positions[i] = y_positions[ (points-1) - i ];
-			c.z_positions[i] = z_positions[ (points-1) - i ];
+			c.precise_x_positions[i] = precise_x_positions[ (points-1) - i ];
+			c.precise_y_positions[i] = precise_y_positions[ (points-1) - i ];
+			c.precise_z_positions[i] = precise_z_positions[ (points-1) - i ];
 		}
 		return c;
 	}
 
-	void addPoint( int x, int y, int z ) {
+	void addPointDouble( double x, double y, double z ) {
 		if( points >= maxPoints ) {
-			expandTo( (int)( maxPoints * 1.2 + 1 ) );
+			int newReserved = (int)( maxPoints * 1.2 + 1 );
+			expandTo( newReserved );
 		}
-		x_positions[points] = x;
-		y_positions[points] = y;
-		z_positions[points++] = z;
+		precise_x_positions[points] = x;
+		precise_y_positions[points] = y;
+		precise_z_positions[points++] = z;
 	}
 
-	public void drawPathAsPoints( ImageCanvas canvas, Graphics g, java.awt.Color c, int plane ) {
+	public void drawPathAsPoints( TracerCanvas canvas, Graphics g, java.awt.Color c, int plane ) {
 		drawPathAsPoints( canvas, g, c, plane, 0, -1 );
 	}
 
+	/* FIXME: Should draw lines between points now, not just points... */
 
-	public void drawPathAsPoints( ImageCanvas canvas, Graphics g, java.awt.Color c, int plane, int z, int either_side ) {
+	public void drawPathAsPoints( TracerCanvas canvas, Graphics g, java.awt.Color c, int plane, int slice, int either_side ) {
 
 		/* This is slightly ugly because we have to use
-		   ImageCanvas.screenX and .screenY to find whether to
-		   actually draw on the Graphics in case we're zoomed. */
+		   InteractiveTracerCanvas.myScreenX and .myScreenY to
+		   find whether to actually draw on the Graphics in
+		   case we're zoomed. */
 
 		/* In addition, if this is a start or end point we
 		   want to represent that with a circle or a square
@@ -478,28 +579,75 @@ public class Path implements Comparable {
 		int spotExtra = pixel_size;
 		int spotDiameter = pixel_size * 3;
 
+		boolean drawDiameter = hasCircles();
+		// boolean drawDiameter = false;
+
+		Path realStartJoins = fittedVersionOf == null ? startJoins : fittedVersionOf.startJoins;
+		Path realEndJoins = fittedVersionOf == null ? endJoins : fittedVersionOf.endJoins;
+
 		switch( plane ) {
 
 		case ThreePanes.XY_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(z_positions[i] - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getZUnscaled(i) - slice) > either_side) )
 					continue;
 
-				int x = canvas.screenX(x_positions[i]);
-				int y = canvas.screenY(y_positions[i]);
+				int x = canvas.myScreenXD(getXUnscaledDouble(i));
+				int y = canvas.myScreenYD(getYUnscaledDouble(i));
 
-				if( ((i == 0) && (startJoins == null)) ||
-				    ((i == points - 1) && (endJoins == null)) ) {
+				if( drawDiameter ) {
+					// Cross the tangents with a unit z vector:
+					double n_x = 0;
+					double n_y = 0;
+					double n_z = 1;
+
+					double t_x = tangents_x[i];
+					double t_y = tangents_y[i];
+					double t_z = tangents_z[i];
+
+					double cross_x = n_y * t_z - n_z * t_y;
+					double cross_y = n_z * t_x - n_x * t_z;
+					double cross_z = n_x * t_y - n_y * t_x;
+
+					double sizeInPlane = Math.sqrt( cross_x * cross_x + cross_y * cross_y );
+					double normalized_cross_x = cross_x / sizeInPlane;
+					double normalized_cross_y = cross_y / sizeInPlane;
+
+					// g.setColor( Color.RED );
+
+					double left_x = precise_x_positions[i] + normalized_cross_x * radiuses[i];
+					double left_y = precise_y_positions[i] + normalized_cross_y * radiuses[i];
+
+					double right_x = precise_x_positions[i] - normalized_cross_x * radiuses[i];
+					double right_y = precise_y_positions[i] - normalized_cross_y * radiuses[i];
+
+					int left_x_on_screen = canvas.myScreenXD(left_x/x_spacing);
+					int left_y_on_screen = canvas.myScreenYD(left_y/y_spacing);
+
+					int right_x_on_screen = canvas.myScreenXD(right_x/x_spacing);
+					int right_y_on_screen = canvas.myScreenYD(right_y/y_spacing);
+
+					int x_on_screen = canvas.myScreenXD( precise_x_positions[i]/x_spacing );
+					int y_on_screen = canvas.myScreenYD( precise_y_positions[i]/y_spacing );
+
+					g.drawLine( x_on_screen, y_on_screen, left_x_on_screen, left_y_on_screen );
+					g.drawLine( x_on_screen, y_on_screen, right_x_on_screen, right_y_on_screen );
+
+					g.setColor( c );
+				}
+
+				if( ((i == 0) && (realStartJoins == null)) ||
+				    ((i == points - 1) && (realEndJoins == null)) ) {
 					// Then draw it as a rectangle...
-					g.fillRect( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
-				} else if( ((i == 0) && (startJoins != null)) ||
-					   ((i == points - 1) && (endJoins != null)) ) {
+					g.fillRect( x - (spotDiameter / 2), y - (spotDiameter / 2), spotDiameter, spotDiameter );
+				} else if( ((i == 0) && (realStartJoins != null)) ||
+					   ((i == points - 1) && (realEndJoins != null)) ) {
 					// The draw it as an oval...
-					g.fillOval( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
+					g.fillOval( x - (spotDiameter / 2), y - (spotDiameter / 2), spotDiameter, spotDiameter );
 				} else {
 					// Just draw normally...
-					g.fillRect( x, y, spotExtra, spotExtra );
+					g.fillRect( x - (spotExtra / 2), y - (spotExtra / 2), spotExtra, spotExtra );
 				}
 			}
 		}
@@ -508,18 +656,18 @@ public class Path implements Comparable {
 		case ThreePanes.XZ_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(z_positions[i] - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getYUnscaled(i) - slice) > either_side) )
 					continue;
 
-				int x = canvas.screenX(x_positions[i]);
-				int y = canvas.screenY(z_positions[i]);
+				int x = canvas.myScreenXD(getXUnscaled(i));
+				int y = canvas.myScreenYD(getZUnscaled(i));
 
-				if( ((i == 0) && (startJoins == null)) ||
-				    ((i == points - 1) && (endJoins == null)) ) {
+				if( ((i == 0) && (realStartJoins == null)) ||
+				    ((i == points - 1) && (realEndJoins == null)) ) {
 					// Then draw it as a rectangle...
 					g.fillRect( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
-				} else if( ((i == 0) && (startJoins != null)) ||
-					   ((i == points - 1) && (endJoins != null)) ) {
+				} else if( ((i == 0) && (realStartJoins != null)) ||
+					   ((i == points - 1) && (realEndJoins != null)) ) {
 					// The draw it as an oval...
 					g.fillOval( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
 				} else {
@@ -533,18 +681,18 @@ public class Path implements Comparable {
 		case ThreePanes.ZY_PLANE:
 		{
 			for( int i = 0; i < points; ++i ) {
-				if( (either_side >= 0) && (Math.abs(z_positions[i] - z) > either_side) )
+				if( (either_side >= 0) && (Math.abs(getXUnscaled(i) - slice) > either_side) )
 					continue;
 
-				int x = canvas.screenX(z_positions[i]);
-				int y = canvas.screenY(y_positions[i]);
+				int x = canvas.myScreenXD(getZUnscaled(i));
+				int y = canvas.myScreenYD(getYUnscaled(i));
 
-				if( ((i == 0) && (startJoins == null)) ||
-				    ((i == points - 1) && (endJoins == null)) ) {
+				if( ((i == 0) && (realStartJoins == null)) ||
+				    ((i == points - 1) && (realEndJoins == null)) ) {
 					// Then draw it as a rectangle...
 					g.fillRect( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
-				} else if( ((i == 0) && (startJoins != null)) ||
-					   ((i == points - 1) && (endJoins != null)) ) {
+				} else if( ((i == 0) && (realStartJoins != null)) ||
+					   ((i == points - 1) && (realEndJoins != null)) ) {
 					// The draw it as an oval...
 					g.fillOval( x - spotExtra, y - spotExtra, spotDiameter, spotDiameter );
 				} else {
@@ -559,6 +707,35 @@ public class Path implements Comparable {
 
 	}
 
+        int indexNearestTo( double x, double y, double z ) {
+
+		if( size() < 1 )
+			throw new RuntimeException("indexNearestTo called on a Path of size() = 0");
+
+		PointInImage result = new PointInImage( Double.MIN_VALUE,
+							Double.MIN_VALUE,
+							Double.MIN_VALUE );
+
+		double minimumDistanceSquared = Double.MAX_VALUE;
+		int indexOfMinimum = -1;
+
+		for( int i = 0; i < size(); ++i ) {
+
+			double diff_x = x - precise_x_positions[i];
+			double diff_y = y - precise_y_positions[i];
+			double diff_z = z - precise_z_positions[i];
+
+			double thisDistanceSquared = diff_x * diff_x + diff_y * diff_y + diff_z * diff_z;
+
+			if( thisDistanceSquared < minimumDistanceSquared ) {
+				indexOfMinimum = i;
+				minimumDistanceSquared = thisDistanceSquared;
+			}
+		}
+
+		return indexOfMinimum;
+	}
+
 	// ------------------------------------------------------------------------
 	// FIXME: adapt these for Path rather than SegmentedConnection, down to EOFIT
 
@@ -569,12 +746,14 @@ public class Path implements Comparable {
 		double [] initial;
 
 		byte [] data;
+		int minValueInData;
 		int maxValueInData;
 		int side;
 
-		public CircleAttempt(double [] start, byte [] data, int maxValueInData, int side ) {
+		public CircleAttempt(double [] start, byte [] data, int minValueInData, int maxValueInData, int side ) {
 
 			this.data = data;
+			this.minValueInData = minValueInData;
 			this.maxValueInData = maxValueInData;
 			this.side = side;
 
@@ -605,9 +784,7 @@ public class Path implements Comparable {
 		}
 
 		public double evaluate(double [] x) {
-			// System.out.println("evaluate called with: "+x[0]+","+x[1]+","+x[2]);
 			double badness = evaluateCircle(x[0],x[1],x[2]);
-			// System.out.println("   gave: "+badness);
 
 			if (badness < min) {
 				best = x.clone();
@@ -619,6 +796,8 @@ public class Path implements Comparable {
 
 		public double evaluateCircle( double x, double y, double r ) {
 
+			double maximumPointPenalty = (maxValueInData - minValueInData) * (maxValueInData - minValueInData);
+
 			double badness = 0;
 
 			for( int i = 0; i < side; ++i ) {
@@ -627,21 +806,15 @@ public class Path implements Comparable {
 					if( r * r > ((i - x) * (i - x)  + (j - y) * (j - y)) )
 						badness += (maxValueInData - value) * (maxValueInData - value);
 					else
-						badness += value * value;
+						badness += (value - minValueInData) * (value - minValueInData);
 				}
 			}
 
-			if( (x + r) >= side ) {
-				badness += maxValueInData * maxValueInData;
-			}
-			if( (x + r) < 0 ) {
-				badness += maxValueInData * maxValueInData;
-			}
-			if( (y + r) >= side ) {
-				badness += maxValueInData * maxValueInData;
-			}
-			if( (y + r) < 0 ) {
-				badness += maxValueInData * maxValueInData;
+			for( double ic = (x - r); ic <= (x + r); ++ic ) {
+				for( double jc = (y - r); jc <= (y + r); ++jc ) {
+					if( ic < 0 || ic > side || jc < 0 || jc > side )
+						badness += maximumPointPenalty;
+				}
 			}
 
 			badness /= (side * side);
@@ -651,9 +824,43 @@ public class Path implements Comparable {
 
 	}
 
+	Path fitted; // If this path has a fitted version, this is it.
+	boolean useFitted = false; // Use the fitted version in preference to this path
+	Path fittedVersionOf; // If this path is a fitted version of another one, this is the original
 
-	public void optimizeCircle( double start_x, double start_y, double start_r ) {
+	public void setFitted( Path p ) {
+		if( fitted != null ) {
+			throw new RuntimeException("BUG: Trying to set a fitted path when there already is one...");
+		}
+		fitted = p;
+		p.fittedVersionOf = this;
+	}
 
+	public void setUseFitted( boolean useFitted ) {
+		setUseFitted( useFitted, null );
+	}
+
+	public void setUseFitted( boolean useFitted, Simple_Neurite_Tracer plugin ) {
+
+		if( useFitted && fitted == null )
+			throw new RuntimeException("BUG: setUseFitted(true) was called, but the 'fitted' member was null");
+
+		if( plugin != null && plugin.use3DViewer ) {
+			// Swap them around in the 3D viewer:
+			if( useFitted ) {
+				removeFrom3DViewer( plugin.univ );
+				fitted.addTo3DViewer( plugin.univ );
+			} else {
+				fitted.removeFrom3DViewer( plugin.univ );
+				addTo3DViewer( plugin.univ );
+			}
+		}
+
+		this.useFitted = useFitted;
+	}
+
+	public boolean getUseFitted( ) {
+		return useFitted;
 	}
 
 	public Path fitCircles( int side, Simple_Neurite_Tracer plugin, boolean display ) {
@@ -667,17 +874,11 @@ public class Path implements Comparable {
 		if( verbose )
 			System.out.println("There are: "+totalPoints+ " in the stack.");
 
-		int last_x = -1;
-		int last_y = -1;
-		int last_z = -1;
-
-		int second_last_x = -1;
-		int second_last_y = -1;
-		int second_last_z = -1;
-
 		double x_spacing = plugin.x_spacing;
 		double y_spacing = plugin.y_spacing;
 		double z_spacing = plugin.z_spacing;
+
+		int pointsEitherSide = 4;
 
 		if( verbose )
 			System.out.println("Using spacing: "+x_spacing+","+y_spacing+","+z_spacing);
@@ -690,196 +891,379 @@ public class Path implements Comparable {
 
 		// We assume that the first and the last in the stack are fine;
 
-		double [] centre_x_positions = new double[totalPoints];
-		double [] centre_y_positions = new double[totalPoints];
+		double [] centre_x_positionsUnscaled = new double[totalPoints];
+		double [] centre_y_positionsUnscaled = new double[totalPoints];
 		double [] rs = new double[totalPoints];
+		double [] rsUnscaled = new double[totalPoints];
 
 		double [] ts_x = new double[totalPoints];
 		double [] ts_y = new double[totalPoints];
 		double [] ts_z = new double[totalPoints];
 
-		for( int i = 0; i < size(); ++i ) {
+		double [] optimized_x = new double[totalPoints];
+		double [] optimized_y = new double[totalPoints];
+		double [] optimized_z = new double[totalPoints];
+
+		double [] scores = new double[totalPoints];
+
+		double [] moved = new double[totalPoints];
+
+		boolean [] valid = new boolean[totalPoints];
+
+		int [] xs_in_image = new int[totalPoints];
+		int [] ys_in_image = new int[totalPoints];
+		int [] zs_in_image = new int[totalPoints];
+
+		double scaleInNormalPlane = plugin.getMinimumSeparation();
+
+		for( int i = 0; i < totalPoints; ++i ) {
+
+			int min_index = i - pointsEitherSide;
+			if( min_index < 0 )
+				min_index = 0;
+
+			int max_index = i + pointsEitherSide;
+			if( max_index >= totalPoints )
+				max_index = totalPoints - 1;
+
+			double x_diff_world = precise_x_positions[max_index] - precise_x_positions[min_index];
+			double y_diff_world = precise_y_positions[max_index] - precise_y_positions[min_index];
+			double z_diff_world = precise_z_positions[max_index] - precise_z_positions[min_index];
 
 			IJ.showProgress( i / (float)totalPoints );
 
-			int x = x_positions[i];
-			int y = y_positions[i];
-			int z = z_positions[i];
+			double x_world = precise_x_positions[i];
+			double y_world = precise_y_positions[i];
+			double z_world = precise_z_positions[i];
+
+			double [] x_basis_in_plane = new double[3];
+			double [] y_basis_in_plane = new double[3];
+
+			byte [] normalPlane = plugin.squareNormalToVector(
+				side,
+				scaleInNormalPlane,   // This is in the same units as the _spacing, etc. variables.
+				x_world,      // These are scaled now
+				y_world,
+				z_world,
+				x_diff_world,
+				y_diff_world,
+				z_diff_world,
+				x_basis_in_plane,
+				y_basis_in_plane );
+
+			/* Now at this stage, try to optimize
+			   a circle in there... */
+
+			// n.b. thes aren't normalized
+			ts_x[i] = x_diff_world;
+			ts_y[i] = y_diff_world;
+			ts_z[i] = z_diff_world;
+
+			ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
+			// optimizer.prin = 2; // debugging information on
+			optimizer.step = side / 4.0;
+
+			double [] startValues = new double[3];
+			startValues[0] = side / 2.0;
+			startValues[1] = side / 2.0;
+			startValues[2] = 3;
 
 			if( verbose )
-				System.out.println("Considering point: "+last_x+","+last_y+","+last_z);
+				System.out.println("start search at: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
 
-			if( (last_x < 0) || (second_last_x < 0) ) {
-
-				if( last_x >= 0 ) {
-
-					/* Then this is the first real
-					   point.  We won't generate a
-					   normal plane, since we
-					   can't trust the normal
-					   vector(well, maybe) but add
-					   an empty slice so
-					   everything is in sync. */
-
-					fitted.addPoint( last_x, last_y, last_z );
-
-					if( verbose )
-						System.out.println("Adding empty slice.");
-
-					byte [] empty = new byte[side*side];
-					ByteProcessor bp = new ByteProcessor( side, side );
-					bp.setPixels(empty);
-					stack.addSlice(null,bp);
-
-				}
-
-
-			} else {
-
-				/* Then the last two points were
-				   valid, so assume the tanget vector
-				   at last_* is the difference
-				   between this point and
-				   second_last_x... */
-
-				int x_diff = x - second_last_x;
-				int y_diff = y - second_last_y;
-				int z_diff = z - second_last_z;
-
-				// These are returned; they *are*
-				// scaled with the _scaling variables
-
-				double [] x_basis_in_plane = new double[3];
-				double [] y_basis_in_plane = new double[3];
-
-				byte [] normalPlane = plugin.squareNormalToVector(
-					side,
-					x_spacing,   // step is in the same units as the _spacing, etc. variables.
-					last_x,      // These are are *not* yet scaled in z
-					last_y,      // They're just sample point differences
-					last_z,
-					x_diff,
-					y_diff,
-					z_diff,
-					x_basis_in_plane,
-					y_basis_in_plane );
-
-				/* Now at this stage, try to optimize
-				   a circle in there... */
-
-				// n.b. thes aren't normalized
-				ts_x[i] = x_diff * x_spacing;
-				ts_y[i] = y_diff * y_spacing;
-				ts_z[i] = z_diff * z_spacing;
-
-				ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
-				// optimizer.prin = 2; // debugging information on
-				optimizer.step = side / 4.0;
-
-				double [] startValues = new double[3];
-				startValues[0] = (side - 1) / 2.0;
-				startValues[1] = (side - 1) / 2.0;
-				startValues[2] = 3.0;
-
-				if( verbose )
-					System.out.println("start search at: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
-
-				int maxValueInSquare = 0;
-				for( int j = 0; j < (side * side); ++j ) {
-					int value = normalPlane[j]&0xFF;
-					if( value > maxValueInSquare )
-						maxValueInSquare = value;
-				}
-
-				CircleAttempt attempt = new CircleAttempt(
-					startValues,
-					normalPlane,
-					maxValueInSquare,
-					side );
-
-				optimizer.optimize( attempt, startValues, 2, 2 );
-
-				if( verbose )
-					// System.out.println("u is: "+u[0]+","+u[1]+","+u[2]);
-					System.out.println("search optimized to: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
-
-				centre_x_positions[i] = startValues[0];
-				centre_y_positions[i] = startValues[1];
-				rs[i] = startValues[2];
-
-				// Now we calculate the real co-ordinates of the new centre:
-
-				double x_from_centre_in_plane = startValues[0] - (side / 2.0);
-				double y_from_centre_in_plane = startValues[1] - (side / 2.0);
-
-				if( verbose )
-					System.out.println("vector to new centre from original: "+x_from_centre_in_plane+","+y_from_centre_in_plane);
-
-				double centre_real_x = (last_x * x_spacing);
-				double centre_real_y = (last_y * y_spacing);
-				double centre_real_z = (last_z * z_spacing);
-
-				if( verbose )
-					System.out.println("original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
-
-				// FIXME: I really think these should be +=, but it seems clear from the results that I've got a sign wrong somewhere :(
-
-				centre_real_x -= x_basis_in_plane[0] * x_from_centre_in_plane + y_basis_in_plane[0] * y_from_centre_in_plane;
-				centre_real_y -= x_basis_in_plane[1] * x_from_centre_in_plane + y_basis_in_plane[1] * y_from_centre_in_plane;
-				centre_real_z -= x_basis_in_plane[2] * x_from_centre_in_plane + y_basis_in_plane[2] * y_from_centre_in_plane;
-
-				if( verbose )
-					System.out.println("adjusted original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
-
-				int x_in_image = (int)Math.round( centre_real_x / x_spacing );
-				int y_in_image = (int)Math.round( centre_real_y / y_spacing );
-				int z_in_image = (int)Math.round( centre_real_z / z_spacing );
-
-				if( verbose )
-					System.out.println("gives in image co-ordinates: "+x_in_image+","+y_in_image+","+z_in_image);
-
-				if( x_in_image < 0 ) x_in_image = 0; if( x_in_image >= width) x_in_image = width - 1;
-				if( y_in_image < 0 ) y_in_image = 0; if( y_in_image >= height) y_in_image = height - 1;
-				if( z_in_image < 0 ) z_in_image = 0; if( z_in_image >= depth) z_in_image = depth - 1;
-
-				if( verbose )
-					System.out.println("addingPoint: "+x_in_image+","+y_in_image+","+z_in_image);
-
-				fitted.addPoint( x_in_image, y_in_image, z_in_image );
-
-				if( verbose )
-					System.out.println("Adding a real slice.");
-
-				ByteProcessor bp = new ByteProcessor( side, side );
-				bp.setPixels(normalPlane);
-				stack.addSlice(null,bp);
-
+			int minValueInSquare = Integer.MAX_VALUE;
+			int maxValueInSquare = Integer.MIN_VALUE;
+			for( int j = 0; j < (side * side); ++j ) {
+				int value = normalPlane[j]&0xFF;
+				if( value > maxValueInSquare )
+					maxValueInSquare = value;
+				if( value < minValueInSquare )
+					minValueInSquare = value;
 			}
 
-			second_last_x = last_x;
-			second_last_y = last_y;
-			second_last_z = last_z;
+			CircleAttempt attempt = new CircleAttempt(
+				startValues,
+				normalPlane,
+				minValueInSquare,
+				maxValueInSquare,
+				side );
 
-			last_x = x;
-			last_y = y;
-			last_z = z;
+			optimizer.optimize( attempt, startValues, 2, 2 );
+
+			if( verbose )
+				// System.out.println("u is: "+u[0]+","+u[1]+","+u[2]);
+				System.out.println("search optimized to: "+startValues[0]+","+startValues[1]+" with radius: "+startValues[2]);
+
+			centre_x_positionsUnscaled[i] = startValues[0];
+			centre_y_positionsUnscaled[i] = startValues[1];
+			rsUnscaled[i] = startValues[2];
+			rs[i] = scaleInNormalPlane * rsUnscaled[i];
+
+			scores[i] = attempt.min;
+
+			// Now we calculate the real co-ordinates of the new centre:
+
+			double x_from_centre_in_plane = startValues[0] - (side / 2.0);
+			double y_from_centre_in_plane = startValues[1] - (side / 2.0);
+
+			moved[i] = scaleInNormalPlane * Math.sqrt( x_from_centre_in_plane * x_from_centre_in_plane +
+								   y_from_centre_in_plane * y_from_centre_in_plane );
+
+			if( verbose )
+				System.out.println("vector to new centre from original: "+x_from_centre_in_plane+","+y_from_centre_in_plane);
+
+			double centre_real_x = x_world;
+			double centre_real_y = y_world;
+			double centre_real_z = z_world;
+
+			if( verbose )
+				System.out.println("original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
+
+			// FIXME: I really think these should be +=, but it seems clear from the results that I've got a sign wrong somewhere :(
+
+			centre_real_x -= x_basis_in_plane[0] * x_from_centre_in_plane + y_basis_in_plane[0] * y_from_centre_in_plane;
+			centre_real_y -= x_basis_in_plane[1] * x_from_centre_in_plane + y_basis_in_plane[1] * y_from_centre_in_plane;
+			centre_real_z -= x_basis_in_plane[2] * x_from_centre_in_plane + y_basis_in_plane[2] * y_from_centre_in_plane;
+
+			if( verbose )
+				System.out.println("adjusted original centre in real co-ordinates: "+centre_real_x+","+centre_real_y+","+centre_real_z);
+
+			optimized_x[i] = centre_real_x;
+			optimized_y[i] = centre_real_y;
+			optimized_z[i] = centre_real_z;
+
+			int x_in_image = (int)Math.round( centre_real_x / x_spacing );
+			int y_in_image = (int)Math.round( centre_real_y / y_spacing );
+			int z_in_image = (int)Math.round( centre_real_z / z_spacing );
+
+			if( verbose )
+				System.out.println("gives in image co-ordinates: "+x_in_image+","+y_in_image+","+z_in_image);
+
+			if( x_in_image < 0 ) x_in_image = 0; if( x_in_image >= width) x_in_image = width - 1;
+			if( y_in_image < 0 ) y_in_image = 0; if( y_in_image >= height) y_in_image = height - 1;
+			if( z_in_image < 0 ) z_in_image = 0; if( z_in_image >= depth) z_in_image = depth - 1;
+
+			if( verbose )
+				System.out.println("addingPoint: "+x_in_image+","+y_in_image+","+z_in_image);
+
+			xs_in_image[i] = x_in_image;
+			ys_in_image[i] = y_in_image;
+			zs_in_image[i] = z_in_image;
+
+			if( verbose )
+				System.out.println("Adding a real slice.");
+
+			ByteProcessor bp = new ByteProcessor( side, side );
+			bp.setPixels(normalPlane);
+			stack.addSlice(null,bp);
 		}
-
-		// Add an extra empty slice for the final one:
-
-		if (verbose) System.out.println("Adding empty slice at the end.");
-
-		byte [] empty = new byte[side*side];
-		ByteProcessor bp = new ByteProcessor( side, side );
-		bp.setPixels(empty);
-		stack.addSlice(null,bp);
 
 		IJ.showProgress( 1.0 );
 
-		fitted.setFittedCircles( ts_x,
-					 ts_y,
-					 ts_z,
-					 rs                );
+		/* Now at each point along the path we calculate the
+		   mode of the radiuses in the nearby region: */
+
+		int modeEitherSide = 4;
+		double [] modeRadiusesUnscaled = new double[totalPoints];
+		double [] modeRadiuses = new double[totalPoints];
+		double [] valuesForMode = new double[modeEitherSide * 2 + 1];
+
+		for( int i = 0; i < totalPoints; ++i ) {
+			int minIndex = i - modeEitherSide;
+			int maxIndex = i + modeEitherSide;
+			int c = 0;
+			for( int modeIndex = minIndex; modeIndex <= maxIndex; ++modeIndex ) {
+				if( modeIndex < 0 )
+					valuesForMode[c] = Double.MIN_VALUE;
+				else if( modeIndex >= totalPoints )
+					valuesForMode[c] = Double.MAX_VALUE;
+				else {
+					if( rsUnscaled[modeIndex] < 1 )
+						valuesForMode[c] = 1;
+					else
+						valuesForMode[c] = rsUnscaled[modeIndex];
+				}
+				++c;
+			}
+			Arrays.sort( valuesForMode );
+			modeRadiusesUnscaled[i] = valuesForMode[modeEitherSide];
+			modeRadiuses[i] = scaleInNormalPlane * modeRadiusesUnscaled[i];
+
+			valid[i] = moved[i] < modeRadiusesUnscaled[i];
+		}
+
+		// Calculate the angle between the vectors from the point to the one on either side:
+		double [] angles = new double[totalPoints];
+		// Set the end points to 180 degrees:
+		angles[0] = angles[totalPoints-1] = Math.PI;
+		for( int i = 1; i < totalPoints-1; ++i ) {
+			// If there's no previously valid one then
+			// just use the first:
+			int previousValid = 0;
+			for( int j = 0; j < i; ++j )
+				if( valid[j] )
+					previousValid = j;
+			// If there's no next valid one then just use
+			// the first:
+			int nextValid = totalPoints - 1;
+			for( int j = totalPoints - 1; j > i; --j )
+				if( valid[j] )
+					nextValid = j;
+			double adiffx = optimized_x[previousValid] - optimized_x[i];
+			double adiffy = optimized_y[previousValid] - optimized_y[i];
+			double adiffz = optimized_z[previousValid] - optimized_z[i];
+			double bdiffx = optimized_x[nextValid] - optimized_x[i];
+			double bdiffy = optimized_y[nextValid] - optimized_y[i];
+			double bdiffz = optimized_z[nextValid] - optimized_z[i];
+			double adotb = adiffx * bdiffx + adiffy * bdiffy + adiffz * bdiffz;
+			double asize = Math.sqrt( adiffx*adiffx + adiffy*adiffy + adiffz*adiffz );
+			double bsize = Math.sqrt( bdiffx*bdiffx + bdiffy*bdiffy + bdiffz*bdiffz );
+			angles[i] = Math.acos( adotb / (asize * bsize) );
+			if( angles[i] < (Math.PI / 2) )
+				valid[i] = false;
+		}
+
+		/* Repeatedly build an array indicating how many other
+		   valid circles each one overlaps with, and remove
+		   the worst culprits on each run until they're all
+		   gone...  This is horrendously inefficient (O(n^3)
+		   in the worst case) but I'm more sure of its
+		   correctness than other things I've tried, and there
+		   should be few overlapping circles.
+		 */
+		int [] overlapsWith = new int[totalPoints];
+		boolean someStillOverlap = true;
+		while( someStillOverlap ) {
+			someStillOverlap = false;
+			int maximumNumberOfOverlaps = -1;
+			for( int i = 0; i < totalPoints; ++i ) {
+				overlapsWith[i] = 0;
+				if( ! valid[i] )
+					continue;
+				for( int j = 0; j < totalPoints; ++j ) {
+					if( ! valid[j] )
+						continue;
+					if( i == j )
+						continue;
+					if( circlesOverlap(
+						    ts_x[i], ts_y[i], ts_z[i],
+						    optimized_x[i], optimized_y[i], optimized_z[i],
+						    rs[i],
+						    ts_x[j], ts_y[j], ts_z[j],
+						    optimized_x[j], optimized_y[j], optimized_z[j],
+						    rs[j] ) ) {
+						++ overlapsWith[i];
+						someStillOverlap = true;
+					}
+				}
+				if( overlapsWith[i] > maximumNumberOfOverlaps )
+					maximumNumberOfOverlaps = overlapsWith[i];
+			}
+			if( maximumNumberOfOverlaps <= 0 ) {
+				break;
+			}
+			// Now we've built the array, go through and
+			// remove the worst offenders:
+			for( int i = 0; i < totalPoints; ++i ) {
+				if( ! valid[i] )
+					continue;
+				int n = totalPoints;
+				for( int j = totalPoints - 1; j > i; --j )
+					if( valid[j] )
+						n = j;
+				if( overlapsWith[i] == maximumNumberOfOverlaps ) {
+					// If the next valid one has
+					// the same number, and that
+					// has a larger radius, remove
+					// that one instead...
+					if( n < totalPoints && overlapsWith[n] == maximumNumberOfOverlaps && rs[n] > rs[i] ) {
+						valid[n] = false;
+					} else {
+						valid[i] = false;
+					}
+					break;
+				}
+			}
+		}
+
+		int lastValidIndex = 0;
+
+		for( int i = 0; i < totalPoints; ++i ) {
+
+			boolean firstOrLast = (i == 0 || i == (points-1));
+
+			if( ! valid[i] ) {
+				// The if we're gone too far without a
+				// successfully optimized datapoint,
+				// add the original one:
+				boolean goneTooFar = i - lastValidIndex >= noMoreThanOneEvery;
+				boolean nextValid = false;
+				if( i < (points - 1) )
+					if( valid[i+1] )
+						nextValid = true;
+
+				if( (goneTooFar && ! nextValid) || firstOrLast ) {
+					valid[i] = true;
+					xs_in_image[i] = getXUnscaled(i);
+					ys_in_image[i] = getYUnscaled(i);
+					zs_in_image[i] = getZUnscaled(i);
+					optimized_x[i] = precise_x_positions[i];
+					optimized_y[i] = precise_y_positions[i];
+					optimized_z[i] = precise_z_positions[i];
+					rsUnscaled[i] = 1;
+					rs[i] = scaleInNormalPlane;
+					modeRadiusesUnscaled[i] = 1;
+					modeRadiuses[i] = scaleInNormalPlane;
+					centre_x_positionsUnscaled[i] = side / 2.0;
+					centre_y_positionsUnscaled[i] = side / 2.0;
+				}
+			}
+
+			if( valid[i] ) {
+				if( rs[i] < scaleInNormalPlane ) {
+					rsUnscaled[i] = 1;
+					rs[i] = scaleInNormalPlane;
+				}
+				fitted.addPointDouble( optimized_x[i], optimized_y[i], optimized_z[i] );
+				lastValidIndex = i;
+			}
+		}
+
+		int fittedLength = fitted.size();
+
+		double [] fitted_ts_x = new double[fittedLength];
+		double [] fitted_ts_y = new double[fittedLength];
+		double [] fitted_ts_z = new double[fittedLength];
+		double [] fitted_rs = new double[fittedLength];
+		double [] fitted_optimized_x = new double[fittedLength];
+		double [] fitted_optimized_y = new double[fittedLength];
+		double [] fitted_optimized_z = new double[fittedLength];
+
+		int added = 0;
+
+		for( int i = 0; i < points; ++i ) {
+			if( ! valid[i] )
+				continue;
+			fitted_ts_x[added] = ts_x[i];
+			fitted_ts_y[added] = ts_y[i];
+			fitted_ts_z[added] = ts_z[i];
+			fitted_rs[added] = rs[i];
+			fitted_optimized_x[added] = optimized_x[i];
+			fitted_optimized_y[added] = optimized_y[i];
+			fitted_optimized_z[added] = optimized_z[i];
+			++ added;
+		}
+
+		if( added != fittedLength )
+			throw new RuntimeException( "Mismatch of lengths, added="+added+" and fittedLength="+fittedLength);
+
+		fitted.setFittedCircles( fitted_ts_x,
+					 fitted_ts_y,
+					 fitted_ts_z,
+					 fitted_rs,
+					 fitted_optimized_x,
+					 fitted_optimized_y,
+					 fitted_optimized_z );
 
 		if( display ) {
 
@@ -888,9 +1272,13 @@ public class Path implements Comparable {
 			NormalPlaneCanvas normalCanvas = new NormalPlaneCanvas(
 				imp,
 				plugin,
-				centre_x_positions,
-				centre_y_positions,
-				rs,
+				centre_x_positionsUnscaled,
+				centre_y_positionsUnscaled,
+				rsUnscaled,
+				scores,
+				modeRadiusesUnscaled,
+				angles,
+				valid,
 				fitted  );
 
 			new StackWindow( imp, normalCanvas );
@@ -899,14 +1287,145 @@ public class Path implements Comparable {
 
 		}
 
+		fitted.setName( "Fitted Path ["+getID()+"]");
+
 		return fitted;
 	}
 
-	private double [] radiuses;
+	double [] radiuses;
 
-	private double [] tangents_x;
-	private double [] tangents_y;
-	private double [] tangents_z;
+	double [] tangents_x;
+	double [] tangents_y;
+	double [] tangents_z;
+
+	double [] precise_x_positions;
+	double [] precise_y_positions;
+        double [] precise_z_positions;
+
+	public boolean circlesOverlap( double n1x, double n1y, double n1z,
+				       double c1x, double c1y, double c1z,
+				       double radius1,
+				       double n2x, double n2y, double n2z,
+				       double c2x, double c2y, double c2z,
+				       double radius2 ) {
+		/* Roughly following the steps described here:
+		      http://local.wasp.uwa.edu.au/~pbourke/geometry/planeplane/
+		 */
+		double epsilon = 0.000001;
+		/* Take the cross product of n1 and n2 to see if they
+		   are colinear, in which case there is overlap: */
+		double crossx = n1y * n2z - n1z * n2y;
+		double crossy = n1z * n2x - n1x * n2z;
+		double crossz = n1x * n2y - n1y * n2x;
+		if( Math.abs(crossx) < epsilon &&
+		    Math.abs(crossy) < epsilon &&
+		    Math.abs(crossz) < epsilon ) {
+			// Then they don't overlap unless they're in
+			// the same plane:
+			double cdiffx = c2x - c1x;
+			double cdiffy = c2y - c1y;
+			double cdiffz = c2z - c1z;
+			double cdiffdotn1 = cdiffx * n1x + cdiffy * n1y + cdiffz * n1z;
+			return Math.abs(cdiffdotn1) < epsilon;
+		}
+		double n1dotn1 = n1x * n1x + n1y * n1y + n1z * n1z;
+		double n2dotn2 = n2x * n2x + n2y * n2y + n2z * n2z;
+		double n1dotn2 = n1x * n2x + n1y * n2y + n1z * n2z;
+
+		double det = n1dotn1 * n2dotn2 - n1dotn2 * n1dotn2;
+
+		// A vector r in the plane is defined by:
+		//      n1 . r = (n1 . c1) = d1
+
+		double d1 = n1x * c1x + n1y * c1y + n1z * c1z;
+		double d2 = n2x * c2x + n2y * c2y + n2z * c2z;
+
+		double constant1 = ( d1 * n2dotn2 - d2 * n1dotn2 ) / det;
+		double constant2 = ( d2 * n1dotn1 - d1 * n1dotn2 ) / det;
+
+		/* So points on the line, paramaterized by u are now:
+
+		       constant1 n1 + constant2 n2 + u ( n1 x n2 )
+
+		   To find if the two circles overlap, we need to find
+		   the values of u where each crosses that line, in
+		   other words, for the first circle:
+
+                      radius1 = |constant1 n1 + constant2 n2 + u ( n1 x n2 ) - c1|
+
+                   => 0 = [ (constant1 n1 + constant2 n2 - c1).(constant1 n1 + constant2 n2 - c1) - radius1 ^ 2 ] +
+                          [ 2 * ( n1 x n2 ) . ( constant1 n1 + constant2 n2 - c1 ) ] * u
+			  [ ( n1 x n2 ) . ( n1 x n2 ) ] * u^2 ]
+
+                   So we solve that quadratic:
+
+		 */
+		double a1 = crossx * crossx + crossy * crossy + crossz * crossz;
+		double b1 = 2 * ( crossx * ( constant1 * n1x + constant2 * n2x - c1x ) +
+				  crossy * ( constant1 * n1y + constant2 * n2y - c1y ) +
+				  crossz * ( constant1 * n1z + constant2 * n2z - c1z ) );
+		double c1 =
+			( constant1 * n1x + constant2 * n2x - c1x ) * ( constant1 * n1x + constant2 * n2x - c1x ) +
+			( constant1 * n1y + constant2 * n2y - c1y ) * ( constant1 * n1y + constant2 * n2y - c1y ) +
+			( constant1 * n1z + constant2 * n2z - c1z ) * ( constant1 * n1z + constant2 * n2z - c1z ) -
+			radius1 * radius1;
+
+		double a2 = crossx * crossx + crossy * crossy + crossz * crossz;
+		double b2 = 2 * ( crossx * ( constant1 * n1x + constant2 * n2x - c2x ) +
+				  crossy * ( constant1 * n1y + constant2 * n2y - c2y ) +
+				  crossz * ( constant1 * n1z + constant2 * n2z - c2z ) );
+		double c2 =
+			( constant1 * n1x + constant2 * n2x - c2x ) * ( constant1 * n1x + constant2 * n2x - c2x ) +
+			( constant1 * n1y + constant2 * n2y - c2y ) * ( constant1 * n1y + constant2 * n2y - c2y ) +
+			( constant1 * n1z + constant2 * n2z - c2z ) * ( constant1 * n1z + constant2 * n2z - c2z ) -
+			radius2 * radius2;
+
+		// So now calculate the discriminants:
+		double discriminant1 = b1 * b1 - 4 * a1 * c1;
+		double discriminant2 = b2 * b2 - 4 * a2 * c2;
+
+		if( discriminant1 < 0 || discriminant2 < 0 ) {
+			// Then one of the circles doesn't even reach the line:
+
+			return false;
+		}
+
+		double u1_1 =   Math.sqrt( discriminant1 ) / ( 2 * a1 ) - b1 / (2 * a1);
+		double u1_2 = - Math.sqrt( discriminant1 ) / ( 2 * a1 ) - b1 / (2 * a1);
+
+		double u2_1 =   Math.sqrt( discriminant2 ) / ( 2 * a2 ) - b2 / (2 * a2);
+		double u2_2 = - Math.sqrt( discriminant2 ) / ( 2 * a2 ) - b2 / (2 * a2);
+
+		double u1_smaller = Math.min( u1_1, u1_2 );
+		double u1_larger  = Math.max( u1_1, u1_2 );
+
+		double u2_smaller = Math.min( u2_1, u2_2 );
+		double u2_larger  = Math.max( u2_1, u2_2 );
+
+		// Non-overlapping cases:
+		if( u1_larger < u2_smaller )
+			return false;
+		if( u2_larger < u1_smaller )
+			return false;
+
+		// Totally overlapping cases:
+		if( u1_smaller <= u2_smaller && u2_larger <= u1_larger )
+			return true;
+		if( u2_smaller <= u1_smaller && u1_larger <= u2_larger )
+			return true;
+
+		// Partially overlapping cases:
+		if( u1_smaller <= u2_smaller && u2_smaller <= u1_larger && u1_larger <= u2_larger )
+			return true;
+		if( u2_smaller <= u1_smaller && u1_smaller <= u2_larger && u2_larger <= u1_larger )
+			return true;
+
+		throw new RuntimeException("BUG: some overlapping case missed: "+
+					   "u1_smaller="+u1_smaller+
+					   "u1_larger="+u1_larger+
+					   "u2_smaller="+u2_smaller+
+					   "u2_larger="+u2_larger);
+	}
 
 	public boolean hasCircles() {
 		return radiuses != null;
@@ -915,21 +1434,26 @@ public class Path implements Comparable {
 	public void setFittedCircles( double [] tangents_x,
 				      double [] tangents_y,
 				      double [] tangents_z,
-				      double [] radiuses ) {
+				      double [] radiuses,
+				      double [] optimized_x,
+				      double [] optimized_y,
+				      double [] optimized_z ) {
 
-		this.tangents_x = new double[tangents_x.length];
-		System.arraycopy( tangents_x, 0, this.tangents_x, 0, tangents_x.length );
-		this.tangents_y = new double[tangents_y.length];
-		System.arraycopy( tangents_y, 0, this.tangents_y, 0, tangents_y.length );
-		this.tangents_z = new double[tangents_z.length];
-		System.arraycopy( tangents_z, 0, this.tangents_z, 0, tangents_z.length );
-		this.radiuses = new double[radiuses.length];
-		System.arraycopy( radiuses, 0, this.radiuses, 0, radiuses.length );
+		this.tangents_x = tangents_x.clone();
+		this.tangents_y = tangents_y.clone();
+		this.tangents_z = tangents_z.clone();
 
+		this.radiuses = radiuses.clone();
+
+		this.precise_x_positions = optimized_x.clone();
+		this.precise_y_positions = optimized_y.clone();
+		this.precise_z_positions = optimized_z.clone();
 	}
 
 	@Override
 	public String toString() {
+		if( useFitted )
+			return fitted.toString();
 		String pathName;
 		String name = getName();
 		if( name == null )
@@ -962,9 +1486,12 @@ public class Path implements Comparable {
 
 
 	Content content3D;
+	String nameWhenAddedToViewer;
+
+	public static final int noMoreThanOneEvery = 2;
 
 	public void removeFrom3DViewer(Image3DUniverse univ) {
-		univ.removeContent(getName());
+		univ.removeContent( nameWhenAddedToViewer );
 	}
 
 	public Content addTo3DViewer(Image3DUniverse univ) {
@@ -978,23 +1505,52 @@ public class Path implements Comparable {
 			return null;
 		}
 
+		int pointsToUse = -1;
+
 		double [] x_points_d = new double[points];
 		double [] y_points_d = new double[points];
 		double [] z_points_d = new double[points];
 		double [] diameters = new double[points];
 
-		for(int i=0; i<points; ++i) {
-			x_points_d[i] = x_spacing * x_positions[i];
-			y_points_d[i] = y_spacing * y_positions[i];
-			z_points_d[i] = z_spacing * z_positions[i];
-			diameters[i] = x_spacing * 3;
+		if( hasCircles() ) {
+			int added = 0;
+			int lastIndexAdded = - noMoreThanOneEvery;
+			for( int i = 0; i < points; ++i ) {
+				if( i - lastIndexAdded >= noMoreThanOneEvery ) {
+					x_points_d[added] = precise_x_positions[i];
+					y_points_d[added] = precise_y_positions[i];
+					z_points_d[added] = precise_z_positions[i];
+					diameters[added] = 2 * radiuses[i];
+					lastIndexAdded = i;
+					++ added;
+				}
+			}
+			pointsToUse = added;
+		} else {
+			for(int i=0; i<points; ++i) {
+				x_points_d[i] = precise_x_positions[i];
+				y_points_d[i] = precise_y_positions[i];
+				z_points_d[i] = precise_z_positions[i];
+				diameters[i] = x_spacing * 3;
+			}
+			pointsToUse = points;
 		}
 
-		double [][][] allPoints = Pipe.makeTube(x_points_d,
-							y_points_d,
-							z_points_d,
-							diameters,
-							4,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
+		double [] x_points_d_trimmed = new double[pointsToUse];
+		double [] y_points_d_trimmed = new double[pointsToUse];
+		double [] z_points_d_trimmed = new double[pointsToUse];
+		double [] diameters_trimmed = new double[pointsToUse];
+
+		System.arraycopy( x_points_d, 0, x_points_d_trimmed, 0, pointsToUse );
+		System.arraycopy( y_points_d, 0, y_points_d_trimmed, 0, pointsToUse );
+		System.arraycopy( z_points_d, 0, z_points_d_trimmed, 0, pointsToUse );
+		System.arraycopy( diameters, 0, diameters_trimmed, 0, pointsToUse );
+
+		double [][][] allPoints = Pipe.makeTube(x_points_d_trimmed,
+							y_points_d_trimmed,
+							z_points_d_trimmed,
+							diameters_trimmed,
+							2,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
 							12);     // "parallels" (12 means cross-sections are dodecagons)
 		if( allPoints == null )
 			return null;
@@ -1003,6 +1559,7 @@ public class Path implements Comparable {
 								  1); // scale
 
 		String title = getName();
+		nameWhenAddedToViewer = title;
 
 		univ.resetView();
 
@@ -1020,11 +1577,12 @@ public class Path implements Comparable {
 	public void setSelected(boolean newSelectedStatus) {
 		if( newSelectedStatus != selected ) {
 			selected = newSelectedStatus;
-			if( content3D != null ) {
+			Path viewerPath = useFitted ? fitted : this;
+			if( viewerPath.content3D != null ) {
 				if( selected )
-					content3D.setColor(new Color3f(Color.green));
+					viewerPath.content3D.setColor(new Color3f(Color.green));
 				else
-					content3D.setColor(new Color3f(Color.magenta));
+					viewerPath.content3D.setColor(new Color3f(Color.magenta));
 			}
 		}
 	}

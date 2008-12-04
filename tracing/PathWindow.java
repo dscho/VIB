@@ -131,6 +131,30 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				return;
 			}
 			plugin.startFillingPaths(selectedPaths);
+		} else if( source == fitVolumeButton ) {
+			TreePath [] selectedPaths = tree.getSelectionPaths();
+			if( selectedPaths == null || selectedPaths.length != 1 ) {
+				IJ.error("You must have exactly one path selected");
+				return;
+			}
+			DefaultMutableTreeNode node =
+				(DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent());
+			if( node == root )
+				return;
+			Path p = (Path)node.getUserObject();
+			if( p.getUseFitted() ) {
+				p.setUseFitted(false, plugin);
+			} else {
+				if( p.fitted == null ) {
+					Path fitted = p.fitCircles( 40, plugin, (e.getModifiers() & ActionEvent.SHIFT_MASK) > 0 );
+					p.setFitted(fitted);
+					p.setUseFitted(true, plugin);
+					pathAndFillManager.addPath( fitted );
+				} else {
+					p.setUseFitted(true, plugin);
+				}
+			}
+			pathAndFillManager.resetListeners(null);
 		} else if( source == renameButton ) {
 			TreePath [] selectedPaths = tree.getSelectionPaths();
 			if( selectedPaths == null || selectedPaths.length != 1 ) {
@@ -174,19 +198,59 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		}
 	}
 
+	public void updateButtonsNoneSelected( ) {
+		renameButton.setEnabled(false);
+		fitVolumeButton.setText("Fit Volume");
+		fitVolumeButton.setEnabled(false);
+		fillOutButton.setEnabled(false);
+		makePrimaryButton.setEnabled(false);
+		deleteButton.setEnabled(false);
+	}
+
+	public void updateButtonsOneSelected( Path p ) {
+		renameButton.setEnabled(true);
+		if( p.getUseFitted() )
+			fitVolumeButton.setText("Un-fit Volume");
+		else
+			fitVolumeButton.setText("Fit Volume");
+		fitVolumeButton.setEnabled(true);
+		fillOutButton.setEnabled(true);
+		makePrimaryButton.setEnabled(true);
+		deleteButton.setEnabled(true);
+	}
+
+	public void updateButtonsManySelected( ) {
+		renameButton.setEnabled(false);
+		fitVolumeButton.setText("Fit Volume");
+		fitVolumeButton.setEnabled(false);
+		fillOutButton.setEnabled(true);
+		makePrimaryButton.setEnabled(false);
+		deleteButton.setEnabled(true);
+	}
+
 	public void valueChanged( TreeSelectionEvent e ) {
 		TreePath [] selectedPaths = tree.getSelectionPaths();
 		if( selectedPaths == null ) {
 			pathAndFillManager.setSelected(new Path[]{},this);
+			updateButtonsNoneSelected();
 		} else {
 			Path [] paths = new Path[selectedPaths.length];
+			int realPathsSelected = 0;
 			for( int i = 0; i < selectedPaths.length; ++i ) {
 				TreePath tp = selectedPaths[i];
 				DefaultMutableTreeNode node =
 					(DefaultMutableTreeNode)(tp.getLastPathComponent());
-				if( node != root )
+				if( node != root ) {
+					++ realPathsSelected;
 					paths[i] = (Path)node.getUserObject();
+				}
 			}
+			if( realPathsSelected == 0 )
+				updateButtonsNoneSelected();
+			else if( realPathsSelected == 1 )
+				updateButtonsOneSelected(paths[0]);
+			else
+				updateButtonsManySelected();
 			pathAndFillManager.setSelected(paths,this);
 		}
 	}
@@ -202,6 +266,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 	JPanel buttonPanel;
 
 	JButton renameButton;
+	JButton fitVolumeButton;
 	JButton fillOutButton;
 	JButton makePrimaryButton;
 	JButton deleteButton;
@@ -219,7 +284,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		this.pathAndFillManager = pathAndFillManager;
 		this.plugin = plugin;
 
-		setBounds(x,y,400,300);
+		setBounds(x,y,540,300);
 		root = new DefaultMutableTreeNode("All Paths");
 		tree = new HelpfulJTree(root);
 		// tree.setRootVisible(false);
@@ -231,22 +296,33 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		buttonPanel = new JPanel();
 
 		renameButton = new JButton("Rename");
+		fitVolumeButton = new JButton("Fit Volume");
 		fillOutButton = new JButton("Fill Out");
 		makePrimaryButton = new JButton("Make Primary");
 		deleteButton = new JButton("Delete");
 
 		buttonPanel.add(renameButton);
+		buttonPanel.add(fitVolumeButton);
 		buttonPanel.add(fillOutButton);
 		buttonPanel.add(makePrimaryButton);
 		buttonPanel.add(deleteButton);
 
-		deleteButton.addActionListener(this);
-		makePrimaryButton.addActionListener(this);
-		fillOutButton.addActionListener(this);
 		renameButton.addActionListener(this);
+		fitVolumeButton.addActionListener(this);
+		fillOutButton.addActionListener(this);
+		makePrimaryButton.addActionListener(this);
+		deleteButton.addActionListener(this);
 
 		add(buttonPanel, BorderLayout.PAGE_END);
 
+	}
+
+	void setButtonsEnabled( boolean enable ) {
+		renameButton.setEnabled(enable);
+		fitVolumeButton.setEnabled(enable);
+		fillOutButton.setEnabled(enable);
+		makePrimaryButton.setEnabled(enable);
+		deleteButton.setEnabled(enable);
 	}
 
 	void getExpandedPaths( HelpfulJTree tree, TreeModel model, MutableTreeNode node, HashSet set ) {
@@ -328,7 +404,9 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		Path [] primaryPaths = pathAndFillManager.getPathsStructured();
 		for( int i = 0; i < primaryPaths.length; ++i ) {
 			Path primaryPath = primaryPaths[i];
-			addNode( newRoot, primaryPath, model );
+			// Add the primary path if it's not just a fitted version of another:
+			if( primaryPath.fittedVersionOf == null )
+				addNode( newRoot, primaryPath, model );
 		}
 		root = newRoot;
 		tree.setModel(model);
@@ -343,7 +421,6 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			setExpandedPaths( tree, model, root, expandedPathsBefore, justAdded );
 
 		setSelectedPaths( tree, model, root, selectedPathsBefore );
-
 	}
 
 	public void addNode( MutableTreeNode parent, Path childPath, DefaultTreeModel model ) {

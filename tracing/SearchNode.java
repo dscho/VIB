@@ -171,7 +171,7 @@ public class SearchNode implements Comparable {
 		Path creversed = new Path(x_spacing, y_spacing, z_spacing, spacing_units);
 		SearchNode p = this;
 		do {
-			creversed.addPoint( p.x, p.y, p.z );
+			creversed.addPointDouble( p.x * x_spacing, p.y * y_spacing, p.z * z_spacing );
 			p = p.predecessor;
 		} while( p != null );
 		return creversed.reversed();
@@ -181,10 +181,10 @@ public class SearchNode implements Comparable {
 		Path result = new Path(x_spacing, y_spacing, z_spacing, spacing_units);
 		SearchNode p = this;
 		do {
-			result.addPoint( p.x, p.y, p.z );
+			result.addPointDouble( p.x * x_spacing, p.y * y_spacing, p.z * z_spacing );
 			p = p.predecessor;
 		} while( p != null );
 		return result;
 	}
-	
+
 }

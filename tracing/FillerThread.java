@@ -25,7 +25,6 @@ package tracing;
 
 import ij.*;
 import ij.process.*;
-import ij.gui.ImageCanvas;
 
 import java.awt.*;
 import java.util.*;
@@ -241,9 +240,9 @@ public class FillerThread extends SearchThread {
 		while( pi.hasNext() ) {
 			Path p = pi.next();
                         for( int k = 0; k < p.size(); ++k ) {
-                                SearchNode f = new SearchNode( p.x_positions[k],
-                                                               p.y_positions[k],
-                                                               p.z_positions[k],
+                                SearchNode f = new SearchNode( p.getXUnscaled(k),
+                                                               p.getYUnscaled(k),
+                                                               p.getZUnscaled(k),
                                                                0,
 							       0,
                                                                null,
@@ -357,7 +356,7 @@ public class FillerThread extends SearchThread {
 	@Override
 	void drawProgressOnSlice( int plane,
 				  int currentSliceInPlane,
-				  ImageCanvas canvas,
+				  TracerCanvas canvas,
 				  Graphics g )  {
 		
 		super.drawProgressOnSlice(plane,currentSliceInPlane,canvas,g);
