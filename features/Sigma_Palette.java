@@ -42,6 +42,7 @@ public class Sigma_Palette extends Thread implements PlugIn {
 		Sigma_Palette owner;
 		Label label;
 		Scrollbar maxValueScrollbar;
+		boolean manuallyChangedAlready = false;
 
 		private void addExtraScrollbar( double defaultMaxValue ) {
 			label = new Label("");
@@ -51,8 +52,8 @@ public class Sigma_Palette extends Thread implements PlugIn {
 			maxValueScrollbar.addAdjustmentListener(
 				new AdjustmentListener()  {
 					public void adjustmentValueChanged(AdjustmentEvent e) {
+						manuallyChangedAlready = true;
 						int newValue = e.getValue();
-						updateLabel( newValue );
 						maxChanged( newValue );
 					}
 				} );
@@ -66,6 +67,7 @@ public class Sigma_Palette extends Thread implements PlugIn {
 		}
 
 		private void maxChanged( double newValue ) {
+			updateLabel( newValue );
 			if( owner != null ) {
 				owner.setMax( newValue );
 			}
@@ -334,7 +336,7 @@ public class Sigma_Palette extends Thread implements PlugIn {
 		setMax(defaultMax);
 
 		PaletteCanvas paletteCanvas = new PaletteCanvas( paletteImage, this, croppedWidth, croppedHeight, sigmasAcross, sigmasDown );
-		new PaletteStackWindow( paletteImage, paletteCanvas, this, defaultMax );
+		PaletteStackWindow paletteWindow = new PaletteStackWindow( paletteImage, paletteCanvas, this, defaultMax );
 
 		paletteImage.setSlice( (initial_z - z_min) + 1 );
 
@@ -346,6 +348,12 @@ public class Sigma_Palette extends Thread implements PlugIn {
 			double sigma = sigmaValues[sigmaIndex];
 			hep.setSigma(sigma);
 			ImagePlus processed = hep.generateImage(cropped);
+			if( ! paletteWindow.manuallyChangedAlready ) {
+				float [] limits = Limits.getStackLimits( processed );
+				int suggestedMax = (int)limits[1];
+				paletteWindow.maxValueScrollbar.setValue( suggestedMax );
+				paletteWindow.maxChanged( suggestedMax );
+			}
 			copyIntoPalette( processed, paletteImage, offsetX, offsetY );
 			paletteImage.updateAndDraw();
 		}
