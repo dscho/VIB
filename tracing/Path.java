@@ -579,8 +579,8 @@ public class Path implements Comparable {
 		int spotExtra = pixel_size;
 		int spotDiameter = pixel_size * 3;
 
-		boolean drawDiameter = hasCircles();
-		// boolean drawDiameter = false;
+		// boolean drawDiameter = hasCircles();
+		boolean drawDiameter = false;
 
 		Path realStartJoins = fittedVersionOf == null ? startJoins : fittedVersionOf.startJoins;
 		Path realEndJoins = fittedVersionOf == null ? endJoins : fittedVersionOf.endJoins;
