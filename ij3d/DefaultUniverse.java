@@ -1,5 +1,7 @@
 package ij3d;
 
+import ij3d.shapes.CoordinateSystem;
+import ij3d.shapes.Scalebar;
 import ij3d.behaviors.MouseBehavior;
 import ij.gui.Toolbar;
 
@@ -14,19 +16,24 @@ import com.sun.j3d.utils.picking.behaviors.PickingCallback;
 
 import com.sun.j3d.utils.behaviors.keyboard.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
+import com.sun.j3d.utils.geometry.Sphere;
 import com.sun.j3d.utils.universe.*;
 
+import ij3d.behaviors.BehaviorCallback;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
 import ij3d.behaviors.Picker;
-import ij3d.behaviors.Rotator;
-import ij3d.behaviors.Translator;
-import ij3d.behaviors.Zoomer;
+import ij3d.behaviors.ContentTransformer;
+import ij3d.behaviors.InteractiveViewPlatformTransformer;
 
 public abstract class DefaultUniverse extends SimpleUniverse implements 
-					MouseBehaviorCallback, PickingCallback {
+					BehaviorCallback, PickingCallback {
+
+	public static final int CENTER_TG = 0;
+	public static final int ZOOM_TG = 1;
+	public static final int TRANSLATE_TG = 2;
+	public static final int ROTATION_TG = 3;
 
 	protected BranchGroup scene;
 	protected Scalebar scalebar;
@@ -34,10 +41,9 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	protected ImageWindow3D win;
 
 	protected MouseBehavior mouseBehavior;
-	private Translator translator;
-	private Rotator rotator;
-	private Zoomer zoomer;
+	private ContentTransformer contentTransformer;
 	private Picker picker;
+	private InteractiveViewPlatformTransformer viewTransformer;
 
 	private List listeners = new ArrayList();
 	private boolean transformed = false;
@@ -45,39 +51,59 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public abstract Content getSelected();
 	public abstract Iterator contents();
 
+	public TransformGroup getZoomTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(ZOOM_TG);
+	}
+
+	public TransformGroup getCenterTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(CENTER_TG);
+	}
+
+	public TransformGroup getRotationTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(ROTATION_TG);
+	}
+
+	public TransformGroup getTranslateTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(TRANSLATE_TG);
+	}
+
 	public Scalebar getScalebar() {
 		return scalebar;
 	}
 
-	public Zoomer getZoomer() {
-		return zoomer;
-	}
-
-	public Rotator getRotator() {
-		return rotator;
-	}
-
-	public Translator getTranslator() {
-		return translator;
+	public ContentTransformer getRotator() {
+		return contentTransformer;
 	}
 
 	public Picker getPicker() {
 		return picker;
 	}
 
+	public InteractiveViewPlatformTransformer getViewPlatformTransformer() {
+		return viewTransformer;
+	}
+
 	public DefaultUniverse(int width, int height) {
-		super(new ImageCanvas3D(width, height));
+		super(new ImageCanvas3D(width, height), 4);
 		getViewingPlatform().setNominalViewingTransform();
 		getViewer().getView().setProjectionPolicy(
-					View.PARALLEL_PROJECTION);
+					View.PERSPECTIVE_PROJECTION);
 
 		bounds = new BoundingSphere();
 		bounds.setRadius(10000.0);
 
 		scene = new BranchGroup();
+		scene.setCapability(Group.ALLOW_CHILDREN_EXTEND);
+		scene.setCapability(Group.ALLOW_CHILDREN_READ);
+		scene.setCapability(Group.ALLOW_CHILDREN_WRITE);
 		
 		scalebar = new Scalebar();
 		scene.addChild(scalebar);
+
+		// just for now: a sphere indicating the global origin
+		scene.addChild(new Sphere(10));
+		// ah, and maybe a global coordinate system
+		scene.addChild(new CoordinateSystem(100, new Color3f(1, 0, 0)));
 
 		// Lightening
 		AmbientLight lightA = new AmbientLight();
@@ -93,9 +119,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scene.addChild(lightS);
 
 		// setup global mouse behavior
-		rotator = new Rotator(this, this);
-		translator = new Translator(this, this);
-		zoomer = new Zoomer(this, this);
+		viewTransformer = new InteractiveViewPlatformTransformer(this, this);
+		contentTransformer = new ContentTransformer(this, this);
 		picker = new Picker(this);
 		mouseBehavior = new MouseBehavior(this);
 		mouseBehavior.setSchedulingBounds(bounds);

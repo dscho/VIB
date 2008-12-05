@@ -1,4 +1,4 @@
-package ij3d;
+package ij3d.shapes;
 
 import com.sun.j3d.utils.geometry.ColorCube;
 import com.sun.j3d.utils.universe.*;

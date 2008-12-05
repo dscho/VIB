@@ -63,9 +63,9 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 //		};
 //		rotpol.setSchedulingBounds(bounds);
 //		rotationsTG.addChild(rotpol);
-//
-//		root.compile();
-//		addBranchGraph(root);
+
+		scene.compile();
+		addBranchGraph(scene);
 		addUniverseListener(new UniverseListener() {
 			public void transformationStarted(View view) {}
 			public void transformationFinished(View view) {}

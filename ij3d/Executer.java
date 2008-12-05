@@ -1,5 +1,6 @@
 package ij3d;
 
+import ij3d.shapes.Scalebar;
 import ij.gui.GenericDialog;
 import ij.IJ;
 import ij.WindowManager;

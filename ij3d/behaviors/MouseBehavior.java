@@ -17,19 +17,16 @@ import orthoslice.OrthoGroup;
 public class MouseBehavior extends Behavior {
 
 	private DefaultUniverse univ;
-	private ImageCanvas3D ic3d;
+	private ImageCanvas3D canvas;
 
 	private WakeupOnAWTEvent[] mouseEvents;
 	private WakeupCondition wakeupCriterion;
 
 	private int toolID;
 
-	private int x_last, y_last;
-
-	private Translator translator;
-	private Rotator rotator;
-	private Zoomer zoomer;
+	private ContentTransformer contentTransformer;
 	private Picker picker;
+	private InteractiveViewPlatformTransformer viewTransformer;
 
 	public static final int B1 = MouseEvent.BUTTON1_DOWN_MASK;
 	public static final int B2 = MouseEvent.BUTTON2_DOWN_MASK;
@@ -45,11 +42,10 @@ public class MouseBehavior extends Behavior {
 
 	public MouseBehavior(DefaultUniverse univ) {
 		this.univ = univ;
-		this.ic3d = (ImageCanvas3D)univ.getCanvas();
-		this.translator = univ.getTranslator();
-		this.rotator = univ.getRotator();
-		this.zoomer = univ.getZoomer();
+		this.canvas = (ImageCanvas3D)univ.getCanvas();
+		this.contentTransformer = univ.getRotator();
 		this.picker = univ.getPicker();
+		this.viewTransformer = univ.getViewPlatformTransformer();
 		mouseEvents = new WakeupOnAWTEvent[5];
 	}
 
@@ -129,11 +125,11 @@ public class MouseBehavior extends Behavior {
 		Content c = univ.getSelected();
 		int code = e.getKeyCode();
 		int axis = -1;
-		if(ic3d.isKeyDown(KeyEvent.VK_X))
+		if(canvas.isKeyDown(KeyEvent.VK_X))
 			axis = Renderer.X_AXIS;
-		else if(ic3d.isKeyDown(KeyEvent.VK_Y))
+		else if(canvas.isKeyDown(KeyEvent.VK_Y))
 			axis = Renderer.Y_AXIS;
-		else if(ic3d.isKeyDown(KeyEvent.VK_Z))
+		else if(canvas.isKeyDown(KeyEvent.VK_Z))
 			axis = Renderer.Z_AXIS;
 		// Consume events if used, to avoid other listeners from reusing the event
 		boolean consumed = true;
@@ -147,8 +143,8 @@ public class MouseBehavior extends Behavior {
 			}
 		} else if(e.isAltDown()) {
 			switch(code) {
-				case KeyEvent.VK_UP: zoomer.zoom(c, 1); return;
-				case KeyEvent.VK_DOWN: zoomer.zoom(c, -1); return;
+				case KeyEvent.VK_UP: viewTransformer.zoom(1); return;
+				case KeyEvent.VK_DOWN: viewTransformer.zoom(-1); return;
 			}
 		} else if(c != null && c.getType() == Content.ORTHO && axis != -1) {
 			OrthoGroup og = (OrthoGroup)c.getContent();
@@ -166,8 +162,8 @@ public class MouseBehavior extends Behavior {
 //				case KeyEvent.VK_LEFT: rotate(c, -5, 0); return;
 //				case KeyEvent.VK_UP: rotate(c, 0, -5); return;
 //				case KeyEvent.VK_DOWN: rotate(c, 0, 5); return;
-				case KeyEvent.VK_UP: zoomer.zoom_old(c, 5); return;
-				case KeyEvent.VK_DOWN: zoomer.zoom_old(c, -5); return;
+				case KeyEvent.VK_UP: viewTransformer.zoom(1); return;
+				case KeyEvent.VK_DOWN: viewTransformer.zoom(-1); return;
 
 			}
 		}
@@ -185,9 +181,8 @@ public class MouseBehavior extends Behavior {
 		int mask = e.getModifiersEx();
 		Content c = univ.getSelected();
 		if(id == MouseEvent.MOUSE_PRESSED) {
-			translator.init(c, e.getX(), e.getY());
-			x_last = e.getX();
-			y_last = e.getY();
+			if(c != null) contentTransformer.init(c, e.getX(), e.getY());
+			else viewTransformer.init(e);
 			if(toolID == Toolbar.POINT) {
 				if(c != null)
 					c.showPointList(true);
@@ -196,15 +191,17 @@ public class MouseBehavior extends Behavior {
 				} else if(mask == DELETE_POINT_MASK) {
 					picker.deletePoint(c, e);
 				}
-				((ImageCanvas3D)univ.getCanvas()).killRoi();
+				canvas.killRoi();
 			}
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
-			if(shouldTranslate(mask, toolID))
-				translator.translate(e);
-			else if(shouldRotate(mask, toolID))
-				rotator.rotate(e);
-			else if(shouldZoom(mask, toolID))
-				zoomer.zoom(c, e);
+			if(shouldTranslate(mask, toolID)) {
+				if(c != null) contentTransformer.translate(e);
+				else viewTransformer.translate(e);
+			} else if(shouldRotate(mask, toolID)) {
+				if(c != null) contentTransformer.rotate(e);
+				else viewTransformer.rotate(e);
+			} else if(shouldZoom(mask, toolID))
+				viewTransformer.zoom(e);
 			else if(shouldMovePoint(mask, toolID))
 				picker.movePoint(c, e);
 		} else if(id == MouseEvent.MOUSE_RELEASED) {
@@ -214,11 +211,11 @@ public class MouseBehavior extends Behavior {
 		}
 		if(id == MouseEvent.MOUSE_WHEEL) {
 			int axis = -1;
-			if(ic3d.isKeyDown(KeyEvent.VK_X))
+			if(canvas.isKeyDown(KeyEvent.VK_X))
 				axis = Renderer.X_AXIS;
-			else if(ic3d.isKeyDown(KeyEvent.VK_Y))
+			else if(canvas.isKeyDown(KeyEvent.VK_Y))
 				axis = Renderer.Y_AXIS;
-			else if(ic3d.isKeyDown(KeyEvent.VK_Z))
+			else if(canvas.isKeyDown(KeyEvent.VK_Z))
 				axis = Renderer.Z_AXIS;
 			if(c != null && c.getType() == Content.ORTHO
 								&& axis != -1) {
@@ -232,7 +229,7 @@ public class MouseBehavior extends Behavior {
 				else if(units < 0) og.decrease(axis);
 
 			} else {
-				zoomer.wheel_zoom(c, e);
+				viewTransformer.wheel_zoom(e);
 			}
 		}
 	}

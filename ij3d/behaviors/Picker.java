@@ -7,19 +7,24 @@ import ij.ImagePlus;
 import ij.measure.Calibration;
 import ij3d.Content;
 import ij3d.DefaultUniverse;
+import ij3d.ImageCanvas3D;
 import java.awt.event.MouseEvent;
 import javax.media.j3d.Node;
 import javax.media.j3d.PickInfo;
+import javax.media.j3d.SceneGraphPath;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Point3d;
 import javax.vecmath.Point3f;
+import javax.vecmath.Vector3d;
 import vib.BenesNamedPoint;
 
 public class Picker {
 	private DefaultUniverse univ;
+	private ImageCanvas3D canvas;
 
 	public Picker(DefaultUniverse univ) {
 		this.univ = univ;
+		this.canvas = (ImageCanvas3D)univ.getCanvas();
 	}
 
 	public void deletePoint(Content c, MouseEvent e) {
@@ -27,7 +32,7 @@ public class Picker {
 			IJ.error("Selection required");
 			return;
 		}
-		Point3d p3d = getPickPoint(c, e);
+		Point3d p3d = getPickPointGeometry(c, e);
 		if(p3d == null)
 			return;
 		int ind = c.getPointListPointIndexAt(p3d);
@@ -42,7 +47,7 @@ public class Picker {
 			IJ.error("Selection required");
 			return;
 		}
-		Point3d p3d = getPickPoint(c, e);
+		Point3d p3d = getPickPointGeometry(c, e);
 		if(p3d == null)
 			return;
 		if(movingIndex == -1)
@@ -117,13 +122,35 @@ public class Picker {
 		}
 	}
 
-	public Point3d getPickPoint(Content c, MouseEvent e) {
-		return getPickPoint(c, e.getX(), e.getY());
+	public Point3d getPickPointGeometry(Content c, Point3d origin, Vector3d dir) {
+		PickTool pickTool = new PickTool(c);
+		pickTool.setShapeRay(origin, dir);
+
+		pickTool.setMode(PickInfo.PICK_GEOMETRY);
+		pickTool.setFlags(PickInfo.CLOSEST_INTERSECTION_POINT);
+		try {
+			PickInfo[] result = pickTool.pickAllSorted();
+			if(result == null || result.length == 0)
+				return null;
+
+			for(int i = 0; i < result.length; i++) {
+				Point3d intersection = result[i].getClosestIntersectionPoint();
+				float v = getVolumePoint(c, intersection);
+				if(v > 20)
+					return intersection;
+			}
+			return null;
+		} catch(Exception ex) {
+			return null;
+		}
 	}
 
-	public Point3d getPickPoint(Content c, int x, int y) {
-		PickCanvas pickCanvas = new PickCanvas(
-					univ.getCanvas(), univ.getScene());
+	public Point3d getPickPointGeometry(Content c, MouseEvent e) {
+		return getPickPointGeometry(c, e.getX(), e.getY());
+	}
+
+	public Point3d getPickPointGeometry(Content c, int x, int y) {
+		PickCanvas pickCanvas = new PickCanvas(canvas, univ.getScene());
 		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
 		pickCanvas.setFlags(PickInfo.CLOSEST_INTERSECTION_POINT);
 		pickCanvas.setTolerance(3.0f);
@@ -141,6 +168,36 @@ public class Picker {
 			}
 			return null;
 		} catch(Exception ex) {
+			return null;
+		}
+	}
+
+	public Point3d getPickPointBoundingSphere(Content c, int x, int y) {
+		PickCanvas pickCanvas = new PickCanvas(canvas, univ.getScene());
+		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
+		pickCanvas.setFlags(PickInfo.SCENEGRAPHPATH | PickInfo.CLOSEST_INTERSECTION_POINT);
+		pickCanvas.setTolerance(3.0f);
+		pickCanvas.setShapeLocation(x, y);
+		c.showBoundingSphere(true);
+		try {
+			PickInfo[] result = pickCanvas.pickAllSorted();
+			if(result == null || result.length == 0)
+				return null;
+			for(int j = 0; j < result.length; j++) {
+				SceneGraphPath path = result[j].getSceneGraphPath();
+				for(int i = path.nodeCount() - 1; i >= 0; i--) {
+					if(path.getNode(i) == c.getBoundingSphere()) {
+						Point3d inters = result[j].getClosestIntersectionPoint();
+						Transform3D inv = new Transform3D();
+						c.getBoundingSphere().getTransform(inv);
+						inv.transform(inters);
+						return inters;
+					}
+				}
+			}
+			return null;
+		} catch(Exception ex) {
+			ex.printStackTrace();
 			return null;
 		}
 	}
