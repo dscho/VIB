@@ -1320,6 +1320,29 @@ public class Path implements Comparable {
 	double [] precise_y_positions;
         double [] precise_z_positions;
 
+	// Going by the meanings of the types given in:
+	//   http://www.soton.ac.uk/~dales/morpho/morpho_doc/
+
+	static final int SWC_UNDEFINED       = 0;
+	static final int SWC_SOMA            = 1;
+	static final int SWC_AXON            = 2;
+	static final int SWC_DENDRITE        = 3;
+	static final int SWC_APICAL_DENDRITE = 4;
+	static final int SWC_FORK_POINT      = 5;
+	static final int SWC_END_POINT       = 6;
+	static final int SWC_CUSTOM          = 7;
+
+	static final String [] swcTypeNames = { "undefined",
+						"soma",
+						"axon",
+						"dendrite",
+						"apical dendrite",
+						"fork point",
+						"end point",
+						"custom" };
+
+	int swcType = 0;
+
 	public boolean circlesOverlap( double n1x, double n1y, double n1z,
 				       double c1x, double c1y, double c1z,
 				       double radius1,

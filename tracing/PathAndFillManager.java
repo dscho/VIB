@@ -1258,27 +1258,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			resetListeners( null );
 	}
 
-	// Going by the meanings of the types given in:
-	//   http://www.soton.ac.uk/~dales/morpho/morpho_doc/
-
-	static final int SWC_UNDEFINED       = 0;
-	static final int SWC_SOMA            = 1;
-	static final int SWC_AXON            = 2;
-	static final int SWC_DENDRITE        = 3;
-	static final int SWC_APICAL_DENDRITE = 4;
-	static final int SWC_FORK_POINT      = 5;
-	static final int SWC_END_POINT       = 6;
-	static final int SWC_CUSTOM          = 7;
-
-	static final String [] swcTypeNames = { "undefined",
-						"soma",
-						"axon",
-						"dendrite",
-						"apical dendrite",
-						"fork point",
-						"end point",
-						"custom" };
-
 	private static class SWCPoint implements Comparable {
 		ArrayList<SWCPoint> nextPoints;
 		SWCPoint previousPoint;
@@ -1305,7 +1284,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			previousPoint = p;
 		}
 		public String toString( ) {
-			return "SWCPoint ["+id+"] "+swcTypeNames[type]+" "+
+			return "SWCPoint ["+id+"] "+Path.swcTypeNames[type]+" "+
 				"("+x+","+y+","+z+") "+
 				"radius: "+radius+", "+
 				"[previous: "+ previous+"]";
