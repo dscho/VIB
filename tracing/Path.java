@@ -863,6 +863,32 @@ public class Path implements Comparable {
 		return useFitted;
 	}
 
+	public void setGuessedTangents( int pointsEitherSide ) {
+		if( tangents_x == null || tangents_y == null || tangents_z == null )
+			throw new RuntimeException("BUG: setGuessedTangents called with one of the tangent arrays null");
+		double [] tangent = new double[3];
+		for( int i = 0; i < points; ++i ) {
+			getTangent( i, pointsEitherSide, tangent );
+			tangents_x[i] = tangent[0];
+			tangents_y[i] = tangent[1];
+			tangents_z[i] = tangent[2];
+		}
+	}
+
+	public void getTangent( int i, int pointsEitherSide, double [] result ) {
+		int min_index = i - pointsEitherSide;
+		if( min_index < 0 )
+			min_index = 0;
+
+		int max_index = i + pointsEitherSide;
+		if( max_index >= points )
+			max_index = points - 1;
+
+		result[0] = precise_x_positions[max_index] - precise_x_positions[min_index];
+		result[1] = precise_y_positions[max_index] - precise_y_positions[min_index];
+		result[2] = precise_z_positions[max_index] - precise_z_positions[min_index];
+	}
+
 	public Path fitCircles( int side, Simple_Neurite_Tracer plugin, boolean display ) {
 
 		Path fitted = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
@@ -916,19 +942,11 @@ public class Path implements Comparable {
 
 		double scaleInNormalPlane = plugin.getMinimumSeparation();
 
+		double [] tangent = new double[3];
+
 		for( int i = 0; i < totalPoints; ++i ) {
 
-			int min_index = i - pointsEitherSide;
-			if( min_index < 0 )
-				min_index = 0;
-
-			int max_index = i + pointsEitherSide;
-			if( max_index >= totalPoints )
-				max_index = totalPoints - 1;
-
-			double x_diff_world = precise_x_positions[max_index] - precise_x_positions[min_index];
-			double y_diff_world = precise_y_positions[max_index] - precise_y_positions[min_index];
-			double z_diff_world = precise_z_positions[max_index] - precise_z_positions[min_index];
+			getTangent( i, pointsEitherSide, tangent );
 
 			IJ.showProgress( i / (float)totalPoints );
 
@@ -945,9 +963,9 @@ public class Path implements Comparable {
 				x_world,      // These are scaled now
 				y_world,
 				z_world,
-				x_diff_world,
-				y_diff_world,
-				z_diff_world,
+				tangent[0],
+				tangent[1],
+				tangent[2],
 				x_basis_in_plane,
 				y_basis_in_plane );
 
@@ -955,9 +973,9 @@ public class Path implements Comparable {
 			   a circle in there... */
 
 			// n.b. thes aren't normalized
-			ts_x[i] = x_diff_world;
-			ts_y[i] = y_diff_world;
-			ts_z[i] = z_diff_world;
+			ts_x[i] = tangent[0];
+			ts_y[i] = tangent[1];
+			ts_z[i] = tangent[2];
 
 			ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
 			// optimizer.prin = 2; // debugging information on
@@ -1488,6 +1506,9 @@ public class Path implements Comparable {
 	Content content3D;
 	String nameWhenAddedToViewer;
 
+
+	/* FIXME: this should be based on distance between points in
+	   the path, not a static number: */
 	public static final int noMoreThanOneEvery = 2;
 
 	public void removeFrom3DViewer(Image3DUniverse univ) {
@@ -1513,10 +1534,12 @@ public class Path implements Comparable {
 		double [] diameters = new double[points];
 
 		if( hasCircles() ) {
+			System.out.println("Yes, using circles...");
 			int added = 0;
 			int lastIndexAdded = - noMoreThanOneEvery;
 			for( int i = 0; i < points; ++i ) {
-				if( i - lastIndexAdded >= noMoreThanOneEvery ) {
+				if( (points <= noMoreThanOneEvery) || (i - lastIndexAdded >= noMoreThanOneEvery) ) {
+					System.out.println("Acutally adding point: "+i);
 					x_points_d[added] = precise_x_positions[i];
 					y_points_d[added] = precise_y_positions[i];
 					z_points_d[added] = precise_z_positions[i];
@@ -1526,7 +1549,9 @@ public class Path implements Comparable {
 				}
 			}
 			pointsToUse = added;
+			System.out.println("After reduction using "+pointsToUse+" points");
 		} else {
+			System.out.println("Using constant tube:");
 			for(int i=0; i<points; ++i) {
 				x_points_d[i] = precise_x_positions[i];
 				y_points_d[i] = precise_y_positions[i];
@@ -1534,6 +1559,37 @@ public class Path implements Comparable {
 				diameters[i] = x_spacing * 3;
 			}
 			pointsToUse = points;
+		}
+
+		if( pointsToUse == 2 ) {
+			// If there are only two points, then makeTube
+			// fails, so interpolate:
+			double [] x_points_d_new = new double[3];
+			double [] y_points_d_new = new double[3];
+			double [] z_points_d_new = new double[3];
+			double [] diameters_new = new double[3];
+
+			x_points_d_new[0] = x_points_d[0];
+			y_points_d_new[0] = y_points_d[0];
+			z_points_d_new[0] = z_points_d[0];
+			diameters_new[0] = diameters[0];
+
+			x_points_d_new[1] = (x_points_d[0] + x_points_d[1]) / 2;
+			y_points_d_new[1] = (y_points_d[0] + y_points_d[1]) / 2;
+			z_points_d_new[1] = (z_points_d[0] + z_points_d[1]) / 2;
+			diameters_new[1] = (diameters[0] + diameters[1]) / 2;
+
+			x_points_d_new[2] = x_points_d[1];
+			y_points_d_new[2] = y_points_d[1];
+			z_points_d_new[2] = z_points_d[1];
+			diameters_new[2] = diameters[1];
+
+			x_points_d = x_points_d_new;
+			y_points_d = y_points_d_new;
+			z_points_d = z_points_d_new;
+			diameters = diameters_new;
+
+			pointsToUse = 3;
 		}
 
 		double [] x_points_d_trimmed = new double[pointsToUse];
@@ -1545,6 +1601,10 @@ public class Path implements Comparable {
 		System.arraycopy( y_points_d, 0, y_points_d_trimmed, 0, pointsToUse );
 		System.arraycopy( z_points_d, 0, z_points_d_trimmed, 0, pointsToUse );
 		System.arraycopy( diameters, 0, diameters_trimmed, 0, pointsToUse );
+
+		System.out.println("-----------------------------------------");
+		for( int i = 0; i < pointsToUse; ++i )
+			System.out.println("("+x_points_d_trimmed[i]+","+y_points_d_trimmed[i]+","+z_points_d_trimmed[i]+") "+diameters_trimmed[i]);
 
 		double [][][] allPoints = Pipe.makeTube(x_points_d_trimmed,
 							y_points_d_trimmed,

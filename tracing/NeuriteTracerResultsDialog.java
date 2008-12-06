@@ -109,6 +109,8 @@ class NeuriteTracerResultsDialog
 
 	Button loadLabelsButton;
 
+	Button importSWCButton;
+
 	Button saveButton;
 	Button loadButton;
 	Button uploadButton;
@@ -259,6 +261,7 @@ class NeuriteTracerResultsDialog
 		viewPathChoice.setEnabled(false);
 		preprocess.setEnabled(false);
 
+		importSWCButton.setEnabled(false);
 		saveButton.setEnabled(false);
 		loadButton.setEnabled(false);
 		if( uploadButton != null ) {
@@ -299,6 +302,7 @@ class NeuriteTracerResultsDialog
 
 			saveButton.setEnabled(true);
 			loadButton.setEnabled(true);
+			importSWCButton.setEnabled(true);
 			if( uploadButton != null ) {
 				uploadButton.setEnabled(true);
 				fetchButton.setEnabled(true);
@@ -631,6 +635,11 @@ class NeuriteTracerResultsDialog
 			loadLabelsButton.addActionListener( this );
 			add(loadLabelsButton,c);
 
+			++c.gridy;
+			importSWCButton = new Button("Import SWC File");
+			importSWCButton.addActionListener( this );
+			add(importSWCButton,c);
+
 			saveButton = new Button("Save Traces File");
 			saveButton.addActionListener( this );
 			loadButton = new Button("Load Traces File");
@@ -766,6 +775,21 @@ class NeuriteTracerResultsDialog
 			int preLoadingState = currentState;
 			changeState( LOADING );
 			plugin.loadTracings();
+			changeState( preLoadingState );
+
+		} else if( source == importSWCButton ) {
+
+			if( plugin.pathsUnsaved() ) {
+				YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(), "Warning",
+									     "There are unsaved paths. Do you really want to import an SWC file?" );
+
+				if( ! d.yesPressed() )
+					return;
+			}
+
+			int preLoadingState = currentState;
+			changeState( LOADING );
+			plugin.importSWC();
 			changeState( preLoadingState );
 
 		} else if( source == loadLabelsButton ) {

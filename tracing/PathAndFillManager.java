@@ -29,6 +29,8 @@ import java.util.Iterator;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.TreeSet;
+import java.util.PriorityQueue;
+import java.util.LinkedList;
 
 import java.io.*;
 
@@ -379,7 +381,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		if( p.getID() < 0 ) {
 			p.setID(++maxUsedID);
 		}
-		if(p.getName() == null || forceNewName) {
+		if(p.name == null || forceNewName) {
 			String suggestedName = getDefaultName(p);
 			p.setName(suggestedName);
 		}
@@ -1106,6 +1108,19 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	}
 
+	public void addTo3DViewer( Path p ) {
+		if( plugin.use3DViewer && p.fittedVersionOf == null && p.size() > 1 ) {
+			Path pathToAdd;
+			if( p.getUseFitted() )
+				pathToAdd = p.fitted;
+			else
+				pathToAdd = p;
+			System.out.println("Adding path: "+p);
+			System.out.println("... of size: "+p.size());
+			pathToAdd.addTo3DViewer(plugin.univ,Color.MAGENTA);
+		}
+	}
+
 	@Override
 	public void endElement(String uri, String localName, String qName) {
 
@@ -1160,14 +1175,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					p.fittedVersionOf = fittedVersionOf;
 				}
 
-				if( plugin.use3DViewer && p.fittedVersionOf == null ) {
-					Path pathToAdd;
-					if( p.getUseFitted() )
-						pathToAdd = p.fitted;
-					else
-						pathToAdd = p;
-					pathToAdd.addTo3DViewer(plugin.univ,Color.MAGENTA);
-				}
+				addTo3DViewer( p );
 			}
 
 			// Now turn the source paths into real paths...
@@ -1248,6 +1256,264 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			allPaths.clear();
 			allFills.clear();
 			resetListeners( null );
+	}
+
+	// Going by the meanings of the types given in:
+	//   http://www.soton.ac.uk/~dales/morpho/morpho_doc/
+
+	static final int SWC_UNDEFINED       = 0;
+	static final int SWC_SOMA            = 1;
+	static final int SWC_AXON            = 2;
+	static final int SWC_DENDRITE        = 3;
+	static final int SWC_APICAL_DENDRITE = 4;
+	static final int SWC_FORK_POINT      = 5;
+	static final int SWC_END_POINT       = 6;
+	static final int SWC_CUSTOM          = 7;
+
+	static final String [] swcTypeNames = { "undefined",
+						"soma",
+						"axon",
+						"dendrite",
+						"apical dendrite",
+						"fork point",
+						"end point",
+						"custom" };
+
+	private static class SWCPoint implements Comparable {
+		ArrayList<SWCPoint> nextPoints;
+		SWCPoint previousPoint;
+		int id, type, previous;
+		double x, y, z, radius;
+		public SWCPoint( int id, int type, double x, double y, double z, double radius, int previous ) {
+			nextPoints = new ArrayList<SWCPoint>();
+			this.id = id;
+			this.type = type;
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.radius = radius;
+			this.previous = previous;
+		}
+		public PointInImage getPointInImage() {
+			return new PointInImage( x, y, z );
+		}
+		public void addNextPoint( SWCPoint p ) {
+			if( ! nextPoints.contains( p ) )
+				nextPoints.add( p );
+		}
+		public void setPreviousPoint( SWCPoint p ) {
+			previousPoint = p;
+		}
+		public String toString( ) {
+			return "SWCPoint ["+id+"] "+swcTypeNames[type]+" "+
+				"("+x+","+y+","+z+") "+
+				"radius: "+radius+", "+
+				"[previous: "+ previous+"]";
+		}
+		public int compareTo( Object o ) {
+			int oid = ((SWCPoint)o).id;
+			return (id < oid) ? -1 : ((id > oid) ? 1 : 0);
+		}
+	}
+
+	public boolean importSWC( BufferedReader br ) throws IOException {
+
+		clearPathsAndFills( );
+
+		Pattern pEmpty = Pattern.compile("^\\s*$");
+		Pattern pComment = Pattern.compile("^([^#]*)#.*$");
+
+		HashSet< Integer > alreadySeen = new HashSet< Integer >();
+		HashMap< Integer, SWCPoint > idToSWCPoint = new HashMap< Integer, SWCPoint >();
+
+		ArrayList<SWCPoint> primaryPoints = new ArrayList<SWCPoint>();
+
+		/* The SWC files I've tried use world co-ordinates
+		   (good) but some seem to have the sign wrong, so
+		   calculate the minimum and maximum in each axis to
+		   test for this: */
+
+		double minX = Math.min( 0 * x_spacing, width * x_spacing );
+		double minY = Math.min( 0 * y_spacing, width * y_spacing );
+		double minZ = Math.min( 0 * z_spacing, width * z_spacing );
+
+		double maxX = Math.max( 0 * x_spacing, width * x_spacing );
+		double maxY = Math.max( 0 * y_spacing, width * y_spacing );
+		double maxZ = Math.max( 0 * z_spacing, width * z_spacing );
+
+		String line;
+		while( (line = br.readLine()) != null ) {
+			Matcher mComment = pComment.matcher(line);
+			line = mComment.replaceAll("$1");
+			Matcher mEmpty = pEmpty.matcher(line);
+			if( mEmpty.matches() )
+				continue;
+			String [] fields = line.split("\\s+");
+			if( fields.length != 7 ) {
+				IJ.error("Wrong number of fields ("+fields.length+") in line: "+line);
+				return false;
+			}
+			try {
+				int id = Integer.parseInt(fields[0]);
+				int type = Integer.parseInt(fields[1]);
+				double x = Double.parseDouble(fields[2]);
+				double y = Double.parseDouble(fields[3]);
+				double z = Double.parseDouble(fields[4]);
+				double radius = Double.parseDouble(fields[5]);
+				int previous = Integer.parseInt(fields[6]);
+				if( alreadySeen.contains(id) ) {
+					IJ.error("Point with ID "+id+" found more than once");
+					return false;
+				}
+				alreadySeen.add( id );
+
+				if( (x < 0) && ! (x >= minX && x <= maxX) )
+					x = Math.abs( x );
+				if( (y < 0) && ! (y >= minY && y <= maxY) )
+					y = Math.abs( y );
+				if( (z < 0) && ! (z >= minZ && z <= maxZ) )
+					z = Math.abs( z );
+
+				SWCPoint p = new SWCPoint( id, type, x, y, z, radius, previous );
+				idToSWCPoint.put( id, p );
+				if( previous == -1 )
+					primaryPoints.add( p );
+				else {
+					SWCPoint previousPoint = idToSWCPoint.get( previous );
+					p.previousPoint = previousPoint;
+					previousPoint.addNextPoint( p );
+				}
+			} catch( NumberFormatException nfe ) {
+				IJ.error( "There was a malformed number in line: "+line );
+				return false;
+			}
+		}
+
+		HashMap< SWCPoint, Path > pointToPath =
+			new HashMap< SWCPoint, Path >();
+
+		PriorityQueue< SWCPoint > backtrackTo =
+			new PriorityQueue< SWCPoint >();
+
+		for( Iterator< SWCPoint > pi = primaryPoints.iterator();
+		     pi.hasNext(); ) {
+			SWCPoint start = pi.next();
+			backtrackTo.add( start );
+		}
+
+		HashMap< Path, SWCPoint > pathStartsOnSWCPoint =
+			new HashMap< Path, SWCPoint >();
+		HashMap< Path, PointInImage > pathStartsAtPointInImage =
+			new HashMap< Path, PointInImage >();
+
+		SWCPoint start;
+		Path currentPath;
+		while( (start = backtrackTo.poll()) != null ) {
+			currentPath = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
+			currentPath.createCircles();
+			int added = 0;
+			if( start.previousPoint != null ) {
+				SWCPoint beforeStart = start.previousPoint;
+				pathStartsOnSWCPoint.put( currentPath, beforeStart );
+				pathStartsAtPointInImage.put( currentPath, beforeStart.getPointInImage() );
+				currentPath.addPointDouble( beforeStart.x,
+							    beforeStart.y,
+							    beforeStart.z );
+				currentPath.radiuses[added] = beforeStart.radius;
+				++ added;
+
+			}
+			// Now we can start adding points to the path:
+			SWCPoint currentPoint = start;
+			while( currentPoint != null ) {
+				currentPath.addPointDouble( currentPoint.x,
+							    currentPoint.y,
+							    currentPoint.z );
+				currentPath.radiuses[added] = currentPoint.radius;
+				++ added;
+				pointToPath.put( currentPoint, currentPath );
+				/* Remove each one from "alreadySeen"
+				   when we add it to a path, just to
+				   check that nothing's left at the
+				   end, which indicates that the file
+				   is malformed. */
+				alreadySeen.remove( currentPoint.id );
+				if( currentPoint.nextPoints.size() > 0 ) {
+					SWCPoint newCurrentPoint = currentPoint.nextPoints.get(0);
+					currentPoint.nextPoints.remove(0);
+					for( int i = 0; i < currentPoint.nextPoints.size(); ++i ) {
+						SWCPoint pointToQueue = currentPoint.nextPoints.get(i);
+						backtrackTo.add( pointToQueue );
+					}
+					currentPoint = newCurrentPoint;
+				} else
+					currentPoint = null;
+			}
+			currentPath.setGuessedTangents( 2 );
+			addPath( currentPath );
+		}
+
+		if( alreadySeen.size() > 0 ) {
+			IJ.error( "Malformed file: there are some misconnected points" );
+			for( Iterator<Integer> i = alreadySeen.iterator();
+			     i.hasNext(); ) {
+				SWCPoint p = idToSWCPoint.get( i.next() );
+				System.out.println( "  Misconnected: " + p);
+			}
+			return false;
+		}
+
+		// Set the start joins:
+		for( Iterator<Path> i = allPaths.iterator();
+		     i.hasNext(); ) {
+			Path p = i.next();
+			SWCPoint swcPoint = pathStartsOnSWCPoint.get( p );
+			if( swcPoint == null )
+				continue;
+			Path previousPath = pointToPath.get(swcPoint);
+			PointInImage pointInImage = pathStartsAtPointInImage.get( p );
+			p.setStartJoin( previousPath, pointInImage );
+		}
+
+		for( Iterator<Path> i = allPaths.iterator();
+		     i.hasNext(); ) {
+			Path p = i.next();
+			addTo3DViewer( p );
+		}
+
+		resetListeners( null, true );
+		return true;
+	}
+
+	public boolean importSWC( String filename ) {
+
+		File f = new File(filename);
+		if( ! f.exists() ) {
+			IJ.error("The traces file '"+filename+"' does not exist.");
+			return false;
+		}
+
+		InputStream is = null;
+		boolean result = false;
+
+		try {
+
+			is = new BufferedInputStream(new FileInputStream(filename));
+			BufferedReader br = new BufferedReader(new InputStreamReader(is,"UTF-8"));
+
+			result = importSWC(br);
+
+			if( is != null )
+				is.close();
+
+		} catch( IOException ioe ) {
+			IJ.error("Couldn't open file '"+filename+"' for reading.");
+			return false;
+		}
+
+		return result;
+
+
 	}
 
 	public boolean load( String filename ) {

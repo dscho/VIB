@@ -360,6 +360,36 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	boolean loading = false;
 
+	synchronized public void importSWC( ) {
+
+		loading = true;
+
+		String fileName = null;
+		String directory = null;
+
+		//  Presumably "No" was pressed...
+
+		OpenDialog od;
+
+		od = new OpenDialog("Select SWC file...",
+				    directory,
+				    null );
+
+		fileName = od.getFileName();
+		directory = od.getDirectory();
+
+		if( fileName != null ) {
+
+			if( pathAndFillManager.importSWC( directory + fileName ) )
+				unsavedPaths = false;
+
+			loading = false;
+			return;
+		}
+
+		loading = false;
+	}
+
 	synchronized public void loadTracings( ) {
 
 		loading = true;
