@@ -225,6 +225,10 @@ public class Executer {
 		univ.addOctree(dir, name);
 	}
 
+	public void removeOctree() {
+		univ.removeOctree();
+	}
+
 	public void load4D() {
 		if(!univ.getContents().isEmpty()) {
 			// showMessage...() is false if Canceled

@@ -146,6 +146,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private VolumeOctree octree = null;
 
+	public void removeOctree() {
+		if(octree != null) {
+			this.removeUniverseListener(octree);
+			scene.removeChild(octree.getRootBranchGroup());
+			octree = null;
+		}
+	}
+
 	public VolumeOctree addOctree(String imageDir, String name) {
 		if(octree != null) {
 			IJ.error("Only one large volume can be displayed a time.\n" +
