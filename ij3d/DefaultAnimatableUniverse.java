@@ -3,6 +3,7 @@ package ij3d;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
 import ij.ImageStack;
+import ij3d.behaviors.ViewPlatformTransformer;
 import ij3d.shapes.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Alpha;
@@ -138,12 +139,8 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	}
 
 	public void rotateY(double rad) {
-//		rotationsTG.getTransform(rotate);
-//		getCanvas().getView().stopView();
-//		rotate.rotY(rad);
-//		rotationsTG.setTransform(rotate);
-//		transformChanged(-1, rotationsTG);
-//		getCanvas().getView().startView();
+		viewTransformer.rotateY(rotationCenter, rad);
+		transformChanged(-1, rotationTG);
 	}
 
 	public void startRecording() {
