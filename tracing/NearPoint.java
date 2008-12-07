@@ -59,6 +59,20 @@ import javax.media.j3d.View;
 import ij3d.Content;
 import ij3d.UniverseListener;
 
+/* This is a class that encapsulates the relationship between an
+   arbitrary point (nearX,nearY,nearZ) close to a particular point on
+   a particular path.
+
+   The important method here is:
+
+      distanceToPathNearPoint()
+
+   ... which will tell you the distance to the nearest point on the
+   the line segments on either side of the path point, rather than
+   just the point.  Also, it will return null if the point appears to
+   be "off the end" of the Path.
+ */
+
 public class NearPoint implements Comparable {
 
 	public NearPoint( double nearX, double nearY, double nearZ,
