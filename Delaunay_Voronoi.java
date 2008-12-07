@@ -60,6 +60,7 @@ public class Delaunay_Voronoi implements PlugIn {
 				imp.getRoi() == null && results != null
 				&& results.getColumnIndex("XM")
 				!= ResultsTable.COLUMN_NOT_FOUND);
+		gd.addCheckbox("export into Results", false);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -69,6 +70,7 @@ public class Delaunay_Voronoi implements PlugIn {
 		boolean makeROI = gd.getNextBoolean();
 		showMeanDistance = gd.getNextBoolean();
 		boolean fromParticles = gd.getNextBoolean();
+		boolean exportResults = gd.getNextBoolean();
 
 		if (fromParticles) {
 			Calibration calib = imp.getCalibration();
@@ -97,6 +99,9 @@ public class Delaunay_Voronoi implements PlugIn {
 
 		CustomCanvas cc = new CustomCanvas(imp);
 
+		if (exportResults)
+			exportResults(cc.delaunay, cc.inf, results);
+
 		if (makeROI) {
 			imp.setRoi(getRoi(cc.delaunay, cc.inf));
 			imp.updateAndDraw();
@@ -117,6 +122,95 @@ public class Delaunay_Voronoi implements PlugIn {
 		if (roi != null)
 			// implicitely set the new image canvas
 			roi.setImage(imp);
+	}
+
+	void exportResults(DelaunayTriangulation delaunay, double inf,
+			ResultsTable results) {
+		if (delaunay == null)
+			return;
+
+		if (mode != DELAUNAY) {
+			IJ.error("Operation only supported for Delaunay");
+			return;
+		}
+
+		if (results.getLastColumn() >= 0) {
+			if (!IJ.showMessageWithCancel("Clear Results?",
+					"May I clear the results table?"))
+				return;
+			results.reset();
+		}
+		results.setHeading(0, "x1");
+		results.setHeading(1, "y1");
+		results.setHeading(2, "x2");
+		results.setHeading(3, "y2");
+
+		TreeMap shown = new TreeMap();
+
+		for (Iterator iter = delaunay.iterator();
+				iter.hasNext(); ) {
+			Simplex triangle = (Simplex)iter.next();
+
+			if (mode == DELAUNAY) {
+				Iterator iter2 = triangle.iterator();
+				Pnt a = (Pnt)iter2.next();
+				Pnt b = (Pnt)iter2.next();
+				Pnt c = (Pnt)iter2.next();
+				if (Math.abs(a.coord(0)) >= inf ||
+						Math.abs(b.coord(0)) >= inf ||
+						Math.abs(c.coord(0)) >= inf)
+					continue;
+				addOneResult(shown, a, b, results);
+				addOneResult(shown, a, c, results);
+				addOneResult(shown, b, c, results);
+			} else {
+				IJ.error("TODO");
+				return;
+			}
+		}
+		results.show("Results");
+	}
+
+	private static class PntPair implements Comparable {
+		Pnt a, b;
+
+		PntPair(Pnt a, Pnt b) {
+			if (compare(a, b) > 0) {
+				this.a = b;
+				this.b = a;
+			} else {
+				this.a = a;
+				this.b = b;
+			}
+		}
+
+		public int compareTo(Object other) {
+			PntPair o = (PntPair)other;
+			int result = compare(a, o.a);
+			if (result == 0)
+				result = compare(b, o.b);
+			return result;
+		}
+
+		public static int compare(Pnt a, Pnt b) {
+			double result = a.coord(0) - b.coord(0);
+			if (result == 0)
+				result = a.coord(1) - b.coord(1);
+			return result < 0 ? -1 : result > 0 ? +1 : 0;
+		}
+	}
+
+	private void addOneResult(TreeMap shown, Pnt a, Pnt b,
+			ResultsTable results) {
+		PntPair pair = new PntPair(a, b);
+		if (shown.containsKey(pair))
+			return;
+		results.incrementCounter();
+		results.addValue(0, pair.a.coord(0));
+		results.addValue(1, pair.a.coord(1));
+		results.addValue(2, pair.b.coord(0));
+		results.addValue(3, pair.b.coord(1));
+		shown.put(pair, null);
 	}
 
 	Roi getRoi(DelaunayTriangulation delaunay, double inf) {

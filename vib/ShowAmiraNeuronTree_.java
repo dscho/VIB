@@ -10,10 +10,19 @@ import ij.plugin.PlugIn;
 import ij.gui.ImageWindow;
 import ij.gui.StackWindow;
 import ij.io.OpenDialog;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class ShowAmiraNeuronTree_ implements PlugIn {
+	private static int lineCount;
+	private static int[] segments;
+	private static Vertex[] vertices;
+	private static int vertexCount;
 	public final int WIDTH = 400, HEIGHT = 400, BGCOLOR = 0x000000;
 
 	public void run(String arg) {
@@ -37,26 +46,21 @@ public class ShowAmiraNeuronTree_ implements PlugIn {
 		ic.repaint();
 	}
 
-	public static void getNeuronTree(String fileName, Image3dCanvas ic)
-			throws java.io.IOException {
-		FileInputStream f = new FileInputStream(fileName);
-		DataInputStream input = new DataInputStream(f);
-
-		if (!input.readLine().startsWith("# AmiraMesh 3D BINARY 2.0"))
-			throw new RuntimeException("No Amira NeuronTree");
+	static void getBinaryNeuronTree(DataInputStream input) 
+		throws java.io.IOException {
 
 		String line;
 		while((line = input.readLine()).equals("")
-				|| line.startsWith("#"))
+				|| line.startsWith("#"))	
 			; // read next
 
 		if (!line.startsWith("define Lines "))
 			throw new RuntimeException("No Amira NeuronTree");
-		int lineCount = Integer.parseInt(line.substring(13));
+		lineCount = Integer.parseInt(line.substring(13));
 
 		if (!(line = input.readLine()).startsWith("nVertices "))
 			throw new RuntimeException("No Amira NeuronTree");
-		int vertexCount = Integer.parseInt(line.substring(10));
+		vertexCount = Integer.parseInt(line.substring(10));
 
 		String header = "";
 		while ((line = input.readLine()) != null &&
@@ -82,6 +86,54 @@ public class ShowAmiraNeuronTree_ implements PlugIn {
 			float z = input.readFloat();
 			vertices[i] = new Vertex(new Vec(x, y, z));
 		}
+		
+	}
+
+	static void getAsciiNeuronTree(InputStream input) 
+		throws java.io.IOException {
+		BufferedInputStream b=new BufferedInputStream(input);
+		BufferedReader br=new BufferedReader(new InputStreamReader(b));
+		String line,header="";
+
+		while ( (line=br.readLine())!=null ){
+			//if(line.startsWith("@1")) break;
+			if(line.startsWith("Lines") && line.indexOf("float")>0){
+				
+			}
+			if(line.startsWith("Vertices") && line.indexOf("float[")>0){
+				
+			}
+			
+			if(line.equals("") || line.startsWith("#")) continue;
+			header += line + "\n";
+			if(line.startsWith("nLines")||line.startsWith("define Lines")){
+				String[] parts=line.split("\\s+");
+				lineCount=new Integer(parts[parts.length-1]).intValue();
+			}
+			if(line.startsWith("nVertices")||line.startsWith("define Vertices")){
+				String[] parts=line.split("\\s+");
+				vertexCount=new Integer(parts[parts.length-1]).intValue();
+			}
+		}
+		AmiraParameters params = new AmiraParameters(header);
+		// At @1
+		
+		throw new RuntimeException("Reading of ASCII Neuron Trees not yet implemented");
+		
+	}
+	
+	public static void getNeuronTree(String fileName, Image3dCanvas ic)
+			throws java.io.IOException {
+		FileInputStream f = new FileInputStream(fileName);
+		DataInputStream input = new DataInputStream(f);
+
+		String firstLine=input.readLine();
+		
+		if (firstLine.startsWith("# AmiraMesh 3D BINARY 2.0"))
+			getBinaryNeuronTree(input);
+		else if (firstLine.startsWith("# AmiraMesh ASCII"))
+			getAsciiNeuronTree(input);
+		else throw new RuntimeException("No Amira NeuronTree");
 
 		RenderObject ro = new RenderObject();
 		int color = 0xffffff;
@@ -96,5 +148,3 @@ public class ShowAmiraNeuronTree_ implements PlugIn {
 		ic.objects.addElement(ro);
 	}
 }
-
-

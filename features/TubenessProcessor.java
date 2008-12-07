@@ -4,6 +4,10 @@ package features;
 
 public class TubenessProcessor extends HessianEvalueProcessor {
 
+	public TubenessProcessor(boolean useCalibration) {
+		this.useCalibration = useCalibration;
+	}
+
 	public TubenessProcessor(double sigma, boolean useCalibration) {
 		this.sigma = sigma;
 		this.useCalibration = useCalibration;

@@ -167,24 +167,24 @@ public class SearchNode implements Comparable {
 		return "("+x+","+y+","+z+") h: "+h+" g: "+g+" f: "+f+" ["+searchStatusString+"]";
 	}
 	
-	public Path asPath( ) {
-		Path creversed = new Path();
+	public Path asPath( double x_spacing, double y_spacing, double z_spacing, String spacing_units ) {
+		Path creversed = new Path(x_spacing, y_spacing, z_spacing, spacing_units);
 		SearchNode p = this;
 		do {
-			creversed.addPoint( p.x, p.y, p.z );
+			creversed.addPointDouble( p.x * x_spacing, p.y * y_spacing, p.z * z_spacing );
 			p = p.predecessor;
 		} while( p != null );
 		return creversed.reversed();
 	}
 	
-	public Path asPathReversed( ) {
-		Path result = new Path();
+	public Path asPathReversed( double x_spacing, double y_spacing, double z_spacing, String spacing_units ) {
+		Path result = new Path(x_spacing, y_spacing, z_spacing, spacing_units);
 		SearchNode p = this;
 		do {
-			result.addPoint( p.x, p.y, p.z );
+			result.addPointDouble( p.x * x_spacing, p.y * y_spacing, p.z * z_spacing );
 			p = p.predecessor;
 		} while( p != null );
 		return result;
 	}
-	
+
 }

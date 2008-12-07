@@ -28,6 +28,9 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.TreeSet;
+import java.util.PriorityQueue;
+import java.util.LinkedList;
 
 import java.io.*;
 
@@ -48,6 +51,7 @@ import org.xml.sax.SAXException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.HashMap;
 
 import java.awt.Color;
 
@@ -68,20 +72,22 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	Simple_Neurite_Tracer plugin;
 	ImagePlus imagePlus;
 
+	int maxUsedID = -1;
+
 	public PathAndFillManager( ) {
 		allPaths = new ArrayList< Path >();
 		allFills = new ArrayList< Fill >();
 		listeners = new ArrayList< PathAndFillListener >();
-		selectedPaths = new boolean[0];
+		selectedPathsSet = new HashSet();
 	}
 
 	public PathAndFillManager( ImagePlus imagePlus ) {
 		this();
 		this.imagePlus = imagePlus;
 		Calibration c = imagePlus.getCalibration();
-		this.x_spacing = Math.abs(c.pixelWidth);
-		this.y_spacing = Math.abs(c.pixelHeight);
-		this.z_spacing = Math.abs(c.pixelDepth);
+		this.x_spacing = c.pixelWidth;
+		this.y_spacing = c.pixelHeight;
+		this.z_spacing = c.pixelDepth;
 		this.spacing_units = c.getUnit();
 		if( this.spacing_units == null || this.spacing_units.length() == 0 )
 			this.spacing_units = "" + c.getUnit();
@@ -128,7 +134,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	ArrayList< PathAndFillListener > listeners;
 
-	boolean [] selectedPaths;
+	HashSet< Path > selectedPathsSet;
 
 	public int size() {
 		return allPaths.size();
@@ -145,6 +151,35 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return allPaths.get(i);
 	}
 
+	public synchronized Path getPathFromName( String name ) {
+		return getPathFromName( name, true );
+	}
+	public synchronized Path getPathFromName( String name, boolean caseSensitive ) {
+		Iterator<Path> pi = allPaths.iterator();
+		while( pi.hasNext() ) {
+			Path p = pi.next();
+			if( caseSensitive ) {
+				if( name.equals(p.getName()) )
+					return p;
+			} else {
+				if( name.equalsIgnoreCase(p.getName()) )
+					return p;
+			}
+		}
+		return null;
+	}
+
+	public synchronized Path getPathFromID( int id ) {
+		Iterator<Path> pi = allPaths.iterator();
+		while( pi.hasNext() ) {
+			Path p = pi.next();
+			if( id == p.getID() ) {
+				return p;
+			}
+		}
+		return null;
+	}
+
 	/* This is called to update the PathAndFillManager's idea of
 	   which paths are currently selected.  This is also
 	   propagated to:
@@ -154,72 +189,135 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
                (b) All the registered PathAndFillListener objects.
 	*/
-	public synchronized void setSelected( int [] selectedIndices ) {
-		selectedPaths = new boolean[allPaths.size()];
-		for( int i = 0; i < selectedPaths.length; ++i ) {
-			selectedPaths[i] = false;
-			allPaths.get(i);
-		}
-		for( int i = 0; i < selectedIndices.length; ++i ) {
-			selectedPaths[selectedIndices[i]] = true;
-		}
-		for( int i = 0; i < selectedPaths.length; ++i ) {
-			// Update the selected flag in the Path class,
-			// which will change the colour of the Path in
-			// the 3D viewer if necessary:
-			allPaths.get(i).setSelected(selectedPaths[i]);
-		}
+	public synchronized void setSelected( Path [] selectedPaths, Object sourceOfMessage ) {
+		selectedPathsSet.clear();
+		for( int i = 0; i < selectedPaths.length; ++i )
+			selectedPathsSet.add( selectedPaths[i] );
 		for( Iterator<PathAndFillListener> i = listeners.iterator(); i.hasNext(); ) {
-			i.next().setSelectedPaths( selectedIndices );
+			PathAndFillListener pafl = i.next();
+			if( pafl != sourceOfMessage )
+				// The source of the message already knows the states:
+				pafl.setSelectedPaths( selectedPathsSet, this );
 		}
 	}
 
-	public synchronized boolean isSelected( int pathIndex ) {
-		return selectedPaths[pathIndex];
+	public synchronized boolean isSelected( Path path ) {
+		return selectedPathsSet.contains(path);
 	}
 
 	public boolean anySelected( ) {
-		for( int i = 0; i < selectedPaths.length; ++i )
-			if( selectedPaths[i] )
-				return true;
-		return false;
+		return selectedPathsSet.size() > 0;
 	}
 
-	public synchronized void resetListeners( ) {
+	/* This method returns an array of the "primary paths", which
+	   should be displayed at the top of a tree-like hierarchy.
 
-		Hashtable< Path, Integer > pathIndicesHash = new Hashtable< Path, Integer >();
+           The paths actually form a graph, of course, but most UIs
+           will want to display the graph as a tree. */
 
-		int paths = allPaths.size();
+	public synchronized Path [] getPathsStructured() {
 
-		String [] pathListEntries = new String[paths];
-		// String [] pathNames = new String[paths];
+		ArrayList<Path> primaryPaths=new ArrayList<Path>();
 
-		for( int i = 0; i < paths; ++i ) {
-			Path p = allPaths.get(i);
+		/* Some paths may be explicitly marked as primary, so
+		   extract those and everything connected to them
+		   first.  If you encounter another path marked as
+		   primary when exploring from these then that's an
+		   error... */
+
+		TreeSet<Path> pathsLeft = new TreeSet<Path>();
+
+		for( int i = 0; i < allPaths.size(); ++i ) {
+			pathsLeft.add(allPaths.get(i));
+		}
+
+		int markedAsPrimary = 0;
+
+		/* This is horrendously inefficent but with the number
+		   of paths that anyone might reasonably add by hand
+		   (I hope!) it's acceptable. */
+
+		Iterator<Path> pi = pathsLeft.iterator();
+		Path primaryPath = null;
+		while( pi.hasNext() ) {
+			Path p = pi.next();
+			if( p.getPrimary() ) {
+				pi.remove();
+				primaryPaths.add(p);
+				++ markedAsPrimary;
+			}
+		}
+
+		for( int i = 0; i < primaryPaths.size(); ++i ) {
+		        primaryPath = primaryPaths.get(i);
+			primaryPath.setChildren(pathsLeft);
+		}
+
+		// Start with each one left that doesn't start on another:
+		boolean foundOne = true;
+		while( foundOne ) {
+			foundOne = false;
+			pi = pathsLeft.iterator();
+			while( pi.hasNext() ) {
+				Path p = pi.next();
+				if( p.startJoins == null ) {
+					foundOne = true;
+					pi.remove();
+					primaryPaths.add(p);
+					p.setChildren(pathsLeft);
+					break;
+				}
+			}
+		}
+
+		// If there's anything left, start with that:
+		while( pathsLeft.size() > 0 ) {
+			pi = pathsLeft.iterator();
+			Path p = pi.next();
+			pi.remove();
+			primaryPaths.add(p);
+			p.setChildren(pathsLeft);
+		}
+
+		return primaryPaths.toArray(new Path[]{});
+	}
+
+	public synchronized void resetListeners( Path justAdded ) {
+		resetListeners( justAdded, false );
+	}
+
+	public synchronized void resetListeners( Path justAdded, boolean expandAll ) {
+
+		Hashtable< Path, Integer > pathToID = new Hashtable< Path, Integer >();
+
+		ArrayList<String> pathListEntries = new ArrayList<String>();
+
+		Iterator<Path> pi = allPaths.iterator();
+		while( pi.hasNext() ) {
+			Path p = pi.next();
+			int pathID = p.getID();
 			// if (verbose) System.out.println("path " + i + " is " + (Object)p );
-			pathIndicesHash.put(p,new Integer(i));
+			pathToID.put(p,new Integer(pathID));
 			if( p == null ) {
-				if (verbose) System.out.println("path was null with i "+i+" out of "+paths );
+				throw new RuntimeException("BUG: A path in allPaths was null!");
 			}
 			String pathName;
 			String name = p.getName();
 			if( name == null )
-				name = "Path [" + i + "]";
+				name = "Path [" + pathID + "]";
 			if( p.startJoins != null ) {
 				name += ", starts on " + p.startJoins.getName();
 			}
 			if( p.endJoins != null ) {
 				name += ", ends on " + p.endJoins.getName();
 			}
-			name += " [" + p.getRealLengthString( x_spacing,
-							      y_spacing,
-							      z_spacing ) +
-				" " + spacing_units + "]";
-			pathListEntries[i] = name;
+			name += " [" + p.getRealLengthString() + " " + spacing_units + "]";
+			pathListEntries.add( name );
 		}
 
 		for( Iterator i = listeners.iterator(); i.hasNext(); ) {
-			((PathAndFillListener)(i.next())).setPathList( pathListEntries );
+			PathAndFillListener listener = (PathAndFillListener)(i.next());
+			listener.setPathList( pathListEntries.toArray( new String[]{} ), justAdded, expandAll );
 		}
 
 		int fills = allFills.size();
@@ -240,25 +338,19 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 				name += " from paths: ";
 
-				for( int j = 0; j < f.sourcePaths.size(); ++j ) {
+				Path [] sortedSourcePaths =f.sourcePaths.toArray( new Path[]{} );
+				Arrays.sort( sortedSourcePaths );
 
-					Path p = f.sourcePaths.get(j);
-
-					if( j != 0 ) {
+				for( int j = 0; j < sortedSourcePaths.length; ++j ) {
+					Path p = sortedSourcePaths[j];
+					if( j != 0 )
 						name += ", ";
-					}
-
 					// if (verbose) System.out.println("source path " + j + " is " + (Object)p );
-
-					Integer fromPath = pathIndicesHash.get( p );
-
-					if( fromPath == null ) {
-						// if (verbose) System.out.println("from unknown path");
+					Integer fromPath = pathToID.get( p );
+					if( fromPath == null )
 						name += "(unknown)";
-					} else {
+					else
 						name += "(" + fromPath.intValue() + ")";
-					}
-
 				}
 			}
 			fillListEntries[i] = name;
@@ -284,57 +376,56 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	public synchronized void addPath( Path p, boolean forceNewName ) {
-		String suggestedName = getDefaultName();
-		if(p.getName() == null || forceNewName) {
+		if( getPathFromID( p.getID() ) != null )
+			throw new RuntimeException("Attempted to add a path with an ID that was already added");
+		if( p.getID() < 0 ) {
+			p.setID(++maxUsedID);
+		}
+		if(p.name == null || forceNewName) {
+			String suggestedName = getDefaultName(p);
 			p.setName(suggestedName);
 		}
+		// Now check if there's already a path with this name.
+		// If so, try adding numbered suffixes:
+		String originalName = p.getName();
+		String candidateName = originalName;
+		int numberSuffix = 2;
+		while( getPathFromName( candidateName ) != null ) {
+			candidateName = originalName + " (" + numberSuffix + ")";
+			++ numberSuffix;
+		}
+		p.setName( candidateName );
 		allPaths.add(p);
-		boolean [] newSelectedPaths = new boolean[allPaths.size()];
-		System.arraycopy(selectedPaths,0,newSelectedPaths,0,selectedPaths.length);
-		selectedPaths = newSelectedPaths;
-		resetListeners();
+		resetListeners( p );
 	}
 
 	/* Find the default name for a new path, making sure it
 	   doesn't collide with any of the existing names: */
 
-	protected String getDefaultName() {
-		boolean fillInGaps = false;
-		int maxPathNumber = -1;
-		Pattern pattern = Pattern.compile("^Path \\((\\d+)\\)");
-		HashSet<Integer> indicesInNames = new HashSet<Integer>();
-		for( Iterator<Path> i=allPaths.iterator();
-		     i.hasNext(); ) {
-			Path p = i.next();
-			String name = p.getName();
-			if( name != null ) {
-				Matcher m = pattern.matcher(name);
-				if(m.matches()) {
-					String numberAsString=m.group(1);
-					int number = Integer.parseInt(numberAsString,10);
-					indicesInNames.add(number);
-					if( number > maxPathNumber ) {
-						maxPathNumber = number;
-					}
-				}
-			}
-		}
-		int numberForNewPath = -1;
-		if( fillInGaps ) {
-			for( int i = 0; i <= maxPathNumber + 1; ++i ) {
-				if(!indicesInNames.contains(i)) {
-					numberForNewPath = i;
-					break;
-				}
-			}
-		} else {
-			numberForNewPath = maxPathNumber + 1;
-		}
-		return "Path ("+numberForNewPath+")";
+	protected String getDefaultName(Path p) {
+		if( p.getID() < 0 )
+			throw new RuntimeException("A path's ID should never be negative");
+		return "Path ("+p.getID()+")";
 	}
 
 	public synchronized void deletePath( int index ) {
 		deletePath( index, true );
+	}
+
+	public synchronized void deletePath( Path p ) {
+		int i = getPathIndex( p );
+		if( i < 0 )
+			throw new RuntimeException("Trying to delete a non-existent path");
+		deletePath( i );
+	}
+
+	public synchronized int getPathIndex( Path p ) {
+		int i = 0;
+		for( i = 0; i < allPaths.size(); ++i ) {
+			if( p == allPaths.get( i ) )
+				return i;
+		}
+		return -1;
 	}
 
 	private synchronized void deletePath( int index, boolean updateInterface ) {
@@ -350,25 +441,22 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			Path p = (Path)i.next();
 			if( p.startJoins == p ) {
 				p.startJoins = null;
-				p.startJoinsIndex = -1;
+				p.startJoinsPoint = null;
 			}
 			if( p.endJoins == p ) {
 				p.endJoins = null;
-				p.endJoinsIndex = -1;
+				p.endJoinsPoint = null;
 			}
 		}
 
-		int paths = allPaths.size();
-		boolean [] newSelectedPaths = new boolean[paths];
+		selectedPathsSet.remove(deleted);
 
-		System.arraycopy(selectedPaths, 0, newSelectedPaths, 0, index );
-		if( index < (paths - 1) )
-			System.arraycopy(selectedPaths, index + 1, newSelectedPaths, index, paths - index - 1 );
-
-		selectedPaths = newSelectedPaths;
+		if( plugin.use3DViewer && deleted.content3D != null ) {
+			deleted.removeFrom3DViewer(plugin.univ);
+		}
 
 		if( updateInterface )
-			resetListeners();
+			resetListeners( null );
 	}
 
 	public void deletePaths( int [] indices ) {
@@ -379,13 +467,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			deletePath( indices[i], false );
 		}
 
-		resetListeners();
+		resetListeners( null );
 	}
 
 	public void addFill( Fill fill ) {
 
 		allFills.add(fill);
-		resetListeners();
+		resetListeners( null );
 	}
 
 	public void deleteFills( int [] indices ) {
@@ -396,7 +484,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			deleteFill( indices[i], false );
 		}
 
-		resetListeners();
+		resetListeners( null );
 	}
 
 	public void deleteFill( int index ) {
@@ -408,7 +496,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		allFills.remove( index );
 
 		if( updateInterface )
-			resetListeners();
+			resetListeners( null );
 	}
 
 	public void reloadFill( int index ) {
@@ -423,6 +511,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	}
 
+	// FIXME: should probably use XMLStreamWriter instead of this ad-hoc approach:
 	synchronized public void writeXML( String fileName,
 					   Simple_Neurite_Tracer plugin,
 					   boolean compress ) throws IOException {
@@ -430,15 +519,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		PrintWriter pw = null;
 
 		try {
-			if( compress ) {
-				System.out.println("Creating, with compression...");
+			if( compress )
 				pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(fileName)),"UTF-8"));
-				System.out.println("Created, pw is: "+pw);
-			} else {
-				System.out.println("Creating, without compression...");
+			else
 				pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName),"UTF-8"));
-				System.out.println("Created, pw is: "+pw);
-			}
 
 			pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 			pw.println("<!DOCTYPE tracings [");
@@ -449,33 +533,51 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			pw.println("  <!ELEMENT point          EMPTY>");
 			pw.println("  <!ELEMENT fill           (node*)>");
 			pw.println("  <!ELEMENT node           EMPTY>");
-			pw.println("  <!ATTLIST samplespacing  x             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST samplespacing  y             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST samplespacing  z             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST samplespacing  units         CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST imagesize      width         CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST imagesize      height        CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST imagesize      depth         CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST path           id            CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST path           startson      CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           startsindex   CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           endson        CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           endsindex     CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST path           reallength    CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST point          x             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST point          y             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST point          z             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST fill           id            CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST fill           frompaths     CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST fill           metric        CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST fill           threshold     CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           id            CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           x             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           y             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           z             CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           previousid    CDATA           #IMPLIED>");
-			pw.println("  <!ATTLIST node           distance      CDATA           #REQUIRED>");
-			pw.println("  <!ATTLIST node           status        (open|closed)   #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  x                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  y                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  z                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST samplespacing  units             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      width             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      height            CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST imagesize      depth             CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST path           id                CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST path           primary           CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           name              CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startson          CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsindex       CDATA           #IMPLIED>"); // deprecated
+			pw.println("  <!ATTLIST path           startsx           CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsy           CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           startsz           CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endson            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsindex         CDATA           #IMPLIED>"); // deprecated
+			pw.println("  <!ATTLIST path           endsx             CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsy             CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           endsz             CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           reallength        CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           usefitted         (true|false)    #IMPLIED>");
+			pw.println("  <!ATTLIST path           fitted            CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST path           fittedversionof   CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          x                 CDATA           #REQUIRED>"); // deprecated
+			pw.println("  <!ATTLIST point          y                 CDATA           #REQUIRED>"); // deprecated
+			pw.println("  <!ATTLIST point          z                 CDATA           #REQUIRED>"); // deprecated
+			pw.println("  <!ATTLIST point          xd                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          yd                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          zd                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          tx                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          ty                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          tz                CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST point          r                 CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST fill           id                CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST fill           frompaths         CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST fill           metric            CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST fill           threshold         CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           id                CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           x                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           y                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           z                 CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           previousid        CDATA           #IMPLIED>");
+			pw.println("  <!ATTLIST node           distance          CDATA           #REQUIRED>");
+			pw.println("  <!ATTLIST node           status            (open|closed)   #REQUIRED>");
 			pw.println("]>");
 			pw.println("");
 
@@ -488,122 +590,93 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			pw.println("  <imagesize width=\"" + width + "\" height=\"" + height + "\" depth=\"" + depth + "\"/>" );
 
-			Hashtable< Path, Integer > h =
+			Hashtable< Path, Integer > pathToID =
 				new Hashtable< Path, Integer >();
 
-			int pathIndex = 0;
-
 			for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
 				Path p = (Path)j.next();
-				h.put( p, new Integer(pathIndex) );
-
-				++ pathIndex;
+				int id = p.getID();
+				if( id < 0 )
+					throw new RuntimeException("In writeXML() there was a path with a negative ID (BUG)");
+				pathToID.put( p, id );
 			}
 
-			pathIndex = 0;
-
 			for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
 				Path p = (Path)j.next();
-
 				// This probably should be a String returning
 				// method of Path.
-
-				pw.print("  <path id=\"" + pathIndex + "\"" );
-
+				pw.print("  <path id=\"" + p.getID() + "\"" );
 				String startsString = "";
 				String endsString = "";
-
 				if( p.startJoins != null ) {
-					int startPathIndex = ((h.get(p.startJoins))).intValue();
-					startsString = " startson=\"" + startPathIndex + "\"" +
-						" startsindex=\"" + p.startJoinsIndex + "\"";
+					int startPathID = ((pathToID.get(p.startJoins))).intValue();
+					// Find the nearest index for backward compatability:
+					int nearestIndexOnStartPath = p.startJoins.indexNearestTo(
+						p.startJoinsPoint.x,
+						p.startJoinsPoint.y,
+						p.startJoinsPoint.z );
+					startsString = " startson=\"" + startPathID + "\"" +
+						" startsindex=\"" + nearestIndexOnStartPath + "\"" +
+						" startx=\"" + p.startJoinsPoint.x + "\"" +
+						" starty=\"" + p.startJoinsPoint.y + "\"" +
+						" startz=\"" + p.startJoinsPoint.z + "\"";
 				}
 				if( p.endJoins != null ) {
-					int endPathIndex = ((h.get(p.endJoins))).intValue();
-					endsString = " endson=\"" + endPathIndex + "\"" +
-						" endsindex=\"" + p.endJoinsIndex + "\"";
+					int endPathID = ((pathToID.get(p.endJoins))).intValue();
+					// Find the nearest index for backward compatability:
+					int nearestIndexOnEndPath = p.endJoins.indexNearestTo(
+						p.endJoinsPoint.x,
+						p.endJoinsPoint.y,
+						p.endJoinsPoint.z );
+					endsString = " endson=\"" + endPathID + "\"" +
+						" endsindex=\"" + nearestIndexOnEndPath + "\""+
+						" endsx=\"" + p.endJoinsPoint.x + "\"" +
+						" endsy=\"" + p.endJoinsPoint.y + "\"" +
+						" endsz=\"" + p.endJoinsPoint.z + "\"";
 				}
-
+				if( p.getPrimary() )
+					pw.print(" primary=\"true\"");
+				pw.print(" usefitted=\""+p.getUseFitted()+"\"");
+				if( p.fitted != null ) {
+					pw.print(" fitted=\""+p.fitted.getID()+"\"");
+				}
+				if( p.fittedVersionOf != null ) {
+					pw.print(" fittedversionof=\""+p.fittedVersionOf.getID()+"\"");
+				}
 				pw.print(startsString);
 				pw.print(endsString);
-
 				if( p.name != null ) {
-					pw.print( " name=\""+p.name+"\"" );
+					pw.print( " name=\""+escapeForXMLAttributeValue(p.name)+"\"" );
 				}
-
-				pw.print(" reallength=\"" +
-					 p.getRealLength(
-						 x_spacing,
-						 y_spacing,
-						 z_spacing ) + "\"");
-
+				pw.print(" reallength=\"" + p.getRealLength( ) + "\"");
 				pw.println( ">" );
 
 				for( int i = 0; i < p.size(); ++i ) {
-
-					pw.println("    <point x=\"" +
-						   p.x_positions[i] + "\" " +
-						   "y=\"" + p.y_positions[i] + "\" z=\"" +
-						   p.z_positions[i] + "\"/>");
-
-				}
-
-				pw.println( "  </path>" );
-
-				++ pathIndex;
-			}
-
-			// Now output the fills:
-
-			int fillIndex = 0;
-
-			for( Iterator j = allFills.iterator(); j.hasNext(); ) {
-
-				Fill f = (Fill) j.next();
-
-				// This should probably be a method of Fill...
-
-				pw.print( "  <fill id=\"" + fillIndex + "\""  );
-
-				if( (f.sourcePaths != null) && (f.sourcePaths.size() > 0) ) {
-
-					pw.print( " frompaths=\"" );
-
-
-					for( int k = 0; k < f.sourcePaths.size(); ++k ) {
-
-						Path p = f.sourcePaths.get(k);
-
-						if( k != 0 ) {
-							pw.print( ", " );
-						}
-
-						Integer fromPath = h.get( p );
-
-						if( fromPath == null ) {
-							pw.print( "-1" );
-						} else {
-							pw.print( "" + fromPath.intValue() );
-						}
-
+					int px = p.getXUnscaled(i);
+					int py = p.getYUnscaled(i);
+					int pz = p.getZUnscaled(i);
+					double pxd = p.precise_x_positions[i];
+					double pyd = p.precise_y_positions[i];
+					double pzd = p.precise_z_positions[i];
+					String attributes = "x=\"" + px + "\" " + "y=\"" + py + "\" z=\"" + pz + "\" "+
+						"xd=\"" + pxd + "\" yd=\"" + pyd + "\" zd=\"" + pzd + "\"";
+					if( p.hasCircles() ) {
+						attributes += " tx=\""+p.tangents_x[i]+"\"";
+						attributes += " ty=\""+p.tangents_y[i]+"\"";
+						attributes += " tz=\""+p.tangents_z[i]+"\"";
+						attributes += " r=\""+p.radiuses[i]+"\"";
 					}
-
-					pw.print( "\"" );
-
-
-
+					pw.println("    <point "+attributes+"/>");
 				}
-
-				pw.println( " metric=\"" + f.getMetric() + "\" threshold=\"" + f.getThreshold() + "\">" );
-
-				f.writeNodesXML( pw );
-
-				pw.println( "  </fill>" );
-
+				pw.println( "  </path>" );
 			}
-
+			// Now output the fills:
+			int fillIndex = 0;
+			for( Iterator j = allFills.iterator(); j.hasNext(); ) {
+				Fill f = (Fill) j.next();
+				f.writeXML( pw, fillIndex, pathToID );
+			}
 			pw.println("</tracings>");
-
 		} finally {
 			pw.close();
 		}
@@ -622,24 +695,41 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	Fill current_fill;
 	Path current_path;
 
-	ArrayList< Integer > startJoins;
-	ArrayList< Integer > endJoins;
+	HashMap< Integer, Integer > startJoins;
+	HashMap< Integer, Integer > startJoinsIndices;
+	HashMap< Integer, PointInImage > startJoinsPoints;
+	HashMap< Integer, Integer > endJoins;
+	HashMap< Integer, Integer > endJoinsIndices;
+	HashMap< Integer, PointInImage > endJoinsPoints;
+	HashMap< Integer, Boolean > useFittedFields;
+	HashMap< Integer, Integer > fittedFields;
+	HashMap< Integer, Integer > fittedVersionOfFields;
 
-	ArrayList< int [] > sourcePathIndicesForFills;
+	ArrayList< int [] > sourcePathIDForFills;
 
 	int last_fill_node_id;
 
 	int last_fill_id;
+
+	HashSet< Integer > foundIDs;
 
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws TracesFileFormatException {
 
 		if( qName.equals("tracings") ) {
 
-			startJoins = new ArrayList< Integer >();
-			endJoins = new ArrayList< Integer >();
+			startJoins            = new HashMap< Integer, Integer >();
+			startJoinsIndices     = new HashMap< Integer, Integer >();
+			startJoinsPoints      = new HashMap< Integer, PointInImage >();
+			endJoins              = new HashMap< Integer, Integer >();
+			endJoinsIndices       = new HashMap< Integer, Integer >();
+			endJoinsPoints        = new HashMap< Integer, PointInImage >();
+			useFittedFields       = new HashMap< Integer, Boolean >();
+			fittedFields          = new HashMap< Integer, Integer >();
+			fittedVersionOfFields = new HashMap< Integer, Integer >();
 
-			sourcePathIndicesForFills = new ArrayList< int [] >();
+			sourcePathIDForFills = new ArrayList< int [] >();
+			foundIDs = new HashSet< Integer >();
 
 			last_fill_id = -1;
 
@@ -648,8 +738,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			if (verbose) System.out.println("Clearing old paths and fills...");
 
-			allPaths.clear();
-			allFills.clear();
+			clearPathsAndFills();
 
 			if (verbose) System.out.println("Now "+allPaths.size()+" paths and "+allFills.size()+" fills");
 
@@ -697,77 +786,228 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			String idString = attributes.getValue("id");
 			String d = attributes.getValue("d");
 
+			String useFittedString = attributes.getValue("usefitted");
+			String fittedIDString = attributes.getValue("fitted");
+			String fittedVersionOfIDString = attributes.getValue("fittedversionof");
+
 			String startsonString =  attributes.getValue("startson");
 			String startsindexString =  attributes.getValue("startsindex");
+			String startsxString = attributes.getValue("startsx");
+			String startsyString = attributes.getValue("startsy");
+			String startszString = attributes.getValue("startsz");
 			String endsonString =  attributes.getValue("endson");
 			String endsindexString =  attributes.getValue("endsindex");
+			String endsxString = attributes.getValue("endsx");
+			String endsyString = attributes.getValue("endsy");
+			String endszString = attributes.getValue("endsz");
 
 			String nameString = attributes.getValue("name");
 
-			if( (startsonString == null && startsindexString != null) ||
-			    (startsonString != null && startsindexString == null) ) {
-				throw new TracesFileFormatException("If startson is specified for a path, then startsindex must also be specified.");
+			String primaryString = attributes.getValue("primary");
+
+			if( startsxString == null && startsyString == null && startszString == null ) { }
+			else if( startsxString != null && startsyString != null && startszString != null ) { }
+			else {
+				throw new TracesFileFormatException("If one of starts[xyz] is specified, all of them must be.");
 			}
 
-			if( (endsonString == null && endsindexString != null) &&
-			    (endsonString != null && endsindexString == null) ) {
-				throw new TracesFileFormatException("If endson is specified for a path, then endsindex must also be specified.");
+			if( endsxString == null && endsyString == null && endszString == null ) { }
+			else if( endsxString != null && endsyString != null && endszString != null ) { }
+			else {
+				throw new TracesFileFormatException("If one of ends[xyz] is specified, all of them must be.");
+			}
+
+			boolean accurateStartProvided = startsxString != null;
+			boolean accurateEndProvided = endsxString != null;
+
+			if( startsonString != null && (startsindexString == null && ! accurateStartProvided)  ) {
+				throw new TracesFileFormatException("If startson is specified for a path, then startsindex or starts[xyz] must also be specified.");
+			}
+
+			if( endsonString != null && (endsindexString == null && ! accurateStartProvided)  ) {
+				throw new TracesFileFormatException("If endson is specified for a path, then endsindex or ends[xyz] must also be specified.");
 			}
 
 			int startson, startsindex, endson, endsindex;
+			double startsx, startsy, startsz;
+			double endsx, endsy, endsz;
 
-			current_path = new Path();
+			current_path = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
 
 			Integer startsOnInteger = null;
+			Integer startsIndexInteger = null;
+			PointInImage startJoinPoint = null;
 			Integer endsOnInteger = null;
+			Integer endsIndexInteger = null;
+			PointInImage endJoinPoint = null;
+
+			Integer fittedIDInteger = null;
+			Integer fittedVersionOfIDInteger = null;
+
+			if( primaryString != null && primaryString.equals("true") )
+				current_path.setPrimary(true);
+
+			int id = -1;
 
 			try {
 
-				int id = Integer.parseInt(idString);
+				id = Integer.parseInt(idString);
+				if( foundIDs.contains(id) ) {
+					throw new TracesFileFormatException("There is more than one path with ID "+id);
+				}
+				current_path.setID(id);
+				if( id > maxUsedID )
+					maxUsedID = id;
 
 				if( startsonString == null )
 					startson = startsindex = -1;
 				else {
 					startson = Integer.parseInt(startsonString);
-					startsindex = Integer.parseInt(startsindexString);
-
 					startsOnInteger = new Integer( startson );
-					current_path.startJoinsIndex = startsindex;
+
+					if( startsxString != null ) {
+						startJoinPoint = new PointInImage( Double.parseDouble( startsxString ),
+										   Double.parseDouble( startsyString ),
+										   Double.parseDouble( startszString ) );
+					} else {
+						// The index (older file format) was supplied:
+						startsindex = Integer.parseInt(startsindexString);
+						startsIndexInteger = new Integer( startsindexString );
+					}
 				}
 
 				if( endsonString == null )
 					endson = endsindex = -1;
 				else {
 					endson = Integer.parseInt(endsonString);
-					endsindex = Integer.parseInt(endsindexString);
-
 					endsOnInteger = new Integer( endson );
-					current_path.endJoinsIndex = endsindex;
+
+					if( endsxString != null ) {
+						endJoinPoint = new PointInImage( Double.parseDouble( endsxString ),
+										 Double.parseDouble( endsyString ),
+										 Double.parseDouble( endszString ) );
+					} else {
+						// The index (older file format) was supplied:
+						endsindex = Integer.parseInt(endsindexString);
+						endsIndexInteger = new Integer( endsindex );
+					}
 				}
 
+				if( fittedVersionOfIDString != null )
+					fittedVersionOfIDInteger = new Integer( Integer.parseInt(fittedVersionOfIDString) );
+				if( fittedIDString != null )
+					fittedIDInteger = new Integer( Integer.parseInt(fittedIDString) );
+
 			} catch( NumberFormatException e ) {
+				e.printStackTrace();
 				throw new TracesFileFormatException("There was an invalid attribute in <path/>: "+e);
 			}
 
-			if( nameString != null )
+			if( nameString == null )
+				current_path.setDefaultName();
+			else
 				current_path.setName(nameString);
 
-			startJoins.add( startsOnInteger );
-			endJoins.add( endsOnInteger );
+			if( startsOnInteger != null )
+				startJoins.put( id, startsOnInteger );
+			if( endsOnInteger != null )
+				endJoins.put( id, endsOnInteger );
+
+			if( startJoinPoint != null )
+				startJoinsPoints.put( id, startJoinPoint );
+			if( endJoinPoint != null )
+				endJoinsPoints.put( id, endJoinPoint );
+
+			if( startsIndexInteger != null )
+				startJoinsIndices.put( id, startsIndexInteger );
+			if( endsIndexInteger != null )
+				endJoinsIndices.put( id, endsIndexInteger );
+
+			if( useFittedString == null )
+				useFittedFields.put( id, false );
+			else {
+				if( useFittedString.equals("true") )
+					useFittedFields.put( id, true );
+				else if( useFittedString.equals("false") )
+				        useFittedFields.put( id, false );
+				else
+					throw new TracesFileFormatException("Unknown value for 'fitted' attribute: '"+useFittedString+"'");
+			}
+
+			if( fittedIDInteger != null )
+				fittedFields.put( id, fittedIDInteger );
+			if( fittedVersionOfIDInteger != null )
+				fittedVersionOfFields.put( id, fittedVersionOfIDInteger );
 
 		} else if( qName.equals("point") ) {
 
 			try {
 
+				double parsed_xd, parsed_yd, parsed_zd;
+
+				String xdString = attributes.getValue("xd");
+				String ydString = attributes.getValue("yd");
+				String zdString = attributes.getValue("zd");
+
 				String xString = attributes.getValue("x");
 				String yString = attributes.getValue("y");
 				String zString = attributes.getValue("z");
 
-				int parsed_x = Integer.parseInt(xString);
-				int parsed_y = Integer.parseInt(yString);
-				int parsed_z = Integer.parseInt(zString);
+				if( xdString != null &&
+				    ydString != null &&
+				    zdString != null ) {
+					parsed_xd = Double.parseDouble(xdString);
+					parsed_yd = Double.parseDouble(ydString);
+					parsed_zd = Double.parseDouble(zdString);
+				} else if( xdString != null ||
+					   ydString != null ||
+					   zdString != null ) {
+					throw new TracesFileFormatException("If one of the attributes xd, yd or zd to the point element is specified, they all must be.");
+				} else if( xString != null &&
+					   yString != null &&
+					   zString != null ) {
+					parsed_xd = parsed_x_spacing * Integer.parseInt(xString);
+					parsed_yd = parsed_y_spacing * Integer.parseInt(yString);
+					parsed_zd = parsed_z_spacing * Integer.parseInt(zString);
+				} else if( xString != null ||
+					   yString != null ||
+					   zString != null ) {
+					throw new TracesFileFormatException("If one of the attributes x, y or z to the point element is specified, they all must be.");
+				} else {
+					throw new TracesFileFormatException("Each point element must have at least the attributes (x, y and z) or (xd, yd, zd)");
+				}
 
-				current_path.addPoint(parsed_x,parsed_y,parsed_z);
+				current_path.addPointDouble(parsed_xd,parsed_yd,parsed_zd);
+
+				int lastIndex = current_path.size() - 1;
+				String radiusString = attributes.getValue("r");
+				String tXString = attributes.getValue("tx");
+				String tYString = attributes.getValue("ty");
+				String tZString = attributes.getValue("tz");
+
+				if( radiusString != null &&
+				    tXString != null &&
+				    tYString != null &&
+				    tZString != null ) {
+					if( lastIndex == 0 )
+						// Then we've just started, create the arrays in Path:
+						current_path.createCircles();
+					else if( ! current_path.hasCircles() )
+						throw new TracesFileFormatException("The point at index " + lastIndex + " had a fitted circle, but none previously did");
+					current_path.tangents_x[lastIndex] = Double.parseDouble( tXString );
+					current_path.tangents_y[lastIndex] = Double.parseDouble( tYString );
+					current_path.tangents_z[lastIndex] = Double.parseDouble( tZString );
+					current_path.radiuses[lastIndex] = Double.parseDouble( radiusString );
+				} else if( radiusString != null ||
+					   tXString != null ||
+					   tYString != null ||
+					   tZString != null )
+					throw new TracesFileFormatException("If one of the r, tx, ty or tz attributes to the point element is specified, they all must be");
+				else {
+					// All circle attributes are null:
+					if( current_path.hasCircles() )
+						throw new TracesFileFormatException("The point at index " + lastIndex + " had no fitted circle, but all previously did");
+				}
 
 			} catch( NumberFormatException e ) {
 				throw new TracesFileFormatException("There was an invalid attribute to <imagesize/>");
@@ -807,7 +1047,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				for( int i = 0; i < sourcePaths.length; ++i )
 					sourcePathIndices[i] = Integer.parseInt(sourcePaths[i]);
 
-				sourcePathIndicesForFills.add( sourcePathIndices );
+				sourcePathIDForFills.add( sourcePathIndices );
 
 				last_fill_id = fill_id;
 
@@ -868,15 +1108,25 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	}
 
+	public void addTo3DViewer( Path p ) {
+		if( plugin.use3DViewer && p.fittedVersionOf == null && p.size() > 1 ) {
+			Path pathToAdd;
+			if( p.getUseFitted() )
+				pathToAdd = p.fitted;
+			else
+				pathToAdd = p;
+			System.out.println("Adding path: "+p);
+			System.out.println("... of size: "+p.size());
+			pathToAdd.addTo3DViewer(plugin.univ,Color.MAGENTA);
+		}
+	}
+
 	@Override
 	public void endElement(String uri, String localName, String qName) {
 
 		if( qName.equals("path") ) {
 
 			allPaths.add( current_path );
-			if( plugin.use3DViewer ) {
-				current_path.addTo3DViewer(plugin.univ,x_spacing,y_spacing,z_spacing,Color.MAGENTA);
-			}
 
 		} else if( qName.equals("fill") ) {
 
@@ -888,34 +1138,60 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			for( int i = 0; i < allPaths.size(); ++i ) {
 				Path p = allPaths.get(i);
-				Integer startInteger = startJoins.get(i);
-				Integer endInteger = endJoins.get(i);
-				if( startInteger != null ) {
-					int start = startInteger.intValue();
-					Path startPath = allPaths.get(start);
-					p.startJoins = startPath;
+
+				Integer startID = startJoins.get(p.getID());
+				Integer startIndexInteger = startJoinsIndices.get(p.getID());
+				PointInImage startJoinPoint = startJoinsPoints.get(p.getID());
+				Integer endID = endJoins.get(p.getID());
+				Integer endIndexInteger = endJoinsIndices.get(p.getID());
+				PointInImage endJoinPoint = endJoinsPoints.get(p.getID());
+				Integer fittedID = fittedFields.get(p.getID());
+				Integer fittedVersionOfID = fittedVersionOfFields.get(p.getID());
+				Boolean useFitted = useFittedFields.get(p.getID());
+
+				if( startID != null ) {
+					Path startPath = getPathFromID(startID);
+					if( startJoinPoint == null ) {
+						// Then we have to get it from startIndexInteger:
+						startJoinPoint = startPath.getPointInImage(startIndexInteger.intValue());
+					}
+					p.setStartJoin( startPath, startJoinPoint );
 				}
-				if( endInteger != null ) {
-					int end = endInteger.intValue();
-					Path endPath = allPaths.get(end);
-					p.endJoins = endPath;
+				if( endID != null ) {
+					Path endPath = getPathFromID(endID);
+					if( endJoinPoint == null ) {
+						// Then we have to get it from endIndexInteger:
+						endJoinPoint = endPath.getPointInImage(endIndexInteger.intValue());
+					}
+					p.setEndJoin( endPath, endJoinPoint );
 				}
+				if( fittedID != null ) {
+					Path fitted = getPathFromID(fittedID);
+					p.fitted = fitted;
+					p.setUseFitted(useFitted.booleanValue());
+				}
+				if( fittedVersionOfID != null ) {
+					Path fittedVersionOf = getPathFromID(fittedVersionOfID);
+					p.fittedVersionOf = fittedVersionOf;
+				}
+
+				addTo3DViewer( p );
 			}
 
 			// Now turn the source paths into real paths...
 
 			for( int i = 0; i < allFills.size(); ++i ) {
 				Fill f = allFills.get(i);
-				int [] sourcePathIndices = sourcePathIndicesForFills.get(i);
-				Path [] realSourcePaths = new Path[sourcePathIndices.length];
-				for( int j = 0; j < sourcePathIndices.length; ++j ) {
-					realSourcePaths[j] = allPaths.get(sourcePathIndices[j]);
+				int [] sourcePathIDs = sourcePathIDForFills.get(i);
+				Path [] realSourcePaths = new Path[sourcePathIDs.length];
+				for( int j = 0; j < sourcePathIDs.length; ++j ) {
+					realSourcePaths[j] = getPathFromID(sourcePathIDs[j]);
 				}
 				f.setSourcePaths( realSourcePaths );
 			}
 
-			setSelected( new int[0] );
-			resetListeners();
+			setSelected( new Path[0], this );
+			resetListeners( null, true );
 			plugin.repaintAllPanes();
 		}
 
@@ -947,39 +1223,275 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		} catch( javax.xml.parsers.ParserConfigurationException e ) {
 
-			allPaths.clear();
-			allFills.clear();
-			resetListeners();
+			clearPathsAndFills();
 			IJ.error("There was a ParserConfigurationException: "+e);
 			return false;
 
 		} catch( SAXException e ) {
 
-			allPaths.clear();
-			allFills.clear();
-			resetListeners();
+			clearPathsAndFills();
 			IJ.error(e.toString());
 			return false;
 
 		} catch( FileNotFoundException e ) {
 
-			allPaths.clear();
-			allFills.clear();
-			resetListeners();
+			clearPathsAndFills();
 			IJ.error("File not found: "+e);
 			return false;
 
 		} catch( IOException e ) {
 
-			allPaths.clear();
-			allFills.clear();
-			resetListeners();
+			clearPathsAndFills();
 			IJ.error("There was an IO exception while reading the file: "+e);
 			return false;
 
 		}
 
 		return true;
+
+	}
+
+	void clearPathsAndFills( ) {
+			maxUsedID = -1;
+			allPaths.clear();
+			allFills.clear();
+			resetListeners( null );
+	}
+
+	private static class SWCPoint implements Comparable {
+		ArrayList<SWCPoint> nextPoints;
+		SWCPoint previousPoint;
+		int id, type, previous;
+		double x, y, z, radius;
+		public SWCPoint( int id, int type, double x, double y, double z, double radius, int previous ) {
+			nextPoints = new ArrayList<SWCPoint>();
+			this.id = id;
+			this.type = type;
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.radius = radius;
+			this.previous = previous;
+		}
+		public PointInImage getPointInImage() {
+			return new PointInImage( x, y, z );
+		}
+		public void addNextPoint( SWCPoint p ) {
+			if( ! nextPoints.contains( p ) )
+				nextPoints.add( p );
+		}
+		public void setPreviousPoint( SWCPoint p ) {
+			previousPoint = p;
+		}
+		public String toString( ) {
+			return "SWCPoint ["+id+"] "+Path.swcTypeNames[type]+" "+
+				"("+x+","+y+","+z+") "+
+				"radius: "+radius+", "+
+				"[previous: "+ previous+"]";
+		}
+		public int compareTo( Object o ) {
+			int oid = ((SWCPoint)o).id;
+			return (id < oid) ? -1 : ((id > oid) ? 1 : 0);
+		}
+	}
+
+	public boolean importSWC( BufferedReader br ) throws IOException {
+
+		clearPathsAndFills( );
+
+		Pattern pEmpty = Pattern.compile("^\\s*$");
+		Pattern pComment = Pattern.compile("^([^#]*)#.*$");
+
+		HashSet< Integer > alreadySeen = new HashSet< Integer >();
+		HashMap< Integer, SWCPoint > idToSWCPoint = new HashMap< Integer, SWCPoint >();
+
+		ArrayList<SWCPoint> primaryPoints = new ArrayList<SWCPoint>();
+
+		/* The SWC files I've tried use world co-ordinates
+		   (good) but some seem to have the sign wrong, so
+		   calculate the minimum and maximum in each axis to
+		   test for this: */
+
+		double minX = Math.min( 0 * x_spacing, width * x_spacing );
+		double minY = Math.min( 0 * y_spacing, width * y_spacing );
+		double minZ = Math.min( 0 * z_spacing, width * z_spacing );
+
+		double maxX = Math.max( 0 * x_spacing, width * x_spacing );
+		double maxY = Math.max( 0 * y_spacing, width * y_spacing );
+		double maxZ = Math.max( 0 * z_spacing, width * z_spacing );
+
+		String line;
+		while( (line = br.readLine()) != null ) {
+			Matcher mComment = pComment.matcher(line);
+			line = mComment.replaceAll("$1");
+			Matcher mEmpty = pEmpty.matcher(line);
+			if( mEmpty.matches() )
+				continue;
+			String [] fields = line.split("\\s+");
+			if( fields.length != 7 ) {
+				IJ.error("Wrong number of fields ("+fields.length+") in line: "+line);
+				return false;
+			}
+			try {
+				int id = Integer.parseInt(fields[0]);
+				int type = Integer.parseInt(fields[1]);
+				double x = Double.parseDouble(fields[2]);
+				double y = Double.parseDouble(fields[3]);
+				double z = Double.parseDouble(fields[4]);
+				double radius = Double.parseDouble(fields[5]);
+				int previous = Integer.parseInt(fields[6]);
+				if( alreadySeen.contains(id) ) {
+					IJ.error("Point with ID "+id+" found more than once");
+					return false;
+				}
+				alreadySeen.add( id );
+
+				if( (x < 0) && ! (x >= minX && x <= maxX) )
+					x = Math.abs( x );
+				if( (y < 0) && ! (y >= minY && y <= maxY) )
+					y = Math.abs( y );
+				if( (z < 0) && ! (z >= minZ && z <= maxZ) )
+					z = Math.abs( z );
+
+				SWCPoint p = new SWCPoint( id, type, x, y, z, radius, previous );
+				idToSWCPoint.put( id, p );
+				if( previous == -1 )
+					primaryPoints.add( p );
+				else {
+					SWCPoint previousPoint = idToSWCPoint.get( previous );
+					p.previousPoint = previousPoint;
+					previousPoint.addNextPoint( p );
+				}
+			} catch( NumberFormatException nfe ) {
+				IJ.error( "There was a malformed number in line: "+line );
+				return false;
+			}
+		}
+
+		HashMap< SWCPoint, Path > pointToPath =
+			new HashMap< SWCPoint, Path >();
+
+		PriorityQueue< SWCPoint > backtrackTo =
+			new PriorityQueue< SWCPoint >();
+
+		for( Iterator< SWCPoint > pi = primaryPoints.iterator();
+		     pi.hasNext(); ) {
+			SWCPoint start = pi.next();
+			backtrackTo.add( start );
+		}
+
+		HashMap< Path, SWCPoint > pathStartsOnSWCPoint =
+			new HashMap< Path, SWCPoint >();
+		HashMap< Path, PointInImage > pathStartsAtPointInImage =
+			new HashMap< Path, PointInImage >();
+
+		SWCPoint start;
+		Path currentPath;
+		while( (start = backtrackTo.poll()) != null ) {
+			currentPath = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
+			currentPath.createCircles();
+			int added = 0;
+			if( start.previousPoint != null ) {
+				SWCPoint beforeStart = start.previousPoint;
+				pathStartsOnSWCPoint.put( currentPath, beforeStart );
+				pathStartsAtPointInImage.put( currentPath, beforeStart.getPointInImage() );
+				currentPath.addPointDouble( beforeStart.x,
+							    beforeStart.y,
+							    beforeStart.z );
+				currentPath.radiuses[added] = beforeStart.radius;
+				++ added;
+
+			}
+			// Now we can start adding points to the path:
+			SWCPoint currentPoint = start;
+			while( currentPoint != null ) {
+				currentPath.addPointDouble( currentPoint.x,
+							    currentPoint.y,
+							    currentPoint.z );
+				currentPath.radiuses[added] = currentPoint.radius;
+				++ added;
+				pointToPath.put( currentPoint, currentPath );
+				/* Remove each one from "alreadySeen"
+				   when we add it to a path, just to
+				   check that nothing's left at the
+				   end, which indicates that the file
+				   is malformed. */
+				alreadySeen.remove( currentPoint.id );
+				if( currentPoint.nextPoints.size() > 0 ) {
+					SWCPoint newCurrentPoint = currentPoint.nextPoints.get(0);
+					currentPoint.nextPoints.remove(0);
+					for( int i = 0; i < currentPoint.nextPoints.size(); ++i ) {
+						SWCPoint pointToQueue = currentPoint.nextPoints.get(i);
+						backtrackTo.add( pointToQueue );
+					}
+					currentPoint = newCurrentPoint;
+				} else
+					currentPoint = null;
+			}
+			currentPath.setGuessedTangents( 2 );
+			addPath( currentPath );
+		}
+
+		if( alreadySeen.size() > 0 ) {
+			IJ.error( "Malformed file: there are some misconnected points" );
+			for( Iterator<Integer> i = alreadySeen.iterator();
+			     i.hasNext(); ) {
+				SWCPoint p = idToSWCPoint.get( i.next() );
+				System.out.println( "  Misconnected: " + p);
+			}
+			return false;
+		}
+
+		// Set the start joins:
+		for( Iterator<Path> i = allPaths.iterator();
+		     i.hasNext(); ) {
+			Path p = i.next();
+			SWCPoint swcPoint = pathStartsOnSWCPoint.get( p );
+			if( swcPoint == null )
+				continue;
+			Path previousPath = pointToPath.get(swcPoint);
+			PointInImage pointInImage = pathStartsAtPointInImage.get( p );
+			p.setStartJoin( previousPath, pointInImage );
+		}
+
+		for( Iterator<Path> i = allPaths.iterator();
+		     i.hasNext(); ) {
+			Path p = i.next();
+			addTo3DViewer( p );
+		}
+
+		resetListeners( null, true );
+		return true;
+	}
+
+	public boolean importSWC( String filename ) {
+
+		File f = new File(filename);
+		if( ! f.exists() ) {
+			IJ.error("The traces file '"+filename+"' does not exist.");
+			return false;
+		}
+
+		InputStream is = null;
+		boolean result = false;
+
+		try {
+
+			is = new BufferedInputStream(new FileInputStream(filename));
+			BufferedReader br = new BufferedReader(new InputStreamReader(is,"UTF-8"));
+
+			result = importSWC(br);
+
+			if( is != null )
+				is.close();
+
+		} catch( IOException ioe ) {
+			IJ.error("Couldn't open file '"+filename+"' for reading.");
+			return false;
+		}
+
+		return result;
+
 
 	}
 
@@ -1034,6 +1546,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return result;
 	}
 
+/* FIXME: new format now... */
+/*
 	public boolean getTracings( boolean mineOnly, ArchiveClient archiveClient ) {
 
 		Hashtable<String,String> parameters = new Hashtable<String,String>();
@@ -1096,9 +1610,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 
 	}
+*/
 
 	// This method outputs the wrong format now.  FIXME
-
+/*
 	@Deprecated
 	public static byte [] tracesAsBytes( ArrayList< Path > all_paths ) {
 		String s = tracesAsString( all_paths );
@@ -1109,9 +1624,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			return null;
 		}
 	}
+*/
 
 	// This method outputs the wrong format now.  FIXME
-
+/*
 	@Deprecated
 	public static String tracesAsString( ArrayList< Path > all_paths ) {
 
@@ -1122,37 +1638,40 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		// if (verbose) System.out.println("Paths to draw: "+paths);
 		for( int i = 0; i < paths; ++i ) {
 
-			int last_x = -1;
-			int last_y = -1;
-			int last_z = -1;
+			double last_x = Double.MIN_VALUE;
+			double last_y = Double.MIN_VALUE;
+			double last_z = Double.MIN_VALUE;
 
 			Path path = all_paths.get(i);
 
 			for( int k = 0; k < path.size(); ++k ) {
-				int x = path.x_positions[k];
-				int y = path.y_positions[k];
-				int z = path.z_positions[k];
-				if( (last_x == x) && (last_y == y) && (last_z == z) ) {
+				double xd = path.precise_x_positions[k];
+				double yd = path.precise_y_positions[k];
+				double zd = path.precise_z_positions[k];
+				if( (last_x == xd) && (last_y == yd) && (last_z == zd) ) {
 					// Skip this, it's just the same.
 				} else {
 					String toWrite = "" + i + "\t" +
-						x + "\t" +
-						y + "\t" +
-						z + "\t" +
+						xd + "\t" +
+						yd + "\t" +
+						zd + "\t" +
 						(path.startJoins != null) + "\n";
 					// if (verbose) System.out.println( "Writing line: " + toWrite );
 					sb.append( toWrite );
 				}
-				last_x = x;
-				last_y = y;
-				last_z = z;
+				last_x = xd;
+				last_y = yd;
+				last_z = zd;
 			}
 		}
 
 		return sb.toString();
 
 	}
+*/
 
+/* FIXME: should change this to upload XML instead */
+/*
 	public boolean uploadTracings( ArchiveClient archiveClient ) {
 
 		if( archiveClient == null ) {
@@ -1190,6 +1709,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 
 	}
+*/
 
 	/* This method will set all the points in array that
 	 * correspond to points on one of the paths to 255, leaving
@@ -1199,50 +1719,44 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		for( Iterator j = allPaths.iterator(); j.hasNext(); ) {
 			Path p = (Path)j.next();
 			for( int i = 0; i < p.size(); ++i ) {
-				slices[p.z_positions[i]][p.y_positions[i] * width + p.x_positions[i]] =
+				slices[p.getZUnscaled(i)][p.getYUnscaled(i) * width + p.getXUnscaled(i)] =
 					(byte)255;
 			}
 		}
 	}
 
-	synchronized PointInImage nearestJoinPointOnSelectedPaths( int x, int y, int z ) {
+	synchronized PointInImage nearestJoinPointOnSelectedPaths( double x, double y, double z ) {
 
 		PointInImage result = null;
 
-		if( ! anySelected() ) {
-			IJ.error( "There are no paths selected, so you can't join (you're holding 'Control')" );
-			return null;
-		}
-
-		int minimumDistanceSquared = Integer.MAX_VALUE;
+		double minimumDistanceSquared = Double.MAX_VALUE;
 
 		int paths = allPaths.size();
 
 		for( int s = 0; s < paths; ++s ) {
 
-			if( ! selectedPaths[s] )
-				continue;
-
 			Path p = allPaths.get(s);
 
-			for( int i = 0; i < p.size(); ++i ) {
+			if( ! selectedPathsSet.contains(p) )
+				continue;
 
-				int this_x = p.x_positions[i];
-				int this_y = p.y_positions[i];
-				int this_z = p.z_positions[i];
+			if( 0 == p.size() )
+				continue;
 
-				int diff_x = x - this_x;
-				int diff_y = y - this_y;
-				int diff_z = z - this_z;
+			int i = p.indexNearestTo( x * x_spacing,
+						  y * y_spacing,
+						  z * z_spacing );
 
-				int thisDistanceSquared = diff_x * diff_x + diff_y * diff_y + diff_z * diff_z;
+			PointInImage nearestOnPath = p.getPointInImage( i );
 
-				if( thisDistanceSquared < minimumDistanceSquared ) {
-					result = new PointInImage( this_x, this_y, this_z );
-					result.onPath = p;
-					result.onPathIndex = i;
-					minimumDistanceSquared = thisDistanceSquared;
-				}
+			double distanceSquared = nearestOnPath.distanceSquaredTo(
+				x * x_spacing,
+				y * y_spacing,
+				z * z_spacing );
+
+			if( distanceSquared < minimumDistanceSquared ) {
+				result = nearestOnPath;
+				minimumDistanceSquared = distanceSquared;
 			}
 		}
 
@@ -1266,24 +1780,47 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	/* If someone selects a path in the 3D viewer, it would be
 	   good to update the path list's selections with that: */
 	public void contentSelected(Content c) {
-		int selectedIndex = -1;
-		int i = 0;
+		Path selectedPath = null;
 		for( Iterator<Path> j = allPaths.iterator(); j.hasNext(); ) {
 			Path p = j.next();
 			if( p.content3D == c )
-				selectedIndex = i;
-			++i;
+				selectedPath = p;
 		}
-		if( selectedIndex >= 0 ) {
-			int [] newSelected = new int[1];
-			newSelected[0] = selectedIndex;
-			setSelected(newSelected);
-		} else {
+		if( selectedPath == null ) {
 			// This is probably someone accidentally
 			// selecting the original image...
+		} else {
+			Path [] newSelectedPaths = new Path[1];
+			newSelectedPaths[0] = selectedPath;
+			setSelected(newSelectedPaths, this);
 		}
 	}
 	public void canvasResized() { }
-	public void universeClosed() { }
+	public void universeClosed() {
+		plugin.use3DViewer = false;
+	}
 
+	private static void replaceAll( StringBuffer s, String substring, String replacement ) {
+		int fromIndex = 0;
+		while (true) {
+			int foundIndex = s.indexOf(substring,fromIndex);
+			if( foundIndex >= 0 ) {
+				int afterEnd = foundIndex + substring.length();
+				s.replace(foundIndex,afterEnd,replacement);
+				fromIndex = afterEnd;
+			} else
+				break;
+		}
+	}
+
+	// This is quite ineffficient, but not expected to be a serious problem:
+	public static String escapeForXMLAttributeValue( String s ) {
+		StringBuffer sb = new StringBuffer(s);
+		replaceAll( sb, "&", "&amp;" );
+		replaceAll( sb, "<", "&lt;" );
+		replaceAll( sb, ">", "&gt;" );
+		replaceAll( sb, "'", "&apos;" );
+		replaceAll( sb, "\"", "&quot;" );
+		return sb.toString();
+	}
 }

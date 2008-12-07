@@ -124,10 +124,12 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		public ArrayList< NewGraphNode > path;
 
 		public Path toPath() {
-			Path p = new Path(path.size());
+			Path p = new Path( spacing_x, spacing_y, spacing_z, "" /* FIXME: get the real spacing_units */, path.size() );
 			for( int i = 0; i < path.size(); ++i ) {
 				NewGraphNode n = path.get(i);
-				p.addPoint(n.x,n.y,n.z);
+				p.addPointDouble( n.x * spacing_x,
+						  n.y * spacing_y,
+						  n.z * spacing_z );
 			}
 			return p;
 		}
@@ -295,6 +297,7 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 	float spacing_x = Float.MIN_VALUE;
 	float spacing_y = Float.MIN_VALUE;
 	float spacing_z = Float.MIN_VALUE;
+	String spacing_units = "";
 
 	ArrayList<NewGraphNode> verticesInObjOrder;
 	Hashtable<Integer,NewGraphNode> positionToNode;
@@ -375,6 +378,11 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 	public void gotSpacingZ( float spacing_z ) {
 		this.spacing_z = spacing_z;
 	}	
+
+	// FIXME: call from somewhere to set:
+	public void gotSpacingUnits( String spacing_units ) {
+		this.spacing_units = spacing_units;
+	}
 
 	byte[][] label_data;
 	byte[][] registered_label_data;

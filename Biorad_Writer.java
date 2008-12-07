@@ -1,20 +1,12 @@
-// Class to save a file as a Biorad PIC file
-// v 0.1 030812
-// ------------
-// - Basic functionality for 8 bit PIC files - based on SaveAsSPE plugin
-// - Should also work for 16 bit files
-// - Doesn't yet save any scale information 
-// ------------
-// v 0.1.1 030901
-// ------------
-// - Now correctly saves the file name into the PIC file header
-
-import java.awt.*;
 import java.io.*;
 import ij.*;
 import ij.io.*;
 import ij.plugin.PlugIn;
 import ij.measure.*;  //for Calibration
+
+// Class to save an image as a Biorad PIC file
+// (c) Greg Jefferis <jefferis@gmail.com> 2006-8
+// Source code released under the terms of GPLv2 or later
 
 public class Biorad_Writer implements PlugIn {
 
@@ -25,9 +17,10 @@ public class Biorad_Writer implements PlugIn {
 				"\n" +
 /*				"32-bit Grayscale float : FLOAT\n" +
 				"(32-bit Grayscale integer) : LONG\n" +*/
-				"16-bit Grayscale integer: INT\n" +
-				"(16-bit Grayscale unsigned integer) : UNINT\n"+
-				"8-bit Grayscale : BYTE\n";
+				"16-bit Greyscale integer: INT\n" +
+				"(16-bit Greyscale unsigned integer) : UNINT\n"+
+				"8-bit Greyscale : BYTE\n"+
+				"8-bit Colour LUT (converted to greyscale): BYTE\n";
 	
 	public void run(String arg) {
 		ImagePlus imp = WindowManager.getCurrentImage();
@@ -60,6 +53,8 @@ public class Biorad_Writer implements PlugIn {
 
 		// Make sure that we can save this kind of image
 		int datatype = imgType(fi.fileType);
+		// Store this image type for later use
+		fi.fileType = datatype;
 		if (datatype < 0) {
 			IJ.showMessage(supportedTypes);
 			return;
@@ -68,6 +63,7 @@ public class Biorad_Writer implements PlugIn {
 		// Set the fileName stored in the file info record to the
 		// file name that was passed in or chosen in the dialog box
 		fi.fileName=file;
+		fi.directory=directory;
 		
 		// ie little endian as used on the Intel platforms which
 		// run Biorad's Lasersharp software
@@ -78,18 +74,24 @@ public class Biorad_Writer implements PlugIn {
 		Calibration cal=imp.getCalibration();
 		fi.pixelWidth=cal.pixelWidth; fi.pixelHeight=cal.pixelHeight;
 		fi.pixelDepth=cal.pixelDepth; fi.unit=cal.getUnits();
+		
+		// This saves problems when loading - the mu seems to flummox
+		// the reader (which is set up only to accept ASCII chars
+		// also allow um as an alternative form indicating microns
+		if(fi.unit.equals("µm") || fi.unit.equals("um")) fi.unit="microns";
+
+		if (IJ.debugMode) IJ.log("FileInfo: "+fi);
 
 		// Actually write out the image
-		File f = new File(directory, file);
 		try {
-			writeImage(f,fi); 
+			writeImage(fi,cal); 
 		} catch (IOException e) {
 			IJ.error("An error occured writing the file.\n \n" + e);
 			IJ.showStatus("");
 		}
 	}
-	void writeImage(File f, FileInfo fi) throws IOException {
-		FileOutputStream out = new FileOutputStream(f);
+	void writeImage(FileInfo fi, Calibration cal) throws IOException {
+		FileOutputStream out = new FileOutputStream(new File(fi.directory,fi.fileName));
 		// First write out the full 76 byte header
 		writeHeader(fi,out);
 		// Then the image data
@@ -99,7 +101,7 @@ public class Biorad_Writer implements PlugIn {
 		// write out the footer - ie the calibration information
 		writeFooter(fi,out);
 		out.close();	
-		IJ.showStatus("Saved "+f.getName());
+		IJ.showStatus("Saved "+fi.fileName);
 	}
 
 	public static int imgType(int fiType) {
@@ -119,6 +121,9 @@ public class Biorad_Writer implements PlugIn {
 		
 			case FileInfo.GRAY8:
 				return FileInfo.GRAY8;
+
+			case FileInfo.COLOR8:
+				return FileInfo.GRAY8;
 			default:
 				return -1;
 		}
@@ -134,8 +139,8 @@ public class Biorad_Writer implements PlugIn {
 		writeDimensions(fi,out);   // write the first 3 fields, nx,ny,npic
 		writeShort(out, (short) 0 );				 	// 6-7 ramp1_min 
 		writeShort(out, (short) 255 );				 	// 8-9 ramp1_max
-		// For the moment won't try to attach any notes
-		writeInt(out, 0);						// 10-13 notes = 0
+		// Changed so that sets notes flag to 1
+		writeInt(out, 1);						// 10-13 notes = 1
 		// Set to 1 = 8 bit or 0 for anything else             						
 		if (fi.fileType==FileInfo.GRAY8) {
 			writeShort(out, (short) 1);				// 14-15 byte_format
@@ -155,7 +160,8 @@ public class Biorad_Writer implements PlugIn {
 			for (int i=0; i<terminatorLength;i++) terminator+="\0";			
 			tFileName = new String(fi.fileName+terminator);
 		} else {
-			tFileName = new String(fi.fileName.substring(0,32)+"\0");
+			// GJ: formerly 32 instead of 31
+			tFileName = new String(fi.fileName.substring(0,31)+"\0");
 		}
 		// Write out the file name as a 32 byte zero terminated string		
 		out.write(tFileName.getBytes());  // 18-49 name

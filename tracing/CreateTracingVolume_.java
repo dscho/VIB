@@ -193,9 +193,9 @@ public class CreateTracingVolume_ implements PlugIn {
 				
 				for( int k = 0; k < p.size(); ++k ) {
 					
-					int x_in_domain = p.x_positions[k];
-					int y_in_domain = p.y_positions[k];
-					int z_in_domain = p.z_positions[k];
+					int x_in_domain = p.getXUnscaled(k);
+					int y_in_domain = p.getYUnscaled(k);
+					int z_in_domain = p.getZUnscaled(k);
 					
 					transformation.apply(x_in_domain,y_in_domain,z_in_domain,transformedPoint);
 					

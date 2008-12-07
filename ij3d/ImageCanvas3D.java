@@ -3,6 +3,8 @@ package ij3d;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 import javax.media.j3d.J3DGraphics2D;
 import javax.media.j3d.Canvas3D;
+import javax.media.j3d.Background;
+import javax.vecmath.Color3f;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseListener;
@@ -35,11 +37,20 @@ import ij.gui.ImageCanvas;
 import ij.ImagePlus;
 import ij.gui.Roi;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+
 public class ImageCanvas3D extends Canvas3D implements KeyListener {
 
 	private RoiImagePlus roiImagePlus;
 	private ImageCanvas roiImageCanvas;
 	private Map<Integer, Long> pressed, released; 
+	private Background background = new Background(new Color3f(0, 0, 0)); // black by default
+	final private ExecutorService exec = Executors.newSingleThreadExecutor();
+
+	protected void flush() {
+		exec.shutdown();
+	}
 
 	private class RoiImagePlus extends ImagePlus {
 		public RoiImagePlus(String title, ByteProcessor ip) {
@@ -68,10 +79,16 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 		};
 		roiImageCanvas.removeKeyListener(ij.IJ.getInstance());
 		roiImageCanvas.disablePopupMenu(true);
-		
+
+		getGraphicsContext3D().setBackground(background);
+
 		addListeners();
 		addMouseListener(roiImageCanvas);
 		addMouseMotionListener(roiImageCanvas);
+	}
+
+	public Background getBG() { //can't use getBackground()
+		return background;
 	}
 
 	public void killRoi() {
@@ -92,17 +109,23 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 		addMouseMotionListener(new MouseMotionAdapter() {
 			public void mouseDragged(MouseEvent e) {
 				if(isSelectionTool())
-					postRender();
+					exec.submit(new Runnable() { public void run() {
+						postRender();
+					}});
 			}
 		});
 		addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				if(isSelectionTool())
-					render();
+					exec.submit(new Runnable() { public void run() {
+						render();
+					}});
 			}
 			public void mouseReleased(MouseEvent e) {
 				if(isSelectionTool())
-					render();
+					exec.submit(new Runnable() { public void run() {
+						render();
+					}});
 			}
 			public void mousePressed(MouseEvent e) {
 				if(!isSelectionTool())
@@ -111,18 +134,25 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 		});
 		addComponentListener(new ComponentAdapter() {
 			public void componentResized(ComponentEvent e) {
-				ByteProcessor ip = new ByteProcessor(
-								getWidth(), 
-								getHeight());
-				roiImagePlus.setProcessor("RoiImagePlus", ip);
-				render();
+				exec.submit(new Runnable() { public void run() {
+					ByteProcessor ip = new ByteProcessor(
+									getWidth(), 
+									getHeight());
+					roiImagePlus.setProcessor("RoiImagePlus", ip);
+					render();
+				}});
 			}
 		});
 		addKeyListener(this);
-	} 
+	}
 
 	public Roi getRoi() {
 		return roiImagePlus.getRoi();
+	}
+
+	public void preRender() {
+		super.getGraphicsContext3D().clear(); // so background is painted
+		super.preRender();
 	}
 
 	public void render() {

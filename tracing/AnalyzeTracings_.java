@@ -178,9 +178,9 @@ public class AnalyzeTracings_ implements PlugIn {
 			
 			for( int k = 0; k < path.size(); ++k ) {
 				
-				int x_in_domain = path.x_positions[k];
-				int y_in_domain = path.y_positions[k];
-				int z_in_domain = path.z_positions[k];
+				int x_in_domain = path.getXUnscaled(k);
+				int y_in_domain = path.getYUnscaled(k);
+				int z_in_domain = path.getZUnscaled(k);
 				
 				transformation.apply(x_in_domain,y_in_domain,z_in_domain,transformedPoint);
 				

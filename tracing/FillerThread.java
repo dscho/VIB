@@ -25,7 +25,6 @@ package tracing;
 
 import ij.*;
 import ij.process.*;
-import ij.gui.ImageCanvas;
 
 import java.awt.*;
 import java.util.*;
@@ -127,14 +126,13 @@ public class FillerThread extends SearchThread {
                 }
 		
                 if( sourcePaths != null ) {
-                        Path [] dummy = { };
-                        fill.setSourcePaths( sourcePaths.toArray(dummy) );
+                        fill.setSourcePaths( sourcePaths );
                 }
 		
                 return fill;
         }
 	
-        ArrayList< Path > sourcePaths;
+        Set< Path > sourcePaths;
 	
 	public static FillerThread fromFill( ImagePlus imagePlus,
 					     float stackMin,
@@ -147,18 +145,12 @@ public class FillerThread extends SearchThread {
 		String metric = fill.getMetric();
 		
 		if( metric.equals("reciprocal-intensity-scaled") ) {
-			
 			reciprocal = true;
-			
 		} else if( metric.equals("256-minus-intensity-scaled") ) {
-			
 			reciprocal = false;
-			
 		} else {
-			
 			IJ.error("Trying to load a fill with an unknown metric ('" + metric + "')");
 			return null;
-			
 		}
 		
 		if (verbose) System.out.println("loading a fill with threshold: " + fill.getThreshold() );
@@ -187,13 +179,11 @@ public class FillerThread extends SearchThread {
 		}
 		
 		for( int i = 0; i < tempNodes.size(); ++i ) {
-			
 			Fill.Node n = fill.nodeList.get(i);
 			SearchNode s = tempNodes.get(i);
 			if( n.previous >= 0 ) {
 				s.setPredecessor( tempNodes.get(n.previous) );
 			}
-			
 			if( n.open ) {
 				s.searchStatus = OPEN_FROM_START;
 				result.addNode( s );
@@ -201,13 +191,9 @@ public class FillerThread extends SearchThread {
 				s.searchStatus = CLOSED_FROM_START;
 				result.addNode( s );
 			}
-			
 		}
-		
-		result.sourcePaths = (ArrayList<Path>)fill.sourcePaths.clone();
-		
+		result.setSourcePaths( fill.sourcePaths );
 		return result;
-		
 	}
 
 	float threshold;
@@ -247,38 +233,23 @@ public class FillerThread extends SearchThread {
 		setPriority( MIN_PRIORITY );
         }
 	
-	public void getSourcePathsFromPlugin( Simple_Neurite_Tracer plugin ) {
-		
-                PathAndFillManager pathAndFillManager = plugin.getPathAndFillManager();
-		
-                // Just get these from the plugin; this thread should be
-                // created synchronized...
-		
-                sourcePaths = new ArrayList< Path >();
-		
-                for( int i = 0; i < pathAndFillManager.size(); ++i ) {
-			
-                        if( ! pathAndFillManager.selectedPaths[i] )
-                                continue;
-			
-                        Path p = pathAndFillManager.getPath(i);
-			
-                        sourcePaths.add(p);
-			
+	public void setSourcePaths( Set<Path> newSourcePaths ) {
+		sourcePaths = new HashSet<Path>();
+		sourcePaths.addAll(newSourcePaths);
+		Iterator<Path> pi = newSourcePaths.iterator();
+		while( pi.hasNext() ) {
+			Path p = pi.next();
                         for( int k = 0; k < p.size(); ++k ) {
-				
-                                SearchNode f = new SearchNode( p.x_positions[k],
-                                                               p.y_positions[k],
-                                                               p.z_positions[k],
+                                SearchNode f = new SearchNode( p.getXUnscaled(k),
+                                                               p.getYUnscaled(k),
+                                                               p.getZUnscaled(k),
                                                                0,
 							       0,
                                                                null,
 							       OPEN_FROM_START );
-				
 				addNode(f);
                         }
-                }
-		
+		}
 	}
 	
         public ImagePlus fillAsImagePlus( boolean realData ) {
@@ -385,7 +356,7 @@ public class FillerThread extends SearchThread {
 	@Override
 	void drawProgressOnSlice( int plane,
 				  int currentSliceInPlane,
-				  ImageCanvas canvas,
+				  TracerCanvas canvas,
 				  Graphics g )  {
 		
 		super.drawProgressOnSlice(plane,currentSliceInPlane,canvas,g);

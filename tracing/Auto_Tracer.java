@@ -61,7 +61,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 	}
 
 	/* Just for convenience, keep casted references to the
-	   superclass's InteractiveTracerCanvas objects */
+	   superclass's TracerCanvas objects */
 
 	AutoTracerCanvas canvas;
 
@@ -165,6 +165,7 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 		Calibration calibration = image.getCalibration();
 
 		FileInfo originalFileInfo = image.getOriginalFileInfo();
+		
 		String originalFileName=originalFileInfo.fileName;
 		System.out.println("originalFileName is "+originalFileName);
 		int lastDot=originalFileName.lastIndexOf(".");
@@ -216,9 +217,9 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			tubenessThreshold = p.tubenessThreshold;
 			minimumRollingMean = p.minimumRollingMean;
 		} else {
-			if (true)
+/*			if (true)
 				throw new RuntimeException("Tried to create a generic dialog!");
-			// Pop up a GenericDialog to ask:
+*/			// Pop up a GenericDialog to ask:
 			GenericDialog gd = new GenericDialog("Auto Tracer");
 			gd.addNumericField( "Tubeness threshold for destinations", tubenessThreshold, 2 );
 			gd.addNumericField( "Minimum rolling mean tubeness", minimumRollingMean, 2 );
@@ -331,8 +332,6 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 			if ( verbose ) System.out.print("  === Destinations: "+destinations.size()+" ");
 			if ( verbose ) System.out.flush();
 
-			int [] pa = new int[3];
-
 			for( Iterator<AutoPoint> it = destinations.iterator(); it.hasNext(); ) {
 
 				if ( verbose ) System.out.print("    ");
@@ -357,9 +356,11 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 						if ( verbose ) System.out.print(".");
 						if ( verbose ) System.out.flush();
 
-						path.getPoint(i,pa);
+						int pax = path.getXUnscaled(i);
+						int pay = path.getYUnscaled(i);
+						int paz = path.getZUnscaled(i);
 
-						float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
+						float tubenessThere = tubeValues[paz][pay*width+pax];
 
 						rollingTubeness[nextRollingAt] = tubenessThere;
 
@@ -398,11 +399,13 @@ public class Auto_Tracer extends ThreePanes implements PlugIn, PaneOwner, Search
 
 					// If the tubeness is above threshold, add this to the list to prune:
 
-					path.getPoint(i,pa);
+					int pax = path.getXUnscaled(i);
+					int pay = path.getYUnscaled(i);
+					int paz = path.getZUnscaled(i);
 
-					float tubenessThere = tubeValues[pa[2]][pa[1]*width+pa[0]];
+					float tubenessThere = tubeValues[paz][pay*width+pax];
 
-					current = new AutoPoint(pa[0],pa[1],pa[2]);
+					current = new AutoPoint(pax,pay,paz);
 
 					if( tubenessThere > tubenessThreshold ) {
 						destinationsToPrune.add(current);

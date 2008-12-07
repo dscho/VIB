@@ -109,7 +109,7 @@ public class AutoSearchThread extends SearchThread {
         }
 
 	Path getPathBack( int from_x, int from_y, int from_z ) {
-		return nodes_as_image[from_z][from_y*width+from_x].asPath();
+		return nodes_as_image[from_z][from_y*width+from_x].asPath( x_spacing, y_spacing, z_spacing, spacing_units );
 	}
 
 }

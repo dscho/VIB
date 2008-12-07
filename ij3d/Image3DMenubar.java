@@ -55,6 +55,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	private MenuItem add;
 	private MenuItem color;
+	private MenuItem bgColor;
 	private MenuItem channels;
 	private MenuItem transparency;
 	private MenuItem threshold;
@@ -301,6 +302,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		viewPreferences.addActionListener(this);
 		view.add(viewPreferences);
 
+		bgColor = new MenuItem("Change background color");
+		bgColor.addActionListener(this);
+		view.add(bgColor);
+
 		return view;
 	}
 
@@ -420,6 +425,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		if(src == color)
 			executer.changeColor(univ.getSelected());
+		else if (src == bgColor)
+			executer.changeBackgroundColor();
 		else if(src == scalebar)
 			executer.editScalebar();
 		else if(src == viewer4d)

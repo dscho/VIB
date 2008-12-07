@@ -164,12 +164,63 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	}
 
 	public void updateImagePlus() {
-		this.imp = getNewImagePlus();
+		//this.imp = getNewImagePlus();
+		imp_updater.update();
+	}
+
+	final ImagePlusUpdater imp_updater = new ImagePlusUpdater(this);
+
+	private class ImagePlusUpdater extends Thread {
+		boolean go = true;
+		int update = 0;
+		final ImageWindow3D iw;
+		ImagePlusUpdater(ImageWindow3D iw) {
+			super("3D-V-IMP-updater");
+			try { setDaemon(true); } catch (Exception e) { e.printStackTrace(); }
+			this.iw = iw;
+			setPriority(Thread.NORM_PRIORITY);
+			start();
+		}
+		void update() {
+			synchronized (this) {
+				update++;
+				notify();
+			}
+		}
+		void updateAndWait() {
+			update();
+			while (update > 0) {
+				synchronized (this) {
+					try { wait(); } catch (InterruptedException ie) { ie.printStackTrace(); }
+				}
+			}
+		}
+		public void run() {
+			while (go) {
+				if (0 == update) {
+					synchronized (this) {
+						try { wait(); } catch (InterruptedException ie) { ie.printStackTrace(); }
+					}
+				}
+				while (update > 0) {
+					synchronized (this) { update = 0; }
+					iw.imp = getNewImagePlus();
+					synchronized (this) { notify(); }
+				}
+			}
+		}
+		void quit() {
+			go = false;
+			synchronized (this) {
+				update = -Integer.MAX_VALUE;
+				notify();
+			}
+		}
 	}
 
 	public ImagePlus getImagePlus() {
 		if(imp == null)
-			updateImagePlus();
+			imp_updater.updateAndWait(); //updateImagePlus();
 		return imp;
 	}
 
@@ -254,6 +305,11 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 
 	public void windowClosing(WindowEvent e) {
 		super.windowClosing(e);
+		destroy();
+	}
+
+	public void destroy() {
+		if (null == universe) return;
 		universe.removeUniverseListener(this);
 
 		// Must remove the listener so this instance can be garbage collected and removed from the Canvas3D, overcomming the limit of 32 total Canvas3D instances.
@@ -265,12 +321,16 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 			ex.printStackTrace();
 		}
 
-		universe.close();
+		if (null != universe.getWindow())
+			universe.close();
 		ImageJ ij = IJ.getInstance();
 		if (null != ij) {
 			removeKeyListener(ij);
 			canvas3D.removeKeyListener(ij);
 		}
+		imp_updater.quit();
+		canvas3D.flush();
+		universe = null;
 	}
 
 	/*

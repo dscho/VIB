@@ -49,6 +49,10 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 	private Simple_Neurite_Tracer tracerPlugin;
 
+	public Simple_Neurite_Tracer getTracerPlugin() {
+		return tracerPlugin;
+	}
+
 	InteractiveTracerCanvas( ImagePlus imp, Simple_Neurite_Tracer plugin, int plane, PathAndFillManager pathAndFillManager ) {
 		super(imp,plugin,plane,pathAndFillManager);
 		tracerPlugin = plugin;
@@ -126,15 +130,18 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 	@Override
 	public void mouseMoved( MouseEvent e ) {
 
-		last_x_in_pane = offScreenX(e.getX());
-		last_y_in_pane = offScreenY(e.getY());
+		double last_x_in_pane_precise = myOffScreenXD(e.getX());
+		double last_y_in_pane_precise = myOffScreenYD(e.getY());
+
+		last_x_in_pane = (int)last_x_in_pane_precise;
+		last_y_in_pane = (int)last_y_in_pane_precise;
 
 		boolean mac = IJ.isMacintosh();
 
 		boolean shift_key_down = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
 		boolean joiner_modifier_down = mac ? ((e.getModifiersEx() & InputEvent.ALT_DOWN_MASK) != 0) : ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0);
 
-		tracerPlugin.mouseMovedTo( last_x_in_pane, last_y_in_pane, plane, shift_key_down, joiner_modifier_down );
+		tracerPlugin.mouseMovedTo( last_x_in_pane_precise, last_y_in_pane_precise, plane, shift_key_down, joiner_modifier_down );
 	}
 
 	int last_x_in_pane;
@@ -143,9 +150,27 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 	@Override
 	public void mouseClicked( MouseEvent e ) {
 
-		if( tracerPlugin.setupTrace ) {
+		int currentState = tracerPlugin.resultsDialog.getState();
+
+		if( currentState == NeuriteTracerResultsDialog.LOADING ||
+		    currentState == NeuriteTracerResultsDialog.SAVING ) {
+
+			// Do nothing
+
+		} else if( currentState == NeuriteTracerResultsDialog.WAITING_FOR_SIGMA_POINT ) {
+
+			tracerPlugin.launchPaletteAround(
+				myOffScreenX(e.getX()),
+				myOffScreenY(e.getY()),
+				imp.getCurrentSlice() - 1 );
+
+		} else if( currentState == NeuriteTracerResultsDialog.WAITING_FOR_SIGMA_CHOICE	) {
+
+			IJ.error( "You must close the sigma palette to continue" );
+
+		} else if( tracerPlugin.setupTrace ) {
 			boolean join = IJ.isMacintosh() ? e.isAltDown() : e.isControlDown();
-			tracerPlugin.clickForTrace( offScreenX(e.getX()), offScreenY(e.getY()), plane, join );
+			tracerPlugin.clickForTrace( myOffScreenX(e.getX()), myOffScreenY(e.getY()), plane, join );
 		} else
 			IJ.error( "BUG: No operation chosen" );
 	}
@@ -169,7 +194,6 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 		if( pixel_size < 1 )
 			pixel_size = 1;
 
-		int spotExtra = 2 * pixel_size;
 		int spotDiameter = 5 * pixel_size;
 
 		if( unconfirmedSegment != null ) {
@@ -179,11 +203,11 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 				int n = unconfirmedSegment.size();
 
-				int x = screenX(unconfirmedSegment.x_positions[n-1]);
-				int y = screenY(unconfirmedSegment.y_positions[n-1]);
+				int x = myScreenX(unconfirmedSegment.getXUnscaled(n-1));
+				int y = myScreenY(unconfirmedSegment.getYUnscaled(n-1));
 
-				int rectX = x - spotExtra;
-				int rectY = y - spotExtra;
+				int rectX = x - spotDiameter / 2;
+				int rectY = y - spotDiameter / 2;
 
 				g.setColor(Color.BLUE);
 				g.fillRect( rectX, rectY, spotDiameter, spotDiameter );
@@ -203,11 +227,11 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 			if( lastPathUnfinished && currentPath.size() == 0 ) {
 
-				int x = screenX(tracerPlugin.last_start_point_x);
-				int y = screenY(tracerPlugin.last_start_point_y);
+				int x = myScreenX(tracerPlugin.last_start_point_x);
+				int y = myScreenY(tracerPlugin.last_start_point_y);
 
-				int rectX = x - spotExtra;
-				int rectY = y - spotExtra;
+				int rectX = x - spotDiameter / 2;
+				int rectY = y - spotDiameter / 2;
 
 				g.setColor(Color.BLUE);
 				g.fillRect( rectX, rectY, spotDiameter, spotDiameter );
@@ -221,5 +245,4 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 		}
 
 	}
-
 }

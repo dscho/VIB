@@ -31,22 +31,36 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 
+import java.util.HashSet;
+
+import features.Sigma_Palette;
+import ij.gui.GenericDialog;
+
+import java.text.DecimalFormat;
+
 class NeuriteTracerResultsDialog
 	extends Dialog
-	implements ActionListener, WindowListener, ItemListener, PathAndFillListener, TextListener, FillerProgressCallback {
+	implements ActionListener, WindowListener, ItemListener, PathAndFillListener, TextListener, Sigma_Palette.SigmaPaletteListener {
 
 	static final boolean verbose = Simple_Neurite_Tracer.verbose;
 
+	PathWindow pw;
+	FillWindow fw;
+
 	// These are the states that the UI can be in:
 
-	static final int WAITING_TO_START_PATH = 0;
-	static final int PARTIAL_PATH          = 1;
-	static final int SEARCHING             = 2;
-	static final int QUERY_KEEP            = 3;
-	static final int LOGGING_POINTS        = 4;
-	static final int DISPLAY_EVS           = 5;
-	static final int FILLING_PATHS         = 6;
-	static final int CALCULATING_GAUSSIAN  = 7;
+	static final int WAITING_TO_START_PATH    = 0;
+	static final int PARTIAL_PATH             = 1;
+	static final int SEARCHING                = 2;
+	static final int QUERY_KEEP               = 3;
+	static final int LOGGING_POINTS           = 4;
+	static final int DISPLAY_EVS              = 5;
+	static final int FILLING_PATHS            = 6;
+	static final int CALCULATING_GAUSSIAN     = 7;
+	static final int WAITING_FOR_SIGMA_POINT  = 8;
+	static final int WAITING_FOR_SIGMA_CHOICE = 9;
+	static final int SAVING                   = 10;
+	static final int LOADING                  = 11;
 
 	static final String [] stateNames = { "WAITING_TO_START_PATH",
 					      "PARTIAL_PATH",
@@ -55,7 +69,11 @@ class NeuriteTracerResultsDialog
 					      "LOGGING_POINTS",
 					      "DISPLAY_EVS",
 					      "FILLING_PATHS",
-					      "CALCULATING_GAUSSIAN" };
+					      "CALCULATING_GAUSSIAN",
+					      "WAITING_FOR_SIGMA_POINT",
+					      "WAITING_FOR_SIGMA_CHOICE",
+					      "SAVING",
+					      "LOADING" };
 
 	static final String SEARCHING_STRING = "Searching for path between points...";
 
@@ -79,40 +97,19 @@ class NeuriteTracerResultsDialog
 	TextField nearbyField;
 
 	Checkbox preprocess;
-	Checkbox showEVs;
+	Checkbox usePreprocessed;
 
-	List pathList;
+	double currentSigma;
+	double currentMultiplier;
 
-	Button deletePaths;
-	Button fillPaths;
-	Button fitCircles;
+	Label currentSigmaAndMultiplierLabel;
 
-	List fillList;
-	Button deleteFills;
-	Button reloadFill;
-
-	Panel fillControlPanel;
-
-	Label fillStatus;
-
-	float maxThresholdValue = 0;
-
-	TextField thresholdField;
-	Label maxThreshold;
-	Button setThreshold;
-	Button setMaxThreshold;
-
-	boolean currentlyFilling = true;
-	Button pauseOrRestartFilling;
-
-	Button saveFill;
-	Button discardFill;
-
-	Button view3D;
-	Checkbox maskNotReal;
-	Checkbox transparent;
+	Button editSigma;
+	Button sigmaWizard;
 
 	Button loadLabelsButton;
+
+	Button importSWCButton;
 
 	Button saveButton;
 	Button loadButton;
@@ -121,30 +118,36 @@ class NeuriteTracerResultsDialog
 
 	Button quitButton;
 
-	public void setPathList( String [] newList ) {
-		pathList.removeAll();
-		for( int i = 0; i < newList.length; ++i )
-			pathList.add( newList[i] );
+	Button showOrHidePathList;
+	Button showOrHideFillList;
+
+	public void newSigmaSelected( double sigma ) {
+		setSigma( sigma, false );
 	}
 
-	public void setFillList( String [] newList ) {
-		fillList.removeAll();
-		for( int i = 0; i < newList.length; ++i )
-			fillList.add( newList[i] );
+	public void newMaximum( double max ) {
+		double multiplier = 256 / max;
+		setMultiplier( multiplier );
 	}
 
-	public void setSelectedPaths( int [] selectedIndices ) {
-		int items = pathList.getItemCount();
-		boolean [] itemStates = new boolean[items];
-		for( int i = 0; i < selectedIndices.length; ++i )
-			itemStates[selectedIndices[i]] = true;
-		for( int i = 0; i < items; ++i ) {
-			if( itemStates[i] ) {
-				if( ! pathList.isIndexSelected(i) )
-					pathList.select(i);
+	// ------------------------------------------------------------------------
+	// FIXME: consider moving these into Simple_Neurite_Tracer
+
+	public void setPathList( String [] newList, Path justAdded, boolean expandAll ) { }
+
+	public void setFillList( String [] newList ) { }
+
+	// Note that rather unexpectedly the p.setSelcted calls make sure that
+	// the colour of the path in the 3D viewer is right...  (FIXME)
+	public void setSelectedPaths( HashSet selectedPathsSet, Object source ) {
+		if( source == this )
+			return;
+		for( int i = 0; i < pathAndFillManager.size(); ++i ) {
+			Path p = pathAndFillManager.getPath(i);
+			if( selectedPathsSet.contains(p) ) {
+				p.setSelected( true );
 			} else {
-				if( pathList.isIndexSelected(i) )
-					pathList.deselect(i);
+				p.setSelected( false );
 			}
 		}
 		plugin.repaintAllPanes();
@@ -153,19 +156,70 @@ class NeuriteTracerResultsDialog
 	// ------------------------------------------------------------------------
 
 	int preGaussianState;
+	int preSigmaPaletteState;
 
 	public void gaussianCalculated(boolean succeeded) {
 		if( !succeeded )
 			preprocess.setState(false);
 		changeState(preGaussianState);
+		if( preprocess.getState() ) {
+			editSigma.setEnabled(false);
+			sigmaWizard.setEnabled(false);
+		} else {
+			editSigma.setEnabled(true);
+			sigmaWizard.setEnabled(true);
+		}
 	}
 
-	public void setPreprocessLabelSigma( double sigma ) {
-		String basic = "Hessian-based analysis";
-		if( sigma < 0 )
-			preprocess.setLabel(basic);
+	public void setMultiplier( double multiplier ) {
+		currentMultiplier = multiplier;
+		updateLabel( );
+	}
+
+	public void setSigma( double sigma, boolean mayStartGaussian ) {
+		currentSigma = sigma;
+		updateLabel( );
+		if( mayStartGaussian && ! preprocess.getState() ) {
+			// Turn on the checkbox:
+			preprocess.setState( true );
+			/* According to the documentation this doesn't
+			   generate an event, so we do would if the
+			   option was turned on manually: */
+			turnOnHessian();
+		}
+	}
+
+	public void turnOnHessian( ) {
+		preGaussianState = currentState;
+		plugin.enableHessian(true);
+		if( usePreprocessed.isEnabled() )
+			usePreprocessed.setState(false);
+	}
+
+	DecimalFormat threeDecimalPlaces = new DecimalFormat("0.0000");
+	DecimalFormat threeDecimalPlacesScientific = new DecimalFormat("0.00E00");
+
+	public String formatDouble( double value ) {
+		double absValue = Math.abs( value );
+		if( absValue < 0.01 || absValue >= 1000 )
+			return threeDecimalPlacesScientific.format(value);
 		else
-			preprocess.setLabel(basic+" (\u03C2="+sigma+")");
+			return threeDecimalPlaces.format(value);
+	}
+
+	public void updateLabel( ) {
+		currentSigmaAndMultiplierLabel.setText(
+			"\u03C3 = " +
+			formatDouble( currentSigma ) +
+			", multiplier = " + formatDouble( currentMultiplier ) );
+	}
+
+	public double getSigma( ) {
+		return currentSigma;
+	}
+
+	public double getMultiplier( ) {
+		return currentMultiplier;
 	}
 
 	public void exitRequested() {
@@ -182,13 +236,18 @@ class NeuriteTracerResultsDialog
 
 		}
 
-		plugin.cancelSearch();
-		// What if we're filling?
+		plugin.cancelSearch( true );
+		pw.dispose();
+		fw.dispose();
 		dispose();
 		plugin.closeAndReset();
 	}
 
 	public void disableEverything() {
+
+		fw.setEnabledNone();
+		pw.setButtonsEnabled(false);
+
 		statusText.setEnabled(false);
 		keepSegment.setEnabled(false);
 		junkSegment.setEnabled(false);
@@ -196,31 +255,13 @@ class NeuriteTracerResultsDialog
 		completePath.setEnabled(false);
 		cancelPath.setEnabled(false);
 
+		editSigma.setEnabled(false);
+		sigmaWizard.setEnabled(false);
+
 		viewPathChoice.setEnabled(false);
 		preprocess.setEnabled(false);
 
-		pathList.setEnabled(false);
-		deletePaths.setEnabled(false);
-		fillPaths.setEnabled(false);
-		fitCircles.setEnabled(false);
-		fillStatus.setEnabled(false);
-
-		thresholdField.setEnabled(false);
-		maxThreshold.setEnabled(false);
-		setThreshold.setEnabled(false);
-		setMaxThreshold.setEnabled(false);
-		pauseOrRestartFilling.setEnabled(false);
-		saveFill.setEnabled(false);
-		discardFill.setEnabled(false);
-
-		fillList.setEnabled(false);
-		deleteFills.setEnabled(false);
-		reloadFill.setEnabled(false);
-
-		view3D.setEnabled(false);
-		maskNotReal.setEnabled(false);
-		transparent.setEnabled(false);
-
+		importSWCButton.setEnabled(false);
 		saveButton.setEnabled(false);
 		loadButton.setEnabled(false);
 		if( uploadButton != null ) {
@@ -241,6 +282,9 @@ class NeuriteTracerResultsDialog
 		case WAITING_TO_START_PATH:
 			statusText.setText("Click somewhere to start a new path...");
 			disableEverything();
+			pw.setButtonsEnabled(true);
+			// Fake a selection change in the path tree:
+			pw.valueChanged( null );
 
 			cancelSearch.setVisible(false);
 			keepSegment.setVisible(false);
@@ -249,21 +293,16 @@ class NeuriteTracerResultsDialog
 			viewPathChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
-			pathList.setEnabled(true);
-			deletePaths.setEnabled(true);
+			editSigma.setEnabled(true);
+			sigmaWizard.setEnabled(true);
 
-			fillList.setEnabled(true);
-			deleteFills.setEnabled(true);
-			reloadFill.setEnabled(true);
-
-			fillPaths.setEnabled(true);
-			fitCircles.setEnabled(true);
-			fillStatus.setEnabled(true);
+			fw.setEnabledWhileNotFilling();
 
 			loadLabelsButton.setEnabled(true);
 
 			saveButton.setEnabled(true);
 			loadButton.setEnabled(true);
+			importSWCButton.setEnabled(true);
 			if( uploadButton != null ) {
 				uploadButton.setEnabled(true);
 				fetchButton.setEnabled(true);
@@ -290,7 +329,8 @@ class NeuriteTracerResultsDialog
 			viewPathChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
-			pathList.setEnabled(true);
+			editSigma.setEnabled(true);
+			sigmaWizard.setEnabled(true);
 
 			quitButton.setEnabled(false);
 
@@ -330,17 +370,7 @@ class NeuriteTracerResultsDialog
 			statusText.setText("Filling out from neuron...");
 			disableEverything();
 
-			thresholdField.setEnabled(true);
-			maxThreshold.setEnabled(true);
-			setThreshold.setEnabled(true);
-			setMaxThreshold.setEnabled(true);
-			pauseOrRestartFilling.setEnabled(true);
-			saveFill.setEnabled(true);
-			discardFill.setEnabled(true);
-
-			view3D.setEnabled(true);
-			maskNotReal.setEnabled(true);
-			transparent.setEnabled(true);
+			fw.setEnabledWhileFilling();
 
 			break;
 
@@ -356,6 +386,26 @@ class NeuriteTracerResultsDialog
 
 			break;
 
+		case WAITING_FOR_SIGMA_POINT:
+			statusText.setText("Click on a neuron in the image");
+			disableEverything();
+			break;
+
+		case WAITING_FOR_SIGMA_CHOICE:
+			statusText.setText("Close the sigma palette window to continue");
+			disableEverything();
+			break;
+
+		case LOADING:
+			statusText.setText("Loading...");
+			disableEverything();
+			break;
+
+		case SAVING:
+			statusText.setText("Saving...");
+			disableEverything();
+			break;
+
 		default:
 			IJ.error("BUG: switching to an unknown state");
 			return;
@@ -363,12 +413,14 @@ class NeuriteTracerResultsDialog
 
 		pack();
 
-		int [] selectedIndices = pathList.getSelectedIndexes();
-		pathAndFillManager.setSelected( selectedIndices );
 		plugin.repaintAllPanes();
 
 		currentState = newState;
 
+	}
+
+	public int getState() {
+		return currentState;
 	}
 
 	// ------------------------------------------------------------------------
@@ -455,7 +507,7 @@ class NeuriteTracerResultsDialog
 			pathActionPanel.add(cancelPath);
 
 			c.gridx = 0;
-			c.gridy = 1;
+			++ c.gridy;
 			add(pathActionPanel,c);
 		}
 
@@ -479,11 +531,6 @@ class NeuriteTracerResultsDialog
 			nearbyPanel.add(nearbyField,BorderLayout.CENTER);
 			nearbyPanel.add(new Label("slices to each side)"),BorderLayout.EAST);
 
-			preprocess = new Checkbox();
-			setPreprocessLabelSigma(-1);
-			preprocess.addItemListener( this );
-			showEVs = new Checkbox("Just show eigenvectors / eigenvalues");
-
 			co.gridx = 0;
 			co.gridy = 0;
 			otherOptionsPanel.add(new Label("View paths: "),co);
@@ -497,184 +544,61 @@ class NeuriteTracerResultsDialog
 			co.anchor = GridBagConstraints.LINE_END;
 			otherOptionsPanel.add(nearbyPanel,co);
 
+			preprocess = new Checkbox("Hessian-based analysis");
+			preprocess.addItemListener( this );
+
 			co.gridx = 0;
-			co.gridy = 2;
+			++ co.gridy;
 			co.gridwidth = 2;
 			co.anchor = GridBagConstraints.LINE_START;
 			otherOptionsPanel.add(preprocess,co);
 
+			++ co.gridy;
+			usePreprocessed = new Checkbox("Use preprocessed image");
+			usePreprocessed.addItemListener( this );
+			usePreprocessed.setEnabled( plugin.tubeness != null );
+			otherOptionsPanel.add(usePreprocessed,co);
+
+			co.fill = GridBagConstraints.HORIZONTAL;
+
+			currentSigmaAndMultiplierLabel = new Label();
+			++ co.gridy;
+			otherOptionsPanel.add(currentSigmaAndMultiplierLabel,co);
+			setSigma( plugin.getMinimumSeparation(), false );
+			setMultiplier( 4 );
+			updateLabel( );
+			++ co.gridy;
+
+			Panel sigmaButtonPanel = new Panel( );
+
+			editSigma = new Button( "Pick Sigma Manually" );
+			editSigma.addActionListener( this );
+			sigmaButtonPanel.add(editSigma);
+
+			sigmaWizard = new Button( "Pick Sigma Visually" );
+			sigmaWizard.addActionListener( this );
+			sigmaButtonPanel.add(sigmaWizard);
+
+			++ co.gridy;
+			otherOptionsPanel.add(sigmaButtonPanel,co);
+
 			c.gridx = 0;
-			c.gridy = 2;
+			++ c.gridy;
 			add(otherOptionsPanel,c);
 		}
 
-		{ /* Add the panel with the path list. */
-
-			Panel pathListPanel = new Panel();
-			pathListPanel.setLayout(new BorderLayout());
-			pathList = new List(3);
-			pathList.setMultipleMode(true);
-			pathList.addItemListener(this);
-			pathListPanel.add(pathList,BorderLayout.CENTER);
-
-			{ /* The sub-panel with buttons for the path list... */
-
-				Panel buttonsForListPanel = new Panel();
-				buttonsForListPanel.setLayout(new GridBagLayout());
-				GridBagConstraints cl = new GridBagConstraints();
-				deletePaths = new Button("Delete Path(s)");
-				deletePaths.addActionListener( this );
-				buttonsForListPanel.add(deletePaths,cl);
-
-				cl.gridx = 1;
-				fillPaths = new Button("Fill Out Path(s)");
-				fillPaths.addActionListener( this );
-				buttonsForListPanel.add(fillPaths,cl);
-
-				cl.gridx = 0;
-				cl.gridy = 1;
-				fitCircles = new Button("Fit Centres and Circles");
-				fitCircles.addActionListener( this );
-				/* FIXME: put this back when the smoothing works...
-				   buttonsForListPanel.add(fitCircles,cl);
-				*/
-				pathListPanel.add(buttonsForListPanel,BorderLayout.SOUTH);
-			}
-
-			c.gridx = 0;
-			c.gridy = 3;
-			c.fill = GridBagConstraints.HORIZONTAL;
-			add(pathListPanel,c);
+		{
+			++ c.gridy;
+			showOrHidePathList = new Button("Show / Hide Path List");
+			add( showOrHidePathList, c);
+			showOrHidePathList.addActionListener(this);
 		}
 
 		{
-			c.insets = new Insets( 8, 8, 1, 8 );
-			fillList = new List(3);
-			c.gridx = 0;
-			c.gridy = 4;
-			c.fill = GridBagConstraints.HORIZONTAL;
-			add(fillList,c);
-
-			Panel fillListCommandsPanel = new Panel();
-			fillListCommandsPanel.setLayout(new BorderLayout());
-
-			deleteFills = new Button("Delete Fill(s)");
-			deleteFills.addActionListener( this );
-			fillListCommandsPanel.add(deleteFills,BorderLayout.WEST);
-
-			reloadFill = new Button("Reload Fill");
-			reloadFill.addActionListener( this );
-			fillListCommandsPanel.add(reloadFill,BorderLayout.CENTER);
-
-			c.insets = new Insets( 1, 8, 8, 8 );
-			c.gridx = 0;
-			c.gridy = 5;
-
-			add(fillListCommandsPanel,c);
-		}
-
-		{ /* The panel with options for filling out neurons... */
-
-			Panel fillingOptionsPanel = new Panel();
-
-			fillingOptionsPanel.setLayout(new GridBagLayout());
-
-			GridBagConstraints cf = new GridBagConstraints();
-
-			cf.gridx = 0;
-			cf.gridy = 0;
-			cf.gridwidth = 4;
-			cf.weightx = 1;
-			cf.anchor = GridBagConstraints.LINE_START;
-			cf.fill = GridBagConstraints.HORIZONTAL;
-			fillStatus = new Label("(Not filling at the moment.)");
-			fillingOptionsPanel.add(fillStatus,cf);
-
-			thresholdField = new TextField("",10);
-			thresholdField.addActionListener(this);
-			cf.gridx = 0;
-			cf.gridy = 1;
-			cf.weightx = 0;
-			cf.gridwidth = 2;
-			cf.fill = GridBagConstraints.NONE;
-			fillingOptionsPanel.add(thresholdField,cf);
-
-			maxThreshold = new Label("(0)                  ",Label.LEFT);
-			cf.gridx = 2;
-			cf.gridy = 1;
-			cf.gridwidth = 1;
-			cf.fill = GridBagConstraints.HORIZONTAL;
-			cf.anchor = GridBagConstraints.LINE_START;
-			fillingOptionsPanel.add(maxThreshold,cf);
-
-			setThreshold = new Button("Set");
-			setThreshold.addActionListener(this);
-			cf.gridx = 0;
-			cf.gridy = 2;
-			cf.gridwidth = 1;
-			cf.fill = GridBagConstraints.NONE;
-			fillingOptionsPanel.add(setThreshold,cf);
-
-			setMaxThreshold = new Button("Set Max");
-			setMaxThreshold.addActionListener(this);
-			cf.gridx = 1;
-			cf.gridy = 2;
-			fillingOptionsPanel.add(setMaxThreshold,cf);
-
-			view3D = new Button("Create Image Stack from Fill");
-			view3D.addActionListener(this);
-			cf.gridx = 0;
-			cf.gridy = 3;
-			cf.gridwidth = 2;
-			cf.anchor = GridBagConstraints.LINE_START;
-			fillingOptionsPanel.add(view3D,cf);
-
-			maskNotReal = new Checkbox("Create as Mask");
-			maskNotReal.addItemListener(this);
-			cf.gridx = 0;
-			cf.gridy = 4;
-			cf.gridwidth = 3;
-			cf.anchor = GridBagConstraints.LINE_START;
-			fillingOptionsPanel.add(maskNotReal,cf);
-
-			transparent = new Checkbox("Transparent fill display (slow!)");
-			transparent.addItemListener(this);
-			cf.gridx = 0;
-			cf.gridy = 5;
-			cf.gridwidth = 3;
-			cf.anchor = GridBagConstraints.LINE_START;
-			fillingOptionsPanel.add(transparent,cf);
-
-			{
-				fillControlPanel = new Panel();
-				fillControlPanel.setLayout(new BorderLayout());
-
-				pauseOrRestartFilling = new Button("Pause");
-				currentlyFilling = true;
-				pauseOrRestartFilling.addActionListener(this);
-				fillControlPanel.add(pauseOrRestartFilling,BorderLayout.WEST);
-
-				saveFill = new Button("Save Fill");
-				saveFill.addActionListener(this);
-				fillControlPanel.add(saveFill,BorderLayout.CENTER);
-
-				discardFill = new Button("Cancel Fill");
-				discardFill.addActionListener(this);
-				fillControlPanel.add(discardFill,BorderLayout.EAST);
-
-				cf.gridx = 0;
-				cf.gridy = 6;
-				cf.gridwidth = 3;
-				cf.fill = GridBagConstraints.HORIZONTAL;
-				cf.anchor = GridBagConstraints.LINE_START;
-
-				fillingOptionsPanel.add(fillControlPanel,cf);
-			}
-
-			c.gridx = 0;
-			c.gridy = 6;
-			c.insets = new Insets( 8, 8, 8, 8 );
-			add(fillingOptionsPanel,c);
+			++ c.gridy;
+			showOrHideFillList = new Button("Show / Hide Fill List");
+			add( showOrHideFillList, c);
+			showOrHideFillList.addActionListener(this);
 		}
 
 		{ /* The panel with options for saving, loading, network storage, etc. */
@@ -703,13 +627,18 @@ class NeuriteTracerResultsDialog
 			}
 
 			c.gridx = 0;
-			c.gridy = 7;
+			++ c.gridy;
 			c.anchor = GridBagConstraints.CENTER;
 			c.fill = GridBagConstraints.NONE;
 
 			loadLabelsButton = new Button("Load Labels");
 			loadLabelsButton.addActionListener( this );
 			add(loadLabelsButton,c);
+
+			++c.gridy;
+			importSWCButton = new Button("Import SWC File");
+			importSWCButton.addActionListener( this );
+			add(importSWCButton,c);
 
 			saveButton = new Button("Save Traces File");
 			saveButton.addActionListener( this );
@@ -723,7 +652,7 @@ class NeuriteTracerResultsDialog
 			traceFileOptionsPanel.add( loadButton, ct );
 
 			c.gridx = 0;
-			c.gridy = 8;
+			++ c.gridy;
 			add(traceFileOptionsPanel,c);
 
 		}
@@ -733,38 +662,51 @@ class NeuriteTracerResultsDialog
 		quitButton = new Button("Quit Tracer");
 		quitButton.addActionListener(this);
 		c.gridx = 0;
-		c.gridy = 9;
+		++ c.gridy;
 		c.anchor = GridBagConstraints.CENTER;
 		add(quitButton,c);
 
+		pack();
+
+		pw = new PathWindow(
+			pathAndFillManager,
+			plugin,
+			getX() + getWidth(),
+			getY() );
+
+		fw = new FillWindow(
+			pathAndFillManager,
+			plugin,
+			getX() + getWidth(),
+			getY() + pw.getHeight() );
+
 		changeState( WAITING_TO_START_PATH );
 
-		pack();
 		setVisible( true );
 
+		setPathListVisible( true );
+		setFillListVisible( false );
 	}
 
 	public void showMouseThreshold( float t ) {
+		String newStatus = null;
 		if( t < 0 ) {
-			fillStatus.setText( "Not reached by search yet" );
+			newStatus = "Not reached by search yet";
 		} else {
-			fillStatus.setText( "Distance from path is: " + t );
+			newStatus = "Distance from path is: " + t;
 		}
-	}
-
-	public boolean createMask() {
-		return maskNotReal.getState();
+		fw.fillStatus.setText( newStatus );
 	}
 
 	public void actionPerformed( ActionEvent e ) {
 
 		Object source = e.getSource();
 
-		if( source == uploadButton ) {
+		/* if( source == uploadButton ) {
 			plugin.uploadTracings();
 		} else if( source == fetchButton ) {
 			plugin.getTracings( true );
-		} else if( source == saveButton ) {
+		} else */ if( source == saveButton ) {
 
 			FileInfo info = plugin.file_info;
 			SaveDialog sd;
@@ -808,14 +750,15 @@ class NeuriteTracerResultsDialog
 
 			IJ.showStatus("Saving traces to "+savePath);
 
+			int preSavingState = currentState;
+			changeState( SAVING );
 			try {
-
 				pathAndFillManager.writeXML( savePath, plugin, true );
-
 			} catch( IOException ioe ) {
 				IJ.error("Writing traces to '"+savePath+"' failed: "+ioe);
 				return;
 			}
+			changeState( preSavingState );
 
 			plugin.unsavedPaths = false;
 
@@ -829,7 +772,25 @@ class NeuriteTracerResultsDialog
 					return;
 			}
 
+			int preLoadingState = currentState;
+			changeState( LOADING );
 			plugin.loadTracings();
+			changeState( preLoadingState );
+
+		} else if( source == importSWCButton ) {
+
+			if( plugin.pathsUnsaved() ) {
+				YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(), "Warning",
+									     "There are unsaved paths. Do you really want to import an SWC file?" );
+
+				if( ! d.yesPressed() )
+					return;
+			}
+
+			int preLoadingState = currentState;
+			changeState( LOADING );
+			plugin.importSWC();
+			changeState( preLoadingState );
 
 		} else if( source == loadLabelsButton ) {
 
@@ -839,7 +800,7 @@ class NeuriteTracerResultsDialog
 
 			if( currentState == SEARCHING ) {
 				statusText.setText("Cancelling path search...");
-				plugin.cancelSearch();
+				plugin.cancelSearch( false );
 			} else if( currentState == CALCULATING_GAUSSIAN ) {
 				statusText.setText("Cancelling Gaussian generation...");
 				plugin.cancelGaussian();
@@ -863,104 +824,96 @@ class NeuriteTracerResultsDialog
 
 			plugin.cancelPath( );
 
-		} else if( source == deletePaths ) {
-
-			// if (verbose) System.out.println("deletePaths called");
-			int [] selectedIndices = pathList.getSelectedIndexes();
-			if( selectedIndices.length < 1 ) {
-				IJ.error("No path was selected for deletion");
-				return;
-			}
-			pathAndFillManager.deletePaths( selectedIndices );
-			plugin.repaintAllPanes();
-
-		} else if( source == deleteFills ) {
-
-			if (verbose) System.out.println("deleteFills called");
-			int [] selectedIndices = fillList.getSelectedIndexes();
-			if( selectedIndices.length < 1 ) {
-				IJ.error("No fill was selected for deletion");
-				return;
-			}
-			pathAndFillManager.deleteFills( selectedIndices );
-			plugin.repaintAllPanes();
-
-		} else if( source == reloadFill ) {
-
-			int [] selectedIndices = fillList.getSelectedIndexes();
-			if( selectedIndices.length != 1 ) {
-				IJ.error("You must have a single fill selected in order to reload.");
-				return;
-			}
-			pathAndFillManager.reloadFill(selectedIndices[0]);
-
-		}  else if( source == fillPaths ) {
-
-			int [] selectedIndices = pathList.getSelectedIndexes();
-
-			if( selectedIndices.length < 1 ) {
-				IJ.error("You must have one or more paths in the list selected");
-				return;
-			}
-
-			currentlyFilling = true;
-			pauseOrRestartFilling.setLabel("Pause");
-			plugin.startFillingPaths();
-
 		} else if( source == quitButton ) {
 
 			exitRequested();
 
-		} else if( source == setMaxThreshold ) {
+		}  else if( source == showOrHidePathList ) {
 
-			plugin.setFillThreshold( maxThresholdValue );
+			togglePathListVisibility();
 
-		} else if( source == setThreshold ) {
+		}  else if( source == showOrHideFillList ) {
 
-			try {
-				double t = Double.parseDouble( thresholdField.getText() );
-				if( t < 0 ) {
-					IJ.error("The fill threshold cannot be negative.");
+			toggleFillListVisibility();
+
+		} else if( source == editSigma ) {
+
+			double newSigma = -1;
+			double newMultiplier = -1;
+			while( newSigma <= 0 ) {
+				GenericDialog gd = new GenericDialog("Select Scale of Structures");
+				gd.addMessage("Please enter the approximate radius of the structures you are looking for:");
+				gd.addNumericField("Sigma: ", plugin.getMinimumSeparation(), 4);
+				gd.addMessage("(The default value is the minimum voxel separation.)");
+				gd.addMessage("Please enter the scaling factor to apply:");
+				gd.addNumericField("Multiplier: ", 4, 4);
+				gd.addMessage("(If you're not sure, just leave this at 4.)");
+				gd.showDialog();
+				if( gd.wasCanceled() )
 					return;
+
+				newSigma = gd.getNextNumber();
+				if( newSigma <= 0 ) {
+					IJ.error("The value of sigma must be positive");
 				}
-				plugin.setFillThreshold( t );
-			} catch( NumberFormatException nfe ) {
-				IJ.error("The threshold '" + thresholdField.getText() + "' wasn't a valid number.");
-				return;
+
+				newMultiplier = gd.getNextNumber();
+				if( newMultiplier <= 0 ) {
+					IJ.error("The value of the multiplier must be positive");
+				}
 			}
 
-		} else if( source == discardFill ) {
+			setSigma( newSigma, true );
+			setMultiplier( newMultiplier );
 
-			plugin.discardFill();
+		} else if( source == sigmaWizard ) {
 
-		} else if( source == saveFill ) {
-
-			plugin.saveFill();
-
-		} else if( source == pauseOrRestartFilling ) {
-
-			plugin.pauseOrRestartFilling();
-
-		} else if( source == view3D ) {
-
-			plugin.viewFillIn3D();
-
-		} else if( source == fitCircles ) {
-
-			int [] indices = pathList.getSelectedIndexes();
-			if( indices.length != 1 ) {
-				IJ.error("You must have exactly one path selected in order to show the normal panes for it.");
-				return;
-			}
-
-			plugin.fitCircles(indices[0],true,40);
-
+			preSigmaPaletteState = currentState;
+			changeState( WAITING_FOR_SIGMA_POINT );
 		}
+	}
 
+	public void sigmaPaletteClosing() {
+		changeState(preSigmaPaletteState);
+		setSigma( currentSigma, true );
+	}
+
+	public void setPathListVisible(boolean makeVisible) {
+		if( makeVisible ) {
+			showOrHidePathList.setLabel("Hide Path List");
+			pw.setVisible(true);
+			pw.toFront();
+		} else {
+			showOrHidePathList.setLabel("Show Path List");
+			pw.setVisible(false);
+		}
+	}
+
+	public void togglePathListVisibility() {
+		synchronized (pw) {
+			setPathListVisible( ! pw.isVisible() );
+		}
+	}
+
+	public void setFillListVisible(boolean makeVisible) {
+		if( makeVisible ) {
+			showOrHideFillList.setLabel("Hide Fill List");
+			fw.setVisible(true);
+			fw.toFront();
+		} else {
+			showOrHideFillList.setLabel("Show Fill List");
+			fw.setVisible(false);
+		}
+	}
+
+	public void toggleFillListVisibility() {
+		synchronized (fw) {
+			setFillListVisible( ! fw.isVisible() );
+		}
 	}
 
 	public void thresholdChanged( double f ) {
-		thresholdField.setText(""+f);
+		fw.thresholdChanged(f);
 	}
 
 	public boolean nearbySlices( ) {
@@ -975,26 +928,19 @@ class NeuriteTracerResultsDialog
 
 			plugin.justDisplayNearSlices(nearbySlices(),getEitherSide());
 
-		} else if( source == pathList ) {
-
-			// Show in green the selected ones....
-			int [] selectedIndices = pathList.getSelectedIndexes();
-			pathAndFillManager.setSelected( selectedIndices );
-			plugin.repaintAllPanes();
-
-		} else if( source == transparent ) {
-
-			plugin.setFillTransparent( transparent.getState() );
-
-
 		} else if( source == preprocess ) {
 
-			if( preprocess.getState() ) {
-				preGaussianState = currentState;
-				plugin.enableHessian(true);
-			} else {
+			if( preprocess.getState() )
+				turnOnHessian();
+			else {
 				plugin.enableHessian(false);
-				changeState(preGaussianState);
+				// changeState(preGaussianState);
+			}
+
+		} else if( source == usePreprocessed ) {
+
+			if( usePreprocessed.getState() ) {
+				preprocess.setState(false);
 			}
 
 		}
@@ -1045,24 +991,6 @@ class NeuriteTracerResultsDialog
 
 	public void threadStatus( SearchThread source, int threadStatus ) {
 		if (verbose) System.out.println("threadStatus reported as: "+threadStatus);
-		switch(threadStatus) {
-		case FillerThread.STOPPING:
-			pauseOrRestartFilling.setLabel("Stopping..");
-			pauseOrRestartFilling.setEnabled(false);
-			break;
-		case FillerThread.PAUSED:
-			pauseOrRestartFilling.setLabel("Continue");
-			break;
-		case FillerThread.RUNNING:
-			pauseOrRestartFilling.setLabel("Pause");
-			break;
-		}
-		fillControlPanel.doLayout();
-	}
-
-	public void maximumDistanceCompletelyExplored( SearchThread source, float f ) {
-		maxThreshold.setText("("+f+")");
-		maxThresholdValue = f;
 	}
 
 	public void finished( SearchThread source, boolean success ) {

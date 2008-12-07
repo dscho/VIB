@@ -208,7 +208,9 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 			while(!listeners.isEmpty())
 				listeners.remove(0);
 			win.close();
+			ImageWindow3D win2 = win;
 			win = null;
+			win2.destroy();
 		}
 		// Flush native resources used by this universe:
 		super.removeAllLocales();
