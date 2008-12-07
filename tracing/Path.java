@@ -1535,7 +1535,8 @@ public class Path implements Comparable {
 	public static final int noMoreThanOneEvery = 2;
 
 	public void removeFrom3DViewer(Image3DUniverse univ) {
-		univ.removeContent( nameWhenAddedToViewer );
+		if( content3D != null )
+			univ.removeContent( nameWhenAddedToViewer );
 	}
 
 	public Content addTo3DViewer(Image3DUniverse univ) {
@@ -1635,8 +1636,10 @@ public class Path implements Comparable {
 							diameters_trimmed,
 							2,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
 							12);     // "parallels" (12 means cross-sections are dodecagons)
-		if( allPoints == null )
+		if( allPoints == null ) {
+			content3D = null;
 			return null;
+		}
 
 		java.util.List triangles = Pipe.generateTriangles(allPoints,
 								  1); // scale
