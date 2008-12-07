@@ -1,7 +1,6 @@
 package octree;
 
 import ij.IJ;
-import ij.ImagePlus;
 
 import ij3d.UniverseListener;
 import ij3d.Content;
@@ -81,7 +80,9 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		rootBranchGroup.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
 
 		behavior = new OctreeBehavior(canvas, this);
-		behavior.setSchedulingBounds(new BoundingSphere());
+		BoundingSphere bs = new BoundingSphere();
+		bs.setRadius(10000);
+		behavior.setSchedulingBounds(bs);
 		behavior.setEnable(true);
 		rootBranchGroup.addChild(behavior);
 
@@ -332,6 +333,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		cancel();
 	}
 	public void transformationFinished(View view){
+		System.out.println("transformationFinished");
 		update();
 	}
 	public void contentAdded(Content c){}

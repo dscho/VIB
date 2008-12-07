@@ -37,6 +37,9 @@ import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import octree.FilePreparer;
+import octree.OctreeDialog;
+import octree.VolumeOctree;
 
 public class Executer {
 
@@ -200,6 +203,26 @@ public class Executer {
 			return;
 		univ.removeContent(c.name);
 		record(DELETE);
+	}
+
+	public void loadOctree() {
+		OctreeDialog od = new OctreeDialog();
+		od.showDialog();
+		if(!od.checkUserInput())
+			return;
+		String dir = od.getImageDir();
+		String name = od.getName();
+		String path = od.getImagePath();
+		if(od.shouldCreateData()) {
+			try {
+				new FilePreparer(path, VolumeOctree.SIZE, dir).createFiles();
+			} catch(Exception e) {
+				IJ.error(e.getMessage());
+				e.printStackTrace();
+				return;
+			}
+		}
+		univ.addOctree(dir, name);
 	}
 
 	public void load4D() {

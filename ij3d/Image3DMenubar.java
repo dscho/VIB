@@ -15,6 +15,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private Executer executer;
 
 	private MenuItem add;
+	private MenuItem octree;
 	private MenuItem color;
 	private MenuItem channels;
 	private MenuItem transparency;
@@ -109,6 +110,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		file.add(delete);
 
 		file.addSeparator();
+
+		octree = new MenuItem("Load large volume");
+		octree.addActionListener(this);
+		file.add(octree);
 
 		viewer4d = new MenuItem("Load 4D data");
 		viewer4d.addActionListener(this);
@@ -393,6 +398,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.editScalebar();
 		else if(src == viewer4d)
 			executer.load4D();
+		else if(src == octree)
+			executer.loadOctree();
 		else if(src == channels)
 			executer.changeChannels(univ.getSelected());
 		else if(src == transparency)

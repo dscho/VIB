@@ -144,15 +144,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		octree.update();
 	}
 
-	private octree.VolumeOctree octree = null;
+	private VolumeOctree octree = null;
 
-	public octree.VolumeOctree addOctree(String imageDir, String name) {
+	public VolumeOctree addOctree(String imageDir, String name) {
 		if(contents.containsKey(name)) {
 			IJ.error("Name exists already");
 			return null;
 		}
 		try {
-			octree = new octree.VolumeOctree(imageDir, canvas);
+			octree = new VolumeOctree(imageDir, canvas);
 			octree.getRootBranchGroup().compile();
 			scene.addChild(octree.getRootBranchGroup());
 			octree.displayInitial();
@@ -167,7 +167,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/*
 	 * Requires an empty directory.
 	 */
-	public octree.VolumeOctree createAndAddOctree(String imagePath, String dir, String name) {
+	public VolumeOctree createAndAddOctree(String imagePath, String dir, String name) {
 		File outdir = new File(dir);
 		if(!outdir.exists())
 			outdir.mkdir();
@@ -182,6 +182,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			throw new RuntimeException(e);
 		}
 	}
+
 	public octree.VolumeOctree createAndAddOctree(ImagePlus image, String dir, String name) {
 		File outdir = new File(dir);
 		if(!outdir.exists())

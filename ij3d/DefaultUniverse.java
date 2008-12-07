@@ -166,7 +166,6 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		});
 
 		fireTransformationUpdated();
-
 	}
 
 	public BranchGroup getScene() {
