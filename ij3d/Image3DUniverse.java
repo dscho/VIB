@@ -247,7 +247,17 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private float oldRange = 2f;
 	private void ensureScale(float range) {
-		double d = (range) / Math.tan(Math.PI/8);
+		if(range > oldRange) {
+			oldRange = range;
+			double d = (range) / Math.tan(Math.PI/8);
+			getViewPlatformTransformer().zoomTo(d);
+			getViewer().getView().setBackClipDistance(2 * d);
+			getViewer().getView().setFrontClipDistance(2 * d / 100);
+		}
+	}
+
+	public void resetZoom() {
+		double d = oldRange / Math.tan(Math.PI/8);
 		getViewPlatformTransformer().zoomTo(d);
 		getViewer().getView().setBackClipDistance(2 * d);
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
@@ -257,17 +267,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		int threshold, boolean[] channels, int resamplingF){
 		return addContent(image, color, name, threshold, channels,
 			resamplingF, Content.SURFACE);
-	}
-
-	public Content addMesh(List mesh, Color3f color,
-			String name, float scale, int threshold){
-		// correct global scaling transformation
-//		Transform3D scaletr = new Transform3D();
-//		scaleTG.getTransform(scaletr);
-//		scaletr.setScale(scale);
-//		scaleTG.setTransform(scaletr);
-		// add the mesh
- 		return addMesh(mesh, color, name, threshold);
 	}
 
 	public Content addMesh(List mesh,
@@ -326,14 +325,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void resetView() {
-//		fireTransformationStarted();
-//		Transform3D t = new Transform3D();
-//		getViewingPlatform().setNominalViewingTransform();
-//		rotationsTG.setTransform(t);
-//		translateTG.setTransform(t);
-//		TransformGroup tg = null;
-//		fireTransformationUpdated();
-//		fireTransformationFinished();
+		fireTransformationStarted();
+		Transform3D t = new Transform3D();
+		getRotationTG().setTransform(t);
+		getTranslateTG().setTransform(t);
+		getViewPlatformTransformer().centerAt(globalCenter);
+		fireTransformationUpdated();
+		fireTransformationFinished();
+		resetZoom();
 	}
 
 	public Content getSelected() {
