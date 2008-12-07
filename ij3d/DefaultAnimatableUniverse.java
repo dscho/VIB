@@ -74,25 +74,39 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			public void canvasResized() {}
 			public void universeClosed() {}
 			public void contentSelected(Content c) {}
-
-			public void transformationUpdated(View view) {
-				somethingChanged();
-			}
-
-			public void contentChanged(Content c) {
-				somethingChanged();
-			}
+			public void transformationUpdated(View view) {}
+			public void contentChanged(Content c) {}
 		});
 	}
 
 	private ImageStack stack;
-	private boolean freeRecording = false;
-	private boolean animatedRecording = false;
 
-	public void somethingChanged() {
-		if(animatedRecording) {
-			return;
-		} else if(freeRecording) {
+	private Transform3D rotate = new Transform3D();
+	private Transform3D centerXformInv = new Transform3D();
+	public ImagePlus record360() {
+		updateRotationAxisAndCenter();
+		try {
+			Thread.currentThread().sleep(1000);
+		} catch (Exception e) {e.printStackTrace();}
+		centerXformInv.invert(centerXform);
+		double deg2 = 2 * Math.PI * 2 / 360;
+		int steps = (int)Math.round(2 * Math.PI / deg2);
+
+		getCanvas().getView().stopView();
+
+		double alpha = 0;
+
+		for(int i = 0; i < steps; i++) {
+			alpha = i * deg2;
+			rotationXform.rotY(alpha);
+			rotate.mul(centerXform, rotationXform);
+			rotate.mul(rotate, centerXformInv);
+			animationTG.setTransform(rotate);
+			transformChanged(-1, animationTG);
+			getCanvas().getView().renderOnce();
+//			try {
+//				Thread.currentThread().sleep(100);
+//			} catch (Exception e) {e.printStackTrace();}
 			win.updateImagePlus();
 			ImageProcessor ip = win.getImagePlus().getProcessor();
 			int w = ip.getWidth(), h = ip.getHeight();
@@ -100,42 +114,13 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 				stack = new ImageStack(w, h);
 			stack.addSlice("", ip);
 		}
-	}
+		getCanvas().getView().startView();
+		incorporateAnimationInRotation();
 
-	private Transform3D rotate = new Transform3D();
-	public void record360() {
-//		rotationsTG.getTransform(rotate);
-//		double angle = 0;
-//		double deg5 = Math.toRadians(5);
-//		double pi2 = Math.PI*2;
-//		int circles = (int)Math.round(pi2/deg5);
-//		getCanvas().getView().stopView();
-//		rotate.rotY(angle);
-//		rotationsTG.setTransform(rotate);
-//		transformChanged(-1, rotationsTG);
-//		getCanvas().getView().renderOnce();
-//		try {
-//			Thread.currentThread().sleep(1000);
-//		} catch (Exception e) {e.printStackTrace();}
-//		for(int i = 0; i < circles; i++) {
-//			angle = i * deg5;
-//			rotate.rotY(angle);
-//			rotationsTG.setTransform(rotate);
-//			transformChanged(-1, rotationsTG);
-//			getCanvas().getView().renderOnce();
-//			try {
-//				Thread.currentThread().sleep(100);
-//			} catch (Exception e) {e.printStackTrace();}
-//			win.updateImagePlus();
-//			ImageProcessor ip = win.getImagePlus().getProcessor();
-//			int w = ip.getWidth(), h = ip.getHeight();
-//			if(stack == null) 
-//				stack = new ImageStack(w, h);
-//			stack.addSlice("", ip);
-//			angle += 0.04;
-//		}
-//		getCanvas().getView().startView();
-//		stopRecording().show();
+		if(stack.getSize() == 0)
+			return null;
+		ImagePlus imp = new ImagePlus("Movie", stack);
+		return imp;
 	}
 
 	public void rotateY(double rad) {
@@ -143,30 +128,16 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		transformChanged(-1, rotationTG);
 	}
 
-	public void startRecording() {
-		ImageProcessor ip = win.getImagePlus().getProcessor();
-		stack = new ImageStack(ip.getWidth(), ip.getHeight());
+	public ImagePlus record() {
+		ImagePlus ret = null;
 		if(!animation.isPaused()) {
 			pauseAnimation();
-			freeRecording = false;
-			animatedRecording = true;
-			record360();
+			ImageProcessor ip = win.getImagePlus().getProcessor();
+			stack = new ImageStack(ip.getWidth(), ip.getHeight());
+			ret = record360();
 			startAnimation();
-		} else {
-			animatedRecording = false;
-			freeRecording = true;
 		}
-	}
-
-	public ImagePlus stopRecording() {
-		animatedRecording = false;
-		freeRecording = false;
-		if(stack == null || stack.getSize() == 0)
-			return null;
-		stack.deleteSlice(1);
-		ImagePlus imp = new ImagePlus("Movie", stack);
-		stack = null;
-		return imp;
+		return ret;
 	}
 
 	public void startAnimation() {
@@ -175,14 +146,11 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		rotpol.setTransformAxis(centerXform);
 		rotpol.setEnable(true);
 		animation.resume();
-		if(freeRecording) {
-			freeRecording = false;
-			animatedRecording = true;
-		}
 		fireTransformationStarted();
 	}
 
 	public void pauseAnimation() {
+		System.out.println("animation.pause");
 		animation.pause();
 	}
 
@@ -190,10 +158,6 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		rotpol.setEnable(false);
 		incorporateAnimationInRotation();
 		animation.setStartTime(System.currentTimeMillis());
-		if(animatedRecording) {
-			animatedRecording = false;
-			freeRecording = true;
-		}
 		TransformGroup tg = null;
 		transformChanged(0, tg);
 		fireTransformationFinished();

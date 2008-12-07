@@ -1,30 +1,14 @@
 package ij3d;
 
-import ij.process.ImageProcessor;
 import ij.ImagePlus;
 import ij.plugin.PlugIn;
-import ij.gui.GenericDialog;
-import ij.measure.Calibration;
-import ij.IJ;
 import ij.WindowManager;
 import ij.gui.GUI;
 
-import ij3d.ImageWindow3D;
-import ij3d.Content;
-import ij3d.ColorTable;
-import ij3d.Image3DUniverse;
-import ij3d.Image3DMenubar;
-
-import java.awt.Dimension;
-import java.awt.MenuBar;
-import java.awt.Menu;
-
-import isosurface.MeshGroup;
 import voltex.VoltexGroup;
 import orthoslice.OrthoGroup;
 
 import javax.media.j3d.Transform3D;
-import javax.vecmath.Vector3f;
 import javax.vecmath.Color3f;
 
 public class ImageJ3DViewer implements PlugIn {
@@ -76,11 +60,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void startRecord() {
-		if(univ != null) univ.startRecording();
-	}
-
-	public static void stopRecord() {
-		if(univ != null) univ.stopRecording();
+		if(univ != null) univ.record();
 	}
 
 	public static void close() {

@@ -25,7 +25,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem properties;
 	private MenuItem resetView;
 	private MenuItem startRecord;
-	private MenuItem stopRecord;
+//	private MenuItem stopRecord;
 	private MenuItem startAnimation;
 	private MenuItem stopAnimation;
 	private MenuItem viewPreferences;
@@ -236,9 +236,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		startRecord.addActionListener(this);
 		view.add(startRecord);
 
-		stopRecord = new MenuItem("Stop recording");
-		stopRecord.addActionListener(this);
-		view.add(stopRecord);
+//		stopRecord = new MenuItem("Stop recording");
+//		stopRecord.addActionListener(this);
+//		view.add(stopRecord);
 
 		view.addSeparator();
 
@@ -408,9 +408,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		else if(src == center)
 			executer.centerSelected(univ.getSelected());
 		else if(src == startRecord)
-			executer.startRecording();
-		else if(src == stopRecord)
-			executer.stopRecording();
+			executer.record();
+//		else if(src == stopRecord)
+//			executer.stopRecording();
 		else if(src == startAnimation)
 			executer.startAnimation();
 		else if(src == stopAnimation)
