@@ -1,5 +1,6 @@
-package ij3d;
+package ij3d.pointlist;
 
+import ij3d.*;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Button;

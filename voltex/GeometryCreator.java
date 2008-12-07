@@ -6,9 +6,20 @@ public class GeometryCreator implements VolRendConstants {
 
 	private double[] quadCoords = new double[12];
 	private Volume volume;
+	private float pos;
+
+	public GeometryCreator() {}
 
 	public GeometryCreator(Volume volume) {
 		this.volume = volume;
+	}
+
+	public void setVolume(Volume volume) {
+		this.volume = volume;
+	}
+
+	public float getPos() {
+		return pos;
 	}
 
 	public GeometryArray getQuad(int direction, int index) {
@@ -48,7 +59,8 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordX(int i) {
-		double curX = i * volume.xSpace;
+		double curX = i * volume.xSpace + volume.minCoord.x;
+		pos = (float)curX;
 		quadCoords[0] = curX;
 		quadCoords[3] = curX;
 		quadCoords[6] = curX;
@@ -56,7 +68,8 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordY(int i) {
-		double curY = i * volume.ySpace;
+		double curY = i * volume.ySpace + volume.minCoord.y;
+		pos = (float)curY;
 		quadCoords[1] = curY;
 		quadCoords[4] = curY;
 		quadCoords[7] = curY;
@@ -64,7 +77,8 @@ public class GeometryCreator implements VolRendConstants {
 	}
 
 	private void setCurCoordZ(int i) {
-		double curZ = i * volume.zSpace;
+		double curZ = i * volume.zSpace + volume.minCoord.z;
+		pos = (float)curZ;
 		quadCoords[2] = curZ;
 		quadCoords[5] = curZ;
 		quadCoords[8] = curZ;

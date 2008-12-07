@@ -1,23 +1,10 @@
 package ij3d;
 
+import ij3d.pointlist.PointListDialog;
 import ij.ImagePlus;
-import ij.process.ImageProcessor;
-import ij.ImageStack;
 import ij.IJ;
 
-import ij3d.ImageWindow3D;
-import ij3d.ImageCanvas3D;
-
-import isosurface.Triangulator;
-import isosurface.MeshGroup;
-
-import voltex.VoltexGroup;
-
-import orthoslice.OrthoGroup;
-
 import java.awt.MenuBar;
-import java.awt.Menu;
-import java.awt.MenuItem;
 import java.awt.event.*;
 
 import java.util.List;
@@ -30,8 +17,10 @@ import com.sun.j3d.utils.universe.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import com.sun.j3d.utils.picking.PickCanvas;
-import com.sun.j3d.utils.picking.PickResult;
+import com.sun.j3d.utils.pickfast.PickCanvas;
+import java.io.File;
+import octree.FilePreparer;
+import octree.VolumeOctree;
 
 public class Image3DUniverse extends DefaultAnimatableUniverse {
 
@@ -56,6 +45,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
+			@Override
 			public void mouseMoved(MouseEvent e) {
 				Content c = getContentAtCanvasPosition(
 						e.getX(), e.getY());
@@ -66,6 +56,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			}
 		});
 		canvas.addMouseListener(new MouseAdapter() {
+			@Override
 			public void mouseClicked(MouseEvent e) {
 				Content c = getContentAtCanvasPosition(
 						e.getX(), e.getY());
@@ -93,6 +84,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				"call", "ImageJ_3D_Viewer.select", c.name);
 	}
 
+	@Override
 	public void show() {
 		super.show();
 		menubar = new Image3DMenubar(this);
@@ -105,6 +97,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		win.setMenuBar(mb);
 	}
 
+	@Override
 	public void close() {
 		super.close();
 		removeAllContents();
@@ -140,14 +133,83 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y)/2;
 		globalCenter.z = globalMin.z + (globalMax.z - globalMin.z)/2;
 
-		Transform3D transform = new Transform3D();
-		transform.setTranslation(new Vector3f(
-			-globalCenter.x, -globalCenter.y, -globalCenter.z));
-		centerTG.setTransform(transform);
+		getViewPlatformTransformer().centerAt(globalCenter);
 	}
 
 	public Point3f getGlobalCenterPoint() {
 		return globalCenter;
+	}
+
+	public void updateOctree() {
+		octree.update();
+	}
+
+	private VolumeOctree octree = null;
+
+	public void removeOctree() {
+		if(octree != null) {
+			this.removeUniverseListener(octree);
+			scene.removeChild(octree.getRootBranchGroup());
+			octree = null;
+		}
+	}
+
+	public VolumeOctree addOctree(String imageDir, String name) {
+		if(octree != null) {
+			IJ.error("Only one large volume can be displayed a time.\n" +
+				"Please remove previously displayed volumes first.");
+			return null;
+		}
+		if(contents.containsKey(name)) {
+			IJ.error("Name exists already");
+			return null;
+		}
+		try {
+			octree = new VolumeOctree(imageDir, canvas);
+			octree.getRootBranchGroup().compile();
+			scene.addChild(octree.getRootBranchGroup());
+			octree.displayInitial();
+			this.addUniverseListener(octree);
+			ensureScale(octree.realWorldXDim());
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		return octree;
+	}
+
+	/*
+	 * Requires an empty directory.
+	 */
+	public VolumeOctree createAndAddOctree(String imagePath, String dir, String name) {
+		File outdir = new File(dir);
+		if(!outdir.exists())
+			outdir.mkdir();
+		if(!outdir.isDirectory()) {
+			throw new RuntimeException("Not a directory");
+		}
+		try {
+			new FilePreparer(imagePath, VolumeOctree.SIZE, dir).createFiles();
+			return addOctree(dir, name);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+	}
+
+	public octree.VolumeOctree createAndAddOctree(ImagePlus image, String dir, String name) {
+		File outdir = new File(dir);
+		if(!outdir.exists())
+			outdir.mkdir();
+		if(!outdir.isDirectory()) {
+			throw new RuntimeException("Not a directory");
+		}
+		try {
+			new FilePreparer(image, VolumeOctree.SIZE, dir).createFiles();
+			return addOctree(dir, name);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
 	}
 
 	public Content addContent(ImagePlus image, Color3f color, String name,
@@ -165,6 +227,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.resamplingF = resf;
 		content.setPointListDialog(pld);
 		content.displayAs(type);
+		content.compile();
 		scene.addChild(content);
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
@@ -193,33 +256,32 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 
 	private void ensureScale(ImagePlus image) {
-		Transform3D scale = new Transform3D();
-		scaleTG.getTransform(scale);
-		float oldXRange = (float)scale.getScale();
+		ensureScale(image.getWidth() *
+				(float)image.getCalibration().pixelWidth);
+	}
 
-		float xRange = image.getWidth() *
-				(float)image.getCalibration().pixelWidth;
-		if(xRange > oldXRange) {
-			scale.setScale(1/xRange);
-			scaleTG.setTransform(scale);
+	private float oldRange = 2f;
+	private void ensureScale(float range) {
+		if(range > oldRange) {
+			oldRange = range;
+			double d = (range) / Math.tan(Math.PI/8);
+			getViewPlatformTransformer().zoomTo(d);
+			getViewer().getView().setBackClipDistance(2 * d);
+			getViewer().getView().setFrontClipDistance(2 * d / 100);
 		}
+	}
+
+	public void resetZoom() {
+		double d = oldRange / Math.tan(Math.PI/8);
+		getViewPlatformTransformer().zoomTo(d);
+		getViewer().getView().setBackClipDistance(2 * d);
+		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
 	
 	public Content addMesh(ImagePlus image, Color3f color, String name,
 		int threshold, boolean[] channels, int resamplingF){
 		return addContent(image, color, name, threshold, channels,
 			resamplingF, Content.SURFACE);
-	}
-
-	public Content addMesh(List mesh, Color3f color,
-			String name, float scale, int threshold){
-		// correct global scaling transformation
-		Transform3D scaletr = new Transform3D();
-		scaleTG.getTransform(scaletr);
-		scaletr.setScale(scale);
-		scaleTG.setTransform(scaletr);
-		// add the mesh
- 		return addMesh(mesh, color, name, threshold);
 	}
 
 	public Content addMesh(List mesh,
@@ -280,12 +342,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public void resetView() {
 		fireTransformationStarted();
 		Transform3D t = new Transform3D();
-		getViewingPlatform().setNominalViewingTransform();
-		rotationsTG.setTransform(t);
-		translateTG.setTransform(t);
-		TransformGroup tg = null;
+		getRotationTG().setTransform(t);
+		getTranslateTG().setTransform(t);
+		getViewPlatformTransformer().centerAt(globalCenter);
 		fireTransformationUpdated();
 		fireTransformationFinished();
+		resetZoom();
 	}
 
 	public Content getSelected() {
@@ -301,20 +363,28 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Content getContentAtCanvasPosition(int x, int y) {
 		PickCanvas pickCanvas = new PickCanvas(canvas, scene);
-		pickCanvas.setMode(PickCanvas.GEOMETRY);
+		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
+		pickCanvas.setFlags(PickInfo.SCENEGRAPHPATH);
 		pickCanvas.setTolerance(4.0f);
 		pickCanvas.setShapeLocation(x, y);
-		PickResult result = null;
+		PickInfo result = null;
 		try {
-			result = pickCanvas.pickClosest();
+			result = pickCanvas.pickAny();
 			if(result == null)
 				return null;
-			Content content = (Content)result.
-					getNode(PickResult.BRANCH_GROUP);
+			SceneGraphPath path = result.getSceneGraphPath();
+			Content content = null;
+			for(int i = path.nodeCount() - 1; i >= 0; i--) {
+				if(path.getNode(i) instanceof Content) {
+					content = (Content)path.getNode(i);
+					break;
+				}
+			}
 			if(content== null)
 				return null;
 			return content;
 		} catch(Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}

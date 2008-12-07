@@ -1,28 +1,30 @@
 package ij3d;
 
-import ij.IJ;
+import ij3d.shapes.CoordinateSystem;
+import ij3d.shapes.BoundingBox;
+import ij3d.shapes.BoundingSphere;
+import ij3d.pointlist.PointListShape;
+import ij3d.pointlist.PointListDialog;
 import ij.ImagePlus;
-import ij.ImageStack;
-import ij.process.ByteProcessor;
 import ij.io.FileInfo;
 import ij.io.OpenDialog;
 
 import vib.PointList;
 import vib.BenesNamedPoint;
-import isosurface.IsoShape;
 import isosurface.MeshGroup;
 import voltex.VoltexGroup;
 import orthoslice.OrthoGroup;
 import surfaceplot.SurfacePlotGroup;
 
-import java.awt.image.IndexColorModel;
 import java.util.BitSet;
 import java.util.List;
 
-import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
-import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
+import javax.media.j3d.BranchGroup;
+import javax.media.j3d.Switch;
+import javax.media.j3d.Transform3D;
+import javax.media.j3d.TransformGroup;
+import javax.media.j3d.View;
 
-import javax.media.j3d.*;
 import javax.vecmath.Color3f;
 import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix3f;
@@ -46,18 +48,18 @@ public class Content extends BranchGroup implements UniverseListener {
 	private boolean locked = false;
 	private boolean visible = true;
 	private boolean coordVisible = true;
-	protected boolean selected = false;
 	private boolean showPL = false;
+	private boolean boundingSphereVisible = false;
+	protected boolean selected = false;
 
 	// entries
 	private ContentNode contentNode = null;
-	private BoundingBox bb = null;
-	private CoordinateSystem cs = null; 
 	private PointListShape pointlist = null;
+	private BoundingSphere boundingSphere = null;
 
 	// scene graph entries
 	private Switch bbSwitch;
-	private BitSet whichChild = new BitSet(2);
+	private BitSet whichChild = new BitSet(5);
 
 	protected TransformGroup localRotate;
 	protected TransformGroup localTranslate;
@@ -69,8 +71,9 @@ public class Content extends BranchGroup implements UniverseListener {
 	// global constants
 	public static final int CO = 0;
 	public static final int BB = 1;
-	public static final int CS = 2;
-	public static final int PL = 3;
+	public static final int BS = 2;
+	public static final int CS = 3;
+	public static final int PL = 4;
 
 	public static final int VOLUME = 0;
 	public static final int ORTHO = 1;
@@ -119,10 +122,14 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(contentNode);
 
 		// create the bounding box and add it to the switch
-		BoundingBox b = new BoundingBox(
+		BoundingBox bb = new BoundingBox(
 				contentNode.min, contentNode.max);
-		b.setPickable(false);
-		bbSwitch.addChild(b);
+		bb.setPickable(false);
+		bbSwitch.addChild(bb);
+		boundingSphere = new BoundingSphere(contentNode.center,
+				contentNode.center.distance(contentNode.min));
+		boundingSphere.setPickable(true);
+		bbSwitch.addChild(boundingSphere);
 
 		// create coordinate system and add it to the switch
 		float cl = (float)Math.abs(contentNode.max.x 
@@ -142,6 +149,7 @@ public class Content extends BranchGroup implements UniverseListener {
 
 		// initialize child mask of the switch
 		whichChild.set(BB, selected);
+		whichChild.set(BS, boundingSphereVisible);
 		whichChild.set(CS, coordVisible);
 		whichChild.set(CO, visible);
 		whichChild.set(PL, showPL);
@@ -189,10 +197,14 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(contentNode);
 
 		// create the bounding box and add it to the switch
-		BoundingBox b = new BoundingBox(
+		BoundingBox bb = new BoundingBox(
 				contentNode.min, contentNode.max);
-		b.setPickable(false);
-		bbSwitch.addChild(b);
+		bb.setPickable(false);
+		bbSwitch.addChild(bb);
+		boundingSphere = new BoundingSphere(contentNode.center,
+				contentNode.center.distance(contentNode.min));
+		boundingSphere.setPickable(true);
+		bbSwitch.addChild(boundingSphere);
 
 		// create coordinate system and add it to the switch
 		float cl = (float)Math.abs(contentNode.max.x 
@@ -210,6 +222,7 @@ public class Content extends BranchGroup implements UniverseListener {
 
 		// initialize child mask of the switch
 		whichChild.set(BB, selected);
+		whichChild.set(BS, boundingSphereVisible);
 		whichChild.set(CS, coordVisible);
 		whichChild.set(CO, visible);
 		whichChild.set(PL, showPL);
@@ -231,8 +244,15 @@ public class Content extends BranchGroup implements UniverseListener {
 		whichChild.set(CO, b);
 		whichChild.set(CS, b);
 		// only if hiding, hide the point list
-		if(!b)
+		if(!b) {
 			showPointList(false);
+			whichChild.set(BS, b);
+		}
+		bbSwitch.setChildMask(whichChild);
+	}
+
+	public void showBoundingSphere(boolean b) {
+		whichChild.set(BS, b);
 		bbSwitch.setChildMask(whichChild);
 	}
 
@@ -281,13 +301,13 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void savePointList() {
 		String dir = OpenDialog.getDefaultDirectory();
-		String name = this.name;
+		String n = this.name;
 		if(image != null) {
 			FileInfo fi = image.getFileInfo();
 			dir = fi.directory;
-			name = fi.fileName;
+			n = fi.fileName;
 		}
-		pointlist.save(dir, name);
+		pointlist.save(dir, n);
 	}
 
 	public void addPointListPoint(Point3d p) {
@@ -303,8 +323,8 @@ public class Content extends BranchGroup implements UniverseListener {
 				point = size;
 			}
 		}
-		String name = "point" + point;
-		pointlist.addPoint(name, p.x, p.y, p.z);
+		String n = "point" + point;
+		pointlist.addPoint(n, p.x, p.y, p.z);
 		plw.update();
 	}
 	
@@ -422,7 +442,6 @@ public class Content extends BranchGroup implements UniverseListener {
 			|| !(this.color.equals(color));
 		if(!colorChanged)
 			return;
-		Color3f oldColor = this.color;
 		this.color = color;
  		pointlist.setColor(color);
 		contentNode.colorUpdated();
@@ -471,6 +490,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	 * getters
 	 *
 	 **************************************************************/
+	@Override
 	public String getName() {
 		return name;
 	}
@@ -481,6 +501,10 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public ContentNode getContent() {
 		return contentNode;
+	}
+
+	public BoundingSphere getBoundingSphere() {
+		return boundingSphere;
 	}
 
 	public ImagePlus getImage() {

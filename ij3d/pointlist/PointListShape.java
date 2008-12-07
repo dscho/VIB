@@ -1,5 +1,6 @@
-package ij3d;
+package ij3d.pointlist;
 
+import ij3d.pointlist.PointListPanel;
 import ij.IJ;
 import ij.measure.Calibration;
 import ij.ImagePlus;

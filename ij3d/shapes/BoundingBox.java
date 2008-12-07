@@ -1,4 +1,4 @@
-package ij3d;
+package ij3d.shapes;
 
 import com.sun.j3d.utils.geometry.ColorCube;
 import com.sun.j3d.utils.universe.*;
@@ -17,6 +17,7 @@ public class BoundingBox extends BranchGroup {
 	
 	public BoundingBox(Point3f minp, Point3f maxp, Color3f color) {
 		setCapability(BranchGroup.ALLOW_DETACH);
+		setCapability(BranchGroup.ENABLE_PICK_REPORTING);
 		min = minp;
 		max = maxp;
 		
@@ -32,51 +33,50 @@ public class BoundingBox extends BranchGroup {
 		p[6] = new Point3f(max.x, max.y, min.z);
 		p[7] = new Point3f(min.x, max.y, min.z);
 
-		Point3f[] coords = new Point3f[24];
+		Shape3D shape = new Shape3D();
+		shape.setName("BB");
+
+		Point3f[] coords = new Point3f[2];
+
 		coords[0] = p[0];
 		coords[1] = p[1];
-		coords[2] = p[2];
-		coords[3] = p[3];
-		
-		coords[4] = p[1];
-		coords[5] = p[5];
-		coords[6] = p[6];
-		coords[7] = p[2];
-		
-		coords[8] = p[5];
-		coords[9] = p[4];
-		coords[10] = p[7];
-		coords[11] = p[6];
-		
-		coords[12] = p[4];
-		coords[13] = p[0];
-		coords[14] = p[3];
-		coords[15] = p[7];
-		
-		coords[16] = p[1];
-		coords[17] = p[0];
-		coords[18] = p[4];
-		coords[19] = p[5];
-		
-		coords[20] = p[3];
-		coords[21] = p[2];
-		coords[22] = p[6];
-		coords[23] = p[7];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[1];
+		coords[1] = p[2];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[2];
+		coords[1] = p[3];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[3];
+		coords[1] = p[0];
+		shape.addGeometry(makeLine(coords));
 
-		QuadArray ga = new QuadArray(24, 
-				QuadArray.COORDINATES |
-				QuadArray.COLOR_3 |
-				QuadArray.NORMALS);
-		ga.setCoordinates(0, coords);
-		Color3f red = new Color3f(1, 0, 0);
-		Color3f[] col = new Color3f[24];
-		for(int i = 0; i < 24; i++) 
-			col[i] = red;
-		ga.setColors(0, col);
-
-		Shape3D shape = new Shape3D();
-		shape.setGeometry(ga);
-
+		coords[0] = p[4];
+		coords[1] = p[5];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[5];
+		coords[1] = p[6];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[6];
+		coords[1] = p[7];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[7];
+		coords[1] = p[4];
+		shape.addGeometry(makeLine(coords));
+		
+		coords[0] = p[0];
+		coords[1] = p[4];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[1];
+		coords[1] = p[5];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[2];
+		coords[1] = p[6];
+		shape.addGeometry(makeLine(coords));
+		coords[0] = p[3];
+		coords[1] = p[7];
+		shape.addGeometry(makeLine(coords));
+		
 		Appearance a = new Appearance();
 		PolygonAttributes pa = new PolygonAttributes();
 		pa.setPolygonMode(PolygonAttributes.POLYGON_LINE);
@@ -90,6 +90,21 @@ public class BoundingBox extends BranchGroup {
 		shape.setAppearance(a);
 
 		addChild(shape);
+	}
+
+	private Geometry makeLine(Point3f[] coords) {
+		LineArray ga = new LineArray(2, 
+				GeometryArray.COORDINATES |
+				GeometryArray.COLOR_3 |
+				GeometryArray.NORMALS);
+		ga.setCapability(GeometryArray.ALLOW_INTERSECT);
+		ga.setCoordinates(0, coords);
+		Color3f red = new Color3f(1, 0, 0);
+		Color3f[] col = new Color3f[2];
+		for(int i = 0; i < 2; i++) 
+			col[i] = red;
+		ga.setColors(0, col);
+		return ga;
 	}
 
 	public String toString() {
