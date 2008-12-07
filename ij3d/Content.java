@@ -6,6 +6,7 @@ import ij3d.shapes.BoundingSphere;
 import ij3d.pointlist.PointListShape;
 import ij3d.pointlist.PointListDialog;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.io.FileInfo;
 import ij.io.OpenDialog;
 

@@ -278,6 +278,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		bgColor = new MenuItem("Change background color");
 		bgColor.addActionListener(this);
 		view.add(bgColor);
+
 		MenuItem tmp = new MenuItem("Update Octree");
 		tmp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {

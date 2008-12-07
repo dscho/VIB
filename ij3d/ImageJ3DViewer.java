@@ -1,7 +1,7 @@
 package ij3d;
 
+import ij.IJ;
 import ij.ImagePlus;
-import ij.Macro;
 import ij.plugin.PlugIn;
 import ij.WindowManager;
 import ij.gui.GUI;
