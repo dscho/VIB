@@ -81,6 +81,8 @@ public class ViewPlatformTransformer {
 		centerV.set(center.x, center.y, center.z);
 		centerXform.set(centerV);
 		centerTG.setTransform(centerXform);
+		centerXform.setIdentity();
+		translateTG.setTransform(centerXform);
 		transformChanged(BehaviorCallback.TRANSLATE, centerXform);
 	}
 

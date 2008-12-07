@@ -813,15 +813,14 @@ public class Executer {
 	}
 
 	public void centerSelected(Content c) {
-//		if(!checkSel(c))
-//			return;
-//		Point3f min = c.getContent().min;
-//		Point3f max = c.getContent().max;
-//		Point3f center = new Point3f();
-//		center.x = min.x + (max.x - min.x)/2;
-//		center.y = min.y + (max.y - min.y)/2;
-//		center.z = min.z + (max.z - min.z)/2;
-//
+		if(!checkSel(c))
+			return;
+
+		Point3f center = c.getContent().center;
+		Transform3D localToVWorld = new Transform3D();
+		c.getLocalToVworld(localToVWorld);
+		localToVWorld.transform(center);
+		univ.getViewPlatformTransformer().centerAt(center);
 //		Point3f globalC = univ.getGlobalCenterPoint();
 //		center.x -= globalC.x;
 //		center.y -= globalC.y;
@@ -830,7 +829,7 @@ public class Executer {
 //		Transform3D transform = new Transform3D();
 //		transform.setTranslation(new Vector3f(
 //				-center.x, -center.y, -center.z));
-//		univ.getGlobalTranslate().setTransform(transform);
+//		univ.getTranslateTG().setTransform(transform);
 	}
 
 	public void startRecording() {
