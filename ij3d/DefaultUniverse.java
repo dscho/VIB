@@ -30,20 +30,21 @@ import ij3d.behaviors.InteractiveViewPlatformTransformer;
 public abstract class DefaultUniverse extends SimpleUniverse implements 
 					BehaviorCallback, PickingCallback {
 
-	public static final int CENTER_TG = 0;
-	public static final int ZOOM_TG = 1;
+	public static final int CENTER_TG    = 0;
+	public static final int ZOOM_TG      = 1;
 	public static final int TRANSLATE_TG = 2;
-	public static final int ROTATION_TG = 3;
+	public static final int ANIMATE_TG   = 3;
+	public static final int ROTATION_TG  = 4;
 
 	protected BranchGroup scene;
 	protected Scalebar scalebar;
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
 
-	protected MouseBehavior mouseBehavior;
-	private ContentTransformer contentTransformer;
-	private Picker picker;
-	private InteractiveViewPlatformTransformer viewTransformer;
+	protected final MouseBehavior mouseBehavior;
+	protected final ContentTransformer contentTransformer;
+	protected final Picker picker;
+	protected final InteractiveViewPlatformTransformer viewTransformer;
 
 	private List listeners = new ArrayList();
 	private boolean transformed = false;
@@ -67,6 +68,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(TRANSLATE_TG);
 	}
 
+	public TransformGroup getAnimationTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(ANIMATE_TG);
+	}
+
 	public Scalebar getScalebar() {
 		return scalebar;
 	}
@@ -84,8 +89,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	}
 
 	public DefaultUniverse(int width, int height) {
-		super(new ImageCanvas3D(width, height), 4);
-		getViewingPlatform().setNominalViewingTransform();
+		super(new ImageCanvas3D(width, height), 5);
+//		getViewingPlatform().setNominalViewingTransform();
 		getViewer().getView().setProjectionPolicy(
 					View.PERSPECTIVE_PROJECTION);
 
@@ -100,8 +105,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scalebar = new Scalebar();
 		scene.addChild(scalebar);
 
-		// just for now: a sphere indicating the global origin
-		scene.addChild(new Sphere(10));
+//		// just for now: a sphere indicating the global origin
+//		scene.addChild(new Sphere(10));
 		// ah, and maybe a global coordinate system
 		scene.addChild(new CoordinateSystem(100, new Color3f(1, 0, 0)));
 
@@ -125,6 +130,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		mouseBehavior = new MouseBehavior(this);
 		mouseBehavior.setSchedulingBounds(bounds);
 		scene.addChild(mouseBehavior);
+
+		// add the scene to the universe
+		scene.compile();
+		addBranchGraph(scene);
 
 		getCanvas().addMouseListener(new MouseAdapter() {
 			@Override

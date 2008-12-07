@@ -260,6 +260,36 @@ public class ViewPlatformTransformer {
 		transformChanged(BehaviorCallback.ROTATE, rotationXform);
 	}
 
+	public void viewPlatformToVworldInverse(Transform3D t) {
+		centerV.set(0, 0, 0);
+		getZoomTranslation(tmpV);
+		centerV.add(tmpV);
+		getCenterTranslation(tmpV);
+		centerV.add(tmpV);
+		getTranslateTranslation(tmpV);
+		centerV.add(tmpV);
+		centerXform.set(centerV);
+
+		rotationTG.getTransform(rotationXform);
+		t.mul(centerXform, rotationXform);
+	}
+
+	public void viewPlatformToVworld(Transform3D t) {
+		centerV.set(0, 0, 0);
+		getZoomTranslation(tmpV);
+		centerV.sub(tmpV);
+		getCenterTranslation(tmpV);
+		centerV.sub(tmpV);
+		getTranslateTranslation(tmpV);
+		centerV.sub(tmpV);
+		centerXform.set(centerV);
+
+		rotationTG.getTransform(rotationXform);
+		rotationXform.invert();
+
+		t.mul(rotationXform, centerXform);
+	}
+
 	public void getTranslateTranslation(Vector3d v) {
 		translateTG.getTransform(tmp);
 		tmp.get(v);
