@@ -478,6 +478,7 @@ public class Executer {
 			new GenericDialog("Adjust background color ...", univ.getWindow());
 
 		final Background background = ((ImageCanvas3D)univ.getCanvas()).getBG();
+		final Label status = univ.getWindow().getStatusLabel();
 		final Color3f oldC = new Color3f();
 		background.getColor(oldC);
 
@@ -495,9 +496,11 @@ public class Executer {
 
 		AdjustmentListener listener = new AdjustmentListener() {
 			public void adjustmentValueChanged(AdjustmentEvent e) {
-				background.setColor(rSlider.getValue() / 255.0f,
-						    gSlider.getValue() / 255.0f,
-						    bSlider.getValue() / 255.0f);
+				float r = rSlider.getValue() / 255f;
+				float g = gSlider.getValue() / 255f;
+				float b = bSlider.getValue() / 255f;
+				background.setColor(r, g, b);
+				status.setBackground(new Color(r, g, b));
 				((ImageCanvas3D)univ.getCanvas()).render();
 			}
 		};
@@ -510,14 +513,17 @@ public class Executer {
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
 					background.setColor(oldC);
+					status.setBackground(new Color(oldC.x, oldC.y, oldC.z));
 					((ImageCanvas3D)univ.getCanvas()).render();
 					return;
 				} else {
 					// TODO macro record
 					// Apply:
-					background.setColor(rSlider.getValue() / 255.0f,
-							    gSlider.getValue() / 255.0f,
-							    bSlider.getValue() / 255.0f);
+					float r = rSlider.getValue() / 255f;
+					float g = gSlider.getValue() / 255f;
+					float b = bSlider.getValue() / 255f;
+					background.setColor(r, g, b);
+					status.setBackground(new Color(r, g, b));
 					((ImageCanvas3D)univ.getCanvas()).render();
 				}
 			}
