@@ -1250,10 +1250,17 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	void clearPathsAndFills( ) {
-			maxUsedID = -1;
-			allPaths.clear();
-			allFills.clear();
-			resetListeners( null );
+		maxUsedID = -1;
+		if( plugin.use3DViewer ) {
+			for( Iterator< Path > i = allPaths.iterator();
+			     i.hasNext(); ) {
+				Path p = i.next();
+				p.removeFrom3DViewer( plugin.univ );
+			}
+		}
+		allPaths.clear();
+		allFills.clear();
+		resetListeners( null );
 	}
 
 	private static class SWCPoint implements Comparable {
