@@ -7,6 +7,7 @@ import java.awt.event.MouseEvent;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.vecmath.AxisAngle4d;
+import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
@@ -114,6 +115,9 @@ public class ContentTransformer {
 
 	private class Initializer {
 		private Point3d centerInVWorld = new Point3d();
+		private Point3d centerInIp = new Point3d();
+
+		private Point2d canvasPoint = new Point2d();
 		
 		private Transform3D ipToVWorld           = new Transform3D();
 		private Transform3D ipToVWorldInverse    = new Transform3D();
@@ -142,6 +146,7 @@ public class ContentTransformer {
 			// calculate the canvas position in world coords
 			c.getContent().getCenter(centerInVWorld);
 			localToVWorld.transform(centerInVWorld);
+			ipToVWorldInverse.transform(centerInVWorld, centerInIp);
 
 			// get the eye point in world coordinates
 			canvas.getCenterEyeInImagePlate(eyePtInVWorld);
@@ -149,8 +154,12 @@ public class ContentTransformer {
 
 			// use picking to infer the radius of the virtual sphere which is rotated
 			pickPtInVWorld = univ.getPicker().getPickPointGeometry(c, x, y);
-			if(pickPtInVWorld == null)
-				return;
+			if(pickPtInVWorld == null) {
+				canvas.getPixelLocationFromImagePlate(centerInIp, canvasPoint);
+				pickPtInVWorld = univ.getPicker().getPickPointGeometry(c, 
+					(int)Math.round(canvasPoint.x),
+					(int)Math.round(canvasPoint.y));
+			}
 			localToVWorld.transform(pickPtInVWorld);
 			float r = (float)pickPtInVWorld.distance(centerInVWorld);
 			float dD = (float)pickPtInVWorld.distance(eyePtInVWorld);
