@@ -1,12 +1,8 @@
 package ij3d.pointlist;
 
-import ij3d.pointlist.PointListPanel;
-import ij.IJ;
-import ij.measure.Calibration;
 import ij.ImagePlus;
 import vib.PointList;
 import vib.BenesNamedPoint;
-import com.sun.j3d.utils.geometry.ColorCube;
 import com.sun.j3d.utils.universe.*;
 import com.sun.j3d.utils.geometry.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
@@ -19,7 +15,6 @@ public class PointListShape extends BranchGroup
 	private PointListPanel pld;
 	private PointList points;
 	private Color3f color = new Color3f(1, 1, 0);
-	private Color3f highlightColor = new Color3f(0, 1, 0);
 	private Appearance appearance;
 	private float radius = 10;
 	private String name = "";
@@ -179,11 +174,13 @@ public class PointListShape extends BranchGroup
 		TransformGroup tg = (TransformGroup)bg.getChild(0);
 		ScaleInterpolator si = (ScaleInterpolator)tg.getChild(1);
 		final Alpha a = si.getAlpha();
+		si.setEnable(true);
 		a.resume();
 		try {
-			Thread.currentThread().sleep(600);
+			Thread.sleep(600);
 		} catch(Exception e) { }
 		a.pause();
+		si.setEnable(false);
 	}
 
 	// private methods responsible for updating the universe
@@ -225,7 +222,9 @@ public class PointListShape extends BranchGroup
 		ScaleInterpolator si = new ScaleInterpolator(alpha, sig);
 		si.setMaximumScale(5 * radius);
 		si.setMinimumScale(radius);
-		si.setSchedulingBounds(new BoundingSphere());
+		BoundingSphere bs = new BoundingSphere(new Point3d(0, 0, 0), 100000);
+		si.setSchedulingBounds(bs);
+
 		tg.addChild(si);
 
 		Sphere sphere = new Sphere();
@@ -235,6 +234,7 @@ public class PointListShape extends BranchGroup
 		sig.addChild(sphere);
 
 		addChild(bg);
+		si.setEnable(true);
 	}
 
 	private void updatePositionInGeometry(int i, Point3d pos) {
@@ -270,6 +270,7 @@ public class PointListShape extends BranchGroup
 
 	}
 
+	@Override
 	public String toString() {
 		return points.toString();
 	}

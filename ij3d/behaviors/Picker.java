@@ -66,7 +66,7 @@ public class Picker {
 			IJ.error("Selection required");
 			return;
 		}
-		Point3d p3d = getPickPoint2(c, e);
+		Point3d p3d = getPickPointGeometry(c, e);
 		if(p3d == null)
 			return;
 		BenesNamedPoint bnp = c.getPointListPointAt(p3d);
@@ -163,11 +163,13 @@ public class Picker {
 			for(int i = 0; i < result.length; i++) {
 				Point3d intersection = result[i].getClosestIntersectionPoint();
 				float v = getVolumePoint(c, intersection);
-				if(v > 20)
+				if(v > 20) {
 					return intersection;
+				}
 			}
 			return null;
 		} catch(Exception ex) {
+			ex.printStackTrace();
 			return null;
 		}
 	}
