@@ -1563,7 +1563,6 @@ public class Path implements Comparable {
 			int lastIndexAdded = - noMoreThanOneEvery;
 			for( int i = 0; i < points; ++i ) {
 				if( (points <= noMoreThanOneEvery) || (i - lastIndexAdded >= noMoreThanOneEvery) ) {
-					System.out.println("Acutally adding point: "+i);
 					x_points_d[added] = precise_x_positions[i];
 					y_points_d[added] = precise_y_positions[i];
 					z_points_d[added] = precise_z_positions[i];
@@ -1573,9 +1572,7 @@ public class Path implements Comparable {
 				}
 			}
 			pointsToUse = added;
-			System.out.println("After reduction using "+pointsToUse+" points");
 		} else {
-			System.out.println("Using constant tube:");
 			for(int i=0; i<points; ++i) {
 				x_points_d[i] = precise_x_positions[i];
 				y_points_d[i] = precise_y_positions[i];
@@ -1625,10 +1622,6 @@ public class Path implements Comparable {
 		System.arraycopy( y_points_d, 0, y_points_d_trimmed, 0, pointsToUse );
 		System.arraycopy( z_points_d, 0, z_points_d_trimmed, 0, pointsToUse );
 		System.arraycopy( diameters, 0, diameters_trimmed, 0, pointsToUse );
-
-		System.out.println("-----------------------------------------");
-		for( int i = 0; i < pointsToUse; ++i )
-			System.out.println("("+x_points_d_trimmed[i]+","+y_points_d_trimmed[i]+","+z_points_d_trimmed[i]+") "+diameters_trimmed[i]);
 
 		double [][][] allPoints = Pipe.makeTube(x_points_d_trimmed,
 							y_points_d_trimmed,

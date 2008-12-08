@@ -1115,8 +1115,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				pathToAdd = p.fitted;
 			else
 				pathToAdd = p;
-			System.out.println("Adding path: "+p);
-			System.out.println("... of size: "+p.size());
 			pathToAdd.addTo3DViewer(plugin.univ,Color.MAGENTA);
 		}
 	}
