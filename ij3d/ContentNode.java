@@ -14,6 +14,14 @@ public abstract class ContentNode extends BranchGroup {
 		setCapability(BranchGroup.ALLOW_DETACH);
 	}
 
+	public void getMin(Tuple3d p) {
+		p.set(min);
+	}
+
+	public void getMax(Tuple3d p) {
+		p.set(max);
+	}
+
 	public void getCenter(Tuple3f p) {
 		p.set(center);
 	}

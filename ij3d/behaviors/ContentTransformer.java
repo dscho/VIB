@@ -123,8 +123,6 @@ public class ContentTransformer {
 		private Point3d centerInVWorld = new Point3d();
 		private Point3d centerInIp = new Point3d();
 
-		private Point2d canvasPoint = new Point2d();
-		
 		private Transform3D ipToVWorld           = new Transform3D();
 		private Transform3D ipToVWorldInverse    = new Transform3D();
 		private Transform3D localToVWorld        = new Transform3D();
@@ -161,16 +159,22 @@ public class ContentTransformer {
 			ipToVWorld.transform(eyePtInVWorld);
 
 			// use picking to infer the radius of the virtual sphere which is rotated
-			pickPtInVWorld = univ.getPicker().getPickPointGeometry(c, x, y);
-			if(pickPtInVWorld == null) {
-				canvas.getPixelLocationFromImagePlate(centerInIp, canvasPoint);
-				pickPtInVWorld = univ.getPicker().getPickPointGeometry(c, 
-					(int)Math.round(canvasPoint.x),
-					(int)Math.round(canvasPoint.y));
+			Point3d p = univ.getPicker().getPickPointGeometry(c, x, y);
+			float r = 0, dD = 0;
+			if(p != null) {
+				pickPtInVWorld.set(p);
+				localToVWorld.transform(pickPtInVWorld);
+				r = (float)pickPtInVWorld.distance(centerInVWorld);
+			} else {
+				c.getContent().getMin(p1);
+				localToVWorld.transform(p1);
+				r = (float)p1.distance(centerInVWorld);
+				vec.sub(centerInVWorld, eyePtInVWorld);
+				vec.normalize();
+				vec.scale(-r);
+				pickPtInVWorld.add(centerInVWorld, vec);
 			}
-			localToVWorld.transform(pickPtInVWorld);
-			float r = (float)pickPtInVWorld.distance(centerInVWorld);
-			float dD = (float)pickPtInVWorld.distance(eyePtInVWorld);
+			dD = (float)pickPtInVWorld.distance(eyePtInVWorld);
 
 			// calculate distance between eye and canvas point
 			canvas.getPixelLocationInImagePlate(x, y, p1);
