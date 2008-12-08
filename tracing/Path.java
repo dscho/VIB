@@ -362,6 +362,18 @@ public class Path implements Comparable {
 		return precise_z_positions[i] / z_spacing;
 	}
 
+	/** Returns an array [3][npoints] of unscaled coordinates (that is, in pixels). */
+	public double[][] getXYZUnscaled() {
+		final double[][] p = new double[3][npoints];
+		for (int i=p[0].length-1; i>-1; i--) {
+			p[0][i] = precise_x_positions[i] / x_spacing;
+			p[1][i] = precise_y_positions[i] / y_spacing;
+			p[2][i] = precise_z_positions[i] / z_spacing;
+		}
+		return p;
+	}
+
+
 /* FIXME:
 	@Override
 	public Path clone() {
