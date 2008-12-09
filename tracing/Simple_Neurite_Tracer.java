@@ -1331,12 +1331,26 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		byte [] result = new byte[side*side];
 
-		/* To find an arbitrary vector in the normal plane, do
-		   the cross product with (0,0,1) */
+		double epsilon = 0.000001;
 
-		double ax = -ny;
-		double ay = nx;
-		double az = 0;
+		/* To find an arbitrary vector in the normal plane, do
+		   the cross product with (0,0,1), unless the normal
+		   is parallel to that, in which case we cross it with
+		   (0,1,0) instead... */
+
+		double ax, ay, az;
+
+		if( Math.abs(nx) < epsilon && Math.abs(ny) < epsilon ) {
+			// Cross with (0,1,0):
+			ax = nz;
+			ay = 0;
+			az = -nx;
+		} else {
+			// Cross with (0,0,1):
+			ax = -ny;
+			ay = nx;
+			az = 0;
+		}
 
 		/* Now to find the other vector in that plane, do the
 		 * cross product of (ax,ay,az) with (nx,ny,nz) */
