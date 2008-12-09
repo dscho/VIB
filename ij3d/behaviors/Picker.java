@@ -135,9 +135,11 @@ public class Picker {
 
 			for(int i = 0; i < result.length; i++) {
 				Point3d intersection = result[i].getClosestIntersectionPoint();
-				float v = getVolumePoint(c, intersection);
-				if(v > 20)
-					return intersection;
+				if(c.getType() == Content.VOLUME) {
+					float v = getVolumePoint(c, intersection);
+					if(v > 20)
+						return intersection;
+				}
 			}
 			return null;
 		} catch(Exception ex) {
