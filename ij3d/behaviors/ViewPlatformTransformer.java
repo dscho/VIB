@@ -52,12 +52,16 @@ public class ViewPlatformTransformer {
 		this.translateTG = univ.getTranslateTG();
 	}
 
-	public void zoomTo(double distance) {
-		getZDir(zDir);
-		zDir.scale(-distance);
-		zoomXform.set(zDir);
+	public void zoomTo(Vector3d v, double distance) {
+		v.scale(-distance);
+		zoomXform.set(v);
 		zoomTG.setTransform(zoomXform);
 		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
+	}
+
+	public void zoomTo(double distance) {
+		getZDir(zDir);
+		zoomTo(zDir, distance);
 	}
 
 	private Transform3D tmp = new Transform3D();

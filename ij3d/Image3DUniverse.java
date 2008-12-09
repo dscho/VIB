@@ -273,7 +273,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public void resetZoom() {
 		double d = oldRange / Math.tan(Math.PI/8);
-		getViewPlatformTransformer().zoomTo(d);
+		getViewPlatformTransformer().zoomTo(new Vector3d(0, 0, -1), d);
 		getViewer().getView().setBackClipDistance(2 * d);
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
@@ -354,13 +354,11 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getRotationTG().setTransform(t);
 		getTranslateTG().setTransform(t);
 		getZoomTG().setTransform(t);
+		getZoomTG().setTransform(t);
 		getViewPlatformTransformer().centerAt(globalCenter);
 		resetZoom();
 		fireTransformationUpdated();
 		fireTransformationFinished();
-//		resetZoom();
-//		fireTransformationUpdated();
-//		fireTransformationFinished();
 	}
 
 	public Content getSelected() {
