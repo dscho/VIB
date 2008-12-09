@@ -1374,6 +1374,10 @@ public class Path implements Comparable {
 		double n1dotn2 = n1x * n2x + n1y * n2y + n1z * n2z;
 
 		double det = n1dotn1 * n2dotn2 - n1dotn2 * n1dotn2;
+		if( Math.abs(det) < epsilon ) {
+			System.out.println("WARNING: det was nearly zero: "+det);
+			return true;
+		}
 
 		// A vector r in the plane is defined by:
 		//      n1 . r = (n1 . c1) = d1
@@ -1427,8 +1431,12 @@ public class Path implements Comparable {
 
 		if( discriminant1 < 0 || discriminant2 < 0 ) {
 			// Then one of the circles doesn't even reach the line:
-
 			return false;
+		}
+
+		if( Math.abs(a1) < epsilon ) {
+			System.out.println("WARNING: a1 was nearly zero: "+a1);
+			return true;
 		}
 
 		double u1_1 =   Math.sqrt( discriminant1 ) / ( 2 * a1 ) - b1 / (2 * a1);
@@ -1460,6 +1468,23 @@ public class Path implements Comparable {
 			return true;
 		if( u2_smaller <= u1_smaller && u1_smaller <= u2_larger && u2_larger <= u1_larger )
 			return true;
+
+		/* We only reach here if something has gone badly
+		   wrong, so dump helpful values to aid in debugging: */
+
+		System.out.println("det is: "+det);
+
+		System.out.println("discriminant1 is: "+discriminant1);
+		System.out.println("discriminant2 is: "+discriminant2);
+
+		System.out.println("n1: ("+n1x+","+n1y+","+n1z+")");
+		System.out.println("n2: ("+n2x+","+n2y+","+n2z+")");
+
+		System.out.println("c1: ("+c1x+","+c1y+","+c1z+")");
+		System.out.println("c2: ("+c2x+","+c2y+","+c2z+")");
+
+		System.out.println("radius1: "+radius1);
+		System.out.println("radius2: "+radius2);
 
 		throw new RuntimeException("BUG: some overlapping case missed: "+
 					   "u1_smaller="+u1_smaller+
