@@ -133,25 +133,42 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			plugin.startFillingPaths(selectedPaths);
 		} else if( source == fitVolumeButton ) {
 			TreePath [] selectedPaths = tree.getSelectionPaths();
-			if( selectedPaths == null || selectedPaths.length != 1 ) {
-				IJ.error("You must have exactly one path selected");
+			if( selectedPaths == null || selectedPaths.length < 1 ) {
+				IJ.error("You must have one or more paths in the list selected");
 				return;
 			}
-			DefaultMutableTreeNode node =
-				(DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent());
-			if( node == root )
-				return;
-			Path p = (Path)node.getUserObject();
-			if( p.getUseFitted() ) {
-				p.setUseFitted(false, plugin);
-			} else {
-				if( p.fitted == null ) {
-					Path fitted = p.fitCircles( 40, plugin, (e.getModifiers() & ActionEvent.SHIFT_MASK) > 0 );
-					p.setFitted(fitted);
-					p.setUseFitted(true, plugin);
-					pathAndFillManager.addPath( fitted );
+			boolean allAlreadyFitted = true;
+			for( int i = 0; i < selectedPaths.length; ++i ) {
+				DefaultMutableTreeNode node =
+					(DefaultMutableTreeNode)(selectedPaths[i].getLastPathComponent());
+				if( node == root )
+					continue;
+				Path p = (Path)node.getUserObject();
+				if( ! p.getUseFitted() )
+					allAlreadyFitted = false;
+			}
+			for( int i = 0; i < selectedPaths.length; ++i ) {
+				DefaultMutableTreeNode node =
+					(DefaultMutableTreeNode)(selectedPaths[i].getLastPathComponent());
+				if( node == root )
+					continue;
+				Path p = (Path)node.getUserObject();
+				if( allAlreadyFitted ) {
+					p.setUseFitted(false, plugin);
 				} else {
-					p.setUseFitted(true, plugin);
+					if( p.getUseFitted() ) {
+						continue;
+					}
+					if( p.fitted == null ) {
+						// There's not already a fitted version:
+						Path fitted = p.fitCircles( 40, plugin, (e.getModifiers() & ActionEvent.SHIFT_MASK) > 0 );
+						p.setFitted(fitted);
+						p.setUseFitted(true, plugin);
+						pathAndFillManager.addPath( fitted );
+					} else {
+						// Just use the existing fitted version:
+						p.setUseFitted(true, plugin);
+					}
 				}
 			}
 			pathAndFillManager.resetListeners(null);
@@ -221,8 +238,24 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 	public void updateButtonsManySelected( ) {
 		renameButton.setEnabled(false);
-		fitVolumeButton.setText("Fit Volume");
-		fitVolumeButton.setEnabled(false);
+		{
+			TreePath [] selectedPaths = tree.getSelectionPaths();
+			boolean allAlreadyFitted = true;
+			for( int i = 0; i < selectedPaths.length; ++i ) {
+				DefaultMutableTreeNode node =
+					(DefaultMutableTreeNode)(selectedPaths[i].getLastPathComponent());
+				if( node == root )
+					continue;
+				Path p = (Path)node.getUserObject();
+				if( ! p.getUseFitted() )
+					allAlreadyFitted = false;
+			}
+			if( allAlreadyFitted )
+				fitVolumeButton.setText("Un-fit Volumes");
+			else
+				fitVolumeButton.setText("Fit Volumes");
+		}
+		fitVolumeButton.setEnabled(true);
 		fillOutButton.setEnabled(true);
 		makePrimaryButton.setEnabled(false);
 		deleteButton.setEnabled(true);

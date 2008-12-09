@@ -1386,6 +1386,10 @@ public class Path implements Comparable {
 		double n1dotn2 = n1x * n2x + n1y * n2y + n1z * n2z;
 
 		double det = n1dotn1 * n2dotn2 - n1dotn2 * n1dotn2;
+		if( Math.abs(det) < epsilon ) {
+			System.out.println("WARNING: det was nearly zero: "+det);
+			return true;
+		}
 
 		// A vector r in the plane is defined by:
 		//      n1 . r = (n1 . c1) = d1
@@ -1439,8 +1443,12 @@ public class Path implements Comparable {
 
 		if( discriminant1 < 0 || discriminant2 < 0 ) {
 			// Then one of the circles doesn't even reach the line:
-
 			return false;
+		}
+
+		if( Math.abs(a1) < epsilon ) {
+			System.out.println("WARNING: a1 was nearly zero: "+a1);
+			return true;
 		}
 
 		double u1_1 =   Math.sqrt( discriminant1 ) / ( 2 * a1 ) - b1 / (2 * a1);
@@ -1472,6 +1480,23 @@ public class Path implements Comparable {
 			return true;
 		if( u2_smaller <= u1_smaller && u1_smaller <= u2_larger && u2_larger <= u1_larger )
 			return true;
+
+		/* We only reach here if something has gone badly
+		   wrong, so dump helpful values to aid in debugging: */
+
+		System.out.println("det is: "+det);
+
+		System.out.println("discriminant1 is: "+discriminant1);
+		System.out.println("discriminant2 is: "+discriminant2);
+
+		System.out.println("n1: ("+n1x+","+n1y+","+n1z+")");
+		System.out.println("n2: ("+n2x+","+n2y+","+n2z+")");
+
+		System.out.println("c1: ("+c1x+","+c1y+","+c1z+")");
+		System.out.println("c2: ("+c2x+","+c2y+","+c2z+")");
+
+		System.out.println("radius1: "+radius1);
+		System.out.println("radius2: "+radius2);
 
 		throw new RuntimeException("BUG: some overlapping case missed: "+
 					   "u1_smaller="+u1_smaller+
@@ -1570,12 +1595,10 @@ public class Path implements Comparable {
 		double [] diameters = new double[points];
 
 		if( hasCircles() ) {
-			System.out.println("Yes, using circles...");
 			int added = 0;
 			int lastIndexAdded = - noMoreThanOneEvery;
 			for( int i = 0; i < points; ++i ) {
 				if( (points <= noMoreThanOneEvery) || (i - lastIndexAdded >= noMoreThanOneEvery) ) {
-					System.out.println("Acutally adding point: "+i);
 					x_points_d[added] = precise_x_positions[i];
 					y_points_d[added] = precise_y_positions[i];
 					z_points_d[added] = precise_z_positions[i];
@@ -1585,9 +1608,7 @@ public class Path implements Comparable {
 				}
 			}
 			pointsToUse = added;
-			System.out.println("After reduction using "+pointsToUse+" points");
 		} else {
-			System.out.println("Using constant tube:");
 			for(int i=0; i<points; ++i) {
 				x_points_d[i] = precise_x_positions[i];
 				y_points_d[i] = precise_y_positions[i];
@@ -1637,10 +1658,6 @@ public class Path implements Comparable {
 		System.arraycopy( y_points_d, 0, y_points_d_trimmed, 0, pointsToUse );
 		System.arraycopy( z_points_d, 0, z_points_d_trimmed, 0, pointsToUse );
 		System.arraycopy( diameters, 0, diameters_trimmed, 0, pointsToUse );
-
-		System.out.println("-----------------------------------------");
-		for( int i = 0; i < pointsToUse; ++i )
-			System.out.println("("+x_points_d_trimmed[i]+","+y_points_d_trimmed[i]+","+z_points_d_trimmed[i]+") "+diameters_trimmed[i]);
 
 		double [][][] allPoints = Pipe.makeTube(x_points_d_trimmed,
 							y_points_d_trimmed,

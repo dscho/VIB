@@ -1115,8 +1115,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				pathToAdd = p.fitted;
 			else
 				pathToAdd = p;
-			System.out.println("Adding path: "+p);
-			System.out.println("... of size: "+p.size());
 			pathToAdd.addTo3DViewer(plugin.univ,Color.MAGENTA);
 		}
 	}
@@ -1252,10 +1250,17 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	void clearPathsAndFills( ) {
-			maxUsedID = -1;
-			allPaths.clear();
-			allFills.clear();
-			resetListeners( null );
+		maxUsedID = -1;
+		if( plugin.use3DViewer ) {
+			for( Iterator< Path > i = allPaths.iterator();
+			     i.hasNext(); ) {
+				Path p = i.next();
+				p.removeFrom3DViewer( plugin.univ );
+			}
+		}
+		allPaths.clear();
+		allFills.clear();
+		resetListeners( null );
 	}
 
 	private static class SWCPoint implements Comparable {
@@ -1822,5 +1827,44 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		replaceAll( sb, "'", "&apos;" );
 		replaceAll( sb, "\"", "&quot;" );
 		return sb.toString();
+	}
+
+	public NearPoint distanceToNearestPointOnAnyPath( double x, double y, double z, double distanceLimit ) {
+
+		/* Order all points in all paths by their euclidean
+		   distance to (x,y,z): */
+
+		PriorityQueue< NearPoint > pq = new PriorityQueue< NearPoint >();
+
+		for( Iterator< Path > i = allPaths.iterator();
+		     i.hasNext(); ) {
+			Path path = i.next();
+			if( path.useFitted )
+				continue;
+			if( path.fittedVersionOf != null && ! path.fittedVersionOf.useFitted )
+				continue;
+			for( int j = 0; j < path.size(); ++j ) {
+				pq.add( new NearPoint( x, y, z, path, j ) );
+			}
+		}
+
+		while( true ) {
+
+			NearPoint np = pq.poll();
+			if( np == null )
+				return null;
+
+			/* Don't bother looking at points that are
+			   more than distanceLimit away.  Since we get
+			   them in the order closest to furthest away,
+			   if we exceed this limit returned: */
+
+			if( np.distanceToPathPointSquared() > (distanceLimit * distanceLimit) )
+				return null;
+
+			double distanceToPath = np.distanceToPathNearPoint();
+			if( distanceToPath >= 0 )
+				return np;
+		}
 	}
 }
