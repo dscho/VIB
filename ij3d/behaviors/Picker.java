@@ -209,6 +209,43 @@ public class Picker {
 		}
 	}
 
+	public Content getPickedContent(int x, int y) {
+		PickCanvas pickCanvas = new PickCanvas(canvas, univ.getScene());
+		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
+		pickCanvas.setFlags(PickInfo.SCENEGRAPHPATH | PickInfo.CLOSEST_INTERSECTION_POINT);
+		pickCanvas.setTolerance(0);
+		pickCanvas.setShapeLocation(x, y);
+		try {
+			PickInfo[] result = pickCanvas.pickAllSorted();
+			if(result == null)
+				return null;
+			for(int i = 0; i < result.length; i++) {
+				SceneGraphPath path = result[i].getSceneGraphPath();
+				Content c = null;
+				for(int j = path.nodeCount()-1; j >= 0; j--)
+					if(path.getNode(j) instanceof Content)
+						c = (Content)path.getNode(j);
+
+				if(c == null)
+					continue;
+
+				if(c.getType() != Content.VOLUME)
+					return c;
+
+				Point3d intersection = result[i].getClosestIntersectionPoint();
+
+				float v = getVolumePoint(c, intersection);
+				if(v > 20)
+					return c;
+			}
+			return null;
+		} catch(Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
+
 	private static float getVolumePoint(Content c, Point3d p) {
 
 		ImagePlus img = c.getImage();

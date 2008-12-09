@@ -47,7 +47,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
 			@Override
 			public void mouseMoved(MouseEvent e) {
-				Content c = getContentAtCanvasPosition(
+				Content c = picker.getPickedContent(
 						e.getX(), e.getY());
 				if(c != null)
 					IJ.showStatus(c.name);
@@ -58,7 +58,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		canvas.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				Content c = getContentAtCanvasPosition(
+				Content c = picker.getPickedContent(
 						e.getX(), e.getY());
 				select(c);
 			}
@@ -370,31 +370,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	private Content getContentAtCanvasPosition(int x, int y) {
-		PickCanvas pickCanvas = new PickCanvas(canvas, scene);
-		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
-		pickCanvas.setFlags(PickInfo.SCENEGRAPHPATH);
-		pickCanvas.setTolerance(0);
-		pickCanvas.setShapeLocation(x, y);
-		PickInfo result = null;
-		try {
-			result = pickCanvas.pickClosest();
-			if(result == null)
-				return null;
-			SceneGraphPath path = result.getSceneGraphPath();
-			Content content = null;
-			for(int i = path.nodeCount() - 1; i >= 0; i--) {
-				if(path.getNode(i) instanceof Content) {
-					content = (Content)path.getNode(i);
-					break;
-				}
-			}
-			if(content== null)
-				return null;
-			return content;
-		} catch(Exception e) {
-			e.printStackTrace();
-			return null;
-		}
+		return picker.getPickedContent(x, y);
 	}
 }
 
