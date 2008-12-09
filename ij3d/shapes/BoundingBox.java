@@ -96,7 +96,7 @@ public class BoundingBox extends BranchGroup {
 				GeometryArray.COORDINATES |
 				GeometryArray.COLOR_3 |
 				GeometryArray.NORMALS);
-		ga.setCapability(GeometryArray.ALLOW_INTERSECT);
+//		ga.setCapability(GeometryArray.ALLOW_INTERSECT);
 		ga.setCoordinates(0, coords);
 		Color3f red = new Color3f(1, 0, 0);
 		Color3f[] col = new Color3f[2];
