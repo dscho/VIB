@@ -8,3 +8,8 @@ TODO for the ImageJ 3D Viewer
 * SwitchInterpolator
 * update macro language support
 * update scalebar
+
+* Light sources
+* remove axis
+* multiple selection
+* printing
