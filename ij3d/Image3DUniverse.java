@@ -284,6 +284,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			resamplingF, Content.SURFACE);
 	}
 
+	public Content addMesh(List mesh, Color3f color, String name,
+			float scale, int threshold) {
+		ensureScale(scale);
+		return addMesh(mesh, color, name, threshold);
+	}
+
 	public Content addMesh(List mesh,
 			Color3f color, String name, int threshold) {
 		// check if exists already
