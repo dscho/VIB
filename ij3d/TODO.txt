@@ -9,6 +9,7 @@ TODO for the ImageJ 3D Viewer
 * update macro language support
 * update scalebar
 
+* parallel projection
 * Light sources
 * remove axis
 * multiple selection
