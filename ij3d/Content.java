@@ -188,13 +188,17 @@ public class Content extends BranchGroup implements UniverseListener {
 		}
 		return 1;
 	}
-	
+
 	public void displayMesh(List mesh) {
+		displayMesh(mesh, MeshGroup.TRIANGLES);
+	}
+
+	public void displayMesh(List mesh, int mode) {
 		// remove everything if possible
 		bbSwitch.removeAllChildren();
 
 		// create content node and add it to the switch
-		contentNode = new MeshGroup(this, mesh);
+		contentNode = new MeshGroup(this, mesh, mode);
 		bbSwitch.addChild(contentNode);
 
 		// create the bounding box and add it to the switch
@@ -208,7 +212,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(boundingSphere);
 
 		// create coordinate system and add it to the switch
-		float cl = (float)Math.abs(contentNode.max.x 
+		float cl = (float)Math.abs(contentNode.max.x
 					- contentNode.min.x) / 5f;
 		CoordinateSystem cs = new CoordinateSystem(
 						cl, new Color3f(0, 1, 0));
@@ -232,7 +236,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		// update type
 		this.type = SURFACE;
 	}
-	
+
 
 
 	/* ************************************************************
@@ -267,7 +271,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		whichChild.set(CS, b);
 		bbSwitch.setChildMask(whichChild);
 	}
-	
+
 	public void setSelected(boolean selected) {
 		this.selected = selected;
 		showBoundingBox(selected);
@@ -275,7 +279,7 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	/* ************************************************************
 	 * point list
-	 * 
+	 *
 	 * ***********************************************************/
 
 	public void setPointListDialog(PointListDialog p) {
@@ -283,7 +287,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	public void showPointList(boolean b) {
-		if(pointlist == null) 
+		if(pointlist == null)
 			return;
 
 		whichChild.set(PL, b);
@@ -328,7 +332,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		pointlist.addPoint(n, p.x, p.y, p.z);
 		plw.update();
 	}
-	
+
 	public void setListPointPos(int i, Point3d pos) {
 		pointlist.setPos(i, pos);
 	}
@@ -384,12 +388,12 @@ public class Content extends BranchGroup implements UniverseListener {
 	public void setTransform(Transform3D transform) {
 		Transform3D t = new Transform3D();
 		Point3f c = contentNode.center;
-		
+
 		Matrix3f m = new Matrix3f();
 		transform.getRotationScale(m);
 		t.setRotationScale(m);
-		// One might thing a rotation matrix has no translational 
-		// component, however, if the rotation is composed of 
+		// One might thing a rotation matrix has no translational
+		// component, however, if the rotation is composed of
 		// translation - rotation - backtranslation, it has indeed.
 		Vector3f v = new Vector3f();
 		v.x = -m.m00*c.x - m.m01*c.y - m.m02*c.z + c.x;
@@ -397,7 +401,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		v.z = -m.m20*c.x - m.m21*c.y - m.m22*c.z + c.z;
 		t.setTranslation(v);
 		localRotate.setTransform(t);
-		
+
 		Vector3f v2 = new Vector3f();
 		transform.get(v2);
 		v2.sub(v);
@@ -411,8 +415,8 @@ public class Content extends BranchGroup implements UniverseListener {
 	 * ***********************************************************/
 
 	public void setChannels(boolean[] channels) {
-		boolean channelsChanged = channels[0] != this.channels[0] || 
-				channels[1] != this.channels[1] || 
+		boolean channelsChanged = channels[0] != this.channels[0] ||
+				channels[1] != this.channels[1] ||
 				channels[2] != this.channels[2];
 		if(!channelsChanged)
 			return;
@@ -439,7 +443,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	public void setColor(Color3f color) {
 		boolean colorChanged = !(this.color == null && color == null)
 			|| (this.color == null && color != null)
-			|| (color == null && this.color != null) 
+			|| (color == null && this.color != null)
 			|| !(this.color.equals(color));
 		if(!colorChanged)
 			return;

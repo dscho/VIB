@@ -18,6 +18,7 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 
 import com.sun.j3d.utils.pickfast.PickCanvas;
+import isosurface.MeshGroup;
 import java.io.File;
 import octree.FilePreparer;
 import octree.VolumeOctree;
@@ -289,6 +290,28 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Content c = addMesh(mesh, color, name, threshold);
 		ensureScale(scale);
 		return c;
+	}
+
+	public Content addLineMesh(List mesh,
+			Color3f color, String name, int threshold, boolean strips) {
+		// check if exists already
+		if(contents.containsKey(name)) {
+			IJ.error("Mesh named '"+name+"' exists already");
+			return null;
+		}
+		Content content = new Content(name);
+		content.color = color;
+		content.threshold = threshold;
+		int mode = strips ? MeshGroup.LINE_STRIPS : MeshGroup.LINES;
+		content.displayMesh(mesh, mode);
+		content.setPointListDialog(pld);
+		scene.addChild(content);
+		contents.put(name, content);
+		recalculateGlobalMinMax(content);
+		float range = globalMax.x - globalMin.x;
+		ensureScale(range);
+		fireContentAdded(content);
+		return content;
 	}
 
 	public Content addMesh(List mesh,
