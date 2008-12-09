@@ -371,11 +371,11 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		PickCanvas pickCanvas = new PickCanvas(canvas, scene);
 		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
 		pickCanvas.setFlags(PickInfo.SCENEGRAPHPATH);
-		pickCanvas.setTolerance(4.0f);
+		pickCanvas.setTolerance(0);
 		pickCanvas.setShapeLocation(x, y);
 		PickInfo result = null;
 		try {
-			result = pickCanvas.pickAny();
+			result = pickCanvas.pickClosest();
 			if(result == null)
 				return null;
 			SceneGraphPath path = result.getSceneGraphPath();

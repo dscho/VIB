@@ -1,6 +1,5 @@
 package ij3d.shapes;
 
-import com.sun.j3d.utils.geometry.ColorCube;
 import com.sun.j3d.utils.universe.*;
 import com.sun.j3d.utils.geometry.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
@@ -17,7 +16,7 @@ public class BoundingBox extends BranchGroup {
 	
 	public BoundingBox(Point3f minp, Point3f maxp, Color3f color) {
 		setCapability(BranchGroup.ALLOW_DETACH);
-		setCapability(BranchGroup.ENABLE_PICK_REPORTING);
+//		setCapability(BranchGroup.ENABLE_PICK_REPORTING);
 		min = minp;
 		max = maxp;
 		

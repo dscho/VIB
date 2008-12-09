@@ -34,7 +34,7 @@ public class BoundingSphere extends BranchGroup {
 
 	public BoundingSphere(Point3f center, float radius, Color3f color, float transparency) {
 		setCapability(BranchGroup.ALLOW_DETACH);
-		setCapability(BranchGroup.ENABLE_PICK_REPORTING);
+//		setCapability(BranchGroup.ENABLE_PICK_REPORTING);
 		this.center = new Point3f(center);
 		this.radius = radius;
 		this.color = color;
@@ -53,7 +53,7 @@ public class BoundingSphere extends BranchGroup {
 		ca.setColor(color);
 		appearance.setColoringAttributes(ca);
 
-		Sphere sphere = new Sphere(1, Primitive.ENABLE_GEOMETRY_PICKING, appearance);
+		Sphere sphere = new Sphere(1, /*Primitive.ENABLE_GEOMETRY_PICKING,*/ appearance);
 		sphere.setName("BS");
 
 		Vector3f translateV = new Vector3f(center);

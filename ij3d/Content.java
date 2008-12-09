@@ -129,7 +129,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(bb);
 		boundingSphere = new BoundingSphere(contentNode.center,
 				contentNode.center.distance(contentNode.min));
-		boundingSphere.setPickable(true);
+		boundingSphere.setPickable(false);
 		bbSwitch.addChild(boundingSphere);
 
 		// create coordinate system and add it to the switch
@@ -204,7 +204,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(bb);
 		boundingSphere = new BoundingSphere(contentNode.center,
 				contentNode.center.distance(contentNode.min));
-		boundingSphere.setPickable(true);
+		boundingSphere.setPickable(false);
 		bbSwitch.addChild(boundingSphere);
 
 		// create coordinate system and add it to the switch
