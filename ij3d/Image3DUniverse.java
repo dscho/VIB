@@ -218,7 +218,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			IJ.error("Name exists already");
 			return null;
 		}
-		ensureScale(image);
 		Content content = new Content(name);
 		content.image = image;
 		content.color = color;
@@ -231,6 +230,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scene.addChild(content);
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
+		ensureScale(image);
 		fireContentAdded(content);
 		fireTransformationFinished();
 		this.addUniverseListener(content);
@@ -286,8 +286,9 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Content addMesh(List mesh, Color3f color, String name,
 			float scale, int threshold) {
+		Content c = addMesh(mesh, color, name, threshold);
 		ensureScale(scale);
-		return addMesh(mesh, color, name, threshold);
+		return c;
 	}
 
 	public Content addMesh(List mesh,
@@ -352,10 +353,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Transform3D t = new Transform3D();
 		getRotationTG().setTransform(t);
 		getTranslateTG().setTransform(t);
+		getZoomTG().setTransform(t);
 		getViewPlatformTransformer().centerAt(globalCenter);
+		resetZoom();
 		fireTransformationUpdated();
 		fireTransformationFinished();
-		resetZoom();
+//		resetZoom();
+//		fireTransformationUpdated();
+//		fireTransformationFinished();
 	}
 
 	public Content getSelected() {
@@ -367,10 +372,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			selected.setSelected(false);
 		selected = null;
 		fireContentSelected(null);
-	}
-
-	private Content getContentAtCanvasPosition(int x, int y) {
-		return picker.getPickedContent(x, y);
 	}
 }
 
