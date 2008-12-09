@@ -305,6 +305,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scene.addChild(content);
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
+		float range = globalMax.x - globalMin.x;
+		ensureScale(range);
 		fireContentAdded(content);
 		return content;
 	}
