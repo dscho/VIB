@@ -1595,7 +1595,6 @@ public class Path implements Comparable {
 		double [] diameters = new double[points];
 
 		if( hasCircles() ) {
-			System.out.println("Yes, using circles...");
 			int added = 0;
 			int lastIndexAdded = - noMoreThanOneEvery;
 			for( int i = 0; i < points; ++i ) {
