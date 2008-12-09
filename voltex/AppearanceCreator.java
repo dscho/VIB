@@ -1,37 +1,94 @@
 package voltex;
 
-import ij.IJ;
-
-import java.awt.*;
 import java.awt.image.*;
-import java.awt.color.ColorSpace;
 import javax.media.j3d.*;
 import javax.vecmath.*;
-import java.io.*;
-import java.text.NumberFormat;
 
 public class AppearanceCreator implements VolRendConstants {
 
-	public TexCoordGeneration xTg = new TexCoordGeneration();
-	public TexCoordGeneration yTg = new TexCoordGeneration();
-	public TexCoordGeneration zTg = new TexCoordGeneration();
-	public Texture2D[] xTextures;
-	public Texture2D[] yTextures;
-	public Texture2D[] zTextures;
+	private int textureMode, componentType;
+
+	private TexCoordGeneration xTg = new TexCoordGeneration();
+	private TexCoordGeneration yTg = new TexCoordGeneration();
+	private TexCoordGeneration zTg = new TexCoordGeneration();
+
+	private BufferedImage xImage, yImage, zImage;
+	private Object xData, yData, zData;
 
 	private Volume volume;
+	private static boolean[] defaultChannels = new boolean[]{true, true, true};
 
-	public AppearanceCreator(Volume volume, 
-			Color3f color, float transparency, boolean[] ch) {
-		this.volume = volume;
-		this.volume.setChannels(ch);
-		initAttributes(color, transparency);
+	public AppearanceCreator() {
+		initAttributes(null, 0.1f);
 	}
 
-	public Appearance getAppearance(int direction, 
-			int index, Color3f color, float transparency) {
-		Texture tex = null;
-		TexCoordGeneration tg = null;
+	public AppearanceCreator(Volume volume) {
+		this(volume, null, 0.1f, defaultChannels);
+	}
+
+	public AppearanceCreator(Volume volume,
+			Color3f color, float transparency, boolean[] ch) {
+		initAttributes(color, transparency);
+		setVolume(volume, ch);
+	}
+
+	public void release() {
+		xTg = null; yTg = null; zTg = null;
+		volume = null;
+		xImage = null; yImage = null; zImage = null;
+		xData = null; yData = null; zData = null;
+	}
+
+	public void setVolume(Volume v) {
+		setVolume(v, defaultChannels);
+	}
+
+	public void setVolume(Volume v, boolean[] ch) {
+		this.volume = v;
+		this.volume.setChannels(ch);
+		zTg = new TexCoordGeneration();
+		zTg.setPlaneS(new Vector4f(v.xTexGenScale, 0f, 0f,
+				-(float)(v.xTexGenScale * v.minCoord.x)));
+		zTg.setPlaneT(new Vector4f(0f, v.yTexGenScale, 0f,
+				-(float)(v.yTexGenScale * v.minCoord.y)));
+		yTg = new TexCoordGeneration();
+		yTg.setPlaneS(new Vector4f(v.xTexGenScale, 0f, 0f,
+				-(float)(v.xTexGenScale * v.minCoord.x)));
+		yTg.setPlaneT(new Vector4f(0f, 0f, v.zTexGenScale,
+				-(float)(v.zTexGenScale * v.minCoord.z)));
+		xTg = new TexCoordGeneration();
+		xTg.setPlaneS(new Vector4f(0f, v.yTexGenScale, 0f,
+				-(float)(v.yTexGenScale * v.minCoord.y)));
+		xTg.setPlaneT(new Vector4f(0f, 0f, v.zTexGenScale,
+				-(float)(v.zTexGenScale * v.minCoord.z)));
+		boolean rgb = v.getDataType() == Volume.INT_DATA;
+		boolean opaque = v.getTransparenyType() == Volume.OPAQUE;
+
+		int bImgType = rgb ? BufferedImage.TYPE_INT_ARGB
+					 : BufferedImage.TYPE_BYTE_GRAY;
+		xImage = new BufferedImage(v.yTexSize, v.zTexSize, bImgType);
+		yImage = new BufferedImage(v.xTexSize, v.zTexSize, bImgType);
+		zImage = new BufferedImage(v.xTexSize, v.yTexSize, bImgType);
+
+		DataBuffer dbx = xImage.getRaster().getDataBuffer();
+		DataBuffer dby = yImage.getRaster().getDataBuffer();
+		DataBuffer dbz = zImage.getRaster().getDataBuffer();
+		if(rgb) {
+			textureMode = opaque ? Texture.RGB : Texture.RGBA;
+			componentType = ImageComponent.FORMAT_RGBA;
+			xData = ((DataBufferInt)dbx).getData();
+			yData = ((DataBufferInt)dby).getData();
+			zData = ((DataBufferInt)dbz).getData();
+		} else {
+			textureMode = opaque ? Texture.LUMINANCE : Texture.INTENSITY;
+			componentType = ImageComponent.FORMAT_CHANNEL8;
+			xData = ((DataBufferByte)dbx).getData();
+			yData = ((DataBufferByte)dby).getData();
+			zData = ((DataBufferByte)dbz).getData();
+		}
+	}
+
+	public Appearance getAppearance(int direction, int index) {
 		Appearance a = new Appearance();
 		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
 		a.setCapability(Appearance.ALLOW_TEXGEN_WRITE);
@@ -59,13 +116,46 @@ public class AppearanceCreator implements VolRendConstants {
 		colAttr.setColor(c);
 	}
 
-	public Texture2D getTexture(int direction, int index) {
-		switch(direction) {
-			case X_AXIS: return xTextures[index];
-			case Y_AXIS: return yTextures[index];
-			case Z_AXIS: return zTextures[index];
-		} 
-		return null;
+	public Texture2D getTexture(int axis, int index) {
+		boolean byRef = false;
+//		boolean byRef = true;
+		boolean yUp = true;
+		int sSize = 0, tSize = 0;
+		BufferedImage bImage = null;
+		switch (axis) {
+			case Z_AXIS:
+				volume.loadZ(index, zData);
+				sSize = volume.xTexSize;
+				tSize = volume.yTexSize;
+				bImage = zImage;
+				break;
+			case Y_AXIS:
+				volume.loadY(index, yData);
+				sSize = volume.xTexSize;
+				tSize = volume.zTexSize;
+				bImage = yImage;
+				break;
+			case X_AXIS:
+				volume.loadX(index, xData);
+				sSize = volume.yTexSize;
+				tSize = volume.zTexSize;
+				bImage = xImage;
+				break;
+		}
+		Texture2D tex = new Texture2D(Texture.BASE_LEVEL,
+			textureMode, sSize, tSize);
+		ImageComponent2D pArray = new ImageComponent2D(
+			componentType, sSize, tSize, byRef, yUp);
+		pArray.set(bImage);
+
+		tex.setImage(0, pArray);
+		tex.setEnable(true);
+		tex.setMinFilter(Texture.BASE_LEVEL_LINEAR);
+		tex.setMagFilter(Texture.BASE_LEVEL_LINEAR);
+
+		tex.setBoundaryModeS(Texture.CLAMP);
+		tex.setBoundaryModeT(Texture.CLAMP);
+		return tex;
 	}
 
 	public TexCoordGeneration getTg(int direction, int index) {
@@ -73,17 +163,8 @@ public class AppearanceCreator implements VolRendConstants {
 			case X_AXIS: return xTg;
 			case Y_AXIS: return yTg;
 			case Z_AXIS: return zTg;
-		} 
+		}
 		return null;
-	}
-
-	public void loadTexture() {
-		IJ.showStatus("Loading Z axis texture maps");
-		loadAxis(Z_AXIS);
-		IJ.showStatus("Loading Y axis texture maps");
-		loadAxis(Y_AXIS);
-		IJ.showStatus("Loading X axis texture maps");
-		loadAxis(X_AXIS);
 	}
 
 	private TextureAttributes texAttr;
@@ -97,9 +178,11 @@ public class AppearanceCreator implements VolRendConstants {
 		texAttr = new TextureAttributes();
 		texAttr.setTextureMode(TextureAttributes.COMBINE);
 		texAttr.setCombineRgbMode(TextureAttributes.COMBINE_MODULATE);
+		texAttr.setPerspectiveCorrectionMode(TextureAttributes.NICEST);
 		//texAttr.setCombineRgbMode(TextureAttributes.COMBINE_REPLACE);
 
 		transAttr = new TransparencyAttributes();
+		transAttr.setTransparency(0.1f);
 		transAttr.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
 		transAttr.setTransparencyMode(TransparencyAttributes.BLENDED);
 		transAttr.setTransparency(transparency);
@@ -108,11 +191,12 @@ public class AppearanceCreator implements VolRendConstants {
 		polyAttr.setCullFace(PolygonAttributes.CULL_NONE);
 
 		material = new Material();
+// 		material.setLightingEnable(true);
 		material.setLightingEnable(false);
-		
+
 		colAttr = new ColoringAttributes();
 		colAttr.setCapability(ColoringAttributes.ALLOW_COLOR_WRITE);
-		colAttr.setShadeModel(ColoringAttributes.FASTEST);
+		colAttr.setShadeModel(ColoringAttributes.NICEST);
 		if(color == null) {
 			colAttr.setColor(1f, 1f, 1f);
 		} else {
@@ -123,101 +207,7 @@ public class AppearanceCreator implements VolRendConstants {
 		rendAttr = new RenderingAttributes();
 		rendAttr.setCapability(
 			RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
-		rendAttr.setAlphaTestValue(0.1f);
+ 		rendAttr.setAlphaTestValue(0.1f);
 		rendAttr.setAlphaTestFunction(RenderingAttributes.GREATER);
 	}
-
-	private void loadAxis(int axis) {
-		int rSize = 0;
-		int sSize = 0;
-		int tSize = 0;
-		Texture2D[] textures = null;
-
-		switch (axis) {
-		  case Z_AXIS:
-			rSize = volume.zDim;
-			sSize = volume.xTexSize;
-			tSize = volume.yTexSize;
-			textures = zTextures = new Texture2D[rSize];
-			zTg = new TexCoordGeneration();
-			zTg.setPlaneS(new Vector4f(
-					volume.xTexGenScale, 0f, 0f, 0f));
-			zTg.setPlaneT(new Vector4f(
-					0f, volume.yTexGenScale, 0f, 0f));
-			break;
-		  case Y_AXIS:
-			rSize = volume.yDim;
-			sSize = volume.xTexSize;
-			tSize = volume.zTexSize;
-			textures = yTextures = new Texture2D[rSize];
-			yTg = new TexCoordGeneration();
-			yTg.setPlaneS(new Vector4f(
-					volume.xTexGenScale, 0f, 0f, 0f));
-			yTg.setPlaneT(new Vector4f(
-					0f, 0f, volume.zTexGenScale, 0f));
-			break;
-		  case X_AXIS:
-			rSize = volume.xDim;
-			sSize = volume.yTexSize;
-			tSize = volume.zTexSize;
-			textures = xTextures = new Texture2D[rSize];
-			xTg = new TexCoordGeneration();
-			xTg.setPlaneS(new Vector4f(
-					0f, volume.yTexGenScale, 0f, 0f));
-			xTg.setPlaneT(new Vector4f(
-					0f, 0f, volume.zTexGenScale, 0f));
-			break;
-		}
-
-		boolean rgb = volume.getDataType() == Volume.INT_DATA;
-		boolean opaque = volume.getTransparenyType() == Volume.OPAQUE;
-		// otherwise, let's assume we're dealing with intensity data
-		int textureMode, componentType;
-		BufferedImage bImage = null;
-		Object data = null;
-
-		if(rgb) {
-			bImage = new BufferedImage(sSize, tSize, 
-				BufferedImage.TYPE_INT_ARGB);
-			DataBuffer db = bImage.getRaster().getDataBuffer();
-			data = ((DataBufferInt)db).getData();
-			textureMode = opaque ? Texture.RGB : Texture.RGBA;
-			componentType = ImageComponent.FORMAT_RGBA;
-		} else {
-			bImage = new BufferedImage(sSize, tSize,
-				BufferedImage.TYPE_BYTE_GRAY);
-			DataBuffer db = bImage.getRaster().getDataBuffer();
-			data = ((DataBufferByte)db).getData();
-			textureMode = opaque ? Texture.LUMINANCE 
-						: Texture.INTENSITY;
-			componentType = ImageComponent.FORMAT_CHANNEL8;
-		}
-
-		for (int i = 0; i < rSize; i ++) { 
-			switch (axis) {
-				case Z_AXIS: volume.loadZ(i, data); break;
-				case Y_AXIS: volume.loadY(i, data); break;
-				case X_AXIS: volume.loadX(i, data); break;
-			}
-			IJ.showProgress(i, rSize);
-
-			boolean byRef = false;
-			boolean yUp = true;
-			Texture2D tex = new Texture2D(Texture.BASE_LEVEL, 
-						textureMode, sSize, tSize);
-			ImageComponent2D pArray = new ImageComponent2D(
-				componentType, sSize, tSize, byRef, yUp);
-			pArray.set(bImage);
-		
-			tex.setImage(0, pArray);
-			tex.setEnable(true);
-			tex.setMinFilter(Texture.BASE_LEVEL_LINEAR);
-			tex.setMagFilter(Texture.BASE_LEVEL_LINEAR);
-			
-			tex.setBoundaryModeS(Texture.CLAMP);
-			tex.setBoundaryModeT(Texture.CLAMP);
-
-			textures[i] = tex;
-		} 
-	} 
 }

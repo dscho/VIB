@@ -33,13 +33,13 @@ public class Volume {
 	public final int xDim, yDim, zDim;
 	public final double pw, ph, pd;
 
-	public float xSpace = 0, ySpace = 0, zSpace = 0;
-	public int xTexSize, yTexSize, zTexSize;
-	public float xTexGenScale, yTexGenScale, zTexGenScale;
+	public final float xSpace, ySpace, zSpace;
+	public final int xTexSize, yTexSize, zTexSize;
+	public final float xTexGenScale, yTexGenScale, zTexGenScale;
 
-	Point3d minCoord = new Point3d();
-	Point3d maxCoord = new Point3d();
-	Point3d volRefPt = new Point3d();
+	final Point3d minCoord = new Point3d();
+	final Point3d maxCoord = new Point3d();
+	final Point3d volRefPt = new Point3d();
 
 	public Volume(ImagePlus imp) {
 		this(imp, OPAQUE);
@@ -61,7 +61,36 @@ public class Volume {
 		ph = c.pixelHeight;
 		pd = c.pixelDepth;
 		
-		init();
+		// tex size is next power of two greater than max - min
+		// regarding pixels
+		xTexSize = powerOfTwo(xDim);
+		yTexSize = powerOfTwo(yDim);
+		zTexSize = powerOfTwo(zDim);
+
+		xSpace = (float)pw;
+		ySpace = (float)ph;
+		zSpace = (float)pd;
+
+		// real coords
+		minCoord.x = c.xOrigin * xSpace;
+		minCoord.y = c.yOrigin * ySpace;
+		minCoord.z = c.zOrigin * zSpace;
+
+		maxCoord.x = minCoord.x + xDim * xSpace;
+		maxCoord.y = minCoord.y + yDim * ySpace;
+		maxCoord.z = minCoord.z + zDim * zSpace;
+
+		// xTexSize is the pixel dim of the file in x-dir, e.g. 256
+		// xSpace is the normalised length of a pixel
+		xTexGenScale = (float)(1.0 / (xSpace * xTexSize));
+		yTexGenScale = (float)(1.0 / (ySpace * yTexSize));
+		zTexGenScale = (float)(1.0 / (zSpace * zTexSize));
+
+		// the min and max coords are for the usable area of the texture,
+		volRefPt.x = (maxCoord.x + minCoord.x) / 2;
+		volRefPt.y = (maxCoord.y + minCoord.y) / 2;
+		volRefPt.z = (maxCoord.z + minCoord.z) / 2;
+
 		initLoader();
 	}
 
@@ -148,35 +177,6 @@ public class Volume {
 				IJ.error("image format not supported");
 				break;
 		}
-	}
-
-	private void init() {
-
-		// tex size is next power of two greater than max - min
-		// regarding pixels
-		xTexSize = powerOfTwo(xDim);
-		yTexSize = powerOfTwo(yDim);
-		zTexSize = powerOfTwo(zDim);
-
-		xSpace = (float)pw;
-		ySpace = (float)ph;
-		zSpace = (float)pd;
-
-		// real coords
-		maxCoord.x = xDim * xSpace;
-		maxCoord.y = yDim * ySpace;
-		maxCoord.z = zDim * zSpace;
-
-		// xTexSize is the pixel dim of the file in x-dir, e.g. 256
-		// xSpace is the normalised length of a pixel
-		xTexGenScale = (float)(1.0 / (xSpace * xTexSize));
-		yTexGenScale = (float)(1.0 / (ySpace * yTexSize));
-		zTexGenScale = (float)(1.0 / (zSpace * zTexSize));
-
-		// the min and max coords are for the usable area of the texture,
-		volRefPt.x = (maxCoord.x + minCoord.x) / 2;
-		volRefPt.y = (maxCoord.y + minCoord.y) / 2;
-		volRefPt.z = (maxCoord.z + minCoord.z) / 2;
 	}
 
 	public boolean hasData() {

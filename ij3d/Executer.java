@@ -1,5 +1,6 @@
 package ij3d;
 
+import ij3d.shapes.Scalebar;
 import ij.gui.GenericDialog;
 import ij.IJ;
 import ij.WindowManager;
@@ -20,7 +21,6 @@ import java.util.Iterator;
 import java.util.Collection;
 import java.util.Map;
 
-import vib.PointList;
 import vib.InterpolatedImage;
 import vib.FastMatrix;
 
@@ -32,13 +32,15 @@ import isosurface.MeshEditor;
 
 import javax.vecmath.Color3f;
 import javax.vecmath.Point3f;
-import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix4d;
 import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.Background;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import octree.FilePreparer;
+import octree.OctreeDialog;
+import octree.VolumeOctree;
 
 public class Executer {
 
@@ -86,6 +88,7 @@ public class Executer {
 	 * *********************************************************/
 	public void addContent(final ImagePlus image, final int type) {
 		new Thread() {
+			@Override
 			public void run() {
 				addC(image, type);
 			}
@@ -203,6 +206,30 @@ public class Executer {
 		record(DELETE);
 	}
 
+	public void loadOctree() {
+		OctreeDialog od = new OctreeDialog();
+		od.showDialog();
+		if(!od.checkUserInput())
+			return;
+		String dir = od.getImageDir();
+		String name = od.getName();
+		String path = od.getImagePath();
+		if(od.shouldCreateData()) {
+			try {
+				new FilePreparer(path, VolumeOctree.SIZE, dir).createFiles();
+			} catch(Exception e) {
+				IJ.error(e.getMessage());
+				e.printStackTrace();
+				return;
+			}
+		}
+		univ.addOctree(dir, name);
+	}
+
+	public void removeOctree() {
+		univ.removeOctree();
+	}
+
 	public void load4D() {
 		if(!univ.getContents().isEmpty()) {
 			// showMessage...() is false if Canceled
@@ -288,6 +315,7 @@ public class Executer {
 
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
 					os.setSlices(oldvalues);
@@ -313,6 +341,7 @@ public class Executer {
 		if(type != Content.VOLUME && type != Content.ORTHO) 
 			return;
 		new Thread() {
+			@Override
 			public void run() {
 				((VoltexGroup)c.getContent()).
 					fillRoiBlack(univ, (byte)0);
@@ -338,6 +367,7 @@ public class Executer {
 			Runtime.getRuntime().availableProcessors()];
 		for (int i = 0; i<thread.length; i++) {
 			thread[i] = new Thread() {
+				@Override
 				public void run() {
 					try {
 						for (int k=ai.getAndIncrement();
@@ -421,6 +451,7 @@ public class Executer {
 
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
 					c.setColor(oldC);
@@ -447,6 +478,7 @@ public class Executer {
 			new GenericDialog("Adjust background color ...", univ.getWindow());
 
 		final Background background = ((ImageCanvas3D)univ.getCanvas()).getBG();
+		final Label status = univ.getWindow().getStatusLabel();
 		final Color3f oldC = new Color3f();
 		background.getColor(oldC);
 
@@ -464,9 +496,11 @@ public class Executer {
 
 		AdjustmentListener listener = new AdjustmentListener() {
 			public void adjustmentValueChanged(AdjustmentEvent e) {
-				background.setColor(rSlider.getValue() / 255.0f,
-						    gSlider.getValue() / 255.0f,
-						    bSlider.getValue() / 255.0f);
+				float r = rSlider.getValue() / 255f;
+				float g = gSlider.getValue() / 255f;
+				float b = bSlider.getValue() / 255f;
+				background.setColor(r, g, b);
+				status.setBackground(new Color(r, g, b));
 				((ImageCanvas3D)univ.getCanvas()).render();
 			}
 		};
@@ -479,14 +513,17 @@ public class Executer {
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
 					background.setColor(oldC);
+					status.setBackground(new Color(oldC.x, oldC.y, oldC.z));
 					((ImageCanvas3D)univ.getCanvas()).render();
 					return;
 				} else {
 					// TODO macro record
 					// Apply:
-					background.setColor(rSlider.getValue() / 255.0f,
-							    gSlider.getValue() / 255.0f,
-							    bSlider.getValue() / 255.0f);
+					float r = rSlider.getValue() / 255f;
+					float g = gSlider.getValue() / 255f;
+					float b = bSlider.getValue() / 255f;
+					background.setColor(r, g, b);
+					status.setBackground(new Color(r, g, b));
 					((ImageCanvas3D)univ.getCanvas()).render();
 				}
 			}
@@ -540,6 +577,7 @@ public class Executer {
 		});
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
 					float newTr = (float)oldTr / 100f;
@@ -593,6 +631,7 @@ public class Executer {
 		});
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosed(WindowEvent e) {
 				try {
 					if(gd.wasCanceled()) {
@@ -682,6 +721,7 @@ public class Executer {
 		});
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
 					c.setLandmarkPointSize(oldS);
@@ -868,34 +908,19 @@ public class Executer {
 	public void centerSelected(Content c) {
 		if(!checkSel(c))
 			return;
-		Point3f min = c.getContent().min;
-		Point3f max = c.getContent().max;
-		Point3f center = new Point3f();
-		center.x = min.x + (max.x - min.x)/2;
-		center.y = min.y + (max.y - min.y)/2;
-		center.z = min.z + (max.z - min.z)/2;
 
-		Point3f globalC = univ.getGlobalCenterPoint();
-		center.x -= globalC.x;
-		center.y -= globalC.y;
-		center.z -= globalC.z;
-		
-		Transform3D transform = new Transform3D();
-		transform.setTranslation(new Vector3f(
-				-center.x, -center.y, -center.z));
-		univ.getGlobalTranslate().setTransform(transform);
+		Point3f center = c.getContent().center;
+		Transform3D localToVWorld = new Transform3D();
+		c.getLocalToVworld(localToVWorld);
+		localToVWorld.transform(center);
+		univ.getViewPlatformTransformer().centerAt(center);
 	}
 
-	public void startRecording() {
-		univ.startRecording();
-		record(START_RECORD);
-	}
-
-	public void stopRecording() {
-		ImagePlus movie = univ.stopRecording();
+	public void record() {
+		ImagePlus movie = univ.record();
 		if(movie != null)
 			movie.show();
-		record(STOP_RECORD);
+		record(START_RECORD);
 	}
 
 	public void startAnimation() {
@@ -964,7 +989,7 @@ public class Executer {
 	public void j3dproperties() {
 		TextWindow tw = new TextWindow("Java 3D Properties", 
 			"Key\tValue", "", 512, 512);
-		Map props = univ.getProperties();
+		Map props = Image3DUniverse.getProperties();
 		tw.append("Java 3D properties\n \n");
 		for(Iterator it = props.entrySet().iterator();
 						it.hasNext();) {
@@ -1183,6 +1208,7 @@ public class Executer {
 		 */
 		protected abstract void setValue(final Content c, final int v);
 
+		@Override
 		public void run() {
 			go = true;
 			while (go) {

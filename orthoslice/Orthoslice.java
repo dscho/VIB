@@ -46,10 +46,8 @@ public class Orthoslice extends VolumeRenderer {
 
 		int i = slices[axis];
 
-		GeometryArray quadArray = 
-			geomCreator.getQuad(axis, i);
-		Appearance a = appCreator.getAppearance(
-			axis, i, color, transparency);
+		GeometryArray quadArray = geomCreator.getQuad(axis, i);
+		Appearance a = appCreator.getAppearance(axis, i);
 		Shape3D frontShape = new Shape3D(quadArray, a);
 
 		frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);

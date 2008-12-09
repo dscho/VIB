@@ -1,50 +1,11 @@
 package ij3d;
 
-import ij.gui.GenericDialog;
-import ij.gui.MultiLineLabel;
-import ij.IJ;
-import ij.WindowManager;
-import ij.ImagePlus;
-import ij.text.TextWindow;
-import ij.gui.Toolbar;
-import ij.process.StackConverter;
-import ij.process.ImageConverter;
-
-import view4d.Viewer4D;
-import view4d.Viewer4DController;
-
-import math3d.Transform_IO;
-
-import java.text.DecimalFormat;
-
 import java.awt.event.*;
 import java.awt.*;
-import java.util.Vector;
 import java.util.Iterator;
-import java.util.Collection;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
 
-import vib.PointList;
-import vib.BenesNamedPoint;
-import vib.InterpolatedImage;
-import vib.FastMatrix;
-
-import orthoslice.OrthoGroup;
-import voltex.VoltexGroup;
-import voltex.Renderer;
-import isosurface.MeshGroup;
-import isosurface.MeshExporter;
-import isosurface.MeshEditor;
-
-import javax.vecmath.Color3f;
-import javax.vecmath.Matrix4d;
 import javax.media.j3d.View;
-import javax.media.j3d.Transform3D;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.Collection;
 
 public class Image3DMenubar extends MenuBar implements ActionListener, 
 					 		ItemListener,
@@ -54,6 +15,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private Executer executer;
 
 	private MenuItem add;
+	private MenuItem addOctree;
+	private MenuItem removeOctree;
 	private MenuItem color;
 	private MenuItem bgColor;
 	private MenuItem channels;
@@ -65,7 +28,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem properties;
 	private MenuItem resetView;
 	private MenuItem startRecord;
-	private MenuItem stopRecord;
+//	private MenuItem stopRecord;
 	private MenuItem startAnimation;
 	private MenuItem stopAnimation;
 	private MenuItem viewPreferences;
@@ -147,6 +110,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		delete.setEnabled(false);
 		delete.addActionListener(this);
 		file.add(delete);
+
+		file.addSeparator();
+
+		addOctree = new MenuItem("Load large volume");
+		addOctree.addActionListener(this);
+		file.add(addOctree);
+
+		removeOctree = new MenuItem("Remove large volume");
+		removeOctree.addActionListener(this);
+		file.add(removeOctree);
 
 		file.addSeparator();
 
@@ -276,9 +249,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		startRecord.addActionListener(this);
 		view.add(startRecord);
 
-		stopRecord = new MenuItem("Stop recording");
-		stopRecord.addActionListener(this);
-		view.add(stopRecord);
+//		stopRecord = new MenuItem("Stop recording");
+//		stopRecord.addActionListener(this);
+//		view.add(stopRecord);
 
 		view.addSeparator();
 
@@ -305,6 +278,14 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		bgColor = new MenuItem("Change background color");
 		bgColor.addActionListener(this);
 		view.add(bgColor);
+
+		MenuItem tmp = new MenuItem("Update Octree");
+		tmp.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				univ.updateOctree();
+			}
+		});
+		view.add(tmp);
 
 		return view;
 	}
@@ -431,6 +412,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.editScalebar();
 		else if(src == viewer4d)
 			executer.load4D();
+		else if(src == addOctree)
+			executer.loadOctree();
+		else if(src == removeOctree)
+			executer.removeOctree();
 		else if(src == channels)
 			executer.changeChannels(univ.getSelected());
 		else if(src == transparency)
@@ -446,9 +431,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		else if(src == center)
 			executer.centerSelected(univ.getSelected());
 		else if(src == startRecord)
-			executer.startRecording();
-		else if(src == stopRecord)
-			executer.stopRecording();
+			executer.record();
+//		else if(src == stopRecord)
+//			executer.stopRecording();
 		else if(src == startAnimation)
 			executer.startAnimation();
 		else if(src == stopAnimation)

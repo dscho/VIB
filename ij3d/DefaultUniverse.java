@@ -1,64 +1,50 @@
 package ij3d;
 
+import ij3d.shapes.CoordinateSystem;
+import ij3d.shapes.Scalebar;
+import ij3d.behaviors.MouseBehavior;
 import ij.gui.Toolbar;
-import ij.ImagePlus;
-import ij.process.ImageProcessor;
-import ij.ImageStack;
-import ij.IJ;
 
-import ij3d.ImageWindow3D;
-import ij3d.ImageCanvas3D;
-
-import isosurface.Triangulator;
-import isosurface.MeshGroup;
-
-import voltex.VoltexGroup;
-
-import marchingcubes.MCTriangulator;
-
-import java.awt.Panel;
 import java.awt.Dimension;
-import java.awt.BorderLayout;
-import java.awt.Frame;
 import java.awt.event.*;
-import java.awt.GraphicsConfiguration;
 
-import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.Iterator;
 
 import com.sun.j3d.utils.picking.behaviors.PickingCallback;
-import com.sun.j3d.utils.picking.behaviors.PickRotateBehavior;
-import com.sun.j3d.utils.picking.behaviors.PickTranslateBehavior;
-import com.sun.j3d.utils.picking.PickCanvas;
-import com.sun.j3d.utils.picking.PickResult;
 
 import com.sun.j3d.utils.behaviors.keyboard.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
-import com.sun.j3d.utils.universe.*;
-import com.sun.j3d.utils.geometry.ColorCube;
 import com.sun.j3d.utils.geometry.Sphere;
+import com.sun.j3d.utils.universe.*;
 
+import ij3d.behaviors.BehaviorCallback;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import com.sun.j3d.utils.behaviors.mouse.MouseBehaviorCallback;
+import ij3d.behaviors.Picker;
+import ij3d.behaviors.ContentTransformer;
+import ij3d.behaviors.InteractiveViewPlatformTransformer;
 
 public abstract class DefaultUniverse extends SimpleUniverse implements 
-					MouseBehaviorCallback, PickingCallback {
+					BehaviorCallback, PickingCallback {
 
-	protected BranchGroup root;
+	public static final int CENTER_TG    = 0;
+	public static final int ZOOM_TG      = 1;
+	public static final int TRANSLATE_TG = 2;
+	public static final int ANIMATE_TG   = 3;
+	public static final int ROTATION_TG  = 4;
+
 	protected BranchGroup scene;
 	protected Scalebar scalebar;
-	protected TransformGroup centerTG;
-	protected TransformGroup translateTG;
-	protected TransformGroup rotationsTG;
-	protected TransformGroup scaleTG;
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
-	protected MouseBehavior mouseBehavior;
+
+	protected final MouseBehavior mouseBehavior;
+	protected final ContentTransformer contentTransformer;
+	protected final Picker picker;
+	protected final InteractiveViewPlatformTransformer viewTransformer;
 
 	private List listeners = new ArrayList();
 	private boolean transformed = false;
@@ -66,88 +52,94 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public abstract Content getSelected();
 	public abstract Iterator contents();
 
-	public TransformGroup getGlobalRotate() {
-		return rotationsTG;
-	}
-
-	public TransformGroup getGlobalScale() {
-		return scaleTG;
-	}
-
-	public TransformGroup getGlobalTranslate() {
-		return translateTG;
+	public TransformGroup getZoomTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(ZOOM_TG);
 	}
 
 	public TransformGroup getCenterTG() {
-		return centerTG;
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(CENTER_TG);
+	}
+
+	public TransformGroup getRotationTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(ROTATION_TG);
+	}
+
+	public TransformGroup getTranslateTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(TRANSLATE_TG);
+	}
+
+	public TransformGroup getAnimationTG() {
+		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(ANIMATE_TG);
 	}
 
 	public Scalebar getScalebar() {
 		return scalebar;
 	}
 
+	public ContentTransformer getRotator() {
+		return contentTransformer;
+	}
+
+	public Picker getPicker() {
+		return picker;
+	}
+
+	public InteractiveViewPlatformTransformer getViewPlatformTransformer() {
+		return viewTransformer;
+	}
+
 	public DefaultUniverse(int width, int height) {
-		super(new ImageCanvas3D(width, height));
-		getViewingPlatform().setNominalViewingTransform();
+		super(new ImageCanvas3D(width, height), 5);
+//		getViewingPlatform().setNominalViewingTransform();
 		getViewer().getView().setProjectionPolicy(
-					View.PARALLEL_PROJECTION);
+					View.PERSPECTIVE_PROJECTION);
 
 		bounds = new BoundingSphere();
-		bounds.setRadius(10.0);
-
-		root = new BranchGroup();
-		
-		scaleTG = new TransformGroup();
-		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		scaleTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		root.addChild(scaleTG);
-
-		scalebar = new Scalebar();
-		scaleTG.addChild(scalebar);
-
-		rotationsTG = new TransformGroup();
-		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		rotationsTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		scaleTG.addChild(rotationsTG);
-
-		translateTG = new TransformGroup();
-		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		translateTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		rotationsTG.addChild(translateTG);
-
-		centerTG = new TransformGroup();
-		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
-		centerTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		translateTG.addChild(centerTG);
+		bounds.setRadius(10000.0);
 
 		scene = new BranchGroup();
-		scene.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);
-		scene.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
-		scene.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
-		centerTG.addChild(scene);
+		scene.setCapability(Group.ALLOW_CHILDREN_EXTEND);
+		scene.setCapability(Group.ALLOW_CHILDREN_READ);
+		scene.setCapability(Group.ALLOW_CHILDREN_WRITE);
+		
+		scalebar = new Scalebar();
+		scene.addChild(scalebar);
+
+//		// just for now: a sphere indicating the global origin
+//		scene.addChild(new Sphere(10));
+		// ah, and maybe a global coordinate system
+		scene.addChild(new CoordinateSystem(100, new Color3f(1, 0, 0)));
 
 		// Lightening
 		AmbientLight lightA = new AmbientLight();
 		lightA.setInfluencingBounds(bounds);
 		lightA.setEnable(false);
-		root.addChild(lightA);
+		scene.addChild(lightA);
 		DirectionalLight lightD1 = new DirectionalLight();
 		lightD1.setInfluencingBounds(bounds);
-		root.addChild(lightD1);
+		scene.addChild(lightD1);
 
 		SpotLight lightS = new SpotLight();
 		lightS.setInfluencingBounds(bounds);
-		root.addChild(lightS);
+		scene.addChild(lightS);
 
-		// setup global mouse rotation
+		// setup global mouse behavior
+		viewTransformer = new InteractiveViewPlatformTransformer(this, this);
+		contentTransformer = new ContentTransformer(this, this);
+		picker = new Picker(this);
 		mouseBehavior = new MouseBehavior(this);
 		mouseBehavior.setSchedulingBounds(bounds);
-		mouseBehavior.setupCallback(this);
-		root.addChild(mouseBehavior);
+		scene.addChild(mouseBehavior);
+
+		// add the scene to the universe
+		scene.compile();
+		addBranchGraph(scene);
 
 		getCanvas().addMouseListener(new MouseAdapter() {
+			@Override
 			public void mouseReleased(MouseEvent e) {
-				if(Toolbar.getToolId() == Toolbar.HAND) {
+				int id = Toolbar.getToolId();
+				if(id == Toolbar.HAND || id == Toolbar.MAGNIFIER) {
 					if(transformed) 
 						fireTransformationFinished();
 					transformed = false;
@@ -155,8 +147,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 			}
 		});
 		getCanvas().addMouseMotionListener(new MouseMotionAdapter() {
+			@Override
 			public void mouseDragged(MouseEvent e) {
-				if(Toolbar.getToolId() == Toolbar.HAND) {
+				int id = Toolbar.getToolId();
+				if(id == Toolbar.HAND || id == Toolbar.MAGNIFIER) {
 					if(!transformed)
 						fireTransformationStarted();
 					transformed = true;
@@ -165,13 +159,13 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		});
 
 		getCanvas().addComponentListener(new ComponentAdapter() {
+			@Override
 			public void componentResized(ComponentEvent e) {
 				fireCanvasResized();
 			}
 		});
 
 		fireTransformationUpdated();
-
 	}
 
 	public BranchGroup getScene() {
@@ -274,7 +268,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public void fireContentRemoved(Content c) {
 		for(int i = 0; i < listeners.size(); i++) {
 			UniverseListener l = (UniverseListener)listeners.get(i);
-			l.contentRemoved(c);;
+			l.contentRemoved(c);
 		}
 	}
 
