@@ -99,6 +99,11 @@ public final class IsoShape extends Shape3D {
 		}
 		double[][] inertia = new double[3][3];
 		volume = (float)MeshProperties.compute(mesh, center, inertia);
+		if(Float.isNaN(center.x) || Float.isNaN(center.y) || Float.isNaN(center.z)) {
+			center.x = (max.x + min.x) / 2;
+			center.y = (max.y + min.y) / 2;
+			center.z = (max.z + min.z) / 2;
+		}
 	}
 
 	public float getVolume() {

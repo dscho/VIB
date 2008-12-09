@@ -165,13 +165,19 @@ Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
 	vib/InterpolatedImage.java vib/Image3dCanvas.java \
 	math3d/Point3d.java math3d/NormalEstimator.java
 
-ImageJ_3D_Viewer.jar: SOURCES=$(wildcard ij3d/*.java) $(wildcard voltex/*.java)\
-	$(wildcard marchingcubes/*.java) $(wildcard isosurface/*.java) \
+ImageJ_3D_Viewer.jar: SOURCES=$(wildcard voltex/*.java)\
+	$(wildcard ij3d/*.java) $(wildcard ij3d/shapes/*.java) \
+	$(wildcard ij3d/behaviors/*.java) \
+	$(wildcard ij3d/pointlist/*.java) \
+	$(wildcard marchingcubes/*.java) \
+	$(wildcard isosurface/*.java) \
 	$(wildcard orthoslice/*.java) \
 	$(wildcard javax/media/j3d/*.java) \
 	$(wildcard math3d/*.java) \
 	$(wildcard view4d/*.java) $(wildcard view4d/icons/*.png) \
 	$(wildcard surfaceplot/*.java) \
+	$(wildcard octree/*.java) \
+	$(wildcard nrrd/*.java) \
 	vib/segment/ImageButton.java vib/segment/Border.java \
 	vib/Resample_.java vib/InterpolatedImage.java \
 	vib/PointList.java vib/BenesNamedPoint.java \
