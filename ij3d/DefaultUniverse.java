@@ -26,6 +26,8 @@ import javax.vecmath.*;
 import ij3d.behaviors.Picker;
 import ij3d.behaviors.ContentTransformer;
 import ij3d.behaviors.InteractiveViewPlatformTransformer;
+import java.util.BitSet;
+import javax.media.j3d.Switch;
 
 public abstract class DefaultUniverse extends SimpleUniverse implements 
 					BehaviorCallback, PickingCallback {
@@ -36,8 +38,12 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public static final int ANIMATE_TG   = 3;
 	public static final int ROTATION_TG  = 4;
 
+	public static final int SCALEBAR = 0;
+	public static final int COORD_SYSTEM = 1;
+
 	protected BranchGroup scene;
 	protected Scalebar scalebar;
+	protected CoordinateSystem globalCoord;
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
 
@@ -45,6 +51,8 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	protected final ContentTransformer contentTransformer;
 	protected final Picker picker;
 	protected final InteractiveViewPlatformTransformer viewTransformer;
+	protected final Switch attributesSwitch;
+	private BitSet attributesMask = new BitSet(2);
 
 	private List listeners = new ArrayList();
 	private boolean transformed = false;
@@ -102,13 +110,22 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		scene.setCapability(Group.ALLOW_CHILDREN_READ);
 		scene.setCapability(Group.ALLOW_CHILDREN_WRITE);
 		
-		scalebar = new Scalebar();
-		scene.addChild(scalebar);
+		attributesSwitch = new Switch();
+		attributesSwitch.setWhichChild(Switch.CHILD_MASK);
+		attributesSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
+		attributesSwitch.setCapability(Switch.ALLOW_SWITCH_WRITE);
+		scene.addChild(attributesSwitch);
 
-//		// just for now: a sphere indicating the global origin
-//		scene.addChild(new Sphere(10));
+		scalebar = new Scalebar();
+		attributesSwitch.addChild(scalebar);
+		attributesMask.set(SCALEBAR, false);
+
 		// ah, and maybe a global coordinate system
-		scene.addChild(new CoordinateSystem(100, new Color3f(1, 0, 0)));
+		globalCoord = new CoordinateSystem(100, new Color3f(1, 0, 0));
+		attributesSwitch.addChild(globalCoord);
+		attributesMask.set(COORD_SYSTEM, false);
+
+		attributesSwitch.setChildMask(attributesMask);
 
 		// Lightening
 		AmbientLight lightA = new AmbientLight();
@@ -166,6 +183,15 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		});
 
 		fireTransformationUpdated();
+	}
+
+	public void showAttribute(int attribute, boolean flag) {
+		attributesMask.set(attribute, flag);
+		attributesSwitch.setChildMask(attributesMask);
+	}
+
+	public boolean isAttributeVisible(int attribute) {
+		return attributesMask.get(attribute);
 	}
 
 	public BranchGroup getScene() {

@@ -950,6 +950,8 @@ public class Executer {
 			== v[0] ? choice[0] : choice[1];
 		gd.addChoice("Projection", choice, def);
 
+		gd.addCheckbox("Show global coordinate system", false);
+
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
@@ -957,6 +959,7 @@ public class Executer {
 		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
 		univ.getViewer().getView().setProjectionPolicy(
 					v[gd.getNextChoiceIndex()]);
+		univ.showAttribute(Image3DUniverse.COORD_SYSTEM, gd.getNextBoolean());
 	}
 
 	public void editScalebar() {
@@ -978,7 +981,9 @@ public class Executer {
 		sc.setLength((float)gd.getNextNumber());
 		sc.setUnit(gd.getNextString());
 		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
-		sc.setVisible(gd.getNextBoolean());
+		boolean vis = gd.getNextBoolean();
+		sc.setVisible(vis);
+		univ.showAttribute(Image3DUniverse.SCALEBAR, vis);
 	}
 
 
