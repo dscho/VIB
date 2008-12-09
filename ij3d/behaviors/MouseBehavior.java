@@ -181,7 +181,7 @@ public class MouseBehavior extends Behavior {
 		int mask = e.getModifiersEx();
 		Content c = univ.getSelected();
 		if(id == MouseEvent.MOUSE_PRESSED) {
-			if(c != null) contentTransformer.init(c, e.getX(), e.getY());
+			if(c != null && !c.isLocked()) contentTransformer.init(c, e.getX(), e.getY());
 			else viewTransformer.init(e);
 			if(toolID == Toolbar.POINT) {
 				if(c != null)
@@ -195,10 +195,10 @@ public class MouseBehavior extends Behavior {
 			}
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
 			if(shouldTranslate(mask, toolID)) {
-				if(c != null) contentTransformer.translate(e);
+				if(c != null && !c.isLocked()) contentTransformer.translate(e);
 				else viewTransformer.translate(e);
 			} else if(shouldRotate(mask, toolID)) {
-				if(c != null) contentTransformer.rotate(e);
+				if(c != null && !c.isLocked()) contentTransformer.rotate(e);
 				else viewTransformer.rotate(e);
 			} else if(shouldZoom(mask, toolID))
 				viewTransformer.zoom(e);
