@@ -681,9 +681,10 @@ class NeuriteTracerResultsDialog
 			getY() + pw.getHeight() );
 
 		changeState( WAITING_TO_START_PATH );
+	}
 
+	public void displayOnStarting( ) {
 		setVisible( true );
-
 		setPathListVisible( true );
 		setFillListVisible( false );
 	}

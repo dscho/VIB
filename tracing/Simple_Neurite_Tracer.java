@@ -1209,7 +1209,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				c.setTransparency(0.5f);
 			}
 
-
+			resultsDialog.displayOnStarting();
 
 		} finally {
 
