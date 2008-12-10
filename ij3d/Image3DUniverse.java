@@ -17,7 +17,7 @@ import com.sun.j3d.utils.universe.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import com.sun.j3d.utils.pickfast.PickCanvas;
+import isosurface.MeshGroup;
 import java.io.File;
 import octree.FilePreparer;
 import octree.VolumeOctree;
@@ -37,6 +37,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private Point3f globalCenter = new Point3f();
 
 	PointListDialog pld;
+
+	static{
+		UniverseSettings.load();
+	}
+
+	public Image3DUniverse() {
+		this(UniverseSettings.startupWidth, UniverseSettings.startupHeight);
+	}
 
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
@@ -225,6 +233,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.channels = channels;
 		content.resamplingF = resf;
 		content.setPointListDialog(pld);
+		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.displayAs(type);
 		content.compile();
 		scene.addChild(content);
@@ -273,7 +282,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public void resetZoom() {
 		double d = oldRange / Math.tan(Math.PI/8);
-		getViewPlatformTransformer().zoomTo(d);
+		getViewPlatformTransformer().zoomTo(new Vector3d(0, 0, -1), d);
 		getViewer().getView().setBackClipDistance(2 * d);
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
@@ -291,6 +300,35 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return c;
 	}
 
+	public Content addLineMesh(List mesh,
+			Color3f color, String name, int threshold, boolean strips) {
+		return addLineMesh(mesh, color, name, threshold, strips,
+				new LineAttributes());
+	}
+
+	public Content addLineMesh(List mesh, Color3f color, String name,
+				int threshold, boolean strips, LineAttributes attrs) {
+		// check if exists already
+		if(contents.containsKey(name)) {
+			IJ.error("Mesh named '"+name+"' exists already");
+			return null;
+		}
+		Content content = new Content(name);
+		content.color = color;
+		content.threshold = threshold;
+		int mode = strips ? MeshGroup.LINE_STRIPS : MeshGroup.LINES;
+		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
+		content.displayMesh(mesh, mode, attrs);
+		content.setPointListDialog(pld);
+		scene.addChild(content);
+		contents.put(name, content);
+		recalculateGlobalMinMax(content);
+		float range = globalMax.x - globalMin.x;
+		ensureScale(range);
+		fireContentAdded(content);
+		return content;
+	}
+
 	public Content addMesh(List mesh,
 			Color3f color, String name, int threshold) {
 		// check if exists already
@@ -301,6 +339,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Content content = new Content(name);
 		content.color = color;
 		content.threshold = threshold;
+		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.displayMesh(mesh);
 		content.setPointListDialog(pld);
 		scene.addChild(content);
@@ -354,13 +393,11 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getRotationTG().setTransform(t);
 		getTranslateTG().setTransform(t);
 		getZoomTG().setTransform(t);
+		getZoomTG().setTransform(t);
 		getViewPlatformTransformer().centerAt(globalCenter);
 		resetZoom();
 		fireTransformationUpdated();
 		fireTransformationFinished();
-//		resetZoom();
-//		fireTransformationUpdated();
-//		fireTransformationFinished();
 	}
 
 	public Content getSelected() {

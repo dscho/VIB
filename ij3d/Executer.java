@@ -934,29 +934,7 @@ public class Executer {
 	}
 
 	public void viewPreferences() {
-		GenericDialog gd = new GenericDialog(
-				"View Preferences", univ.getWindow());
-		gd.addMessage("Window size:");
-		Dimension d = univ.getSize();
-		if(d == null)
-			return;
-		gd.addNumericField("width", d.width, 0);
-		gd.addNumericField("height", d.height, 0);
-
-		String[] choice = new String[] {"PARALLEL", "PERSPECTIVE"};
-		int v[] = new int[] {View.PARALLEL_PROJECTION,
-					View.PERSPECTIVE_PROJECTION};
-		String def = univ.getViewer().getView().getProjectionPolicy()
-			== v[0] ? choice[0] : choice[1];
-		gd.addChoice("Projection", choice, def);
-
-		gd.showDialog();
-		if(gd.wasCanceled())
-			return;
-
-		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
-		univ.getViewer().getView().setProjectionPolicy(
-					v[gd.getNextChoiceIndex()]);
+		UniverseSettings.initFromDialog(univ);
 	}
 
 	public void editScalebar() {
@@ -969,7 +947,7 @@ public class Executer {
 		gd.addStringField("Units", sc.getUnit(), 5);
 		gd.addChoice("Color", ColorTable.colorNames, 
 				ColorTable.getColorName(sc.getColor()));
-		gd.addCheckbox("show", sc.isVisible());
+		gd.addCheckbox("show", univ.isAttributeVisible(Image3DUniverse.SCALEBAR));
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
@@ -978,7 +956,8 @@ public class Executer {
 		sc.setLength((float)gd.getNextNumber());
 		sc.setUnit(gd.getNextString());
 		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
-		sc.setVisible(gd.getNextBoolean());
+		boolean vis = gd.getNextBoolean();
+		univ.showAttribute(Image3DUniverse.SCALEBAR, vis);
 	}
 
 

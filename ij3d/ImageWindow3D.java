@@ -9,7 +9,6 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.ImageWindow;
 import ij.gui.ImageCanvas;
-import ij.gui.MessageDialog;
 import ij.gui.Toolbar;
 import ij.process.ColorProcessor;
 import ij.macro.Interpreter;
@@ -19,7 +18,6 @@ import java.awt.Label;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsEnvironment;
@@ -28,9 +26,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferInt;
-import java.awt.image.Raster;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -45,6 +40,7 @@ import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.RenderingError;
 import javax.media.j3d.RenderingErrorListener;
 import javax.media.j3d.Screen3D;
+import javax.vecmath.Color3f;
 
 public class ImageWindow3D extends ImageWindow implements UniverseListener, 
 							WindowStateListener,
@@ -73,7 +69,8 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		add(canvas3D, -1);
 		status.setText("");
 		status.setForeground(Color.WHITE);
-		status.setBackground(Color.BLACK);
+		Color3f c = UniverseSettings.defaultBackground;
+		status.setBackground(new Color(c.x, c.y, c.z));
 		status.setFont(new Font("Verdana", Font.PLAIN, 20));
 		add(status, BorderLayout.SOUTH, -1);
 

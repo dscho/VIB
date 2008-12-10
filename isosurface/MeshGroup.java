@@ -1,39 +1,28 @@
 package isosurface;
 
 import java.util.List;
-import java.util.Vector;
-
 import java.awt.Color;
-
 import ij.IJ;
-import ij.ImagePlus;
-import ij.WindowManager;
-import ij.gui.GenericDialog;
-
-import ij.measure.Calibration;
 
 import ij3d.Content;
 import ij3d.ContentNode;
-import ij3d.Image3DUniverse;
-import ij3d.ColorTable;
 
-import vib.Resample_;
-
+import javax.media.j3d.LineAttributes;
 import marchingcubes.MCTriangulator;
 
-import javax.media.j3d.Node;
 import javax.media.j3d.View;
-import javax.media.j3d.Transform3D;
-import javax.vecmath.Vector3f;
 import javax.vecmath.Point3f;
 import javax.vecmath.Color3f;
 
 public class MeshGroup extends ContentNode {
 
+	public static final int TRIANGLES = 0;
+	public static final int LINES = 1;
+	public static final int LINE_STRIPS = 2;
+
 	IsoShape shape; 
 	Triangulator triangulator = new MCTriangulator();
 	Content c;
-
 
 	public MeshGroup (Content c) {
 		super();
@@ -54,6 +43,14 @@ public class MeshGroup extends ContentNode {
 	}
 
 	public MeshGroup(Content c, List mesh) {
+		this(c, mesh, TRIANGLES);
+	}
+
+	public MeshGroup(Content c, List mesh, int mode) {
+		this(c, mesh, mode, new LineAttributes());
+	}
+
+	public MeshGroup(Content c, List mesh, int mode, LineAttributes attrs) {
 		super();
 		this.c = c;
 		Color3f color = c.getColor();
@@ -62,7 +59,7 @@ public class MeshGroup extends ContentNode {
 			color= new Color3f(
 				thresh/255f, thresh/255f, thresh/255f);
 		}
-		shape = new IsoShape(mesh, color, thresh, c.getTransparency());
+		shape = new IsoShape(mesh, color, thresh, c.getTransparency(), mode, attrs);
 		calculateMinMaxCenterPoint();
 		addChild(shape);
 	}

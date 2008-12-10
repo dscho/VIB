@@ -23,27 +23,24 @@ import javax.media.j3d.PolygonAttributes;
 import javax.media.j3d.ColoringAttributes;
 
 
-public class Scalebar extends Switch {
+public class Scalebar extends BranchGroup {
 
 	private DecimalFormat df = new DecimalFormat("###0.00");
 
-	private float length = 0f;
+	private float length = 1f;
 	private Color3f color = new Color3f(1.0f, 1.0f, 1.0f);
-	private float x = 0, y = 0;
+	private float x = 2, y = 2;
 	private String unit = "";
-	private boolean visible = true;
 
 	private TransformGroup positionTG, textTG;
 	private Shape3D lineShape;
 	private OrientedShape3D textShape;
 
 	public Scalebar() {
-		this(0f);
+		this(1f);
 	}
 	
 	public Scalebar(float length) {
-		setCapability(Switch.ALLOW_SWITCH_WRITE);
-
 		Transform3D position = new Transform3D();
 		positionTG = new TransformGroup(position);
 		positionTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
@@ -70,8 +67,6 @@ public class Scalebar extends Switch {
 		textShape.setAppearance(createTextAppearance());
 		textShape.setAlignmentAxis(0.0f, 1.0f, 0.0f);
 		textTG.addChild(textShape);
-
-		setVisible(visible);
 	}
 
 	public float getX() {
@@ -80,10 +75,6 @@ public class Scalebar extends Switch {
 
 	public float getY() {
 		return y;
-	}
-
-	public boolean isVisible() {
-		return visible;
 	}
 
 	public float getLength() {
@@ -101,11 +92,6 @@ public class Scalebar extends Switch {
 	public void setUnit(String unit) {
 		this.unit = unit;
 		textShape.setGeometry(createTextGeometry());
-	}
-
-	public void setVisible(boolean b) {
-		this.visible = b;
-		setWhichChild(b ? Switch.CHILD_ALL : Switch.CHILD_NONE);
 	}
 
 	public void setPosition(float x, float y) {
