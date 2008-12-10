@@ -66,7 +66,7 @@ public class ViewPlatformTransformer {
 
 	private Transform3D tmp = new Transform3D();
 	public void zoom(int units) {
-		double factor = distanceEyeOrigin() / 100;
+		double factor = distanceEyeOrigin() / 50;
 		getZDir(zDir);
 		// let the factor be 1 percent of the distance between
 		// eye position and origin
