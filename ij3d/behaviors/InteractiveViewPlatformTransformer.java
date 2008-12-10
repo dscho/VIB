@@ -1,6 +1,7 @@
 package ij3d.behaviors;
 
 import ij3d.DefaultUniverse;
+import ij3d.Image3DUniverse;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import javax.vecmath.Point3d;
@@ -31,7 +32,7 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 	public void rotate(MouseEvent e) {
 		int dx = xLast - e.getX();
 		int dy = yLast - e.getY();
-		Point3f cen = new Point3f();  // ((Image3DUniverse)univ).getGlobalCenterPoint();
+		Point3f cen = ((Image3DUniverse)univ).getGlobalCenterPoint();
 		rotateXY(new Point3d(cen), dy * ONE_RAD, dx * ONE_RAD);
 		xLast = e.getX();
 		yLast = e.getY();
