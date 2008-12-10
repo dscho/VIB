@@ -7,29 +7,17 @@ import javax.media.j3d.Background;
 import javax.vecmath.Color3f;
 
 import java.awt.event.MouseAdapter;
-import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionAdapter;
-import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.ComponentListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 
-import java.awt.Image;
-import java.awt.image.BufferedImage;
-
-import java.awt.GraphicsConfiguration;
 import java.awt.Dimension;
-import java.awt.Polygon;
-import java.awt.Point;
-import java.awt.Color;
-import java.awt.Font;
 
 import java.util.Map;
 import java.util.HashMap;
-
 
 import ij.process.ByteProcessor;
 import ij.gui.Toolbar;
@@ -45,7 +33,8 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 	private RoiImagePlus roiImagePlus;
 	private ImageCanvas roiImageCanvas;
 	private Map<Integer, Long> pressed, released; 
-	private Background background = new Background(new Color3f(0, 0, 0)); // black by default
+	private Background background = new Background(
+			new Color3f(UniverseSettings.defaultBackground));
 	final private ExecutorService exec = Executors.newSingleThreadExecutor();
 
 	protected void flush() {

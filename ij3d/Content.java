@@ -49,7 +49,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	// visibility flags
 	private boolean locked = false;
 	private boolean visible = true;
-	private boolean coordVisible = true;
+	private boolean coordVisible = UniverseSettings.showLocalCoordinateSystemsByDefault;
 	private boolean showPL = false;
 	private boolean boundingSphereVisible = false;
 	protected boolean selected = false;

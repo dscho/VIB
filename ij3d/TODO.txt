@@ -14,3 +14,5 @@ TODO for the ImageJ 3D Viewer
 * remove axis -- done
 * multiple selection
 * printing
+
+* Content hinzufügen ohne ensureScale and center

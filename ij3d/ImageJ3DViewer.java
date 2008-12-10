@@ -19,7 +19,7 @@ public class ImageJ3DViewer implements PlugIn {
 	public void run(String arg) {
 		ImagePlus image = WindowManager.getCurrentImage();
 		try {
-			univ = new Image3DUniverse(512, 512);
+			univ = new Image3DUniverse();
 			univ.show();
 			GUI.center(univ.getWindow());
 			int type = -1;

@@ -99,8 +99,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	public DefaultUniverse(int width, int height) {
 		super(new ImageCanvas3D(width, height), 5);
 //		getViewingPlatform().setNominalViewingTransform();
-		getViewer().getView().setProjectionPolicy(
-					View.PERSPECTIVE_PROJECTION);
+		getViewer().getView().setProjectionPolicy(UniverseSettings.projection);
 
 		bounds = new BoundingSphere();
 		bounds.setRadius(10000.0);
@@ -118,12 +117,12 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 
 		scalebar = new Scalebar();
 		attributesSwitch.addChild(scalebar);
-		attributesMask.set(SCALEBAR, false);
+		attributesMask.set(SCALEBAR, UniverseSettings.showScalebar);
 
 		// ah, and maybe a global coordinate system
 		globalCoord = new CoordinateSystem(100, new Color3f(1, 0, 0));
 		attributesSwitch.addChild(globalCoord);
-		attributesMask.set(COORD_SYSTEM, false);
+		attributesMask.set(COORD_SYSTEM, UniverseSettings.showGlobalCoordinateSystem);
 
 		attributesSwitch.setChildMask(attributesMask);
 
@@ -223,6 +222,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	}
 
 	public void close() {
+		UniverseSettings.save();
 		if(win != null) {
 			fireUniverseClosed();
 			while(!listeners.isEmpty())

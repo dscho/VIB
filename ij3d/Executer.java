@@ -934,32 +934,7 @@ public class Executer {
 	}
 
 	public void viewPreferences() {
-		GenericDialog gd = new GenericDialog(
-				"View Preferences", univ.getWindow());
-		gd.addMessage("Window size:");
-		Dimension d = univ.getSize();
-		if(d == null)
-			return;
-		gd.addNumericField("width", d.width, 0);
-		gd.addNumericField("height", d.height, 0);
-
-		String[] choice = new String[] {"PARALLEL", "PERSPECTIVE"};
-		int v[] = new int[] {View.PARALLEL_PROJECTION,
-					View.PERSPECTIVE_PROJECTION};
-		String def = univ.getViewer().getView().getProjectionPolicy()
-			== v[0] ? choice[0] : choice[1];
-		gd.addChoice("Projection", choice, def);
-
-		gd.addCheckbox("Show global coordinate system", false);
-
-		gd.showDialog();
-		if(gd.wasCanceled())
-			return;
-
-		univ.setSize((int)gd.getNextNumber(), (int)gd.getNextNumber());
-		univ.getViewer().getView().setProjectionPolicy(
-					v[gd.getNextChoiceIndex()]);
-		univ.showAttribute(Image3DUniverse.COORD_SYSTEM, gd.getNextBoolean());
+		UniverseSettings.initFromDialog(univ);
 	}
 
 	public void editScalebar() {
@@ -972,7 +947,7 @@ public class Executer {
 		gd.addStringField("Units", sc.getUnit(), 5);
 		gd.addChoice("Color", ColorTable.colorNames, 
 				ColorTable.getColorName(sc.getColor()));
-		gd.addCheckbox("show", sc.isVisible());
+		gd.addCheckbox("show", univ.isAttributeVisible(Image3DUniverse.SCALEBAR));
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
@@ -982,7 +957,6 @@ public class Executer {
 		sc.setUnit(gd.getNextString());
 		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
 		boolean vis = gd.getNextBoolean();
-		sc.setVisible(vis);
 		univ.showAttribute(Image3DUniverse.SCALEBAR, vis);
 	}
 

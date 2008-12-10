@@ -17,7 +17,6 @@ import com.sun.j3d.utils.universe.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import com.sun.j3d.utils.pickfast.PickCanvas;
 import isosurface.MeshGroup;
 import java.io.File;
 import octree.FilePreparer;
@@ -38,6 +37,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private Point3f globalCenter = new Point3f();
 
 	PointListDialog pld;
+
+	static{
+		UniverseSettings.load();
+	}
+
+	public Image3DUniverse() {
+		this(UniverseSettings.startupWidth, UniverseSettings.startupHeight);
+	}
 
 	public Image3DUniverse(int width, int height) {
 		super(width, height);
@@ -226,6 +233,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.channels = channels;
 		content.resamplingF = resf;
 		content.setPointListDialog(pld);
+		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.displayAs(type);
 		content.compile();
 		scene.addChild(content);
@@ -309,6 +317,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.color = color;
 		content.threshold = threshold;
 		int mode = strips ? MeshGroup.LINE_STRIPS : MeshGroup.LINES;
+		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.displayMesh(mesh, mode, attrs);
 		content.setPointListDialog(pld);
 		scene.addChild(content);
@@ -330,6 +339,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Content content = new Content(name);
 		content.color = color;
 		content.threshold = threshold;
+		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.displayMesh(mesh);
 		content.setPointListDialog(pld);
 		scene.addChild(content);
