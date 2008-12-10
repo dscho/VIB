@@ -2,7 +2,7 @@
 
 /* This is a cut-down version of the TrakEM2 Pipe class, which is here
    so that we can use the "makeTube" function to construct meshes from
-   a series of points with diameters withouth having to include the
+   a series of points with radiuses without having to include the
    complete TrakEM2_.jar as a dependency.
 
    It's not very sensible repeating all this code, of course - ideally
@@ -14,7 +14,7 @@
 		double [][][] allPoints = Pipe.makeTube(x_points_d,
 							y_points_d,
 							z_points_d,
-							diameters,
+							radiuses,
 							4,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
 							12);     // "parallels" (12 means cross-sections are dodecagons)
 
