@@ -11,6 +11,6 @@ TODO for the ImageJ 3D Viewer
 
 * parallel projection
 * Light sources
-* remove axis
+* remove axis -- done
 * multiple selection
 * printing
