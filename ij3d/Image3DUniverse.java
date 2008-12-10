@@ -294,6 +294,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public Content addLineMesh(List mesh,
 			Color3f color, String name, int threshold, boolean strips) {
+		return addLineMesh(mesh, color, name, threshold, strips,
+				new LineAttributes());
+	}
+
+	public Content addLineMesh(List mesh, Color3f color, String name,
+				int threshold, boolean strips, LineAttributes attrs) {
 		// check if exists already
 		if(contents.containsKey(name)) {
 			IJ.error("Mesh named '"+name+"' exists already");
@@ -303,7 +309,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.color = color;
 		content.threshold = threshold;
 		int mode = strips ? MeshGroup.LINE_STRIPS : MeshGroup.LINES;
-		content.displayMesh(mesh, mode);
+		content.displayMesh(mesh, mode, attrs);
 		content.setPointListDialog(pld);
 		scene.addChild(content);
 		contents.put(name, content);

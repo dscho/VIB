@@ -17,6 +17,7 @@ public final class IsoShape extends Shape3D {
 	private boolean shaded = true;
 	private float volume;
 	private int mode = MeshGroup.TRIANGLES;
+	private LineAttributes lineAttrs;
 
 	public IsoShape(List mesh, int threshold, float transparency){
 		this(mesh, new Color3f(0, 1, 0), threshold, transparency);
@@ -28,10 +29,16 @@ public final class IsoShape extends Shape3D {
 	}
 
 	public IsoShape(List mesh, Color3f color, int threshold, float transp, int mode) {
+		this(mesh, color, threshold, transp, mode, new LineAttributes());
+	}
+
+	public IsoShape(List mesh, Color3f color, int threshold,
+			float transp, int mode, LineAttributes attrs) {
 		this.mesh = mesh;
 		this.color = color;
 		this.threshold = threshold;
 		this.transparency = transp;
+		this.lineAttrs = attrs;
 		this.mode = mode;
 		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
@@ -153,6 +160,8 @@ public final class IsoShape extends Shape3D {
 		tr.setTransparencyMode(mode);
 		tr.setTransparency(transparency);
 		appearance.setTransparencyAttributes(tr);
+
+		appearance.setLineAttributes(lineAttrs);
 
 		Material material = new Material();
 		material.setCapability(Material.ALLOW_COMPONENT_WRITE);

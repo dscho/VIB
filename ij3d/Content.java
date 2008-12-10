@@ -21,6 +21,7 @@ import java.util.BitSet;
 import java.util.List;
 
 import javax.media.j3d.BranchGroup;
+import javax.media.j3d.LineAttributes;
 import javax.media.j3d.Switch;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
@@ -194,11 +195,15 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	public void displayMesh(List mesh, int mode) {
+		displayMesh(mesh, mode, new LineAttributes());
+	}
+
+	public void displayMesh(List mesh, int mode, LineAttributes attrs) {
 		// remove everything if possible
 		bbSwitch.removeAllChildren();
 
 		// create content node and add it to the switch
-		contentNode = new MeshGroup(this, mesh, mode);
+		contentNode = new MeshGroup(this, mesh, mode, attrs);
 		bbSwitch.addChild(contentNode);
 
 		// create the bounding box and add it to the switch

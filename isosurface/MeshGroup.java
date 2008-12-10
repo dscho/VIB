@@ -7,6 +7,7 @@ import ij.IJ;
 import ij3d.Content;
 import ij3d.ContentNode;
 
+import javax.media.j3d.LineAttributes;
 import marchingcubes.MCTriangulator;
 
 import javax.media.j3d.View;
@@ -46,6 +47,10 @@ public class MeshGroup extends ContentNode {
 	}
 
 	public MeshGroup(Content c, List mesh, int mode) {
+		this(c, mesh, mode, new LineAttributes());
+	}
+
+	public MeshGroup(Content c, List mesh, int mode, LineAttributes attrs) {
 		super();
 		this.c = c;
 		Color3f color = c.getColor();
@@ -54,7 +59,7 @@ public class MeshGroup extends ContentNode {
 			color= new Color3f(
 				thresh/255f, thresh/255f, thresh/255f);
 		}
-		shape = new IsoShape(mesh, color, thresh, c.getTransparency(), mode);
+		shape = new IsoShape(mesh, color, thresh, c.getTransparency(), mode, attrs);
 		calculateMinMaxCenterPoint();
 		addChild(shape);
 	}
