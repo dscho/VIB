@@ -213,7 +213,7 @@ public class Picker {
 		PickCanvas pickCanvas = new PickCanvas(canvas, univ.getScene());
 		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
 		pickCanvas.setFlags(PickInfo.SCENEGRAPHPATH | PickInfo.CLOSEST_INTERSECTION_POINT);
-		pickCanvas.setTolerance(0);
+		pickCanvas.setTolerance(3);
 		pickCanvas.setShapeLocation(x, y);
 		try {
 			PickInfo[] result = pickCanvas.pickAllSorted();
