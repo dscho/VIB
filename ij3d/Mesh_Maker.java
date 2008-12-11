@@ -1,3 +1,5 @@
+/* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
+
 /**
  * Example plugin on how to add spheres and tubes to the 3D Viewer.
  * Albert Cardona 2008-12-09
@@ -63,6 +65,7 @@ public class Mesh_Maker implements PlugIn {
 		Content tube1 = univ.addMesh(createTube(px, py, pz, pr, 12, false), colort, "Tube", 1);
 		Content tube2 = univ.addMesh(createTube(px2, py2, pz2, pr2, 12, false), color_t2, "Tube spiral", 1);
 
+		Content disc1 = univ.addMesh(createDisc(100,100,50,3,3,3,50,12), new Color3f(Color.blue), "Disc 1", 1);
 
 		// Extra:
 		// Now modify some attributes:
@@ -75,6 +78,8 @@ public class Mesh_Maker implements PlugIn {
 
 		// Change the transparency of the first tube
 		tube1.setTransparency(0.5f); // from 0 (opaque) to 1 (fully transparent)
+
+		disc1.setTransparency(0.3f);
 
 		// Move the small sphere in x,y,z to a new location
 		sph1.applyTransform(new Transform3D(new double[]{1, 0, 0,  50,
@@ -173,5 +178,61 @@ public class Mesh_Maker implements PlugIn {
 	static public List createTube(final double[] x, final double[] y, final double[] z,
 			              final double[] r, final int parallels, final boolean do_resample) {
 		return Pipe.generateTriangles(Pipe.makeTube(x, y, z, r, 1, parallels, do_resample), 1);
+	}
+
+	static public List createDisc(double x, double y, double z,
+				      double nx, double ny, double nz,
+				      double radius,
+				      int edgePoints ) {
+		double ax, ay, az;
+
+		if( Math.abs(nx) >= Math.abs(ny) ) {
+			double scale = 1 / Math.sqrt( nx*nx + nz*nz  );
+			ax = -nz * scale;
+			ay = 0;
+			az = nx * scale;
+		} else {
+			double scale = 1 / Math.sqrt( ny*ny + nz*nz  );
+			ax = 0;
+			ay = nz * scale;
+			az = - ny * scale;
+		}
+
+		/* Now to find the other vector in that plane, do the
+		 * cross product of (ax,ay,az) with (nx,ny,nz) */
+
+		double bx = (ay * nz - az * ny);
+		double by = (az * nx - ax * nz);
+		double bz = (ax * ny - ay * nx);
+		double bScale = 1 / Math.sqrt( bx*bx + by*by + bz*bz );
+		bx *= bScale;
+		by *= bScale;
+		bz *= bScale;
+
+		double [] circleX = new double[edgePoints+1];
+		double [] circleY = new double[edgePoints+1];
+		double [] circleZ = new double[edgePoints+1];
+
+		for( int i = 0; i < edgePoints + 1; ++i ) {
+			double angle = (i * 2 * Math.PI) / edgePoints;
+			double c = Math.cos(angle);
+			double s = Math.sin(angle);
+			circleX[i] = x + radius * c * ax + radius * s * bx;
+			circleY[i] = y + radius * c * ay + radius * s * by;
+			circleZ[i] = z + radius * c * az + radius * s * bz;
+		}
+		final ArrayList list = new ArrayList();
+		Point3f centre = new Point3f( (float)x, (float)y, (float)z );
+		for( int i = 0; i < edgePoints; ++i ) {
+			Point3f t2 = new Point3f( (float)circleX[i], (float)circleY[i], (float)circleZ[i] );
+			Point3f t3 = new Point3f( (float)circleX[i+1], (float)circleY[i+1], (float)circleZ[i+1] );
+			list.add( centre );
+			list.add( t2 );
+			list.add( t3 );
+			list.add( centre );
+			list.add( t3 );
+			list.add( t2 );
+		}
+		return list;
 	}
 }
