@@ -89,22 +89,28 @@ public class Pipe {
 	}
 
 	static public double[][][] makeTube(double[] px, double[] py, double[] pz, double[] p_width_i, final int resample, final int parallels) {
+		return makeTube(px, py, pz, p_width_i, resample, parallels, true);
+	}
+
+	static public double[][][] makeTube(double[] px, double[] py, double[] pz, double[] p_width_i, final int resample, final int parallels, final boolean do_resample) {
 
 		int n = px.length;
 
 		// Resampling to get a smoother pipe
-		try {
-			VectorString3D vs = new VectorString3D(px, py, pz);
-			vs.addDependent(p_width_i);
-			vs.resample(vs.getAverageDelta() * resample);
-			px = vs.getPoints(0);
-			py = vs.getPoints(1);
-			pz = vs.getPoints(2);
-			p_width_i = vs.getDependent(0);
-			//Utils.log("lengths:  " + px.length + ", " + py.length + ", " + pz.length + ", " + p_width_i.length);
-			n = vs.length();
-		} catch (Exception e) {
-			IJ.error(""+e);
+		if (do_resample) {
+			try {
+				VectorString3D vs = new VectorString3D(px, py, pz);
+				vs.addDependent(p_width_i);
+				vs.resample(vs.getAverageDelta() * resample);
+				px = vs.getPoints(0);
+				py = vs.getPoints(1);
+				pz = vs.getPoints(2);
+				p_width_i = vs.getDependent(0);
+				//Utils.log("lengths:  " + px.length + ", " + py.length + ", " + pz.length + ", " + p_width_i.length);
+				n = vs.length();
+			} catch (Exception e) {
+				IJ.error(""+e);
+			}
 		}
 
 		double[][][] all_points = new double[n+2][parallels+1][3];
