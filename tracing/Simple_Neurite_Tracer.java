@@ -36,6 +36,7 @@ import ij3d.Image3DUniverse;
 import ij3d.Image3DMenubar;
 import ij3d.Content;
 import ij3d.Pipe;
+import ij3d.Mesh_Maker;
 import javax.vecmath.Color3f;
 import ij.gui.GUI;
 
@@ -50,6 +51,7 @@ import java.io.*;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import client.ArchiveClient;
 
@@ -1792,10 +1794,20 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				addLineTo3DViewer(
 					np.nearX, np.nearY, np.nearZ,
 					np.pathPointX, np.pathPointY, np.pathPointZ,
-					Math.abs(x_spacing),
+					Math.abs(x_spacing) / 4,
 					c,
 					tracesFile.getName()+"-"+done);
+				String ballName = "ball "+done;
+				if( ! univ.contains(ballName) ) {
+					List sphere = Mesh_Maker.createSphere( np.nearX,
+									       np.nearY,
+									       np.nearZ,
+									       Math.abs(x_spacing/2) );
+					univ.addMesh( sphere, new Color3f(Color.pink), ballName, 1 );
+				}
 			}
+
+
 			++done;
 		}
 	}
