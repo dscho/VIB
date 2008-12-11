@@ -1,27 +1,39 @@
 package vib;
 
-import Quick3dApplet.ColTri;
-import Quick3dApplet.Matrix;
-import Quick3dApplet.NetTri;
-import Quick3dApplet.PhongTri;
-import Quick3dApplet.Render;
-import Quick3dApplet.RenderObject;
-import Quick3dApplet.Tri;
-import Quick3dApplet.Vec;
-import Quick3dApplet.Vertex;
-import Quick3dApplet.VertexNorm;
-import ij.*;
-import ij.gui.*;
+import ij.IJ;
+import ij.ImagePlus;
+
+import ij.gui.GenericDialog;
+
 import ij.measure.Calibration;
+
 import ij.plugin.filter.PlugInFilter;
-import ij.process.*;
-import java.awt.*;
-import java.awt.image.*;
-import java.io.*;
-import java.util.*;
-import java.lang.*;
+
+import ij.process.ImageProcessor;
+
+import ij3d.Image3DUniverse;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+
 import java.text.DecimalFormat;
-import math3d.*;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.Vector;
+
+import javax.vecmath.Color3f;
+import javax.vecmath.Point3f;
+
+import math3d.NormalEstimator;
+import math3d.Point3d;
 
 public class Extract_Surface implements PlugInFilter {
 	ImagePlus image;
@@ -55,9 +67,9 @@ public class Extract_Surface implements PlugInFilter {
 		IJ.showProgress(1, 6);
 		IJ.showStatus("reassociate vertices");
 		reassociateVertices();
-		IJ.showProgress(2, 6);
-		IJ.showStatus("get normals");
-		getNormals();
+		//IJ.showProgress(2, 6);
+		//IJ.showStatus("get normals");
+		//getNormals();
 		IJ.showProgress(3, 6);
 		IJ.showStatus("get edges");
 		//showAllPoints();
@@ -68,7 +80,7 @@ public class Extract_Surface implements PlugInFilter {
 		getTriangles();
 		IJ.showProgress(5, 6);
 		IJ.showStatus("show triangles");
-		showTriangles(0xff00000);
+		showTriangles(0xff0000);
 		IJ.showProgress(6, 6);
 
 		if (!wrlFileName.equals(""))
@@ -133,8 +145,8 @@ public class Extract_Surface implements PlugInFilter {
 				calib.zOrigin + k * calib.pixelDepth);
 		}
 
-		public Vec getVec() {
-			return new Vec(
+		public Point3f getPoint3f() {
+			return new Point3f(
 				(float)(calib.xOrigin + i * calib.pixelWidth),
 				(float)(calib.yOrigin + j * calib.pixelHeight),
 				(float)(calib.zOrigin + k * calib.pixelDepth));
@@ -366,29 +378,32 @@ public class Extract_Surface implements PlugInFilter {
 	}
 
 
+	Color3f makeColor(int v) {
+		return new Color3f(((v >> 16) & 0xff) / 255.0f,
+				((v >> 8) & 0xff) / 255.0f,
+				(v & 0xff) / 255.0f);
+	}
+
 	void showAllPoints(boolean clearObjects) {
-		getIC();
+		showPoints(surfaceVoxels.keySet().iterator(), 0xff0000);
+	/*
+		getUniverse();
 
 		if (clearObjects)
 			ic.objects.clear();
 
-		int[] colors = new int[vertices.size()];
+		Color3f[] colors = new int[vertices.size()];
 		for (int i = 0; i < colors.length; i++)
-			colors[i] = vertices.get(i).hashCode();
+			colors[i] = makeColor(vertices.get(i).hashCode());
 
-		RenderObject ro = new RenderObject();
 		Iterator iter = surfaceVoxels.keySet().iterator();
 		while (iter.hasNext()) {
 			SurfaceVoxel v = (SurfaceVoxel)iter.next();
-			int color = (v.vertexIndex < 0 ? 0xff0000
+			Color3f color = (v.vertexIndex < 0 ? makeColor(0xff0000)
 					: colors[v.vertexIndex]);
 			if (v == v.getVertex())
-				color = 0xffffff;
+				color = makeColor(0xffffff);
 			addPointToRenderObject(ro, v.getPoint3d(), color);
-
-			ro.optimise();
-			ic.objects.addElement(ro);
-			ro = new RenderObject();
 		}
 
 		if (clearObjects) {
@@ -397,6 +412,7 @@ public class Extract_Surface implements PlugInFilter {
 			ic.rotate(m2);
 		}
 		ic.repaint();
+	*/
 	}
 
 	/*
@@ -437,14 +453,14 @@ public class Extract_Surface implements PlugInFilter {
 		}
 	}
 
-	static Vec Point3d2Vec(Point3d p) {
-		return new Vec((float)p.x, (float)p.y, (float)p.z);
+	static Point3f Point3d2Point3f(Point3d p) {
+		return new Point3f((float)p.x, (float)p.y, (float)p.z);
 	}
 
-	Vec[] normals;
+	Point3f[] normals;
 
 	void getNormals() {
-		normals = new Vec[vertices.size()];
+		normals = new Point3f[vertices.size()];
 		for (int i = 0; i < normals.length; i++) {
 			SurfaceVoxel vertex = getVertex(i);
 			NeighbourQueue queue = new NeighbourQueue(vertex);
@@ -454,7 +470,7 @@ public class Extract_Surface implements PlugInFilter {
 				SurfaceVoxel voxel = queue.pop();
 				est.add(voxel.getPoint3d());
 			}
-			normals[i] = Point3d2Vec(est.getNormal());
+			normals[i] = Point3d2Point3f(est.getNormal());
 		}
 	}
 
@@ -488,15 +504,9 @@ public class Extract_Surface implements PlugInFilter {
 			return "" + a + " " + b;
 		}
 
-		public RenderObject getRenderObject(int color) {
-			Vertex v1 = new Vertex(getVertex(a).getVec());
-			Vertex v2 = new Vertex(getVertex(b).getVec());
-			Vertex v3 = new Vertex(Vec.add(v2.getPos(),
-					new Vec(2.5f, 2.3f, 0)));
-			RenderObject result = new RenderObject();
-			result.addTri(new NetTri(v1, v2, v3, color));
-			result.optimise();
-			return result;
+		public void addLineTo(List out) {
+			out.add(getVertex(a).getPoint3f());
+			out.add(getVertex(b).getPoint3f());
 		}
 	}
 
@@ -528,16 +538,19 @@ public class Extract_Surface implements PlugInFilter {
 		}
 	}
 
-	void showEdges(int color) {
-		getIC();
+	static int lineMeshCount = 0;
 
+	void showEdges(int color) {
+		getUniverse();
+
+		List lineMesh = new ArrayList();
 		Iterator iter = edges.keySet().iterator();
 		while(iter.hasNext()) {
 			Edge e = (Edge)iter.next();
-			RenderObject ro = e.getRenderObject(color);
-			ic.objects.addElement(ro);
+			e.addLineTo(lineMesh);
 		}
-		ic.repaint();
+		universe.addLineMesh(lineMesh, makeColor(color),
+				"line" + lineMeshCount++, 0, false);
 	}
 
 
@@ -577,19 +590,13 @@ public class Extract_Surface implements PlugInFilter {
 			return "" + a + " " + b + " " + c;
 		}
 
-		public RenderObject getRenderObject(int color) {
-			Vertex v1 = new Vertex(getVertex(a).getVec());
-			Vertex v2 = new Vertex(getVertex(b).getVec());
-			Vertex v3 = new Vertex(getVertex(c).getVec());
-			VertexNorm vn1 = new VertexNorm(normals[a]);
-			VertexNorm vn2 = new VertexNorm(normals[b]);
-			VertexNorm vn3 = new VertexNorm(normals[c]);
-			RenderObject result = new RenderObject();
-			//result.addTri(new NetTri(v1, v2, v3, color));
-			result.addTri(new PhongTri(v1, v2, v3, vn1, vn2, vn3, color));
-			result.addTri(new PhongTri(v1, v3, v2, vn1, vn3, vn2, color));
-			result.optimise();
-			return result;
+		public void addTriangleTo(List out) {
+			out.add(getVertex(a).getPoint3f());
+			out.add(getVertex(b).getPoint3f());
+			out.add(getVertex(c).getPoint3f());
+			out.add(getVertex(c).getPoint3f());
+			out.add(getVertex(b).getPoint3f());
+			out.add(getVertex(a).getPoint3f());
 		}
 	}
 
@@ -635,39 +642,36 @@ public class Extract_Surface implements PlugInFilter {
 		}
 	}
 
-	void showTriangles(int color) {
-		getIC();
+	int triangleCount = 0;
 
+	void showTriangles(int color) {
+		getUniverse();
+
+		List mesh = new ArrayList();
 		Iterator iter = triangles.keySet().iterator();
 		while(iter.hasNext()) {
 			Triangle t = (Triangle)iter.next();
-			RenderObject ro = t.getRenderObject(color);
-			ic.objects.addElement(ro);
+			t.addTriangleTo(mesh);
 		}
-		ic.fitToWindow();
-		ic.repaint();
+		universe.addMesh(mesh, makeColor(color),
+				"mesh" + triangleCount++, 0);
 	}
 
-	Image3dCanvas ic;
+	Image3DUniverse universe;
 
-	void getIC() {
-		if (ic != null)
+	void getUniverse() {
+		if (universe != null)
 			return;
-		ic = new Image3dCanvas("3d", 300, 300);
-		ic.r.setViewOffset(new Vec(0, 0, 
-					-1.3f * (ii.w + ii.h + ii.d)));
-		ic.r.setLightDir(new Vec(0, 0, +1));
+		universe = new Image3DUniverse();
+		universe.show();
 	}
 
-	void addPointToRenderObject(RenderObject o, Point3d p, int color) {
-		//Quick3dShapes.QCube.addCube(o, new Vec((float)p.x + 0.5f - ii.w / 2, (float)p.y + 0.5f - ii.h / 2, (float)p.z + 0.5f - ii.d / 2), 1, color, null, null);
-	}
+	int pointCount = 0;
 
 	void showPoints(Iterator iter, int color) {
-		getIC();
+		getUniverse();
 
-		RenderObject ro = new RenderObject();
-		VertexNorm n = new VertexNorm(new Vec(0, 0, 1));
+		List mesh = new ArrayList();
 		while(iter.hasNext()) {
 			Object next = iter.next();
 			Point3d p = null;
@@ -675,30 +679,41 @@ public class Extract_Surface implements PlugInFilter {
 				p = ((SurfaceVoxel)next).getPoint3d();
 			else
 				p = (Point3d)next;
-	
-			PhongTri t;
-			t = new PhongTri(
-					new Vertex(new Vec((float)p.x - ii.w / 2, (float)p.y - ii.h / 2, (float)p.z - ii.d / 2)),
-					new Vertex(new Vec((float)p.x + 1 - ii.w / 2, (float)p.y - ii.h / 2, (float)p.z - ii.d / 2)),
-					new Vertex(new Vec((float)p.x - ii.w / 2, (float)p.y + 1 - ii.h / 2, (float)p.z - ii.d / 2)),
-					n, n, n, color);
-			ro.addTri(t);
-			t = new PhongTri(
-					new Vertex(new Vec((float)p.x + 1 - ii.w / 2, (float)p.y - ii.h / 2, (float)p.z - ii.d / 2)),
-					new Vertex(new Vec((float)p.x - ii.w / 2, (float)p.y - ii.h / 2, (float)p.z - ii.d / 2)),
-					new Vertex(new Vec((float)p.x - ii.w / 2, (float)p.y + 1 - ii.h / 2, (float)p.z - ii.d / 2)),
-					n, n, n, color);
-			ro.addTri(t);
+
+			float radius = (ii.w + ii.h + ii.d) / 6;
+			Point3f p1 = new Point3f((float)p.x, (float)p.y,
+					(float)p.z - radius);
+			Point3f p2 = new Point3f((float)p.x - 0.5f * radius,
+					(float)p.y + 0.8f * radius,
+					(float)p.z + 0.3f * radius);
+			Point3f p3 = new Point3f((float)p.x - 0.5f * radius,
+					(float)p.y - 0.8f * radius,
+					(float)p.z + 0.3f * radius);
+			Point3f p4 = new Point3f((float)p.x + 0.8f * radius,
+					(float)p.y,
+					(float)p.z + 0.3f * radius);
+			mesh.add(p1);
+			mesh.add(p2);
+			mesh.add(p3);
+
+			mesh.add(p4);
+			mesh.add(p2);
+			mesh.add(p3);
+
+			mesh.add(p1);
+			mesh.add(p2);
+			mesh.add(p4);
+
+			mesh.add(p1);
+			mesh.add(p3);
+			mesh.add(p4);
 		}
-
-		ro.optimise();
-		ic.objects.addElement(ro);
-
-		ic.repaint();
+		universe.addMesh(mesh, makeColor(color),
+				"point" + pointCount++, 0);
 	}
 
 	public void showSurfaceVoxels() {
-		getIC();
+		getUniverse();
 		showPoints(surfaceVoxels.values().iterator(), 0xffffffff);
 	}
 
@@ -726,12 +741,16 @@ public class Extract_Surface implements PlugInFilter {
 
 	void saveWRL(String filename) {
 		try {
-			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(new File(filename))));
+			FileWriter w = new FileWriter(new File(filename));
+			PrintWriter pw = new PrintWriter(new BufferedWriter(w));
 			pw.println("#VRML V2.0 utf8\n"
 					+ "\n"
 					+ "Transform { children [ Shape {\n"
-					+ "   appearance Appearance { material Material { diffuseColor 0.57 0.57 0.57 } }\n"
-					+ "   geometry IndexedFaceSet { coord Coordinate { point [");
+					+ "   appearance Appearance { material "
+						+ "Material { diffuseColor "
+						+ "0.57 0.57 0.57 } }\n"
+					+ "   geometry IndexedFaceSet { "
+						+ "coord Coordinate { point [");
 			Iterator iter = vertices.iterator();
 			while (iter.hasNext()) {
 				SurfaceVoxel v = (SurfaceVoxel)iter.next();
@@ -774,7 +793,8 @@ public class Extract_Surface implements PlugInFilter {
 	void saveAsText(String filename) {
 		try {
 			DecimalFormat f = new DecimalFormat("0.###");
-			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(new File(filename))));
+			FileWriter w = new FileWriter(new File(filename));
+			PrintWriter pw = new PrintWriter(new BufferedWriter(w));
 			pw.println("# vertices");
 			pw.println("" + vertices.size());
 			for (int i = 0; i < vertices.size(); i++) {
@@ -784,7 +804,7 @@ public class Extract_Surface implements PlugInFilter {
 			pw.println("# normals");
 			pw.println("" + normals.length);
 			for (int i = 0; i < normals.length; i++) {
-				Vec v = normals[i];
+				Point3f v = normals[i];
 				pw.println(f.format(v.x) + " "
 						+ f.format(v.y) + " "
 						+ f.format(v.z));
