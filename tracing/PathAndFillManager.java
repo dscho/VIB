@@ -451,7 +451,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		selectedPathsSet.remove(deleted);
 
-		if( plugin.use3DViewer && deleted.content3D != null ) {
+		if( plugin != null && plugin.use3DViewer && deleted.content3D != null ) {
 			deleted.removeFrom3DViewer(plugin.univ);
 		}
 
@@ -1109,7 +1109,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	public void addTo3DViewer( Path p ) {
-		if( plugin.use3DViewer && p.fittedVersionOf == null && p.size() > 1 ) {
+		if( plugin != null && plugin.use3DViewer && p.fittedVersionOf == null && p.size() > 1 ) {
 			Path pathToAdd;
 			if( p.getUseFitted() )
 				pathToAdd = p.fitted;
@@ -1190,7 +1190,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			setSelected( new Path[0], this );
 			resetListeners( null, true );
-			plugin.repaintAllPanes();
+			if( plugin != null )
+				plugin.repaintAllPanes();
 		}
 
 	}
@@ -1251,7 +1252,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	void clearPathsAndFills( ) {
 		maxUsedID = -1;
-		if( plugin.use3DViewer ) {
+		if( plugin != null && plugin.use3DViewer ) {
 			for( Iterator< Path > i = allPaths.iterator();
 			     i.hasNext(); ) {
 				Path p = i.next();
