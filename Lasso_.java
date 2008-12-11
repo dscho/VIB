@@ -23,12 +23,22 @@ public class Lasso_ implements PlugIn {
 
 	public static final String MACRO_CMD =
 		"var clicked = 0;\n" +
+		"var spacePressed = 0;\n" +
 		"var leftClick = 16;\n" +
 		"var currentX = -1;\n" +
 		"var currentY = -1;\n" +
 		"\n" +
-		"macro 'Lasso Tool - C000T0d14<T7d14<' {\n" +
+		"macro 'Lasso Tool - C000Pdaa79796a6c4c2a1613215276998a6a70' {\n" +
 		"  while (true) {\n" +
+		"    if (!spacePressed) {\n" +
+		"        if (isKeyDown('space'))\n" +
+		"            spacePressed = 1;\n" +
+		"    } else {\n" +
+		"        if (!isKeyDown('space')) {\n" +
+		"            spacePressed = 0;\n" +
+		"            call('Lasso_.toggleMode');\n" +
+		"        }\n" +
+		"    }\n" +
 		"    getCursorLoc(x, y, z, flags);\n" +
 		"    if (!clicked) {\n" +
 		"        if ((flags & leftClick) != 0) {\n" +
@@ -58,6 +68,19 @@ public class Lasso_ implements PlugIn {
 
 	private static Lasso_ instance;
 	private static boolean doBlowToolInstead = true;
+
+	public synchronized static void setMode(String mode) {
+		if (mode.equals("lasso"))
+			doBlowToolInstead = false;
+		else if (mode.equals("blow"))
+			doBlowToolInstead = true;
+		else
+			IJ.error("Unknown Lasso/Blow mode: " + mode);
+	}
+
+	public synchronized static void toggleMode() {
+		doBlowToolInstead = !doBlowToolInstead;
+	}
 
 	public synchronized static void start(String x_, String y_) {
 		if (instance == null)
