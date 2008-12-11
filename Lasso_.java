@@ -93,6 +93,10 @@ public class Lasso_ implements PlugIn {
 	public synchronized static void move(String x_, String y_) {
 		int x = (int)Float.parseFloat(x_);
 		int y = (int)Float.parseFloat(y_);
+		if (x < 0) x = 0;
+		if (x >= instance.w) x = instance.w - 1;
+		if (y < 0) y = 0;
+		if (y >= instance.h) y = instance.h - 1;
 		try {
 				if (doBlowToolInstead)
 					instance.moveBlow(x, y);
