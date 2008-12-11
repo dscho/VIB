@@ -4,6 +4,7 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
+import ij.gui.ShapeRoi;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.FloatProcessor;
@@ -20,6 +21,7 @@ public class Lasso_ implements PlugIn {
 	private int[] previous;
 
 	private int w, h;
+	private Roi originalRoi;
 
 	public static final String MACRO_CMD =
 		"var clicked = 0;\n" +
@@ -125,6 +127,8 @@ public class Lasso_ implements PlugIn {
 		} while (x != startX || y != startY);
 		Roi roi = new PolygonRoi(xPoints, yPoints, i,
 				PolygonRoi.FREELINE);
+		if (originalRoi != null)
+			roi = new ShapeRoi(originalRoi).or(new ShapeRoi(roi));
 		ImagePlus image = WindowManager.getCurrentImage();
 		image.setRoi(roi);
 		image.updateAndDraw();
@@ -139,8 +143,11 @@ public class Lasso_ implements PlugIn {
 		ThresholdToSelection t2s = new ThresholdToSelection();
 		t2s.setup("", blowImage);
 		t2s.run(fp);
+		Roi roi = blowImage.getRoi();
+		if (originalRoi != null)
+			roi = new ShapeRoi(originalRoi).or(new ShapeRoi(roi));
 		ImagePlus image = WindowManager.getCurrentImage();
-		image.setRoi(blowImage.getRoi());
+		image.setRoi(roi);
 		image.updateAndDraw();
 	}
 
@@ -221,6 +228,8 @@ public class Lasso_ implements PlugIn {
 
 	private void initDijkstra(int x, int y) {
 		ImagePlus image = WindowManager.getCurrentImage();
+		originalRoi = IJ.shiftKeyDown() ? image.getRoi() : null;
+
 		ImageProcessor ip = image.getProcessor();
 		w = ip.getWidth();
 		h = ip.getHeight();
