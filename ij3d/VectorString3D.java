@@ -361,6 +361,7 @@ class VectorString3D {
 		final Vector vector = new Vector();
 
 		// first resampled point is the same as point zero
+		r.setDeps(0, dep, new int[]{0}, new double[]{1.0}, 1);
 		r.setP(0, x[0], y[0], z[0]);
 		// the first vector is 0,0,0 unless the path is closed, in which case it contains the vector from last-to-first.
 

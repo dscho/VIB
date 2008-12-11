@@ -35,6 +35,7 @@ import ij.io.*;
 import ij3d.Image3DUniverse;
 import ij3d.Image3DMenubar;
 import ij3d.Content;
+import ij3d.Pipe;
 import javax.vecmath.Color3f;
 import ij.gui.GUI;
 
@@ -47,6 +48,8 @@ import java.awt.image.IndexColorModel;
 import java.io.*;
 
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import client.ArchiveClient;
 
@@ -1604,6 +1607,79 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			return c != null;
 		} catch( Exception e ) {
 			return false;
+		}
+	}
+
+	public void addLineTo3DViewer( double x1, double y1, double z1,
+				       double x2, double y2, double z2,
+				       double radius,
+				       Color c,
+				       String name ) {
+
+		if( ! use3DViewer )
+			return;
+
+		int points = 8;
+
+		double [] x_points_d = new double[points];
+		double [] y_points_d = new double[points];
+		double [] z_points_d = new double[points];
+		double [] radiuses = new double[points];
+
+		for( int i = 0; i < points; ++i ) {
+			x_points_d[i] = ( i * (x2 - x1) ) / points + x1;
+			y_points_d[i] = ( i * (y2 - y1) ) / points + y1;
+			z_points_d[i] = ( i * (z2 - z1) ) / points + z1;
+			radiuses[i] = radius;
+		}
+
+		double [][][] allPoints = Pipe.makeTube(x_points_d,
+							y_points_d,
+							z_points_d,
+							radiuses,
+							1,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
+							8);     // "parallels" (12 means cross-sections are dodecagons)
+
+		java.util.List triangles = Pipe.generateTriangles(allPoints,
+								  1); // scale
+
+		univ.resetView();
+
+		univ.addMesh(triangles,
+			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
+			     name,
+			     1); // threshold
+	}
+
+	public void showCorrespondencesTo( File tracesFile, Color c, double maxDistance ) {
+
+		PathAndFillManager pafmTraces = new PathAndFillManager(
+			width, height, depth,
+			(float)x_spacing, (float)y_spacing, (float)z_spacing,
+			spacing_units );
+
+		if( ! pafmTraces.load( tracesFile.getAbsolutePath() ) ) {
+			IJ.error("Failed to load traces from: "+tracesFile.getAbsolutePath());
+			return;
+		}
+
+		// Now find corresponding points from the first one, and draw lines to them:
+		ArrayList< NearPoint > cp = pathAndFillManager.getCorrespondences( pafmTraces, 2.5 );
+		Iterator< NearPoint > i = cp.iterator();
+		int done = 0;
+		while( i.hasNext() ) {
+			NearPoint np = i.next();
+			if( np != null ) {
+				// System.out.println("Drawing:");
+				// System.out.println(np.toString());
+				addLineTo3DViewer(
+					np.nearX, np.nearY, np.nearZ,
+					np.pathPointX, np.pathPointY, np.pathPointZ,
+					Math.abs(x_spacing),
+					c,
+					tracesFile.getName()+"-"+done);
+			}
+			++done;
 		}
 	}
 }

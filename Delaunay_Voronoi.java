@@ -83,6 +83,10 @@ public class Delaunay_Voronoi implements PlugIn {
 				return;
 			}
 			float[] x = results.getColumn(xCol);
+			if (x == null || x.length == 0) {
+				IJ.error("No results found!");
+				return;
+			}
 			float[] y = results.getColumn(yCol);
 			int[] xInt = new int[x.length];
 			int[] yInt = new int[x.length];
