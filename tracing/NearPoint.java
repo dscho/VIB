@@ -108,6 +108,15 @@ public class NearPoint implements Comparable {
 		return (d < od) ? -1 : ((d > od) ? 1 : 0);
 	}
 
+	public String toString() {
+		return "  near: ("+nearX+","+nearY+","+nearZ+")\n"+
+			"  pathPoint: ("+pathPointX+","+pathPointY+","+pathPointZ+")\n"+
+			"  indexInPath: "+indexInPath+"\n"+
+			"  path: "+path+"\n"+
+			"  distanceSquared: "+distanceSquared+"\n"+
+			"  cachedDistanceToPathNearPoint: "+cachedDistanceToPathNearPoint;
+	}
+
 	/* If we can find a corresponding point on the path,
 	   returns the distance to the path.  Returns -1 if no
 	   such point can be found, so test for < 0 */
