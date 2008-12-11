@@ -12,7 +12,6 @@ public class OctreeBehavior extends Behavior {
 	public static final int TRIGGER_ID = 1;
 
 	private WakeupOnBehaviorPost postCrit;
-	private WakeupOnElapsedFrames frameCrit;
 
 	private Canvas3D canvas;
 	private VolumeOctree octree;
@@ -22,7 +21,6 @@ public class OctreeBehavior extends Behavior {
 		this.canvas = canvas;
 		this.octree = octree;
 		postCrit = new WakeupOnBehaviorPost(null, TRIGGER_ID);
-		frameCrit = new WakeupOnElapsedFrames(0);
 	}
 
 	public void initialize() {
@@ -33,16 +31,12 @@ public class OctreeBehavior extends Behavior {
 		while(criteria.hasMoreElements()) {
 			Object c = criteria.nextElement();
 			if(c instanceof WakeupOnBehaviorPost) {
-				octree.display(canvas);
-				wakeupOn(frameCrit);
-			} else if(c instanceof WakeupOnElapsedFrames) {
-				new Thread() {
+				new Thread("OctreeBehaviorThread") {
 					@Override
 					public void run() {
-						System.gc();
+						octree.display(canvas);
 					}
 				}.start();
-				System.out.println("finished");
 				wakeupOn(postCrit);
 			}
 		}
