@@ -26,7 +26,7 @@ package tracing;
 /* The x, y and z here are in world coordinates, i.e. already scaled
    by the calibration values. */
 
-class PointInImage {
+public class PointInImage {
 
 	public double x, y, z;
 	public PointInImage( double x, double y, double z ) {
