@@ -1939,4 +1939,26 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 
 	}
+
+	/* For each point in *this* PathAndFillManager, find the
+	   corresponding point on the other one.  If there's no
+	   corresponding one, include a null instead. */
+
+	public ArrayList< NearPoint > getCorrespondences( PathAndFillManager other, double maxDistance ) {
+
+		ArrayList< NearPoint > result = new ArrayList< NearPoint >();
+
+		AllPointsIterator i = allPointsIterator();
+		int numberFromIterator = 0;
+		while( i.hasNext() ) {
+			PointInImage p = i.next();
+			NearPoint np = other.nearestPointOnAnyPath(
+				p.x,
+				p.y,
+				p.z,
+				maxDistance );
+			result.add(np);
+		}
+		return result;
+	}
 }

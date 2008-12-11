@@ -97,8 +97,8 @@ public class NearPoint implements Comparable {
 
 	private Path path;
 	private int indexInPath;
-	private double pathPointX, pathPointY, pathPointZ;
-	private double nearX, nearY, nearZ;
+	double pathPointX, pathPointY, pathPointZ;
+	double nearX, nearY, nearZ;
 	private double distanceSquared;
 	private Double cachedDistanceToPathNearPoint;
 

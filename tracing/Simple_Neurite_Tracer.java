@@ -48,6 +48,8 @@ import java.awt.image.IndexColorModel;
 import java.io.*;
 
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import client.ArchiveClient;
 
@@ -1611,7 +1613,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	public void addLineTo3DViewer( double x1, double y1, double z1,
 				       double x2, double y2, double z2,
 				       double radius,
-				       Color c ) {
+				       Color c,
+				       String name ) {
 
 		if( ! use3DViewer )
 			return;
@@ -1644,10 +1647,39 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		univ.addMesh(triangles,
 			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
-			     "blah",
+			     name,
 			     1); // threshold
 	}
 
+	public void showCorrespondencesTo( File tracesFile, Color c, double maxDistance ) {
 
+		PathAndFillManager pafmTraces = new PathAndFillManager(
+			width, height, depth,
+			(float)x_spacing, (float)y_spacing, (float)z_spacing,
+			spacing_units );
 
+		if( ! pafmTraces.load( tracesFile.getAbsolutePath() ) ) {
+			IJ.error("Failed to load traces from: "+tracesFile.getAbsolutePath());
+			return;
+		}
+
+		// Now find corresponding points from the first one, and draw lines to them:
+		ArrayList< NearPoint > cp = pathAndFillManager.getCorrespondences( pafmTraces, 2.5 );
+		Iterator< NearPoint > i = cp.iterator();
+		int done = 0;
+		while( i.hasNext() ) {
+			NearPoint np = i.next();
+			if( np != null ) {
+				// System.out.println("Drawing:");
+				// System.out.println(np.toString());
+				addLineTo3DViewer(
+					np.nearX, np.nearY, np.nearZ,
+					np.pathPointX, np.pathPointY, np.pathPointZ,
+					Math.abs(x_spacing),
+					c,
+					tracesFile.getName()+"-"+done);
+			}
+			++done;
+		}
+	}
 }
