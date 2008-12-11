@@ -124,7 +124,7 @@ public class Lasso_ implements PlugIn {
 			y = j / w;
 		} while (x != startX || y != startY);
 		Roi roi = new PolygonRoi(xPoints, yPoints, i,
-				PolygonRoi.POLYGON);
+				PolygonRoi.FREELINE);
 		ImagePlus image = WindowManager.getCurrentImage();
 		image.setRoi(roi);
 		image.updateAndDraw();
