@@ -196,12 +196,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 			for(ShapeGroup sg : cdata.shapes)
 				shapes[i++] = sg;
 		}
-
-		// remove the old data
-		BranchGroup prev = (BranchGroup)axisSwitch.getChild(DETAIL_AXIS);
-		prev.detach();
-		if(prev.numChildren() > 0)
-			((Group)prev.getChild(0)).removeAllChildren();
+		removeAllCubes();
 
 		// update cube data
 		updater.updateCubes(cubes);
@@ -227,6 +222,14 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 			axisSwitch.setWhichChild(DETAIL_AXIS);
 			System.out.println("# shapes: " + countDetailShapes());
 		}
+	}
+
+	private final void removeAllCubes() {
+		// remove the old data
+		BranchGroup prev = (BranchGroup)axisSwitch.getChild(DETAIL_AXIS);
+		prev.detach();
+		if(prev.numChildren() > 0)
+			((Group)prev.getChild(0)).removeAllChildren();
 	}
 
 	/*
