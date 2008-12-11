@@ -34,7 +34,7 @@ else
 endif
 
 JAVACOPTSCOMPAT= -source 1.5 -target 1.5
-JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP)$(PLUGINSHOME)/Quick3dApplet-1.0.8.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar $(JAVACOPTSCOMPAT)
+JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar $(JAVACOPTSCOMPAT)
 
 all: $(CLASSES)
 
@@ -145,7 +145,7 @@ AmiraMesh_.jar: SOURCES=AmiraMeshReader_.java AmiraMeshWriter_.java \
 	amira/AmiraTable.java
 
 AmiraSurface_.jar: SOURCES=ShowAmiraSurface_.java amira/AmiraParameters.java \
-	amira/AmiraTable.java vib/Image3dCanvas.java
+	amira/AmiraTable.java
 
 Rigid_Registration.jar: SOURCES=vib/RigidRegistration_.java \
 	vib/InterpolatedImage.java vib/TransformedImage.java \
@@ -162,7 +162,7 @@ Rigid_Registration.jar: SOURCES=vib/RigidRegistration_.java \
 
 Extract_Surface.jar: SOURCES=vib/ArrayBase.java vib/IntArray.java \
 	vib/DoubleArray.java vib/Extract_Surface.java \
-	vib/InterpolatedImage.java vib/Image3dCanvas.java \
+	vib/InterpolatedImage.java \
 	math3d/Point3d.java math3d/NormalEstimator.java
 
 ImageJ_3D_Viewer.jar: SOURCES=$(wildcard voltex/*.java)\
