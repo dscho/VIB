@@ -1592,7 +1592,7 @@ public class Path implements Comparable {
 		double [] x_points_d = new double[points];
 		double [] y_points_d = new double[points];
 		double [] z_points_d = new double[points];
-		double [] diameters = new double[points];
+		double [] radiuses_d = new double[points];
 
 		if( hasCircles() ) {
 			int added = 0;
@@ -1602,7 +1602,7 @@ public class Path implements Comparable {
 					x_points_d[added] = precise_x_positions[i];
 					y_points_d[added] = precise_y_positions[i];
 					z_points_d[added] = precise_z_positions[i];
-					diameters[added] = 2 * radiuses[i];
+					radiuses_d[added] = radiuses[i];
 					lastIndexAdded = i;
 					++ added;
 				}
@@ -1613,7 +1613,7 @@ public class Path implements Comparable {
 				x_points_d[i] = precise_x_positions[i];
 				y_points_d[i] = precise_y_positions[i];
 				z_points_d[i] = precise_z_positions[i];
-				diameters[i] = x_spacing * 3;
+				radiuses_d[i] = x_spacing * 1.5;
 			}
 			pointsToUse = points;
 		}
@@ -1624,27 +1624,27 @@ public class Path implements Comparable {
 			double [] x_points_d_new = new double[3];
 			double [] y_points_d_new = new double[3];
 			double [] z_points_d_new = new double[3];
-			double [] diameters_new = new double[3];
+			double [] radiuses_d_new = new double[3];
 
 			x_points_d_new[0] = x_points_d[0];
 			y_points_d_new[0] = y_points_d[0];
 			z_points_d_new[0] = z_points_d[0];
-			diameters_new[0] = diameters[0];
+			radiuses_d_new[0] = radiuses_d[0];
 
 			x_points_d_new[1] = (x_points_d[0] + x_points_d[1]) / 2;
 			y_points_d_new[1] = (y_points_d[0] + y_points_d[1]) / 2;
 			z_points_d_new[1] = (z_points_d[0] + z_points_d[1]) / 2;
-			diameters_new[1] = (diameters[0] + diameters[1]) / 2;
+			radiuses_d_new[1] = (radiuses_d[0] + radiuses_d[1]) / 2;
 
 			x_points_d_new[2] = x_points_d[1];
 			y_points_d_new[2] = y_points_d[1];
 			z_points_d_new[2] = z_points_d[1];
-			diameters_new[2] = diameters[1];
+			radiuses_d_new[2] = radiuses_d[1];
 
 			x_points_d = x_points_d_new;
 			y_points_d = y_points_d_new;
 			z_points_d = z_points_d_new;
-			diameters = diameters_new;
+			radiuses_d = radiuses_d_new;
 
 			pointsToUse = 3;
 		}
@@ -1652,17 +1652,17 @@ public class Path implements Comparable {
 		double [] x_points_d_trimmed = new double[pointsToUse];
 		double [] y_points_d_trimmed = new double[pointsToUse];
 		double [] z_points_d_trimmed = new double[pointsToUse];
-		double [] diameters_trimmed = new double[pointsToUse];
+		double [] radiuses_d_trimmed = new double[pointsToUse];
 
 		System.arraycopy( x_points_d, 0, x_points_d_trimmed, 0, pointsToUse );
 		System.arraycopy( y_points_d, 0, y_points_d_trimmed, 0, pointsToUse );
 		System.arraycopy( z_points_d, 0, z_points_d_trimmed, 0, pointsToUse );
-		System.arraycopy( diameters, 0, diameters_trimmed, 0, pointsToUse );
+		System.arraycopy( radiuses_d, 0, radiuses_d_trimmed, 0, pointsToUse );
 
 		double [][][] allPoints = Pipe.makeTube(x_points_d_trimmed,
 							y_points_d_trimmed,
 							z_points_d_trimmed,
-							diameters_trimmed,
+							radiuses_d_trimmed,
 							2,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
 							12);     // "parallels" (12 means cross-sections are dodecagons)
 		if( allPoints == null ) {
