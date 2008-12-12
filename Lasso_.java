@@ -1,16 +1,21 @@
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
+
 import ij.gui.GenericDialog;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
+import ij.gui.Toolbar;
+
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
+
 import ij.plugin.MacroInstaller;
 import ij.plugin.PlugIn;
+
 import ij.plugin.filter.ThresholdToSelection;
 
 import java.util.TreeMap;
@@ -22,6 +27,12 @@ public class Lasso_ implements PlugIn {
 
 	private int w, h;
 	private Roi originalRoi;
+
+	/*
+	 * Multiply the spatial distance with this factor before adding to
+	 * the color distance.
+	 */
+	private double ratioSpaceColor = 1;
 
 	public static final String MACRO_CMD =
 		"var clicked = 0;\n" +
@@ -59,7 +70,11 @@ public class Lasso_ implements PlugIn {
 		"    }\n" +
 		"    wait(100);\n" +
 		"  }\n" +
-		"}";
+		"}\n" +
+		"\n" +
+		"macro 'Lasso Tool Options' {\n" +
+		"    call('Lasso_.callOptionDialog');\n" +
+		"}\n";
 
 	public void run(String arg){
 		if (IJ.versionLessThan("1.37j"))
@@ -84,6 +99,25 @@ public class Lasso_ implements PlugIn {
 
 	public synchronized static void toggleMode() {
 		doBlowToolInstead = !doBlowToolInstead;
+	}
+
+	public synchronized static void callOptionDialog() {
+		if (instance == null)
+			instance = new Lasso_();
+		instance.optionDialog();
+	}
+
+	public void optionDialog() {
+		String[] modes = { "lasso", "blow" };
+		GenericDialog gd = new GenericDialog("Lasso Tool Options");
+		gd.addChoice("mode", modes,
+				doBlowToolInstead ? "blow" : "lasso");
+		gd.addNumericField("ratio space/color", ratioSpaceColor, 2);
+		gd.showDialog();
+		if (gd.wasCanceled())
+			return;
+		setMode(gd.getNextChoice());
+		ratioSpaceColor = gd.getNextNumber();
 	}
 
 	public synchronized static void start(String x_, String y_) {
@@ -266,9 +300,8 @@ public class Lasso_ implements PlugIn {
 
 				if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h)
 					continue;
-				double newC = cost + stepW[i]
-					+ (1 + difference.difference(x, y,
-						x2, y2));
+				double newC = cost + stepW[i] + (ratioSpaceColor
+					 + difference.difference(x, y, x2, y2));
 				if (dijkstra[x2 + w * y2] > newC) {
 					queue.add(newC, new PixelCost(x2,
 								y2, newC));
