@@ -43,7 +43,7 @@ jars[] <- Delaunay_Voronoi.jar AmiraMesh_.jar AmiraSurface_.jar \
 	Simple_Neurite_Tracer.jar ExportMesh_.jar VIB_Protocol.jar \
 	Average_Color.jar Bilateral_Filter.jar \
 	Mask_Of_Nearby_Points.jar Find_Connected_Regions.jar \
-	Tubeness_.jar
+	Tubeness_.jar Lasso_.jar
 
 JAVAVERSION(Segmentation_Editor.jar)=1.3
 SOURCES(Segmentation_Editor.jar)=amira/*.java \
@@ -198,5 +198,6 @@ SOURCES(VIB_Protocol.jar)=vib/app/*.java \
 SOURCES(Average_Color.jar)=Average_Color.java CIELAB.java
 SOURCES(Bilateral_Filter.jar)=Bilateral_Filter.java \
 	vib/InterpolatedImage.java math3d/Point3d.java
+SOURCES(Lasso_.jar)=Lasso_.java FibonacciHeapDouble.java
 
 *.jar <- $SOURCES
