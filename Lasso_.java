@@ -31,7 +31,8 @@ public class Lasso_ implements PlugIn {
 		"var currentY = -1;\n" +
 		"\n" +
 		"macro 'Lasso Tool - C000Pdaa79796a6c4c2a1613215276998a6a70' {\n" +
-		"  while (true) {\n" +
+		"  tool = toolID();\n" +
+		"  while (tool == toolID()) {\n" +
 		"    if (!spacePressed) {\n" +
 		"        if (isKeyDown('space'))\n" +
 		"            spacePressed = 1;\n" +
