@@ -97,8 +97,8 @@ public class NearPoint implements Comparable {
 
 	private Path path;
 	private int indexInPath;
-	private double pathPointX, pathPointY, pathPointZ;
-	private double nearX, nearY, nearZ;
+	double pathPointX, pathPointY, pathPointZ;
+	double nearX, nearY, nearZ;
 	private double distanceSquared;
 	private Double cachedDistanceToPathNearPoint;
 
@@ -106,6 +106,15 @@ public class NearPoint implements Comparable {
 		double d = distanceSquared;
 		double od = ((NearPoint)other).distanceSquared;
 		return (d < od) ? -1 : ((d > od) ? 1 : 0);
+	}
+
+	public String toString() {
+		return "  near: ("+nearX+","+nearY+","+nearZ+")\n"+
+			"  pathPoint: ("+pathPointX+","+pathPointY+","+pathPointZ+")\n"+
+			"  indexInPath: "+indexInPath+"\n"+
+			"  path: "+path+"\n"+
+			"  distanceSquared: "+distanceSquared+"\n"+
+			"  cachedDistanceToPathNearPoint: "+cachedDistanceToPathNearPoint;
 	}
 
 	/* If we can find a corresponding point on the path,

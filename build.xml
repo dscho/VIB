@@ -10,7 +10,6 @@
       <classpath>
         <pathelement location="../ImageJ/ij.jar"/>
         <pathelement location="jzlib-1.0.7.jar"/>
-        <pathelement location="Quick3dApplet-1.0.8.jar"/>
       </classpath>
     </javac>
     <copy todir="build">
@@ -29,9 +28,6 @@
 	  maxmemory="1024m">
       <sysproperty key="plugins.dir" value="${basedir}/build"/>
       <sysproperty key="j3d.noOffScreen" value="true"/>
-      <classpath>
-	<pathelement location="${basedir}/Quick3dApplet-1.0.8.jar"/>
-      </classpath>
       <!-- <arg value="-eval"/> -->
       <!-- <arg value="run('Quantile Based Normalization','');"/> -->
       <!-- <arg value="/home/mark/tracing-examples/c061AG-cropped.tif"/> -->
@@ -46,7 +42,6 @@
       <classpath>
 	<pathelement location="."/>
         <pathelement location="jzlib-1.0.7.jar"/>
-	<pathelement location="Quick3dApplet-1.0.8.jar"/>               
       </classpath>
     </nbprofiledirect>
 
@@ -58,7 +53,6 @@
       <classpath>
 	<pathelement location="."/>
         <pathelement location="jzlib-1.0.7.jar"/>
-	<pathelement location="Quick3dApplet-1.0.8.jar"/>
       </classpath>
     </java>
 

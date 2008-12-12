@@ -58,7 +58,7 @@ SOURCES(AmiraMesh_.jar)=AmiraMeshReader_.java AmiraMeshWriter_.java \
 	amira/AmiraMeshDecoder.java amira/AmiraTableEncoder.java \
 	amira/AmiraTable.java
 SOURCES(AmiraSurface_.jar)=ShowAmiraSurface_.java amira/AmiraParameters.java \
-	amira/AmiraTable.java vib/Image3dCanvas.java
+	amira/AmiraTable.java
 SOURCES(Rigid_Registration.jar)=vib/RigidRegistration_.java \
 	vib/InterpolatedImage.java vib/TransformedImage.java \
 	vib/FastMatrix.java vib/RegistrationOptimizer.java \
@@ -74,7 +74,7 @@ SOURCES(Rigid_Registration.jar)=vib/RigidRegistration_.java \
 	util/StupidLog.java
 SOURCES(Extract_Surface.jar)=vib/ArrayBase.java vib/IntArray.java \
 	vib/DoubleArray.java vib/Extract_Surface.java \
-	vib/InterpolatedImage.java vib/Image3dCanvas.java \
+	vib/InterpolatedImage.java \
 	math3d/Point3d.java math3d/NormalEstimator.java
 SOURCES(ImageJ_3D_Viewer.jar)=ij3d/*.java voltex/*.java\
 	marchingcubes/*.java isosurface/*.java \

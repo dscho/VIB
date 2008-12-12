@@ -1830,7 +1830,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return sb.toString();
 	}
 
-	public NearPoint distanceToNearestPointOnAnyPath( double x, double y, double z, double distanceLimit ) {
+	public NearPoint nearestPointOnAnyPath( double x, double y, double z, double distanceLimit ) {
 
 		/* Order all points in all paths by their euclidean
 		   distance to (x,y,z): */
@@ -1867,5 +1867,98 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			if( distanceToPath >= 0 )
 				return np;
 		}
+	}
+
+	public AllPointsIterator allPointsIterator() {
+		return new AllPointsIterator();
+	}
+
+	public int pointsInAllPaths( ) {
+		AllPointsIterator a = allPointsIterator();
+		int points = 0;
+		while( a.hasNext() ) {
+			a.next();
+			++ points;
+		}
+		return points;
+	}
+
+	public class AllPointsIterator implements java.util.Iterator {
+
+		public AllPointsIterator() {
+			numberOfPaths = allPaths.size();
+			currentPath = null;
+			currentPathIndex = -1;
+			currentPointIndex = -1;
+		}
+
+		int numberOfPaths;
+		// These should all be set to be appropriate to the
+		// last point that was returned:
+		Path currentPath;
+		int currentPathIndex;
+		int currentPointIndex;
+
+		public boolean hasNext() {
+			if( currentPath == null || currentPointIndex == currentPath.points - 1 ) {
+				/* Find out if there is a non-empty
+				   path after this: */
+				int tmpPathIndex = currentPathIndex + 1;
+				while( tmpPathIndex < numberOfPaths ) {
+					Path p = allPaths.get( tmpPathIndex );
+					if( p.size() > 0 )
+						return true;
+				}
+				return false;
+			}
+			/* So we know that there's a current path and
+			   we're not at the end of it, so there must
+			   be another point: */
+			return true;
+		}
+
+		public PointInImage next() {
+			if( currentPath == null || currentPointIndex == currentPath.points - 1 ) {
+				currentPointIndex = 0;
+				/* Move to the next non-empty path: */
+				while( true ) {
+					++ currentPathIndex;
+					if( currentPathIndex == numberOfPaths )
+						throw new java.util.NoSuchElementException();
+					currentPath = allPaths.get( currentPathIndex );
+					if( currentPath.size() > 0 )
+						break;
+				}
+			} else
+				++ currentPointIndex;
+			return currentPath.getPointInImage(currentPointIndex);
+		}
+
+		public void remove() {
+			throw new UnsupportedOperationException("AllPointsIterator does not allow the removal of points");
+		}
+
+	}
+
+	/* For each point in *this* PathAndFillManager, find the
+	   corresponding point on the other one.  If there's no
+	   corresponding one, include a null instead. */
+
+	public ArrayList< NearPoint > getCorrespondences( PathAndFillManager other, double maxDistance ) {
+
+		ArrayList< NearPoint > result = new ArrayList< NearPoint >();
+
+		AllPointsIterator i = allPointsIterator();
+		int numberFromIterator = 0;
+		while( i.hasNext() ) {
+			PointInImage p = i.next();
+			NearPoint np = other.nearestPointOnAnyPath(
+				p.x,
+				p.y,
+				p.z,
+				maxDistance );
+			result.add(np);
+		}
+		return result;
 	}
 }

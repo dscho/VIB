@@ -2,7 +2,7 @@
 
 /* This is a cut-down version of the TrakEM2 Pipe class, which is here
    so that we can use the "makeTube" function to construct meshes from
-   a series of points with diameters withouth having to include the
+   a series of points with radiuses without having to include the
    complete TrakEM2_.jar as a dependency.
 
    It's not very sensible repeating all this code, of course - ideally
@@ -14,7 +14,7 @@
 		double [][][] allPoints = Pipe.makeTube(x_points_d,
 							y_points_d,
 							z_points_d,
-							diameters,
+							radiuses,
 							4,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
 							12);     // "parallels" (12 means cross-sections are dodecagons)
 
@@ -89,22 +89,28 @@ public class Pipe {
 	}
 
 	static public double[][][] makeTube(double[] px, double[] py, double[] pz, double[] p_width_i, final int resample, final int parallels) {
+		return makeTube(px, py, pz, p_width_i, resample, parallels, true);
+	}
+
+	static public double[][][] makeTube(double[] px, double[] py, double[] pz, double[] p_width_i, final int resample, final int parallels, final boolean do_resample) {
 
 		int n = px.length;
 
 		// Resampling to get a smoother pipe
-		try {
-			VectorString3D vs = new VectorString3D(px, py, pz);
-			vs.addDependent(p_width_i);
-			vs.resample(vs.getAverageDelta() * resample);
-			px = vs.getPoints(0);
-			py = vs.getPoints(1);
-			pz = vs.getPoints(2);
-			p_width_i = vs.getDependent(0);
-			//Utils.log("lengths:  " + px.length + ", " + py.length + ", " + pz.length + ", " + p_width_i.length);
-			n = vs.length();
-		} catch (Exception e) {
-			IJ.error(""+e);
+		if (do_resample) {
+			try {
+				VectorString3D vs = new VectorString3D(px, py, pz);
+				vs.addDependent(p_width_i);
+				vs.resample(vs.getAverageDelta() * resample);
+				px = vs.getPoints(0);
+				py = vs.getPoints(1);
+				pz = vs.getPoints(2);
+				p_width_i = vs.getDependent(0);
+				//Utils.log("lengths:  " + px.length + ", " + py.length + ", " + pz.length + ", " + p_width_i.length);
+				n = vs.length();
+			} catch (Exception e) {
+				IJ.error(""+e);
+			}
 		}
 
 		double[][][] all_points = new double[n+2][parallels+1][3];
