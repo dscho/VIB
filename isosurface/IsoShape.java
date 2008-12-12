@@ -166,7 +166,7 @@ public final class IsoShape extends Shape3D {
 		Material material = new Material();
 		material.setCapability(Material.ALLOW_COMPONENT_WRITE);
 		material.setAmbientColor(0.1f, 0.1f, 0.1f);
-		material.setSpecularColor(0.5f,0.5f,0.5f);
+		material.setSpecularColor(0.1f,0.1f,0.1f);
 		material.setDiffuseColor(0.1f,0.1f,0.1f);
 		appearance.setMaterial(material);
 		return appearance;
