@@ -148,6 +148,18 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return globalCenter;
 	}
 
+	public void getGlobalCenterPoint(Point3f p) {
+		p.set(globalCenter);
+	}
+
+	public void getGlobalMinPoint(Point3f p) {
+		p.set(globalMin);
+	}
+
+	public void getGlobalMaxPoint(Point3f p) {
+		p.set(globalMax);
+	}
+
 	public void updateOctree() {
 		if(octree != null)
 			octree.update();
