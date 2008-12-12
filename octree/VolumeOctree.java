@@ -215,17 +215,6 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	}
 
 	/*
-	 * synchronization methods
-	 */
-//	private final synchronized boolean isUpdateFinished() {
-//		return updateFinished;
-//	}
-//
-//	private final synchronized void setUpdateFinished(boolean b) {
-//		this.updateFinished = b;
-//	}
-
-	/*
 	 * UniverseListener interface
 	 */
 	private Vector3d eyeVec = new Vector3d();
