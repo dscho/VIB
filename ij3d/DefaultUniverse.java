@@ -127,17 +127,23 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		attributesSwitch.setChildMask(attributesMask);
 
 		// Lightening
+		BranchGroup lightBG = new BranchGroup();
+
 		AmbientLight lightA = new AmbientLight();
 		lightA.setInfluencingBounds(bounds);
 		lightA.setEnable(false);
-		scene.addChild(lightA);
+		lightBG.addChild(lightA);
+
 		DirectionalLight lightD1 = new DirectionalLight();
 		lightD1.setInfluencingBounds(bounds);
-		scene.addChild(lightD1);
+		lightBG.addChild(lightD1);
 
-		SpotLight lightS = new SpotLight();
+		PointLight lightS = new PointLight();
+		lightS.setPosition(0, 0, -300);
 		lightS.setInfluencingBounds(bounds);
-		scene.addChild(lightS);
+		lightBG.addChild(lightS);
+
+		getRotationTG().addChild(lightBG);
 
 		// setup global mouse behavior
 		viewTransformer = new InteractiveViewPlatformTransformer(this, this);
