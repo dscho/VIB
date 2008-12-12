@@ -1,6 +1,7 @@
 package ij3d.behaviors;
 
 import ij3d.DefaultUniverse;
+import ij3d.Image3DUniverse;
 import ij3d.ImageCanvas3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
@@ -65,8 +66,13 @@ public class ViewPlatformTransformer {
 	}
 
 	private Transform3D tmp = new Transform3D();
+	private Point3f p1 = new Point3f(), p2 = new Point3f();
 	public void zoom(int units) {
-		double factor = distanceEyeOrigin() / 50;
+		Image3DUniverse u = (Image3DUniverse)univ;
+		u.getGlobalMaxPoint(p1);
+		u.getGlobalMinPoint(p2);
+		
+		float factor = 0.02f * p1.distance(p2);
 		getZDir(zDir);
 		// let the factor be 1 percent of the distance between
 		// eye position and origin

@@ -53,16 +53,16 @@ public class CubeUpdater {
 					if(queue.isEmpty() || cancelled)
 						break;
 					c = poll();
+					try {
+						if(!c.cubeDataUpToDate())
+							c.updateCubeData();
+					} catch(Exception e) {
+						e.printStackTrace();
+					}
+					done++;
+					if(done % 50 == 0)
+						IJ.showProgress(done, orgSize);
 				}
-				try {
-					if(!c.cubeDataUpToDate())
-						c.updateCubeData();
-				} catch(Exception e) {
-					e.printStackTrace();
-				}
-				done++;
-				if(done % 50 == 0)
-					IJ.showProgress(done, orgSize);
 			}
 		}
 	}

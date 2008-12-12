@@ -282,7 +282,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		MenuItem tmp = new MenuItem("Update Octree");
 		tmp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				univ.updateOctree();
+				univ.cancelOctree();
 			}
 		});
 		view.add(tmp);

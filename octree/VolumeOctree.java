@@ -1,16 +1,13 @@
 package octree;
 
-import ij.IJ;
-
 import ij3d.UniverseListener;
 import ij3d.Content;
 
 import java.io.File;
 import java.io.FileReader;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.BitSet;
 import java.util.Properties;
 
 import javax.media.j3d.BoundingSphere;
@@ -20,7 +17,6 @@ import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Group;
 import javax.media.j3d.OrderedGroup;
 import javax.media.j3d.Switch;
-import javax.media.j3d.Transform3D;
 
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
@@ -30,30 +26,27 @@ import voltex.Renderer;
 
 public class VolumeOctree implements UniverseListener, VolRendConstants {
 
-	public static final int SIZE = 128;
+	public static final int SIZE = 256;
 
 	static final int DETAIL_AXIS = 6;
 
 	private static final int[][] axisIndex = new int[3][2];
 
-	final Switch axisSwitch;
+	private final Switch axisSwitch;
 
 	private String imageDir;
 
-	private Cube rootCube;
-	private BranchGroup rootBranchGroup;
+	private final Cube rootCube;
+	private final BranchGroup rootBranchGroup;
 
-	private int curAxis = Z_AXIS;
-	private int curDir = FRONT;
+	int curAxis = Z_AXIS;
+	int curDir = FRONT;
 
 	private final int xdim, ydim, zdim;
 	final float pw, ph, pd;
 	private final Point3d refPt;
-	private OctreeBehavior behavior;
+	private final OctreeBehavior behavior;
 
-	private boolean cancelUpdating = false;
-	private boolean updateFinished = true;
-	private CubeUpdater updater = new CubeUpdater();
 
 	public VolumeOctree(String imageDir, Canvas3D canvas) throws RuntimeException {
 		this.imageDir = imageDir;
@@ -71,7 +64,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		axisSwitch.setCapability(Group.ALLOW_CHILDREN_EXTEND);
 
 		for(int i = 0; i < 7; i++) {
-			axisSwitch.addChild(getBranchGroup());
+			axisSwitch.addChild(getOrderedGroup());
 		}
 
 		rootBranchGroup = new BranchGroup();
@@ -111,14 +104,11 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	}
 
 	public void update() {
-		behavior.postId(OctreeBehavior.TRIGGER_ID);
+		behavior.postId(OctreeBehavior.UPDATE);
 	}
 
 	public void cancel() {
-		if(!isUpdateFinished()) {
-			setCancelUpdating(true);
-			updater.cancel();
-		}
+		behavior.cancel();
 	}
 
 	public BranchGroup getRootBranchGroup() {
@@ -153,146 +143,75 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 				e.printStackTrace();
 			}
 			Arrays.sort(cdata.shapes);
-			OrderedGroup fg = getOrderedGroup();
-			OrderedGroup bg = getOrderedGroup();
+			OrderedGroup fg = getOrderedGroup(axisIndex[axis[ai]][FRONT]);
+			OrderedGroup bg = getOrderedGroup(axisIndex[axis[ai]][BACK]);
 			for(int i = 0; i < SIZE; i++) {
-				fg.addChild(new ShapeGroup(cdata.shapes[i]).shape);
-				bg.insertChild(cdata.shapes[i].shape, 0);
+				BranchGroup br = getBranchGroup();
+				br.addChild(new ShapeGroup(cdata.shapes[i]).shape);
+				fg.addChild(br);
+				br = getBranchGroup();
+				br.addChild(new ShapeGroup(cdata.shapes[i]).shape);
+				bg.insertChild(br, 0);
 			}
-			BranchGroup bgf = getBranchGroup(), bgb = getBranchGroup();
-			bgf.addChild(fg);
-			bgb.addChild(bg);
-
-			axisSwitch.setChild(bgf, axisIndex[axis[ai]][FRONT]);
-			axisSwitch.setChild(bgb, axisIndex[axis[ai]][BACK]);
 		}
-		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
+		setWhichChild(axisIndex[curAxis][curDir]);
 		System.out.println("# shapes: " + countInitialShapes());
 	}
 
-	/*
-	 * This method should only be called from OctreeBehavior
-	 */
-	private Transform3D volumeToImagePlate = new Transform3D();
-	private Transform3D tmp = new Transform3D();
-	void display(Canvas3D canvas) {
-		setUpdateFinished(false);
-
-		// calculate the current view parameters
-		canvas.getImagePlateToVworld(volumeToImagePlate);
-		volumeToImagePlate.invert();
-		rootBranchGroup.getLocalToVworld(tmp);
-		volumeToImagePlate.mul(tmp);
-
-		// collect the cubes which should be displayed
-		List<Cube> cubes = new ArrayList<Cube>();
-		rootCube.collectCubesToDisplay(cubes, canvas, volumeToImagePlate, curAxis, curDir);
-		System.out.println("Found " + cubes.size() + " cubes to display");
-		ShapeGroup[] shapes = new ShapeGroup[cubes.size() * SIZE];
-		System.out.println("This gives " + shapes.length + " shapes");
-		int i = 0;
-		for(Cube c : cubes) {
-			CubeData cdata = c.getCubeData();
-			for(ShapeGroup sg : cdata.shapes)
-				shapes[i++] = sg;
-		}
-		removeAllCubes();
-
-		// update cube data
-		updater.updateCubes(cubes);
-
-		// sort according to z-order
-		Arrays.sort(shapes);
-
-		BranchGroup bg = getBranchGroup();
-		OrderedGroup og = getOrderedGroup();
-		displayShapes(og, shapes, curDir);
-
-		bg.addChild(og);
-		axisSwitch.addChild(bg);
-
-		// add the ShapeGroups of the collected cubes to the scenegraph
-		CubeDataRecycler.instance().clearAll();
-		setUpdateFinished(true);
-		if(isCancelUpdating()) {
-			System.out.println("Aborted");
-			rootCube.cleanup();
-			setCancelUpdating(false);
-		} else {
-			axisSwitch.setWhichChild(DETAIL_AXIS);
-			System.out.println("# shapes: " + countDetailShapes());
-		}
-	}
-
-	private final void removeAllCubes() {
+	final void removeAllCubes() {
 		// remove the old data
-		BranchGroup prev = (BranchGroup)axisSwitch.getChild(DETAIL_AXIS);
-		prev.detach();
-		if(prev.numChildren() > 0)
-			((Group)prev.getChild(0)).removeAllChildren();
-	}
-
-	/*
-	 * private methods
-	 */
-	private final void displayShapes(OrderedGroup og, ShapeGroup[] shapes, int dir) {
-		if(dir == FRONT) {
-			for(int i = 0; i < shapes.length; i++) {
-				if(isCancelUpdating())
-					break;
-				og.addChild(shapes[i].shape);
-			}
-		} else {
-			for(int i = shapes.length - 1; i >= 0; i--) {
-				if(isCancelUpdating())
-					break;
-				og.addChild(shapes[i].shape);
-			}
+		OrderedGroup og = getOrderedGroup(DETAIL_AXIS);
+		for(int i = og.numChildren()-1; i >= 0; i--) {
+			BranchGroup child = (BranchGroup)og.getChild(i);
+			child.detach();
+			child.removeAllChildren();
 		}
-		IJ.showProgress(1);
 	}
 
-	private final int countInitialShapes() {
-		int sum = 0;
-		for(int i = 0; i < 6; i++) {
-			OrderedGroup og = (OrderedGroup)((Group)axisSwitch.getChild(i)).getChild(0);
-			sum += og.numChildren();
-		}
-		return sum;
+	final void setWhichChild(int child) {
+		axisSwitch.setWhichChild(child);
 	}
 
-	private final int countDetailShapes() {
-		return ((Group)((Group)axisSwitch.getChild(DETAIL_AXIS)).getChild(0)).numChildren();
+	private BitSet bitset = new BitSet(6);
+	final void setCombinedWhichChild() {
+		axisSwitch.setWhichChild(Switch.CHILD_MASK);
+		bitset.clear();
+		bitset.set(DETAIL_AXIS, true);
+		bitset.set(axisIndex[curAxis][curDir], true);
+		axisSwitch.setChildMask(bitset);
 	}
 
-	private final OrderedGroup getOrderedGroup() {
-		OrderedGroup og = new OrderedGroup();
-		return og;
+	final OrderedGroup getOrderedGroup(int i) {
+		return (OrderedGroup)axisSwitch.getChild(i);
 	}
 
-	private final BranchGroup getBranchGroup() {
+	static final BranchGroup getBranchGroup() {
 		BranchGroup bg = new BranchGroup();
 		bg.setCapability(BranchGroup.ALLOW_DETACH);
 		return bg;
 	}
 
+	final int countDetailShapes() {
+		return getOrderedGroup(DETAIL_AXIS).numChildren();
+	}
+
 	/*
-	 * synchronization methods
+	 * private methods
 	 */
-	private final synchronized boolean isUpdateFinished() {
-		return updateFinished;
+	private final int countInitialShapes() {
+		int sum = 0;
+		for(int i = 0; i < 6; i++) {
+			OrderedGroup og = getOrderedGroup(i);
+			sum += og.numChildren();
+		}
+		return sum;
 	}
 
-	private final synchronized void setUpdateFinished(boolean b) {
-		this.updateFinished = b;
-	}
-
-	private synchronized final boolean isCancelUpdating() {
-		return cancelUpdating;
-	}
-
-	private final synchronized void setCancelUpdating(boolean b) {
-		cancelUpdating = b;
+	private static final OrderedGroup getOrderedGroup() {
+		OrderedGroup og = new OrderedGroup();
+		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
+		og.setCapability(Group.ALLOW_CHILDREN_WRITE);
+		return og;
 	}
 
 	/*
@@ -326,17 +245,15 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		if ((axis != curAxis) || (dir != curDir)) {
 			curAxis = axis;
 			curDir = dir;
-			axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
+			setWhichChild(axisIndex[curAxis][curDir]);
 		}
 	}
 
 	public void transformationStarted(View view){
-		System.out.println("transform started");
-		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 		cancel();
+		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 	}
 	public void transformationFinished(View view){
-		System.out.println("transformationFinished");
 		update();
 	}
 	public void contentAdded(Content c){}
