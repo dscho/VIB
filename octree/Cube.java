@@ -15,7 +15,7 @@ public class Cube implements VolRendConstants {
 	public static final int RESOLUTION_UNSUFFICIENT = 1;
 	public static final int OUTSIDE_CANVAS          = 2;
 
-	public static final double RES_THRESHOLD = VolumeOctree.SIZE * 3;//Math.sqrt(3);
+	public static final double RES_THRESHOLD = VolumeOctree.SIZE * 4;//Math.sqrt(3);
 
 	final int x, y, z, level;
 	final float pw, ph, pd;

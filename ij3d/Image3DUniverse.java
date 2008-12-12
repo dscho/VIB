@@ -149,7 +149,13 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void updateOctree() {
-		octree.update();
+		if(octree != null)
+			octree.update();
+	}
+
+	public void cancelOctree() {
+		if(octree != null)
+			octree.cancel();
 	}
 
 	private VolumeOctree octree = null;
