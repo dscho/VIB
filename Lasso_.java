@@ -67,6 +67,7 @@ public class Lasso_ implements PlugIn {
 
 		MacroInstaller installer = new MacroInstaller();
 		installer.install(MACRO_CMD);
+		Toolbar.getInstance().setTool(Toolbar.SPARE1);
 	}
 
 	private static Lasso_ instance;
