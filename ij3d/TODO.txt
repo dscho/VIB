@@ -15,4 +15,6 @@ TODO for the ImageJ 3D Viewer
 * multiple selection
 * printing
 
+* Grouping
+
 * Content hinzufügen ohne ensureScale and center
