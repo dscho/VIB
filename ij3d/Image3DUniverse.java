@@ -288,7 +288,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	private float oldRange = 2f;
-	private void ensureScale(float range) {
+	public void ensureScale(float range) {
 		if(range > oldRange) {
 			oldRange = range;
 			double d = (range) / Math.tan(Math.PI/8);
