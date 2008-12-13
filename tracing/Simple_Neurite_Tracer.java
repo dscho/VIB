@@ -752,6 +752,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		setTemporaryPath( null );
 
+		endJoin = null;
+		endJoinPoint = null;
+
 		resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 		repaintAllPanes( );
 	}
