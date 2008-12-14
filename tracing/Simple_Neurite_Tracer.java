@@ -119,6 +119,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	public void cancelSearch( boolean cancelFillToo ) {
 		if( currentSearchThread != null )
 			currentSearchThread.requestStop();
+		endJoin = null;
+		endJoinPoint = null;
 		if( cancelFillToo && filler != null )
 			filler.requestStop();
 	}
