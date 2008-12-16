@@ -914,6 +914,7 @@ public class Executer {
 		c.getLocalToVworld(localToVWorld);
 		localToVWorld.transform(center);
 		univ.getViewPlatformTransformer().centerAt(center);
+		((Image3DUniverse)univ).getGlobalCenterPoint().set(center);
 	}
 
 	public void record() {
