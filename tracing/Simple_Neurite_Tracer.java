@@ -119,6 +119,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	public void cancelSearch( boolean cancelFillToo ) {
 		if( currentSearchThread != null )
 			currentSearchThread.requestStop();
+		endJoin = null;
+		endJoinPoint = null;
 		if( cancelFillToo && filler != null )
 			filler.requestStop();
 	}
@@ -752,6 +754,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		setTemporaryPath( null );
 
+		endJoin = null;
+		endJoinPoint = null;
+
 		resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 		repaintAllPanes( );
 	}
@@ -1040,25 +1045,35 @@ public class Simple_Neurite_Tracer extends ThreePanes
 						File tubesFile=new File(file_info.directory,tubesFileName);
 						if (verbose) System.out.println("Testing for the existence of "+tubesFile.getAbsolutePath());
 						if( tubesFile.exists() ) {
-							IJ.showStatus("Loading tubes file.");
-							tubenessImage=BatchOpener.openFirstChannel(tubesFile.getAbsolutePath());
-							if (verbose) System.out.println("Loaded the tubeness file");
-							if( tubenessImage == null ) {
-								IJ.error("Failed to load tubes image from "+tubesFile.getAbsolutePath()+" although it existed");
+							long megaBytesExtra = ( ((long)width) * height * depth * 4 ) / (1024 * 1024);
+							String extraMemoryNeeded = megaBytesExtra + "MiB";
+							YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(),
+												     "Confirm",
+												     "A tubeness file ("+tubesFile.getName()+") exists.  Load this file?\n"+
+												     "(This would use an extra "+extraMemoryNeeded+" of memory.)");
+							if( d.cancelPressed() )
 								return;
-							}
-							if( tubenessImage.getType() != ImagePlus.GRAY32 ) {
-								IJ.error("The tubeness file must be a 32 bit float image - "+tubesFile.getAbsolutePath()+" was not.");
-								return;
-							}
-							int width = tubenessImage.getWidth();
-							int height = tubenessImage.getHeight();
-							int depth = tubenessImage.getStackSize();
-							ImageStack tubenessStack = tubenessImage.getStack();
-							tubeness = new float[depth][];
-							for( int z = 0; z < depth; ++z ) {
-								FloatProcessor fp = (FloatProcessor)tubenessStack.getProcessor( z + 1 );
-								tubeness[z] = (float[])fp.getPixels();
+							else if( d.yesPressed() ) {
+								IJ.showStatus("Loading tubes file.");
+								tubenessImage=BatchOpener.openFirstChannel(tubesFile.getAbsolutePath());
+								if (verbose) System.out.println("Loaded the tubeness file");
+								if( tubenessImage == null ) {
+									IJ.error("Failed to load tubes image from "+tubesFile.getAbsolutePath()+" although it existed");
+									return;
+								}
+								if( tubenessImage.getType() != ImagePlus.GRAY32 ) {
+									IJ.error("The tubeness file must be a 32 bit float image - "+tubesFile.getAbsolutePath()+" was not.");
+									return;
+								}
+								int width = tubenessImage.getWidth();
+								int height = tubenessImage.getHeight();
+								int depth = tubenessImage.getStackSize();
+								ImageStack tubenessStack = tubenessImage.getStack();
+								tubeness = new float[depth][];
+								for( int z = 0; z < depth; ++z ) {
+									FloatProcessor fp = (FloatProcessor)tubenessStack.getProcessor( z + 1 );
+									tubeness[z] = (float[])fp.getPixels();
+								}
 							}
 						}
 					}
