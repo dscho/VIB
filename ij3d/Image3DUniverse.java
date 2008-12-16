@@ -128,6 +128,31 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return registrationMenubar;
 	}
 
+	public void recalculateGlobalMinMax() {
+		if(contents.isEmpty())
+			return;
+		Iterator it = contents();
+		Content c = (Content)it.next();
+		globalMin.set(c.getContent().min);
+		globalMax.set(c.getContent().max);
+		while(it.hasNext()) {
+			c = (Content)it.next();
+			Point3f cmin = c.getContent().min;
+			Point3f cmax = c.getContent().max;
+			if(cmin.x < globalMin.x) globalMin.x = cmin.x;
+			if(cmin.y < globalMin.y) globalMin.y = cmin.y;
+			if(cmin.z < globalMin.z) globalMin.z = cmin.z;
+			if(cmax.x > globalMax.x) globalMax.x = cmax.x;
+			if(cmax.y > globalMax.y) globalMax.y = cmax.y;
+			if(cmax.z > globalMax.z) globalMax.z = cmax.z;
+		}
+		globalCenter.x = globalMin.x + (globalMax.x - globalMin.x) / 2;
+		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y) / 2;
+		globalCenter.z = globalMin.z + (globalMax.z - globalMin.z) / 2;
+
+		getViewPlatformTransformer().centerAt(globalCenter);
+	}
+
 	public void recalculateGlobalMinMax(Content c) {
 		Point3f cmin = c.getContent().min;
 		Point3f cmax = c.getContent().max;
@@ -417,6 +442,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getTranslateTG().setTransform(t);
 		getZoomTG().setTransform(t);
 		getZoomTG().setTransform(t);
+		recalculateGlobalMinMax();
 		getViewPlatformTransformer().centerAt(globalCenter);
 		resetZoom();
 		fireTransformationUpdated();
