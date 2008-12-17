@@ -22,7 +22,7 @@ public class GeometryCreator implements VolRendConstants {
 					GeometryArray.COORDINATES);
 
 		quadArray.setCoordinates(0, quadCoords);
-		quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
+//		quadArray.setCapability(QuadArray.ALLOW_INTERSECT);
 		return quadArray;
 	}
 

@@ -139,7 +139,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		lightBG.addChild(lightD1);
 
 		PointLight lightS = new PointLight();
-		lightS.setPosition(0, 0, -300);
+		lightS.setPosition(-2, 0, -3);
 		lightS.setInfluencingBounds(bounds);
 		lightBG.addChild(lightS);
 
