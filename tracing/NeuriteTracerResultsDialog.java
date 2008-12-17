@@ -756,10 +756,13 @@ class NeuriteTracerResultsDialog
 			try {
 				pathAndFillManager.writeXML( savePath, plugin, true );
 			} catch( IOException ioe ) {
+				IJ.showStatus("Saving failed.");
 				IJ.error("Writing traces to '"+savePath+"' failed: "+ioe);
+				changeState( preSavingState );
 				return;
 			}
 			changeState( preSavingState );
+			IJ.showStatus("Saving completed.");
 
 			plugin.unsavedPaths = false;
 
