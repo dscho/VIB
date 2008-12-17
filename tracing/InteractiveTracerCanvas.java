@@ -78,6 +78,9 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 	public void keyPressed(KeyEvent e) {
 
+		if( ! tracerPlugin.isReady() )
+			return;
+
 		int keyCode = e.getKeyCode();
 		char keyChar = e.getKeyChar();
 
@@ -130,6 +133,9 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 	@Override
 	public void mouseMoved( MouseEvent e ) {
 
+		if( ! tracerPlugin.isReady() )
+			return;
+
 		double last_x_in_pane_precise = myOffScreenXD(e.getX());
 		double last_y_in_pane_precise = myOffScreenYD(e.getY());
 
@@ -149,6 +155,9 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 	@Override
 	public void mouseClicked( MouseEvent e ) {
+
+		if( ! tracerPlugin.isReady() )
+			return;
 
 		int currentState = tracerPlugin.resultsDialog.getState();
 

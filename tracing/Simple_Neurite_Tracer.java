@@ -1234,6 +1234,12 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 	}
 
+	public boolean isReady() {
+		if( resultsDialog == null )
+			return false;
+		return resultsDialog.isVisible();
+	}
+
 	public void launchPaletteAround( int x, int y, int z ) {
 
 		int either_side = 40;
