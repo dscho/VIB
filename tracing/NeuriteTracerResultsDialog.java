@@ -110,6 +110,7 @@ class NeuriteTracerResultsDialog
 	Button loadLabelsButton;
 
 	Button importSWCButton;
+	Button exportCSVButton;
 
 	Button saveButton;
 	Button loadButton;
@@ -262,6 +263,7 @@ class NeuriteTracerResultsDialog
 		preprocess.setEnabled(false);
 
 		importSWCButton.setEnabled(false);
+		exportCSVButton.setEnabled(false);
 		saveButton.setEnabled(false);
 		loadButton.setEnabled(false);
 		if( uploadButton != null ) {
@@ -303,6 +305,7 @@ class NeuriteTracerResultsDialog
 			saveButton.setEnabled(true);
 			loadButton.setEnabled(true);
 			importSWCButton.setEnabled(true);
+			exportCSVButton.setEnabled(true);
 			if( uploadButton != null ) {
 				uploadButton.setEnabled(true);
 				fetchButton.setEnabled(true);
@@ -640,6 +643,11 @@ class NeuriteTracerResultsDialog
 			importSWCButton.addActionListener( this );
 			add(importSWCButton,c);
 
+			++c.gridy;
+			exportCSVButton = new Button("Export as CSV");
+			exportCSVButton.addActionListener( this );
+			add(exportCSVButton,c);
+
 			saveButton = new Button("Save Traces File");
 			saveButton.addActionListener( this );
 			loadButton = new Button("Load Traces File");
@@ -795,6 +803,57 @@ class NeuriteTracerResultsDialog
 			changeState( LOADING );
 			plugin.importSWC();
 			changeState( preLoadingState );
+
+		} else if( source == exportCSVButton ) {
+
+			FileInfo info = plugin.file_info;
+			SaveDialog sd;
+
+			if( info == null ) {
+
+				sd = new SaveDialog("Export as CSV...",
+						    "traces",
+						    ".csv");
+
+			} else {
+
+				sd = new SaveDialog("Export as CSV...",
+						    info.directory,
+						    info.fileName,
+						    ".csv");
+			}
+
+			String savePath;
+			if(sd.getFileName()==null) {
+				return;
+			} else {
+				savePath = sd.getDirectory()+sd.getFileName();
+			}
+
+			File file = new File(savePath);
+			if ((file!=null)&&file.exists()) {
+				if (!IJ.showMessageWithCancel(
+					    "Export as CSV...", "The file "+
+					    savePath+" already exists.\n"+
+					    "Do you want to replace it?"))
+					return;
+			}
+
+			IJ.showStatus("Exporting as CSV to "+savePath);
+
+			int preExportingState = currentState;
+			changeState( SAVING );
+			// Export here...
+			try {
+				pathAndFillManager.exportToCSV(file);
+			} catch( IOException ioe ) {
+				IJ.showStatus("Exporting failed.");
+				IJ.error("Writing traces to '"+savePath+"' failed: "+ioe);
+				changeState( preExportingState );
+				return;
+			}
+			IJ.showStatus("Export complete.");
+			changeState( preExportingState );
 
 		} else if( source == loadLabelsButton ) {
 
