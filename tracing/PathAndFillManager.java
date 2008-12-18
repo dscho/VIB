@@ -2011,14 +2011,20 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		Iterator<Path> pi = allPaths.iterator();
 		while( pi.hasNext() ) {
 			Path p = pi.next();
+			Path pForLengthAndName = p;
+			if( p.getUseFitted() ) {
+				pForLengthAndName = p.fitted;
+			}
+			if( p.fittedVersionOf != null )
+				continue;
 			pw.print(stringForCSV(""+p.getID()));
 			pw.print(",");
-			pw.print(stringForCSV(""+p.getName()));
+			pw.print(stringForCSV(""+pForLengthAndName.getName()));
 			pw.print(",");
 			boolean primary = h.contains(p);
 			pw.print(stringForCSV(""+primary));
 			pw.print(",");
-			pw.print(stringForCSV(""+p.getRealLength()));
+			pw.print(stringForCSV(""+pForLengthAndName.getRealLength()));
 			pw.print(",");
 			pw.print(stringForCSV(""+p.spacing_units));
 			pw.print(",");
