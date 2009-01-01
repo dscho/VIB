@@ -8,11 +8,13 @@ import pal.math.MultivariateFunction;
 
 public class TransformationAttempt implements MultivariateFunction {
 	
+	// FIXME: NamedPoint now NamedPointWorld
+
         double cubeSide;
         ImagePlus croppedTemplate;
-        NamedPoint templatePoint;
+        NamedPointWorld templatePoint;
         ImagePlus newImage;
-        NamedPoint guessedPoint;
+        NamedPointWorld guessedPoint;
 	
 	ProgressWindow progressWindow;
 	
@@ -23,9 +25,9 @@ public class TransformationAttempt implements MultivariateFunction {
 	
         public TransformationAttempt( double cubeSide,
                                       ImagePlus croppedTemplate,
-                                      NamedPoint templatePoint,
+                                      NamedPointWorld templatePoint,
                                       ImagePlus newImage,
-                                      NamedPoint guessedPoint,
+                                      NamedPointWorld guessedPoint,
 				      int similarityMeasure,
 				      ProgressWindow progressWindow ) {
 		

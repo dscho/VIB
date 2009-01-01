@@ -24,7 +24,7 @@ import vib.oldregistration.RegistrationAlgorithm;
 
 import vib.transforms.OrderedTransformations;
 import vib.transforms.FastMatrixTransform;
-import landmarks.NamedPoint;
+import landmarks.NamedPointWorld;
 
 import util.CombinationGenerator;
 
@@ -44,11 +44,11 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 
                 for (Iterator i=common.listIterator();i.hasNext();) {
                         String s = (String)i.next();
-                        NamedPoint p0 = null;
-                        NamedPoint p1 = null;
+                        NamedPointWorld p0 = null;
+                        NamedPointWorld p1 = null;
 
                         for (Iterator i0=inImage0.listIterator();i0.hasNext();) {
-                                NamedPoint current=(NamedPoint)i0.next();
+                                NamedPointWorld current=(NamedPointWorld)i0.next();
                                 if (s.equals(current.getName())) {
                                         p0 = current;
                                         break;
@@ -56,12 +56,14 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                         }
 
                         for (Iterator i1=inImage1.listIterator();i1.hasNext();) {
-                                NamedPoint current=(NamedPoint)i1.next();
+                                NamedPointWorld current=(NamedPointWorld)i1.next();
                                 if (s.equals(current.getName())) {
                                         p1 = current;
                                         break;
                                 }
                         }
+
+			// FIXME: now in world coordinates, so maybe change the application
 
                         double[] p1_transformed = new double[3];
                         t.apply(p1.x,p1.y,p1.z,p1_transformed);
@@ -85,15 +87,17 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
         // This finds an affine mapping that maps a1 onto a2,
         // b1 onto b2, etc.
 
-        public static FastMatrixTransform generateAffine(NamedPoint a1,
-							 NamedPoint b1,
-							 NamedPoint c1,
-							 NamedPoint d1,
+	// FIXME: now all world coordinates, change the code
+
+        public static FastMatrixTransform generateAffine(NamedPointWorld a1,
+							 NamedPointWorld b1,
+							 NamedPointWorld c1,
+							 NamedPointWorld d1,
 							 
-							 NamedPoint a2,
-							 NamedPoint b2,
-							 NamedPoint c2,
-							 NamedPoint d2) {
+							 NamedPointWorld a2,
+							 NamedPointWorld b2,
+							 NamedPointWorld c2,
+							 NamedPointWorld d2) {
 
                 double[][] p = new double[3][4];
 
@@ -321,22 +325,19 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 
         public OrderedTransformations register() {
 
-		NamedPointSet points0 = NamedPointSet.forImage(sourceImages[0]);
-		NamedPointSet points1 = NamedPointSet.forImage(sourceImages[1]);
+		NamedPointSet points0 = null;
+		NamedPointSet points1 = null;
 
-                if(points0==null) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[0].getTitle()+"\"");
-                        System.out.println("for 0 in Affine_From_Landmarks.register()");
-                        return null;
-                }
-
-                if(points1==null) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[1].getTitle()+"\"");
-                        System.out.println("for 1 in Affine_From_Landmarks.register()");
-                        return null;
-                }
+		try {
+			points0 = NamedPointSet.forImage( sourceImages[0] );
+		} catch( NamedPointSet.PointsFileException e ) {
+			IJ.error( "Failed to find a corresponding points file for: "+sourceImages[0].getTitle() );
+		}
+		try {
+			points1 = NamedPointSet.forImage( sourceImages[1] );
+		} catch( NamedPointSet.PointsFileException e ) {
+			IJ.error( "Failed to find a corresponding points file for: "+sourceImages[1].getTitle() );
+		}
 
                 FastMatrixTransform affine=bestBetweenPoints( points0, points1 );
 

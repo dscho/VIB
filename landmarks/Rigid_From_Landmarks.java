@@ -21,7 +21,7 @@ import java.util.ListIterator;
 import java.util.Comparator;
 
 import vib.transforms.FastMatrixTransform;
-import landmarks.NamedPoint;
+import landmarks.NamedPointWorld;
 import vib.FastMatrix;
 import vib.transforms.OrderedTransformations;
 import vib.oldregistration.RegistrationAlgorithm;
@@ -30,6 +30,8 @@ import util.CombinationGenerator;
 
 /* This method doesn't work terribly well, and is here largely for
  * comparison purposes. */
+
+// FIXME: all NamedPoints are now NamedPointWorlds
 
 public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugIn {
 
@@ -47,11 +49,11 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
 
                 for (Iterator i=common.listIterator();i.hasNext();) {
                         String s = (String)i.next();
-                        NamedPoint p0 = null;
-                        NamedPoint p1 = null;
+                        NamedPointWorld p0 = null;
+                        NamedPointWorld p1 = null;
 
                         for (Iterator i0=inImage0.listIterator();i0.hasNext();) {
-                                NamedPoint current=(NamedPoint)i0.next();
+                                NamedPointWorld current=(NamedPointWorld)i0.next();
                                 if (s.equals(current.getName())) {
                                         p0 = current;
                                         break;
@@ -59,7 +61,7 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
                         }
 
                         for (Iterator i1=inImage1.listIterator();i1.hasNext();) {
-                                NamedPoint current=(NamedPoint)i1.next();
+                                NamedPointWorld current=(NamedPointWorld)i1.next();
                                 if (s.equals(current.getName())) {
                                         p1 = current;
                                         break;
@@ -88,13 +90,13 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
         // This finds an affine mapping that maps a1 onto a2,
         // b1 onto b2, etc.
 
-        public static FastMatrixTransform generateRigid(NamedPoint a1,
-                                               NamedPoint b1,
-                                               NamedPoint c1,
+        public static FastMatrixTransform generateRigid(NamedPointWorld a1,
+                                               NamedPointWorld b1,
+                                               NamedPointWorld c1,
 
-                                               NamedPoint a2,
-                                               NamedPoint b2,
-                                               NamedPoint c2) {
+                                               NamedPointWorld a2,
+                                               NamedPointWorld b2,
+                                               NamedPointWorld c2) {
 
                 FastMatrixTransform translate_a1_to_origin=new FastMatrixTransform(1.0);
                 translate_a1_to_origin.setTranslation( - a1.x, - a1.y, - a1.z );
@@ -350,17 +352,21 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
 
         public OrderedTransformations register() {
 
-                NamedPointSet points0 = NamedPointSet.forImage(sourceImages[0]);
-                NamedPointSet points1 = NamedPointSet.forImage(sourceImages[1]);
+                NamedPointSet points0 = null;
+                NamedPointSet points1 = null;
 
-                if(points0==null) {
+		try {
+			points0 = NamedPointSet.forImage(sourceImages[0]);
+		} catch( NamedPointSet.PointsFileException e ) {
                         IJ.error("No corresponding .points file found "+
                                  "for image: \""+sourceImages[0].getTitle()+"\"");
                         System.out.println("for 0 in Rigid_From_Landmarks.register()");
                         return null;
                 }
 
-                if(points1==null) {
+		try {
+			points1 = NamedPointSet.forImage(sourceImages[1]);
+		} catch( NamedPointSet.PointsFileException e ) {
                         IJ.error("No corresponding .points file found "+
                                  "for image: \""+sourceImages[1].getTitle()+"\"");
                         System.out.println("for 1 in Rigid_From_Landmarks.register()");
@@ -374,8 +380,10 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
                 FastMatrixTransform toAspect1=FastMatrixTransform.fromCalibrationWithoutOrigin(sourceImages[1]);
                 FastMatrixTransform fromAspect0=toAspect0.inverse();
 
+		/* No need to correct now...
                 points0.correctWithCalibration(c0);
                 points1.correctWithCalibration(c1);
+		*/
 
                 FastMatrixTransform affine=bestBetweenPoints(points0,points1);
 

@@ -26,7 +26,7 @@ import vib.transforms.FastMatrixTransform;
 import vib.transforms.OrderedTransformations;
 import vib.oldregistration.RegistrationAlgorithm;
 
-import landmarks.NamedPoint;
+import landmarks.NamedPointWorld;
 
 /* This method doesn't work terribly well, and is here largely for
  * comparison purposes. */
@@ -51,15 +51,17 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
         // This finds an affine mapping that maps a1 onto a2,
         // b1 onto b2, etc.
 
-        public FastMatrixTransform generateAffine(NamedPoint a1,
-                                         NamedPoint b1,
-                                         NamedPoint c1,
-                                         NamedPoint d1,
+	// FIXME: now the points are in world coordinates
 
-                                         NamedPoint a2,
-                                         NamedPoint b2,
-                                         NamedPoint c2,
-                                         NamedPoint d2) {
+        public FastMatrixTransform generateAffine(NamedPointWorld a1,
+                                         NamedPointWorld b1,
+                                         NamedPointWorld c1,
+                                         NamedPointWorld d1,
+
+                                         NamedPointWorld a2,
+                                         NamedPointWorld b2,
+                                         NamedPointWorld c2,
+                                         NamedPointWorld d2) {
 
                 double[][] p = new double[3][4];
 
@@ -166,32 +168,36 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
 
         public OrderedTransformations register() {
 
-                NamedPointSet points0 = NamedPointSet.forImage(sourceImages[0]);
-                NamedPointSet points1 = NamedPointSet.forImage(sourceImages[1]);
+		NamedPointSet points0 = null;
+		NamedPointSet points1 = null;
 
-                if(points0==null) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[0].getTitle()+"\"");
+		try {
+			points0 = NamedPointSet.forImage(sourceImages[0]);
+		} catch( NamedPointSet.PointsFileException e ) {
+                        IJ.error( "No corresponding .points file found "+
+                                  "for image: \""+sourceImages[0].getTitle()+"\": " + e );
                         System.out.println("for 0 in Best_Affine_From_Landmarks.register()");
                         return null;
-                }
+		}
 
-                if(points1==null) {
+		try {
+			points1 = NamedPointSet.forImage(sourceImages[1]);
+		} catch( NamedPointSet.PointsFileException e ) {
                         IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[1].getTitle()+"\"");
+                                 "for image: \""+sourceImages[1].getTitle()+"\": " + e );
                         System.out.println("for 1 in Best_Affine_From_Landmarks.register()");
                         return null;
-                }
+		}
 
                 ArrayList<String> commonPointNames = points0.namesSharedWith(points1);
 
                 int n = commonPointNames.size();
 
-                if (n<4) {
+                if( n < 4 ) {
                         String error = "There are fewer than 4 points in these two "+
                                 "images that have been marked up with the same "+
                                 "names:";
-                        if(n==0) {
+                        if( n == 0 ) {
                                 error += " (none in common)";
                         } else {
                                 for(Iterator i=commonPointNames.iterator();i.hasNext();)
@@ -212,12 +218,14 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
 
                 for (Iterator i=commonPointNames.listIterator();i.hasNext();) {
 
+			// FIXME: now the NamedPoints are in world coordinates
+
                         String s = (String)i.next();
-                        NamedPoint p0 = null;
-                        NamedPoint p1 = null;
+                        NamedPointWorld p0 = null;
+                        NamedPointWorld p1 = null;
 
                         for (Iterator i0=points0.listIterator();i0.hasNext();) {
-                                NamedPoint current=(NamedPoint)i0.next();
+                                NamedPointWorld current=(NamedPointWorld)i0.next();
                                 if (s.equals(current.getName())) {
                                         p0 = current;
                                         break;
@@ -225,7 +233,7 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
                         }
 
                         for (Iterator i1=points1.listIterator();i1.hasNext();) {
-                                NamedPoint current=(NamedPoint)i1.next();
+                                NamedPointWorld current=(NamedPointWorld)i1.next();
                                 if (s.equals(current.getName())) {
                                         p1 = current;
                                         break;

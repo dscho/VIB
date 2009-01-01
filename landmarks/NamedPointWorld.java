@@ -23,17 +23,25 @@ import java.awt.event.*;
 import java.io.*;
 import java.util.regex.*;
 
+import tracing.PathAndFillManager;
 
 import vib.FastMatrix;
 
-public class NamedPoint {
-	
+/* This class replaces the old NamedPoint class, the difference being
+   that these objects hold world co-ordinates rather than image
+   co-ordinates...  i.e. the x, y, z in this class have already been
+   scaled by the pixel(Width|Height|Depth) values in the image's
+   calibration information.
+ */
+
+public class NamedPointWorld {
+
         public double x,y,z;
         public boolean set;
-	
+
         String name;
-	
-        public NamedPoint(String name,
+
+        public NamedPointWorld(String name,
                           double x,
                           double y,
                           double z) {
@@ -43,44 +51,70 @@ public class NamedPoint {
                 this.name = name;
                 this.set = true;
         }
-	
-        public NamedPoint(String name) {
+
+        public NamedPointWorld(String name) {
                 this.name = name;
                 this.set = false;
         }
-	
+
         public void transformWith(FastMatrix m) {
                 m.apply(x,y,z);
                 x=m.x;
                 y=m.y;
                 z=m.z;
         }
-	
-        public NamedPoint transformWith(OrderedTransformations o) {
+
+        public NamedPointWorld transformWith(OrderedTransformations o) {
                 double[] result=new double[3];
                 o.apply(x,y,z,result);
-                return new NamedPoint(name,result[0],result[1],result[2]);
+                return new NamedPointWorld(name,result[0],result[1],result[2]);
         }
-		
+
         public static String escape(String s) {
                 String result = s.replaceAll("\\\\","\\\\\\\\");
                 result = result.replaceAll("\\\"","\\\\\"");
                 return result;
         }
-	
+
         public static String unescape(String s) {
-                // FIXME: actually write the unescaping code...
-                return s;
+		StringBuffer result = new StringBuffer( s );
+		int startNextSearch = 0;
+		while( true ) {
+			int nextBackslash = result.indexOf( s, startNextSearch );
+			if( nextBackslash < 0 )
+				return result.toString();
+			result.deleteCharAt(nextBackslash);
+			startNextSearch = nextBackslash + 1;
+		}
         }
-	
+
         public Point3d toPoint3d() {
                 return new Point3d(x,y,z);
         }
-	
+
         public String getName() {
                 return name;
         }
-	
+
+	public String toXMLElement() {
+		StringBuffer result = new StringBuffer("<pointworld set=\"");
+		result.append( set );
+		result.append( "\" name=\"" );
+		result.append( PathAndFillManager.escapeForXMLAttributeValue(name) );
+		result.append( "\"");
+		if( set ) {
+			result.append( "x=\"" );
+			result.append( x );
+			result.append( "\" y=\"" );
+			result.append( y );
+			result.append( "\" z=\"" );
+			result.append( z );
+			result.append( "\"" );
+		}
+		result.append( "/>" );
+		return result.toString();
+	}
+
         public String toYAML() {
                 String line = "\""+
                         escape(name)+

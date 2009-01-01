@@ -99,9 +99,9 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		GridBagConstraints c = new GridBagConstraints();
 		
 		int counter = 0;
-		Iterator i;
+		Iterator<NamedPointWorld> i;
 		for (i=points.listIterator();i.hasNext();) {
-			NamedPoint p = (NamedPoint)i.next();
+			NamedPointWorld p = i.next();
 			c.gridx = 0;
 			c.gridy = counter;
 			c.anchor = GridBagConstraints.LINE_END;			
@@ -274,10 +274,12 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			plugin.reset();
 		} else if (source == uploadButton) {
 			plugin.upload();
+/*
 		} else if (source == getMyButton ) {
 			plugin.get( true );
 		} else if (source == getAnyButton ) {
 			plugin.get( false );
+*/
 		} else if (source == chooseTemplate ) {
 			
 			OpenDialog od;
@@ -359,7 +361,7 @@ public class Name_Points implements PlugIn {
 			return;
                 }
 		
-		NamedPoint p = points.get(i);
+		NamedPointWorld p = points.get(i);
 		if (p == null) {
 			IJ.error("You must have set a point in order to fine-tune it.");
 			return;
@@ -372,7 +374,7 @@ public class Name_Points implements PlugIn {
 			return;
                 }
 		
-		NamedPoint pointInTemplate = templatePoints.getPoint(pointName);
+		NamedPointWorld pointInTemplate = templatePoints.getPoint(pointName);
 		
 		if( pointInTemplate == null ) {
 			IJ.error("The point you want to fine-tune must be set both in this image and the template.  \""+pointName+"\" is not set in the template.");
@@ -445,11 +447,11 @@ public class Name_Points implements PlugIn {
 			System.out.println("... calculating vector to: "+otherPoints[0]);
 			System.out.println("... and: "+otherPoints[1]);
 			
-			NamedPoint inThis1=points.getPoint(otherPoints[0]);
-			NamedPoint inThis2=points.getPoint(otherPoints[1]);
+			NamedPointWorld inThis1=points.getPoint(otherPoints[0]);
+			NamedPointWorld inThis2=points.getPoint(otherPoints[1]);
 			
-			NamedPoint inTemplate1=templatePoints.getPoint(otherPoints[0]);
-			NamedPoint inTemplate2=templatePoints.getPoint(otherPoints[1]);
+			NamedPointWorld inTemplate1=templatePoints.getPoint(otherPoints[0]);
+			NamedPointWorld inTemplate2=templatePoints.getPoint(otherPoints[1]);
 			
 			double inThisX = p.x * x_spacing;
 			double inThisY = p.y * y_spacing;
@@ -564,7 +566,7 @@ public class Name_Points implements PlugIn {
 
 		if( bestResult != null ) {
 			
-			NamedPoint point = points.get(progressWindow.indexOfPointBeingFineTuned);			
+			NamedPointWorld point = points.get(progressWindow.indexOfPointBeingFineTuned);			
 			point.x = bestResult.point_would_be_moved_to_x;
 			point.y = bestResult.point_would_be_moved_to_y;
 			point.z = bestResult.point_would_be_moved_to_z;
@@ -615,7 +617,7 @@ public class Name_Points implements PlugIn {
 	    around the template point.
 	 */
 
-	static RegistrationResult mapImageWith( ImagePlus toTransform, ImagePlus toKeep, NamedPoint templatePoint, NamedPoint guessedPoint, double[] mapValues, double cubeSide, int similarityMeasure, boolean show, String imageTitle ) {
+	static RegistrationResult mapImageWith( ImagePlus toTransform, ImagePlus toKeep, NamedPointWorld templatePoint, NamedPointWorld guessedPoint, double[] mapValues, double cubeSide, int similarityMeasure, boolean show, String imageTitle ) {
 		
 		double sumSquaredDifferences = 0;
                 double sumAbsoluteDifferences = 0;
@@ -1078,7 +1080,7 @@ public class Name_Points implements PlugIn {
 			
 			dialog.setCoordinateLabel(i,x,y,z);
 			
-			NamedPoint point = points.get(i);
+			NamedPointWorld point = points.get(i);
 			point.x = x;
 			point.y = y;
 			point.z = z;
@@ -1091,6 +1093,8 @@ public class Name_Points implements PlugIn {
 		
 	}
 	
+	/* FIXME: put this back when file format detection and loading is sorted...
+
 	public void get( boolean mineOnly ) {
 		
 		Hashtable<String,String> parameters = new Hashtable<String,String>();
@@ -1136,8 +1140,10 @@ public class Name_Points implements PlugIn {
 		
 		if( fileContents != null )
 			loadFromString(fileContents);
+
 		
 	}
+	*/
 	
 	public void upload() {
 		
@@ -1150,7 +1156,7 @@ public class Name_Points implements PlugIn {
 		
 		// Need to included data too....
 		
-		byte [] fileAsBytes = points.dataAsBytes( );
+		byte [] fileAsBytes = points.xmlDataAsBytes( );
 		
 		ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, fileAsBytes );
 		
@@ -1283,7 +1289,7 @@ public class Name_Points implements PlugIn {
 			if( ! foundExistingPointsFile ) {
 				points = new NamedPointSet();
 				for (int i = 0; i < defaultPointNames.length; ++i)
-					points.add(new NamedPoint(defaultPointNames[i]));
+					points.add(new NamedPointWorld(defaultPointNames[i]));
 			}
 		}
 		
@@ -1302,23 +1308,28 @@ public class Name_Points implements PlugIn {
 	}
 	
 	public boolean loadAtStart() {
-		
-		NamedPointSet newNamedPoints = NamedPointSet.forImage(imp);
+
+		NamedPointSet newNamedPoints = null;
+		try {
+			newNamedPoints = NamedPointSet.forImage(imp);
+		} catch( NamedPointSet.PointsFileException e ) {
+			return false;
+		}
 
 		if( points == null ) {
 			points=new NamedPointSet();
 		}
 		
-		if(newNamedPoints==null)
+		if( newNamedPoints == null )
 			return false;
 		
-		ListIterator i;
+		ListIterator<NamedPointWorld> i;
 		for (i = newNamedPoints.listIterator();i.hasNext();) {
-			NamedPoint current = (NamedPoint)i.next();
+			NamedPointWorld current = i.next();
 			boolean foundName = false;
-			ListIterator j;
+			ListIterator<NamedPointWorld> j;
 			for(j=points.listIterator();j.hasNext();) {
-				NamedPoint p = (NamedPoint)j.next();
+				NamedPointWorld p = j.next();
 				if (current.getName().equals(p.getName())) {
 					p.x = current.x;
 					p.y = current.y;
@@ -1332,38 +1343,6 @@ public class Name_Points implements PlugIn {
 		}
 		
 		return true;
-	}
-	
-	public void loadFromString(String fileContents) {
-		
-		NamedPointSet newNamedPoints = NamedPointSet.fromString(fileContents);
-		
-		dialog.resetAll();
-
-		if (points == null) {
-			points = new NamedPointSet();
-		}
-		
-		ListIterator i;
-		for (i = newNamedPoints.listIterator();i.hasNext();) {
-			NamedPoint current = (NamedPoint)i.next();
-			int foundIndex = -1;
-			for( int j = 0; j < points.size(); ++j ) {
-				NamedPoint p = points.get(j);
-				if (current.getName().equals(p.getName())) {
-					dialog.setCoordinateLabel(j,current.x,current.y,current.z);
-					NamedPoint point = points.get(j);
-					point.x = current.x;
-					point.y = current.y;
-					point.z = current.z;
-					point.set = true;
-					break;
-				}
-			}
-			if( foundIndex < 0 )
-				points.add(current);
-		}
-		
 	}
 	
 	public boolean useTemplate( String templateImageFileName ) {
@@ -1383,12 +1362,17 @@ public class Name_Points implements PlugIn {
 			return false;
 		}
 		
-		NamedPointSet templatePointSet=NamedPointSet.forImage(templateImageFileName);
-		System.out.println("point set was: "+templatePointSet);
+		NamedPointSet templatePointSet = null;
+		try {
+			templatePointSet = NamedPointSet.forImage(templateImageFileName);
+		} catch( NamedPointSet.PointsFileException e ) {
+			return false;
+		}
+		System.out.println( "point set was: " + templatePointSet );
 		if( templatePointSet == null ) {
 			return false;
 		}
-		ImagePlus [] channels = BatchOpener.open(templateImageFileName);
+		ImagePlus [] channels = BatchOpener.open( templateImageFileName );
 		if( channels == null ) {
 			IJ.error("Couldn't open template image: "+templateImageFileName );
 			return false;

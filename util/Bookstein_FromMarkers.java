@@ -19,8 +19,10 @@ import vib.transforms.OrderedTransformations;
 import vib.transforms.FastMatrixTransform;
 import vib.transforms.BooksteinTransform;
 
-import landmarks.NamedPoint;
+import landmarks.NamedPointWorld;
 import landmarks.NamedPointSet;
+
+// FIXME: all NamedPoint now NamedPointWorld
 
 import vib.oldregistration.*;
 
@@ -64,17 +66,21 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
                 FastMatrixTransform toCorrectAspect1 = FastMatrixTransform.fromCalibrationWithoutOrigin(sourceImages[1]);
                 FastMatrixTransform fromCorrectAspect1=toCorrectAspect1.inverse();
 
-                NamedPointSet points0 = NamedPointSet.forImage(sourceImages[0]);
-                NamedPointSet points1 = NamedPointSet.forImage(sourceImages[1]);
+                NamedPointSet points0 = null;
+                NamedPointSet points1 = null;
 
-                if(points0==null) {
+		try {
+			points0 = NamedPointSet.forImage(sourceImages[0]);
+		} catch( NamedPointSet.PointsFileException e ) {
                         IJ.error("No corresponding .points file found "+
                                  "for image: \""+sourceImages[0].getTitle()+"\"");
                         System.out.println("for 0 in Bookstein_FromMarkers.register()");
                         return null;
                 }
 
-                if(points1==null) {
+		try {
+			points1 = NamedPointSet.forImage(sourceImages[1]);
+		} catch( NamedPointSet.PointsFileException e ) {
                         IJ.error("No corresponding .points file found "+
                                  "for image: \""+sourceImages[1].getTitle()+"\"");
                         System.out.println("for 1 in Bookstein_FromMarkers.register()");
@@ -95,11 +101,11 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
 
                         // System.out.println("Point "+i_index+" is: "+s);
 
-                        NamedPoint p0 = null;
-                        NamedPoint p1 = null;
+                        NamedPointWorld p0 = null;
+                        NamedPointWorld p1 = null;
 
                         for (Iterator i0=points0.listIterator();i0.hasNext();) {
-                                NamedPoint current=(NamedPoint)i0.next();
+                                NamedPointWorld current=(NamedPointWorld)i0.next();
                                 if (s.equals(current.getName())) {
                                         Point3d p=new Point3d(current.x,
                                                               current.y,
@@ -117,7 +123,7 @@ public class Bookstein_FromMarkers extends RegistrationAlgorithm implements Plug
                         }
 
                         for (Iterator i1=points1.listIterator();i1.hasNext();) {
-                                NamedPoint current=(NamedPoint)i1.next();
+                                NamedPointWorld current=(NamedPointWorld)i1.next();
                                 if (s.equals(current.getName())) {
                                         Point3d p=new Point3d(current.x,
                                                               current.y,

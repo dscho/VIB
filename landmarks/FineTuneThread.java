@@ -20,6 +20,8 @@ import vib.FastMatrix;
 
 */
 
+// FIXME: NamedPoint is now NamedPointWorld (check templatePoint and guessedPoint)
+
 public class FineTuneThread extends Thread {
 	
 	boolean keepResults = true;
@@ -30,9 +32,9 @@ public class FineTuneThread extends Thread {
         double cubeSide;
         ImagePlus croppedTemplate;
         ImagePlus template;
-        NamedPoint templatePoint;
+        NamedPointWorld templatePoint;
         ImagePlus newImage;
-        NamedPoint guessedPoint;
+        NamedPointWorld guessedPoint;
         double [] guessedRotation;
         ProgressWindow progressWindow;
 	Name_Points plugin;
@@ -44,9 +46,9 @@ public class FineTuneThread extends Thread {
 		double cubeSide,
                 ImagePlus croppedTemplate, // The cropped template image.
                 ImagePlus template, // The full template image.
-                NamedPoint templatePoint,
+                NamedPointWorld templatePoint,
                 ImagePlus newImage, // The full current image.
-                NamedPoint guessedPoint,
+                NamedPointWorld guessedPoint,
                 double [] guessedRotation,
 		ProgressWindow progressWindow,
                 Name_Points plugin ) {
