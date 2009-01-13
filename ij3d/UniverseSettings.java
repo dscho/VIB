@@ -2,6 +2,7 @@ package ij3d;
 
 import ij.gui.GenericDialog;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.Properties;
@@ -48,7 +49,7 @@ public class UniverseSettings {
 	public static void load() {
 		try {
 			Properties properties = new Properties();
-			properties.load(new FileReader(propsfile));
+			properties.load(new FileInputStream(propsfile));
 			startupWidth = integer(properties.getProperty("Startup_Width", str(startupWidth)));
 			startupHeight = integer(properties.getProperty("Startup_Height", str(startupHeight)));
 			projection = integer(properties.getProperty("Projection", str(projection)));
