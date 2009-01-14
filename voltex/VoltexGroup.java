@@ -131,9 +131,9 @@ public class VoltexGroup extends ContentNode {
 							int x, int y, int z) {
 		
 		Volume vol = renderer.volume;
-		double px = x * vol.xSpace;
-		double py = y * vol.ySpace;
-		double pz = z * vol.zSpace;
+		double px = x * vol.pw;
+		double py = y * vol.ph;
+		double pz = z * vol.pd;
 		Point3d locInImagePlate = new Point3d(px, py, pz);
 		
 		volToIP.transform(locInImagePlate);

@@ -8,6 +8,8 @@ public class AppearanceCreator implements VolRendConstants {
 
 	private int textureMode, componentType;
 
+	private boolean opaque = false;
+
 	private TexCoordGeneration xTg = new TexCoordGeneration();
 	private TexCoordGeneration yTg = new TexCoordGeneration();
 	private TexCoordGeneration zTg = new TexCoordGeneration();
@@ -62,7 +64,6 @@ public class AppearanceCreator implements VolRendConstants {
 		xTg.setPlaneT(new Vector4f(0f, 0f, v.zTexGenScale,
 				-(float)(v.zTexGenScale * v.minCoord.z)));
 		boolean rgb = v.getDataType() == Volume.INT_DATA;
-		boolean opaque = v.getTransparenyType() == Volume.OPAQUE;
 
 		int bImgType = rgb ? BufferedImage.TYPE_INT_ARGB
 					 : BufferedImage.TYPE_BYTE_GRAY;
@@ -80,7 +81,7 @@ public class AppearanceCreator implements VolRendConstants {
 			yData = ((DataBufferInt)dby).getData();
 			zData = ((DataBufferInt)dbz).getData();
 		} else {
-			textureMode = opaque ? Texture.LUMINANCE : Texture.INTENSITY;
+			textureMode = opaque ? Texture.LUMINANCE : Texture.LUMINANCE;
 			componentType = ImageComponent.FORMAT_CHANNEL8;
 			xData = ((DataBufferByte)dbx).getData();
 			yData = ((DataBufferByte)dby).getData();

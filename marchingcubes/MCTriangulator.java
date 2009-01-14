@@ -25,7 +25,7 @@ public class MCTriangulator implements Triangulator {
 		zeroPad(image);
 		// create Volume
 		voltex.Volume volume = new voltex.Volume(
-					image, Volume.OPAQUE, channels);
+					image, channels);
 		volume.setAverage(true);
 
 		// get triangles

@@ -17,7 +17,7 @@ public class VolumeRenderer extends Renderer {
 	private int curAxis = Z_AXIS;
 	private int curDir = FRONT;
 
-	private BranchGroup root;
+	private final BranchGroup root;
 
 	protected AppearanceCreator appCreator;
 
@@ -30,7 +30,6 @@ public class VolumeRenderer extends Renderer {
 	public VolumeRenderer(ImagePlus img, Color3f color,
 					float tr, boolean[] channels) {
 		super(img);
-		volume.setTransparencyType(Volume.TRANSLUCENT);
 		this.transparency = tr;
 		this.color = color;
 		appCreator = new AppearanceCreator(
@@ -114,9 +113,7 @@ public class VolumeRenderer extends Renderer {
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {
 			((Group)axisSwitch.getChild(i)).removeAllChildren();
 		}
-		if (volume.hasData()) {
-			loadQuads();
-		}
+		loadQuads();
 		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 	}
 

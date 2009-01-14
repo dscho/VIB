@@ -1,14 +1,13 @@
 package voltex;
 
 import ij.ImagePlus;
-import java.awt.*;
-import java.awt.image.*;
-import java.awt.color.ColorSpace;
-import javax.media.j3d.*;
-import javax.vecmath.*;
-import java.io.*;
-import java.text.NumberFormat;
-import com.sun.j3d.utils.behaviors.mouse.*;
+import javax.media.j3d.BranchGroup;
+import javax.media.j3d.Canvas3D;
+import javax.media.j3d.Node;
+import javax.media.j3d.Transform3D;
+import javax.media.j3d.View;
+import javax.vecmath.Color3f;
+import javax.vecmath.Point3d;
 
 abstract public class Renderer implements VolRendConstants {
 
@@ -18,7 +17,7 @@ abstract public class Renderer implements VolRendConstants {
 
 	public Renderer(ImagePlus image) {
 		this.image = image;
-		volume = new Volume(image, Volume.TRANSLUCENT);
+		volume = new Volume(image);
 	}
 
 	public int  getThreshold() {

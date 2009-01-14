@@ -23,7 +23,6 @@ public class Orthoslice extends VolumeRenderer {
 	public Orthoslice(ImagePlus img, Color3f color, 
 					float tr, boolean[] channels) {
 		super(img, color, tr, channels);
-		volume.setTransparencyType(Volume.OPAQUE);
 		dimensions[0] = img.getWidth();
 		dimensions[1] = img.getHeight();
 		dimensions[2] = img.getStackSize();
