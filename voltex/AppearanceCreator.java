@@ -149,7 +149,7 @@ public class AppearanceCreator implements VolRendConstants {
 			yData = ((DataBufferInt)dby).getData();
 			zData = ((DataBufferInt)dbz).getData();
 		} else {
-			textureMode = opaque ? Texture.LUMINANCE : Texture.LUMINANCE;
+			textureMode = opaque ? Texture.LUMINANCE : Texture.INTENSITY;
 			componentType = ImageComponent.FORMAT_CHANNEL8;
 			xData = ((DataBufferByte)dbx).getData();
 			yData = ((DataBufferByte)dby).getData();
