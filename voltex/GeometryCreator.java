@@ -2,26 +2,43 @@ package voltex;
 
 import javax.media.j3d.*;
 
+/**
+ * This class is a helper class whose main task is to create Geometry
+ * objects for a specified axis and direction.
+ * The returned GeometryArray objects are QuadArray objects.
+ * 
+ * @author Benjamin Schmid
+ */
 public class GeometryCreator implements VolRendConstants {
 
+	/** Temporary array of the coordinates of one rectangle */
 	private double[] quadCoords = new double[12];
+
+	/** Image data to be displayed */
 	private Volume volume;
-	private float pos;
 
-	public GeometryCreator() {}
-
+	/**
+	 * Initializes this GeometryCreator with the given volume
+	 * @param volume
+	 */
 	public GeometryCreator(Volume volume) {
 		this.volume = volume;
 	}
 
+	/**
+	 * Change the image data for this GeometryCreator
+	 * @param volume
+	 */
 	public void setVolume(Volume volume) {
 		this.volume = volume;
 	}
 
-	public float getPos() {
-		return pos;
-	}
-
+	/**
+	 * Returns the QuadArray for the specified axis and slice index.
+	 * @param direction
+	 * @param index
+	 * @return
+	 */
 	public GeometryArray getQuad(int direction, int index) {
 		calculateQuad(direction, index);
 		QuadArray quadArray = new QuadArray(4, 
@@ -33,11 +50,24 @@ public class GeometryCreator implements VolRendConstants {
 		return quadArray;
 	}
 
+	/**
+	 * Returns the coordinates of the rectangle of the specified
+	 * axis and slice index as a double array.
+	 * @param direction
+	 * @param index
+	 * @return
+	 */
 	public double[] getQuadCoords(int direction, int index) {
 		calculateQuad(direction, index);
 		return quadCoords;
 	}
 
+	/**
+	 * Calculate the quad coordinates for the given axis and index and
+	 * store them in the field.
+	 * @param direction
+	 * @param index
+	 */
 	private void calculateQuad(int direction, int index) {
 		switch(direction) {
 			case X_AXIS: 	
@@ -60,7 +90,6 @@ public class GeometryCreator implements VolRendConstants {
 
 	private void setCurCoordX(int i) {
 		double curX = i * volume.pw + volume.minCoord.x;
-		pos = (float)curX;
 		quadCoords[0] = curX;
 		quadCoords[3] = curX;
 		quadCoords[6] = curX;
@@ -69,7 +98,6 @@ public class GeometryCreator implements VolRendConstants {
 
 	private void setCurCoordY(int i) {
 		double curY = i * volume.ph + volume.minCoord.y;
-		pos = (float)curY;
 		quadCoords[1] = curY;
 		quadCoords[4] = curY;
 		quadCoords[7] = curY;
@@ -78,7 +106,6 @@ public class GeometryCreator implements VolRendConstants {
 
 	private void setCurCoordZ(int i) {
 		double curZ = i * volume.pd + volume.minCoord.z;
-		pos = (float)curZ;
 		quadCoords[2] = curZ;
 		quadCoords[5] = curZ;
 		quadCoords[8] = curZ;
