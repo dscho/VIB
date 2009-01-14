@@ -105,7 +105,9 @@ public class MaterialList extends ScrollPane implements ActionListener,
 		add = new MenuItem("Add Material");
 		popup.add(add);
 		remove = new MenuItem("Remove Material");
-		popup.add(remove);
+		// FIXME: there's no point in adding this option since
+		// it just creates a RuntimeException at the moment.
+		// popup.add(remove);
 		rename = new MenuItem("Rename Material");
 		popup.add(rename);
 		color = new MenuItem("Change Color");
