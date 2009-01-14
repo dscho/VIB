@@ -264,8 +264,11 @@ public class MaterialList extends ScrollPane implements ActionListener,
 				repaint();
 			}
 			if (e.isPopupTrigger()) {
-				lock.setState(locked[e.getY() / lineHeight]);
-				popup.show(this, e.getX(), e.getY());
+				int index = e.getY() / lineHeight;
+				if (index < getItemCount()) {
+					lock.setState(locked[e.getY() / lineHeight]);
+					popup.show(this, e.getX(), e.getY());
+				}
 			}
 		}
 
