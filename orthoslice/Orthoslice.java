@@ -107,7 +107,7 @@ public class Orthoslice extends VolumeRenderer {
 
 		Texture2D tex = appCreator.getTexture(axis, v);
 		shape.getAppearance().setTexture(tex);
-		TexCoordGeneration tg = appCreator.getTg(axis, v);
+		TexCoordGeneration tg = appCreator.getTg(axis);
 		shape.getAppearance().setTexCoordGeneration(tg);
 	}
 }
