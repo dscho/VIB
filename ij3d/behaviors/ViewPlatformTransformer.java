@@ -8,10 +8,31 @@ import javax.media.j3d.TransformGroup;
 import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
-import javax.vecmath.Point3f;
 import javax.vecmath.Vector3d;
-import javax.vecmath.Vector3f;
 
+/**
+ * This class is a helper class which implements some functions for
+ * transforming the view part of the scene graph.
+ * The view transformation consists of 5 single transformations:
+ * 
+ * A center transformation, which is responsible for shifting the view
+ * to a position so that the content of the universe is centered.
+ * 
+ * A zoom transformation, which translates the view backward and forward
+ * 
+ * A translate transformation, which is adjusted manually, either explicitly
+ * or interactively, when the user translates the view with the mouse.
+ * 
+ * An animation transformation, which is changed when the universe is animated.
+ * 
+ * A rotation transformation, which is adjusted manually, either explicitly
+ * or interactively, when the user rotates the view with the mouse.
+ * 
+ * The functions in this class mainly aim to facilitate transformations
+ * related to the image plate.
+ * 
+ * @author bene
+ */
 public class ViewPlatformTransformer {
 
 	protected DefaultUniverse univ;
@@ -44,6 +65,11 @@ public class ViewPlatformTransformer {
 
 	private Transform3D ipToVWorld = new Transform3D();
 
+	/**
+	 * Initialize this ViewPlatformTransformer.
+	 * @param univ
+	 * @param callback
+	 */
 	public ViewPlatformTransformer(DefaultUniverse univ, BehaviorCallback callback) {
 		this.univ = univ;
 		this.canvas = (ImageCanvas3D)univ.getCanvas();
@@ -54,6 +80,11 @@ public class ViewPlatformTransformer {
 		this.translateTG = univ.getTranslateTG();
 	}
 
+	/**
+	 * Moves the view back (related ot the given direction)
+	 * to the specified distance.
+	 * @param distance
+	 */
 	public void zoomTo(Vector3d v, double distance) {
 		v.scale(-distance);
 		zoomXform.set(v);
@@ -61,6 +92,11 @@ public class ViewPlatformTransformer {
 		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 
+	/**
+	 * Moves the view back (i.e. in the z-direction of the image plate)
+	 * to the specified distance.
+	 * @param distance
+	 */
 	public void zoomTo(double distance) {
 		getZDir(zDir);
 		zoomTo(zDir, distance);
@@ -68,6 +104,10 @@ public class ViewPlatformTransformer {
 
 	private Transform3D tmp = new Transform3D();
 	private Point3d p1 = new Point3d(), p2 = new Point3d();
+	/**
+	 * Zoom by the specified amounts of units.
+	 * @param units
+	 */
 	public void zoom(int units) {
 		Image3DUniverse u = (Image3DUniverse)univ;
 		u.getGlobalMaxPoint(p1);
@@ -88,6 +128,10 @@ public class ViewPlatformTransformer {
 		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 
+	/**
+	 * Center the view at the given point.
+	 * @param center
+	 */
 	public void centerAt(Point3d center) {
 		centerV.set(center.x, center.y, center.z);
 		centerXform.set(centerV);
@@ -101,6 +145,12 @@ public class ViewPlatformTransformer {
 	private Point2d originInCanvas = new Point2d();
 	private Point3d originOnIp = new Point3d();
 	private Point3d currentPtOnIp = new Point3d();
+	/**
+	 * Translates the view suitable to a mouse movement by dxPix and dyPix
+	 * on the canvas.
+	 * @param dxPix
+	 * @param dyPix
+	 */
 	public void translateXY(int dxPix, int dyPix) {
 		origin.set(0, 0, 0);
 		canvas.getCenterEyeInImagePlate(eyePos);
@@ -132,6 +182,12 @@ public class ViewPlatformTransformer {
 	}
 
 	private Vector3d v3f = new Vector3d();
+	/**
+	 * Translates the view by the specified distances along the x, y
+	 * and z direction (of the vworld).
+	 * @param v The distances in x, y and z direction, given in vworld
+	 * dimensions.
+	 */
 	public void translate(Vector3d v) {
 		getTranslateTranslation(tmpV);
 		tmpV.sub(v);
@@ -142,6 +198,12 @@ public class ViewPlatformTransformer {
 		transformChanged(BehaviorCallback.TRANSLATE, translateXform);
 	}
 
+	/**
+	 * Translates the view by the specified distances along the x and y
+	 * direction (of the image plate).
+	 * @param dx The distance in x direction, given in vworld dimensions.
+	 * @param dy The distance in y direction, given in vworld dimensions.
+	 */
 	public void translateXY(double dx, double dy) {
 		getXDir(xDir);
 		getYDir(yDir);
@@ -153,6 +215,12 @@ public class ViewPlatformTransformer {
 
 	private AxisAngle4d aa = new AxisAngle4d();
 	private Vector3d tmpV = new Vector3d();
+	/**
+	 * Rotates the view around the specified center by the specified
+	 * angle around the x axis (of the image plate).
+	 * @param center The rotation center
+	 * @param angle The angle (in rad) around the x-axis
+	 */
 	public void rotateX(Point3d center, double angle){
 		// compose the translation to center
 		centerV.set(-center.x, -center.y, -center.z);
@@ -182,6 +250,12 @@ public class ViewPlatformTransformer {
 		rotationTG.setTransform(rotationXform);
 	}
 
+	/**
+	 * Rotates the view around the specified center by the specified
+	 * angle around the y axis (of the image plate).
+	 * @param center The rotation center
+	 * @param angle The angle (in rad) around the y-axis
+	 */
 	public void rotateY(Point3d center, double angle){
 		centerV.set(-center.x, -center.y, -center.z);
 		getZoomTranslation(tmpV);
@@ -210,6 +284,12 @@ public class ViewPlatformTransformer {
 		rotationTG.setTransform(rotationXform);
 	}
 
+	/**
+	 * Rotates the view around the specified center by the specified
+	 * angle around the z axis (of the image plate).
+	 * @param center The rotation center
+	 * @param angle The angle (in rad) around the z-axis
+	 */
 	public void rotateZ(Point3d center, double angle){
 		centerV.set(-center.x, -center.y, -center.z);
 		getZoomTranslation(tmpV);
@@ -240,6 +320,13 @@ public class ViewPlatformTransformer {
 
 	private AxisAngle4d aa2 = new AxisAngle4d();
 	private Transform3D tmp2 = new Transform3D();
+	/**
+	 * Rotates the view around the specified center by the specified
+	 * angles around the x and y axis (of the image plate).
+	 * @param center The rotation center
+	 * @param angleX The angle (in rad) around the x-axis
+	 * @param angleY The angle (in rad) around the y-axis
+	 */
 	public void rotateXY(Point3d center, double angleX, double angleY) {
 
 		centerV.set(-center.x, -center.y, -center.z);
@@ -277,6 +364,11 @@ public class ViewPlatformTransformer {
 		transformChanged(BehaviorCallback.ROTATE, rotationXform);
 	}
 
+	/**
+	 * Store inverse of the overall transformation from the view to vworld
+	 * in the specified Transform3D.
+	 * @param t
+	 */
 	public void viewPlatformToVworldInverse(Transform3D t) {
 		centerV.set(0, 0, 0);
 		getZoomTranslation(tmpV);
@@ -291,6 +383,11 @@ public class ViewPlatformTransformer {
 		t.mul(centerXform, rotationXform);
 	}
 
+	/**
+	 * Store the overall transformation from the view to vworld
+	 * in the specified Transform3D.
+	 * @param t
+	 */
 	public void viewPlatformToVworld(Transform3D t) {
 		centerV.set(0, 0, 0);
 		getZoomTranslation(tmpV);
@@ -307,21 +404,40 @@ public class ViewPlatformTransformer {
 		t.mul(rotationXform, centerXform);
 	}
 
+	/**
+	 * Retrieves the manual translation vector of the view.
+	 * @param v
+	 */
 	public void getTranslateTranslation(Vector3d v) {
 		translateTG.getTransform(tmp);
 		tmp.get(v);
 	}
 
+	/**
+	 * Retrieves the translation vector which is responsible for
+	 * centering the view.
+	 * @param v
+	 */
 	public void getCenterTranslation(Vector3d v) {
 		centerTG.getTransform(tmp);
 		tmp.get(v);
 	}
 
+	/**
+	 * Retrieves the translation vector which is responsible for the current
+	 * zooming and stores it in the given Vector3d.
+	 * @param v
+	 */
 	public void getZoomTranslation(Vector3d v) {
 		zoomTG.getTransform(tmp);
 		tmp.get(v);
 	}
 
+	/**
+	 * Stores the canvas position of the origin of the vworld in
+	 * the specified Point2d.
+	 * @param out
+	 */
 	public void originInCanvas(Point2d out) {
 		origin.set(0, 0, 0);
 		pointInCanvas(origin, out);
@@ -329,6 +445,12 @@ public class ViewPlatformTransformer {
 
 	private Point3d tmpP = new Point3d();	
 	private Transform3D ipToVWorldInverse = new Transform3D();
+	/**
+	 * Calculates where the specified point in the vworld space is
+	 * placed on the canvas and stores the result in the specified Point2d.
+	 * @param in
+	 * @param out
+	 */
 	public void pointInCanvas(Point3d in, Point2d out) {
 		tmpP.set(in);
 		canvas.getImagePlateToVworld(ipToVWorld);
@@ -337,6 +459,11 @@ public class ViewPlatformTransformer {
 		canvas.getPixelLocationFromImagePlate(in, out);
 	}
 
+	/**
+	 * Calculates the distance between the viewer's eye and an
+	 * arbitrary point in the vworld space.
+	 * @return
+	 */
 	public double distanceEyeTo(Point3d p) {
 		canvas.getCenterEyeInImagePlate(eyePos);
 		canvas.getImagePlateToVworld(ipToVWorld);
@@ -344,16 +471,34 @@ public class ViewPlatformTransformer {
 		return eyePos.distance(p);
 	}
 
+	/**
+	 * Calculates the distance between the viewer's eye and the
+	 * origin in the vworld space.
+	 * @return
+	 */
 	public double distanceEyeOrigin() {
 		origin.set(0, 0, 0);
 		return distanceEyeTo(origin);
 	}
 
+	/**
+	 * Transforms the x-direction of the image plate to a normalized
+	 * vector representing this direction in the vworld space.
+	 * 
+	 * @param v Vector3d in which the result in stored.
+	 */
 	public void getXDir(Vector3d v) {
 		canvas.getImagePlateToVworld(ipToVWorld);
 		getXDir(v, ipToVWorld);
 	}
 
+	/**
+	 * Transforms the x-direction of the image plate to a normalized
+	 * vector representing this direction in the vworld space.
+	 * 
+	 * @param v Vector3d in which the result in stored.
+	 * @param ipToVWorld the image plate to vworld transformation.
+	 */
 	public void getXDir(Vector3d v, Transform3D ipToVWorld) {
 		origin.set(0, 0, 0);
 		oneInX.set(1, 0, 0);
@@ -363,11 +508,23 @@ public class ViewPlatformTransformer {
 		v.normalize();
 	}
 
+	/**
+	 * Stores the y-direction in the image plate coordinate system,
+	 * i.e. the direction towards the user, in the given Vector3d.
+	 * @param v Vector3d in which the result in stored.
+	 */
 	public void getYDir(Vector3d v) {
 		canvas.getImagePlateToVworld(ipToVWorld);
 		getYDir(v, ipToVWorld);
 	}
 
+	/**
+	 * Transforms the y-direction of the image plate to a normalized
+	 * vector representing this direction in the vworld space.
+	 * 
+	 * @param v Vector3d in which the result in stored.
+	 * @param ipToVWorld the image plate to vworld transformation.
+	 */
 	public void getYDir(Vector3d v, Transform3D ipToVWorld) {
 		origin.set(0, 0, 0);
 		oneInY.set(0, 1, 0);
@@ -377,11 +534,24 @@ public class ViewPlatformTransformer {
 		v.normalize();
 	}
 
+	/**
+	 * Transforms the z-direction of the image plate to a normalized
+	 * vector representing this direction in the vworld space.
+	 * 
+	 * @param v Vector3d in which the result in stored.
+	 */
 	public void getZDir(Vector3d v) {
 		canvas.getImagePlateToVworld(ipToVWorld);
 		getZDir(v, ipToVWorld);
 	}
 
+	/**
+	 * Transforms the z-direction of the image plate to a normalized
+	 * vector representing this direction in the vworld space.
+	 * 
+	 * @param v Vector3d in which the result in stored.
+	 * @param ipToVWorld the image plate to vworld transformation.
+	 */
 	public void getZDir(Vector3d v, Transform3D ipToVWorld) {
 		origin.set(0, 0, 0);
 		oneInZ.set(0, 0, 1);

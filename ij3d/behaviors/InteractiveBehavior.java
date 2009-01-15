@@ -14,7 +14,14 @@ import java.util.Enumeration;
 import voltex.VolumeRenderer;
 import orthoslice.OrthoGroup;
 
-public class MouseBehavior extends Behavior {
+/**
+ * This class interprets mouse and keyboard events and invokes the
+ * desired actions. It uses the ContentTransformer, Picker and
+ * ViewPlatformTransformer objects of the universe as helpers.
+ * 
+ * @author Benjamin Schmid
+ */
+public class InteractiveBehavior extends Behavior {
 
 	private DefaultUniverse univ;
 	private ImageCanvas3D canvas;
@@ -28,25 +35,69 @@ public class MouseBehavior extends Behavior {
 	private Picker picker;
 	private InteractiveViewPlatformTransformer viewTransformer;
 
-	public static final int B1 = MouseEvent.BUTTON1_DOWN_MASK;
-	public static final int B2 = MouseEvent.BUTTON2_DOWN_MASK;
-	public static final int B3 = MouseEvent.BUTTON3_DOWN_MASK;
+	private static final int B1 = MouseEvent.BUTTON1_DOWN_MASK;
+	private static final int B2 = MouseEvent.BUTTON2_DOWN_MASK;
+	private static final int B3 = MouseEvent.BUTTON3_DOWN_MASK;
 
-	public static final int SHIFT = InputEvent.SHIFT_DOWN_MASK;
-	public static final int CTRL  = InputEvent.CTRL_DOWN_MASK;
+	private static final int SHIFT = InputEvent.SHIFT_DOWN_MASK;
+	private static final int CTRL  = InputEvent.CTRL_DOWN_MASK;
 
-	public static final int PICK_POINT_MASK = MouseEvent.BUTTON1_DOWN_MASK;
-	public static final int DELETE_POINT_MASK = InputEvent.SHIFT_DOWN_MASK |
+	private static final int PICK_POINT_MASK = MouseEvent.BUTTON1_DOWN_MASK;
+	private static final int DELETE_POINT_MASK = InputEvent.SHIFT_DOWN_MASK |
 						MouseEvent.BUTTON1_DOWN_MASK;
 
 
-	public MouseBehavior(DefaultUniverse univ) {
+	/**
+	 * Initializes a new InteractiveBehavior.
+	 * @param univ
+	 */
+	public InteractiveBehavior(DefaultUniverse univ) {
 		this.univ = univ;
 		this.canvas = (ImageCanvas3D)univ.getCanvas();
 		this.contentTransformer = univ.getRotator();
 		this.picker = univ.getPicker();
 		this.viewTransformer = univ.getViewPlatformTransformer();
 		mouseEvents = new WakeupOnAWTEvent[5];
+	}
+
+	/**
+	 * @see Behavior#initialize() Behavior.initialize
+	 */
+	public void initialize() {
+		mouseEvents[0]= new WakeupOnAWTEvent(MouseEvent.MOUSE_DRAGGED);
+		mouseEvents[1]= new WakeupOnAWTEvent(MouseEvent.MOUSE_PRESSED);
+		mouseEvents[2]= new WakeupOnAWTEvent(MouseEvent.MOUSE_RELEASED);
+		mouseEvents[3]= new WakeupOnAWTEvent(MouseEvent.MOUSE_WHEEL);
+		mouseEvents[4]= new WakeupOnAWTEvent(AWTEvent.KEY_EVENT_MASK);
+		wakeupCriterion = new WakeupOr(mouseEvents);
+		this.wakeupOn(wakeupCriterion);
+	}
+
+	/**
+	 * @see Behavior#processStimulus(Enumeration) Behavior.processStimulus
+	 */
+	public void processStimulus(Enumeration criteria) {
+		toolID = Toolbar.getToolId();
+		if(toolID != Toolbar.HAND && toolID != Toolbar.MAGNIFIER &&
+				toolID != Toolbar.POINT) {
+			wakeupOn (wakeupCriterion);
+			return;
+		}
+		WakeupOnAWTEvent wakeup;
+		AWTEvent[] events;
+		AWTEvent evt;
+		while(criteria.hasMoreElements()) {
+			wakeup = (WakeupOnAWTEvent)criteria.nextElement();
+			events = (AWTEvent[])wakeup.getAWTEvent();
+			if(events.length > 0) {
+				evt = events[events.length -1];
+				if(evt instanceof MouseEvent)
+					doProcess((MouseEvent)evt);
+				if(evt instanceof KeyEvent)
+					doProcess((KeyEvent)evt);
+			}
+		}
+		wakeupOn(wakeupCriterion);
 	}
 
 	private boolean shouldRotate(int mask, int toolID) {
@@ -82,41 +133,11 @@ public class MouseBehavior extends Behavior {
 		return (mask & (onmask | offmask)) == onmask;
 	}
 
-	public void initialize() {
-		mouseEvents[0]= new WakeupOnAWTEvent(MouseEvent.MOUSE_DRAGGED);
-		mouseEvents[1]= new WakeupOnAWTEvent(MouseEvent.MOUSE_PRESSED);
-		mouseEvents[2]= new WakeupOnAWTEvent(MouseEvent.MOUSE_RELEASED);
-		mouseEvents[3]= new WakeupOnAWTEvent(MouseEvent.MOUSE_WHEEL);
-		mouseEvents[4]= new WakeupOnAWTEvent(AWTEvent.KEY_EVENT_MASK);
-		wakeupCriterion = new WakeupOr(mouseEvents);
-		this.wakeupOn(wakeupCriterion);
-	}
-
-	public void processStimulus(Enumeration criteria) {
-		toolID = Toolbar.getToolId();
-		if(toolID != Toolbar.HAND && toolID != Toolbar.MAGNIFIER &&
-				toolID != Toolbar.POINT) {
-			wakeupOn (wakeupCriterion);
-			return;
-		}
-		WakeupOnAWTEvent wakeup;
-		AWTEvent[] events;
-		AWTEvent evt;
-		while(criteria.hasMoreElements()) {
-			wakeup = (WakeupOnAWTEvent)criteria.nextElement();
-			events = (AWTEvent[])wakeup.getAWTEvent();
-			if(events.length > 0) {
-				evt = events[events.length -1];
-				if(evt instanceof MouseEvent)
-					doProcess((MouseEvent)evt);
-				if(evt instanceof KeyEvent)
-					doProcess((KeyEvent)evt);
-			}
-		}
-		wakeupOn(wakeupCriterion);
-	}
-
-	public void doProcess(KeyEvent e) {
+	/**
+	 * Process key events.
+	 * @param e
+	 */
+	private void doProcess(KeyEvent e) {
 		int id = e.getID();
 
 		if(id == KeyEvent.KEY_RELEASED || id == KeyEvent.KEY_TYPED)
@@ -176,7 +197,11 @@ public class MouseBehavior extends Behavior {
 		}
 	}
 
-	public void doProcess(MouseEvent e) {
+	/**
+	 * Process mouse events.
+	 * @param e
+	 */
+	private void doProcess(MouseEvent e) {
 		int id = e.getID();
 		int mask = e.getModifiersEx();
 		Content c = univ.getSelected();
@@ -187,7 +212,7 @@ public class MouseBehavior extends Behavior {
 				if(c != null)
 					c.showPointList(true);
 				if(mask == PICK_POINT_MASK) {
-					picker.pickPoint(c, e);
+					picker.addPoint(c, e);
 				} else if(mask == DELETE_POINT_MASK) {
 					picker.deletePoint(c, e);
 				}
