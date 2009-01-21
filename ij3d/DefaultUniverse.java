@@ -16,7 +16,6 @@ import com.sun.j3d.utils.picking.behaviors.PickingCallback;
 
 import com.sun.j3d.utils.behaviors.keyboard.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
-import com.sun.j3d.utils.geometry.Sphere;
 import com.sun.j3d.utils.universe.*;
 
 import ij3d.behaviors.BehaviorCallback;

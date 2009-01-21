@@ -3,9 +3,7 @@ package marchingcubes;
 import java.util.List;
 import java.util.ArrayList;
 import javax.vecmath.Point3f;
-import ij.ImagePlus;
 import ij.IJ;
-import ij.measure.Calibration;
 
 public final class MCCube {
 	// default size of the cubes
@@ -140,7 +138,7 @@ public final class MCCube {
 		return caseNumber;
 	}
 
-	/* 
+	/** 
 	 * An encapsulating class to avoid thread collisions on static fields.
 	 */
 	private static final class Carrier {
@@ -153,6 +151,13 @@ public final class MCCube {
 		}
 	}
 
+	/**
+	 * Create a list of triangles from the specified image data and the
+	 * given isovalue.
+	 * @param volume
+	 * @param thresh
+	 * @return
+	 */
 	public static final List<Point3f> getTriangles(
 				voltex.Volume volume, int thresh){
 		List<Point3f> tri = new ArrayList<Point3f>();

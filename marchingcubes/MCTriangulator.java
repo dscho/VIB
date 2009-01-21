@@ -9,9 +9,6 @@ import java.util.List;
 
 import vib.Resample_;
 
-import ij3d.ColorTable;
-import voltex.Volume;
-
 import isosurface.Triangulator;
 
 public class MCTriangulator implements Triangulator {
