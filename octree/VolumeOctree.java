@@ -4,7 +4,7 @@ import ij3d.UniverseListener;
 import ij3d.Content;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -83,7 +83,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 		int maxLevel = 1;
 
 		try {
-			props.load(new FileReader(new File(imageDir, "props.txt")));
+			props.load(new FileInputStream(new File(imageDir, "props.txt")));
 
 			xdim = Integer.parseInt(props.getProperty("width"));
 			ydim = Integer.parseInt(props.getProperty("height"));
