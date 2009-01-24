@@ -64,6 +64,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	String defaultInstructions = "Mark the current point selection as:";
 
 	public void recreatePointsPanel() {
+
 		// Alias this for convenience:
 		NamedPointSet points = plugin.points;
 		// Remove all the action listeners:
@@ -251,7 +252,6 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		newText += "x: " + x + ", y: " + y + ", z: " + z;
 		coordinateLabels[i].setText(newText);
 		showButtons[i].setEnabled(true);
-		pack();
 	}
 
 	public void setFineTuning( boolean busy ) {
@@ -637,6 +637,7 @@ public class Name_Points implements PlugIn {
 						   point.x,
 						   point.y,
 						   point.z );
+			dialog.pack();
 
 		}
 
@@ -1124,6 +1125,7 @@ public class Name_Points implements PlugIn {
 			System.out.println("Converted to our co-ordinates: "+xWorld+","+yWorld+","+zWorld);
 
 			dialog.setCoordinateLabel(i,xWorld,yWorld,zWorld);
+			dialog.pack();
 
 			NamedPointWorld point = points.get(i);
 			point.x = xWorld;
