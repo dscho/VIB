@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.ListIterator;
+import java.util.HashMap;
 import java.util.regex.*;
 import java.text.DecimalFormat;
 
@@ -43,11 +44,22 @@ import vib.transforms.FastMatrixTransform;
 class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 	Label[] coordinateLabels;
+
 	Button[] markButtons;
 	Button[] showButtons;
 	Button[] fineTuneButtons;
 	Button[] renameButtons;
 	Button[] deleteButtons;
+
+	HashMap< Button, Integer > buttonToAction;
+	HashMap< Button, Integer > buttonToIndex;
+
+	static final int MARK = 1;
+	static final int SHOW = 2;
+	static final int RESET = 3;
+	static final int FINE_TUNE = 4;
+	static final int RENAME = 5;
+	static final int DELETE = 6;
 
 	Label instructions;
 	Panel pointsPanel;
@@ -66,7 +78,6 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	String defaultInstructions = "Mark the current point selection as:";
 
 	public void recreatePointsPanel() {
-
 		// Alias this for convenience:
 		NamedPointSet points = plugin.points;
 		// Remove all the action listeners:
@@ -83,49 +94,68 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		fineTuneButtons = new Button[points.size()];
 		renameButtons = new Button[points.size()];
 		deleteButtons = new Button[points.size()];
+		buttonToIndex = new HashMap< Button, Integer >();
+		buttonToAction = new HashMap< Button, Integer >();
 
 		// Now add everything again:
 		pointsPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 
+		Button b;
 		int counter = 0;
 		Iterator<NamedPointWorld> i;
 		for (i=points.listIterator();i.hasNext();) {
 			NamedPointWorld p = i.next();
+
 			c.gridx = 0;
 			c.gridy = counter;
 			c.anchor = GridBagConstraints.LINE_END;
-			markButtons[counter] = new Button(p.getName());
-			markButtons[counter].addActionListener(this);
-			pointsPanel.add(markButtons[counter],c);
+			markButtons[counter] = b = new Button(p.getName());
+			b.addActionListener(this);
+			buttonToIndex.put( b, counter );
+			buttonToAction.put( b, MARK );
+			pointsPanel.add( b, c );
+
 			c.anchor = GridBagConstraints.LINE_START;
 			c.gridx = 1;
 			coordinateLabels[counter] = new Label("<unset>");
-			pointsPanel.add(coordinateLabels[counter],c);
+			pointsPanel.add( coordinateLabels[counter], c );
+
 			c.anchor = GridBagConstraints.LINE_START;
 			c.gridx = 2;
-			showButtons[counter] = new Button("Show");
-			showButtons[counter].addActionListener(this);
-			showButtons[counter].setEnabled(false);
-			pointsPanel.add(showButtons[counter],c);
+			showButtons[counter] = b = new Button("Show");
+			b.addActionListener(this);
+			b.setEnabled(false);
+			buttonToIndex.put( b, counter );
+			buttonToAction.put( b, SHOW );
+			pointsPanel.add( b, c );
+
 			c.anchor = GridBagConstraints.LINE_START;
 			c.gridx = 3;
-			fineTuneButtons[counter] = new Button("Fine Tune");
-			fineTuneButtons[counter].addActionListener(this);
-			fineTuneButtons[counter].setEnabled(true);
-			pointsPanel.add(fineTuneButtons[counter],c);
+			fineTuneButtons[counter] = b = new Button("Fine Tune");
+			b.addActionListener(this);
+			b.setEnabled(true);
+			buttonToIndex.put( b, counter );
+			buttonToAction.put( b, FINE_TUNE );
+			pointsPanel.add( b, c );
+
 			c.anchor = GridBagConstraints.LINE_START;
 			c.gridx = 4;
-			renameButtons[counter] = new Button("Rename");
-			renameButtons[counter].addActionListener(this);
-			renameButtons[counter].setEnabled(true);
-			pointsPanel.add(renameButtons[counter],c);
+			renameButtons[counter] = b = new Button("Rename");
+			b.addActionListener(this);
+			b.setEnabled(true);
+			buttonToIndex.put( b, counter );
+			buttonToAction.put( b, RENAME );
+			pointsPanel.add( b, c );
+
 			c.anchor = GridBagConstraints.LINE_START;
 			c.gridx = 5;
-			deleteButtons[counter] = new Button("Delete");
-			deleteButtons[counter].addActionListener(this);
-			deleteButtons[counter].setEnabled(true);
-			pointsPanel.add(deleteButtons[counter],c);
+			deleteButtons[counter] = b = new Button("Delete");
+			b.addActionListener(this);
+			b.setEnabled(true);
+			buttonToIndex.put( b, counter );
+			buttonToAction.put( b, DELETE );
+			pointsPanel.add( b, c );
 
 			if (p.set)
 				setCoordinateLabel(counter,
@@ -287,35 +317,26 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
-		// FIXME: this is ridiculous
-		for (int i=0; i < markButtons.length; ++i) {
-			if(source == markButtons[i]) {
+		Integer index = buttonToIndex.get( source );
+		if( index != null ) {
+			int i = index.intValue();
+			int action = buttonToAction.get( source );
+			switch (action) {
+			case MARK:
 				plugin.mark(i);
-				break;
-			}
-		}
-		for (int i=0; i < showButtons.length; ++i) {
-			if(source == showButtons[i]) {
+				return;
+			case SHOW:
 				plugin.show(i);
-				break;
-			}
-		}
-		for (int i=0; i < fineTuneButtons.length; ++i) {
-			if(source == fineTuneButtons[i]) {
+				return;
+			case FINE_TUNE:
 				plugin.fineTune(i);
-				break;
-			}
-		}
-		for (int i=0; i < renameButtons.length; ++i) {
-			if(source == renameButtons[i]) {
+				return;
+			case RENAME:
 				plugin.rename(i);
-				break;
-			}
-		}
-		for (int i=0; i < deleteButtons.length; ++i) {
-			if(source == deleteButtons[i]) {
+				return;
+			case DELETE:
 				plugin.delete(i);
-				break;
+				return;
 			}
 		}
 		if(source == addButton) {
