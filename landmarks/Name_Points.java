@@ -1036,54 +1036,39 @@ public class Name_Points implements PlugIn {
 		Roi roi = imp.getRoi();
 		if (roi!=null && roi.getType()==Roi.POINT) {
 			Polygon p = roi.getPolygon();
-			ImageProcessor processor = imp.getProcessor();
-			/*
-			  Calibration cal = imp.getCalibration();
-			  ip.setCalibrationTable(cal.getCTable());
-			*/
 			if(p.npoints > 1) {
 				IJ.error("You can only have one point selected to mark.");
 				return;
 			}
 			
 			System.out.println("Fetched ROI with co-ordinates: "+p.xpoints[0]+", "+p.ypoints[0]);
-			
-			/* The ROI co-ordinates do seem to be indexes into the
-			   samples in the image stack as opposed to values
-			   modified by the view (zoom, offset) or calibration.
+
+			/* The ROI co-ordinates are indexes into the
+			   samples in the image stack as opposed to
+			   values modified by the view (zoom, offset)
+			   or calibration.
 			 */
-			  
+
 			int x = p.xpoints[0];
 			int y = p.ypoints[0];
 			int z = imp.getCurrentSlice()-1;
 
-			System.out.println("Converted to our co-ordinates: "+x+","+y+","+z);
-			
-			if( false ) {
-				
-				// Add a crosshair to the point we've just marked.
-				
-				processor.setColor(Toolbar.getForegroundColor());
-				processor.setLineWidth(1);
-				processor.moveTo(x+1,y);
-				processor.lineTo(x+5,y);
-				processor.moveTo(x-1,y);
-				processor.lineTo(x-5,y);
-				processor.moveTo(x,y+1);
-				processor.lineTo(x,y+5);
-				processor.moveTo(x,y-1);
-				processor.lineTo(x,y-5);
-				imp.updateAndDraw();
+			Calibration c = imp.getCalibration();
+			double xWorld = x, yWorld = y, zWorld = z;
+			if( c != null ) {
+				xWorld = x * c.pixelWidth;
+				yWorld = y * c.pixelHeight;
+				zWorld = z * c.pixelDepth;
 			}
+
+			System.out.println("Converted to our co-ordinates: "+xWorld+","+yWorld+","+zWorld);
 			
-			// System.out.println("Got x: " + x + ", y: " + y + ", z: " + z);
-			
-			dialog.setCoordinateLabel(i,x,y,z);
-			
+			dialog.setCoordinateLabel(i,xWorld,yWorld,zWorld);
+
 			NamedPointWorld point = points.get(i);
-			point.x = x;
-			point.y = y;
-			point.z = z;
+			point.x = xWorld;
+			point.y = yWorld;
+			point.z = zWorld;
 			point.set = true;
 			
 		} else {

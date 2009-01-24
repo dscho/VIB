@@ -160,16 +160,22 @@ public class NamedPointSet {
 	void showAsROI(int i, ImagePlus imp) {
 		NamedPointWorld p = pointsWorld.get(i);
 		assert p.set;
-		int slice = (int)p.z;
+		double x = p.x;
+		double y = p.y;
+		double z = p.z;
+		Calibration c = imp.getCalibration();
+		if( c != null ) {
+			x /= c.pixelWidth;
+			y /= c.pixelHeight;
+			z /= c.pixelDepth;
+		}
+		int slice = (int)z;
 		if(slice < 0)
 			slice = 0;
 		if(slice > imp.getStackSize())
 			slice = imp.getStackSize()-1;
 		imp.setSlice(slice+1);
-		ImageCanvas canvas = imp.getCanvas();
-		Roi roi = new PointRoi(canvas.screenX((int)p.x),
-				       canvas.screenY((int)p.y),
-				       imp);
+		Roi roi = new PointRoi( (int)x, (int)y );
 		imp.setRoi(roi);
 	}
 
