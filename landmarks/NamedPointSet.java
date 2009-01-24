@@ -266,7 +266,13 @@ public class NamedPointSet {
 */
 
 	public void add(NamedPointWorld namedPointWorld) {
-		pointsWorld.add(namedPointWorld);
+		synchronized (pointsWorld) {
+			String name = namedPointWorld.getName();
+			NamedPointWorld existing = get( name );
+			if( existing != null )
+				throw new RuntimeException( "Trying to add a point of name '" + name + "', but this NamedPointSet already has one." );
+			pointsWorld.add( namedPointWorld );
+		}
 	}
 
 	/* The file loading here is complicated by the large number of
