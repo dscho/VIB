@@ -368,6 +368,10 @@ public class NamedPointSet {
 		throw new PointsFileException( "None of the points filenames corresponding to '" + imageFilename + "' could be loaded." );
 	}
 
+	public static NamedPointSet fromFile( String pointsFilename ) throws PointsFileException {
+		return fromFile( pointsFilename, null, null );
+	}
+
 	public static NamedPointSet fromFile( String pointsFilename, ImagePlus imagePlus, String imageFilename ) throws PointsFileException {
 		File f = new File( pointsFilename );
 		if( ! f.exists() ) {
@@ -376,12 +380,20 @@ public class NamedPointSet {
 		return fromFile( f, imagePlus, imageFilename );
 	}
 
+	public static NamedPointSet fromFile( File f ) throws PointsFileException {
+		return fromFile( f, null, null );
+	}
+
 	public static NamedPointSet fromFile( File f, ImagePlus imagePlus, String imageFilename ) throws PointsFileException {
 		try {
 			return fromBufferedReader( new BufferedReader( new FileReader(f) ), imagePlus, imageFilename );
 		} catch( FileNotFoundException e ) {
 			throw new PointsFileException( "Couldn't find the file: "+f.getAbsolutePath() );
 		}
+	}
+
+	public static NamedPointSet fromString( String s ) {
+		return fromString( s );
 	}
 
 	// Ultimately, we turn all of these files into a String, and try to load that:
