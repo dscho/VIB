@@ -340,7 +340,7 @@ public class NamedPointSet {
 	}
 
 	public static NamedPointSet forImage( ImagePlus imagePlus, String imageFilename ) throws PointsFileException {
-		String [] possibleExtensions = { ".points", ".points.R", ".points.xml" };
+		String [] possibleExtensions = { ".points.xml", ".points.R", ".points"  };
 		int lastDot = imageFilename.lastIndexOf( "." );
 		String withoutExtension = null;
 		if( lastDot >= 0 )
