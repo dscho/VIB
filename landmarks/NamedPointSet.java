@@ -208,13 +208,15 @@ public class NamedPointSet {
 		result.append("  <!ATTLIST pointworld y CDATA #IMPLIED>\n");
 		result.append("  <!ATTLIST pointworld z CDATA #IMPLIED>\n");
 		result.append("]>\n\n");
-		result.append("<namedpointset version=\"1.0\">");
+		result.append("<namedpointset version=\"1.0\">\n");
 		Iterator<NamedPointWorld> i = pointsWorld.iterator();
 		while( i.hasNext() ) {
 			NamedPointWorld p = i.next();
+			result.append("  ");
 			result.append(p.toXMLElement());
+			result.append("\n");
 		}
-		result.append("</namedpointset>");
+		result.append("</namedpointset>\n");
 		return result.toString();
 	}
 
