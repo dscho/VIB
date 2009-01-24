@@ -103,7 +103,7 @@ public class NamedPointWorld {
 		result.append( PathAndFillManager.escapeForXMLAttributeValue(name) );
 		result.append( "\"");
 		if( set ) {
-			result.append( "x=\"" );
+			result.append( " x=\"" );
 			result.append( x );
 			result.append( "\" y=\"" );
 			result.append( y );
