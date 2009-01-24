@@ -124,14 +124,14 @@ public class NamedPointSet {
 		return pointsWorld.listIterator();
 	}
 
-        public NamedPointSet transformPointsWith( OrderedTransformations o ) {
+	public NamedPointSet transformPointsWith( OrderedTransformations o ) {
 		NamedPointSet result = new NamedPointSet();
-                Iterator i0;
-                for( i0 = pointsWorld.listIterator(); i0.hasNext(); ) {
-                        NamedPointWorld p = (NamedPointWorld)i0.next();
-                        NamedPointWorld transformed = p.transformWith(o);
+		Iterator i0;
+		for( i0 = pointsWorld.listIterator(); i0.hasNext(); ) {
+			NamedPointWorld p = (NamedPointWorld)i0.next();
+			NamedPointWorld transformed = p.transformWith(o);
 			result.add( transformed );
-                }
+		}
 		return result;
 	}
 
@@ -151,12 +151,12 @@ public class NamedPointSet {
 	}
 
 	public NamedPointWorld get(String name) {
-                Iterator<NamedPointWorld> i0;
-                for(i0=pointsWorld.listIterator();i0.hasNext();) {
-                        NamedPointWorld p=i0.next();
-                        if( p.getName().equals(name) )
+		Iterator<NamedPointWorld> i0;
+		for(i0=pointsWorld.listIterator();i0.hasNext();) {
+			NamedPointWorld p=i0.next();
+			if( p.getName().equals(name) )
 				return p;
-                }
+		}
 		return null;
 	}
 
@@ -277,34 +277,34 @@ public class NamedPointSet {
 
 	     test.points.xml
 	     test.tif.points.xml
-             test.points.R
-             test.tif.points.R
-             test.points
-             test.tif.points
+	     test.points.R
+	     test.tif.points.R
+	     test.points
+	     test.tif.points
 
-           If the file has no extension, e.g. it's called "test", we
-           try each of the following filenames:
+	   If the file has no extension, e.g. it's called "test", we
+	   try each of the following filenames:
 
-             test.points.xml
-             test.points.R
+	     test.points.xml
+	     test.points.R
 	     test.points
 
-           For each file that exists, we try to parse it as:
+	   For each file that exists, we try to parse it as:
 
-             - An XML file:
-                 - The new standard format.
+	     - An XML file:
+		 - The new standard format.
 		 - Co-ordinates are in world space (i.e. scaled by
-                   calibration).
-                 
+		   calibration).
+
 	     - An "R" file:
-	         - This is really a tab separated values file.
-                 - Co-ordinates are again in world space.
+		 - This is really a tab separated values file.
+		 - Co-ordinates are again in world space.
 
 	     - A pseudo-YAML file:
-	         - Co-ordinates are integer indicies of the samples,
-                   with Z co-ordinates 0-indexed.
+		 - Co-ordinates are integer indicies of the samples,
+		   with Z co-ordinates 0-indexed.
 		 - This format should no longer be used, but is
-                   supported to load old files.
+		   supported to load old files.
 
 	     - [FIXME: could add Torsten's IGS files here if I had the specification.]
 
@@ -313,11 +313,11 @@ public class NamedPointSet {
 	   to each, since we may discover that we need to fetch the
 	   calibration data, and either:
 
-             - imagePlus non-null: The ImagePlus is already loaded
+	     - imagePlus non-null: The ImagePlus is already loaded
 	       (very efficient to get the calibration)
 
-             - or imageFilename non-null: the image has to be loaded
-               from that file to get the calibraion (very inefficient)
+	     - or imageFilename non-null: the image has to be loaded
+	       from that file to get the calibraion (very inefficient)
 
 	     - both are null: return an error if the file is pseudo-YAML
 
@@ -405,7 +405,7 @@ public class NamedPointSet {
 			// Should never occur from a StringReader...
 			throw new PointsFileException( "BUG: FileNotFoundException while parsing XML from a String: " + e );
 		} catch( IOException e ) {
-			// Should never occur from a String 
+			// Should never occur from a String
 			throw new PointsFileException( "BUG: IOException while parsing XML from a String: " + e );
 		}
 
@@ -538,21 +538,21 @@ public class NamedPointSet {
 		}
 	}
 
-        public ArrayList<String> namesSharedWith( NamedPointSet other) {
+	public ArrayList<String> namesSharedWith( NamedPointSet other) {
 
-                ArrayList<String> common = new ArrayList<String>();
-                Iterator i0;
-                for(i0=listIterator();i0.hasNext();) {
-                        String pointName = ((NamedPoint)i0.next()).name;
-                        for(Iterator i1=other.listIterator();i1.hasNext();) {
-                                if (pointName.equals(((NamedPoint)i1.next()).name)) {
-                                        common.add(new String(pointName));
-                                        break;
-                                }
-                        }
-                }
-                return common;
-        }
+		ArrayList<String> common = new ArrayList<String>();
+		Iterator i0;
+		for(i0=listIterator();i0.hasNext();) {
+			String pointName = ((NamedPoint)i0.next()).name;
+			for(Iterator i1=other.listIterator();i1.hasNext();) {
+				if (pointName.equals(((NamedPoint)i1.next()).name)) {
+					common.add(new String(pointName));
+					break;
+				}
+			}
+		}
+		return common;
+	}
 
 	public Point3d[] getPoint3DArrayForNames( String [] names ) {
 		Point3d [] result = new Point3d[names.length];
@@ -565,6 +565,5 @@ public class NamedPointSet {
 		}
 		return result;
 	}
-
 
 }
