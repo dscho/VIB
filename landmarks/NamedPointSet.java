@@ -504,7 +504,7 @@ public class NamedPointSet {
 			if( c != null ) {
 				xSpacing = c.pixelWidth;
 				ySpacing = c.pixelHeight;
-				ySpacing = c.pixelDepth;
+				zSpacing = c.pixelDepth;
 			}
 
 			String [] lines = s.split("[\\r\\n]+");
