@@ -30,6 +30,8 @@ import java.util.ListIterator;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.HashSet;
+import java.util.Set;
 import math3d.Point3d;
 import vib.transforms.FastMatrixTransform;
 import vib.transforms.OrderedTransformations;
@@ -583,4 +585,43 @@ public class NamedPointSet {
 		return result;
 	}
 
+	public Set< String > getNamesAsSet( ) {
+		HashSet< String > namesSet = new HashSet< String >();
+		for( NamedPointWorld npw : pointsWorld ) {
+			namesSet.add( npw.getName() );
+		}
+		return namesSet;
+	}
+
+	public boolean equals( NamedPointSet other ) {
+		Set< String > thisNames = getNamesAsSet();
+		Set< String > otherNames = other.getNamesAsSet();
+		if( ! thisNames.equals( otherNames ) )
+			return false;
+		double epsilon = 0.00001;
+		for( String name : thisNames ) {
+			NamedPointWorld thisNPW = get( name );
+			NamedPointWorld otherNPW = other.get( name );
+			if( thisNPW.set != otherNPW.set )
+				return false;
+			if( thisNPW.set ) {
+				if( Math.abs( thisNPW.x - otherNPW.x ) > epsilon )
+					return false;
+				if( Math.abs( thisNPW.y - otherNPW.y ) > epsilon )
+					return false;
+				if( Math.abs( thisNPW.z - otherNPW.z ) > epsilon )
+					return false;
+			}
+		}
+		return true;
+	}
+
+	public String toString( ) {
+		StringBuffer sb = new StringBuffer();
+		for( NamedPointWorld npw : pointsWorld ) {
+			sb.append( npw.toString() );
+			sb.append( "\n" );
+		}
+		return sb.toString();
+	}
 }
