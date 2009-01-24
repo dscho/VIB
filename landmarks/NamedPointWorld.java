@@ -36,47 +36,47 @@ import vib.FastMatrix;
 
 public class NamedPointWorld {
 
-        public double x,y,z;
-        public boolean set;
+	public double x,y,z;
+	public boolean set;
 
-        String name;
+	String name;
 
-        public NamedPointWorld(String name,
-                          double x,
-                          double y,
-                          double z) {
-                this.x = x;
-                this.y = y;
-                this.z = z;
-                this.name = name;
-                this.set = true;
-        }
+	public NamedPointWorld(String name,
+			  double x,
+			  double y,
+			  double z) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.name = name;
+		this.set = true;
+	}
 
-        public NamedPointWorld(String name) {
-                this.name = name;
-                this.set = false;
-        }
+	public NamedPointWorld(String name) {
+		this.name = name;
+		this.set = false;
+	}
 
-        public void transformWith(FastMatrix m) {
-                m.apply(x,y,z);
-                x=m.x;
-                y=m.y;
-                z=m.z;
-        }
+	public void transformWith(FastMatrix m) {
+		m.apply(x,y,z);
+		x=m.x;
+		y=m.y;
+		z=m.z;
+	}
 
-        public NamedPointWorld transformWith(OrderedTransformations o) {
-                double[] result=new double[3];
-                o.apply(x,y,z,result);
-                return new NamedPointWorld(name,result[0],result[1],result[2]);
-        }
+	public NamedPointWorld transformWith(OrderedTransformations o) {
+		double[] result=new double[3];
+		o.apply(x,y,z,result);
+		return new NamedPointWorld(name,result[0],result[1],result[2]);
+	}
 
-        public static String escape(String s) {
-                String result = s.replaceAll("\\\\","\\\\\\\\");
-                result = result.replaceAll("\\\"","\\\\\"");
-                return result;
-        }
+	public static String escape(String s) {
+		String result = s.replaceAll("\\\\","\\\\\\\\");
+		result = result.replaceAll("\\\"","\\\\\"");
+		return result;
+	}
 
-        public static String unescape(String s) {
+	public static String unescape(String s) {
 		StringBuffer result = new StringBuffer( s );
 		int startNextSearch = 0;
 		while( true ) {
@@ -86,15 +86,15 @@ public class NamedPointWorld {
 			result.deleteCharAt(nextBackslash);
 			startNextSearch = nextBackslash + 1;
 		}
-        }
+	}
 
-        public Point3d toPoint3d() {
-                return new Point3d(x,y,z);
-        }
+	public Point3d toPoint3d() {
+		return new Point3d(x,y,z);
+	}
 
-        public String getName() {
-                return name;
-        }
+	public String getName() {
+		return name;
+	}
 
 	public String toXMLElement() {
 		StringBuffer result = new StringBuffer("<pointworld set=\"");
@@ -115,15 +115,15 @@ public class NamedPointWorld {
 		return result.toString();
 	}
 
-        public String toYAML() {
-                String line = "\""+
-                        escape(name)+
-                        "\": [ "+
-                        x+", "+
-                        y+", "+
-                        z+" ]";
-                return line;
-        }
+	public String toYAML() {
+		String line = "\""+
+			escape(name)+
+			"\": [ "+
+			x+", "+
+			y+", "+
+			z+" ]";
+		return line;
+	}
 
 	public String toString() {
 		return ""+name+
