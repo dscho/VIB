@@ -62,41 +62,25 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	Button chooseTemplate;
 	
         String defaultInstructions = "Mark the current point selection as:";
-	
-	public PointsDialog(String title,
-			    NamedPointSet points,
-			    ArchiveClient archiveClient,
-			    String loadedTemplateFilename,
-			    Name_Points plugin) {
-		
-		super(IJ.getInstance(),title,false);
-		
-		this.plugin = plugin;
-		this.archiveClient = archiveClient;
-		
+
+	public void recreatePointsPanel() {
+		// Alias this for convenience:
+		NamedPointSet points = plugin.points;
+		// Remove all the action listeners:
+		for( Component c : pointsPanel.getComponents() ) {
+			if( c instanceof Button )
+				((Button)c).removeActionListener(this);
+		}
+		// Remove all of them:
+		pointsPanel.removeAll();
+		// Make sure the arrays are the right size:
 		coordinateLabels = new Label[points.size()];
 		markButtons = new Button[points.size()];
 	        showButtons = new Button[points.size()];
 		fineTuneButtons = new Button[points.size()];
 		renameButtons = new Button[points.size()];
-		
-		setLayout(new GridBagLayout());
-		
-		GridBagConstraints outerc=new GridBagConstraints();
-		
-		Panel instructionsPanel = new Panel();
-		pointsPanel = new Panel();
-		buttonsPanel = new Panel();
-		
-		instructions = new Label( defaultInstructions );
-		instructionsPanel.setLayout(new BorderLayout());
-		instructionsPanel.add(instructions,BorderLayout.WEST);
-		
-		outerc.gridx = 0;
-		outerc.gridy = 0;
-		outerc.anchor = GridBagConstraints.LINE_START;
-		add(instructionsPanel,outerc);
-		
+
+		// Now add everything again:
 		pointsPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		
@@ -140,11 +124,46 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 						   p.z);
 			++counter;
 		}
-		
+	}
+
+	public PointsDialog(String title,
+			    ArchiveClient archiveClient,
+			    String loadedTemplateFilename,
+			    Name_Points plugin) {
+
+		super(IJ.getInstance(),title,false);
+
+		this.plugin = plugin;
+		this.archiveClient = archiveClient;
+
+
+		setLayout(new GridBagLayout());
+
+		GridBagConstraints outerc=new GridBagConstraints();
+
+		Panel instructionsPanel = new Panel();
+		pointsPanel = new Panel();
+		buttonsPanel = new Panel();
+
+		instructions = new Label( defaultInstructions );
+		instructionsPanel.setLayout(new BorderLayout());
+		instructionsPanel.add(instructions,BorderLayout.WEST);
+
+		outerc.gridx = 0;
+		outerc.gridy = 0;
+		outerc.anchor = GridBagConstraints.LINE_START;
+		add(instructionsPanel,outerc);
+
+		recreatePointsPanel();
+
 		outerc.gridy = 1;
 		outerc.anchor = GridBagConstraints.CENTER;
 		add(pointsPanel,outerc);
-		
+
+		addButton = new Button("Add New Point");
+		addButton.addActionListener(this);
+		buttonsPanel.add(addButton);
+
 		if( archiveClient == null ) {
 			
 			saveButton = new Button("Save");
@@ -208,7 +227,9 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	Button getMyButton;
 	Button getAnyButton;
 	Button uploadButton;
-	
+
+	Button addButton;
+
 	public void reset(int i) {
 		assert i>0;
 		assert i<coordinateLabels.length;
@@ -280,7 +301,9 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 				break;
 			}
 		}
-		if(source == closeButton) {
+		if(source == addButton) {
+			plugin.addNewPoint();
+		} else if (source == closeButton) {
 			dispose();
 		} else if (source == saveButton) {
 			plugin.save();
@@ -383,6 +406,12 @@ public class Name_Points implements PlugIn {
 		} else {
 			IJ.error("Couldn't rename point: there already is one called \"" + newName + "\"" );
 		}
+	}
+
+	void addNewPoint() {
+		NamedPointWorld npw = points.addNewPoint();
+		dialog.recreatePointsPanel();
+		dialog.pack();
 	}
 
 	void fineTune(int i) {
@@ -1316,7 +1345,6 @@ public class Name_Points implements PlugIn {
 		}
 		
 		dialog = new PointsDialog( "Marking up: "+imp.getTitle(),
-					   points,
 					   archiveClient,
 					   loadedTemplate ? templateParameter : null,
 					   this );

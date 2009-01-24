@@ -634,4 +634,19 @@ public class NamedPointSet {
 			return false;
 		}
 	}
+
+	synchronized public NamedPointWorld addNewPoint( ) {
+		int i = pointsWorld.size();
+		boolean nameTaken = true;
+		String newName = null;
+		while( nameTaken ) {
+			newName = "Named Point (" + i + ")";
+			nameTaken = get( newName ) != null;
+			++ i;
+		}
+		NamedPointWorld toAdd = new NamedPointWorld( newName );
+		pointsWorld.add( toAdd );
+		return toAdd;
+	}
+
 }
