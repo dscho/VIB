@@ -40,28 +40,28 @@ import vib.transforms.FastMatrixTransform;
 */
 
 class PointsDialog extends Dialog implements ActionListener, WindowListener {
-	
+
 	Label[] coordinateLabels;
 	Button[] markButtons;
-	Button[] showButtons;      
+	Button[] showButtons;
 	Button[] fineTuneButtons;
 	Button[] renameButtons;
-	
-        Label instructions;
-        Panel pointsPanel;
-        Panel buttonsPanel;
-        Panel templatePanel;
-        Panel optionsPanel;
-        Checkbox tryManyRotations;
-	
+
+	Label instructions;
+	Panel pointsPanel;
+	Panel buttonsPanel;
+	Panel templatePanel;
+	Panel optionsPanel;
+	Checkbox tryManyRotations;
+
 	Name_Points plugin;
-	
+
 	ArchiveClient archiveClient;
-	
+
 	Label templateFileName;
 	Button chooseTemplate;
-	
-        String defaultInstructions = "Mark the current point selection as:";
+
+	String defaultInstructions = "Mark the current point selection as:";
 
 	public void recreatePointsPanel() {
 		// Alias this for convenience:
@@ -76,21 +76,21 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		// Make sure the arrays are the right size:
 		coordinateLabels = new Label[points.size()];
 		markButtons = new Button[points.size()];
-	        showButtons = new Button[points.size()];
+		showButtons = new Button[points.size()];
 		fineTuneButtons = new Button[points.size()];
 		renameButtons = new Button[points.size()];
 
 		// Now add everything again:
 		pointsPanel.setLayout(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
-		
+
 		int counter = 0;
 		Iterator<NamedPointWorld> i;
 		for (i=points.listIterator();i.hasNext();) {
 			NamedPointWorld p = i.next();
 			c.gridx = 0;
 			c.gridy = counter;
-			c.anchor = GridBagConstraints.LINE_END;			
+			c.anchor = GridBagConstraints.LINE_END;
 			markButtons[counter] = new Button(p.getName());
 			markButtons[counter].addActionListener(this);
 			pointsPanel.add(markButtons[counter],c);
@@ -105,18 +105,18 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			showButtons[counter].setEnabled(false);
 			pointsPanel.add(showButtons[counter],c);
 			c.anchor = GridBagConstraints.LINE_START;
-                        c.gridx = 3;
+			c.gridx = 3;
 			fineTuneButtons[counter] = new Button("Fine Tune");
 			fineTuneButtons[counter].addActionListener(this);
 			fineTuneButtons[counter].setEnabled(true);
 			pointsPanel.add(fineTuneButtons[counter],c);
 			c.anchor = GridBagConstraints.LINE_START;
-                        c.gridx = 4;
+			c.gridx = 4;
 			renameButtons[counter] = new Button("Rename");
 			renameButtons[counter].addActionListener(this);
 			renameButtons[counter].setEnabled(true);
 			pointsPanel.add(renameButtons[counter],c);
-			
+
 			if (p.set)
 				setCoordinateLabel(counter,
 						   p.x,
@@ -165,36 +165,36 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		buttonsPanel.add(addButton);
 
 		if( archiveClient == null ) {
-			
+
 			saveButton = new Button("Save");
 			saveButton.addActionListener(this);
 			resetButton = new Button("Reset");
 			resetButton.addActionListener(this);
 			closeButton = new Button("Close");
 			closeButton.addActionListener(this);
-			
-			buttonsPanel.add(saveButton);		
+
+			buttonsPanel.add(saveButton);
 			buttonsPanel.add(resetButton);
 			buttonsPanel.add(closeButton);
-			
+
 		} else {
-			
+
 			getMyButton = new Button("Get My Most Recent Annotation");
 			getMyButton.addActionListener(this);
 			getAnyButton = new Button("Get Most Recent Annotation");
 			getAnyButton.addActionListener(this);
 			uploadButton = new Button("Upload");
 			uploadButton.addActionListener(this);
-			
+
 			buttonsPanel.add(getMyButton);
 			buttonsPanel.add(getAnyButton);
 			buttonsPanel.add(uploadButton);
-			
+
 		}
-		
+
 		outerc.gridy = 2;
 		add(buttonsPanel,outerc);
-		
+
 		templatePanel=new Panel();
 		templatePanel.add(new Label("Template File:"));
 		templateFileName = new Label("[None chosen]");
@@ -204,26 +204,26 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		chooseTemplate = new Button("Choose");
 		chooseTemplate.addActionListener(this);
 		templatePanel.add(chooseTemplate);
-		
+
 		outerc.gridy = 3;
 		outerc.anchor = GridBagConstraints.LINE_START;
 		add(templatePanel,outerc);
-		
-                optionsPanel = new Panel();
-                tryManyRotations=new Checkbox(" Try 24 initial starting rotations?",true);
-                // For the moment, don't add this:
+
+		optionsPanel = new Panel();
+		tryManyRotations=new Checkbox(" Try 24 initial starting rotations?",true);
+		// For the moment, don't add this:
 		// optionsPanel.add(tryManyRotations);
-                outerc.gridy = 4;
-                add(optionsPanel,outerc);
-		
+		outerc.gridy = 4;
+		add(optionsPanel,outerc);
+
 		pack();
 		setVisible(true);
 	}
-	
+
 	Button saveButton;
 	Button resetButton;
-	Button closeButton;	
-	
+	Button closeButton;
+
 	Button getMyButton;
 	Button getAnyButton;
 	Button uploadButton;
@@ -235,9 +235,9 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		assert i<coordinateLabels.length;
 		coordinateLabels[i].setText("<unset>");
 		showButtons[i].setEnabled(false);
-		pack();		
+		pack();
 	}
-	
+
 	public void resetAll() {
 		for(int i = 0; i < coordinateLabels.length; ++i) {
 			coordinateLabels[i].setText("<unset>");
@@ -245,7 +245,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		}
 		pack();
 	}
-	
+
 	public void setCoordinateLabel(int i, double x, double y, double z) {
 		String newText = "";
 		newText += "x: " + x + ", y: " + y + ", z: " + z;
@@ -253,8 +253,8 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		showButtons[i].setEnabled(true);
 		pack();
 	}
-	
-        public void setFineTuning( boolean busy ) {
+
+	public void setFineTuning( boolean busy ) {
 		if( busy ) {
 			instructions.setText("Fine tuning... (may take some time)");
 			pointsPanel.setEnabled(false);
@@ -264,17 +264,17 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		} else {
 			instructions.setText(defaultInstructions);
 			pointsPanel.setEnabled(true);
-			buttonsPanel.setEnabled(true);                
+			buttonsPanel.setEnabled(true);
 			templatePanel.setEnabled(true);
 			optionsPanel.setEnabled(true);
 		}
-        }
-	
+	}
+
 	@Override
 	public void paint(Graphics g) {
 		super.paint(g);
-	}	
-	
+	}
+
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
 		for (int i=0; i < markButtons.length; ++i) {
@@ -318,61 +318,61 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			plugin.get( false );
 */
 		} else if (source == chooseTemplate ) {
-			
+
 			OpenDialog od;
-			
+
 			od = new OpenDialog("Select template image file...",
 					    null,
 					    null );
-			
+
 			String fileName = od.getFileName();
 			String directory = od.getDirectory();
-			
+
 			if( fileName == null ) {
 				return;
 			}
-			
+
 			String fullFileName=directory+fileName;
-			
+
 			if( plugin.useTemplate(fullFileName) ) {
 				templateFileName.setText(fullFileName);
 				pack();
 			}
-			
+
 		}
-		
+
 	}
-	
+
 	public void windowClosing( WindowEvent e ) {
 		plugin.stopFineTuneThreads();
 		dispose();
 	}
-	
+
 	public void windowActivated( WindowEvent e ) { }
 	public void windowDeactivated( WindowEvent e ) { }
 	public void windowClosed( WindowEvent e ) { }
 	public void windowOpened( WindowEvent e ) { }
 	public void windowIconified( WindowEvent e ) { }
-	public void windowDeiconified( WindowEvent e ) { }    
-	
+	public void windowDeiconified( WindowEvent e ) { }
+
 }
 
 public class Name_Points implements PlugIn {
-	
-        String templateImageFilename="/home/mark/arnim-brain/CantonF41c.grey";
+
+	String templateImageFilename="/home/mark/arnim-brain/CantonF41c.grey";
 	ImagePlus templateImage;
-        NamedPointSet templatePoints;
+	NamedPointSet templatePoints;
 	String templateUnits;
 
 	int numberOfFineTuneThreads = 2;
-	
-        double x_spacing;
-        double y_spacing;
-        double z_spacing;
-	
+
+	double x_spacing;
+	double y_spacing;
+	double z_spacing;
+
 	// FIXME: really we want different sets of points for
 	// different applications.
-	
+
 	private String [] defaultPointNames = {
 		"the centre of the ellipsoid body",
 		"the left tip of the protocerebral bridge",
@@ -384,11 +384,11 @@ public class Name_Points implements PlugIn {
 		"the most lateral part of the mushroom body on the left",
 		"the most lateral part of the mushroom body on the right"
 	};
-	
+
 	public void show(int i) {
 		points.showAsROI(i, imp);
 	}
-	
+
 	ProgressWindow progressWindow;
 
 	void rename(int i) {
@@ -415,45 +415,45 @@ public class Name_Points implements PlugIn {
 	}
 
 	void fineTune(int i) {
-	    
-                if( progressWindow != null ) {
+
+		if( progressWindow != null ) {
 			IJ.error("There's already a point being fine tuned at the moment.");
 			return;
-                }
-		
+		}
+
 		NamedPointWorld p = points.get(i);
 		if (p == null) {
 			IJ.error("You must have set a point in order to fine-tune it.");
 			return;
 		}
-		
+
 		String pointName = p.getName();
-		
-                if( templatePoints == null ) {
+
+		if( templatePoints == null ) {
 			IJ.error("You must have a template file loaded in order to fine tune.");
 			return;
-                }
-		
+		}
+
 		NamedPointWorld pointInTemplate = templatePoints.getPoint(pointName);
-		
+
 		if( pointInTemplate == null ) {
 			IJ.error("The point you want to fine-tune must be set both in this image and the template.  \""+pointName+"\" is not set in the template.");
 			return;
 		}
-		
+
 		// We need at least 3 points in common between the two
 		// point sets for an initial guess:
-		
-		
+
+
 		ArrayList<String> namesInCommon = points.namesSharedWith(templatePoints);
-		
+
 		boolean initialGuess = (namesInCommon.size() >= 3);
-		
-                dialog.setFineTuning(true);
-		
+
+		dialog.setFineTuning(true);
+
 		// Get a small image from around that point...
 		Calibration c = templateImage.getCalibration();
-		
+
 		double x_spacing_template = c.pixelWidth;
 		double y_spacing_template = c.pixelHeight;
 		double z_spacing_template = c.pixelDepth;
@@ -462,38 +462,38 @@ public class Name_Points implements PlugIn {
 		double real_x_template = pointInTemplate.x * x_spacing_template;
 		double real_y_template = pointInTemplate.y * y_spacing_template;
 		double real_z_template = pointInTemplate.z * z_spacing_template;
-		
+
 		double templateCubeSide = 50;
-		
+
 		double x_min_template = real_x_template - (templateCubeSide / 2);
 		double x_max_template = real_x_template + (templateCubeSide / 2);
 		double y_min_template = real_y_template - (templateCubeSide / 2);
 		double y_max_template = real_y_template + (templateCubeSide / 2);
 		double z_min_template = real_z_template - (templateCubeSide / 2);
 		double z_max_template = real_z_template + (templateCubeSide / 2);
-		
+
 		int x_min_template_i = (int) (x_min_template / x_spacing_template);
 		int x_max_template_i = (int) (x_max_template / x_spacing_template);
 		int y_min_template_i = (int) (y_min_template / y_spacing_template);
 		int y_max_template_i = (int) (y_max_template / y_spacing_template);
 		int z_min_template_i = (int) (z_min_template / z_spacing_template);
 		int z_max_template_i = (int) (z_max_template / z_spacing_template);
-		
+
 		ImagePlus cropped = ThreePaneCrop.performCrop(templateImage, x_min_template_i, x_max_template_i, y_min_template_i, y_max_template_i, z_min_template_i, z_max_template_i, false);
-		
-                double [] guessedRotation = null;
-		
+
+		double [] guessedRotation = null;
+
 		if( initialGuess ) {
 			// We could try to pick the other points we want to use
 			// in a more subtle way, but for the moment just pick
 			// the first two which are in common.
-			
+
 			String [] otherPoints=new String[2];
-			
+
 			int addAtIndex = 0;
 			for( Iterator<String> nameIterator = namesInCommon.iterator();
 			     nameIterator.hasNext(); ) {
-				
+
 				String otherName = nameIterator.next();
 				if (pointName.equals(otherName)) {
 					continue;
@@ -503,79 +503,79 @@ public class Name_Points implements PlugIn {
 					break;
 				}
 			}
-			
+
 			System.out.println("... calculating vector to: "+otherPoints[0]);
 			System.out.println("... and: "+otherPoints[1]);
-			
+
 			NamedPointWorld inThis1=points.getPoint(otherPoints[0]);
 			NamedPointWorld inThis2=points.getPoint(otherPoints[1]);
-			
+
 			NamedPointWorld inTemplate1=templatePoints.getPoint(otherPoints[0]);
 			NamedPointWorld inTemplate2=templatePoints.getPoint(otherPoints[1]);
-			
+
 			double inThisX = p.x * x_spacing;
 			double inThisY = p.y * y_spacing;
 			double inThisZ = p.z * z_spacing;
-			
+
 			double inThis1X = inThis1.x * x_spacing;
 			double inThis1Y = inThis1.y * y_spacing;
 			double inThis1Z = inThis1.z * z_spacing;
-			
+
 			double inThis2X = inThis2.x * x_spacing;
 			double inThis2Y = inThis2.y * y_spacing;
 			double inThis2Z = inThis2.z * z_spacing;
-			
+
 			double inTemplateX = pointInTemplate.x * x_spacing_template;
 			double inTemplateY = pointInTemplate.y * y_spacing_template;
 			double inTemplateZ = pointInTemplate.z * z_spacing_template;
-			
+
 			double inTemplate1X = inTemplate1.x * x_spacing_template;
 			double inTemplate1Y = inTemplate1.y * y_spacing_template;
 			double inTemplate1Z = inTemplate1.z * z_spacing_template;
-			
+
 			double inTemplate2X = inTemplate2.x * x_spacing_template;
 			double inTemplate2Y = inTemplate2.y * y_spacing_template;
 			double inTemplate2Z = inTemplate2.z * z_spacing_template;
-			
+
 			double [] inThisTo1 = new double[3];
 			double [] inThisTo2 = new double[3];
-			
+
 			double [] inTemplateTo1 = new double[3];
 			double [] inTemplateTo2 = new double[3];
-			
+
 			inThisTo1[0] = inThis1.x - inThisX;
 			inThisTo1[1] = inThis1.y - inThisY;
 			inThisTo1[2] = inThis1.z - inThisZ;
-			
+
 			inThisTo2[0] = inThis2.x - inThisX;
 			inThisTo2[1] = inThis2.y - inThisY;
 			inThisTo2[2] = inThis2.z - inThisZ;
-			
+
 			inTemplateTo1[0] = inTemplate1.x - inTemplateX;
 			inTemplateTo1[1] = inTemplate1.y - inTemplateY;
 			inTemplateTo1[2] = inTemplate1.z - inTemplateZ;
-			
+
 			inTemplateTo2[0] = inTemplate2.x - inTemplateX;
 			inTemplateTo2[1] = inTemplate2.y - inTemplateY;
 			inTemplateTo2[2] = inTemplate2.z - inTemplateZ;
-			
+
 			FastMatrix r=FastMatrix.rotateToAlignVectors(inTemplateTo1, inTemplateTo2, inThisTo1, inThisTo2);
-			
+
 			guessedRotation=new double[6];
 			r.guessEulerParameters(guessedRotation);
-			
+
 			System.out.println("guessed euler 0 degrees: "+((180*guessedRotation[0])/Math.PI));
 			System.out.println("guessed euler 1 degrees: "+((180*guessedRotation[1])/Math.PI));
 			System.out.println("guessed euler 2 degrees: "+((180*guessedRotation[2])/Math.PI));
-			
+
 			System.out.println("my inferred r is: "+r);
-			
+
 			FastMatrix rAnotherWay = FastMatrix.rotateEuler(guessedRotation[0],
 									guessedRotation[1],
 									guessedRotation[2]);
-			
+
 			System.out.println("another r is:   "+rAnotherWay);
-			
+
 		}
 
 		ImageStack emptyStack = new ImageStack(100,100);
@@ -590,14 +590,14 @@ public class Name_Points implements PlugIn {
 
 		progressCanvas.setCrosshairs(50,50,2,true);
 		progressCanvas.setCrosshairs(60,60,2,false);
-		
-		progressWindow = new ProgressWindow( progressImagePlus, progressCanvas );	
+
+		progressWindow = new ProgressWindow( progressImagePlus, progressCanvas );
 		progressWindow.setPlugin(this);
 
 		progressWindow.indexOfPointBeingFineTuned = i;
-		
+
 		for( int threadIndex = 0; threadIndex < numberOfFineTuneThreads; ++threadIndex ) {
-			
+
 			FineTuneThread fineTuneThread = new FineTuneThread(
 				threadIndex,
 				numberOfFineTuneThreads,
@@ -611,28 +611,28 @@ public class Name_Points implements PlugIn {
 				guessedRotation,
 				progressWindow,
 				this);
-		    
-			progressWindow.addFineTuneThread(fineTuneThread);
-			
-		}
-		
-		progressWindow.startThreads();
-		
-	}
-	
-        void fineTuneResults( RegistrationResult bestResult ) {
 
-		dialog.setFineTuning(false);		
+			progressWindow.addFineTuneThread(fineTuneThread);
+
+		}
+
+		progressWindow.startThreads();
+
+	}
+
+	void fineTuneResults( RegistrationResult bestResult ) {
+
+		dialog.setFineTuning(false);
 
 		if( bestResult != null ) {
-			
-			NamedPointWorld point = points.get(progressWindow.indexOfPointBeingFineTuned);			
+
+			NamedPointWorld point = points.get(progressWindow.indexOfPointBeingFineTuned);
 			point.x = bestResult.point_would_be_moved_to_x;
 			point.y = bestResult.point_would_be_moved_to_y;
 			point.z = bestResult.point_would_be_moved_to_z;
 			point.set = true;
 			System.out.println("Got a result, changed point to: "+point);
-			
+
 			dialog.setCoordinateLabel( progressWindow.indexOfPointBeingFineTuned,
 						   point.x,
 						   point.y,
@@ -640,12 +640,12 @@ public class Name_Points implements PlugIn {
 
 		}
 
-		progressWindow = null;	      
+		progressWindow = null;
 
 		IJ.showProgress(1.0);
 
-        }
-	
+	}
+
 	static void printParameters( double [] parameters ) {
 		System.out.println( "  z1: "+parameters[0] );
 		System.out.println( "  x1: "+parameters[1] );
@@ -657,12 +657,12 @@ public class Name_Points implements PlugIn {
 		System.out.println( "  ty: "+parameters[4]);
 		System.out.println( "  tz: "+parameters[5]);
 	}
-	
+
 	public static final int MEAN_ABSOLUTE_DIFFERENCES     = 1;
 	public static final int MEAN_SQUARED_DIFFERENCES      = 2;
-	public static final int CORRELATION                   = 3;
+	public static final int CORRELATION		   = 3;
 	public static final int NORMALIZED_MUTUAL_INFORMATION = 4;
-	
+
 	public static final String [] methodName = {
 		"UNSET!",
 		"mean abs diffs",
@@ -670,46 +670,46 @@ public class Name_Points implements PlugIn {
 		"correlation",
 		"norm mut inf"
 	};
-	
-	/** 
+
+	/**
 	    When this is called, toKeep is the full new image, and
 	    toTransform is just a cropped region of the template
 	    around the template point.
 	 */
 
 	static RegistrationResult mapImageWith( ImagePlus toTransform, ImagePlus toKeep, NamedPointWorld templatePoint, NamedPointWorld guessedPoint, double[] mapValues, double cubeSide, int similarityMeasure, boolean show, String imageTitle ) {
-		
+
 		double sumSquaredDifferences = 0;
-                double sumAbsoluteDifferences = 0;
+		double sumAbsoluteDifferences = 0;
 		long numberOfPoints = 0;
 		double sumX = 0;
 		double sumY = 0;
 		double sumXY = 0;
 		double sumXSquared = 0;
 		double sumYSquared = 0;
-		
+
 		FastMatrix scalePointInToTransform = FastMatrix.fromCalibration(toTransform);
 		FastMatrix scalePointInToKeep = FastMatrix.fromCalibration(toKeep);
 		FastMatrix scalePointInToKeepInverse = scalePointInToKeep.inverse();
-		
+
 		FastMatrix backToOriginBeforeRotation = FastMatrix.translate(-cubeSide / 2, -cubeSide / 2, -cubeSide / 2);
-		
+
 		double z1 = mapValues[0];
 		double x1 = mapValues[1];
 		double z2 = mapValues[2];
 		double tx = mapValues[3];
 		double ty = mapValues[4];
 		double tz = mapValues[5];
-		
+
 		FastMatrix rotateFromValues = FastMatrix.rotateEuler(z1, x1, z2);
 		FastMatrix transformFromValues = FastMatrix.translate(tx, ty, tz);
-		
+
 		FastMatrixTransform m = new FastMatrixTransform(scalePointInToTransform);
 		m = m.composeWithFastMatrix(backToOriginBeforeRotation);
 		m = m.composeWithFastMatrix(rotateFromValues);
 		m = m.composeWithFastMatrix(transformFromValues);
 		m = m.composeWithFastMatrix(scalePointInToKeepInverse);
-		
+
 		/* Now transform the corner points of the cropped
 		   template image to find the maximum and minimum
 		   extents of the transformed image. */
@@ -717,16 +717,16 @@ public class Name_Points implements PlugIn {
 		int w = toTransform.getWidth();
 		int h = toTransform.getHeight();
 		int d = toTransform.getStackSize();
-		
+
 		int[][] corners = {{0, 0, 0}, {w, 0, 0}, {0, h, 0}, {0, 0, d}, {w, 0, d}, {0, h, d}, {w, h, 0}, {w, h, d}};
-		
+
 		double xmin = Double.MAX_VALUE;
 		double xmax = Double.MIN_VALUE;
 		double ymin = Double.MAX_VALUE;
 		double ymax = Double.MIN_VALUE;
 		double zmin = Double.MAX_VALUE;
 		double zmax = Double.MIN_VALUE;
-		
+
 		for (int i = 0; i < corners.length; ++i) {
 			m.apply(corners[i][0], corners[i][1], corners[i][2]);
 			if (m.x < xmin) {
@@ -748,33 +748,33 @@ public class Name_Points implements PlugIn {
 				zmax = m.z;
 			}
 		}
-		
+
 		int transformed_x_min = (int) Math.floor(xmin);
 		int transformed_y_min = (int) Math.floor(ymin);
 		int transformed_z_min = (int) Math.floor(zmin);
-		
+
 		int transformed_x_max = (int) Math.ceil(xmax);
 		int transformed_y_max = (int) Math.ceil(ymax);
 		int transformed_z_max = (int) Math.ceil(zmax);
-		
+
 		/*
 		  System.out.println("x min, max: " + transformed_x_min + "," + transformed_x_max);
 		  System.out.println("y min, max: " + transformed_y_min + "," + transformed_y_max);
 		  System.out.println("z min, max: " + transformed_z_min + "," + transformed_z_max);
 		*/
-		
+
 		int transformed_width = (transformed_x_max - transformed_x_min) + 1;
 		int transformed_height = (transformed_y_max - transformed_y_min) + 1;
 		int transformed_depth = (transformed_z_max - transformed_z_min) + 1;
-		
+
 		// System.out.println("transformed dimensions: " + transformed_width + "," + transformed_height + "," + transformed_depth);
-		
+
 		int k_width = toKeep.getWidth();
 		int k_height = toKeep.getHeight();
 		int k_depth = toKeep.getStackSize();
-		
+
 		byte[][] toKeepCroppedBytes = new byte[transformed_depth][transformed_height * transformed_width];
-		
+
 		ImageStack toKeepStack = toKeep.getStack();
 		for (int z = 0; z < transformed_depth; ++z) {
 			int z_uncropped = z + transformed_z_min;
@@ -793,37 +793,37 @@ public class Name_Points implements PlugIn {
 				}
 			}
 		}
-		
+
 		ImageStack toTransformStack=toTransform.getStack();
 		byte [][] toTransformBytes=new byte[d][];
 		for( int z_s = 0; z_s < d; ++z_s)
 			toTransformBytes[z_s]=(byte[])toTransformStack.getPixels(z_s+1);
-		
-                FastMatrix back_to_template = m.inverse();
-		
+
+		FastMatrix back_to_template = m.inverse();
+
 		byte [][] transformedBytes = new byte[transformed_depth][transformed_height * transformed_width];
-		
+
 		for( int z = 0; z < transformed_depth; ++z ) {
 			for( int y = 0; y < transformed_height; ++y ) {
 				for( int x = 0; x < transformed_width; ++x ) {
-					
+
 					int x_in_original = x + transformed_x_min;
 					int y_in_original = y + transformed_y_min;
 					int z_in_original = z + transformed_z_min;
-					
+
 					// System.out.println("in original: "+x_in_original+","+y_in_original+","+z_in_original);
-					
+
 					back_to_template.apply(
 						x_in_original,
 						y_in_original,
 						z_in_original );
-					
+
 					int x_in_template = (int)back_to_template.x;
 					int y_in_template = (int)back_to_template.y;
 					int z_in_template = (int)back_to_template.z;
-					
+
 					// System.out.print("Got back *_in_template "+x_in_template+","+y_in_template+","+z_in_template);
-					
+
 					if( (x_in_template < 0) || (x_in_template >= w) ||
 					    (y_in_template < 0) || (y_in_template >= h) ||
 					    (z_in_template < 0) || (z_in_template >= d) ) {
@@ -831,35 +831,35 @@ public class Name_Points implements PlugIn {
 						continue;
 					}
 					// System.out.println("including");
-					
+
 					int value=toTransformBytes[z_in_template][y_in_template*w+x_in_template]&0xFF;
-					
+
 					transformedBytes[z][y*transformed_width+x]=(byte)value;
-					
+
 					int valueInOriginal = toKeepCroppedBytes[z][y*transformed_width+x] &0xFF;
-					
+
 					int difference = Math.abs( value - valueInOriginal );
 					int differenceSquared = difference * difference;
-					
+
 					sumAbsoluteDifferences += difference;
 					sumSquaredDifferences += differenceSquared;
-					
+
 					sumX += value;
 					sumXSquared += value * value;
-					
+
 					sumY += valueInOriginal;
 					sumYSquared += valueInOriginal * valueInOriginal;
-					
-					sumXY += value * valueInOriginal;			
-					
+
+					sumXY += value * valueInOriginal;
+
 					++numberOfPoints;
-					
+
 				}
 			}
 		}
-		
-                RegistrationResult result = new RegistrationResult();
-		
+
+		RegistrationResult result = new RegistrationResult();
+
 		result.overlay_width = transformed_width;
 		result.overlay_height = transformed_height;
 		result.overlay_depth = transformed_depth;
@@ -869,43 +869,43 @@ public class Name_Points implements PlugIn {
 		result.parameters = mapValues;
 
 		/* Work out the score... */
-		
+
 		double maximumValue = 0;
-		
-                switch(similarityMeasure) {
-			
+
+		switch(similarityMeasure) {
+
 		case MEAN_ABSOLUTE_DIFFERENCES:
 			maximumValue = 255;
 			break;
-			
+
 		case MEAN_SQUARED_DIFFERENCES:
 			maximumValue = 255 * 255;
 			break;
-			
+
 		case CORRELATION:
 			maximumValue = 2;
 			break;
-			
+
 		case NORMALIZED_MUTUAL_INFORMATION:
 			maximumValue = 1;
 			break;
-			
+
 		default:
 			assert false : "Unknown similarity measure: "+similarityMeasure;
-			
+
 		}
 
 		double pointDrift;
-		
+
 		{
 			// Map the centre of the cropped template with this
 			// transformation and see how far away it is from the
 			// guessed point.
-			
+
 			int centre_cropped_template_x = toTransform.getWidth() / 2;
 			int centre_cropped_template_y = toTransform.getHeight() / 2;
 			int centre_cropped_template_z = toTransform.getStackSize() / 2;
-			
+
 			m.apply( centre_cropped_template_x,
 				 centre_cropped_template_y,
 				 centre_cropped_template_z );
@@ -913,7 +913,7 @@ public class Name_Points implements PlugIn {
 			result.point_would_be_moved_to_x = (int)m.x;
 			result.point_would_be_moved_to_y = (int)m.y;
 			result.point_would_be_moved_to_z = (int)m.z;
-			
+
 			/* I think this is buggy - we compare it with
 			cubeSide, so we need to scale these with the
 			calibration:
@@ -931,12 +931,12 @@ public class Name_Points implements PlugIn {
 
 			double pointDriftSquared =
 				(xdiff * xdiff) + (ydiff * ydiff) + (zdiff * zdiff);
-			
+
 			pointDrift = Math.sqrt(pointDriftSquared);
 		}
 
 		result.pointMoved = pointDrift;
-	
+
 		/* Now what happens to the template point
 		 * (transformed) and the original guessed point. */
 
@@ -958,58 +958,58 @@ public class Name_Points implements PlugIn {
 		// Back to the scoring now: now use the logistic
 		// function to scale up the penalty as we get further
 		// away in translation...
-		
+
 		double minimumPenaltyAt = 0.8;
 		double maximumPenaltyAt = 1.0;
 		double midPoint = (minimumPenaltyAt + maximumPenaltyAt) / 2;
-		
+
 		double proportionOfCubeSideAway = pointDrift / cubeSide;
-		
+
 		// When t is 6 or more, the maximum applies...
-		
+
 		double scaleUpT = 6.0 / (maximumPenaltyAt - midPoint);
-		
+
 		double additionalTranslationalPenalty = 1 / (1 + Math.exp( -(proportionOfCubeSideAway - midPoint) * scaleUpT));
 		additionalTranslationalPenalty *= maximumValue;
-		
+
 		/* Also use the logistic function to penalize the
 		   rotation from getting too near to the extrema: 4PI
 		   and -4PI. */
-		
+
 		double absz1 = Math.abs(z1);
 		double absx1 = Math.abs(x1);
 		double absz2 = Math.abs(z2);
-		
+
 		double mostExtremeAngle =  Math.max(Math.max(absz1,absx1),absz2);
-		
+
 		minimumPenaltyAt = (7 * Math.PI) / 2;
 		maximumPenaltyAt = 4 * Math.PI;
 		midPoint = (maximumPenaltyAt + minimumPenaltyAt) / 2;
-		
+
 		double angleFromMid = mostExtremeAngle - midPoint;
-		
+
 		scaleUpT = 6.0 / (Math.PI / 4);
-		
+
 		double additionalAnglePenalty = 1 / (1 + Math.exp( -angleFromMid * scaleUpT ) );
 		additionalAnglePenalty *= maximumValue;
-		
+
 		if( numberOfPoints == 0 ) {
 			// This should be unneccessary, since there
 			// are heavy penalties for moving towards the
 			// point of no overlap.
 			result.score = maximumValue;
 		} else {
-			
+
 			switch(similarityMeasure) {
-				
+
 			case MEAN_ABSOLUTE_DIFFERENCES:
 				result.score = sumAbsoluteDifferences / numberOfPoints;
 				break;
-				
+
 			case MEAN_SQUARED_DIFFERENCES:
 				result.score = sumSquaredDifferences / numberOfPoints;
 				break;
-				
+
 			case CORRELATION:
 				double n2 = numberOfPoints * numberOfPoints;
 				double numerator = (sumXY/numberOfPoints) - (sumX * sumY) / n2;
@@ -1029,22 +1029,22 @@ public class Name_Points implements PlugIn {
 				*/
 				result.score = 1 - result.score;
 				break;
-				
+
 			case NORMALIZED_MUTUAL_INFORMATION:
 				assert false : "Mutual information measure not implemented yet";
 				break;
-				
+
 			}
 		}
-		
+
 		result.score += additionalAnglePenalty;
 		result.score += additionalTranslationalPenalty;
-		
+
 		return result;
-	}	
-	
+	}
+
 	public void save() {
-		
+
 		FileInfo info = imp.getOriginalFileInfo();
 		if( info == null ) {
 			IJ.error("There's no original file name that these points refer to.");
@@ -1053,23 +1053,23 @@ public class Name_Points implements PlugIn {
 		String fileName = info.fileName;
 		String url = info.url;
 		String directory = info.directory;
-		
+
 		String suggestedSaveFilename;
-		
+
 		suggestedSaveFilename = fileName+".points";
-		
+
 		SaveDialog sd = new SaveDialog("Save points annotation file as...",
 					       directory,
 					       suggestedSaveFilename,
 					       ".points");
-		
+
 		String savePath;
 		if(sd.getFileName()==null)
 			return;
 		else {
 			savePath = sd.getDirectory()+sd.getFileName();
 		}
-		
+
 		File file = new File(savePath);
 		if ((file!=null)&&file.exists()) {
 			if (!IJ.showMessageWithCancel(
@@ -1078,20 +1078,20 @@ public class Name_Points implements PlugIn {
 				    "Do you want to replace it?"))
 				return;
 		}
-		
+
 		IJ.showStatus("Saving point annotations to "+savePath);
-		
+
 		if( ! points.savePointsFile( savePath ) )
 			IJ.error("Error saving to: "+savePath+"\n");
-		
+
 		IJ.showStatus("Saved point annotations.");
-		
+
 	}
-	
+
 	public void reset() {
 		dialog.resetAll();
 	}
-	
+
 	public void mark(int i) {
 		Roi roi = imp.getRoi();
 		if (roi!=null && roi.getType()==Roi.POINT) {
@@ -1100,7 +1100,7 @@ public class Name_Points implements PlugIn {
 				IJ.error("You can only have one point selected to mark.");
 				return;
 			}
-			
+
 			System.out.println("Fetched ROI with co-ordinates: "+p.xpoints[0]+", "+p.ypoints[0]);
 
 			/* The ROI co-ordinates are indexes into the
@@ -1122,7 +1122,7 @@ public class Name_Points implements PlugIn {
 			}
 
 			System.out.println("Converted to our co-ordinates: "+xWorld+","+yWorld+","+zWorld);
-			
+
 			dialog.setCoordinateLabel(i,xWorld,yWorld,zWorld);
 
 			NamedPointWorld point = points.get(i);
@@ -1130,20 +1130,20 @@ public class Name_Points implements PlugIn {
 			point.y = yWorld;
 			point.z = zWorld;
 			point.set = true;
-			
+
 		} else {
 			IJ.error("You must have a current point selection in "+
 				 imp.getTitle()+" in order to mark points.");
 		}
-		
+
 	}
-	
+
 	/* FIXME: put this back when file format detection and loading is sorted...
 
 	public void get( boolean mineOnly ) {
-		
+
 		Hashtable<String,String> parameters = new Hashtable<String,String>();
-		
+
 		parameters.put("method","most-recent-annotation");
 		parameters.put("type","points");
 		parameters.put("variant","around-central-complex");
@@ -1152,11 +1152,11 @@ public class Name_Points implements PlugIn {
 			parameters.put("for_user",archiveClient.getValue("user"));
 		else
 			parameters.put("for_user","");
-		
+
 		// Need to included data too....
-		
+
 		ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, null );
-		
+
 		String [] first_line = tsv_results.get(0);
 		int urls_found;
 		String bestUrl = null;
@@ -1173,38 +1173,38 @@ public class Name_Points implements PlugIn {
 		} else {
 			IJ.error("There was an unknown response to request for an annotation file: " + first_line[0]);
 		}
-		
+
 		// Now fetch that file:
-		
+
 		// FIXME:
-		
+
 		if( bestUrl == null )
 			return;
-		
+
 		String fileContents =  ArchiveClient.justGetFileAsString( bestUrl );
-		
+
 		if( fileContents != null )
 			loadFromString(fileContents);
 
-		
+
 	}
 	*/
-	
+
 	public void upload() {
-		
+
 		Hashtable<String,String> parameters = new Hashtable<String,String>();
-		
+
 		parameters.put("method","upload-annotation");
-		parameters.put("type","points");	       
+		parameters.put("type","points");
 		parameters.put("variant","around-central-complex");
 		parameters.put("md5sum",archiveClient.getValue("md5sum"));
-		
+
 		// Need to included data too....
-		
+
 		byte [] fileAsBytes = points.xmlDataAsBytes( );
-		
+
 		ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, fileAsBytes );
-		
+
 		String [] first_line = tsv_results.get(0);
 		if( first_line[0].equals("success") ) {
 			IJ.error("Annotations uploaded successfully!");
@@ -1213,48 +1213,48 @@ public class Name_Points implements PlugIn {
 		} else {
 			IJ.error("There was an unknown response to the annotation file upload request: " + first_line[0]);
 		}
-		
+
 	}
-	
+
 	public Name_Points() {
-		
+
 	}
-	
+
 	PointsDialog dialog;
 	ImagePlus imp;
-	
+
 	NamedPointSet points;
-	
+
 	ArchiveClient archiveClient;
-	
+
 	ImageCanvas canvas;
-	
+
 	public void run( String arguments ) {
-		
+
 		Applet applet = IJ.getApplet();
 		if( applet != null ) {
 			archiveClient=new ArchiveClient( applet );
 		}
-		
+
 		String macroOptions=Macro.getOptions();
 		String templateParameter = null;
-                if( macroOptions != null )
+		if( macroOptions != null )
 			templateParameter = Macro.getValue(macroOptions,"template",null);
-		
+
 		/*
 		  String test1 = "one backslash '\\' and one double quote '\"'";
 		  System.out.println("escaping: "+test1);
 		  System.out.println("gives: "+escape(test1));
 		*/
-		
+
 		if( archiveClient != null ) {
-			
+
 			// We go for a channel that's tagged 'nc82'
-			
+
 			Hashtable<String,String> parameters = new Hashtable<String,String>();
 			parameters.put("method","channel-tags");
 			parameters.put("md5sum",archiveClient.getValue("md5sum"));
-			
+
 			ArrayList< String [] > tsv_results = archiveClient.synchronousRequest(parameters,null);
 			int tags = Integer.parseInt((tsv_results.get(0))[1]); // FIXME error checking
 			int nc82_channel = -1;
@@ -1266,25 +1266,25 @@ public class Name_Points implements PlugIn {
 				}
 			}
 			if( nc82_channel < 0 ) {
-				
+
 				imp = IJ.getImage();
-				
+
 				if(imp == null) {
 					IJ.error("There's no image to annotate.");
 					return;
 				}
-				
+
 			} else {
-				
+
 				// Look for the one with the right name...
 				String lookFor = "Ch"+(nc82_channel+1);
-				
+
 				int[] wList = WindowManager.getIDList();
 				if (wList==null) {
 					IJ.error("Name_Points: no images have been loaded");
 					return;
 				}
-				
+
 				for (int i=0; i<wList.length; i++) {
 					ImagePlus tmpImp = WindowManager.getImage(wList[i]);
 					String title = tmpImp!=null?tmpImp.getTitle():"";
@@ -1293,34 +1293,34 @@ public class Name_Points implements PlugIn {
 						tmpImp.close();
 					}
 				}
-				
+
 				imp = IJ.getImage();
-				
+
 				if(imp == null) {
 					IJ.error("There's no image to annotate.");
 					return;
 				}
-				
+
 			}
-			
+
 		} else {
-			
+
 			imp = IJ.getImage();
-			
+
 			if(imp == null) {
 				IJ.error("There's no image to annotate.");
 				return;
 			}
-			
+
 		}
-		
-                Calibration c=imp.getCalibration();
-                this.x_spacing=c.pixelWidth;
-                this.y_spacing=c.pixelHeight;
-                this.z_spacing=c.pixelDepth;
-		
+
+		Calibration c=imp.getCalibration();
+		this.x_spacing=c.pixelWidth;
+		this.y_spacing=c.pixelHeight;
+		this.z_spacing=c.pixelDepth;
+
 		canvas = imp.getCanvas();
-		
+
 		/*
 		  ImagePlus [] templateChannels=BatchOpener.open(templateImageFilename);
 		  if( templateChannels != null ) {
@@ -1330,27 +1330,27 @@ public class Name_Points implements PlugIn {
 		*/
 
 		if( applet == null ) {
-			boolean foundExistingPointsFile = loadAtStart();		
+			boolean foundExistingPointsFile = loadAtStart();
 			if( ! foundExistingPointsFile ) {
 				points = new NamedPointSet();
 				for (int i = 0; i < defaultPointNames.length; ++i)
 					points.add(new NamedPointWorld(defaultPointNames[i]));
 			}
 		}
-		
+
 		boolean loadedTemplate = false;
-		
+
 		if( (templateParameter != null) && useTemplate(templateParameter) ) {
 			loadedTemplate = true;
 		}
-		
+
 		dialog = new PointsDialog( "Marking up: "+imp.getTitle(),
 					   archiveClient,
 					   loadedTemplate ? templateParameter : null,
 					   this );
-		
+
 	}
-	
+
 	public boolean loadAtStart() {
 
 		NamedPointSet newNamedPoints = null;
@@ -1363,10 +1363,10 @@ public class Name_Points implements PlugIn {
 		if( points == null ) {
 			points=new NamedPointSet();
 		}
-		
+
 		if( newNamedPoints == null )
 			return false;
-		
+
 		ListIterator<NamedPointWorld> i;
 		for (i = newNamedPoints.listIterator();i.hasNext();) {
 			NamedPointWorld current = i.next();
@@ -1385,27 +1385,27 @@ public class Name_Points implements PlugIn {
 			if (!foundName)
 				points.add(current);
 		}
-		
+
 		return true;
 	}
-	
+
 	public boolean useTemplate( String templateImageFileName ) {
-		
+
 		File file=new File(templateImageFileName);
 		if( ! file.exists() ) {
 			IJ.error("The file "+templateImageFileName+" doesn't exist.");
 			return false;
 		}
-		
+
 		String pointsFileName=templateImageFileName+".points";
-		
+
 		File pointsFile=new File(pointsFileName);
-		
+
 		if( ! pointsFile.exists() ) {
 			IJ.error("There's no corresponding points file for that image.  It must be called "+pointsFile.getAbsolutePath());
 			return false;
 		}
-		
+
 		NamedPointSet templatePointSet = null;
 		try {
 			templatePointSet = NamedPointSet.forImage(templateImageFileName);
@@ -1421,16 +1421,16 @@ public class Name_Points implements PlugIn {
 			IJ.error("Couldn't open template image: "+templateImageFileName );
 			return false;
 		}
-		
+
 		this.templateImage = channels[0];
 		this.templatePoints = templatePointSet;
-		
+
 		return true;
 	}
-	
-        void stopFineTuneThreads() {
+
+	void stopFineTuneThreads() {
 		if( progressWindow != null )
 			progressWindow.stopThreads();
-        }
-	
+	}
+
 }
