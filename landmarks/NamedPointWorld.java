@@ -116,19 +116,16 @@ public class NamedPointWorld {
 	}
 
 	public String toYAML() {
-		String line = "\""+
-			escape(name)+
-			"\": [ "+
-			x+", "+
-			y+", "+
-			z+" ]";
-		return line;
+		if( set )
+			return "\"" + escape(name) + "\": [ " + x + ", " + y + ", " + z + " ]";
+		else
+			return "\"" + escape(name) + "\":";
 	}
 
 	public String toString() {
-		return ""+name+
-			" at "+x+
-			", "+y+
-			", "+z;
+		if( set )
+			return "\""+name+"\" at "+x+", "+y+", "+z;
+		else
+			return "\""+name+"\" [not set]";
 	}
 }
