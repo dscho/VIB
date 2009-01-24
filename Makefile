@@ -46,7 +46,8 @@ JUNIT4JAR=$(shell pwd)/junit-4.4.jar
 TESTCLASSES=math3d.TestEigenvalueDecompositions \
 	distance.TestMutualInformation \
 	distance.TestEuclidean \
-	distance.TestCorrelation
+	distance.TestCorrelation \
+	landmarks.TestLoading
 
 TESTMEM=512m
 
