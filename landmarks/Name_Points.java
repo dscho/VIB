@@ -19,6 +19,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.regex.*;
+import java.text.DecimalFormat;
 
 import client.ArchiveClient;
 import ij.measure.Calibration;
@@ -256,8 +257,9 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	}
 
 	public void setCoordinateLabel(int i, double x, double y, double z) {
+		DecimalFormat f = new DecimalFormat("0.000");
 		String newText = "";
-		newText += "x: " + x + ", y: " + y + ", z: " + z;
+		newText += "x: " + f.format(x) + ", y: " + f.format(y) + ", z: " + f.format(z);
 		coordinateLabels[i].setText(newText);
 		showButtons[i].setEnabled(true);
 	}
