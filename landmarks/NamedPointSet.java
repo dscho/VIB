@@ -526,14 +526,15 @@ public class NamedPointSet {
 		StringBuffer result = new StringBuffer( "" );
 		String line = null;
 		try {
-			line = br.readLine();
-			if( line == null )
-				return fromString( result.toString(), imagePlus, imageFilename );
-			else {
-				result.append( line );
-				result.append( "\n" );
+			while( true ) {
+				line = br.readLine();
+				if( line == null )
+					return fromString( result.toString(), imagePlus, imageFilename );
+				else {
+					result.append( line );
+					result.append( "\n" );
+				}
 			}
-			return fromString( result.toString(), imagePlus, imageFilename );
 		} catch( IOException e ) {
 			throw new PointsFileException( "There was an IOException while reading points file data: " + e );
 		}
