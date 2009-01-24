@@ -436,9 +436,9 @@ public class NamedPointSet {
 				Matcher numberZMatcher = numberPattern.matcher( zString );
 				boolean set;
 				if( emptyXMatcher.matches() && emptyYMatcher.matches() && emptyZMatcher.matches() ) {
-					set = true;
-				} else if( numberXMatcher.matches() && numberYMatcher.matches() && numberZMatcher.matches() ) {
 					set = false;
+				} else if( numberXMatcher.matches() && numberYMatcher.matches() && numberZMatcher.matches() ) {
+					set = true;
 				} else {
 					throw new PointsFileException( "In tab-separated format, the first three columns must all be empty or all be numbers" );
 				}
