@@ -323,15 +323,16 @@ public class NamedPointSet {
 
 	*/
 
-        public static NamedPointSet forImage( ImagePlus imagePlus ) throws PointsFileException {
-                FileInfo info = imagePlus.getOriginalFileInfo();
-                if( info == null )
-                        throw new PointsFileException( "Could not find original file for the image: " + imagePlus.getTitle() );
-                String fileName = info.fileName;
-                String url = info.url;
-                String directory = info.directory;
-                return NamedPointSet.forImage( imagePlus, directory + File.separator + fileName );
-        }
+	public static NamedPointSet forImage( ImagePlus imagePlus ) throws PointsFileException {
+		FileInfo info = imagePlus.getOriginalFileInfo();
+		if( info == null )
+			throw new PointsFileException( "Could not find original file for the image: " + imagePlus.getTitle() );
+		String fileName = info.fileName;
+		String url = info.url;
+		String directory = info.directory;
+		File f = new File( directory, fileName );
+		return NamedPointSet.forImage( imagePlus, f.getAbsolutePath() );
+	}
 
 	static boolean verbose = true;
 
