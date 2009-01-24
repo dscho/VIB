@@ -148,6 +148,10 @@ public class NamedPointSet {
 		return null;
 	}
 
+	synchronized public NamedPointWorld delete(int i) {
+		return (NamedPointWorld)pointsWorld.remove(i);
+	}
+
 	public NamedPointWorld get(int i) {
 		return pointsWorld.get(i);
 	}

@@ -46,6 +46,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	Button[] showButtons;
 	Button[] fineTuneButtons;
 	Button[] renameButtons;
+	Button[] deleteButtons;
 
 	Label instructions;
 	Panel pointsPanel;
@@ -80,6 +81,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		showButtons = new Button[points.size()];
 		fineTuneButtons = new Button[points.size()];
 		renameButtons = new Button[points.size()];
+		deleteButtons = new Button[points.size()];
 
 		// Now add everything again:
 		pointsPanel.setLayout(new GridBagLayout());
@@ -117,6 +119,12 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			renameButtons[counter].addActionListener(this);
 			renameButtons[counter].setEnabled(true);
 			pointsPanel.add(renameButtons[counter],c);
+			c.anchor = GridBagConstraints.LINE_START;
+			c.gridx = 5;
+			deleteButtons[counter] = new Button("Delete");
+			deleteButtons[counter].addActionListener(this);
+			deleteButtons[counter].setEnabled(true);
+			pointsPanel.add(deleteButtons[counter],c);
 
 			if (p.set)
 				setCoordinateLabel(counter,
@@ -277,6 +285,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
+		// FIXME: this is ridiculous
 		for (int i=0; i < markButtons.length; ++i) {
 			if(source == markButtons[i]) {
 				plugin.mark(i);
@@ -298,6 +307,12 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		for (int i=0; i < renameButtons.length; ++i) {
 			if(source == renameButtons[i]) {
 				plugin.rename(i);
+				break;
+			}
+		}
+		for (int i=0; i < deleteButtons.length; ++i) {
+			if(source == deleteButtons[i]) {
+				plugin.delete(i);
 				break;
 			}
 		}
@@ -405,6 +420,17 @@ public class Name_Points implements PlugIn {
 			dialog.pack();
 		} else {
 			IJ.error("Couldn't rename point: there already is one called \"" + newName + "\"" );
+		}
+	}
+
+	void delete(int i) {
+		String name = points.get(i).getName();
+		YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(), "Really delete?",
+							     "Do you really want to delete the point \""+name+"\"?" );
+		if( d.yesPressed() ) {
+			points.delete(i);
+			dialog.recreatePointsPanel();
+			dialog.pack();
 		}
 	}
 
