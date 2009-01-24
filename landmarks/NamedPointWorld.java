@@ -128,4 +128,8 @@ public class NamedPointWorld {
 		else
 			return "\""+name+"\" [not set]";
 	}
+
+	public void setName(String newName) {
+		this.name = newName;
+	}
 }

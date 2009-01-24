@@ -45,6 +45,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	Button[] markButtons;
 	Button[] showButtons;      
 	Button[] fineTuneButtons;
+	Button[] renameButtons;
 	
         Label instructions;
         Panel pointsPanel;
@@ -77,6 +78,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		markButtons = new Button[points.size()];
 	        showButtons = new Button[points.size()];
 		fineTuneButtons = new Button[points.size()];
+		renameButtons = new Button[points.size()];
 		
 		setLayout(new GridBagLayout());
 		
@@ -124,6 +126,12 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			fineTuneButtons[counter].addActionListener(this);
 			fineTuneButtons[counter].setEnabled(true);
 			pointsPanel.add(fineTuneButtons[counter],c);
+			c.anchor = GridBagConstraints.LINE_START;
+                        c.gridx = 4;
+			renameButtons[counter] = new Button("Rename");
+			renameButtons[counter].addActionListener(this);
+			renameButtons[counter].setEnabled(true);
+			pointsPanel.add(renameButtons[counter],c);
 			
 			if (p.set)
 				setCoordinateLabel(counter,
@@ -266,6 +274,12 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 				break;
 			}
 		}
+		for (int i=0; i < renameButtons.length; ++i) {
+			if(source == renameButtons[i]) {
+				plugin.rename(i);
+				break;
+			}
+		}
 		if(source == closeButton) {
 			dispose();
 		} else if (source == saveButton) {
@@ -353,7 +367,24 @@ public class Name_Points implements PlugIn {
 	}
 	
 	ProgressWindow progressWindow;
-	
+
+	void rename(int i) {
+		NamedPointWorld npw = points.get(i);
+		GenericDialog gd = new GenericDialog( "Rename Point" );
+		gd.addStringField( "Rename point to:", npw.getName() );
+		gd.showDialog();
+		if( gd.wasCanceled() )
+			return;
+		String newName = gd.getNextString();
+		boolean result = points.renamePointTo( i, newName );
+		if( result ) {
+			dialog.markButtons[i].setLabel( newName );
+			dialog.pack();
+		} else {
+			IJ.error("Couldn't rename point: there already is one called \"" + newName + "\"" );
+		}
+	}
+
 	void fineTune(int i) {
 	    
                 if( progressWindow != null ) {

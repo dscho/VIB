@@ -268,7 +268,7 @@ public class NamedPointSet {
 */
 
 	public void add(NamedPointWorld namedPointWorld) {
-		synchronized (pointsWorld) {
+		synchronized (this) {
 			String name = namedPointWorld.getName();
 			NamedPointWorld existing = get( name );
 			if( existing != null )
@@ -623,5 +623,15 @@ public class NamedPointSet {
 			sb.append( "\n" );
 		}
 		return sb.toString();
+	}
+
+	synchronized public boolean renamePointTo( int i, String newName ) {
+		NamedPointWorld existing = get( newName );
+		if( existing == null ) {
+			pointsWorld.get(i).setName( newName );
+			return true;
+		} else {
+			return false;
+		}
 	}
 }
