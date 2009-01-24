@@ -99,6 +99,9 @@ public class NamedPointSet {
 				}
 			}
 		}
+		@Override
+		public void endElement(String uri, String localName, String qName) throws SAXException {
+		}
 	}
 
 	public static class PointsFileException extends Exception {
