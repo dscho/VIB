@@ -356,10 +356,7 @@ public class NamedPointSet {
 				}
 				try {
 					return fromFile( candidateFilename, imagePlus, imageFilename );
-				} catch( PointsFileException e ) {
-					if( verbose )
-						System.err.println("-- Couldn't load points filename: " + candidateFilename );
-				}
+				} catch( PointsFileException e ) { }
 			}
 		}
 		throw new PointsFileException( "None of the points filenames corresponding to '" + imageFilename + "' could be loaded." );
