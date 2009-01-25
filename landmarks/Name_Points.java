@@ -507,9 +507,8 @@ public class Name_Points implements PlugIn {
 			return;
 		}
 
-		// We need at least 3 points in common between the two
-		// point sets for an initial guess:
-
+		/* We need at least 3 points in common between the two
+		   point sets for an initial guess: */
 
 		ArrayList<String> namesInCommon = points.namesSharedWith(templatePoints);
 
