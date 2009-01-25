@@ -566,9 +566,9 @@ public class NamedPointSet {
 		ArrayList<String> common = new ArrayList<String>();
 		Iterator i0;
 		for(i0=listIterator();i0.hasNext();) {
-			String pointName = ((NamedPoint)i0.next()).name;
+			String pointName = ((NamedPointWorld)i0.next()).name;
 			for(Iterator i1=other.listIterator();i1.hasNext();) {
-				if (pointName.equals(((NamedPoint)i1.next()).name)) {
+				if (pointName.equals(((NamedPointWorld)i1.next()).name)) {
 					common.add(new String(pointName));
 					break;
 				}
