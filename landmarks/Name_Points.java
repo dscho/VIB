@@ -519,16 +519,36 @@ public class Name_Points implements PlugIn {
 		// Get a small image from around that point...
 		Calibration c = templateImage.getCalibration();
 
-		double x_spacing_template = c.pixelWidth;
-		double y_spacing_template = c.pixelHeight;
-		double z_spacing_template = c.pixelDepth;
-		templateUnits = c.getUnits();
+		double x_spacing_template = 1;
+		double y_spacing_template = 1;
+		double z_spacing_template = 1;
+		templateUnits = "pixels";
 
-		double real_x_template = pointInTemplate.x * x_spacing_template;
-		double real_y_template = pointInTemplate.y * y_spacing_template;
-		double real_z_template = pointInTemplate.z * z_spacing_template;
+		if( c != null ) {
+			x_spacing_template = c.pixelWidth;
+			y_spacing_template = c.pixelHeight;
+			z_spacing_template = c.pixelDepth;
+			templateUnits = c.getUnits();
+		}
 
-		double templateCubeSide = 50;
+		double real_x_template = pointInTemplate.x;
+		double real_y_template = pointInTemplate.y;
+		double real_z_template = pointInTemplate.z;
+
+		/* We want to make sure that the side of the cube in
+		   samples is no greater than this value */
+
+		int maxCubeSideSamples = 40;
+
+		double minimumTemplateSpacing = Math.min( Math.abs(x_spacing_template),
+							  Math.min( Math.abs(y_spacing_template), Math.abs(z_spacing_template) ) );
+
+
+		double templateCubeSide = maxCubeSideSamples * minimumTemplateSpacing;
+		System.out.println( "Using cube side in template of "+templateCubeSide+" "+templateUnits );
+		System.out.println( "   So template samples in x are: "+(int)( templateCubeSide / x_spacing_template ) );
+		System.out.println( "   So template samples in y are: "+(int)( templateCubeSide / y_spacing_template ) );
+		System.out.println( "   So template samples in z are: "+(int)( templateCubeSide / z_spacing_template ) );
 
 		double x_min_template = real_x_template - (templateCubeSide / 2);
 		double x_max_template = real_x_template + (templateCubeSide / 2);
