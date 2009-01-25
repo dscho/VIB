@@ -47,6 +47,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 	Button[] markButtons;
 	Button[] showButtons;
+	Button[] resetButtons;
 	Button[] fineTuneButtons;
 	Button[] renameButtons;
 	Button[] deleteButtons;
@@ -91,6 +92,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		coordinateLabels = new Label[points.size()];
 		markButtons = new Button[points.size()];
 		showButtons = new Button[points.size()];
+		resetButtons = new Button[points.size()];
 		fineTuneButtons = new Button[points.size()];
 		renameButtons = new Button[points.size()];
 		deleteButtons = new Button[points.size()];
@@ -117,12 +119,12 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			pointsPanel.add( b, c );
 
 			c.anchor = GridBagConstraints.LINE_START;
-			c.gridx = 1;
+			++ c.gridx;
 			coordinateLabels[counter] = new Label("<unset>");
 			pointsPanel.add( coordinateLabels[counter], c );
 
 			c.anchor = GridBagConstraints.LINE_START;
-			c.gridx = 2;
+			++ c.gridx;
 			showButtons[counter] = b = new Button("Show");
 			b.addActionListener(this);
 			b.setEnabled(false);
@@ -131,7 +133,16 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			pointsPanel.add( b, c );
 
 			c.anchor = GridBagConstraints.LINE_START;
-			c.gridx = 3;
+			++ c.gridx;
+			resetButtons[counter] = b = new Button("Reset");
+			b.addActionListener(this);
+			b.setEnabled(false);
+			buttonToIndex.put( b, counter );
+			buttonToAction.put( b, RESET );
+			pointsPanel.add( b, c );
+
+			c.anchor = GridBagConstraints.LINE_START;
+			++ c.gridx;
 			fineTuneButtons[counter] = b = new Button("Fine Tune");
 			b.addActionListener(this);
 			b.setEnabled(true);
@@ -140,7 +151,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			pointsPanel.add( b, c );
 
 			c.anchor = GridBagConstraints.LINE_START;
-			c.gridx = 4;
+			++ c.gridx;
 			renameButtons[counter] = b = new Button("Rename");
 			b.addActionListener(this);
 			b.setEnabled(true);
@@ -149,7 +160,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			pointsPanel.add( b, c );
 
 			c.anchor = GridBagConstraints.LINE_START;
-			c.gridx = 5;
+			++ c.gridx;
 			deleteButtons[counter] = b = new Button("Delete");
 			b.addActionListener(this);
 			b.setEnabled(true);
@@ -208,7 +219,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 			saveButton = new Button("Save");
 			saveButton.addActionListener(this);
-			resetButton = new Button("Reset");
+			resetButton = new Button("Reset All");
 			resetButton.addActionListener(this);
 			closeButton = new Button("Close");
 			closeButton.addActionListener(this);
@@ -275,6 +286,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		assert i<coordinateLabels.length;
 		coordinateLabels[i].setText("<unset>");
 		showButtons[i].setEnabled(false);
+		resetButtons[i].setEnabled(false);
 		pack();
 	}
 
@@ -282,6 +294,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		for(int i = 0; i < coordinateLabels.length; ++i) {
 			coordinateLabels[i].setText("<unset>");
 			showButtons[i].setEnabled(false);
+			resetButtons[i].setEnabled(false);
 		}
 		pack();
 	}
@@ -292,6 +305,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		newText += "x: " + f.format(x) + ", y: " + f.format(y) + ", z: " + f.format(z);
 		coordinateLabels[i].setText(newText);
 		showButtons[i].setEnabled(true);
+		resetButtons[i].setEnabled(true);
 	}
 
 	public void setFineTuning( boolean busy ) {
@@ -327,6 +341,9 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 				return;
 			case SHOW:
 				plugin.show(i);
+				return;
+			case RESET:
+				plugin.reset(i);
 				return;
 			case FINE_TUNE:
 				plugin.fineTune(i);
@@ -1138,6 +1155,11 @@ public class Name_Points implements PlugIn {
 
 	}
 
+	public void reset(int i) {
+		points.unset(i);
+		dialog.reset(i);
+	}
+
 	public void reset() {
 		dialog.resetAll();
 	}
@@ -1177,10 +1199,7 @@ public class Name_Points implements PlugIn {
 			dialog.pack();
 
 			NamedPointWorld point = points.get(i);
-			point.x = xWorld;
-			point.y = yWorld;
-			point.z = zWorld;
-			point.set = true;
+			point.set( xWorld, yWorld, zWorld );
 
 		} else {
 			IJ.error("You must have a current point selection in "+

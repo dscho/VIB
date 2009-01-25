@@ -653,4 +653,8 @@ public class NamedPointSet {
 		return toAdd;
 	}
 
+	void unset( int i ) {
+		NamedPointWorld npw = pointsWorld.get(i);
+		npw.unset();
+	}
 }

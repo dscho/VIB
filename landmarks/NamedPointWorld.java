@@ -132,4 +132,18 @@ public class NamedPointWorld {
 	public void setName(String newName) {
 		this.name = newName;
 	}
+
+	public void unset() {
+		set = false;
+		x = 0;
+		y = 0;
+		z = 0;
+	}
+
+	public void set( double x, double y, double z ) {
+		set = true;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
 }
