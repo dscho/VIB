@@ -565,16 +565,21 @@ public class NamedPointSet {
 		}
 	}
 
-	public ArrayList<String> namesSharedWith( NamedPointSet other) {
+	public ArrayList<String> namesSharedWith( NamedPointSet other ) {
+		return namesSharedWith( other, false );
+	}
+
+	public ArrayList<String> namesSharedWith( NamedPointSet other, boolean onlySetPoints ) {
 
 		ArrayList<String> common = new ArrayList<String>();
-		Iterator i0;
-		for(i0=listIterator();i0.hasNext();) {
-			String pointName = ((NamedPointWorld)i0.next()).name;
-			for(Iterator i1=other.listIterator();i1.hasNext();) {
-				if (pointName.equals(((NamedPointWorld)i1.next()).name)) {
-					common.add(new String(pointName));
-					break;
+		for( NamedPointWorld iNPW : pointsWorld ) {
+			String pointName = iNPW.name;
+			for( NamedPointWorld jNPQ : other.pointsWorld ) {
+				if( (iNPW.set && jNPQ.set) || ! onlySetPoints ) {
+					if( pointName.equals(jNPQ.name) ) {
+						common.add( new String( pointName ) );
+						break;
+					}
 				}
 			}
 		}
