@@ -20,20 +20,15 @@ import java.util.Iterator;
 
 public class ProgressWindow extends StackWindow implements ActionListener {
 
-	int indexOfPointBeingFineTuned;
-	
 	int width;
 	int height;
 	int depth;
 	
 	DecimalFormat scoreFormatter;
 	DecimalFormat distanceFormatter;
-	
+
 	Name_Points plugin;
-	public void setPlugin( Name_Points plugin ) {
-		this.plugin = plugin;
-	}
-	
+
 	ArrayList<FineTuneThread> fineTuneThreads;
 	
 	Button useThis;
@@ -59,35 +54,9 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 
 	void updateDistance(double newDistance,String units) {
 		distanceMoved.setText( "Moved: "+scoreFormatter.format(newDistance)+" "+units );
+		pack();
 	}
 		
-	void addFineTuneThread( FineTuneThread f ) {
-		fineTuneThreads.add(f);	    
-	}
-	
-	void stopThreads() {
-		
-		for( Iterator<FineTuneThread> i = fineTuneThreads.iterator();
-		     i.hasNext(); ) {
-			FineTuneThread f = i.next();
-			f.askToFinish();
-		}
-		
-		for( Iterator<FineTuneThread> i = fineTuneThreads.iterator();
-		     i.hasNext(); ) {
-			FineTuneThread f = i.next();
-			
-			System.out.println("waiting for thread "+f.threadIndex+" to finish");
-			try {
-				f.join();
-			} catch( InterruptedException e ) {
-				System.out.println("Caught InterruptedException while joining...");
-			}
-			System.out.println("... done waiting for thread "+f.threadIndex);
-		}	   
-		
-	}
-	
 	boolean useTheResult = true;
 	
 	@Override
@@ -100,24 +69,16 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 		if( source == useThis || source == cancel ) {
 			cancel.setEnabled(false);
 			useThis.setEnabled(false);
-			stopThreads();
 			if (source == useThis) {
 				useTheResult = true;
 				triedSoFar.setText("Finishing...");
-				plugin.fineTuneResults(bestSoFar);
+				plugin.stopFineTuneThreads();
 			} else if (source == cancel) {
 				useTheResult = false;
 				triedSoFar.setText("Cancelling...");
-				plugin.fineTuneResults(null);
+				plugin.stopFineTuneThreads();
 			}
 			close();		
-		} else if (source == refineBestSoFar) {
-
-			// FIXME: add this functionality...
-
-			/* Need to stop the threads and start a new
-			 * one from the best position so far. */
-
 		} else if (source == moveToOriginalPoint ) {
 			imp.setSlice( progressCanvas.fixed_z + 1 );
 		} else if (source == moveToRefinedPoint ) {
@@ -144,19 +105,18 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 	
 	protected ProgressCanvas progressCanvas;
 	
-	public ProgressWindow(ImagePlus imp, ImageCanvas ic) {
+	public ProgressWindow(ImagePlus imp, ImageCanvas ic, Name_Points plugin) {
 		super( imp, ic );
 		ImageCanvas icAfter = getCanvas();
 		if( (icAfter != null) && (ic instanceof ProgressCanvas) )
 			progressCanvas = (ProgressCanvas)ic;
 		else
 			progressCanvas = null;
-                fineTuneThreads = new ArrayList<FineTuneThread>();
+		this.plugin = plugin;
 		useThis = new Button("Use This");
 		cancel = new Button("Cancel");
 		lowestScore = new Label("Score: (none yet)");
 		triedSoFar = new Label("No attempts so far.");
-		refineBestSoFar = new Button("Start Again From Best");
 		useThis.addActionListener(this);
 		cancel.addActionListener(this);
 		add( useThis );
@@ -172,7 +132,7 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 		add( moveToRefinedPoint );
 		add( moveToOriginalPoint );
 
-		distanceMoved = new Label("");
+		distanceMoved = new Label("Moved:");
 		add( distanceMoved );
 
 		pack();
@@ -186,7 +146,7 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 	
 	synchronized void showBest( ) {
 		
-                RegistrationResult r = bestSoFar;
+		RegistrationResult r = bestSoFar;
 		
 		System.out.println("Updating progressDisplay with score: "+r.score);
 		
@@ -270,7 +230,6 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 					       r.transformed_point_z,
 					       false );
 
-
 		updateDistance(r.pointMoved,plugin.templateUnits);
 
 		System.out.println("the point moved: "+r.pointMoved);
@@ -290,13 +249,13 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 		if( setCentreSlice )
 			pack();
 		
-	        imp.updateAndRepaintWindow();
+		imp.updateAndRepaintWindow();
 		repaint();
 		
 		notShowingBest = false;
 	}
 	
-        long timeLastProgressUpdate = 0;
+	long timeLastProgressUpdate = 0;
 	
 	public synchronized void offerNewResult( RegistrationResult r ) {
 		
@@ -305,8 +264,8 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 		
 		if( (bestSoFar == null) || (r.score < bestSoFar.score) ) {
 			
-                        bestSoFar = r;
-                        updateLowestScore( r.score );
+			bestSoFar = r;
+			updateLowestScore( r.score );
 			notShowingBest = true;
 			
 			System.out.println("Found a better one: "+r.score);

@@ -19,6 +19,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.regex.*;
 import java.text.DecimalFormat;
 
@@ -28,7 +29,6 @@ import pal.math.MultivariateFunction;
 import stacks.ThreePaneCrop;
 import util.BatchOpener;
 import vib.FastMatrix;
-import vib.transforms.FastMatrixTransform;
 
 
 /* FIXME:
@@ -36,8 +36,6 @@ import vib.transforms.FastMatrixTransform;
      - scale the parameters to that i can set scbd to 1.0
      - indicate where the point would be moved to
      - add a key
-     - be able to interrupt to finish or cancel
-     - use a smoothed template?  (created on with 1.0 sigma, using calibration)
      - why do some really good looking alignments score apparently so low?
 */
 
@@ -189,7 +187,6 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		this.plugin = plugin;
 		this.archiveClient = archiveClient;
 
-
 		setLayout(new GridBagLayout());
 
 		GridBagConstraints outerc=new GridBagConstraints();
@@ -199,12 +196,13 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		buttonsPanel = new Panel();
 
 		instructions = new Label( defaultInstructions );
-		instructionsPanel.setLayout(new BorderLayout());
+		instructionsPanel.setLayout( new BorderLayout() );
 		instructionsPanel.add(instructions,BorderLayout.WEST);
 
 		outerc.gridx = 0;
 		outerc.gridy = 0;
 		outerc.anchor = GridBagConstraints.LINE_START;
+		outerc.fill = GridBagConstraints.HORIZONTAL;
 		add(instructionsPanel,outerc);
 
 		recreatePointsPanel();
@@ -274,6 +272,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 		outerc.gridy = 3;
 		outerc.anchor = GridBagConstraints.LINE_START;
+		outerc.fill = GridBagConstraints.NONE;
 		add(templatePanel,outerc);
 
 		optionsPanel = new Panel();
@@ -431,7 +430,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 }
 
-public class Name_Points implements PlugIn {
+public class Name_Points implements PlugIn, FineTuneProgressListener {
 
 	String templateImageFilename=Prefs.get("landmarks.Name_Points.templateImageFilename",null);
 	ImagePlus templateImage;
@@ -484,39 +483,93 @@ public class Name_Points implements PlugIn {
 		dialog.pack();
 	}
 
-	void fineTune(int i) {
+	int maxThreads = Runtime.getRuntime().availableProcessors();
 
-		if( progressWindow != null ) {
-			IJ.error("There's already a point being fine tuned at the moment.");
-			return;
+	/* To modify either of these, synchronize on the former: */
+
+	LinkedList< FineTuneThread > fineTuneThreadQueue = new LinkedList< FineTuneThread >();
+	LinkedList< FineTuneThread > fineTuneThreadsStarted = new LinkedList< FineTuneThread >();
+	boolean fineTuning = false;
+	boolean startedAdditionalRefinement = false;
+	int indexOfPointBeingFineTuned = -1;
+	FineTuneThread finalRefinementThread;
+	RegistrationResult bestSoFar;
+
+	/* We synchronize on latch to alter
+	   currentlyRunningFineTuneThreads, and call notifyAll() on it
+	   whenever we decrement it. */
+
+	Object latch = new Object();
+	int currentlyRunningFineTuneThreads;
+
+	// FIXME: not properly tested yet...
+/*
+	boolean fineTuneBlocking( int i ) {
+		synchronized ( latch ) {
+			if( ! fineTune( i ) )
+				return false;
+		}
+		synchronized ( latch ) {
+			while( currentlyRunningFineTuneThreads > 0 ) {
+				try {
+					latch.wait( );
+				} catch( InterruptedException e ) { }
+			}
+		}
+		return true;
+	}
+*/
+
+	/* Return true if we actually started threads, return false if
+	   we didn't - ypically because there are already threads
+	   running...
+	 */
+
+	boolean fineTune( int i ) {
+
+		synchronized( fineTuneThreadQueue ) {
+			if( fineTuning ) {
+				IJ.error( "Already fine-tuning some points" );
+				return false;
+			} else {
+				fineTuning = true;
+				indexOfPointBeingFineTuned = i;
+				startedAdditionalRefinement = false;
+				bestSoFar = null;
+				fineTuneThreadQueue.clear();
+				fineTuneThreadsStarted.clear();
+			}
 		}
 
 		NamedPointWorld p = points.get(i);
 		if (p == null) {
 			IJ.error("You must have set a point in order to fine-tune it.");
-			return;
+			return false;
 		}
 
 		String pointName = p.getName();
 
 		if( templatePoints == null ) {
 			IJ.error("You must have a template file loaded in order to fine tune.");
-			return;
+			return false;
 		}
 
 		NamedPointWorld pointInTemplate = templatePoints.getPoint(pointName);
 
 		if( pointInTemplate == null ) {
 			IJ.error("The point you want to fine-tune must be set both in this image and the template.  \""+pointName+"\" is not set in the template.");
-			return;
+			return false;
 		}
 
 		/* We need at least 3 points in common between the two
 		   point sets for an initial guess: */
 
-		ArrayList<String> namesInCommon = points.namesSharedWith(templatePoints);
+		ArrayList<String> namesInCommon = points.namesSharedWith(templatePoints,true);
 
-		boolean initialGuess = (namesInCommon.size() >= 3);
+		System.out.println("namedInCommon are: "+namesInCommon.toString());
+
+		boolean addInitialGuess = (namesInCommon.size() >= 3);
+		boolean addAllRotations = true;
 
 		dialog.setFineTuning(true);
 
@@ -556,11 +609,10 @@ public class Name_Points implements PlugIn {
 		/* We want to make sure that the side of the cube in
 		   samples is no greater than this value */
 
-		int maxCubeSideSamples = 40;
+		int maxCubeSideSamples = 100;
 
 		double minimumTemplateSpacing = Math.min( Math.abs(x_spacing_template),
 							  Math.min( Math.abs(y_spacing_template), Math.abs(z_spacing_template) ) );
-
 
 		double templateCubeSide = maxCubeSideSamples * minimumTemplateSpacing;
 		System.out.println( "Using cube side in template of "+templateCubeSide+" "+templateUnits );
@@ -584,12 +636,55 @@ public class Name_Points implements PlugIn {
 
 		ImagePlus cropped = ThreePaneCrop.performCrop(templateImage, x_min_template_i, x_max_template_i, y_min_template_i, y_max_template_i, z_min_template_i, z_max_template_i, false);
 
-		double [] guessedRotation = null;
+		{
+			ImageStack emptyStack = new ImageStack(100,100);
+			ColorProcessor emptyCP = new ColorProcessor(100,100);
+			emptyCP.setRGB( new byte[100*100], new byte[100*100], new byte[100*100] );
+			emptyStack.addSlice("",emptyCP);
+			// grrr, add two slices so that the scrollbar gets created:
+			emptyStack.addSlice("",emptyCP);
 
-		if( initialGuess ) {
-			// We could try to pick the other points we want to use
-			// in a more subtle way, but for the moment just pick
-			// the first two which are in common.
+			ImagePlus progressImagePlus = new ImagePlus( "Fine-Tuning Progress", emptyStack );
+			ProgressCanvas progressCanvas = new ProgressCanvas( progressImagePlus );
+
+			progressWindow = new ProgressWindow( progressImagePlus, progressCanvas, this );
+		}
+
+		fineTuneThreadQueue = new LinkedList< FineTuneThread >();
+
+		/* A quick word about the transformations being
+		   optimized here, which are arrays of 6 double
+		   values.  These are:
+
+		   	{ z1, x1, z2, tx, ty, tz }
+
+		   This defines a transformation that will take a
+		   real-world vector from the template point to
+		   another point in the template, and map it to a
+		   real-world co-ordinate in the image we're marking
+		   up.
+
+		   (FIXME: of course, this makes it harder to
+		   understand than if the transformation was straight
+		   from a real-world coordinate in the template to a
+		   real-world coordinate in the image we're marking
+		   up.  I will fix this when I have time.)
+
+		   So, ( z1, x1, x2 ) are Euler angles and ( tx, ty,
+		   tz ) are a translation.  First the vector from the
+		   template-point is rotated according to the former,
+		   and then it is translated with the latter. */
+
+		double [] guessedTransformation = null;
+
+		if( addInitialGuess ) {
+
+			// FIXME: use bestRigid instead
+
+			/* We could try to pick the other points we
+			   want to use in a more subtle way, but for
+			   the moment just pick the first two which
+			   are in common. */
 
 			String [] otherPoints=new String[2];
 
@@ -616,94 +711,54 @@ public class Name_Points implements PlugIn {
 			NamedPointWorld inTemplate1=templatePoints.getPoint(otherPoints[0]);
 			NamedPointWorld inTemplate2=templatePoints.getPoint(otherPoints[1]);
 
-			double inThisX = p.x * x_spacing;
-			double inThisY = p.y * y_spacing;
-			double inThisZ = p.z * z_spacing;
-
-			double inThis1X = inThis1.x * x_spacing;
-			double inThis1Y = inThis1.y * y_spacing;
-			double inThis1Z = inThis1.z * z_spacing;
-
-			double inThis2X = inThis2.x * x_spacing;
-			double inThis2Y = inThis2.y * y_spacing;
-			double inThis2Z = inThis2.z * z_spacing;
-
-			double inTemplateX = pointInTemplate.x * x_spacing_template;
-			double inTemplateY = pointInTemplate.y * y_spacing_template;
-			double inTemplateZ = pointInTemplate.z * z_spacing_template;
-
-			double inTemplate1X = inTemplate1.x * x_spacing_template;
-			double inTemplate1Y = inTemplate1.y * y_spacing_template;
-			double inTemplate1Z = inTemplate1.z * z_spacing_template;
-
-			double inTemplate2X = inTemplate2.x * x_spacing_template;
-			double inTemplate2Y = inTemplate2.y * y_spacing_template;
-			double inTemplate2Z = inTemplate2.z * z_spacing_template;
-
 			double [] inThisTo1 = new double[3];
 			double [] inThisTo2 = new double[3];
 
 			double [] inTemplateTo1 = new double[3];
 			double [] inTemplateTo2 = new double[3];
 
-			inThisTo1[0] = inThis1.x - inThisX;
-			inThisTo1[1] = inThis1.y - inThisY;
-			inThisTo1[2] = inThis1.z - inThisZ;
+			inThisTo1[0] = inThis1.x - p.x;
+			inThisTo1[1] = inThis1.y - p.y;
+			inThisTo1[2] = inThis1.z - p.z;
 
-			inThisTo2[0] = inThis2.x - inThisX;
-			inThisTo2[1] = inThis2.y - inThisY;
-			inThisTo2[2] = inThis2.z - inThisZ;
+			inThisTo2[0] = inThis2.x - p.x;
+			inThisTo2[1] = inThis2.y - p.y;
+			inThisTo2[2] = inThis2.z - p.z;
 
-			inTemplateTo1[0] = inTemplate1.x - inTemplateX;
-			inTemplateTo1[1] = inTemplate1.y - inTemplateY;
-			inTemplateTo1[2] = inTemplate1.z - inTemplateZ;
+			inTemplateTo1[0] = inTemplate1.x - pointInTemplate.x;
+			inTemplateTo1[1] = inTemplate1.y - pointInTemplate.y;
+			inTemplateTo1[2] = inTemplate1.z - pointInTemplate.z;
 
-			inTemplateTo2[0] = inTemplate2.x - inTemplateX;
-			inTemplateTo2[1] = inTemplate2.y - inTemplateY;
-			inTemplateTo2[2] = inTemplate2.z - inTemplateZ;
+			inTemplateTo2[0] = inTemplate2.x - pointInTemplate.x;
+			inTemplateTo2[1] = inTemplate2.y - pointInTemplate.y;
+			inTemplateTo2[2] = inTemplate2.z - pointInTemplate.z;
 
 			FastMatrix r=FastMatrix.rotateToAlignVectors(inTemplateTo1, inTemplateTo2, inThisTo1, inThisTo2);
 
-			guessedRotation=new double[6];
-			r.guessEulerParameters(guessedRotation);
+			guessedTransformation=new double[6];
+			r.guessEulerParameters(guessedTransformation);
 
-			System.out.println("guessed euler 0 degrees: "+((180*guessedRotation[0])/Math.PI));
-			System.out.println("guessed euler 1 degrees: "+((180*guessedRotation[1])/Math.PI));
-			System.out.println("guessed euler 2 degrees: "+((180*guessedRotation[2])/Math.PI));
+			System.out.println("guessed euler 0 degrees: "+((180*guessedTransformation[0])/Math.PI));
+			System.out.println("guessed euler 1 degrees: "+((180*guessedTransformation[1])/Math.PI));
+			System.out.println("guessed euler 2 degrees: "+((180*guessedTransformation[2])/Math.PI));
 
 			System.out.println("my inferred r is: "+r);
 
-			FastMatrix rAnotherWay = FastMatrix.rotateEuler(guessedRotation[0],
-									guessedRotation[1],
-									guessedRotation[2]);
+			FastMatrix rAnotherWay = FastMatrix.rotateEuler(guessedTransformation[0],
+									guessedTransformation[1],
+									guessedTransformation[2]);
 
 			System.out.println("another r is:   "+rAnotherWay);
 
-		}
 
-		ImageStack emptyStack = new ImageStack(100,100);
-		ColorProcessor emptyCP = new ColorProcessor(100,100);
-		emptyCP.setRGB( new byte[100*100], new byte[100*100], new byte[100*100] );
-		emptyStack.addSlice("",emptyCP);
-		// grrr, add two slices so that the scrollbar gets created:
-		emptyStack.addSlice("",emptyCP);
-
-		ImagePlus progressImagePlus = new ImagePlus( "Fine-Tuning Progress", emptyStack );
-		ProgressCanvas progressCanvas = new ProgressCanvas( progressImagePlus );
-
-		progressCanvas.setCrosshairs(50,50,2,true);
-		progressCanvas.setCrosshairs(60,60,2,false);
-
-		progressWindow = new ProgressWindow( progressImagePlus, progressCanvas );
-		progressWindow.setPlugin(this);
-
-		progressWindow.indexOfPointBeingFineTuned = i;
-
-		for( int threadIndex = 0; threadIndex < numberOfFineTuneThreads; ++threadIndex ) {
+			double [] initialValues = { guessedTransformation[0],
+						    guessedTransformation[1],
+						    guessedTransformation[2],
+						    p.x,
+						    p.y,
+						    p.z };
 
 			FineTuneThread fineTuneThread = new FineTuneThread(
-				threadIndex,
-				numberOfFineTuneThreads,
 				CORRELATION,
 				templateCubeSide,
 				cropped,
@@ -711,43 +766,130 @@ public class Name_Points implements PlugIn {
 				pointInTemplate,
 				imp,
 				p,
-				guessedRotation,
+				initialValues,
+				guessedTransformation,
 				progressWindow,
 				this);
 
-			progressWindow.addFineTuneThread(fineTuneThread);
-
+			fineTuneThreadQueue.addLast( fineTuneThread );
 		}
 
-		progressWindow.startThreads();
+		/* We want to generate all possible rigid rotations
+		   of one axis onto another.  So, the x axis can be
+		   mapped on to one of 6 axes.  Then the y axis can
+		   be mapped on to one of 4 axes.  The z axis can
+		   then only be mapped onto 1 axis if the handedness
+		   is to be preserved.
 
+		   As a special case, if guessedTransformation is supplied then
+		   we try that first.
+		*/
+
+		for( int rotation = 0; rotation < 24; ++rotation ) {
+
+			double [] initialValues = new double[6];
+
+			int firstAxis = rotation / 8;
+			int firstAxisParity = 2 * ((rotation / 4) % 2) - 1;
+			int secondAxisInformation = rotation % 4;
+			int secondAxisIncrement = 1 + (secondAxisInformation / 2);
+			int secondAxisParity = 2 * (secondAxisInformation % 2) - 1;
+			int secondAxis = (firstAxis + secondAxisIncrement) % 3;
+
+			double [] xAxisMappedTo = new double[3];
+			double [] yAxisMappedTo = new double[3];
+
+			xAxisMappedTo[firstAxis] = firstAxisParity;
+			yAxisMappedTo[secondAxis] = secondAxisParity;
+
+			double [] zAxisMappedTo = FastMatrix.crossProduct( xAxisMappedTo, yAxisMappedTo );
+
+			System.out.println("x axis mapped to: "+xAxisMappedTo[0]+","+xAxisMappedTo[1]+","+xAxisMappedTo[2]);
+			System.out.println("y axis mapped to: "+yAxisMappedTo[0]+","+yAxisMappedTo[1]+","+yAxisMappedTo[2]);
+			System.out.println("z axis mapped to: "+zAxisMappedTo[0]+","+zAxisMappedTo[1]+","+zAxisMappedTo[2]);
+
+			double [][] m = new double[3][4];
+
+			m[0][0] = xAxisMappedTo[0];
+			m[1][0] = xAxisMappedTo[1];
+			m[2][0] = xAxisMappedTo[2];
+
+			m[0][1] = yAxisMappedTo[0];
+			m[1][1] = yAxisMappedTo[1];
+			m[2][1] = yAxisMappedTo[2];
+
+			m[0][2] = zAxisMappedTo[0];
+			m[1][2] = zAxisMappedTo[1];
+			m[2][2] = zAxisMappedTo[2];
+
+			FastMatrix rotationMatrix = new FastMatrix(m);
+			double [] eulerParameters = new double[6];
+			rotationMatrix.guessEulerParameters(eulerParameters);
+
+			double z1 = eulerParameters[0];
+			double x1 = eulerParameters[1];
+			double z2 = eulerParameters[2];
+
+			initialValues[0] = z1;
+			initialValues[1] = x1;
+			initialValues[2] = z2;
+			initialValues[3] = p.x;
+			initialValues[4] = p.y;
+			initialValues[5] = p.z;
+
+			FineTuneThread fineTuneThread = new FineTuneThread(
+				CORRELATION,
+				templateCubeSide,
+				cropped,
+				templateImage,
+				pointInTemplate,
+				imp,
+				p,
+				initialValues,
+				guessedTransformation,
+				progressWindow,
+				this);
+
+			fineTuneThreadQueue.addLast( fineTuneThread );
+		}
+
+		// Start the initial threads:
+		synchronized( fineTuneThreadQueue ) {
+			for( int j = Math.min( fineTuneThreadQueue.size(), maxThreads ); j > 0; --j ) {
+				System.out.println("========== Starting an initial thread ==========");
+				startNextThread();
+			}
+		}
+
+		/* Now similarly create a final thread which we will
+		   use for a last refinement stage after all of the
+		   others have finished. */
+
+		finalRefinementThread = new FineTuneThread(
+			CORRELATION,
+			templateCubeSide,
+			cropped,
+			templateImage,
+			pointInTemplate,
+			imp,
+			p,
+			null,
+			guessedTransformation,
+			progressWindow,
+			this);
+
+		return true;
 	}
 
-	void fineTuneResults( RegistrationResult bestResult ) {
-
-		dialog.setFineTuning(false);
-
-		if( bestResult != null ) {
-
-			NamedPointWorld point = points.get(progressWindow.indexOfPointBeingFineTuned);
-			point.x = bestResult.point_would_be_moved_to_x;
-			point.y = bestResult.point_would_be_moved_to_y;
-			point.z = bestResult.point_would_be_moved_to_z;
-			point.set = true;
-			System.out.println("Got a result, changed point to: "+point);
-
-			dialog.setCoordinateLabel( progressWindow.indexOfPointBeingFineTuned,
-						   point.x,
-						   point.y,
-						   point.z );
-			dialog.pack();
-
+	void startNextThread( ) {
+		synchronized (fineTuneThreadQueue) {
+			if( fineTuning ) {
+				FineTuneThread ftt = fineTuneThreadQueue.removeFirst();
+				ftt.start();
+				fineTuneThreadsStarted.addLast(ftt);
+				++ currentlyRunningFineTuneThreads;
+			}
 		}
-
-		progressWindow = null;
-
-		IJ.showProgress(1.0);
-
 	}
 
 	static void printParameters( double [] parameters ) {
@@ -764,7 +906,7 @@ public class Name_Points implements PlugIn {
 
 	public static final int MEAN_ABSOLUTE_DIFFERENCES     = 1;
 	public static final int MEAN_SQUARED_DIFFERENCES      = 2;
-	public static final int CORRELATION		   = 3;
+	public static final int CORRELATION		      = 3;
 	public static final int NORMALIZED_MUTUAL_INFORMATION = 4;
 
 	public static final String [] methodName = {
@@ -776,12 +918,31 @@ public class Name_Points implements PlugIn {
 	};
 
 	/**
-	    When this is called, toKeep is the full new image, and
 	    toTransform is just a cropped region of the template
 	    around the template point.
+
+	    toTransform must have calibration data; if it weren't for
+	    the possibility of the cube being clipped by the edges of
+	    the template, cubeSide may be calculable from that.
+
+	    templatePoint is the real world coordinate of the centre
+	    of toTransform.
+
+	    toKeep is the complete image we're marking ("guessing")
+	    points in.
+
+	    guessPoint is the real world coordinate of the point we've
+	    guess as corresponding in toKeep.
 	 */
 
-	static RegistrationResult mapImageWith( ImagePlus toTransform, ImagePlus toKeep, NamedPointWorld templatePoint, NamedPointWorld guessedPoint, double[] mapValues, double cubeSide, int similarityMeasure, boolean show, String imageTitle ) {
+	static RegistrationResult mapImageWith( ImagePlus toTransform,
+						ImagePlus toKeep,
+						NamedPointWorld templatePoint,
+						NamedPointWorld guessedPoint,
+						double[] mapValues,
+						double cubeSide,
+						int similarityMeasure,
+						String imageTitle ) {
 
 		double sumSquaredDifferences = 0;
 		double sumAbsoluteDifferences = 0;
@@ -808,11 +969,11 @@ public class Name_Points implements PlugIn {
 		FastMatrix rotateFromValues = FastMatrix.rotateEuler(z1, x1, z2);
 		FastMatrix transformFromValues = FastMatrix.translate(tx, ty, tz);
 
-		FastMatrixTransform m = new FastMatrixTransform(scalePointInToTransform);
-		m = m.composeWithFastMatrix(backToOriginBeforeRotation);
-		m = m.composeWithFastMatrix(rotateFromValues);
-		m = m.composeWithFastMatrix(transformFromValues);
-		m = m.composeWithFastMatrix(scalePointInToKeepInverse);
+		FastMatrix mFM = new FastMatrix(scalePointInToTransform);
+		mFM = backToOriginBeforeRotation.times(mFM);
+		mFM = rotateFromValues.times(mFM);
+		mFM = transformFromValues.times(mFM);
+		mFM = scalePointInToKeepInverse.times(mFM);
 
 		/* Now transform the corner points of the cropped
 		   template image to find the maximum and minimum
@@ -832,24 +993,25 @@ public class Name_Points implements PlugIn {
 		double zmax = Double.MIN_VALUE;
 
 		for (int i = 0; i < corners.length; ++i) {
-			m.apply(corners[i][0], corners[i][1], corners[i][2]);
-			if (m.x < xmin) {
-				xmin = m.x;
+
+			mFM.apply(corners[i][0], corners[i][1], corners[i][2]);
+			if (mFM.x < xmin) {
+				xmin = mFM.x;
 			}
-			if (m.x > xmax) {
-				xmax = m.x;
+			if (mFM.x > xmax) {
+				xmax = mFM.x;
 			}
-			if (m.y < ymin) {
-				ymin = m.y;
+			if (mFM.y < ymin) {
+				ymin = mFM.y;
 			}
-			if (m.y > ymax) {
-				ymax = m.y;
+			if (mFM.y > ymax) {
+				ymax = mFM.y;
 			}
-			if (m.z < zmin) {
-				zmin = m.z;
+			if (mFM.z < zmin) {
+				zmin = mFM.z;
 			}
-			if (m.z > zmax) {
-				zmax = m.z;
+			if (mFM.z > zmax) {
+				zmax = mFM.z;
 			}
 		}
 
@@ -871,7 +1033,10 @@ public class Name_Points implements PlugIn {
 		int transformed_height = (transformed_y_max - transformed_y_min) + 1;
 		int transformed_depth = (transformed_z_max - transformed_z_min) + 1;
 
-		// System.out.println("transformed dimensions: " + transformed_width + "," + transformed_height + "," + transformed_depth);
+		if( transformed_width < 0 || transformed_height < 0 || transformed_depth < 0 ) {
+			System.out.println("=== Error ==================");
+			System.out.println("transformed dimensions: " + transformed_width + "," + transformed_height + "," + transformed_depth);
+		}
 
 		int k_width = toKeep.getWidth();
 		int k_height = toKeep.getHeight();
@@ -903,7 +1068,7 @@ public class Name_Points implements PlugIn {
 		for( int z_s = 0; z_s < d; ++z_s)
 			toTransformBytes[z_s]=(byte[])toTransformStack.getPixels(z_s+1);
 
-		FastMatrix back_to_template = m.inverse();
+		FastMatrix back_to_template = mFM.inverse();
 
 		byte [][] transformedBytes = new byte[transformed_depth][transformed_height * transformed_width];
 
@@ -999,6 +1164,16 @@ public class Name_Points implements PlugIn {
 
 		}
 
+		Calibration c = toKeep.getCalibration();
+		double toKeep_x_spacing = 1;
+		double toKeep_y_spacing = 1;
+		double toKeep_z_spacing = 1;
+		if( c != null ) {
+			toKeep_x_spacing = c.pixelWidth;
+			toKeep_y_spacing = c.pixelHeight;
+			toKeep_z_spacing = c.pixelDepth;
+		}
+
 		double pointDrift;
 
 		{
@@ -1010,28 +1185,17 @@ public class Name_Points implements PlugIn {
 			int centre_cropped_template_y = toTransform.getHeight() / 2;
 			int centre_cropped_template_z = toTransform.getStackSize() / 2;
 
-			m.apply( centre_cropped_template_x,
-				 centre_cropped_template_y,
-				 centre_cropped_template_z );
+			mFM.apply( centre_cropped_template_x,
+				   centre_cropped_template_y,
+				   centre_cropped_template_z );
 
-			result.point_would_be_moved_to_x = (int)m.x;
-			result.point_would_be_moved_to_y = (int)m.y;
-			result.point_would_be_moved_to_z = (int)m.z;
-
-			/* I think this is buggy - we compare it with
-			cubeSide, so we need to scale these with the
-			calibration:
+			result.point_would_be_moved_to_x = mFM.x * toKeep_x_spacing;
+			result.point_would_be_moved_to_y = mFM.y * toKeep_y_spacing;
+			result.point_would_be_moved_to_z = mFM.z * toKeep_z_spacing;
 
 			double xdiff = result.point_would_be_moved_to_x - guessedPoint.x;
 			double ydiff = result.point_would_be_moved_to_y - guessedPoint.y;
 			double zdiff = result.point_would_be_moved_to_z - guessedPoint.z;
-			*/
-
-			Calibration c = toKeep.getCalibration();
-
-			double xdiff = (result.point_would_be_moved_to_x - guessedPoint.x) * c.pixelWidth;
-			double ydiff = (result.point_would_be_moved_to_y - guessedPoint.y) * c.pixelHeight;
-			double zdiff = (result.point_would_be_moved_to_z - guessedPoint.z) * c.pixelDepth;
 
 			double pointDriftSquared =
 				(xdiff * xdiff) + (ydiff * ydiff) + (zdiff * zdiff);
@@ -1048,16 +1212,16 @@ public class Name_Points implements PlugIn {
 		 * offset of newImage subtracted from it:
 		 */
 
-		result.fixed_point_x = (int)( guessedPoint.x - transformed_x_min );
-		result.fixed_point_y = (int)( guessedPoint.y - transformed_y_min );
-		result.fixed_point_z = (int)( guessedPoint.z - transformed_z_min );
+		result.fixed_point_x = (int)( (guessedPoint.x / toKeep_x_spacing) - transformed_x_min );
+		result.fixed_point_y = (int)( (guessedPoint.y / toKeep_y_spacing) - transformed_y_min );
+		result.fixed_point_z = (int)( (guessedPoint.z / toKeep_z_spacing) - transformed_z_min );
 
 		/* The template point - we worked out where it moved
 		 * to above, but not adjusted for the cropping... */
 
-		result.transformed_point_x = (int)( result.point_would_be_moved_to_x - transformed_x_min );
-		result.transformed_point_y = (int)( result.point_would_be_moved_to_y - transformed_y_min );
-		result.transformed_point_z = (int)( result.point_would_be_moved_to_z - transformed_z_min );
+		result.transformed_point_x = (int)( (result.point_would_be_moved_to_x / toKeep_x_spacing) - transformed_x_min );
+		result.transformed_point_y = (int)( (result.point_would_be_moved_to_y / toKeep_y_spacing) - transformed_y_min );
+		result.transformed_point_z = (int)( (result.point_would_be_moved_to_z / toKeep_z_spacing) - transformed_z_min );
 
 		// Back to the scoring now: now use the logistic
 		// function to scale up the penalty as we get further
@@ -1251,8 +1415,6 @@ public class Name_Points implements PlugIn {
 
 	}
 
-	/* FIXME: put this back when file format detection and loading is sorted...
-
 	public void get( boolean mineOnly ) {
 
 		Hashtable<String,String> parameters = new Hashtable<String,String>();
@@ -1289,19 +1451,19 @@ public class Name_Points implements PlugIn {
 
 		// Now fetch that file:
 
-		// FIXME:
-
 		if( bestUrl == null )
 			return;
 
 		String fileContents =  ArchiveClient.justGetFileAsString( bestUrl );
-
-		if( fileContents != null )
-			loadFromString(fileContents);
-
-
+		if( fileContents == null ) {
+			IJ.error("Failed to fetch URL: "+bestUrl);
+		} else {
+			NamedPointSet nps = NamedPointSet.fromString( fileContents );
+			this.points = nps;
+			dialog.recreatePointsPanel();
+			dialog.pack();
+		}
 	}
-	*/
 
 	public void upload() {
 
@@ -1471,7 +1633,6 @@ public class Name_Points implements PlugIn {
 						IJ.error("Couldn't load points file for template image.  The error was: " + e );
 					}
 				}
-
 				if( templatePoints == null ) {
 					points.addNewPoint();
 				} else {
@@ -1492,7 +1653,6 @@ public class Name_Points implements PlugIn {
 					   archiveClient,
 					   loadedTemplate ? templateParameter : null,
 					   this );
-
 	}
 
 	public boolean loadAtStart() {
@@ -1567,9 +1727,110 @@ public class Name_Points implements PlugIn {
 		return true;
 	}
 
-	void stopFineTuneThreads() {
+	public void fineTuneNewBestResult( RegistrationResult result ) {
 		if( progressWindow != null )
-			progressWindow.stopThreads();
+			progressWindow.offerNewResult( result );
 	}
 
+	public void stopFineTuneThreads( ) {
+
+		synchronized( fineTuneThreadQueue ) {
+			for( FineTuneThread runningThread : fineTuneThreadsStarted )
+				runningThread.askToFinish();
+			fineTuning = false;
+		}
+		for( FineTuneThread f : fineTuneThreadsStarted ) {
+			System.out.println( "Waiting for thread " + f + " to finish..." );
+			try {
+				f.join();
+			} catch( InterruptedException e ) {
+			}
+			System.out.println("... done waiting for thread.");
+		}
+		dialog.setFineTuning( false );
+
+		if( progressWindow != null && progressWindow.useTheResult ) {
+			useFineTuneResult( progressWindow.bestSoFar );
+		}
+
+		System.out.println("FINISHED! (in stopFineTuneThreads)");
+	}
+
+	public void useFineTuneResult( ) {
+		useFineTuneResult( bestSoFar );
+	}
+
+	public void useFineTuneResult( RegistrationResult r ) {
+
+		if( r != null ) {
+
+			NamedPointWorld point = points.get( indexOfPointBeingFineTuned );
+			point.x = r.point_would_be_moved_to_x;
+			point.y = r.point_would_be_moved_to_y;
+			point.z = r.point_would_be_moved_to_z;
+			point.set = true;
+			System.out.println("Got a result, changed point to: "+point);
+
+			dialog.setCoordinateLabel( indexOfPointBeingFineTuned,
+						   point.x,
+						   point.y,
+						   point.z );
+			dialog.pack();
+		}
+
+		progressWindow = null;
+	}
+
+	public void updateBest( RegistrationResult r ) {
+		if( bestSoFar == null || r.score < bestSoFar.score ) {
+			bestSoFar = r;
+		}
+	}
+
+	public void fineTuneThreadFinished( int reason, RegistrationResult result ) {
+
+		synchronized( fineTuneThreadQueue ) {
+
+			if( result != null ) {
+				if( progressWindow != null )
+					progressWindow.offerNewResult( result );
+				updateBest( result );
+			}
+
+			synchronized( latch ) {
+				if( currentlyRunningFineTuneThreads <= maxThreads &&
+				    reason == FineTuneProgressListener.COMPLETED ) {
+					if( fineTuneThreadQueue.size() > 0 ) {
+						System.out.println( "========== A thread finished, and with currentlyRunningFineTuneThreads = " + currentlyRunningFineTuneThreads + ", starting a thread ==========" );
+						startNextThread();
+					}
+				}
+
+				-- currentlyRunningFineTuneThreads;
+
+				if( currentlyRunningFineTuneThreads == 0 ) {
+
+					if( fineTuning && ! startedAdditionalRefinement ) {
+
+						/* Then take the best so far, and restart from there.
+						   Sometimes this seems to produce some improvement. */
+
+						System.out.println("Starting refinement thread!");
+
+						startedAdditionalRefinement = true;
+						finalRefinementThread.setInitialTransformation( bestSoFar.parameters );
+						fineTuneThreadQueue.addLast( finalRefinementThread );
+						startNextThread();
+					} else {
+						if( reason == COMPLETED ) {
+							// Then indicated that we've finished in the instructions panel:
+							dialog.instructions.setText("Completed: select 'Use this' or 'Cancel' in the fine-tune window.");
+							dialog.pack();
+						}
+					}
+				}
+				latch.notifyAll();
+			}
+		}
+	}
 }

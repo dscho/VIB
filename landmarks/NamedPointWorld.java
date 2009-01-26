@@ -147,9 +147,9 @@ public class NamedPointWorld {
 		this.z = z;
 	}
 
-        public String toIGS() {
+	public String toIGS() {
 		return "landmark {\n\tname \""+escape(name)+"\"\n\tlocation "+
 			x+" "+y+" "+z+"\n}";
-        }
+	}
 
 }
