@@ -491,6 +491,7 @@ public class NamedPointSet {
 						"([eE0-9\\.\\-]+) *, *"+
 						"([eE0-9\\.\\-]+) *\\] *$");
 
+			Pattern p_comment = Pattern.compile("^ *#.*$");
 			Pattern p_name_no_data = Pattern.compile("^\"(.*)\":.*$");
 
 			// Make sure we have the calibration data here:
@@ -520,6 +521,7 @@ public class NamedPointSet {
 					continue;
 
 				Matcher m_data = p_data.matcher(line);
+				Matcher m_comment = p_comment.matcher(line);
 				Matcher m_name_no_data = p_name_no_data.matcher(line);
 
 				if (m_data.matches()) {
@@ -529,6 +531,8 @@ public class NamedPointSet {
 								      Double.parseDouble(m_data.group(4)) * zSpacing) );
 				} else if (m_name_no_data.matches()) {
 					nps.add( new NamedPointWorld( m_name_no_data.group(1) ) );
+				} else if (m_comment.matches()) {
+					continue;
 				} else {
 					throw new PointsFileException( "Couldn't parse the points file; the problematic line is '" + line + "'" );
 				}
