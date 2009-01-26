@@ -75,6 +75,8 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 	Label templateFileName;
 	Button chooseTemplate;
+	Button setAsDefaultTemplate;
+	Button clearTemplate;
 
 	String defaultInstructions = "Mark the current point selection as:";
 
@@ -251,13 +253,24 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 		templatePanel=new Panel();
 		templatePanel.add(new Label("Template File:"));
-		templateFileName = new Label("[None chosen]");
+		if( plugin.templateImageFilename == null )
+			templateFileName = new Label("[None chosen]");
+		else
+			templateFileName = new Label(plugin.templateImageFilename);
 		if( loadedTemplateFilename != null )
 			templateFileName.setText(loadedTemplateFilename);
 		templatePanel.add(templateFileName);
 		chooseTemplate = new Button("Choose");
 		chooseTemplate.addActionListener(this);
 		templatePanel.add(chooseTemplate);
+
+		setAsDefaultTemplate = new Button("Set As Default");
+		setAsDefaultTemplate.addActionListener(this);
+		templatePanel.add(setAsDefaultTemplate);
+
+		clearTemplate = new Button("Clear Template");
+		clearTemplate.addActionListener(this);
+		templatePanel.add(clearTemplate);
 
 		outerc.gridy = 3;
 		outerc.anchor = GridBagConstraints.LINE_START;
@@ -379,29 +392,29 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			plugin.get( false );
 */
 		} else if (source == chooseTemplate ) {
-
 			OpenDialog od;
-
-			od = new OpenDialog("Select template image file...",
-					    null,
-					    null );
-
-			String fileName = od.getFileName();
-			String directory = od.getDirectory();
-
-			if( fileName == null ) {
-				return;
+			String openTitle = "Select template image file...";
+			File templateImageFile = null;
+			if( plugin.templateImageFilename != null )
+				templateImageFile = new File( plugin.templateImageFilename );
+			if( templateImageFile == null )
+				od = new OpenDialog( openTitle, null );
+			else
+				od = new OpenDialog( openTitle, templateImageFile.getParent(), templateImageFile.getName() );
+			if( od.getFileName() != null ) {
+				String templateImageFilename=od.getDirectory()+od.getFileName();
+				if( plugin.useTemplate( templateImageFilename ) ) {
+					templateFileName.setText(templateImageFilename);
+					pack();
+				}
 			}
-
-			String fullFileName=directory+fileName;
-
-			if( plugin.useTemplate(fullFileName) ) {
-				templateFileName.setText(fullFileName);
-				pack();
-			}
-
+		} else if (source == setAsDefaultTemplate) {
+			plugin.setDefaultTemplate();
+		} else if (source == clearTemplate) {
+			plugin.useTemplate( null );
+			templateFileName.setText("[None chosen]");
+			pack();
 		}
-
 	}
 
 	public void windowClosing( WindowEvent e ) {
@@ -420,7 +433,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 public class Name_Points implements PlugIn {
 
-	String templateImageFilename="/home/mark/arnim-brain/CantonF41c.grey";
+	String templateImageFilename=Prefs.get("landmarks.Name_Points.templateImageFilename",null);
 	ImagePlus templateImage;
 	NamedPointSet templatePoints;
 	String templateUnits;
@@ -430,21 +443,6 @@ public class Name_Points implements PlugIn {
 	double x_spacing;
 	double y_spacing;
 	double z_spacing;
-
-	// FIXME: really we want different sets of points for
-	// different applications.
-
-	private String [] defaultPointNames = {
-		"the centre of the ellipsoid body",
-		"the left tip of the protocerebral bridge",
-		"the right tip of the protocerebral bridge",
-		"the most dorsal point of the left part of the protocerebral bridge",
-		"the most dorsal point of the right part of the protocerebral bridge",
-		"the top of the left alpha lobe of the mushroom body",
-		"the top of the right alpha lobe of the mushroom body",
-		"the most lateral part of the mushroom body on the left",
-		"the most lateral part of the mushroom body on the right"
-	};
 
 	public void show(int i) {
 		points.showAsROI(i, imp);
@@ -521,6 +519,20 @@ public class Name_Points implements PlugIn {
 		boolean initialGuess = (namesInCommon.size() >= 3);
 
 		dialog.setFineTuning(true);
+
+		// If the templateImage hasn't already been loaded, load it now:
+		if( templateImage == null ) {
+			File templateImageFile = new File( templateImageFilename );
+			if( ! templateImageFile.exists() ) {
+				IJ.error("The template file ('"+templateImageFile.getAbsolutePath()+"') does not exist");
+				return false;
+			}
+			templateImage = BatchOpener.openFirstChannel(templateImageFile.getAbsolutePath());
+			if( templateImage == null ) {
+				IJ.error( "Couldn't load the template image from: " + templateImageFilename );
+				return false;
+			}
+		}
 
 		// Get a small image from around that point...
 		Calibration c = templateImage.getCalibration();
@@ -1332,6 +1344,32 @@ public class Name_Points implements PlugIn {
 
 	public void run( String arguments ) {
 
+		boolean promptForTemplate = IJ.altKeyDown();
+
+		File templateImageFile = null;
+		if( templateImageFilename != null )
+			templateImageFile = new File(templateImageFilename);
+
+		if (promptForTemplate) {
+			OpenDialog od;
+			String openTitle = "Select template image file...";
+			if( templateImageFile == null )
+				od = new OpenDialog( openTitle, null );
+			else
+				od = new OpenDialog( openTitle, templateImageFile.getParent(), templateImageFile.getName() );
+			if( od.getFileName() != null ) {
+				templateImageFilename=od.getDirectory()+od.getFileName();
+				useTemplate( templateImageFilename );
+				setDefaultTemplate( templateImageFilename );
+			}
+		} else if( templateImageFilename != null ) {
+			if( templateImageFile.exists() ) {
+				useTemplate( templateImageFilename );
+			} else {
+				IJ.error( "The default template file ('" + templateImageFilename + "') did not exist.");
+			}
+		}
+
 		Applet applet = IJ.getApplet();
 		if( applet != null ) {
 			archiveClient=new ArchiveClient( applet );
@@ -1422,20 +1460,25 @@ public class Name_Points implements PlugIn {
 
 		canvas = imp.getCanvas();
 
-		/*
-		  ImagePlus [] templateChannels=BatchOpener.open(templateImageFilename);
-		  if( templateChannels != null ) {
-		  templateImage = templateChannels[0];
-		  templatePoints = NamedPointSet.forImage(templateImageFilename);
-		  }
-		*/
-
 		if( applet == null ) {
 			boolean foundExistingPointsFile = loadAtStart();
 			if( ! foundExistingPointsFile ) {
 				points = new NamedPointSet();
-				for (int i = 0; i < defaultPointNames.length; ++i)
-					points.add(new NamedPointWorld(defaultPointNames[i]));
+				if( templateImageFile != null && templateImageFile.exists() ) {
+					try {
+						templatePoints = NamedPointSet.forImage( templateImageFilename );
+					} catch( NamedPointSet.PointsFileException e )  {
+						IJ.error("Couldn't load points file for template image.  The error was: " + e );
+					}
+				}
+
+				if( templatePoints == null ) {
+					points.addNewPoint();
+				} else {
+					String [] templatePointNames = templatePoints.getPointNames();
+					for( String name : templatePointNames )
+						points.add( new NamedPointWorld(name) );
+				}
 			}
 		}
 
@@ -1486,46 +1529,41 @@ public class Name_Points implements PlugIn {
 			if (!foundName)
 				points.add(current);
 		}
-
 		return true;
 	}
 
-	public boolean useTemplate( String templateImageFileName ) {
+	public void setDefaultTemplate( ) {
+		setDefaultTemplate( templateImageFilename );
+	}
 
-		File file=new File(templateImageFileName);
-		if( ! file.exists() ) {
-			IJ.error("The file "+templateImageFileName+" doesn't exist.");
+	public void setDefaultTemplate( String defaultTemplateImageFilename ) {
+		System.out.println("setDefaultTemplate called with: "+defaultTemplateImageFilename);
+		Prefs.set("landmarks.Name_Points.templateImageFilename", defaultTemplateImageFilename );
+	}
+
+	public boolean useTemplate( String possibleTemplateImageFilename ) {
+		if( possibleTemplateImageFilename == null ) {
+			// Then unset the template:
+			templateImageFilename = null;
+			templateImage = null;
+			templatePoints = null;
+			return true;
+		}
+		File possibleTemplateImageFile = new File( possibleTemplateImageFilename );
+		if( ! possibleTemplateImageFile.exists() ) {
+			IJ.error( "The file " + possibleTemplateImageFilename + " doesn't exist.");
 			return false;
 		}
-
-		String pointsFileName=templateImageFileName+".points";
-
-		File pointsFile=new File(pointsFileName);
-
-		if( ! pointsFile.exists() ) {
-			IJ.error("There's no corresponding points file for that image.  It must be called "+pointsFile.getAbsolutePath());
-			return false;
-		}
-
-		NamedPointSet templatePointSet = null;
+		templateImageFilename = possibleTemplateImageFilename;
+		templateImage = null;
+		NamedPointSet newTemplatePointSet = null;
 		try {
-			templatePointSet = NamedPointSet.forImage(templateImageFileName);
+			newTemplatePointSet = NamedPointSet.forImage(templateImageFilename);
 		} catch( NamedPointSet.PointsFileException e ) {
-			return false;
+			IJ.error( "Warning: Couldn't load a points file corresponding to this template: " + e );
+			return true;
 		}
-		System.out.println( "point set was: " + templatePointSet );
-		if( templatePointSet == null ) {
-			return false;
-		}
-		ImagePlus [] channels = BatchOpener.open( templateImageFileName );
-		if( channels == null ) {
-			IJ.error("Couldn't open template image: "+templateImageFileName );
-			return false;
-		}
-
-		this.templateImage = channels[0];
-		this.templatePoints = templatePointSet;
-
+		templatePoints = newTemplatePointSet;
 		return true;
 	}
 

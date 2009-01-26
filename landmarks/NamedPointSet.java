@@ -166,6 +166,16 @@ public class NamedPointSet {
 		return null;
 	}
 
+	public String[] getPointNames(){
+		String[] sa= new String[pointsWorld.size()];
+		int i=0;
+		for (Iterator it = listIterator(); it.hasNext();) {
+			NamedPointWorld p = (NamedPointWorld)it.next();
+			sa[i++]=p.name;
+		}
+		return sa;
+	}
+
 	void showAsROI(int i, ImagePlus imp) {
 		NamedPointWorld p = pointsWorld.get(i);
 		assert p.set;
