@@ -235,6 +235,24 @@ public class NamedPointSet {
 		}
 	}
 
+	public boolean saveIGSPointsFile( String savePath ) {
+
+		try {
+			FileOutputStream fos = new FileOutputStream(savePath);
+			StringBuffer sb=new StringBuffer("! TYPEDSTREAM 1.1\n");
+			Iterator<NamedPointWorld> i;
+			for(i=listIterator();i.hasNext();) {
+				NamedPointWorld p = i.next();
+				if(p.set) sb.append(p.toIGS()+"\n");
+			}
+			fos.write(sb.toString().getBytes("UTF-8"));
+			fos.close();
+			return true;
+		} catch( IOException e ) {
+			return false;
+		}
+	}
+
 /*
 	public byte [] dataAsBytes( ) {
 
