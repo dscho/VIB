@@ -28,6 +28,7 @@ import ij.measure.Calibration;
 import pal.math.MultivariateFunction;
 import stacks.ThreePaneCrop;
 import util.BatchOpener;
+import util.Penalty;
 import vib.FastMatrix;
 
 
@@ -1227,18 +1228,12 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		// function to scale up the penalty as we get further
 		// away in translation...
 
-		double minimumPenaltyAt = 0.8;
-		double maximumPenaltyAt = 1.0;
-		double midPoint = (minimumPenaltyAt + maximumPenaltyAt) / 2;
-
 		double proportionOfCubeSideAway = pointDrift / cubeSide;
 
-		// When t is 6 or more, the maximum applies...
-
-		double scaleUpT = 6.0 / (maximumPenaltyAt - midPoint);
-
-		double additionalTranslationalPenalty = 1 / (1 + Math.exp( -(proportionOfCubeSideAway - midPoint) * scaleUpT));
-		additionalTranslationalPenalty *= maximumValue;
+		double additionalTranslationalPenalty = Penalty.logisticPenalty( proportionOfCubeSideAway,
+										 0.8,
+										 1.0,
+										 maximumValue );
 
 		/* Also use the logistic function to penalize the
 		   rotation from getting too near to the extrema: 4PI
@@ -1250,21 +1245,15 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 
 		double mostExtremeAngle =  Math.max(Math.max(absz1,absx1),absz2);
 
-		minimumPenaltyAt = (7 * Math.PI) / 2;
-		maximumPenaltyAt = 4 * Math.PI;
-		midPoint = (maximumPenaltyAt + minimumPenaltyAt) / 2;
-
-		double angleFromMid = mostExtremeAngle - midPoint;
-
-		scaleUpT = 6.0 / (Math.PI / 4);
-
-		double additionalAnglePenalty = 1 / (1 + Math.exp( -angleFromMid * scaleUpT ) );
-		additionalAnglePenalty *= maximumValue;
+		double additionalAnglePenalty = Penalty.logisticPenalty( mostExtremeAngle,
+									(7 * Math.PI) / 2,
+									4 * Math.PI,
+									maximumValue );
 
 		if( numberOfPoints == 0 ) {
-			// This should be unneccessary, since there
-			// are heavy penalties for moving towards the
-			// point of no overlap.
+			/* This should be unneccessary, since there
+			   are heavy penalties for moving towards the
+			   point of no overlap. */
 			result.score = maximumValue;
 		} else {
 
