@@ -47,7 +47,8 @@ TESTCLASSES=math3d.TestEigenvalueDecompositions \
 	distance.TestMutualInformation \
 	distance.TestEuclidean \
 	distance.TestCorrelation \
-	landmarks.TestLoading
+	landmarks.TestLoading \
+	util.TestPenalty
 
 TESTMEM=512m
 
