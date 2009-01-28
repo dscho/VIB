@@ -18,10 +18,8 @@ import orthoslice.OrthoGroup;
 import surfaceplot.SurfacePlotGroup;
 
 import java.util.BitSet;
-import java.util.List;
 
 import javax.media.j3d.BranchGroup;
-import javax.media.j3d.LineAttributes;
 import javax.media.j3d.Switch;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
@@ -32,6 +30,9 @@ import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
+
+import customnode.CustomMesh;
+import customnode.CustomMeshNode;
 
 public class Content extends BranchGroup implements UniverseListener {
 
@@ -81,7 +82,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	public static final int ORTHO = 1;
 	public static final int SURFACE = 2;
 	public static final int SURFACE_PLOT2D = 3;
-	
+
 	public Content(String name) {
 		// create BranchGroup for this image
 		this.name = name;
@@ -134,7 +135,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(boundingSphere);
 
 		// create coordinate system and add it to the switch
-		float cl = (float)Math.abs(contentNode.max.x 
+		float cl = (float)Math.abs(contentNode.max.x
 					- contentNode.min.x) / 5f;
 		CoordinateSystem cs = new CoordinateSystem(
 						cl, new Color3f(0, 1, 0));
@@ -190,20 +191,12 @@ public class Content extends BranchGroup implements UniverseListener {
 		return 1;
 	}
 
-	public void displayMesh(List mesh) {
-		displayMesh(mesh, MeshGroup.TRIANGLES);
-	}
-
-	public void displayMesh(List mesh, int mode) {
-		displayMesh(mesh, mode, new LineAttributes());
-	}
-
-	public void displayMesh(List mesh, int mode, LineAttributes attrs) {
+	public void displayMesh(CustomMesh mesh) {
 		// remove everything if possible
 		bbSwitch.removeAllChildren();
 
 		// create content node and add it to the switch
-		contentNode = new MeshGroup(this, mesh, mode, attrs);
+		contentNode = new CustomMeshNode(mesh, this);
 		bbSwitch.addChild(contentNode);
 
 		// create the bounding box and add it to the switch
@@ -241,8 +234,6 @@ public class Content extends BranchGroup implements UniverseListener {
 		// update type
 		this.type = SURFACE;
 	}
-
-
 
 	/* ************************************************************
 	 * setters - visibility flags
@@ -437,8 +428,10 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	public void setShaded(boolean b) {
-		this.shaded = b;
-		contentNode.shadeUpdated();
+		if(b != shaded) {
+			this.shaded = b;
+			contentNode.shadeUpdated();
+		}
 	}
 
 	public boolean isShaded() {
@@ -457,7 +450,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		contentNode.colorUpdated();
 	}
 
-	public void setTransparency(float transparency) {
+	public synchronized void setTransparency(float transparency) {
 		transparency = transparency < 0 ? 0 : transparency;
 		transparency = transparency > 1 ? 1 : transparency;
 		if(Math.abs(transparency - this.transparency) < 0.01)

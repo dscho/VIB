@@ -83,9 +83,9 @@ public class MeshExporter {
 			Content ob = (Content)it.next();
 			if (ob.getType() != Content.SURFACE) continue;
 			final MeshGroup mg = (MeshGroup)ob.getContent();
-			List triangles = mg.shape.getMesh();
+			List triangles = mg.getMesh().getMesh();
 			String title = ob.getName().replaceAll(" ", "_").replaceAll("#", "--");
-			Mtl mat = new Mtl(1 - ob.getTransparency(), mg.shape.color);
+			Mtl mat = new Mtl(1 - ob.getTransparency(), mg.getMesh().getColor());
 			writeTrianglesDXF(sb_data, triangles, title, "" + mat.getAsSingle());
 		}
 		sb_data.append("0\nENDSEC\n0\nEOF\n");         //TRAILER of the file
@@ -147,10 +147,10 @@ public class MeshExporter {
 				continue;
 			final MeshGroup mg = (MeshGroup)mob.getContent();
 
-			List triangles = mg.shape.getMesh();
+			List triangles = mg.getMesh().getMesh();
 			// make material, and see whether it exists already
 			Mtl mat = new Mtl(1 - mob.getTransparency(),
-						mg.shape.color);
+						mg.getMesh().getColor());
 			Object mat2 = ht_mat.get(mat);
 			if (null != mat2) mat = (Mtl)mat2; // recycling
 			else ht_mat.put(mat, mat); // !@#$% Can't get the object in a HashSet easily

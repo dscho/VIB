@@ -33,9 +33,12 @@ import isosurface.MeshEditor;
 import javax.vecmath.Color3f;
 import javax.vecmath.Point3f;
 import javax.vecmath.Matrix4d;
-import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.Background;
+
+import customnode.CustomMesh;
+import customnode.CustomMeshNode;
+import customnode.CustomTriangleMesh;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import octree.FilePreparer;
@@ -354,7 +357,14 @@ public class Executer {
 	public void smoothMesh(Content c) {
 		if(!checkSel(c))
 			return;
-		MeshEditor.smooth(c, 0.25f);
+		if(c.getType() == Content.SURFACE) {
+			ContentNode cn = c.getContent();
+			if(cn instanceof CustomMeshNode) {
+				CustomMesh mesh = ((CustomMeshNode)cn).getMesh();
+				if(mesh instanceof CustomTriangleMesh)
+					MeshEditor.smooth((CustomTriangleMesh)mesh, 0.25f);
+			}
+		}
 	}
 
 	public void smoothAllMeshes() {
@@ -373,8 +383,7 @@ public class Executer {
 						for (int k=ai.getAndIncrement();
 						k < c.length;
 						k = ai.getAndIncrement()) {
-							MeshEditor.
-							smooth(c[k], 0.25f);
+							smoothMesh(c[k]);
 						}
 					} catch (Exception e) {
 						e.printStackTrace();

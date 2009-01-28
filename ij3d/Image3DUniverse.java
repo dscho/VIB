@@ -12,12 +12,13 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Collection;
 
-import com.sun.j3d.utils.behaviors.keyboard.*;
-import com.sun.j3d.utils.universe.*;
+import customnode.CustomLineMesh;
+import customnode.CustomMesh;
+import customnode.CustomTriangleMesh;
+
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import isosurface.MeshGroup;
 import java.io.File;
 import octree.FilePreparer;
 import octree.VolumeOctree;
@@ -25,7 +26,8 @@ import octree.VolumeOctree;
 public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Content selected;
-	private Hashtable contents = new Hashtable();
+	private Hashtable<String, Content> contents =
+				new Hashtable<String, Content>();
 	private Image3DMenubar menubar;
 	private RegistrationMenubar registrationMenubar;
 	private ImageCanvas3D canvas;
@@ -281,7 +283,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.channels = channels;
 		content.resamplingF = resf;
 		content.setPointListDialog(pld);
-		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
+		content.showCoordinateSystem(UniverseSettings.
+				showLocalCoordinateSystemsByDefault);
 		content.displayAs(type);
 		content.compile();
 		scene.addChild(content);
@@ -334,39 +337,23 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewer().getView().setBackClipDistance(2 * d);
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
-	
+
 	public Content addMesh(ImagePlus image, Color3f color, String name,
 		int threshold, boolean[] channels, int resamplingF){
 		return addContent(image, color, name, threshold, channels,
 			resamplingF, Content.SURFACE);
 	}
 
-	public Content addMesh(List mesh, Color3f color, String name,
-			float scale, int threshold) {
-		Content c = addMesh(mesh, color, name, threshold);
-		ensureScale(scale);
-		return c;
-	}
-
-	public Content addLineMesh(List mesh,
-			Color3f color, String name, int threshold, boolean strips) {
-		return addLineMesh(mesh, color, name, threshold, strips,
-				new LineAttributes());
-	}
-
-	public Content addLineMesh(List mesh, Color3f color, String name,
-				int threshold, boolean strips, LineAttributes attrs) {
-		// check if exists already
+	public Content addCustomMesh(CustomMesh mesh, Color3f color, String name) {
 		if(contents.containsKey(name)) {
 			IJ.error("Mesh named '"+name+"' exists already");
 			return null;
 		}
 		Content content = new Content(name);
 		content.color = color;
-		content.threshold = threshold;
-		int mode = strips ? MeshGroup.LINE_STRIPS : MeshGroup.LINES;
-		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
-		content.displayMesh(mesh, mode, attrs);
+		content.showCoordinateSystem(
+				UniverseSettings.showLocalCoordinateSystemsByDefault);
+		content.displayMesh(mesh);
 		content.setPointListDialog(pld);
 		scene.addChild(content);
 		contents.put(name, content);
@@ -377,18 +364,34 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return content;
 	}
 
-	public Content addMesh(List mesh,
-			Color3f color, String name, int threshold) {
-		// check if exists already
-		if(contents.containsKey(name)) {
-			IJ.error("Mesh named '"+name+"' exists already");
-			return null;
-		}
+	public Content addLineMesh(List<Point3f> mesh, Color3f color, String name,
+				boolean strips) {
+		int mode = strips ? CustomLineMesh.CONTINUOUS : CustomLineMesh.PAIRWISE;
+		CustomLineMesh lmesh = new CustomLineMesh(mesh, mode, color, 0);
+		return addCustomMesh(lmesh, color, name);
+	}
+
+	/**
+	 * @deprecated This method will not be supported in the future.
+	 * Use addTriangleMesh instead.
+	 * @param mesh
+	 * @param color
+	 * @param name
+	 * @param threshold
+	 * @return
+	 */
+	public Content addMesh(List<Point3f> mesh, Color3f color, String name,
+				int threshold) {
+		return addTriangleMesh(mesh, color, name);
+	}
+
+	public Content addTriangleMesh(List<Point3f> mesh,
+				Color3f color, String name) {
+		CustomTriangleMesh tmesh = new CustomTriangleMesh(mesh, color, 0);
 		Content content = new Content(name);
 		content.color = color;
-		content.threshold = threshold;
 		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
-		content.displayMesh(mesh);
+		content.displayMesh(tmesh);
 		content.setPointListDialog(pld);
 		scene.addChild(content);
 		contents.put(name, content);
@@ -425,7 +428,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Collection getContents() {
 		return contents.values();
 	}
-	
+
 	public boolean contains(String name) {
 		return contents.containsKey(name);
 	}
