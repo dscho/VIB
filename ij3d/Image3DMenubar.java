@@ -1,5 +1,7 @@
 package ij3d;
 
+import ij.ImagePlus;
+
 import java.awt.event.*;
 import java.awt.*;
 import java.util.Iterator;
@@ -583,10 +585,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		slices.setEnabled(t == Content.ORTHO);
 		fill.setEnabled(t == Content.VOLUME);
 		shaded.setEnabled(t == Content.SURFACE_PLOT2D ||
-			t == Content.SURFACE);
-		exportObj.setEnabled(t == Content.SURFACE);
-		exportDXF.setEnabled(t == Content.SURFACE);
-		smoothMesh.setEnabled(t == Content.SURFACE);
+			t == Content.SURFACE || t == Content.CUSTOM);
+		exportObj.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
+		exportDXF.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
+		smoothMesh.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
 
 		coordinateSystem.setState(c.hasCoord());
 		lock.setState(c.isLocked());
@@ -594,11 +596,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		pl_show.setState(c.isPLVisible());
 		shaded.setState(c.isShaded());
 
-
-		displayAsVolume.setEnabled(t != Content.VOLUME);
-		displayAsOrtho.setEnabled(t != Content.ORTHO);
-		displayAsSurface.setEnabled(t != Content.SURFACE);
-		displayAsSurfacePlot.setEnabled(t != Content.SURFACE_PLOT2D);
+		ImagePlus i = c.image;
+		displayAsVolume.setEnabled(t != Content.VOLUME && i != null);
+		displayAsOrtho.setEnabled(t != Content.ORTHO && i != null);
+		displayAsSurface.setEnabled(t != Content.SURFACE && i != null);
+		displayAsSurfacePlot.setEnabled(
+				t != Content.SURFACE_PLOT2D && i != null);
 	}
 }
 

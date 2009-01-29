@@ -357,7 +357,7 @@ public class Executer {
 	public void smoothMesh(Content c) {
 		if(!checkSel(c))
 			return;
-		if(c.getType() == Content.SURFACE) {
+		if(c.getType() == Content.SURFACE || c.getType() == Content.CUSTOM) {
 			ContentNode cn = c.getContent();
 			if(cn instanceof CustomMeshNode) {
 				CustomMesh mesh = ((CustomMeshNode)cn).getMesh();
@@ -609,6 +609,11 @@ public class Executer {
 	public void changeThreshold(final Content c) {
 		if(!checkSel(c))
 			return;
+		if(c.image == null) {
+			IJ.error("The selected object contains no image data,\n" +
+					"therefore the threshold can't be changed");
+			return;
+		}
 		final SliderAdjuster thresh_adjuster = new SliderAdjuster() {
 			public synchronized final void setValue(Content c, int v) {
 				c.setThreshold(v);
@@ -670,7 +675,8 @@ public class Executer {
 		if(!checkSel(c))
 			return;
 		int t = c.getType();
-		if(t == Content.SURFACE || t == Content.SURFACE_PLOT2D)
+		if(t == Content.SURFACE ||
+				t == Content.SURFACE_PLOT2D || t == Content.CUSTOM)
 			c.setShaded(b);
 	}
 

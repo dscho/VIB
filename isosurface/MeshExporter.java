@@ -81,7 +81,9 @@ public class MeshExporter {
 		StringBuffer sb_data = new StringBuffer("0\nSECTION\n2\nENTITIES\n");   //header of file
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content ob = (Content)it.next();
-			if (ob.getType() != Content.SURFACE) continue;
+			int t = ob.getType();
+			if (t != Content.SURFACE || t != Content.CUSTOM)
+				continue;
 			final MeshGroup mg = (MeshGroup)ob.getContent();
 			List triangles = mg.getMesh().getMesh();
 			String title = ob.getName().replaceAll(" ", "_").replaceAll("#", "--");
@@ -143,7 +145,8 @@ public class MeshExporter {
 
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content mob = (Content)it.next();
-			if (mob.getType() != Content.SURFACE)
+			int t = mob.getType();
+			if (t != Content.SURFACE && t != Content.CUSTOM)
 				continue;
 			final MeshGroup mg = (MeshGroup)mob.getContent();
 
