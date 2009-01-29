@@ -57,7 +57,6 @@ public class Texture_By_Ref implements PlugInFilter,
 
 	private Image3DUniverse univ;
 
-	private BufferedImage bImage;
 	private ByteProcessor bProcessor;
 	private ImageComponent2D bComp;
 	private ImageComponent2D.Updater updater;
@@ -228,7 +227,7 @@ public class Texture_By_Ref implements PlugInFilter,
 		return shape;
 	}
 	
-	public void createImage() {
+	public BufferedImage createImage() {
 		bProcessor = (ByteProcessor)imp.getProcessor();
 		byte[] pixels = (byte[])bProcessor.getPixels();
 		
@@ -240,22 +239,22 @@ public class Texture_By_Ref implements PlugInFilter,
 		DataBufferByte db = new DataBufferByte(pixels, w * h, 0);
 		WritableRaster raster = Raster.createWritableRaster(sm, db, null);
      
-		bImage = new BufferedImage(cm, raster, false, null);
+		return new BufferedImage(cm, raster, false, null);
 	}
 
-	public void createImage2() {
-		bImage = new BufferedImage(w, h, B_IMG_TYPE);
-		byte[] pixels = ((DataBufferByte)bImage.getRaster().getDataBuffer()).getData();
-		bProcessor = new ByteProcessor(w, h, pixels, null);
-		imp = new ImagePlus("Please draw", bProcessor);
-	}
+//	public void createImage2() {
+//		bImage = new BufferedImage(w, h, B_IMG_TYPE);
+//		byte[] pixels = ((DataBufferByte)bImage.getRaster().getDataBuffer()).getData();
+//		bProcessor = new ByteProcessor(w, h, pixels, null);
+//		imp = new ImagePlus("Please draw", bProcessor);
+//	}
 
 	public Texture getTexture() {
 
 		Texture2D tex = new Texture2D(Texture.BASE_LEVEL, TEX_MODE, w, h);
 		bComp = new ImageComponent2D(COMP_TYPE, w, h, BY_REF, Y_UP);
 		bComp.setCapability(ImageComponent.ALLOW_IMAGE_WRITE);
-		bComp.set(bImage);
+		bComp.set(createImage());
 
 		tex.setImage(0, bComp);
 		tex.setEnable(true);
