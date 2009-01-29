@@ -53,20 +53,12 @@ public class Orthoslice extends VolumeRenderer {
 				setSlice(i, v[i]);
 	}
 
-	public int[] getSlices() {
-		return slices;
-	}
-
 	public int getSlice(int axis) {
 		return slices[axis];
 	}
 
 	public boolean isVisible(int axis) {
 		return visible[axis];
-	}
-
-	public boolean[] getVisible() {
-		return visible;
 	}
 
 	public void setVisible(int axis, boolean b) {
@@ -76,11 +68,6 @@ public class Orthoslice extends VolumeRenderer {
 			whichChild.set(axisIndex[axis][BACK], b);
 			axisSwitch.setChildMask(whichChild);
 		}
-	}
-
-	public void setVisible(boolean[] b) {
-		for(int i = 0; i < b.length; i++)
-			setVisible(i, b[i]);
 	}
 
 	public void decrease(int axis) {

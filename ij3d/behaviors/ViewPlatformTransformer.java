@@ -88,7 +88,7 @@ public class ViewPlatformTransformer {
 		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 
-	public void centerAt(Point3f center) {
+	public void centerAt(Point3d center) {
 		centerV.set(center.x, center.y, center.z);
 		centerXform.set(centerV);
 		centerTG.setTransform(centerXform);
