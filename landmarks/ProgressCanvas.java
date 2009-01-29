@@ -21,8 +21,6 @@ public class ProgressCanvas extends ImageCanvas {
 
 	protected void drawOverlay( Graphics g ) {
 		
-		System.out.println("drawFixed: "+drawFixed+" (fixed_z: "+fixed_z+"), drawTransformed: "+drawTransformed+" (transformed_z: "+transformed_z+")");
-
 		int sliceZeroIndexed = imagePlus.getCurrentSlice() - 1;
 
 		if( drawFixed && fixed_z == sliceZeroIndexed ) {

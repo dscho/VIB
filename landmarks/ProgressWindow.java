@@ -64,8 +64,6 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 		
 		Object source = e.getSource();
 		
-		System.out.println("Got event!");
-		
 		if( source == useThis || source == cancel ) {
 			cancel.setEnabled(false);
 			useThis.setEnabled(false);
@@ -147,8 +145,6 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 	synchronized void showBest( ) {
 		
 		RegistrationResult r = bestSoFar;
-		
-		System.out.println("Updating progressDisplay with score: "+r.score);
 		
 		/* Instead, go through each slice and replace the
 		 * values. */
@@ -232,8 +228,6 @@ public class ProgressWindow extends StackWindow implements ActionListener {
 
 		updateDistance(r.pointMoved,plugin.templateUnits);
 
-		System.out.println("the point moved: "+r.pointMoved);
-		
 		// Call setSlice in any case since this might cause
 		// the scrollbar to update.
 		
