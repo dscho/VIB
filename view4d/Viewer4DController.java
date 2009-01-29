@@ -1,29 +1,23 @@
 package view4d;
 
-import ij.IJ;
-import ij.plugin.PlugIn;
 import ij.gui.GenericDialog;
-import ij.util.Tools;
-import ij.process.ImageProcessor;
-import ij.ImagePlus;
 
 import java.awt.*;
 import java.awt.event.*;
 
-import java.io.*;
-import java.util.zip.*;
-import java.util.Enumeration;
-import java.util.Vector;
 import java.net.URL;
 import java.awt.image.ImageProducer;
 
 import vib.segment.ImageButton;
 
+/**
+ * This class implements the window with the controls for the 4D viewer.
+ * 
+ * @author Benjamin Schmid
+ */
 public class Viewer4DController implements ActionListener {
 	
-	public static int ICON_SIZE = 24;
-
-	public static final String[] FILES = new String[] {
+	private static final String[] FILES = new String[] {
 				"icons/first.png",
 				"icons/previous.png",
 				"icons/next.png",
@@ -33,7 +27,7 @@ public class Viewer4DController implements ActionListener {
 				"icons/faster.png",
 				"icons/slower.png"};
 
-	public static final String[] COMMANDS = new String[] {
+	private static final String[] COMMANDS = new String[] {
 			"FIRST", "PREV", "NEXT", "LAST", 
 			"PLAY", "PAUSE", "FASTER", "SLOWER"};
 
@@ -41,6 +35,11 @@ public class Viewer4DController implements ActionListener {
 	private ImageButton[] buttons = new ImageButton[FILES.length];
 	private Viewer4D viewer4d;
 	
+	/**
+	 * Initializes a new Viewer4DController;
+	 * opens a new new window with the control buttons for the 4D viewer.
+	 * @param viewer
+	 */
 	public Viewer4DController(Viewer4D viewer) {
 		this.viewer4d = viewer;
 
@@ -54,6 +53,7 @@ public class Viewer4DController implements ActionListener {
 		}
 		gd.addPanel(p);
 		gd.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosed(WindowEvent e) {
 				viewer4d.releaseContents();
 			}
@@ -62,7 +62,7 @@ public class Viewer4DController implements ActionListener {
 		gd.showDialog();
 	}
 
-	public Image loadIcon(String name) {
+	private Image loadIcon(String name) {
 		URL url;
 		Image img = null;
 		try {

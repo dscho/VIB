@@ -1,51 +1,76 @@
 package view4d;
 
-import ij.plugin.PlugIn;
-import ij.*;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.ImageStack;
 import ij.gui.GenericDialog;
 import ij.io.OpenDialog;
-import ij.io.Opener;
-import java.io.*;
-
-import java.awt.*;
-import java.awt.event.*;
-import java.util.Iterator;
-import java.util.ArrayList;
-
-import java.util.Arrays;
-import javax.vecmath.Color3f;
-import ij3d.Image3DUniverse;
-import ij3d.Executer;
 import ij3d.Content;
+import ij3d.Executer;
+import ij3d.Image3DUniverse;
 
+import java.awt.Button;
+import java.awt.FlowLayout;
+import java.awt.Label;
+import java.awt.Panel;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.Arrays;
+
+/**
+ * Implements the functionality for the 4D viewer, like loading
+ * and animation.
+ * 
+ * @author Benjamin Schmid
+ */
 public class Viewer4D {
 
-	String directory = null;
-	Image3DUniverse univ;
-	Content[] contents = null;
-	int current = 0;
+	private String directory = null;
+	private Image3DUniverse univ;
+	private Content[] contents = null;
+	private int current = 0;
 
+	/**
+	 * Initialize a new Viewer4D.
+	 * @param univ
+	 */
 	public Viewer4D(Image3DUniverse univ) {
 		this.univ = univ;
 	}
 
+	/**
+	 * Returns the number of time points.
+	 * @return
+	 */
 	public int size() {
 		if(contents == null) return 0;
 		return contents.length;
 	}
 
+	/**
+	 * Speed up the animation.
+	 */
 	public void faster() {
 		if(delay >= 100)
 			delay -= 100;
 	}
 
+	/**
+	 * Slows the animation down.
+	 */
 	public void slower() {
 		delay += 100;
 	}
 
 	private boolean shouldPause = false;
 	private int delay = 1000;
-	public void play() {
+
+	/**
+	 * Start animation.
+	 */
+	public synchronized void play() {
 		new Thread(new Runnable() {
 			public void run() {
 				while(!shouldPause) {
@@ -54,8 +79,7 @@ public class Viewer4D {
 					else
 						first();
 					try {
-						Thread.currentThread()
-							.sleep(delay);
+						Thread.sleep(delay);
 					} catch(Exception e) {
 						shouldPause = false;
 					}
@@ -65,10 +89,16 @@ public class Viewer4D {
 		}).start();
 	}
 
-	public void pause() {
+	/**
+	 * Stop/pause animation
+	 */
+	public synchronized void pause() {
 		shouldPause = true;
 	}
 
+	/**
+	 * Display next timepoint.
+	 */
 	public void next() {
 		if(contents == null || contents.length == 0)
 			return;
@@ -80,6 +110,9 @@ public class Viewer4D {
 		univ.setStatus((current+1) + "/" + contents.length);
 	}
 
+	/**
+	 * Display previous timepoint.
+	 */
 	public void previous() {
 		if(contents == null || contents.length == 0)
 			return;
@@ -91,6 +124,9 @@ public class Viewer4D {
 		univ.setStatus((current+1) + "/" + contents.length);
 	}
 
+	/**
+	 * Display first timepoint.
+	 */
 	public void first() {
 		if(contents == null || contents.length == 0)
 			return;
@@ -102,6 +138,9 @@ public class Viewer4D {
 		univ.setStatus((current+1) + "/" + contents.length);
 	}
 
+	/**
+	 * Display last timepoint.
+	 */
 	public void last() {
 		if(contents == null || contents.length == 0)
 			return;
@@ -113,6 +152,9 @@ public class Viewer4D {
 		univ.setStatus((current+1) + "/" + contents.length);
 	}
 
+	/**
+	 * Release all loaded contents.
+	 */
 	public void releaseContents() {
 		pause();
 		directory = null;
@@ -126,6 +168,13 @@ public class Viewer4D {
 		univ.setStatus("");
 	}
 
+	/**
+	 * Opens a dialog, which asks the user for a directory with Contents
+	 * to load, and loads them
+	 * 
+	 * @return false, if something went wrong and the Contents could
+	 * not be loaded.
+	 */
 	public boolean loadContents() {
 
 		// remove all contents from the universe
