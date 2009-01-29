@@ -176,6 +176,16 @@ public class NamedPointSet {
 		return sa;
 	}
 
+	public int getIndexOfPoint( String name ) {
+		int i = 0;
+		for( NamedPointWorld p : pointsWorld ) {
+			if( p.getName().equals( name ) )
+				return i;
+			++i;
+		}
+		return -1;
+	}
+
 	void showAsROI(int i, ImagePlus imp) {
 		NamedPointWorld p = pointsWorld.get(i);
 		assert p.set;
