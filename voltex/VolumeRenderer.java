@@ -276,7 +276,7 @@ public class VolumeRenderer implements VolRendConstants {
 	/** 
 	 * return the eye's position in <node>'s coordinate space
 	 */
-	public static Point3d getViewPosInLocal(View view, Node node) {
+	private static Point3d getViewPosInLocal(View view, Node node) {
 		if (node == null )
 			return null;
 		if (!node.isLive()) 

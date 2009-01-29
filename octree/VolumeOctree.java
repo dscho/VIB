@@ -15,14 +15,15 @@ import javax.media.j3d.BranchGroup;
 import javax.media.j3d.View;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Group;
+import javax.media.j3d.Node;
 import javax.media.j3d.OrderedGroup;
 import javax.media.j3d.Switch;
 
+import javax.media.j3d.Transform3D;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
 import voltex.VolRendConstants;
-import voltex.VolumeRenderer;
 
 public class VolumeOctree implements UniverseListener, VolRendConstants {
 
@@ -219,7 +220,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	 */
 	private Vector3d eyeVec = new Vector3d();
 	public void transformationUpdated(View view){
-		Point3d eyePt = VolumeRenderer.getViewPosInLocal(view, rootBranchGroup);
+		Point3d eyePt = getViewPosInLocal(view, rootBranchGroup);
 		if (eyePt == null)
 			return;
 		eyeVec.sub(eyePt, refPt);
@@ -262,5 +263,29 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	public void contentSelected(Content c){}
 	public void canvasResized(){}
 	public void universeClosed(){}
+
+	private static Transform3D parentInv = new Transform3D();
+	private static Point3d viewPosition = new Point3d();
+	private static Transform3D t = new Transform3D();
+	private static Point3d getViewPosInLocal(View view, Node node) {
+		if (node == null )
+			return null;
+		if (!node.isLive()) 
+			return null;
+		//  get viewplatforms's location in virutal world
+		Canvas3D canvas = (Canvas3D)view.getCanvas3D(0);
+		canvas.getCenterEyeInImagePlate(viewPosition);
+		canvas.getImagePlateToVworld(t);
+		t.transform(viewPosition);
+
+		// get parent transform
+		node.getLocalToVworld(parentInv);
+		parentInv.invert();
+
+		// transform the eye position into the parent's coordinate system
+		parentInv.transform(viewPosition);
+
+		return viewPosition;
+	}
 }
 
