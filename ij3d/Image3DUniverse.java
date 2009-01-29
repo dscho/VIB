@@ -412,7 +412,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scene.addChild(c);
 		contents.put(c.name, c);
 		recalculateGlobalMinMax(c);
-		float range = globalMax.x - globalMin.x;
+		float range = (float)(globalMax.x - globalMin.x);
 		ensureScale(range);
 		fireContentAdded(c);
 		return c;
