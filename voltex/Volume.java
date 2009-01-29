@@ -337,7 +337,6 @@ public class Volume {
 		void loadX(int xValue, Object arr)  {
 			byte[] dst = (byte[])arr;
 			for (int z=0; z < zDim; z++){
-				byte[] src = fData[z];
 				int offsDst = z * yTexSize;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;
@@ -413,7 +412,6 @@ public class Volume {
 		void loadX(int xValue, Object arr)  {
 			int[] dst = (int[])arr;
 			for (int z=0; z < zDim; z++){
-				int[] src = fData[z];
 				int offsDst = z * yTexSize;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;
@@ -504,7 +502,6 @@ public class Volume {
 		void loadX(int xValue, Object arr)  {
 			int[] dst = (int[])arr;
 			for (int z=0; z < zDim; z++){
-				int[] src = fData[z];
 				int offsDst = z * yTexSize;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;

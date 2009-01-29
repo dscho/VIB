@@ -1,13 +1,19 @@
 package voltex;
 
-import java.awt.*;
-import java.awt.image.*;
-import javax.media.j3d.*;
-import javax.vecmath.*;
-import java.io.*;
-import com.sun.j3d.utils.behaviors.mouse.*;
 import ij.IJ;
 import ij.ImagePlus;
+
+import javax.media.j3d.Appearance;
+import javax.media.j3d.BranchGroup;
+import javax.media.j3d.GeometryArray;
+import javax.media.j3d.Group;
+import javax.media.j3d.OrderedGroup;
+import javax.media.j3d.Shape3D;
+import javax.media.j3d.Switch;
+import javax.media.j3d.View;
+import javax.vecmath.Color3f;
+import javax.vecmath.Point3d;
+import javax.vecmath.Vector3d;
 
 public class VolumeRenderer extends Renderer {
 
