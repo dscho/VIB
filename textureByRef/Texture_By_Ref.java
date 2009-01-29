@@ -1,10 +1,15 @@
+package textureByRef;
+
 import com.sun.j3d.utils.pickfast.PickCanvas;
+
+import ij.IJ;
 import ij.ImageListener;
 import ij.ImagePlus;
 import ij.gui.OvalRoi;
 import ij.gui.Toolbar;
-import ij.plugin.PlugIn;
+import ij.plugin.filter.PlugInFilter;
 import ij.process.ByteProcessor;
+import ij.process.ImageProcessor;
 import ij3d.Image3DUniverse;
 import java.awt.Polygon;
 import java.awt.event.MouseEvent;
@@ -12,6 +17,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.awt.image.IndexColorModel;
+import java.awt.image.SampleModel;
+import java.awt.image.WritableRaster;
+import java.awt.image.Raster;
+
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.ColoringAttributes;
@@ -34,8 +44,10 @@ import javax.vecmath.Point3d;
 import javax.vecmath.Point3f;
 import javax.vecmath.Vector4f;
 
-public class Texture_By_Ref implements PlugIn, ImageListener, MouseMotionListener,
-					MouseListener {
+public class Texture_By_Ref implements PlugInFilter,
+						ImageListener,
+						MouseMotionListener,
+						MouseListener {
 
 	private static final int B_IMG_TYPE = BufferedImage.TYPE_BYTE_GRAY;
 	private static final int TEX_MODE = Texture.INTENSITY;
@@ -52,8 +64,28 @@ public class Texture_By_Ref implements PlugIn, ImageListener, MouseMotionListene
 	private ImagePlus imp;
 	private int w = 256;
 	private int h = 256;
+	
+	public static void main(String[] args) {
+		new ij.ImageJ();
+		ImagePlus img = IJ.openImage("/home/bene/PhD/brains/template.tif");
+		img = new ImagePlus("Slice 20", img.getStack().getProcessor(20));
+		img.show();
+		ij.IJ.runPlugIn("textureByRef.Texture_By_Ref", "");
+	}
+	
+	public int setup(String arg, ImagePlus imp) {
+		this.imp = imp;
+		return DOES_8G;
+	}
 
-	public void run(String s) {
+	public void run(ImageProcessor ip) {
+		if(imp.getStackSize() > 1 ||
+				!isPow2(imp.getWidth()) ||
+				!isPow2(imp.getHeight())) {
+			IJ.error("Only one slice allowed, whose dimensions must" + 
+					" be a power of 2");
+			return;
+		}
 		createImage();
 		univ = new Image3DUniverse();
 		BranchGroup bg = new BranchGroup();
@@ -114,6 +146,8 @@ public class Texture_By_Ref implements PlugIn, ImageListener, MouseMotionListene
 		}
 	}
 
+	// MouseListener interfaces
+	
 	public void mousePressed(MouseEvent e) {
 		int id = Toolbar.getToolId();
 		doDraw = id == Toolbar.SPARE1 || id == Toolbar.SPARE2 ||
@@ -132,6 +166,8 @@ public class Texture_By_Ref implements PlugIn, ImageListener, MouseMotionListene
 	public void mouseClicked(MouseEvent e) {}
 
 	public void mouseMoved(MouseEvent e) {}
+	
+	// ImageListener interfaces
 
 	public void imageOpened(ImagePlus image) {}
 
@@ -191,8 +227,23 @@ public class Texture_By_Ref implements PlugIn, ImageListener, MouseMotionListene
 			createAppearance());
 		return shape;
 	}
-
+	
 	public void createImage() {
+		bProcessor = (ByteProcessor)imp.getProcessor();
+		byte[] pixels = (byte[])bProcessor.getPixels();
+		
+		IndexColorModel cm = bProcessor.getDefaultColorModel();
+		WritableRaster wr = cm.createCompatibleWritableRaster(1, 1);
+		SampleModel sm = wr.getSampleModel();
+		sm = sm.createCompatibleSampleModel(w, h);
+		
+		DataBufferByte db = new DataBufferByte(pixels, w * h, 0);
+		WritableRaster raster = Raster.createWritableRaster(sm, db, null);
+     
+		bImage = new BufferedImage(cm, raster, false, null);
+	}
+
+	public void createImage2() {
 		bImage = new BufferedImage(w, h, B_IMG_TYPE);
 		byte[] pixels = ((DataBufferByte)bImage.getRaster().getDataBuffer()).getData();
 		bProcessor = new ByteProcessor(w, h, pixels, null);
@@ -246,16 +297,20 @@ public class Texture_By_Ref implements PlugIn, ImageListener, MouseMotionListene
 		return quadArray;
 	}
 
-	private final int nextPow2(int n) {
+	private static final int nextPow2(int n) {
 		int retval = 2;
 		while (retval < n) {
 			retval = retval << 1;
 		}
 		return retval;
 	}
+	
+	private static final boolean isPow2(int n) {
+		int next = nextPow2(n);
+		return n == next;
+	}
 
 	private class ImageUpdater implements ImageComponent2D.Updater {
-
 		public void updateData(ImageComponent2D comp, int x, int y, int w, int h) {
 		}
 	}
