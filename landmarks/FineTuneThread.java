@@ -97,18 +97,20 @@ public class FineTuneThread extends Thread {
 		optimizer.optimize(attempt, startValues, 2, 2);
 
 		if( pleaseStop ) {
-			listener.fineTuneThreadFinished( FineTuneProgressListener.CANCELLED, null );
+			listener.fineTuneThreadFinished( FineTuneProgressListener.CANCELLED, null, this );
 			return;
 		}
 
 		// Now it should be optimized such that our result
 		// is in startValues.
 
+		/*
 		System.out.println("startValues now: ");
 		Name_Points.printParameters(startValues);
+		*/
 
 		if( pleaseStop ) {
-			listener.fineTuneThreadFinished( FineTuneProgressListener.CANCELLED, null );
+			listener.fineTuneThreadFinished( FineTuneProgressListener.CANCELLED, null, this );
 			return;
 		}
 
@@ -124,7 +126,7 @@ public class FineTuneThread extends Thread {
 			method,
 			"score: ");
 
-		listener.fineTuneThreadFinished( FineTuneProgressListener.COMPLETED, r );
+		listener.fineTuneThreadFinished( FineTuneProgressListener.COMPLETED, r, this );
 	}
 
 	boolean pleaseStop = false;

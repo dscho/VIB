@@ -486,7 +486,8 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 
 	int maxThreads = Runtime.getRuntime().availableProcessors();
 
-	/* To modify either of these, synchronize on the former: */
+	/* To modify the fields down to EOSYNC, synchronize on
+	   fineTuneThreadQueue */
 
 	LinkedList< FineTuneThread > fineTuneThreadQueue = new LinkedList< FineTuneThread >();
 	LinkedList< FineTuneThread > fineTuneThreadsStarted = new LinkedList< FineTuneThread >();
@@ -495,38 +496,38 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 	int indexOfPointBeingFineTuned = -1;
 	FineTuneThread finalRefinementThread;
 	RegistrationResult bestSoFar;
-
-	/* We synchronize on latch to alter
-	   currentlyRunningFineTuneThreads, and call notifyAll() on it
-	   whenever we decrement it. */
-
-	Object latch = new Object();
 	int currentlyRunningFineTuneThreads;
 
-	// FIXME: not properly tested yet...
-/*
-	boolean fineTuneBlocking( int i ) {
-		synchronized ( latch ) {
-			if( ! fineTune( i ) )
-				return false;
-		}
-		synchronized ( latch ) {
-			while( currentlyRunningFineTuneThreads > 0 ) {
-				try {
-					latch.wait( );
-				} catch( InterruptedException e ) { }
-			}
-		}
-		return true;
-	}
-*/
+	// EOSYNC
+
+	/* We synchronize on latch to get a notification that a fine
+	   tune operation has finished when using a macro to fine-tune
+	   in batches. */
+
+	Object latch;
 
 	/* Return true if we actually started threads, return false if
-	   we didn't - ypically because there are already threads
+	   we didn't - typically because there are already threads
 	   running...
 	 */
 
 	boolean fineTune( int i ) {
+
+		NamedPointWorld p = points.get(i);
+		if (p == null) {
+			IJ.error("You must have set a point in order to fine-tune it.");
+			return false;
+		}
+
+		return fineTune( p );
+	}
+
+	boolean fineTune( NamedPointWorld p ) {
+		int index = points.getIndexOfPoint( p.getName() );
+		return fineTune( p, index );
+	}
+
+	boolean fineTune( NamedPointWorld p, int indexOfPoint ) {
 
 		synchronized( fineTuneThreadQueue ) {
 			if( fineTuning ) {
@@ -534,18 +535,12 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 				return false;
 			} else {
 				fineTuning = true;
-				indexOfPointBeingFineTuned = i;
+				indexOfPointBeingFineTuned = indexOfPoint;
 				startedAdditionalRefinement = false;
 				bestSoFar = null;
 				fineTuneThreadQueue.clear();
 				fineTuneThreadsStarted.clear();
 			}
-		}
-
-		NamedPointWorld p = points.get(i);
-		if (p == null) {
-			IJ.error("You must have set a point in order to fine-tune it.");
-			return false;
 		}
 
 		String pointName = p.getName();
@@ -572,7 +567,8 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		boolean addInitialGuess = (namesInCommon.size() >= 3);
 		boolean addAllRotations = true;
 
-		dialog.setFineTuning(true);
+		if( dialog != null )
+			dialog.setFineTuning(true);
 
 		// If the templateImage hasn't already been loaded, load it now:
 		if( templateImage == null ) {
@@ -587,6 +583,10 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 				return false;
 			}
 		}
+
+		int templateWidth = templateImage.getWidth();
+		int templateHeight = templateImage.getHeight();
+		int templateDepth = templateImage.getStackSize();
 
 		// Get a small image from around that point...
 		Calibration c = templateImage.getCalibration();
@@ -607,10 +607,29 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		double real_y_template = pointInTemplate.y;
 		double real_z_template = pointInTemplate.z;
 
-		/* We want to make sure that the side of the cube in
-		   samples is no greater than this value */
+		/* Ideally we want a side of 100, but this may extend
+		   over one of the edges from this point, so make sure
+		   the cube side isn't so large that that happens: */
 
-		int maxCubeSideSamples = 100;
+		int sample_x_template = (int) Math.round( real_x_template / x_spacing_template );
+		int sample_y_template = (int) Math.round( real_y_template / y_spacing_template );
+		int sample_z_template = (int) Math.round( real_z_template / z_spacing_template );
+
+		int maxSides [] = { 40,
+				    sample_x_template * 2,
+				    (templateWidth - sample_x_template) * 2,
+				    sample_y_template * 2,
+				    (templateHeight - sample_y_template) * 2,
+				    sample_z_template * 2,
+				    (templateDepth - sample_z_template) * 2 };
+
+		int maxCubeSideSamples = Integer.MAX_VALUE;
+		for( int maxSide : maxSides ) {
+			if( maxSide < maxCubeSideSamples )
+				maxCubeSideSamples = maxSide;
+		}
+
+		System.out.println("Decided on maxCubeSideSamples: "+maxCubeSideSamples);
 
 		double minimumTemplateSpacing = Math.min( Math.abs(x_spacing_template),
 							  Math.min( Math.abs(y_spacing_template), Math.abs(z_spacing_template) ) );
@@ -628,16 +647,16 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		double z_min_template = real_z_template - (templateCubeSide / 2);
 		double z_max_template = real_z_template + (templateCubeSide / 2);
 
-		int x_min_template_i = (int) (x_min_template / x_spacing_template);
-		int x_max_template_i = (int) (x_max_template / x_spacing_template);
-		int y_min_template_i = (int) (y_min_template / y_spacing_template);
-		int y_max_template_i = (int) (y_max_template / y_spacing_template);
-		int z_min_template_i = (int) (z_min_template / z_spacing_template);
-		int z_max_template_i = (int) (z_max_template / z_spacing_template);
+		int x_min_template_i = (int) Math.round( x_min_template / x_spacing_template );
+		int x_max_template_i = (int) Math.round( x_max_template / x_spacing_template );
+		int y_min_template_i = (int) Math.round( y_min_template / y_spacing_template );
+		int y_max_template_i = (int) Math.round( y_max_template / y_spacing_template );
+		int z_min_template_i = (int) Math.round( z_min_template / z_spacing_template );
+		int z_max_template_i = (int) Math.round( z_max_template / z_spacing_template );
 
 		ImagePlus cropped = ThreePaneCrop.performCrop(templateImage, x_min_template_i, x_max_template_i, y_min_template_i, y_max_template_i, z_min_template_i, z_max_template_i, false);
 
-		{
+		if( ! batchFineTuning ) {
 			ImageStack emptyStack = new ImageStack(100,100);
 			ColorProcessor emptyCP = new ColorProcessor(100,100);
 			emptyCP.setRGB( new byte[100*100], new byte[100*100], new byte[100*100] );
@@ -854,30 +873,32 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			fineTuneThreadQueue.addLast( fineTuneThread );
 		}
 
-		// Start the initial threads:
 		synchronized( fineTuneThreadQueue ) {
+
+			/* Create a final thread which we will
+			   use for a last refinement stage after all of the
+			   others have finished. */
+
+			finalRefinementThread = new FineTuneThread(
+				CORRELATION,
+				templateCubeSide,
+				cropped,
+				templateImage,
+				pointInTemplate,
+				imp,
+				p,
+				null,
+				guessedTransformation,
+				progressWindow,
+				this);
+
+			// Now start the initial threads:
+
 			for( int j = Math.min( fineTuneThreadQueue.size(), maxThreads ); j > 0; --j ) {
 				System.out.println("========== Starting an initial thread ==========");
 				startNextThread();
 			}
 		}
-
-		/* Now similarly create a final thread which we will
-		   use for a last refinement stage after all of the
-		   others have finished. */
-
-		finalRefinementThread = new FineTuneThread(
-			CORRELATION,
-			templateCubeSide,
-			cropped,
-			templateImage,
-			pointInTemplate,
-			imp,
-			p,
-			null,
-			guessedTransformation,
-			progressWindow,
-			this);
 
 		return true;
 	}
@@ -1493,9 +1514,105 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 
 	ImageCanvas canvas;
 
+	boolean batchFineTuning = false;
+
+	public void batchFineTune( String templateImageFilename, String inputImageFilename, String outputPointsFilename ) {
+
+		boolean templateSet = useTemplate( templateImageFilename );
+		if( ! templateSet )
+			return;
+
+		imp = BatchOpener.openFirstChannel(inputImageFilename);
+		if( imp == null ) {
+			IJ.error("Couldn't open the input image file '"+inputImageFilename+"'");
+			return;
+		}
+
+		Calibration c=imp.getCalibration();
+		x_spacing=c.pixelWidth;
+		y_spacing=c.pixelHeight;
+		z_spacing=c.pixelDepth;
+
+		try {
+			points = NamedPointSet.forImage(imp);
+		} catch( NamedPointSet.PointsFileException e ) {
+			IJ.error("Couldn't load points file for image '"+imp.getTitle()+"': " + e ) ;
+			return;
+		}
+
+		ArrayList<String> namesInCommon = points.namesSharedWith(templatePoints,true);
+
+		latch = new Object();
+
+		for( String name : namesInCommon ) {
+
+			NamedPointWorld guessedPoint = points.get( name );
+
+			boolean started = fineTune( guessedPoint );
+			if( ! started ) {
+				IJ.error( "Failed to start a fineTuneThread" );
+				return;
+			}
+
+			synchronized ( latch ) {
+				try {
+					latch.wait( );
+				} catch( InterruptedException e ) { }
+			}
+		}
+
+		// Now we should have an adjusted NamedPointSet, which
+		// we can write out to the output filename...
+
+		if( ! points.savePointsFile( outputPointsFilename ) ) {
+			IJ.error( "Saving the points file to: " + outputPointsFilename );
+		}
+	}
+
 	public void run( String arguments ) {
 
 		boolean promptForTemplate = IJ.altKeyDown();
+
+		String macroOptions=Macro.getOptions();
+		String templateParameter = null;
+		if( macroOptions != null ) {
+			templateParameter = Macro.getValue(macroOptions,"template",null);
+			String actionParameter = Macro.getValue(macroOptions,"action",null);
+			if( actionParameter != null ) {
+				if( actionParameter.equals( "finetunetofile" ) ) {
+					/* This is the only supported action at the moment.
+					   You must also supply the options:
+					      - inputimage (name of the imagefile)
+					      - templateimage (name of the templatefile)
+					      - outputpointsfile (filename for the fine-tuned pointset)
+					 */
+					batchFineTuning = true;
+					String inputImageParameter = Macro.getValue(macroOptions,"inputimage",null);
+					if( inputImageParameter == null ) {
+						IJ.error("You must supply an 'inputimage' parameter when using the macro action 'finetunetofile'");
+						return;
+					}
+					String templateImageParameter = Macro.getValue(macroOptions,"templateimage",null);
+					if( templateImageParameter == null ) {
+						IJ.error("You must supply an 'templateimage' parameter when using the macro action 'finetunetofile'");
+						return;
+					}
+					String outputPointsFileParameter = Macro.getValue(macroOptions,"outputpointsfile",null);
+					if( outputPointsFileParameter == null ) {
+						IJ.error("You must supply an 'outputpointsfile' parameter when using the macro action 'finetunetofile'");
+						return;
+					}
+
+					batchFineTune( templateImageParameter, inputImageParameter, outputPointsFileParameter );
+					return;
+
+				} else {
+					IJ.error("Unknown macro action '"+actionParameter+"'");
+					return;
+				}
+			}
+		}
+
 
 		File templateImageFile = null;
 		if( templateImageFilename != null )
@@ -1525,17 +1642,6 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		if( applet != null ) {
 			archiveClient=new ArchiveClient( applet );
 		}
-
-		String macroOptions=Macro.getOptions();
-		String templateParameter = null;
-		if( macroOptions != null )
-			templateParameter = Macro.getValue(macroOptions,"template",null);
-
-		/*
-		  String test1 = "one backslash '\\' and one double quote '\"'";
-		  System.out.println("escaping: "+test1);
-		  System.out.println("gives: "+escape(test1));
-		*/
 
 		if( archiveClient != null ) {
 
@@ -1736,7 +1842,8 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			}
 			System.out.println("... done waiting for thread.");
 		}
-		dialog.setFineTuning( false );
+		if( dialog != null )
+			dialog.setFineTuning( false );
 
 		if( progressWindow != null && progressWindow.useTheResult ) {
 			useFineTuneResult( progressWindow.bestSoFar );
@@ -1760,11 +1867,13 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			point.set = true;
 			System.out.println("Got a result, changed point to: "+point);
 
-			dialog.setCoordinateLabel( indexOfPointBeingFineTuned,
-						   point.x,
-						   point.y,
-						   point.z );
-			dialog.pack();
+			if( dialog != null ) {
+				dialog.setCoordinateLabel( indexOfPointBeingFineTuned,
+							   point.x,
+							   point.y,
+							   point.z );
+				dialog.pack();
+			}
 		}
 
 		progressWindow = null;
@@ -1776,7 +1885,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		}
 	}
 
-	public void fineTuneThreadFinished( int reason, RegistrationResult result ) {
+	public void fineTuneThreadFinished( int reason, RegistrationResult result, FineTuneThread fineTuneThread ) {
 
 		synchronized( fineTuneThreadQueue ) {
 
@@ -1786,39 +1895,56 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 				updateBest( result );
 			}
 
-			synchronized( latch ) {
-				if( currentlyRunningFineTuneThreads <= maxThreads &&
-				    reason == FineTuneProgressListener.COMPLETED ) {
-					if( fineTuneThreadQueue.size() > 0 ) {
-						System.out.println( "========== A thread finished, and with currentlyRunningFineTuneThreads = " + currentlyRunningFineTuneThreads + ", starting a thread ==========" );
-						startNextThread();
-					}
+			if( currentlyRunningFineTuneThreads <= maxThreads &&
+			    reason == FineTuneProgressListener.COMPLETED ) {
+				if( fineTuneThreadQueue.size() > 0 ) {
+					System.out.println( "========== A thread finished, and with currentlyRunningFineTuneThreads = " + currentlyRunningFineTuneThreads + ", starting a thread ==========" );
+					startNextThread();
 				}
+			}
 
-				-- currentlyRunningFineTuneThreads;
+			-- currentlyRunningFineTuneThreads;
 
-				if( currentlyRunningFineTuneThreads == 0 ) {
+			if( currentlyRunningFineTuneThreads == 0 ) {
 
-					if( fineTuning && ! startedAdditionalRefinement ) {
+				if( fineTuning && ! startedAdditionalRefinement ) {
 
-						/* Then take the best so far, and restart from there.
-						   Sometimes this seems to produce some improvement. */
+					/* Then take the best so far, and restart from there.
+					   Sometimes this seems to produce some improvement. */
 
-						System.out.println("Starting refinement thread!");
+					System.out.println("Starting refinement thread!");
 
-						startedAdditionalRefinement = true;
-						finalRefinementThread.setInitialTransformation( bestSoFar.parameters );
-						fineTuneThreadQueue.addLast( finalRefinementThread );
-						startNextThread();
-					} else {
-						if( reason == COMPLETED ) {
-							// Then indicated that we've finished in the instructions panel:
+					startedAdditionalRefinement = true;
+					finalRefinementThread.setInitialTransformation( bestSoFar.parameters );
+					fineTuneThreadQueue.addLast( finalRefinementThread );
+					startNextThread();
+				} else {
+
+					// When the fine-tuning is finished, we should always pass through this section of code:
+
+					if( reason == COMPLETED ) {
+						// Then indicated that we've finished in the instructions panel:
+						if( dialog != null ) {
 							dialog.instructions.setText("Completed: select 'Use this' or 'Cancel' in the fine-tune window.");
 							dialog.pack();
 						}
+						if( batchFineTuning ) {
+							System.out.println("########################################################################");
+							System.out.println("Finished batchFineTuning one point, was: "+fineTuneThread.guessedPoint.toString());
+							// Then adjust the point as if someone had clicked useThis:
+							useFineTuneResult();
+							System.out.println("Point is now: "+points.get( indexOfPointBeingFineTuned ).toString());
+							fineTuning = false;
+						}
+					}
+
+					if( latch != null ) {
+						synchronized (latch) {
+							latch.notifyAll();
+						}
+
 					}
 				}
-				latch.notifyAll();
 			}
 		}
 	}
