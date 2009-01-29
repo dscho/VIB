@@ -1,38 +1,20 @@
 package surfaceplot;
 
-import java.util.List;
-import java.util.Vector;
+import ij.ImagePlus;
+import ij.gui.StackWindow;
+import ij3d.Content;
+import ij3d.ContentNode;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Scrollbar;
-
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 
-
-import ij.IJ;
-import ij.ImagePlus;
-import ij.WindowManager;
-import ij.gui.GenericDialog;
-import ij.gui.StackWindow;
-
-import ij.measure.Calibration;
-
-import ij3d.Content;
-import ij3d.ContentNode;
-import ij3d.Image3DUniverse;
-import ij3d.ColorTable;
-import voltex.Volume;
+import javax.media.j3d.View;
+import javax.vecmath.Point3f;
 
 import vib.Resample_;
-
-import javax.media.j3d.Node;
-import javax.media.j3d.View;
-import javax.media.j3d.Transform3D;
-import javax.vecmath.Vector3f;
-import javax.vecmath.Point3f;
-import javax.vecmath.Color3f;
+import voltex.Volume;
 
 public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 
@@ -50,7 +32,7 @@ public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 		volume.setChannels(c.getChannels());
 		surfacep = new SurfacePlot(volume, c.getColor(),
 				c.getTransparency(), c.getImage().getSlice());
-		calculateMinMaxCenterPoint();
+
 		addChild(surfacep);
 		if(c.getImage().getStackSize() == 1)
 			return;

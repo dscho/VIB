@@ -44,7 +44,6 @@ public class VoltexGroup extends ContentNode {
 		renderer.fullReload();
 		oldColor = c.getColor();
 		addChild(renderer.getVolumeNode());
-		calculateMinMaxCenterPoint();
 	}
 
 	public void thresholdUpdated() {
