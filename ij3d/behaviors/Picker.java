@@ -11,7 +11,6 @@ import ij3d.ImageCanvas3D;
 import java.awt.event.MouseEvent;
 import javax.media.j3d.PickInfo;
 import javax.media.j3d.SceneGraphPath;
-import javax.media.j3d.Transform3D;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 import vib.BenesNamedPoint;

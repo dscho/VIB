@@ -1,18 +1,26 @@
 package ij3d.behaviors;
 
-import ij3d.*;
-
-import java.awt.event.*;
-import java.awt.*;
-
-import javax.media.j3d.*;
-import javax.vecmath.*;
-
-import ij.gui.Toolbar;
 import java.util.Enumeration;
 
-import voltex.VolumeRenderer;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.AWTEvent;
+
+import ij.gui.Toolbar;
+
+import ij3d.Content;
+import ij3d.DefaultUniverse;
+import ij3d.ImageCanvas3D;
+
+import javax.media.j3d.Behavior;
+import javax.media.j3d.WakeupCondition;
+import javax.media.j3d.WakeupOnAWTEvent;
+import javax.media.j3d.WakeupOr;
+
 import orthoslice.OrthoGroup;
+import voltex.VolumeRenderer;
 
 /**
  * This class interprets mouse and keyboard events and invokes the
