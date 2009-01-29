@@ -50,7 +50,6 @@ public class OrthoGroup extends VoltexGroup {
 		renderer.fullReload();
 		oldColor = c.getColor();
 		addChild(renderer.getVolumeNode());
-		calculateMinMaxCenterPoint();
 	}
 
 	public void setSlice(int axis, int v) {

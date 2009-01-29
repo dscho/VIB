@@ -550,7 +550,7 @@ public class Extract_Surface implements PlugInFilter {
 			e.addLineTo(lineMesh);
 		}
 		universe.addLineMesh(lineMesh, makeColor(color),
-				"line" + lineMeshCount++, 0, false);
+				"line" + lineMeshCount++, false);
 	}
 
 

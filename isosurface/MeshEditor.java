@@ -3,14 +3,15 @@
  */
 package isosurface;
 
-import ij3d.Content;
 import javax.vecmath.Point3f;
+
+import customnode.CustomTriangleMesh;
+
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class MeshEditor {
 
@@ -18,11 +19,8 @@ public class MeshEditor {
 	 * If the Content instance wraps a mesh, smooth it by the 
 	 * fraction K (0, 1). 
 	 */
-	static public void smooth(final Content c, final float K) {
-		if (null == c || c.getType() != Content.SURFACE)
-			return;
-		final MeshGroup mg = (MeshGroup)c.getContent();
-		final List triangles = mg.shape.getMesh();
+	static public void smooth(final CustomTriangleMesh c, final float K) {
+		final List triangles = c.getMesh();
 		if (0 != triangles.size() % 3) {
 			System.out.println("MeshEditor.smooth: need a list of points multiple of 3.");
 			return;
@@ -54,7 +52,6 @@ public class MeshEditor {
 			pg.smoothMembers(K);
 		}
 		// done!
-		mg.shape.update();
 	}
 
 	/** Represents one point in 3D space that appears in multiple instances within the triangles list. */
