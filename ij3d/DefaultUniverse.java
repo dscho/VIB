@@ -212,6 +212,26 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		transformChanged(type, tg);
 	}
 
+	/* For some interactive applications, the use of toFront() in
+	   ImageWindow3D creates usability problems, so these methods
+	   allow one to supress this behaviour by calling
+	   setUseToFront(false).  This will only have an effect when
+	   off-screen 3D rendering is not available.  You should be
+	   careful about using this - it will, for example, cause
+	   problems for scripted use of the viewer from macros if
+	   off-screen 3D rendering is not available.
+	*/
+
+	protected boolean useToFront = true;
+
+	public void setUseToFront(boolean useToFront) {
+		this.useToFront = useToFront;
+	}
+
+	public boolean getUseToFront() {
+		return useToFront;
+	}
+
 	public void show() {
 		win = new ImageWindow3D("ImageJ 3D Viewer", this);
 	}
