@@ -11,6 +11,7 @@ import orthoslice.OrthoGroup;
 
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Color3f;
+import voltex.VolumeRenderer;
 
 public class ImageJ3DViewer implements PlugIn {
 
@@ -135,8 +136,9 @@ public class ImageJ3DViewer implements PlugIn {
 
 			OrthoGroup vg = (OrthoGroup)univ.
 						getSelected().getContent();
-			vg.setSlices(new int[] {
-				getInt(x), getInt(y), getInt(z)});
+			vg.setSlice(VolumeRenderer.X_AXIS, getInt(x));
+			vg.setSlice(VolumeRenderer.Y_AXIS, getInt(y));
+			vg.setSlice(VolumeRenderer.Z_AXIS, getInt(z));
 		}
 	}
 
@@ -146,7 +148,8 @@ public class ImageJ3DViewer implements PlugIn {
 
 			VoltexGroup vg = (VoltexGroup)univ.
 						getSelected().getContent();
-			vg.fillRoiBlack(univ, (byte)0);
+			ImageCanvas3D canvas = (ImageCanvas3D)univ.getCanvas();
+			vg.fillRoiBlack(canvas, canvas.getRoi(), (byte)0);
 		}
 	}
 

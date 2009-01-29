@@ -35,9 +35,9 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Executer executer;
 
-	private Point3f globalMin = new Point3f();
-	private Point3f globalMax = new Point3f();
-	private Point3f globalCenter = new Point3f();
+	private Point3d globalMin = new Point3d();
+	private Point3d globalMax = new Point3d();
+	private Point3d globalCenter = new Point3d();
 
 	PointListDialog pld;
 
@@ -134,20 +134,25 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public void recalculateGlobalMinMax() {
 		if(contents.isEmpty())
 			return;
+		Point3d min = new Point3d();
+		Point3d max = new Point3d();
+
 		Iterator it = contents();
 		Content c = (Content)it.next();
-		globalMin.set(c.getContent().min);
-		globalMax.set(c.getContent().max);
+		c.getContent().getMin(min);
+		c.getContent().getMax(max);
+		globalMin.set(min);
+		globalMax.set(max);
 		while(it.hasNext()) {
 			c = (Content)it.next();
-			Point3f cmin = c.getContent().min;
-			Point3f cmax = c.getContent().max;
-			if(cmin.x < globalMin.x) globalMin.x = cmin.x;
-			if(cmin.y < globalMin.y) globalMin.y = cmin.y;
-			if(cmin.z < globalMin.z) globalMin.z = cmin.z;
-			if(cmax.x > globalMax.x) globalMax.x = cmax.x;
-			if(cmax.y > globalMax.y) globalMax.y = cmax.y;
-			if(cmax.z > globalMax.z) globalMax.z = cmax.z;
+			c.getContent().getMin(min);
+			c.getContent().getMax(max);
+			if(min.x < globalMin.x) globalMin.x = min.x;
+			if(min.y < globalMin.y) globalMin.y = min.y;
+			if(min.z < globalMin.z) globalMin.z = min.z;
+			if(max.x > globalMax.x) globalMax.x = max.x;
+			if(max.y > globalMax.y) globalMax.y = max.y;
+			if(max.z > globalMax.z) globalMax.z = max.z;
 		}
 		globalCenter.x = globalMin.x + (globalMax.x - globalMin.x) / 2;
 		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y) / 2;
@@ -157,8 +162,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void recalculateGlobalMinMax(Content c) {
-		Point3f cmin = c.getContent().min;
-		Point3f cmax = c.getContent().max;
+		Point3d cmin = new Point3d(); c.getContent().getMin(cmin);
+		Point3d cmax = new Point3d(); c.getContent().getMax(cmax);
 		if(contents.size() == 1) {
 			globalMin.set(cmin);
 			globalMax.set(cmax);
@@ -177,19 +182,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewPlatformTransformer().centerAt(globalCenter);
 	}
 
-	public Point3f getGlobalCenterPoint() {
-		return globalCenter;
-	}
-
-	public void getGlobalCenterPoint(Point3f p) {
+	public void getGlobalCenterPoint(Point3d p) {
 		p.set(globalCenter);
 	}
 
-	public void getGlobalMinPoint(Point3f p) {
+	public void getGlobalMinPoint(Point3d p) {
 		p.set(globalMin);
 	}
 
-	public void getGlobalMaxPoint(Point3f p) {
+	public void getGlobalMaxPoint(Point3d p) {
 		p.set(globalMax);
 	}
 
@@ -359,7 +360,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scene.addChild(content);
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
-		float range = globalMax.x - globalMin.x;
+		float range = (float)(globalMax.x - globalMin.x);
 		ensureScale(range);
 		fireContentAdded(content);
 		return content;
@@ -397,7 +398,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		scene.addChild(content);
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
-		float range = globalMax.x - globalMin.x;
+		float range = (float)(globalMax.x - globalMin.x);
 		ensureScale(range);
 		fireContentAdded(content);
 		return content;

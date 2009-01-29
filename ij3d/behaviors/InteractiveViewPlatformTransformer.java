@@ -6,7 +6,6 @@ import ij3d.UniverseSettings;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import javax.vecmath.Point3d;
-import javax.vecmath.Point3f;
 
 public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer {
 
@@ -36,7 +35,7 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 		int dy = yLast - e.getY();
 		if(UniverseSettings.globalRotationCenter == 
 				UniverseSettings.ROTATION_AROUND_CENTER)
-			rotCenter.set(((Image3DUniverse)univ).getGlobalCenterPoint());
+			((Image3DUniverse)univ).getGlobalCenterPoint(rotCenter);
 		else
 			rotCenter.set(0, 0, 0);
 		rotateXY(rotCenter, dy * ONE_RAD, dx * ONE_RAD);

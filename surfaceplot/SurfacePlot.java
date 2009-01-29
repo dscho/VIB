@@ -1,26 +1,25 @@
 package surfaceplot;
 
-import ij.process.ImageProcessor;
-import ij.ImagePlus;
-import ij.measure.Calibration;
 import ij.IJ;
 
-import java.applet.Applet;
-import java.awt.BorderLayout;
-import java.awt.Frame;
 import java.awt.Color;
-import java.awt.event.*;
-import java.awt.GraphicsConfiguration;
-import com.sun.j3d.utils.applet.MainFrame; 
-import com.sun.j3d.utils.universe.*;
-import com.sun.j3d.utils.geometry.*;
-import javax.media.j3d.*;
-import javax.vecmath.*;
 
-import java.util.List;
-import java.util.ArrayList;
+import javax.media.j3d.Appearance;
+import javax.media.j3d.ColoringAttributes;
+import javax.media.j3d.IndexedQuadArray;
+import javax.media.j3d.Material;
+import javax.media.j3d.PolygonAttributes;
+import javax.media.j3d.Shape3D;
+import javax.media.j3d.TransparencyAttributes;
+import javax.media.j3d.TriangleArray;
+import javax.vecmath.Color3f;
+import javax.vecmath.Point3d;
+import javax.vecmath.Point3f;
 
 import voltex.Volume;
+
+import com.sun.j3d.utils.geometry.GeometryInfo;
+import com.sun.j3d.utils.geometry.NormalGenerator;
 
 public final class SurfacePlot extends Shape3D {
 
@@ -83,7 +82,6 @@ public final class SurfacePlot extends Shape3D {
 	}
 
 	private void calculateMax() {
-		int wh = w * h;
 		maxVal = 0;
 		for(int z = 0; z < d; z++) {
 			for(int y = 0; y < h; y++) {
@@ -100,11 +98,11 @@ public final class SurfacePlot extends Shape3D {
 		float realW = w * pw;
 		float realH = h * ph;
 		maxZ = realW > realH ? realW : realH;
-		float zFactor = maxZ / maxVal;
+		zFactor = maxZ / maxVal;
 	}
 
-	public void calculateMinMaxCenterPoint(Point3f min, 
-				Point3f max, Point3f center) {
+	public void calculateMinMaxCenterPoint(Point3d min, 
+				Point3d max, Point3d center) {
 
 		min.x = 0; min.y = 0; min.z = 0;
 		max.x = w * pw; max.y = h * ph; max.z = maxZ;

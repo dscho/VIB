@@ -9,12 +9,10 @@ import ij3d.Content;
 import ij3d.DefaultUniverse;
 import ij3d.ImageCanvas3D;
 import java.awt.event.MouseEvent;
-import javax.media.j3d.Node;
 import javax.media.j3d.PickInfo;
 import javax.media.j3d.SceneGraphPath;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Point3d;
-import javax.vecmath.Point3f;
 import javax.vecmath.Vector3d;
 import vib.BenesNamedPoint;
 
@@ -78,6 +76,7 @@ public class Picker {
 	Point3d start = new Point3d();
 	Transform3D tmp = new Transform3D();
 	double z = 0.004245426;
+	/*
 	private Point3d getPickPoint2(Content c, MouseEvent e) {
 		int x = e.getX(), y = e.getY();
 		PickTool pickTool = new PickTool(c);
@@ -120,7 +119,7 @@ public class Picker {
 			ex.printStackTrace();
 			return null;
 		}
-	}
+	}*/
 
 	public Point3d getPickPointGeometry(Content c, Point3d origin, Vector3d dir) {
 		PickTool pickTool = new PickTool(c);
@@ -171,36 +170,6 @@ public class Picker {
 				float v = getVolumePoint(c, intersection);
 				if(v > 20)
 					return intersection;
-			}
-			return null;
-		} catch(Exception ex) {
-			ex.printStackTrace();
-			return null;
-		}
-	}
-
-	public Point3d getPickPointBoundingSphere(Content c, int x, int y) {
-		PickCanvas pickCanvas = new PickCanvas(canvas, univ.getScene());
-		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
-		pickCanvas.setFlags(PickInfo.SCENEGRAPHPATH | PickInfo.CLOSEST_INTERSECTION_POINT);
-		pickCanvas.setTolerance(3.0f);
-		pickCanvas.setShapeLocation(x, y);
-		c.showBoundingSphere(true);
-		try {
-			PickInfo[] result = pickCanvas.pickAllSorted();
-			if(result == null || result.length == 0)
-				return null;
-			for(int j = 0; j < result.length; j++) {
-				SceneGraphPath path = result[j].getSceneGraphPath();
-				for(int i = path.nodeCount() - 1; i >= 0; i--) {
-					if(path.getNode(i) == c.getBoundingSphere()) {
-						Point3d inters = result[j].getClosestIntersectionPoint();
-						Transform3D inv = new Transform3D();
-						c.getBoundingSphere().getTransform(inv);
-						inv.transform(inters);
-						return inters;
-					}
-				}
 			}
 			return null;
 		} catch(Exception ex) {

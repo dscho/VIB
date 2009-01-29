@@ -2,7 +2,6 @@ package ij3d;
 
 import ij3d.shapes.CoordinateSystem;
 import ij3d.shapes.BoundingBox;
-import ij3d.shapes.BoundingSphere;
 import ij3d.pointlist.PointListShape;
 import ij3d.pointlist.PointListDialog;
 import ij.ImagePlus;
@@ -26,10 +25,9 @@ import javax.media.j3d.TransformGroup;
 import javax.media.j3d.View;
 
 import javax.vecmath.Color3f;
-import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix3f;
-import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
+import javax.vecmath.Vector3d;
 
 public class Content extends BranchGroup implements UniverseListener {
 
@@ -49,13 +47,11 @@ public class Content extends BranchGroup implements UniverseListener {
 	private boolean visible = true;
 	private boolean coordVisible = UniverseSettings.showLocalCoordinateSystemsByDefault;
 	private boolean showPL = false;
-	private boolean boundingSphereVisible = false;
 	protected boolean selected = false;
 
 	// entries
 	private ContentNode contentNode = null;
 	private PointListShape pointlist = null;
-	private BoundingSphere boundingSphere = null;
 
 	// scene graph entries
 	private Switch bbSwitch;
@@ -69,11 +65,10 @@ public class Content extends BranchGroup implements UniverseListener {
 
 
 	// global constants
-	private static final int CO = 0;
-	private static final int BB = 1;
-	private static final int BS = 2;
-	private static final int CS = 3;
-	private static final int PL = 4;
+	public static final int CO = 0;
+	public static final int BB = 1;
+	public static final int CS = 2;
+	public static final int PL = 3;
 
 	public static final int VOLUME = 0;
 	public static final int ORTHO = 1;
@@ -120,8 +115,6 @@ public class Content extends BranchGroup implements UniverseListener {
 					"Specified type is neither VOLUME, ORTHO," +
 					"SURFACE or SURFACEPLOT2D");
 		}
-		display(contentNode);
-
 		// update type
 		this.type = type;
 	}
@@ -164,18 +157,14 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(contentNode);
 
 		// create the bounding box and add it to the switch
-		BoundingBox bb = new BoundingBox(
-				contentNode.min, contentNode.max);
+		Point3d min = new Point3d(); contentNode.getMin(min);
+		Point3d max = new Point3d(); contentNode.getMax(max);
+		BoundingBox bb = new BoundingBox(min, max);
 		bb.setPickable(false);
 		bbSwitch.addChild(bb);
-		boundingSphere = new BoundingSphere(contentNode.center,
-				contentNode.center.distance(contentNode.min));
-		boundingSphere.setPickable(false);
-		bbSwitch.addChild(boundingSphere);
 
 		// create coordinate system and add it to the switch
-		float cl = (float)Math.abs(contentNode.max.x
-					- contentNode.min.x) / 5f;
+		float cl = (float)Math.abs(max.x - min.x) / 5f;
 		CoordinateSystem cs = new CoordinateSystem(
 						cl, new Color3f(0, 1, 0));
 		cs.setPickable(false);
@@ -189,7 +178,6 @@ public class Content extends BranchGroup implements UniverseListener {
 
 		// initialize child mask of the switch
 		whichChild.set(BB, selected);
-		whichChild.set(BS, boundingSphereVisible);
 		whichChild.set(CS, coordVisible);
 		whichChild.set(CO, visible);
 		whichChild.set(PL, showPL);
@@ -211,13 +199,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		// only if hiding, hide the point list
 		if(!b) {
 			showPointList(false);
-			whichChild.set(BS, b);
 		}
-		bbSwitch.setChildMask(whichChild);
-	}
-
-	public void showBoundingSphere(boolean b) {
-		whichChild.set(BS, b);
 		bbSwitch.setChildMask(whichChild);
 	}
 
@@ -349,7 +331,7 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void setTransform(Transform3D transform) {
 		Transform3D t = new Transform3D();
-		Point3f c = contentNode.center;
+		Point3d c = new Point3d(); contentNode.getCenter(c);
 
 		Matrix3f m = new Matrix3f();
 		transform.getRotationScale(m);
@@ -357,14 +339,14 @@ public class Content extends BranchGroup implements UniverseListener {
 		// One might thing a rotation matrix has no translational
 		// component, however, if the rotation is composed of
 		// translation - rotation - backtranslation, it has indeed.
-		Vector3f v = new Vector3f();
+		Vector3d v = new Vector3d();
 		v.x = -m.m00*c.x - m.m01*c.y - m.m02*c.z + c.x;
 		v.y = -m.m10*c.x - m.m11*c.y - m.m12*c.z + c.y;
 		v.z = -m.m20*c.x - m.m21*c.y - m.m22*c.z + c.z;
 		t.setTranslation(v);
 		localRotate.setTransform(t);
 
-		Vector3f v2 = new Vector3f();
+		Vector3d v2 = new Vector3d();
 		transform.get(v2);
 		v2.sub(v);
 		t.set(v2);
@@ -470,10 +452,6 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public ContentNode getContent() {
 		return contentNode;
-	}
-
-	public BoundingSphere getBoundingSphere() {
-		return boundingSphere;
 	}
 
 	public ImagePlus getImage() {

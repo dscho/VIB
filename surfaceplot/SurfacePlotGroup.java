@@ -11,15 +11,21 @@ import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 
 import javax.media.j3d.View;
-import javax.vecmath.Point3f;
+import javax.vecmath.Point3d;
+import javax.vecmath.Tuple3d;
 
 import vib.Resample_;
 import voltex.Volume;
+
 
 public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 
 	SurfacePlot surfacep;
 	Content c;
+
+	private Point3d min = new Point3d();
+	private Point3d max = new Point3d();
+	private Point3d center = new Point3d();
 
 	public SurfacePlotGroup (Content c) {
 		super();
@@ -33,6 +39,7 @@ public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 		surfacep = new SurfacePlot(volume, c.getColor(),
 				c.getTransparency(), c.getImage().getSlice());
 
+		surfacep.calculateMinMaxCenterPoint(min, max, center);
 		addChild(surfacep);
 		if(c.getImage().getStackSize() == 1)
 			return;
@@ -45,6 +52,18 @@ public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 				((Scrollbar)co[i]).addAdjustmentListener(this);
 			}
 		}
+	}
+
+	public void getMax(Tuple3d max) {
+		max.set(this.max);
+	}
+
+	public void getMin(Tuple3d min) {
+		min.set(this.min);
+	}
+
+	public void getCenter(Tuple3d center) {
+		center.set(this.center);
 	}
 
 	public void adjustmentValueChanged(AdjustmentEvent e) {
@@ -61,14 +80,6 @@ public class SurfacePlotGroup extends ContentNode implements AdjustmentListener{
 
 	public void channelsUpdated() {
 		surfacep.setChannels(c.getChannels());
-	}
-
-	public void calculateMinMaxCenterPoint() {
-		min = new Point3f(); max = new Point3f();
-		center = new Point3f();
-		if(surfacep != null) {
-			surfacep.calculateMinMaxCenterPoint(min, max, center);
-		}
 	}
 
 	public float getVolume() {

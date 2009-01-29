@@ -67,13 +67,13 @@ public class ViewPlatformTransformer {
 	}
 
 	private Transform3D tmp = new Transform3D();
-	private Point3f p1 = new Point3f(), p2 = new Point3f();
+	private Point3d p1 = new Point3d(), p2 = new Point3d();
 	public void zoom(int units) {
 		Image3DUniverse u = (Image3DUniverse)univ;
 		u.getGlobalMaxPoint(p1);
 		u.getGlobalMinPoint(p2);
 		
-		float factor = 0.02f * p1.distance(p2);
+		float factor = 0.02f * (float)p1.distance(p2);
 		getZDir(zDir);
 		// let the factor be 1 percent of the distance between
 		// eye position and origin
@@ -95,7 +95,7 @@ public class ViewPlatformTransformer {
 		centerXform.setIdentity();
 		translateTG.setTransform(centerXform);
 		transformChanged(BehaviorCallback.TRANSLATE, centerXform);
-		((Image3DUniverse)univ).getGlobalCenterPoint().set(center);
+//		((Image3DUniverse)univ).getGlobalCenterPoint().set(center);
 	}
 
 	private Point2d originInCanvas = new Point2d();
@@ -131,14 +131,14 @@ public class ViewPlatformTransformer {
 		translateXY(dX, dY);
 	}
 
-	private Vector3f v3f = new Vector3f();
+	private Vector3d v3f = new Vector3d();
 	public void translate(Vector3d v) {
 		getTranslateTranslation(tmpV);
 		tmpV.sub(v);
 		translateXform.set(tmpV);
 		translateTG.setTransform(translateXform);
 		v3f.set(v);
-		((Image3DUniverse)univ).getGlobalCenterPoint().sub(v3f);
+//		((Image3DUniverse)univ).getGlobalCenterPoint().sub(v3f);
 		transformChanged(BehaviorCallback.TRANSLATE, translateXform);
 	}
 

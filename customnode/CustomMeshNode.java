@@ -2,6 +2,7 @@ package customnode;
 
 import javax.media.j3d.View;
 import javax.vecmath.Point3f;
+import javax.vecmath.Tuple3d;
 
 import ij3d.Content;
 import ij3d.ContentNode;
@@ -10,6 +11,7 @@ public class CustomMeshNode extends ContentNode {
 	
 	private CustomMesh mesh;
 	private Content content;
+	private Point3f min, max, center;
 	
 	public CustomMeshNode(CustomMesh mesh, Content content) {
 		this.mesh = mesh;
@@ -21,13 +23,20 @@ public class CustomMeshNode extends ContentNode {
 	public CustomMesh getMesh() {
 		return mesh;
 	}
-
+	
 	@Override
-	public void calculateMinMaxCenterPoint() {
-		min = new Point3f();
-		max = new Point3f();
-		center = new Point3f();
-		mesh.calculateMinMaxCenterPoint(min, max, center);
+	public void getMin(Tuple3d min) {
+		min.set(this.min);
+	}
+	
+	@Override
+	public void getMax(Tuple3d max) {
+		max.set(this.max);
+	}
+	
+	@Override
+	public void getCenter(Tuple3d center) {
+		center.set(this.center);
 	}
 
 	@Override
@@ -63,5 +72,12 @@ public class CustomMeshNode extends ContentNode {
 	@Override
 	public void transparencyUpdated() {
 		mesh.setTransparency(content.getTransparency());
+	}
+
+	private void calculateMinMaxCenterPoint() {
+		min = new Point3f();
+		max = new Point3f();
+		center = new Point3f();
+		mesh.calculateMinMaxCenterPoint(min, max, center);
 	}
 }
