@@ -17,31 +17,58 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
-
+/**
+ * This class is the main class for creating a volume rendering. It consists
+ * of a root branch group, which holds a Switch of OrderedGroups.
+ * Each OrderedGroup holds the shapes for one direction. One shape
+ * consists of a rectangular geometry on which a texture from the given
+ * image data is mapped.
+ * 
+ * @author Benjamin Schmid
+ */
 public class VolumeRenderer implements VolRendConstants {
 
-	protected final ImagePlus image;
+	/** The image data which is rendered by this VolumeRenderer */
 	protected final Volume volume;
 
+	/** The root BranchGroup whose subtree contains the volume rendering */
 	protected final BranchGroup root;
 
+	/** The AppearanceCreator, which creates the textures. */
 	protected final AppearanceCreator appCreator;
+	/** The GeometryCreator, which creates the corresponding geomentries. */
 	protected final GeometryCreator geomCreator;
 
-	private int curAxis = Z_AXIS;
-	private int curDir = FRONT;
-
+	/** A Switch, which holds 6 OrderedGroups, one for each direction */
 	protected final Switch axisSwitch;
+	/** The index in the switch, given the direction */
 	protected final int[][] axisIndex = new int[3][2];
 
+	/** The current axis of view */
+	private int curAxis = Z_AXIS;
+	/** The current direction of view */
+	private int curDir = FRONT;
 
+	/**
+	 * Constructor.
+	 * Initializes this VolumeRenderer with the given image, color,
+	 * transparency and channels.
+	 * This does not yet start the rendering. To do so, fullReload()
+	 * needs to be called.
+	 *
+	 * @param img the image stack to be rendered.
+	 * @param color the color in which this rendering should be displayed
+	 * @param tr the transparency value for this volume rendering
+	 * @param channels the rgb channels which should be used. This must be
+	 * a boolean[] array of length three, one for red, green and blue
+	 * respectively.
+	 */
 	public VolumeRenderer(ImagePlus img, Color3f color,
 					float tr, boolean[] channels) {
 
-		this.image = img;
-		this.volume = new Volume(image);
-		appCreator = new AppearanceCreator(
-				volume, color, tr, channels);
+		this.volume = new Volume(img);
+		volume.setChannels(channels);
+		appCreator = new AppearanceCreator(volume, color, tr);
 		geomCreator = new GeometryCreator(volume);
 
 		axisIndex[X_AXIS][FRONT] = 0;
@@ -65,30 +92,37 @@ public class VolumeRenderer implements VolRendConstants {
 		root.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
 	}
 
+	/**
+	 * Returns the root BranchGroup below which the whole volume
+	 * rendering is organized.
+	 * @return
+	 */
 	public BranchGroup getVolumeNode() {
 		return root;
 	}
 
-	private Group getOrderedGroup() {
-		OrderedGroup og = new OrderedGroup();
-		og.setCapability(Group.ALLOW_CHILDREN_READ);
-		og.setCapability(Group.ALLOW_CHILDREN_WRITE);
-		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
-		return og;
+	/**
+	 * Returns the image data of this rendering.
+	 * @return
+	 */
+	public Volume getVolume() {
+		return volume;
 	}
 
+	/**
+	 * Call this method when the direction of view changed.
+	 */
 	private Vector3d eyeVec = new Vector3d();
 	public void eyePtChanged(View view) {
-
 		Point3d eyePt = getViewPosInLocal(view, root);
 		if (eyePt != null) {
 			Point3d  volRefPt = volume.volRefPt;
 			eyeVec.sub(eyePt, volRefPt);
 
 			// compensate for different xyz resolution/scale
-//			eyeVec.x /= volume.xSpace;
-//			eyeVec.y /= volume.ySpace;
-//			eyeVec.z /= volume.zSpace;
+			eyeVec.x /= volume.pw;
+			eyeVec.y /= volume.ph;
+			eyeVec.z /= volume.pd;
 
 			// select the axis with the greatest magnitude
 			int axis = X_AXIS;
@@ -117,14 +151,23 @@ public class VolumeRenderer implements VolRendConstants {
 		}
 	}
 
+	/**
+	 * Fully removes all the data and reloads all the textures.
+	 */
 	public void fullReload() {
 		for(int i = 0; i < axisSwitch.numChildren(); i++) {
 			((Group)axisSwitch.getChild(i)).removeAllChildren();
 		}
-		loadQuads();
+		loadAxis(Z_AXIS);
+		loadAxis(Y_AXIS);
+		loadAxis(X_AXIS);
 		axisSwitch.setWhichChild(axisIndex[curAxis][curDir]);
 	}
 
+	/**
+	 * Set the threshold. Pixel value below the threshold are not rendered.
+	 * @param threshold
+	 */
 	public void setThreshold(int threshold) {
 		float value = threshold/255f;
 		value = Math.min(1f, value);
@@ -132,15 +175,29 @@ public class VolumeRenderer implements VolRendConstants {
 		appCreator.setThreshold(value);
 	}
 
+	/**
+	 * Set the transparency for this rendering
+	 * @param transparency
+	 */
 	public void setTransparency(float transparency) {
 		appCreator.setTransparency(transparency);
 	}
 
+	/**
+	 * Set the displayed color channels for this volume rendering. This
+	 * affects only RGB images. A boolean[] array is required of length
+	 * 3, one value for red, green and blue.
+	 * @param channels
+	 */
 	public void setChannels(boolean[] channels) {
 		if(volume.setChannels(channels))
 			fullReload();
 	}
 
+	/**
+	 * Set the color for this volume rendering
+	 * @param color
+	 */
 	public void setColor(Color3f color) {
 		if(volume.setAverage(color != null))
 			fullReload();
@@ -148,15 +205,12 @@ public class VolumeRenderer implements VolRendConstants {
 		appCreator.setColor(c);
 	}
 
-	private void loadQuads() {
-		loadAxis(Z_AXIS);
-		loadAxis(Y_AXIS);
-		loadAxis(X_AXIS);
-	}
-
-	/*
-	 * Needs to be protected so that it can be overwritten in
-	 * Orthoslice
+	/**
+	 * Load a specific axis (both front and back direction)
+	 * This method is protected, so that it can eventually be overridden
+	 * by subclasses like Orthoslice.
+	 * 
+	 * @param axis
 	 */
 	protected void loadAxis(int axis) {
 		int rSize = 0;		// number of tex maps to create
@@ -172,41 +226,56 @@ public class VolumeRenderer implements VolRendConstants {
 			case Y_AXIS: rSize = volume.yDim; m += "y axis"; break;
 			case X_AXIS: rSize = volume.xDim; m += "z axis"; break;
 		}
+		IJ.showStatus(m);
 
-		IJ.showStatus("Loading " + m);
 		for (int i=0; i < rSize; i++) {
 			IJ.showProgress(i+1, rSize);
-
-			GeometryArray quadArray = geomCreator.getQuad(axis, i);
-			Appearance a = appCreator.getAppearance(axis, i);
-
-			Shape3D frontShape = new Shape3D(quadArray, a);
-			frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
-
-			BranchGroup frontShapeGroup = new BranchGroup();
-			frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-			frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
-			frontShapeGroup.addChild(frontShape);
-			frontGroup.addChild(frontShapeGroup);
-
-			Shape3D backShape = new Shape3D(quadArray, a);
-			backShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
-
-			BranchGroup backShapeGroup = new BranchGroup();
-			backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-			backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
-			backShapeGroup.addChild(backShape);
-			backGroup.insertChild(backShapeGroup, 0);
+			loadAxis(axis, i, frontGroup, backGroup);
 		}
 	}
 
-	/** 
-	 * return the eye's position in <node>'s coordinate space
+	/**
+	 * Load a specific slice of the specified axis (both front and back 
+	 * direction) and adds it to the specified Groups.
+	 * This method is protected, so that it can eventually be overridden
+	 * by subclasses like Orthoslice.
+	 * 
+	 * @param axis
+	 * @param index
+	 * @param front
+	 * @param back
 	 */
+	protected void loadAxis(int axis, int index, Group front, Group back) {
+
+		GeometryArray quadArray = geomCreator.getQuad(axis, index);
+		Appearance a = appCreator.getAppearance(axis, index);
+
+		Shape3D frontShape = new Shape3D(quadArray, a);
+		frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
+
+		BranchGroup frontShapeGroup = new BranchGroup();
+		frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+		frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
+		frontShapeGroup.addChild(frontShape);
+		front.addChild(frontShapeGroup);
+
+		Shape3D backShape = new Shape3D(quadArray, a);
+		backShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
+
+		BranchGroup backShapeGroup = new BranchGroup();
+		backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
+		backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
+		backShapeGroup.addChild(backShape);
+		back.insertChild(backShapeGroup, 0);
+	} 
+
 	private static Transform3D parentInv = new Transform3D();
 	private static Point3d viewPosition = new Point3d();
 	private static Transform3D t = new Transform3D();
 
+	/** 
+	 * return the eye's position in <node>'s coordinate space
+	 */
 	public static Point3d getViewPosInLocal(View view, Node node) {
 		if (node == null )
 			return null;
@@ -227,4 +296,13 @@ public class VolumeRenderer implements VolRendConstants {
 
 		return viewPosition;
 	}
+
+	private Group getOrderedGroup() {
+		OrderedGroup og = new OrderedGroup();
+		og.setCapability(Group.ALLOW_CHILDREN_READ);
+		og.setCapability(Group.ALLOW_CHILDREN_WRITE);
+		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
+		return og;
+	}
+
 }

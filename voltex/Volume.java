@@ -232,6 +232,10 @@ public class Volume {
 		return retval;
 	}
 
+	public void set(int x, int y, int z, int v) {
+		loader.set(x, y, z, v);
+	}
+
 	/**
 	 * Load the value at the specified position
 	 * @param x
@@ -278,6 +282,7 @@ public class Volume {
 	 */
 	private abstract class Loader {
 		abstract int load(int x, int y, int z);
+		abstract void set(int x, int y, int z, int v);
 
 		abstract void loadZ(int z, Object dst);
 		abstract void loadY(int y, Object dst);
@@ -302,6 +307,10 @@ public class Volume {
 
 		int load(int x, int y, int z) {
 			return (int)fData[z][y * w + x] & 0xff;
+		}
+
+		void set(int x, int y, int z, int v) {
+			fData[z][y * w + x] = (byte)v;
 		}
 
 		void loadZ(int zValue, Object arr) {
@@ -379,6 +388,10 @@ public class Volume {
 
 		int load(int x, int y, int z) {
 			return fData[z][y * w + x];
+		}
+
+		void set(int x, int y, int z, int v) {
+			fData[z][y * w + x] = v;
 		}
 
 		void loadZ(int zValue, Object arr) {
@@ -467,6 +480,10 @@ public class Volume {
 			return fData[z][y * w + x] & mask;
 		}
 
+		void set(int x, int y, int z, int v) {
+			fData[z][y * w + x] = v;
+		}
+
 		void loadZ(int zValue, Object arr) {
 			int[] dst = (int[])arr;
 			int[] src = fData[zValue];
@@ -534,6 +551,10 @@ public class Volume {
 			usedCh = 0;
 			for(int i = 0; i < 3; i++)
 				if(channels[i]) usedCh++;
+		}
+
+		void set(int x, int y, int z, int v) {
+			fdata[z][y * w + x] = v;
 		}
 
 		int load(int x, int y, int z) {

@@ -18,20 +18,19 @@ public class AppearanceCreator implements VolRendConstants {
 	private Object xData, yData, zData;
 
 	private Volume volume;
-	private static boolean[] defaultChannels = new boolean[]{true, true, true};
 
 	public AppearanceCreator() {
 		initAttributes(null, 0.1f);
 	}
 
 	public AppearanceCreator(Volume volume) {
-		this(volume, null, 0.1f, defaultChannels);
+		this(volume, null, 0.1f);
 	}
 
 	public AppearanceCreator(Volume volume,
-			Color3f color, float transparency, boolean[] ch) {
+			Color3f color, float transparency) {
 		initAttributes(color, transparency);
-		setVolume(volume, ch);
+		setVolume(volume);
 	}
 
 	public void release() {
@@ -42,12 +41,7 @@ public class AppearanceCreator implements VolRendConstants {
 	}
 
 	public void setVolume(Volume v) {
-		setVolume(v, defaultChannels);
-	}
-
-	public void setVolume(Volume v, boolean[] ch) {
 		this.volume = v;
-		this.volume.setChannels(ch);
 		zTg = new TexCoordGeneration();
 		zTg.setPlaneS(new Vector4f(v.xTexGenScale, 0f, 0f,
 				-(float)(v.xTexGenScale * v.minCoord.x)));

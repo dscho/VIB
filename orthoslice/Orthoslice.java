@@ -2,7 +2,6 @@ package orthoslice;
 
 import java.awt.*;
 import java.awt.image.*;
-import java.awt.color.ColorSpace;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 import java.io.*;
@@ -11,7 +10,6 @@ import ij.ImagePlus;
 import java.util.BitSet;
 
 import voltex.VolumeRenderer;
-import voltex.Volume;
 
 public class Orthoslice extends VolumeRenderer {
 
@@ -34,40 +32,16 @@ public class Orthoslice extends VolumeRenderer {
 		}
 	}
 
+	@Override
 	protected void loadAxis(int axis) {
-		OrderedGroup frontGroup = null;
-		OrderedGroup backGroup = null;
 
-		frontGroup = 
-		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][FRONT]);
-		backGroup = 
-		(OrderedGroup)axisSwitch.getChild(axisIndex[axis][BACK]);
-
+		Group front = (Group)axisSwitch.getChild(axisIndex[axis][FRONT]);
+		Group back  = (Group)axisSwitch.getChild(axisIndex[axis][BACK]);
 		int i = slices[axis];
-
-		GeometryArray quadArray = geomCreator.getQuad(axis, i);
-		Appearance a = appCreator.getAppearance(axis, i);
-		Shape3D frontShape = new Shape3D(quadArray, a);
-
-		frontShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
-
-		BranchGroup frontShapeGroup = new BranchGroup();
-		frontShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-		frontShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
-		frontShapeGroup.addChild(frontShape);
-		frontGroup.addChild(frontShapeGroup);
-
-		Shape3D backShape = new Shape3D(quadArray, a);
-		backShape.setCapability(Shape3D.ALLOW_APPEARANCE_READ);
-
-		BranchGroup backShapeGroup = new BranchGroup();
-		backShapeGroup.setCapability(BranchGroup.ALLOW_DETACH);
-		backShapeGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
-		backShapeGroup.addChild(backShape);
-		backGroup.insertChild(backShapeGroup, 0);
-
+		loadAxis(axis, i, front, back);
 	} 
 
+	@Override
 	public void eyePtChanged(View view) {
 		axisSwitch.setWhichChild(Switch.CHILD_MASK);
 		axisSwitch.setChildMask(whichChild);

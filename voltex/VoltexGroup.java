@@ -153,49 +153,37 @@ public class VoltexGroup extends ContentNode {
 		volToIP.invert();
 		volumeToImagePlate(volToIP);
 
-		ImagePlus image = renderer.image;
-		int w = image.getWidth(), h = image.getHeight();
-		int d = image.getStackSize();
-		for(int z = 0; z < d; z++) {
-			byte[] data =(byte[])image.getStack().getPixels(z+1);
-			for(int y = 0; y < h; y++) {
-				for(int x = 0; x < w; x++) {
-					int index = y * w + x;
+		Volume vol = renderer.getVolume();
+		for(int z = 0; z < vol.zDim; z++) {
+			for(int y = 0; y < vol.yDim; y++) {
+				for(int x = 0; x < vol.xDim; x++) {
 					Point2d onCanvas = volumePointInCanvas(
-							canvas, volToIP,x,y,z);
+							canvas, volToIP, x, y, z);
 					if(p.contains(onCanvas.x, onCanvas.y)) {
-						data[index] = fillValue;
+						vol.set(x, y, z, fillValue);
 					}
 				}
 			}
 			IJ.showStatus("Filling...");
-			IJ.showProgress(z, d);
+			IJ.showProgress(z, vol.zDim);
 		}
 		renderer.fullReload();
 		// also fill the original image
-		image = c.getImage();
-		w = image.getWidth(); 
-		h = image.getHeight();
-		d = image.getStackSize();
+		ImagePlus image = c.getImage();
+		vol = new Volume(image);
 		int factor = c.getResamplingFactor();
-		for(int z = 0; z < d; z++) {
-			byte[] data =(byte[])image.getStack().getPixels(z+1);
-			for(int y = 0; y < h; y++) {
-				for(int x = 0; x < w; x++) {
-					int index = y * w + x;
-					Point2d onCanvas = volumePointInCanvas(
-						canvas, 
-						volToIP,
-						x/factor,
-						y/factor,
-						z/factor);
+		for(int z = 0; z < vol.zDim; z++) {
+			for(int y = 0; y < vol.yDim; y++) {
+				for(int x = 0; x < vol.xDim; x++) {
+					Point2d onCanvas = volumePointInCanvas( canvas, 
+						volToIP, x/factor, y/factor, z/factor);
 					if(p.contains(onCanvas.x, onCanvas.y)) {
-						data[index] = fillValue;
+						vol.set(x, y, z, fillValue);
 					}
 				}
 			}
 			IJ.showStatus("Filling...");
-			IJ.showProgress(z, d);
+			IJ.showProgress(z, vol.zDim);
 		}
 	}
 }
