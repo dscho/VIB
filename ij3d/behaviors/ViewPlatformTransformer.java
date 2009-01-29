@@ -10,6 +10,7 @@ import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Point3f;
 import javax.vecmath.Vector3d;
+import javax.vecmath.Vector3f;
 
 public class ViewPlatformTransformer {
 
@@ -94,6 +95,7 @@ public class ViewPlatformTransformer {
 		centerXform.setIdentity();
 		translateTG.setTransform(centerXform);
 		transformChanged(BehaviorCallback.TRANSLATE, centerXform);
+		((Image3DUniverse)univ).getGlobalCenterPoint().set(center);
 	}
 
 	private Point2d originInCanvas = new Point2d();
@@ -129,11 +131,14 @@ public class ViewPlatformTransformer {
 		translateXY(dX, dY);
 	}
 
+	private Vector3f v3f = new Vector3f();
 	public void translate(Vector3d v) {
 		getTranslateTranslation(tmpV);
 		tmpV.sub(v);
 		translateXform.set(tmpV);
 		translateTG.setTransform(translateXform);
+		v3f.set(v);
+		((Image3DUniverse)univ).getGlobalCenterPoint().sub(v3f);
 		transformChanged(BehaviorCallback.TRANSLATE, translateXform);
 	}
 

@@ -1961,4 +1961,85 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 		return result;
 	}
+
+	public static String stringForCSV( String s ) {
+		boolean quote = false;
+		String result = s;
+		if( s.indexOf(',') >= 0 )
+			quote = true;
+		if( s.indexOf('"') >= 0 ) {
+			System.out.println("ooh, got a quote..");
+			quote = true;
+			result = s.replaceAll("\"","\"\"");
+			System.out.println("result is now: "+result);
+		}
+		if( quote )
+			return "\"" + result + "\"";
+		else
+			return result;
+	}
+
+	/* Output some potentially useful information about the paths
+	   as a CSV (comma separated values) file. */
+
+	public void exportToCSV( File outputFile ) throws IOException {
+		// FIXME: also add statistics on volumes of fills and
+		// reconstructions...
+		String [] headers = { "PathID",
+				      "PathName",
+				      "PrimaryPath",
+				      "PathLength",
+				      "PathLengthUnits",
+				      "StartsOnPath",
+				      "EndsOnPath",
+				      "ConnectedPathIDs",
+				      "ChildPathIDs" };
+
+		Path [] primaryPaths = getPathsStructured();
+		HashSet<Path> h = new HashSet<Path>();
+		for( int i = 0; i < primaryPaths.length; ++i )
+			h.add(primaryPaths[i]);
+
+		PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile.getAbsolutePath()),"UTF-8"));
+		int columns = headers.length;
+		for( int c = 0; c < columns; ++c ) {
+			pw.print(stringForCSV(headers[c]));
+			if( c < (columns - 1) )
+				pw.print(",");
+		}
+		pw.print("\r\n");
+		Iterator<Path> pi = allPaths.iterator();
+		while( pi.hasNext() ) {
+			Path p = pi.next();
+			Path pForLengthAndName = p;
+			if( p.getUseFitted() ) {
+				pForLengthAndName = p.fitted;
+			}
+			if( p.fittedVersionOf != null )
+				continue;
+			pw.print(stringForCSV(""+p.getID()));
+			pw.print(",");
+			pw.print(stringForCSV(""+pForLengthAndName.getName()));
+			pw.print(",");
+			boolean primary = h.contains(p);
+			pw.print(stringForCSV(""+primary));
+			pw.print(",");
+			pw.print(stringForCSV(""+pForLengthAndName.getRealLength()));
+			pw.print(",");
+			pw.print(stringForCSV(""+p.spacing_units));
+			pw.print(",");
+			if( p.startJoins != null )
+				pw.print(""+p.startJoins.getID());
+			pw.print(",");
+			if( p.endJoins != null )
+				pw.print(""+p.endJoins.getID());
+			pw.print(",");
+			pw.print(stringForCSV(p.somehowJoinsAsString()));
+			pw.print(",");
+			pw.print(stringForCSV(p.childrenAsString()));
+			pw.print("\r\n");
+			pw.flush();
+		}
+		pw.close();
+	}
 }

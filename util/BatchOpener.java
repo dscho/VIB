@@ -602,6 +602,7 @@ public class BatchOpener {
 		int bitDepth = imp.getBitDepth();
 		int size = slices*frames;
 		ImagePlus[] result=new ImagePlus[channels];
+		FileInfo fi = imp.getOriginalFileInfo();
 		HyperStackReducer reducer = new HyperStackReducer(imp);
 		for (int c=1; c<=channels; c++) {
 			ImageStack stack2 = new ImageStack(width, height, size); // create empty stack
@@ -612,6 +613,7 @@ public class BatchOpener {
 			imp2.setDimensions(1, slices, frames);
 			reducer.reduce(imp2);
 			imp2.setOpenAsHyperStack(true);
+			imp2.setFileInfo(fi);
 			result[c-1]=imp2;
 		}
 		imp.changes = false;

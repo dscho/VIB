@@ -152,7 +152,11 @@ public class VolumeRenderer extends Renderer {
 		loadAxis(X_AXIS);
 	}
 
-	private void loadAxis(int axis) {
+	/*
+	 * Needs to be protected so that it can be overwritten in
+	 * Orthoslice
+	 */
+	protected void loadAxis(int axis) {
 		int rSize = 0;		// number of tex maps to create
 		Group frontGroup = null;
 		Group backGroup = null;

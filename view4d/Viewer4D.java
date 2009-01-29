@@ -3,7 +3,7 @@ package view4d;
 import ij.plugin.PlugIn;
 import ij.*;
 import ij.gui.GenericDialog;
-import ij.io.DirectoryChooser;
+import ij.io.OpenDialog;
 import ij.io.Opener;
 import java.io.*;
 
@@ -133,20 +133,29 @@ public class Viewer4D {
 		
 		GenericDialog gd = new GenericDialog("Load time lapse");
 
+		gd.addMessage("Select either a file containing a hyperstack\n" +
+				"or a directory containing your time lapse " +
+				"data");
+
 		Panel p = new Panel(new FlowLayout());
-		Button b = new Button("Load");
+		Label l = new Label("Time lapse data");
+		final TextField folder = new TextField(30);
+		Button b = new Button("...");
+		p.add(l);
+		p.add(folder);
 		p.add(b);
 		gd.addPanel(p);
 
-		gd.addStringField("Time lapse dir", "", 30);
-		final TextField folder = (TextField)gd.getStringFields().get(0);
 		b.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				DirectoryChooser dc = new DirectoryChooser(
-							"Time lapse dir");
+				OpenDialog dc = new OpenDialog(
+						"Time lapse dir", null);
 				String dir = dc.getDirectory();
-				if (null == dir) return;
-				folder.setText(dir);
+				String file = dc.getFileName();
+				if(dir == null || file == null)
+					return;
+				folder.setText(new File(dir, file).
+					getAbsolutePath());
 			}
 		});
 
@@ -173,44 +182,88 @@ public class Viewer4D {
 		resf = (int)gd.getNextNumber();
 		
 		File dir = new File(directory);
-		if(!dir.exists())
-			return false;
-
-		// get the file names
-		String[] names = dir.list(new FilenameFilter() {
-			public boolean accept(File dir, String name) {
-				return name.endsWith("tif");
-			}
-		});
-
-		if (names.length == 0) {
-			IJ.showMessage("No files!");
+		if(!dir.exists()) {
+			IJ.showMessage(directory + " does not exist");
 			return false;
 		}
-		Arrays.sort(names);
-		Content[] c = new Content[names.length];
 
-		int i = 0;
-		for(int j = 0; j < names.length; j++) {
-			univ.setStatus("Loading " + (j+1) + "/" + names.length);
-			ImagePlus image = IJ.openImage(directory + names[j]);
-			if(image == null)
-				continue;
+		ImagePlus[] images = dir.isDirectory()
+			? getImages(dir)
+			: getImages(IJ.openImage(dir.getAbsolutePath()));
+		if(images == null || images.length == 0)
+			return false;
+		if(images.length == 0) {
+			IJ.showMessage("Could not load any of the images");
+			return false;
+		}
+		Content[] c = new Content[images.length];
+
+		for(int j = 0; j < images.length; j++) {
+			univ.setStatus("Adding " + (j+1) + "/" + images.length);
+			ImagePlus image = images[j];
 			Executer.convert(image);
-			IJ.showStatus("adding " + image);
-			c[i] = univ.addContent(image, null, names[j],
+			c[j] = univ.addContent(image, null, image.getTitle(),
 				threshold, new boolean[] {true, true, true}, 
 				resf, type);
+			c[j].showCoordinateSystem(false);
 
-			if(i != 0) c[i].setVisible(false);
-			i++;
+			if(j != 0) c[j].setVisible(false);
 		}
 
-		contents = new Content[i];
+		contents = new Content[images.length];
 		System.arraycopy(c, 0, contents, 0, contents.length);
 		univ.setStatus("");
 		current = 0;
 		
 		return true;
+	}
+
+	private ImagePlus[] getImages(ImagePlus imp) {
+		int nChannels = imp.getNChannels();
+		if(nChannels != 1) {
+			IJ.showMessage(
+				"Currently, images with one channel are\n" +
+				"supported.");
+			return null;
+		}
+
+		int nSlices = imp.getNSlices();
+		int nFrames = imp.getNFrames();
+		ImagePlus[] ret = new ImagePlus[nFrames];
+		int w = imp.getWidth(), h = imp.getHeight();
+
+		ImageStack oldStack = imp.getStack();
+		String oldTitle = imp.getTitle();
+		for(int i = 0, slice = 1; i < nFrames; i++) {
+			ImageStack newStack = new ImageStack(w, h);
+			for(int j = 0; j < nSlices; j++, slice++) {
+				newStack.addSlice(
+					oldStack.getSliceLabel(slice),
+					oldStack.getPixels(slice));
+			}
+			ret[i] = new ImagePlus(oldTitle
+				+ " (frame " + i + ")", newStack);
+		}
+		return ret;
+	}
+
+	private ImagePlus[] getImages(File dir) {
+		// get the file names
+		String[] names = dir.list();
+		if (names.length == 0) {
+			IJ.showMessage("No files in " + dir.getName());
+			return null;
+		}
+		Arrays.sort(names);
+		ImagePlus[] ret = new ImagePlus[names.length];
+		for(int i = 0, j = 0; i < ret.length; i++) {
+			univ.setStatus("Loading " + (j+1) + "/" + names.length);
+			File f = new File(dir, names[i]);
+			ImagePlus imp = IJ.openImage(f.getAbsolutePath());
+			if(imp != null)
+				ret[j++] = imp;
+		}
+		return ret;
+
 	}
 }

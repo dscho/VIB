@@ -112,6 +112,26 @@ public class Path implements Comparable {
 	   'somehowJoins'... */
 	ArrayList<Path> children;
 
+	private String pathsToIDListString( ArrayList<Path> a ) {
+		StringBuffer s = new StringBuffer("");
+		int n = a.size();
+		for( int i = 0; i < n; ++i ) {
+			s.append(a.get(i).getID());
+			if( i < n - 1 ) {
+				s.append(",");
+			}
+		}
+		return s.toString();
+	}
+
+	public String somehowJoinsAsString() {
+		return pathsToIDListString( somehowJoins );
+	}
+
+	public String childrenAsString() {
+		return pathsToIDListString( children );
+	}
+
 	public void setChildren( Set<Path> pathsLeft ) {
 		// Set the children of this path in a breadth first fashion:
 		children.clear();
