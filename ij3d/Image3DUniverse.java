@@ -14,6 +14,7 @@ import java.util.Collection;
 
 import customnode.CustomLineMesh;
 import customnode.CustomMesh;
+import customnode.CustomMeshNode;
 import customnode.CustomTriangleMesh;
 
 import javax.media.j3d.*;
@@ -353,7 +354,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.color = color;
 		content.showCoordinateSystem(
 				UniverseSettings.showLocalCoordinateSystemsByDefault);
-		content.displayMesh(mesh);
+		content.display(new CustomMeshNode(mesh, content));
 		content.setPointListDialog(pld);
 		scene.addChild(content);
 		contents.put(name, content);
@@ -391,7 +392,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		Content content = new Content(name);
 		content.color = color;
 		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
-		content.displayMesh(tmesh);
+		content.display(new CustomMeshNode(tmesh, content));
 		content.setPointListDialog(pld);
 		scene.addChild(content);
 		contents.put(name, content);
@@ -400,6 +401,20 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		ensureScale(range);
 		fireContentAdded(content);
 		return content;
+	}
+
+	public Content addContent(Content c) {
+		if(contents.containsKey(c.name)) {
+			IJ.error("Mesh named '" + c.name + "' exists already");
+			return null;
+		}
+		scene.addChild(c);
+		contents.put(c.name, c);
+		recalculateGlobalMinMax(c);
+		float range = globalMax.x - globalMin.x;
+		ensureScale(range);
+		fireContentAdded(c);
+		return c;
 	}
 
 	public void removeAllContents() {
