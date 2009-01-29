@@ -26,7 +26,7 @@ import vib.FastMatrix;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
-import voltex.Renderer;
+import voltex.VolumeRenderer;
 import isosurface.MeshExporter;
 import isosurface.MeshEditor;
 
@@ -292,8 +292,8 @@ public class Executer {
 				"x, y, z + SPACE switches planes on\n" +
 				"and off");
 
-		final int[] dirs = new int[] {Renderer.X_AXIS, 
-				Renderer.Y_AXIS, Renderer.Z_AXIS};
+		final int[] dirs = new int[] {VolumeRenderer.X_AXIS, 
+				VolumeRenderer.Y_AXIS, VolumeRenderer.Z_AXIS};
 		final Scrollbar[] sl = new Scrollbar[3]; 
 		final Checkbox[] cb = new Checkbox[3];
 

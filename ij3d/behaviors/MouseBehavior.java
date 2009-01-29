@@ -11,7 +11,7 @@ import javax.vecmath.*;
 import ij.gui.Toolbar;
 import java.util.Enumeration;
 
-import voltex.Renderer;
+import voltex.VolumeRenderer;
 import orthoslice.OrthoGroup;
 
 public class MouseBehavior extends Behavior {
@@ -126,11 +126,11 @@ public class MouseBehavior extends Behavior {
 		int code = e.getKeyCode();
 		int axis = -1;
 		if(canvas.isKeyDown(KeyEvent.VK_X))
-			axis = Renderer.X_AXIS;
+			axis = VolumeRenderer.X_AXIS;
 		else if(canvas.isKeyDown(KeyEvent.VK_Y))
-			axis = Renderer.Y_AXIS;
+			axis = VolumeRenderer.Y_AXIS;
 		else if(canvas.isKeyDown(KeyEvent.VK_Z))
-			axis = Renderer.Z_AXIS;
+			axis = VolumeRenderer.Z_AXIS;
 		// Consume events if used, to avoid other listeners from reusing the event
 		boolean consumed = true;
 		try {
@@ -212,11 +212,11 @@ public class MouseBehavior extends Behavior {
 		if(id == MouseEvent.MOUSE_WHEEL) {
 			int axis = -1;
 			if(canvas.isKeyDown(KeyEvent.VK_X))
-				axis = Renderer.X_AXIS;
+				axis = VolumeRenderer.X_AXIS;
 			else if(canvas.isKeyDown(KeyEvent.VK_Y))
-				axis = Renderer.Y_AXIS;
+				axis = VolumeRenderer.Y_AXIS;
 			else if(canvas.isKeyDown(KeyEvent.VK_Z))
-				axis = Renderer.Z_AXIS;
+				axis = VolumeRenderer.Z_AXIS;
 			if(c != null && c.getType() == Content.ORTHO
 								&& axis != -1) {
 				OrthoGroup og = (OrthoGroup)c.getContent();

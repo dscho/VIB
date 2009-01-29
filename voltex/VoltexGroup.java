@@ -24,7 +24,7 @@ import vib.Resample_;
 
 public class VoltexGroup extends ContentNode {
 
-	protected Renderer renderer;
+	protected VolumeRenderer renderer;
 	protected Color3f oldColor;
 	protected Content c;
 	private float volume;

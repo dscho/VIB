@@ -22,7 +22,7 @@ import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
 import voltex.VolRendConstants;
-import voltex.Renderer;
+import voltex.VolumeRenderer;
 
 public class VolumeOctree implements UniverseListener, VolRendConstants {
 
@@ -219,7 +219,7 @@ public class VolumeOctree implements UniverseListener, VolRendConstants {
 	 */
 	private Vector3d eyeVec = new Vector3d();
 	public void transformationUpdated(View view){
-		Point3d eyePt = Renderer.getViewPosInLocal(view, rootBranchGroup);
+		Point3d eyePt = VolumeRenderer.getViewPosInLocal(view, rootBranchGroup);
 		if (eyePt == null)
 			return;
 		eyeVec.sub(eyePt, refPt);

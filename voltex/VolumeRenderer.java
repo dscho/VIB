@@ -2,52 +2,54 @@ package voltex;
 
 import ij.IJ;
 import ij.ImagePlus;
-
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BranchGroup;
+import javax.media.j3d.Canvas3D;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.Group;
+import javax.media.j3d.Node;
 import javax.media.j3d.OrderedGroup;
 import javax.media.j3d.Shape3D;
 import javax.media.j3d.Switch;
+import javax.media.j3d.Transform3D;
 import javax.media.j3d.View;
 import javax.vecmath.Color3f;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
-public class VolumeRenderer extends Renderer {
 
-	protected float transparency;
-	protected Color3f color;
+public class VolumeRenderer implements VolRendConstants {
+
+	protected final ImagePlus image;
+	protected final Volume volume;
+
+	protected final BranchGroup root;
+
+	protected final AppearanceCreator appCreator;
+	protected final GeometryCreator geomCreator;
 
 	private int curAxis = Z_AXIS;
 	private int curDir = FRONT;
 
-	private final BranchGroup root;
-
-	protected AppearanceCreator appCreator;
-
-	protected GeometryCreator geomCreator;
-
-	protected Switch axisSwitch;
-	protected int[][] axisIndex = new int[3][2];
+	protected final Switch axisSwitch;
+	protected final int[][] axisIndex = new int[3][2];
 
 
 	public VolumeRenderer(ImagePlus img, Color3f color,
 					float tr, boolean[] channels) {
-		super(img);
-		this.transparency = tr;
-		this.color = color;
+
+		this.image = img;
+		this.volume = new Volume(image);
 		appCreator = new AppearanceCreator(
 				volume, color, tr, channels);
 		geomCreator = new GeometryCreator(volume);
 
 		axisIndex[X_AXIS][FRONT] = 0;
-		axisIndex[X_AXIS][BACK] = 1;
+		axisIndex[X_AXIS][BACK]  = 1;
 		axisIndex[Y_AXIS][FRONT] = 2;
-		axisIndex[Y_AXIS][BACK] = 3;
+		axisIndex[Y_AXIS][BACK]  = 3;
 		axisIndex[Z_AXIS][FRONT] = 4;
-		axisIndex[Z_AXIS][BACK] = 5;
+		axisIndex[Z_AXIS][BACK]  = 5;
 
 		axisSwitch = new Switch();
 		axisSwitch.setCapability(Switch.ALLOW_SWITCH_READ);
@@ -127,12 +129,10 @@ public class VolumeRenderer extends Renderer {
 		float value = threshold/255f;
 		value = Math.min(1f, value);
 		value = Math.max(0.1f, value);
-		this.threshold = (int)Math.round(value * 255);
 		appCreator.setThreshold(value);
 	}
 
 	public void setTransparency(float transparency) {
-		this.transparency = transparency;
 		appCreator.setTransparency(transparency);
 	}
 
@@ -142,7 +142,6 @@ public class VolumeRenderer extends Renderer {
 	}
 
 	public void setColor(Color3f color) {
-		this.color = color;
 		if(volume.setAverage(color != null))
 			fullReload();
 		Color3f c = color != null ? color : new Color3f(1f, 1f, 1f);
@@ -199,5 +198,33 @@ public class VolumeRenderer extends Renderer {
 			backShapeGroup.addChild(backShape);
 			backGroup.insertChild(backShapeGroup, 0);
 		}
+	}
+
+	/** 
+	 * return the eye's position in <node>'s coordinate space
+	 */
+	private static Transform3D parentInv = new Transform3D();
+	private static Point3d viewPosition = new Point3d();
+	private static Transform3D t = new Transform3D();
+
+	public static Point3d getViewPosInLocal(View view, Node node) {
+		if (node == null )
+			return null;
+		if (!node.isLive()) 
+			return null;
+		//  get viewplatforms's location in virutal world
+		Canvas3D canvas = (Canvas3D)view.getCanvas3D(0);
+		canvas.getCenterEyeInImagePlate(viewPosition);
+		canvas.getImagePlateToVworld(t);
+		t.transform(viewPosition);
+
+		// get parent transform
+		node.getLocalToVworld(parentInv);
+		parentInv.invert();
+
+		// transform the eye position into the parent's coordinate system
+		parentInv.transform(viewPosition);
+
+		return viewPosition;
 	}
 }
