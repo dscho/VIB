@@ -159,6 +159,8 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
                 return transformed_scaled_rotated.composeWithFastMatrix(translate_origin_to_a2);
         }
 
+	boolean allowScaling;
+
         public void run(String arg) {
 
                 int[] wList = WindowManager.getIDList();
@@ -180,7 +182,7 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
                 gd.addChoice("Template stack:", titles, titles[0]);
                 gd.addChoice("Stack to transform:", titles, titles[1]);
 
-                gd.addCheckbox("Keep source images", true);
+		gd.addCheckbox("Allow scaling:",true);
 
                 /*
                   String[] labels = {
@@ -200,12 +202,13 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
                 int[] index = new int[2];
                 index[0] = gd.getNextChoiceIndex();
                 index[1] = gd.getNextChoiceIndex();
-                keepSourceImages = gd.getNextBoolean();
 
                 sourceImages = new ImagePlus[2];
 
                 sourceImages[0] = WindowManager.getImage(wList[index[0]]);
                 sourceImages[1] = WindowManager.getImage(wList[index[1]]);
+
+                allowScaling = gd.getNextBoolean();
 
                 transformation=register();
                 ImagePlus newImage=transformation.createNewImage(sourceImages[0],sourceImages[1],true);
@@ -266,7 +269,7 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
                 FastMatrixTransform toAspect1=new FastMatrixTransform( FastMatrix.fromCalibration( sourceImages[1] ) );
                 FastMatrixTransform fromAspect0=toAspect0.inverse();
 
-		FastMatrix fm = FastMatrix.bestRigid( fromPoints, toPoints );
+		FastMatrix fm = FastMatrix.bestRigid( fromPoints, toPoints, allowScaling );
 
 		for( int i = 0; i < toPoints.length; ++i ) {
 			fm.apply( fromPoints[i].x, fromPoints[i].y, fromPoints[i].z );
