@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import javax.vecmath.Point3f;
 import ij.IJ;
+import ij3d.Volume;
 
 public final class MCCube {
 	// default size of the cubes
@@ -143,7 +144,7 @@ public final class MCCube {
 	 */
 	private static final class Carrier {
 		int w, h, d;
-		voltex.Volume volume;
+		Volume volume;
 		int threshold;
 
 		final int intensity(final Point3f p) {
@@ -158,8 +159,7 @@ public final class MCCube {
 	 * @param thresh
 	 * @return
 	 */
-	public static final List<Point3f> getTriangles(
-				voltex.Volume volume, int thresh){
+	public static final List<Point3f> getTriangles(Volume volume, int thresh){
 		List<Point3f> tri = new ArrayList<Point3f>();
 		final Carrier car = new Carrier();
 		car.w = volume.xDim;

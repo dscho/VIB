@@ -29,7 +29,7 @@ import javax.vecmath.Vector3d;
 public class VolumeRenderer implements VolRendConstants {
 
 	/** The image data which is rendered by this VolumeRenderer */
-	protected final Volume volume;
+	protected final VoltexVolume volume;
 
 	/** The root BranchGroup whose subtree contains the volume rendering */
 	protected final BranchGroup root;
@@ -66,7 +66,7 @@ public class VolumeRenderer implements VolRendConstants {
 	public VolumeRenderer(ImagePlus img, Color3f color,
 					float tr, boolean[] channels) {
 
-		this.volume = new Volume(img);
+		this.volume = new VoltexVolume(img);
 		volume.setChannels(channels);
 		appCreator = new AppearanceCreator(volume, color, tr);
 		geomCreator = new GeometryCreator(volume);
@@ -105,7 +105,7 @@ public class VolumeRenderer implements VolRendConstants {
 	 * Returns the image data of this rendering.
 	 * @return
 	 */
-	public Volume getVolume() {
+	public VoltexVolume getVolume() {
 		return volume;
 	}
 

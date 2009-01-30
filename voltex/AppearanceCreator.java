@@ -34,7 +34,7 @@ import javax.vecmath.Vector4f;
 public class AppearanceCreator implements VolRendConstants {
 
 	/** The volume from which the textures are created */
-	private Volume volume;
+	private VoltexVolume volume;
 
 	/** Texture mode, e.g. Texture.RGB or so */
 	private int textureMode;
@@ -83,7 +83,7 @@ public class AppearanceCreator implements VolRendConstants {
 	 * Initializes this AppearanceCreator with the given image data.
 	 * @param volume
 	 */
-	public AppearanceCreator(Volume volume) {
+	public AppearanceCreator(VoltexVolume volume) {
 		this(volume, null, 0.1f);
 	}
 
@@ -94,7 +94,7 @@ public class AppearanceCreator implements VolRendConstants {
 	 * @param color
 	 * @param transparency
 	 */
-	public AppearanceCreator(Volume volume,
+	public AppearanceCreator(VoltexVolume volume,
 			Color3f color, float transparency) {
 		initAttributes(color, transparency);
 		setVolume(volume);
@@ -114,7 +114,7 @@ public class AppearanceCreator implements VolRendConstants {
 	 * Change the image data of this AppearanceCreator
 	 * @param v
 	 */
-	public void setVolume(Volume v) {
+	public void setVolume(VoltexVolume v) {
 		this.volume = v;
 		zTg = new TexCoordGeneration();
 		zTg.setPlaneS(new Vector4f(v.xTexGenScale, 0f, 0f,
@@ -131,7 +131,7 @@ public class AppearanceCreator implements VolRendConstants {
 				-(float)(v.yTexGenScale * v.minCoord.y)));
 		xTg.setPlaneT(new Vector4f(0f, 0f, v.zTexGenScale,
 				-(float)(v.zTexGenScale * v.minCoord.z)));
-		boolean rgb = v.getDataType() == Volume.INT_DATA;
+		boolean rgb = v.getDataType() == VoltexVolume.INT_DATA;
 
 		int bImgType = rgb ? BufferedImage.TYPE_INT_ARGB
 					 : BufferedImage.TYPE_BYTE_GRAY;

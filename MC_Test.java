@@ -2,7 +2,6 @@ import javax.vecmath.*;
 import javax.media.j3d.*;
 import com.sun.j3d.utils.geometry.Sphere;
 
-import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -10,7 +9,7 @@ import ij.plugin.PlugIn;
 import ij.gui.GenericDialog;
 
 import ij3d.Image3DUniverse;
-import voltex.Volume;
+import ij3d.Volume;
 import marchingcubes.MCCube;
 
 import java.util.List;
