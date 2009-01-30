@@ -1,12 +1,7 @@
 package voltex;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferInt;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.ColoringAttributes;
-import javax.media.j3d.ImageComponent;
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Material;
 import javax.media.j3d.PolygonAttributes;
@@ -38,8 +33,6 @@ public class AppearanceCreator implements VolRendConstants {
 
 	/** Texture mode, e.g. Texture.RGB or so */
 	private int textureMode;
-	/** Component type, e.g. ImageComponent.FORMAT_RGBA or so */
-	private int componentType;
 
 	/** Indicates if transparent or opaque texture modes should be used */
 	private boolean opaque = false;
@@ -50,20 +43,6 @@ public class AppearanceCreator implements VolRendConstants {
 	private TexCoordGeneration yTg;
 	/** TexCoordGeneration object for z direction */
 	private TexCoordGeneration zTg;
-
-	/** Temporary BufferedImage in x direction */
-	private BufferedImage xImage;
-	/** Temporary BufferedImage in y direction */
-	private BufferedImage yImage;
-	/** Temporary BufferedImage in z direction */
-	private BufferedImage zImage;
-
-	/** Temporary DataBuffer Object in x direction */
-	private Object xData;
-	/** Temporary DataBuffer Object in y direction */
-	private Object yData;
-	/** Temporary DataBuffer Object in z direction */
-	private Object zData;
 
 	/** texture attributes */
 	private TextureAttributes texAttr;
@@ -106,8 +85,6 @@ public class AppearanceCreator implements VolRendConstants {
 	public void release() {
 		xTg = null; yTg = null; zTg = null;
 		volume = null;
-		xImage = null; yImage = null; zImage = null;
-		xData = null; yData = null; zData = null;
 	}
 
 	/**
@@ -133,27 +110,10 @@ public class AppearanceCreator implements VolRendConstants {
 				-(float)(v.zTexGenScale * v.minCoord.z)));
 		boolean rgb = v.getDataType() == VoltexVolume.INT_DATA;
 
-		int bImgType = rgb ? BufferedImage.TYPE_INT_ARGB
-					 : BufferedImage.TYPE_BYTE_GRAY;
-		xImage = new BufferedImage(v.yTexSize, v.zTexSize, bImgType);
-		yImage = new BufferedImage(v.xTexSize, v.zTexSize, bImgType);
-		zImage = new BufferedImage(v.xTexSize, v.yTexSize, bImgType);
-
-		DataBuffer dbx = xImage.getRaster().getDataBuffer();
-		DataBuffer dby = yImage.getRaster().getDataBuffer();
-		DataBuffer dbz = zImage.getRaster().getDataBuffer();
 		if(rgb) {
 			textureMode = opaque ? Texture.RGB : Texture.RGBA;
-			componentType = ImageComponent.FORMAT_RGBA;
-			xData = ((DataBufferInt)dbx).getData();
-			yData = ((DataBufferInt)dby).getData();
-			zData = ((DataBufferInt)dbz).getData();
 		} else {
 			textureMode = opaque ? Texture.LUMINANCE : Texture.INTENSITY;
-			componentType = ImageComponent.FORMAT_CHANNEL8;
-			xData = ((DataBufferByte)dbx).getData();
-			yData = ((DataBufferByte)dby).getData();
-			zData = ((DataBufferByte)dbz).getData();
 		}
 	}
 
@@ -217,36 +177,27 @@ public class AppearanceCreator implements VolRendConstants {
 	 * @return
 	 */
 	public Texture2D getTexture(int axis, int index) {
-		boolean byRef = false;
-//		boolean byRef = true;
-		boolean yUp = true;
 		int sSize = 0, tSize = 0;
-		BufferedImage bImage = null;
+		ImageComponent2D pArray = null;
 		switch (axis) {
 			case Z_AXIS:
-				volume.loadZ(index, zData);
 				sSize = volume.xTexSize;
 				tSize = volume.yTexSize;
-				bImage = zImage;
+				pArray = volume.getImageComponentZ(index);
 				break;
 			case Y_AXIS:
-				volume.loadY(index, yData);
 				sSize = volume.xTexSize;
 				tSize = volume.zTexSize;
-				bImage = yImage;
+				pArray = volume.getImageComponentY(index);
 				break;
 			case X_AXIS:
-				volume.loadX(index, xData);
 				sSize = volume.yTexSize;
 				tSize = volume.zTexSize;
-				bImage = xImage;
+				pArray = volume.getImageComponentX(index);
 				break;
 		}
 		Texture2D tex = new Texture2D(Texture.BASE_LEVEL,
 			textureMode, sSize, tSize);
-		ImageComponent2D pArray = new ImageComponent2D(
-			componentType, sSize, tSize, byRef, yUp);
-		pArray.set(bImage);
 
 		tex.setImage(0, pArray);
 		tex.setEnable(true);
