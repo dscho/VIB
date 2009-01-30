@@ -24,6 +24,7 @@ import vib.oldregistration.RegistrationAlgorithm;
 
 import vib.transforms.OrderedTransformations;
 import vib.transforms.FastMatrixTransform;
+import vib.FastMatrix;
 import landmarks.NamedPointWorld;
 
 import util.CombinationGenerator;
@@ -201,9 +202,9 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
         }
 
 
-        public static FastMatrixTransform bestBetweenPoints( NamedPointSet points0, NamedPointSet points1 ) {
+        public static FastMatrixTransform bestBetweenPoints( NamedPointSet points0, ImagePlus image0, NamedPointSet points1, ImagePlus image1 ) {
 
-                ArrayList<String> commonPointNames = points0.namesSharedWith( points1 );
+                ArrayList<String> commonPointNames = points0.namesSharedWith( points1, true );
 
                 int n = commonPointNames.size();
 
@@ -336,10 +337,14 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 			IJ.error( "Failed to find a corresponding points file for: "+sourceImages[1].getTitle() );
 		}
 
-                FastMatrixTransform affine=bestBetweenPoints( points0, points1 );
+                FastMatrixTransform affine=bestBetweenPoints( points0, sourceImages[0], points1, sourceImages[1] );
 
                 OrderedTransformations t = new OrderedTransformations();
+
+		t.addLast(new FastMatrixTransform(FastMatrix.fromCalibration(sourceImages[1])));
                 t.addLast(affine);
+		t.addLast(new FastMatrixTransform(FastMatrix.fromCalibration(sourceImages[0]).inverse()));
+
                 transformation=t;
                 return t;
         }

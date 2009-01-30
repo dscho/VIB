@@ -60,10 +60,10 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                 if(transformation!=null)
                         return transformation;
 
-                FastMatrixTransform toCorrectAspect0 = FastMatrixTransform.fromCalibrationWithoutOrigin(sourceImages[0]);
+                FastMatrixTransform toCorrectAspect0 = new FastMatrixTransform(FastMatrix.fromCalibration(sourceImages[0]));
                 FastMatrixTransform fromCorrectAspect0=toCorrectAspect0.inverse();
 
-                FastMatrixTransform toCorrectAspect1 = FastMatrixTransform.fromCalibrationWithoutOrigin(sourceImages[1]);
+                FastMatrixTransform toCorrectAspect1 = new FastMatrixTransform(FastMatrix.fromCalibration(sourceImages[1]));
                 FastMatrixTransform fromCorrectAspect1=toCorrectAspect1.inverse();
 
                 NamedPointSet points0 = null;
@@ -87,7 +87,7 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                         return null;
                 }
 
-                ArrayList<String> commonPointNames = points0.namesSharedWith(points1);
+                ArrayList<String> commonPointNames = points0.namesSharedWith( points1, true );
 
                 Point3d[] domainPoints=new Point3d[commonPointNames.size()];
                 Point3d[] templatePoints=new Point3d[commonPointNames.size()];
@@ -110,14 +110,7 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                                         Point3d p=new Point3d(current.x,
                                                               current.y,
                                                               current.z);
-                                        // drawCrosshair(sourceImages[0],(int)p.x,(int)p.y,(int)p.z,current.name);
-                                        toCorrectAspect0.apply(p);
-                                        Point3d p_corrected=new Point3d(toCorrectAspect0.x,
-                                                                        toCorrectAspect0.y,
-                                                                        toCorrectAspect0.z);
-                                        // System.out.println("      "+p);
-                                        // System.out.println("   => "+p_corrected);
-                                        templatePoints[i_index]=p_corrected;
+                                        templatePoints[i_index]=p;
                                         break;
                                 }
                         }
@@ -128,14 +121,7 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                                         Point3d p=new Point3d(current.x,
                                                               current.y,
                                                               current.z);
-                                        // drawCrosshair(sourceImages[1],(int)p.x,(int)p.y,(int)p.z,current.name);
-                                        toCorrectAspect1.apply(p);
-                                        Point3d p_corrected=new Point3d(toCorrectAspect1.x,
-                                                                        toCorrectAspect1.y,
-                                                                        toCorrectAspect1.z);
-                                        // System.out.println("      "+p);
-                                        // System.out.println("   => "+p_corrected);
-                                        domainPoints[i_index]=p_corrected;
+                                        domainPoints[i_index]=p;
                                         break;
                                 }
                         }

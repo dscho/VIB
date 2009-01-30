@@ -111,7 +111,7 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
                         return null;
 		}
 
-                ArrayList<String> commonPointNames = points0.namesSharedWith(points1);
+                ArrayList<String> commonPointNames = points0.namesSharedWith( points1, true );
 
                 int n = commonPointNames.size();
 
@@ -138,32 +138,13 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
 
                 int index = 0;
 
-                for (Iterator i=commonPointNames.listIterator();i.hasNext();) {
+                for( String s : commonPointNames ) {
 
-			// FIXME: now the NamedPoints are in world coordinates
+                        NamedPointWorld p0 = points0.getPoint( s );
+                        NamedPointWorld p1 = points1.getPoint( s );
 
-                        String s = (String)i.next();
-                        NamedPointWorld p0 = null;
-                        NamedPointWorld p1 = null;
-
-                        for (Iterator i0=points0.listIterator();i0.hasNext();) {
-                                NamedPointWorld current=(NamedPointWorld)i0.next();
-                                if (s.equals(current.getName())) {
-                                        p0 = current;
-                                        break;
-                                }
-                        }
-
-                        for (Iterator i1=points1.listIterator();i1.hasNext();) {
-                                NamedPointWorld current=(NamedPointWorld)i1.next();
-                                if (s.equals(current.getName())) {
-                                        p1 = current;
-                                        break;
-                                }
-                        }
-
-                        fromPoints[index] = p1.toPoint3d();
                         toPoints[index] = p0.toPoint3d();
+                        fromPoints[index] = p1.toPoint3d();
 
                         ++ index;
                 }
@@ -171,9 +152,10 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
                 FastMatrixTransform affine = new FastMatrixTransform(FastMatrix.bestLinear(fromPoints,toPoints));
 
                 OrderedTransformations t = new OrderedTransformations();
+		t.addLast(new FastMatrixTransform(FastMatrix.fromCalibration(sourceImages[1])));
                 t.addLast(affine);
+		t.addLast(new FastMatrixTransform(FastMatrix.fromCalibration(sourceImages[0]).inverse()));
 
                 return t;
-
         }
 }

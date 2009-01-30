@@ -242,25 +242,46 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
                         return null;
                 }
 
-                Calibration c0=sourceImages[0].getCalibration();
-                Calibration c1=sourceImages[1].getCalibration();
+		ArrayList< String > sharedNames = points0.namesSharedWith( points1, true );
 
-                FastMatrixTransform toAspect0=FastMatrixTransform.fromCalibrationWithoutOrigin(sourceImages[0]);
-                FastMatrixTransform toAspect1=FastMatrixTransform.fromCalibrationWithoutOrigin(sourceImages[1]);
+		Point3d[] fromPoints = new Point3d[sharedNames.size()];
+		Point3d[] toPoints = new Point3d[sharedNames.size()];
+
+		int pointIndex = 0;
+		for( String name : sharedNames ) {
+			NamedPointWorld npw0 = points0.getPoint(name);
+			NamedPointWorld npw1 = points1.getPoint(name);
+			toPoints[pointIndex] = npw0.toPoint3d();
+			fromPoints[pointIndex] = npw1.toPoint3d();
+			++ pointIndex;
+		}
+
+		for( int i = 0; i < toPoints.length; ++i ) {
+			System.out.println("    toPoints["+i+"]: "+toPoints[i]);
+			System.out.println("  fromPoints["+i+"]: "+fromPoints[i]+"\n");
+		}
+		System.out.println("------------------------------------");
+
+                FastMatrixTransform toAspect0=new FastMatrixTransform( FastMatrix.fromCalibration( sourceImages[0] ) );
+                FastMatrixTransform toAspect1=new FastMatrixTransform( FastMatrix.fromCalibration( sourceImages[1] ) );
                 FastMatrixTransform fromAspect0=toAspect0.inverse();
 
-		/* No need to correct now...
-                points0.correctWithCalibration(c0);
-                points1.correctWithCalibration(c1);
-		*/
+		FastMatrix fm = FastMatrix.bestRigid( fromPoints, toPoints );
 
-                FastMatrixTransform affine=bestBetweenPoints(points0,points1);
+		for( int i = 0; i < toPoints.length; ++i ) {
+			fm.apply( fromPoints[i].x, fromPoints[i].y, fromPoints[i].z );
+			System.out.println(" fromPoints["+i+"]: "+fromPoints[i]);
+			System.out.println("    mapped back to: "+fm.x+", "+fm.y+", "+fm.z+"\n");
+		}
+		System.out.println("------------------------------------");
 
                 OrderedTransformations t = new OrderedTransformations();
-                t.addLast(toAspect1);
-                t.addLast(affine);
-                t.addLast(fromAspect0);
-                transformation=t;
+                t.addLast( toAspect1 );
+                t.addLast( new FastMatrixTransform( fm ) );
+                t.addLast( fromAspect0 );
+
+                transformation = t;
+
                 return t;
         }
 }
