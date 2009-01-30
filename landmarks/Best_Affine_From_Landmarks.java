@@ -107,6 +107,9 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
 
         public void run(String arg) {
 
+		throw new RuntimeException( "This method doesn't work very well, and will be replace shortly." );
+
+/*
                 int[] wList = WindowManager.getIDList();
                 if (wList==null) {
                         IJ.error("Best_Affine_From_Landmarks.run(): No images are open.");
@@ -156,7 +159,7 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
                 transformation=register();
                 ImagePlus impNew=transformation.createNewImage(sourceImages[0],sourceImages[1],true);
                 impNew.show();
-
+*/
         }
 
         public ImagePlus produceOverlayed( ) {

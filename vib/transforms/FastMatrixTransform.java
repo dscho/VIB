@@ -262,12 +262,18 @@ public class FastMatrixTransform extends FastMatrix implements Transform {
         }
 	
         public static FastMatrixTransform fromCalibrationWithoutOrigin(ImagePlus image) {
-
+		// FIXME: What idiocy prompted me to write these methods?
+		throw new RuntimeException("BUG: it's very unlikely that you really want to be calling fromCalibrationWithoutOrigin");
+/*
                 return fromCalibrationWithoutOrigin(image.getCalibration());
+*/
         }
 
         public static FastMatrixTransform fromCalibrationWithoutOrigin(Calibration calib) {
 
+		// FIXME: What idiocy prompted me to write these methods?
+		throw new RuntimeException("BUG: it's very unlikely that you really want to be calling fromCalibrationWithoutOrigin");
+/*
                 double x_spacing = 1.0;
                 double y_spacing = 1.0;
                 double z_spacing = 1.0;
@@ -285,6 +291,7 @@ public class FastMatrixTransform extends FastMatrix implements Transform {
 							   y_spacing,
 							   z_spacing );
 
+*/
         }
 
 	/* FIXME: duplicating the code saves an extra objection
