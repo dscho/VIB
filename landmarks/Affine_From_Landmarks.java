@@ -63,8 +63,6 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                                 }
                         }
 
-			// FIXME: now in world coordinates, so maybe change the application
-
                         double[] p1_transformed = new double[3];
                         t.apply(p1.x,p1.y,p1.z,p1_transformed);
 
@@ -86,8 +84,6 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 
         // This finds an affine mapping that maps a1 onto a2,
         // b1 onto b2, etc.
-
-	// FIXME: now all world coordinates, change the code
 
         public static FastMatrixTransform generateAffine(NamedPointWorld a1,
 							 NamedPointWorld b1,
@@ -112,6 +108,7 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                 p[2][0] = b1.z - a1.z;
                 p[2][1] = c1.z - a1.z;
                 p[2][2] = d1.z - a1.z;
+
 
                 double[][] q = new double[3][4];
 

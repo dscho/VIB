@@ -35,76 +35,6 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
 
         OrderedTransformations transformation;
 
-        double scoreFromAllMarkers(OrderedTransformations t,
-                                   ArrayList<String> common,
-                                   NamedPointSet inImage0,
-                                   NamedPointSet inImage1) {
-
-                double sum_squared_differences = 0.0;
-                // FIXME:
-                return sum_squared_differences;
-        }
-
-
-
-
-        // This finds an affine mapping that maps a1 onto a2,
-        // b1 onto b2, etc.
-
-	// FIXME: now the points are in world coordinates
-
-        public FastMatrixTransform generateAffine(NamedPointWorld a1,
-                                         NamedPointWorld b1,
-                                         NamedPointWorld c1,
-                                         NamedPointWorld d1,
-
-                                         NamedPointWorld a2,
-                                         NamedPointWorld b2,
-                                         NamedPointWorld c2,
-                                         NamedPointWorld d2) {
-
-                double[][] p = new double[3][4];
-
-                p[0][0] = b1.x - a1.x;
-                p[0][1] = c1.x - a1.x;
-                p[0][2] = d1.x - a1.x;
-
-                p[1][0] = b1.y - a1.y;
-                p[1][1] = c1.y - a1.y;
-                p[1][2] = d1.y - a1.y;
-
-                p[2][0] = b1.z - a1.z;
-                p[2][1] = c1.z - a1.z;
-                p[2][2] = d1.z - a1.z;
-
-                double[][] q = new double[3][4];
-
-                q[0][0] = b2.x - a2.x;
-                q[0][1] = c2.x - a2.x;
-                q[0][2] = d2.x - a2.x;
-
-                q[1][0] = b2.y - a2.y;
-                q[1][1] = c2.y - a2.y;
-                q[1][2] = d2.y - a2.y;
-
-                q[2][0] = b2.z - a2.z;
-                q[2][1] = c2.z - a2.z;
-                q[2][2] = d2.z - a2.z;
-
-                FastMatrixTransform P = new FastMatrixTransform(p);
-                FastMatrixTransform Q = new FastMatrixTransform(q);
-
-                FastMatrixTransform M = Q.times(P.inverse());
-
-                M.apply( a1.x, a1.y, a1.z );
-
-                double ox = a2.x - M.x;
-                double oy = a2.y - M.y;
-                double oz = a2.z - M.z;
-
-                return M.composeWithFastMatrix(FastMatrixTransform.translate(ox,oy,oz));
-        }
-
         public void run(String arg) {
 
 		throw new RuntimeException( "This method doesn't work very well, and will be replace shortly." );
@@ -130,17 +60,6 @@ public class Best_Affine_From_Landmarks extends RegistrationAlgorithm implements
                 gd.addChoice("Stack to transform:", titles, titles[1]);
 
                 gd.addCheckbox("Keep source images", true);
-
-                /*
-                  String[] labels = {
-                      "Pick best based on least-squares",
-                      "Pick best from best 4 points"
-                  };
-
-                  boolean[] defaultValues = { false, true };
-
-                  gd.addCheckboxGroup(2,1,labels,defaultValues);
-                */
 
                 gd.showDialog();
                 if (gd.wasCanceled())

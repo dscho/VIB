@@ -31,9 +31,6 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
 
         OrderedTransformations transformation;
 
-        static int test_column_x;
-        static int test_column_y;
-
         OrderedTransformations getTransformation( ) {
                 return transformation;
         }
@@ -146,9 +143,6 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                         ++i_index;
                 }
 
-                Bookstein_From_Landmarks.test_column_x=(int)templatePoints[1].x;
-                Bookstein_From_Landmarks.test_column_y=(int)templatePoints[1].x;
-
                 BooksteinTransform b=new BooksteinTransform(domainPoints,templatePoints);
 
                 transformation=new OrderedTransformations();
@@ -186,17 +180,6 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
 
                 gd.addCheckbox("Keep source images", true);
 
-                /*
-                  String[] labels = {
-                      "Pick best based on least-squares",
-                      "Pick best from best 4 points"
-                  };
-
-                  boolean[] defaultValues = { false, true };
-
-                  gd.addCheckboxGroup(2,1,labels,defaultValues);
-                */
-
                 gd.showDialog();
                 if (gd.wasCanceled())
                         return;
@@ -217,5 +200,4 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                 ImagePlus newImage=transformation.createNewImage(sourceImages[0],sourceImages[1],true);
                 newImage.show();
         }
-
 }
