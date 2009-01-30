@@ -13,8 +13,66 @@ import java.util.ArrayList;
 
 public class Overlay_Registered implements PlugIn {
 
+	public static ImageStack overlay( ImagePlus a, ImagePlus b ) {
+
+		float[] valueRange;
+		{
+			TransformedImage ti = new TransformedImage( a, b );
+			valueRange = ti.getValuesRange();
+		}
+
+		a.getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+		b.getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+
+		int width = a.getWidth();
+		int height = a.getHeight();
+		int depth = a.getStackSize();
+
+		if ( ! (width == b.getWidth() &&
+			height == b.getHeight() &&
+			depth == b.getStackSize())) {
+			IJ.error("The dimensions of image stack " +
+				 b.getTitle() +
+				 " do not match those of " + a.getTitle());
+			return null;
+		}
+
+		int type0 = a.getType();
+		int type1 = b.getType();
+
+		if( type0 != type1 ) {
+			IJ.error("Can't overlay two images of different types.");
+			return null;
+		}
+
+		int bitDepth;
+
+		float [] range0 = getValuesRange(a);
+		float [] range1 = getValuesRange(b);
+
+		a.getProcessor().setMinAndMax(range0[0],range0[1]);
+		StackConverter converter=new StackConverter(a);
+		converter.convertToGray8();
+
+		b.getProcessor().setMinAndMax(range1[0],range1[1]);
+		converter=new StackConverter(b);
+		converter.convertToGray8();
+
+		RGBStackMerge merger=new RGBStackMerge();
+		ImageStack merged = merger.mergeStacks(
+			width,
+			height,
+			depth,
+			a.getStack(),
+			b.getStack(),
+			a.getStack(),
+			true);
+
+		return merged;
+	}
+
 	public static float[] getValuesRange(ImagePlus imagePlus) {
-	
+
 		int stackSize      = imagePlus.getStackSize();
 		ImageStack stack      = imagePlus.getStack();
 		int bitDepth      = imagePlus.getBitDepth();
@@ -54,14 +112,14 @@ public class Overlay_Registered implements PlugIn {
 	}
 
 	public void run(String ignored) {
-	
+
 		String macroOptions = Macro.getOptions();
 
 		String mustHaveSubstring = "";
 
-                String titleSubstring = null;
-                boolean closeAllOthers = false;
-                
+		String titleSubstring = null;
+		boolean closeAllOthers = false;
+
 		if (macroOptions != null) {
 			String value = Macro.getValue(macroOptions, "substring", null);
 			if( value != null ) {
@@ -90,10 +148,10 @@ public class Overlay_Registered implements PlugIn {
 		ArrayList<String> matchingTitles = new ArrayList<String>();
 		ArrayList<ImagePlus> matchingImages = new ArrayList<ImagePlus>();
 
-                ImagePlus [] matchingImagePlus=new ImagePlus[wList.length];
-                ImagePlus [] allImages=new ImagePlus[wList.length];
-                
-                int totalMatchingTitles = 0;
+		ImagePlus [] matchingImagePlus=new ImagePlus[wList.length];
+		ImagePlus [] allImages=new ImagePlus[wList.length];
+
+		int totalMatchingTitles = 0;
 		for (int i = 0; i < wList.length; i++) {
 			ImagePlus imp = WindowManager.getImage(wList[i]);
 			String title = imp != null ? imp.getTitle() : "";
@@ -124,73 +182,19 @@ public class Overlay_Registered implements PlugIn {
 		index[1] = gd.getNextChoiceIndex();
 
 		ImagePlus [] sourceImages = new ImagePlus[2];
-		
+
 		sourceImages[0] = matchingImages.get(index[0]);
 		sourceImages[1] = matchingImages.get(index[1]);
-		
-                float[] valueRange;
-                {
-                    TransformedImage ti = new TransformedImage(
-                        sourceImages[0],
-                        sourceImages[1]);
 
-                    valueRange = ti.getValuesRange();
-                }
-                
-                sourceImages[0].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
-                sourceImages[1].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
-                
-		int width = sourceImages[0].getWidth();
-		int height = sourceImages[0].getHeight();
-		int depth = sourceImages[0].getStackSize();
-		
-		if ( ! (width == sourceImages[1].getWidth() &&
-			height == sourceImages[1].getHeight() &&
-			depth == sourceImages[1].getStackSize())) {
-			IJ.error("The dimensions of image stack " +
-				 sourceImages[1].getTitle() +
-				 " do not match those of " + sourceImages[0].getTitle());
-			return;
-		}
-		
-		int type0 = sourceImages[0].getType();
-		int type1 = sourceImages[1].getType();
-		
-		if( type0 != type1 ) {
-			IJ.error("Can't overlay two images of different types.");
-			return;
-		}
-		
-		int bitDepth;
+		ImageStack rgbStack = overlay( sourceImages[0], sourceImages[1] );
 
-		float [] range0 = getValuesRange(sourceImages[0]);
-		float [] range1 = getValuesRange(sourceImages[1]);
-		
-		sourceImages[0].getProcessor().setMinAndMax(range0[0],range0[1]);
-		StackConverter converter=new StackConverter(sourceImages[0]);
-		converter.convertToGray8();
-
-		sourceImages[1].getProcessor().setMinAndMax(range1[0],range1[1]);
-		converter=new StackConverter(sourceImages[1]);
-		converter.convertToGray8();
-
-		RGBStackMerge merger=new RGBStackMerge();
-		ImageStack merged = merger.mergeStacks(
-			width,
-			height,
-			depth,
-			sourceImages[0].getStack(),
-			sourceImages[1].getStack(),
-			sourceImages[0].getStack(),
-			true);
-		
-		ImagePlus rgbResult = new ImagePlus("Merged",merged);
+		ImagePlus rgbResult = new ImagePlus( "Merged", rgbStack );
 		rgbResult.show();
 
 		ModelessQuestions q=new ModelessQuestions("Rate This Registration",rgbResult);
 
 		q.addTextField("I dunno", 20, "Your message:" );
-		
+
 		q.addTextField("Well", 10, "Something");
 
 		q.addLabel("Just a label.");
@@ -206,10 +210,10 @@ public class Overlay_Registered implements PlugIn {
 
 		IJ.error("Finished waiting for answers!");
 
-                if(closeAllOthers) {
-                    for( int i=0; i < allImages.length; ++i ) {
-                        allImages[i].close();
-                    }
-                }
+		if(closeAllOthers) {
+			for( int i=0; i < allImages.length; ++i ) {
+				allImages[i].close();
+			}
+		}
 	}
 }
