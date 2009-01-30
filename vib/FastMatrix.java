@@ -680,6 +680,8 @@ public class FastMatrix {
 	public static FastMatrix bestLinear(Point3d[] x, Point3d[] y) {
 		if (x.length != y.length)
 			throw new RuntimeException("different lengths");
+		if (x.length != 4 )
+			throw new RuntimeException("The arrays passed to bestLinear must be of length 4");
 		
 		double[][] a = new double[4][4];
 		double[][] b = new double[4][4];
