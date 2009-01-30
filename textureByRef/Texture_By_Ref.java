@@ -231,7 +231,7 @@ public class Texture_By_Ref implements PlugInFilter,
 		bProcessor = (ByteProcessor)imp.getProcessor();
 		byte[] pixels = (byte[])bProcessor.getPixels();
 		
-		IndexColorModel cm = bProcessor.getDefaultColorModel();
+		IndexColorModel cm = getDefaultColorModel();
 		WritableRaster wr = cm.createCompatibleWritableRaster(1, 1);
 		SampleModel sm = wr.getSampleModel();
 		sm = sm.createCompatibleSampleModel(w, h);
@@ -240,6 +240,14 @@ public class Texture_By_Ref implements PlugInFilter,
 		WritableRaster raster = Raster.createWritableRaster(sm, db, null);
      
 		return new BufferedImage(cm, raster, false, null);
+	}
+
+	private static IndexColorModel getDefaultColorModel() {
+		byte[] r = new byte[256], g = new byte[256], b = new byte[256];
+		for(int i = 0; i < 256; i++) {
+			r[i] = (byte)i;
+		}
+		return new IndexColorModel(8, 256, r, g, b);
 	}
 
 //	public void createImage2() {
