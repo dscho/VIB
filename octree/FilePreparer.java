@@ -5,7 +5,7 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.util.Properties;
 import vib.Resample_;
 
@@ -98,7 +98,7 @@ public class FilePreparer {
 		props.setProperty("pixelWidth", Float.toString((float)c.pixelWidth));
 		props.setProperty("pixelHeight", Float.toString((float)c.pixelHeight));
 		props.setProperty("pixelDepth", Float.toString((float)c.pixelDepth));
-		FileWriter fw = new FileWriter(new File(outdir, "props.txt"));
+		FileOutputStream fw = new FileOutputStream(new File(outdir, "props.txt"));
 		props.store(fw, "octree");
 	}
 

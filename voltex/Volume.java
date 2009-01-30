@@ -1,58 +1,88 @@
 package voltex;
 
-import java.awt.*;
-import java.awt.image.*;
-import java.awt.color.ColorSpace;
-import javax.media.j3d.*;
-import javax.vecmath.*;
-import java.io.*;
-import com.sun.j3d.utils.behaviors.mouse.*;
-import java.net.*;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
 import ij.IJ;
+import javax.vecmath.Point3d;
 
+/**
+ * This class encapsulates an image stack and provides various methods for
+ * retrieving data. It is possible to control the loaded color channels of
+ * RGB images, and to specify whether or not to average several channels
+ * (and merge them in this way into one byte per pixel).
+ * 
+ * Depending on these settings, and on the type of image given at construction
+ * time, the returned data type is one of INT_DATA or BYTE_DATA.
+ * 
+ * @author Benjamin Schmid
+ */
 public class Volume {
 
+	/** Data is read as int data */
 	public static final int INT_DATA = 0;
+	/** Data is read as byte data */
 	public static final int BYTE_DATA = 1;
 	
-	public static final int TRANSLUCENT = 2;
-	public static final int OPAQUE = 3;
+	/** The image holding the data */
+	private final ImagePlus imp;
 
-	private ImagePlus imp;
+	/** The loader, initialized depending on the data type */
 	private Loader loader;
 
+	/** 
+	 * Indicates in which format the data is loaded. This depends on
+	 * the image type and on the number of selected channels.
+	 * May be one of INT_DATA or BYTE_DATA
+	 */
 	private int dataType;
-	private int transparencyType = TRANSLUCENT;
+
+	/** Flag indicating that the channels should be averaged */
 	private boolean average = false;
 
+	/** Channels in RGB images which should be loaded */
 	private boolean[] channels = new boolean[] {true, true, true};
 
+	/** The dimensions of the data */
 	public final int xDim, yDim, zDim;
+
+	/** The calibration of the data */
 	public final double pw, ph, pd;
 
-	public final float xSpace, ySpace, zSpace;
+	/** The textures' size. These are powers of two. */
 	public final int xTexSize, yTexSize, zTexSize;
+
+	/** The texGenScale */
 	public final float xTexGenScale, yTexGenScale, zTexGenScale;
 
+	/** The minimum coordinate of the data */
 	final Point3d minCoord = new Point3d();
+
+	/** The maximum coordinate of the data */
 	final Point3d maxCoord = new Point3d();
+
+	/** The mid point in the data */
 	final Point3d volRefPt = new Point3d();
 
+	/**
+	 * Initializes this Volume with the specified image.
+	 * All channels are used.
+	 * @param imp
+	 */
 	public Volume(ImagePlus imp) {
-		this(imp, OPAQUE);
+		this(imp, new boolean[] {true, true, true});
 	}
 
-	public Volume(ImagePlus imp, int transpType) {
-		this(imp, transpType, new boolean[] {true, true, true});
-	}
-
-	public Volume(ImagePlus imp, int transpType, boolean[] ch) {
+	/**
+	 * Initializes this Volume with the specified image and channels.
+	 * @param imp
+	 * @param ch A boolean[] array of length three, which indicates whether
+	 * the red, blue and green channel should be read. This has only an
+	 * effct when reading color images.
+	 */
+	public Volume(ImagePlus imp, boolean[] ch) {
 		this.channels = ch;
 		this.imp = imp;
-		this.transparencyType = transpType;
 		xDim = imp.getWidth();
 		yDim = imp.getHeight();
 		zDim = imp.getStackSize();
@@ -67,9 +97,9 @@ public class Volume {
 		yTexSize = powerOfTwo(yDim);
 		zTexSize = powerOfTwo(zDim);
 
-		xSpace = (float)pw;
-		ySpace = (float)ph;
-		zSpace = (float)pd;
+		float xSpace = (float)pw;
+		float ySpace = (float)ph;
+		float zSpace = (float)pd;
 
 		// real coords
 		minCoord.x = c.xOrigin * xSpace;
@@ -94,21 +124,23 @@ public class Volume {
 		initLoader();
 	}
 
+	/**
+	 * Get the current set data type. This is one of BYTE_DATA or INT_DATA.
+	 * The data type specifies in which format the data is read:
+	 * This method returns INT_DATA, if for example the image is of type
+	 * RGB and more than one channels should be read.
+	 * If only one channels is read, or if the type of the image is 8-bit,
+	 * it will return BYTE_DATA.
+	 * @return The type of the returned data.
+	 */
 	public int getDataType() {
 		return dataType;
 	}
 
-	public int getTransparenyType() {
-		return transparencyType;
-	}
-
-	public void setTransparencyType(int t) {
-		transparencyType = t;
-	}
-
-	/*
-	 * Returns a flag which indicates whether the textures should
-	 * be reloaded.
+	/**
+	 * If true, build an average byte from the specified channels 
+	 * (for each pixel).
+	 * @return true if the value for 'average' has changed.
 	 */
 	public boolean setAverage(boolean a) {
 		if(average != a) {
@@ -119,12 +151,19 @@ public class Volume {
 		return false;
 	}
 
+	/**
+	 * Returns true if specified channels are being averaged when
+	 * reading the image data.
+	 * @return
+	 */
 	public boolean isAverage() {
 		return average;
 	}
 
-	/*
-	 * Returns true if data has to be reloaded.
+	/**
+	 * Specify the channels which should be read from the image.
+	 * This only affects RGB images.
+	 * @return true if the channels settings has changed.
 	 */
 	public boolean setChannels(boolean[] ch) {
 		if(ch[0] == channels[0] && 
@@ -137,10 +176,11 @@ public class Volume {
 	}
 
 	/*
-	 * OK, this code is not nice. I will clean it later, as soon as it
-	 * works.
+	 * Initializes the specific loader which is used for the current
+	 * settings. The choice depends on the specific values of channels,
+	 * average and data type.
 	 */
-	public void initLoader() {
+	private void initLoader() {
 
 		boolean[] c = channels;
 		int usedCh = 0;
@@ -179,10 +219,11 @@ public class Volume {
 		}
 	}
 
-	public boolean hasData() {
-		return (imp != null);
-	}
-
+	/**
+	 * Calculate the next power of two to the given value.
+	 * @param value
+	 * @return
+	 */
 	private int powerOfTwo(int value) {
 		int retval = 16;
 		while (retval < value) {
@@ -191,24 +232,57 @@ public class Volume {
 		return retval;
 	}
 
+	public void set(int x, int y, int z, int v) {
+		loader.set(x, y, z, v);
+	}
+
+	/**
+	 * Load the value at the specified position
+	 * @param x
+	 * @param y
+	 * @param z
+	 * @return value. Casted to int if it was a byte value before.
+	 */
 	public int load(int x, int y, int z) {
 		return loader.load(x, y, z);
 	}
 
+	/**
+	 * Loads a xy-slice at the given z position.
+	 * @param z
+	 * @param dst must be an int[] or byte[] array (depending on what
+	 * getDataType() says) of correct length.
+	 */
 	public void loadZ(int z, Object dst) {
 		loader.loadZ(z, dst);
 	}
 
+	/**
+	 * Loads a xz-slice at the given y position.
+	 * @param y
+	 * @param dst must be an int[] or byte[] array (depending on what
+	 * getDataType() says) of correct length.
+	 */
 	public void loadY(int y, Object dst) {
 		loader.loadY(y, dst);
 	}
 
+	/**
+	 * Loads a yz-slice at the given x position.
+	 * @param x
+	 * @param dst must be an int[] or byte[] array (depending on what
+	 * getDataType() says) of correct length.
+	 */
 	public void loadX(int x, Object dst) {
 		loader.loadX(x, dst);
 	}
 
+	/**
+	 * Abstract interface for the loader classes.
+	 */
 	private abstract class Loader {
 		abstract int load(int x, int y, int z);
+		abstract void set(int x, int y, int z, int v);
 
 		abstract void loadZ(int z, Object dst);
 		abstract void loadY(int y, Object dst);
@@ -229,11 +303,14 @@ public class Volume {
 			fData = new byte[d][];
 			for (int z = 0; z < d; z++)
 				fData[z] = (byte[])stack.getPixels(z+1);
-System.out.println("ByteLoader");
 		}
 
 		int load(int x, int y, int z) {
 			return (int)fData[z][y * w + x] & 0xff;
+		}
+
+		void set(int x, int y, int z, int v) {
+			fData[z][y * w + x] = (byte)v;
 		}
 
 		void loadZ(int zValue, Object arr) {
@@ -269,7 +346,6 @@ System.out.println("ByteLoader");
 		void loadX(int xValue, Object arr)  {
 			byte[] dst = (byte[])arr;
 			for (int z=0; z < zDim; z++){
-				byte[] src = fData[z];
 				int offsDst = z * yTexSize;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;
@@ -288,7 +364,6 @@ System.out.println("ByteLoader");
 		int w;
 
 		IntLoader() {
-System.out.println("IntLoader");
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();
 			w = imp.getWidth();
@@ -313,6 +388,10 @@ System.out.println("IntLoader");
 
 		int load(int x, int y, int z) {
 			return fData[z][y * w + x];
+		}
+
+		void set(int x, int y, int z, int v) {
+			fData[z][y * w + x] = v;
 		}
 
 		void loadZ(int zValue, Object arr) {
@@ -346,7 +425,6 @@ System.out.println("IntLoader");
 		void loadX(int xValue, Object arr)  {
 			int[] dst = (int[])arr;
 			for (int z=0; z < zDim; z++){
-				int[] src = fData[z];
 				int offsDst = z * yTexSize;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;
@@ -369,7 +447,6 @@ System.out.println("IntLoader");
 		int usedCh = 3;
 
 		IntFromIntLoader(boolean[] channels) {
-System.out.println("IntFromIntLoader");
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();
 			fData = new int[d][];
@@ -403,6 +480,10 @@ System.out.println("IntFromIntLoader");
 			return fData[z][y * w + x] & mask;
 		}
 
+		void set(int x, int y, int z, int v) {
+			fData[z][y * w + x] = v;
+		}
+
 		void loadZ(int zValue, Object arr) {
 			int[] dst = (int[])arr;
 			int[] src = fData[zValue];
@@ -438,7 +519,6 @@ System.out.println("IntFromIntLoader");
 		void loadX(int xValue, Object arr)  {
 			int[] dst = (int[])arr;
 			for (int z=0; z < zDim; z++){
-				int[] src = fData[z];
 				int offsDst = z * yTexSize;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;
@@ -461,7 +541,6 @@ System.out.println("IntFromIntLoader");
 		int usedCh = 3;
 
 		ByteFromIntLoader(boolean[] channels) {
-System.out.println("ByteFromIntLoader");
 			this.channels = channels;
 			ImageStack stack = imp.getStack();
 			int d = imp.getStackSize();
@@ -472,6 +551,10 @@ System.out.println("ByteFromIntLoader");
 			usedCh = 0;
 			for(int i = 0; i < 3; i++)
 				if(channels[i]) usedCh++;
+		}
+
+		void set(int x, int y, int z, int v) {
+			fdata[z][y * w + x] = v;
 		}
 
 		int load(int x, int y, int z) {

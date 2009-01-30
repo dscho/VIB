@@ -3,8 +3,7 @@ package ij3d;
 import ij.gui.GenericDialog;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.util.Properties;
 import javax.media.j3d.View;
 import javax.vecmath.Color3f;
@@ -40,7 +39,7 @@ public class UniverseSettings {
 		properties.put("Background", str(defaultBackground));
 		properties.put("Center_Of_Global_Rotation", str(globalRotationCenter));
 		try {
-			properties.store(new FileWriter(propsfile), "ImageJ 3D Viewer properties");
+			properties.store(new FileOutputStream(propsfile), "ImageJ 3D Viewer properties");
 		} catch(Exception e) {
 			System.err.println(e.getMessage());
 		}

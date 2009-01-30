@@ -1212,6 +1212,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				String title = "Original image for tracing";
 
 				univ = new Image3DUniverse(512, 512);
+				univ.setUseToFront(false);
 				univ.addUniverseListener(pathAndFillManager);
 				univ.show();
 				GUI.center(univ.getWindow());

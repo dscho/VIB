@@ -26,18 +26,22 @@ import vib.FastMatrix;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
-import voltex.Renderer;
+import voltex.VolumeRenderer;
 import isosurface.MeshExporter;
 import isosurface.MeshEditor;
 
 import javax.vecmath.Color3f;
 import javax.vecmath.Point3f;
 import javax.vecmath.Matrix4d;
-import javax.media.j3d.View;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.Background;
 
+import customnode.CustomMesh;
+import customnode.CustomMeshNode;
+import customnode.CustomTriangleMesh;
+
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.vecmath.Point3d;
 import octree.FilePreparer;
 import octree.OctreeDialog;
 import octree.VolumeOctree;
@@ -269,19 +273,23 @@ public class Executer {
 		final GenericDialog gd = new GenericDialog(
 			"Adjust slices...", univ.getWindow());
 		final OrthoGroup os = (OrthoGroup)c.getContent();
-		final int[] oldvalues = os.getSlices();
-		final boolean[] visible = os.getVisible();
+		final int ind1 = os.getSlice(VolumeRenderer.X_AXIS);
+		final int ind2 = os.getSlice(VolumeRenderer.Y_AXIS);
+		final int ind3 = os.getSlice(VolumeRenderer.Z_AXIS);
+		final boolean vis1 = os.isVisible(VolumeRenderer.X_AXIS);
+		final boolean vis2 = os.isVisible(VolumeRenderer.Y_AXIS);
+		final boolean vis3 = os.isVisible(VolumeRenderer.Z_AXIS);
 		ImagePlus imp = c.image;
 		int w = imp.getWidth() / c.getResamplingFactor();
 		int h = imp.getHeight() / c.getResamplingFactor();
 		int d = imp.getStackSize() / c.getResamplingFactor();
 
-		gd.addCheckbox("Show_yz plane", visible[0]);
-		gd.addSlider("x coordinate", 0, w-1, oldvalues[0]);
-		gd.addCheckbox("Show_xz plane", visible[1]);
-		gd.addSlider("y coordinate", 0, h-1, oldvalues[1]);
-		gd.addCheckbox("Show_xy plane", visible[2]);
-		gd.addSlider("z coordinate", 0, d-1, oldvalues[2]);
+		gd.addCheckbox("Show_yz plane", vis1);
+		gd.addSlider("x coordinate", 0, w-1, ind1);
+		gd.addCheckbox("Show_xz plane", vis2);
+		gd.addSlider("y coordinate", 0, h-1, ind2);
+		gd.addCheckbox("Show_xy plane", vis3);
+		gd.addSlider("z coordinate", 0, d-1, ind3);
 
 		gd.addMessage(  "You can use the x, y and z key plus\n" +
 				"the arrow keys to adjust slices in\n" +
@@ -289,8 +297,8 @@ public class Executer {
 				"x, y, z + SPACE switches planes on\n" +
 				"and off");
 
-		final int[] dirs = new int[] {Renderer.X_AXIS, 
-				Renderer.Y_AXIS, Renderer.Z_AXIS};
+		final int[] dirs = new int[] {VolumeRenderer.X_AXIS, 
+				VolumeRenderer.Y_AXIS, VolumeRenderer.Z_AXIS};
 		final Scrollbar[] sl = new Scrollbar[3]; 
 		final Checkbox[] cb = new Checkbox[3];
 
@@ -318,8 +326,12 @@ public class Executer {
 			@Override
 			public void windowClosed(WindowEvent e) {
 				if(gd.wasCanceled()) {
-					os.setSlices(oldvalues);
-					os.setVisible(visible);
+					os.setSlice(VolumeRenderer.X_AXIS, ind1);
+					os.setSlice(VolumeRenderer.Y_AXIS, ind2);
+					os.setSlice(VolumeRenderer.Z_AXIS, ind3);
+					os.setVisible(VolumeRenderer.X_AXIS, vis1);
+					os.setVisible(VolumeRenderer.Y_AXIS, vis2);
+					os.setVisible(VolumeRenderer.Z_AXIS, vis3);
 					univ.fireContentChanged(c);
 					return;
 				} else {
@@ -343,8 +355,9 @@ public class Executer {
 		new Thread() {
 			@Override
 			public void run() {
+				ImageCanvas3D canvas = (ImageCanvas3D)univ.getCanvas();
 				((VoltexGroup)c.getContent()).
-					fillRoiBlack(univ, (byte)0);
+					fillRoiBlack(canvas, canvas.getRoi(), (byte)0);
 				univ.fireContentChanged(c);
 				record(FILL_SELECTION);
 			}
@@ -354,7 +367,14 @@ public class Executer {
 	public void smoothMesh(Content c) {
 		if(!checkSel(c))
 			return;
-		MeshEditor.smooth(c, 0.25f);
+		if(c.getType() == Content.SURFACE || c.getType() == Content.CUSTOM) {
+			ContentNode cn = c.getContent();
+			if(cn instanceof CustomMeshNode) {
+				CustomMesh mesh = ((CustomMeshNode)cn).getMesh();
+				if(mesh instanceof CustomTriangleMesh)
+					MeshEditor.smooth((CustomTriangleMesh)mesh, 0.25f);
+			}
+		}
 	}
 
 	public void smoothAllMeshes() {
@@ -373,8 +393,7 @@ public class Executer {
 						for (int k=ai.getAndIncrement();
 						k < c.length;
 						k = ai.getAndIncrement()) {
-							MeshEditor.
-							smooth(c[k], 0.25f);
+							smoothMesh(c[k]);
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -600,6 +619,11 @@ public class Executer {
 	public void changeThreshold(final Content c) {
 		if(!checkSel(c))
 			return;
+		if(c.image == null) {
+			IJ.error("The selected object contains no image data,\n" +
+					"therefore the threshold can't be changed");
+			return;
+		}
 		final SliderAdjuster thresh_adjuster = new SliderAdjuster() {
 			public synchronized final void setValue(Content c, int v) {
 				c.setThreshold(v);
@@ -661,7 +685,8 @@ public class Executer {
 		if(!checkSel(c))
 			return;
 		int t = c.getType();
-		if(t == Content.SURFACE || t == Content.SURFACE_PLOT2D)
+		if(t == Content.SURFACE ||
+				t == Content.SURFACE_PLOT2D || t == Content.CUSTOM)
 			c.setShaded(b);
 	}
 
@@ -754,17 +779,25 @@ public class Executer {
 	public void contentProperties(Content c) {
 		if(!checkSel(c))
 			return;
+		Point3d min = new Point3d();
+		Point3d max = new Point3d();
+		Point3d center = new Point3d();
+
+		c.getContent().getMin(min);
+		c.getContent().getMax(max);
+		c.getContent().getCenter(center);
+
 		TextWindow tw = new TextWindow(c.getName(), 
 			" \tx\ty\tz",
-			"min\t" + (float)c.getContent().min.x + "\t"
-				+ (float)c.getContent().min.y + "\t"
-				+ (float)c.getContent().min.z + "\n" +
-			"max\t" + (float)c.getContent().max.x + "\t"
-				+ (float)c.getContent().max.y + "\t"
-				+ (float)c.getContent().max.z + "\n" +
-			"cog\t" + (float)c.getContent().center.x + "\t"
-				+ (float)c.getContent().center.y + "\t"
-				+ (float)c.getContent().center.z + "\n\n" +
+			"min\t" + (float)min.x + "\t"
+				+ (float)min.y + "\t"
+				+ (float)min.z + "\n" +
+			"max\t" + (float)max.x + "\t"
+				+ (float)max.y + "\t"
+				+ (float)max.z + "\n" +
+			"cog\t" + (float)center.x + "\t"
+				+ (float)center.y + "\t"
+				+ (float)center.z + "\n\n" +
 			"volume\t" + c.getContent().getVolume(),
 			512, 512);
 	}
@@ -909,7 +942,8 @@ public class Executer {
 		if(!checkSel(c))
 			return;
 
-		Point3f center = c.getContent().center;
+		Point3d center = new Point3d();
+		c.getContent().getCenter(center);
 		Transform3D localToVWorld = new Transform3D();
 		c.getLocalToVworld(localToVWorld);
 		localToVWorld.transform(center);

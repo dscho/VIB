@@ -1,5 +1,5 @@
 javaVersion=1.5
-all <- remove-tempdir VIB_.jar
+all <- VIB_.jar
 
 CLASSPATH=$CLASSPATH:junit-4.4.jar:.
 VIB_.jar <- **/*.java \

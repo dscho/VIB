@@ -2,7 +2,6 @@ package ij3d;
 
 import ij3d.shapes.CoordinateSystem;
 import ij3d.shapes.BoundingBox;
-import ij3d.shapes.BoundingSphere;
 import ij3d.pointlist.PointListShape;
 import ij3d.pointlist.PointListDialog;
 import ij.ImagePlus;
@@ -18,20 +17,17 @@ import orthoslice.OrthoGroup;
 import surfaceplot.SurfacePlotGroup;
 
 import java.util.BitSet;
-import java.util.List;
 
 import javax.media.j3d.BranchGroup;
-import javax.media.j3d.LineAttributes;
 import javax.media.j3d.Switch;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.media.j3d.View;
 
 import javax.vecmath.Color3f;
-import javax.vecmath.Vector3f;
 import javax.vecmath.Matrix3f;
-import javax.vecmath.Point3f;
 import javax.vecmath.Point3d;
+import javax.vecmath.Vector3d;
 
 public class Content extends BranchGroup implements UniverseListener {
 
@@ -51,13 +47,11 @@ public class Content extends BranchGroup implements UniverseListener {
 	private boolean visible = true;
 	private boolean coordVisible = UniverseSettings.showLocalCoordinateSystemsByDefault;
 	private boolean showPL = false;
-	private boolean boundingSphereVisible = false;
 	protected boolean selected = false;
 
 	// entries
 	private ContentNode contentNode = null;
 	private PointListShape pointlist = null;
-	private BoundingSphere boundingSphere = null;
 
 	// scene graph entries
 	private Switch bbSwitch;
@@ -73,15 +67,15 @@ public class Content extends BranchGroup implements UniverseListener {
 	// global constants
 	public static final int CO = 0;
 	public static final int BB = 1;
-	public static final int BS = 2;
-	public static final int CS = 3;
-	public static final int PL = 4;
+	public static final int CS = 2;
+	public static final int PL = 3;
 
 	public static final int VOLUME = 0;
 	public static final int ORTHO = 1;
 	public static final int SURFACE = 2;
 	public static final int SURFACE_PLOT2D = 3;
-	
+	public static final int CUSTOM = 4;
+
 	public Content(String name) {
 		// create BranchGroup for this image
 		this.name = name;
@@ -110,9 +104,6 @@ public class Content extends BranchGroup implements UniverseListener {
 	public void displayAs(int type) {
 		if(image == null)
 			return;
-		// remove everything if possible
-		bbSwitch.removeAllChildren();
-
 		// create content node and add it to the switch
 		switch(type) {
 			case VOLUME: contentNode = new VoltexGroup(this); break;
@@ -120,43 +111,10 @@ public class Content extends BranchGroup implements UniverseListener {
 			case SURFACE: contentNode = new MeshGroup(this); break;
 			case SURFACE_PLOT2D: contentNode =
 				new SurfacePlotGroup(this); break;
+			default: throw new IllegalArgumentException(
+					"Specified type is neither VOLUME, ORTHO," +
+					"SURFACE or SURFACEPLOT2D");
 		}
-		bbSwitch.addChild(contentNode);
-
-		// create the bounding box and add it to the switch
-		BoundingBox bb = new BoundingBox(
-				contentNode.min, contentNode.max);
-		bb.setPickable(false);
-		bbSwitch.addChild(bb);
-		boundingSphere = new BoundingSphere(contentNode.center,
-				contentNode.center.distance(contentNode.min));
-		boundingSphere.setPickable(false);
-		bbSwitch.addChild(boundingSphere);
-
-		// create coordinate system and add it to the switch
-		float cl = (float)Math.abs(contentNode.max.x 
-					- contentNode.min.x) / 5f;
-		CoordinateSystem cs = new CoordinateSystem(
-						cl, new Color3f(0, 1, 0));
-		cs.setPickable(false);
-		bbSwitch.addChild(cs);
-
-		// create point list and add it to the switch
-		// only create the point list when it does not exist already
-		if(pointlist == null)
-			pointlist = new PointListShape(name);
-// 		pointlist.setPickable(false);
-		bbSwitch.addChild(pointlist);
-
-
-		// initialize child mask of the switch
-		whichChild.set(BB, selected);
-		whichChild.set(BS, boundingSphereVisible);
-		whichChild.set(CS, coordVisible);
-		whichChild.set(CO, visible);
-		whichChild.set(PL, showPL);
-		bbSwitch.setChildMask(whichChild);
-
 		// update type
 		this.type = type;
 	}
@@ -190,35 +148,23 @@ public class Content extends BranchGroup implements UniverseListener {
 		return 1;
 	}
 
-	public void displayMesh(List mesh) {
-		displayMesh(mesh, MeshGroup.TRIANGLES);
-	}
-
-	public void displayMesh(List mesh, int mode) {
-		displayMesh(mesh, mode, new LineAttributes());
-	}
-
-	public void displayMesh(List mesh, int mode, LineAttributes attrs) {
+	public void display(ContentNode node) {
 		// remove everything if possible
 		bbSwitch.removeAllChildren();
 
 		// create content node and add it to the switch
-		contentNode = new MeshGroup(this, mesh, mode, attrs);
+		contentNode = node;
 		bbSwitch.addChild(contentNode);
 
 		// create the bounding box and add it to the switch
-		BoundingBox bb = new BoundingBox(
-				contentNode.min, contentNode.max);
+		Point3d min = new Point3d(); contentNode.getMin(min);
+		Point3d max = new Point3d(); contentNode.getMax(max);
+		BoundingBox bb = new BoundingBox(min, max);
 		bb.setPickable(false);
 		bbSwitch.addChild(bb);
-		boundingSphere = new BoundingSphere(contentNode.center,
-				contentNode.center.distance(contentNode.min));
-		boundingSphere.setPickable(false);
-		bbSwitch.addChild(boundingSphere);
 
 		// create coordinate system and add it to the switch
-		float cl = (float)Math.abs(contentNode.max.x
-					- contentNode.min.x) / 5f;
+		float cl = (float)Math.abs(max.x - min.x) / 5f;
 		CoordinateSystem cs = new CoordinateSystem(
 						cl, new Color3f(0, 1, 0));
 		cs.setPickable(false);
@@ -232,17 +178,14 @@ public class Content extends BranchGroup implements UniverseListener {
 
 		// initialize child mask of the switch
 		whichChild.set(BB, selected);
-		whichChild.set(BS, boundingSphereVisible);
 		whichChild.set(CS, coordVisible);
 		whichChild.set(CO, visible);
 		whichChild.set(PL, showPL);
 		bbSwitch.setChildMask(whichChild);
 
 		// update type
-		this.type = SURFACE;
+		this.type = CUSTOM;
 	}
-
-
 
 	/* ************************************************************
 	 * setters - visibility flags
@@ -256,13 +199,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		// only if hiding, hide the point list
 		if(!b) {
 			showPointList(false);
-			whichChild.set(BS, b);
 		}
-		bbSwitch.setChildMask(whichChild);
-	}
-
-	public void showBoundingSphere(boolean b) {
-		whichChild.set(BS, b);
 		bbSwitch.setChildMask(whichChild);
 	}
 
@@ -335,7 +272,8 @@ public class Content extends BranchGroup implements UniverseListener {
 		}
 		String n = "point" + point;
 		pointlist.addPoint(n, p.x, p.y, p.z);
-		plw.update();
+		if(plw != null)
+			plw.update();
 	}
 
 	public void setListPointPos(int i, Point3d pos) {
@@ -364,7 +302,8 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void deletePointListPoint(int i) {
 		pointlist.delete(i);
-		plw.update();
+		if(plw != null)
+			plw.update();
 	}
 
 	/* ************************************************************
@@ -392,7 +331,7 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void setTransform(Transform3D transform) {
 		Transform3D t = new Transform3D();
-		Point3f c = contentNode.center;
+		Point3d c = new Point3d(); contentNode.getCenter(c);
 
 		Matrix3f m = new Matrix3f();
 		transform.getRotationScale(m);
@@ -400,14 +339,14 @@ public class Content extends BranchGroup implements UniverseListener {
 		// One might thing a rotation matrix has no translational
 		// component, however, if the rotation is composed of
 		// translation - rotation - backtranslation, it has indeed.
-		Vector3f v = new Vector3f();
+		Vector3d v = new Vector3d();
 		v.x = -m.m00*c.x - m.m01*c.y - m.m02*c.z + c.x;
 		v.y = -m.m10*c.x - m.m11*c.y - m.m12*c.z + c.y;
 		v.z = -m.m20*c.x - m.m21*c.y - m.m22*c.z + c.z;
 		t.setTranslation(v);
 		localRotate.setTransform(t);
 
-		Vector3f v2 = new Vector3f();
+		Vector3d v2 = new Vector3d();
 		transform.get(v2);
 		v2.sub(v);
 		t.set(v2);
@@ -437,8 +376,10 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	public void setShaded(boolean b) {
-		this.shaded = b;
-		contentNode.shadeUpdated();
+		if(b != shaded) {
+			this.shaded = b;
+			contentNode.shadeUpdated();
+		}
 	}
 
 	public boolean isShaded() {
@@ -457,7 +398,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		contentNode.colorUpdated();
 	}
 
-	public void setTransparency(float transparency) {
+	public synchronized void setTransparency(float transparency) {
 		transparency = transparency < 0 ? 0 : transparency;
 		transparency = transparency > 1 ? 1 : transparency;
 		if(Math.abs(transparency - this.transparency) < 0.01)
@@ -511,10 +452,6 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public ContentNode getContent() {
 		return contentNode;
-	}
-
-	public BoundingSphere getBoundingSphere() {
-		return boundingSphere;
 	}
 
 	public ImagePlus getImage() {

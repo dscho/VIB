@@ -7,10 +7,15 @@ import java.awt.event.MouseEvent;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.vecmath.AxisAngle4d;
-import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
+/**
+ * This class is a helper class which transforms MouseEvents
+ * to an appropriate transformation of the selected Content.
+ * 
+ * @author Benjamin Schmid
+ */
 public class ContentTransformer {
 
 	private Initializer initializer;
@@ -40,6 +45,11 @@ public class ContentTransformer {
 		
 	private int xLast, yLast;
 
+	/**
+	 * Constructs a new ContentTransformer.
+	 * @param univ
+	 * @param callback
+	 */
 	public ContentTransformer(DefaultUniverse univ, BehaviorCallback callback) {
 		this.univ = univ;
 		this.canvas = (ImageCanvas3D)univ.getCanvas();
@@ -47,14 +57,29 @@ public class ContentTransformer {
 		this.initializer = new Initializer();
 	}
 
+	/**
+	 * This method should be called to initiate a new transformation, e.g.
+	 * when the mouse is pressed before rotation or translation.
+	 * @param c
+	 * @param x
+	 * @param y
+	 */
 	public void init(Content c, int x, int y) {
 		initializer.init(c, x, y);
 	}
 
+	/**
+	 * Translate the selected Content suitably to the specified MouseEvent.
+	 * @param e
+	 */
 	public void translate(MouseEvent e) {
 		translate(e.getX(), e.getY());
 	}
 
+	/**
+	 * Rotate the selected Content suitably to the specified MouseEvent.
+	 * @param e
+	 */
 	public void rotate(MouseEvent e) {
 		rotate(e.getX(), e.getY());
 	}
@@ -65,7 +90,7 @@ public class ContentTransformer {
 	private Point3d v1 = new Point3d();
 	private Point3d v2 = new Point3d();
 
-	public void translate(int xNew, int yNew) {
+	private void translate(int xNew, int yNew) {
 		if(content.isLocked())
 			return;
 		int dx = xNew - xLast;
@@ -86,7 +111,7 @@ public class ContentTransformer {
 
 	private Transform3D rotateNew = new Transform3D();
 	private Transform3D rotateOld = new Transform3D();
-	public void rotate(int xNew, int yNew) {
+	private void rotate(int xNew, int yNew) {
 		if(content.isLocked())
 			return;
 

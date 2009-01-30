@@ -12,12 +12,14 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Collection;
 
-import com.sun.j3d.utils.behaviors.keyboard.*;
-import com.sun.j3d.utils.universe.*;
+import customnode.CustomLineMesh;
+import customnode.CustomMesh;
+import customnode.CustomMeshNode;
+import customnode.CustomTriangleMesh;
+
 import javax.media.j3d.*;
 import javax.vecmath.*;
 
-import isosurface.MeshGroup;
 import java.io.File;
 import octree.FilePreparer;
 import octree.VolumeOctree;
@@ -25,16 +27,17 @@ import octree.VolumeOctree;
 public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Content selected;
-	private Hashtable contents = new Hashtable();
+	private Hashtable<String, Content> contents =
+				new Hashtable<String, Content>();
 	private Image3DMenubar menubar;
 	private RegistrationMenubar registrationMenubar;
 	private ImageCanvas3D canvas;
 
 	private Executer executer;
 
-	private Point3f globalMin = new Point3f();
-	private Point3f globalMax = new Point3f();
-	private Point3f globalCenter = new Point3f();
+	private Point3d globalMin = new Point3d();
+	private Point3d globalMax = new Point3d();
+	private Point3d globalCenter = new Point3d();
 
 	PointListDialog pld;
 
@@ -131,20 +134,25 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public void recalculateGlobalMinMax() {
 		if(contents.isEmpty())
 			return;
+		Point3d min = new Point3d();
+		Point3d max = new Point3d();
+
 		Iterator it = contents();
 		Content c = (Content)it.next();
-		globalMin.set(c.getContent().min);
-		globalMax.set(c.getContent().max);
+		c.getContent().getMin(min);
+		c.getContent().getMax(max);
+		globalMin.set(min);
+		globalMax.set(max);
 		while(it.hasNext()) {
 			c = (Content)it.next();
-			Point3f cmin = c.getContent().min;
-			Point3f cmax = c.getContent().max;
-			if(cmin.x < globalMin.x) globalMin.x = cmin.x;
-			if(cmin.y < globalMin.y) globalMin.y = cmin.y;
-			if(cmin.z < globalMin.z) globalMin.z = cmin.z;
-			if(cmax.x > globalMax.x) globalMax.x = cmax.x;
-			if(cmax.y > globalMax.y) globalMax.y = cmax.y;
-			if(cmax.z > globalMax.z) globalMax.z = cmax.z;
+			c.getContent().getMin(min);
+			c.getContent().getMax(max);
+			if(min.x < globalMin.x) globalMin.x = min.x;
+			if(min.y < globalMin.y) globalMin.y = min.y;
+			if(min.z < globalMin.z) globalMin.z = min.z;
+			if(max.x > globalMax.x) globalMax.x = max.x;
+			if(max.y > globalMax.y) globalMax.y = max.y;
+			if(max.z > globalMax.z) globalMax.z = max.z;
 		}
 		globalCenter.x = globalMin.x + (globalMax.x - globalMin.x) / 2;
 		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y) / 2;
@@ -154,8 +162,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public void recalculateGlobalMinMax(Content c) {
-		Point3f cmin = c.getContent().min;
-		Point3f cmax = c.getContent().max;
+		Point3d cmin = new Point3d(); c.getContent().getMin(cmin);
+		Point3d cmax = new Point3d(); c.getContent().getMax(cmax);
 		if(contents.size() == 1) {
 			globalMin.set(cmin);
 			globalMax.set(cmax);
@@ -174,19 +182,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewPlatformTransformer().centerAt(globalCenter);
 	}
 
-	public Point3f getGlobalCenterPoint() {
-		return globalCenter;
-	}
-
-	public void getGlobalCenterPoint(Point3f p) {
+	public void getGlobalCenterPoint(Point3d p) {
 		p.set(globalCenter);
 	}
 
-	public void getGlobalMinPoint(Point3f p) {
+	public void getGlobalMinPoint(Point3d p) {
 		p.set(globalMin);
 	}
 
-	public void getGlobalMaxPoint(Point3f p) {
+	public void getGlobalMaxPoint(Point3d p) {
 		p.set(globalMax);
 	}
 
@@ -281,7 +285,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.channels = channels;
 		content.resamplingF = resf;
 		content.setPointListDialog(pld);
-		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
+		content.showCoordinateSystem(UniverseSettings.
+				showLocalCoordinateSystemsByDefault);
 		content.displayAs(type);
 		content.compile();
 		scene.addChild(content);
@@ -334,69 +339,83 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewer().getView().setBackClipDistance(2 * d);
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
-	
+
 	public Content addMesh(ImagePlus image, Color3f color, String name,
 		int threshold, boolean[] channels, int resamplingF){
 		return addContent(image, color, name, threshold, channels,
 			resamplingF, Content.SURFACE);
 	}
 
-	public Content addMesh(List mesh, Color3f color, String name,
-			float scale, int threshold) {
-		Content c = addMesh(mesh, color, name, threshold);
-		ensureScale(scale);
+	public Content addCustomMesh(CustomMesh mesh, Color3f color, String name) {
+		if(contents.containsKey(name)) {
+			IJ.error("Mesh named '"+name+"' exists already");
+			return null;
+		}
+		Content content = new Content(name);
+		content.color = color;
+		content.showCoordinateSystem(
+				UniverseSettings.showLocalCoordinateSystemsByDefault);
+		content.display(new CustomMeshNode(mesh, content));
+		content.setPointListDialog(pld);
+		scene.addChild(content);
+		contents.put(name, content);
+		recalculateGlobalMinMax(content);
+		float range = (float)(globalMax.x - globalMin.x);
+		ensureScale(range);
+		fireContentAdded(content);
+		return content;
+	}
+
+	public Content addLineMesh(List<Point3f> mesh, Color3f color, String name,
+				boolean strips) {
+		int mode = strips ? CustomLineMesh.CONTINUOUS : CustomLineMesh.PAIRWISE;
+		CustomLineMesh lmesh = new CustomLineMesh(mesh, mode, color, 0);
+		return addCustomMesh(lmesh, color, name);
+	}
+
+	/**
+	 * @deprecated This method will not be supported in the future.
+	 * Use addTriangleMesh instead.
+	 * @param mesh
+	 * @param color
+	 * @param name
+	 * @param threshold
+	 * @return
+	 */
+	public Content addMesh(List<Point3f> mesh, Color3f color, String name,
+				int threshold) {
+		return addTriangleMesh(mesh, color, name);
+	}
+
+	public Content addTriangleMesh(List<Point3f> mesh,
+				Color3f color, String name) {
+		CustomTriangleMesh tmesh = new CustomTriangleMesh(mesh, color, 0);
+		Content content = new Content(name);
+		content.color = color;
+		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
+		content.display(new CustomMeshNode(tmesh, content));
+		content.setPointListDialog(pld);
+		scene.addChild(content);
+		contents.put(name, content);
+		recalculateGlobalMinMax(content);
+		float range = (float)(globalMax.x - globalMin.x);
+		ensureScale(range);
+		fireContentAdded(content);
+		return content;
+	}
+
+	public Content addContent(Content c) {
+		if(contents.containsKey(c.name)) {
+			IJ.error("Mesh named '" + c.name + "' exists already");
+			return null;
+		}
+		scene.addChild(c);
+		contents.put(c.name, c);
+		recalculateGlobalMinMax(c);
+		float range = (float)(globalMax.x - globalMin.x);
+		ensureScale(range);
+		fireContentAdded(c);
 		return c;
-	}
-
-	public Content addLineMesh(List mesh,
-			Color3f color, String name, int threshold, boolean strips) {
-		return addLineMesh(mesh, color, name, threshold, strips,
-				new LineAttributes());
-	}
-
-	public Content addLineMesh(List mesh, Color3f color, String name,
-				int threshold, boolean strips, LineAttributes attrs) {
-		// check if exists already
-		if(contents.containsKey(name)) {
-			IJ.error("Mesh named '"+name+"' exists already");
-			return null;
-		}
-		Content content = new Content(name);
-		content.color = color;
-		content.threshold = threshold;
-		int mode = strips ? MeshGroup.LINE_STRIPS : MeshGroup.LINES;
-		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
-		content.displayMesh(mesh, mode, attrs);
-		content.setPointListDialog(pld);
-		scene.addChild(content);
-		contents.put(name, content);
-		recalculateGlobalMinMax(content);
-		float range = globalMax.x - globalMin.x;
-		ensureScale(range);
-		fireContentAdded(content);
-		return content;
-	}
-
-	public Content addMesh(List mesh,
-			Color3f color, String name, int threshold) {
-		// check if exists already
-		if(contents.containsKey(name)) {
-			IJ.error("Mesh named '"+name+"' exists already");
-			return null;
-		}
-		Content content = new Content(name);
-		content.color = color;
-		content.threshold = threshold;
-		content.showCoordinateSystem(UniverseSettings.showLocalCoordinateSystemsByDefault);
-		content.displayMesh(mesh);
-		content.setPointListDialog(pld);
-		scene.addChild(content);
-		contents.put(name, content);
-		recalculateGlobalMinMax(content);
-		float range = globalMax.x - globalMin.x;
-		ensureScale(range);
-		fireContentAdded(content);
-		return content;
 	}
 
 	public void removeAllContents() {
@@ -425,7 +444,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Collection getContents() {
 		return contents.values();
 	}
-	
+
 	public boolean contains(String name) {
 		return contents.containsKey(name);
 	}
