@@ -1014,6 +1014,23 @@ public class FastMatrix {
 	final public boolean isIdentity() {
 		return isIdentity((double)1e-10);
 	}
+
+	final public boolean equals( FastMatrix other ) {
+		double eps = (double)1e-10;
+		return eps > (double)Math.abs( a00 - other.a00 ) &&
+			eps > (double)Math.abs( a01 - other.a01 ) &&
+			eps > (double)Math.abs( a02 - other.a02 ) &&
+			eps > (double)Math.abs( a03 - other.a03 ) &&
+			eps > (double)Math.abs( a10 - other.a10 ) &&
+			eps > (double)Math.abs( a11 - other.a11 ) &&
+			eps > (double)Math.abs( a12 - other.a12 ) &&
+			eps > (double)Math.abs( a13 - other.a13 ) &&
+			eps > (double)Math.abs( a20 - other.a20 ) &&
+			eps > (double)Math.abs( a21 - other.a21 ) &&
+			eps > (double)Math.abs( a22 - other.a22 ) &&
+			eps > (double)Math.abs( a23 - other.a23 );
+
+	}
 	
 	final public boolean isIdentity(double eps) {
 		return eps > (double)Math.abs(a00 - 1) &&
