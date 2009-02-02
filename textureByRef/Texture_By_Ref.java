@@ -49,7 +49,6 @@ public class Texture_By_Ref implements PlugInFilter,
 						MouseMotionListener,
 						MouseListener {
 
-	private static final int B_IMG_TYPE = BufferedImage.TYPE_BYTE_GRAY;
 	private static final int TEX_MODE = Texture.INTENSITY;
 	private static final int COMP_TYPE = ImageComponent.FORMAT_CHANNEL8;
 	private static final boolean BY_REF = true;
