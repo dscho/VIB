@@ -231,9 +231,7 @@ public class Texture_By_Ref implements PlugInFilter,
 		byte[] pixels = (byte[])bProcessor.getPixels();
 		
 		IndexColorModel cm = getDefaultColorModel();
-		WritableRaster wr = cm.createCompatibleWritableRaster(1, 1);
-		SampleModel sm = wr.getSampleModel();
-		sm = sm.createCompatibleSampleModel(w, h);
+		SampleModel sm = cm.createCompatibleSampleModel(w, h);
 		
 		DataBufferByte db = new DataBufferByte(pixels, w * h, 0);
 		WritableRaster raster = Raster.createWritableRaster(sm, db, null);
