@@ -25,7 +25,6 @@ public class EditableVolume extends VoltexVolume {
 	private ImageComponent2D[] yzComp;
 
 	private ColorModel cm;
-	private SampleModel sm;
 	
 	private ImageUpdater updater = new ImageUpdater();
 	
@@ -57,8 +56,6 @@ public class EditableVolume extends VoltexVolume {
 		updateData();
 
 		cm = getGreyColorModel();
-		WritableRaster wr = cm.createCompatibleWritableRaster(1, 1);
-		sm = wr.getSampleModel();
 		
 		for(int z = 0; z < zDim; z++)
 			xyComp[z] = createImageComponent(xy[z], xTexSize, yTexSize);
@@ -106,7 +103,7 @@ public class EditableVolume extends VoltexVolume {
 
 	private ImageComponent2D createImageComponent(byte[] pix, int w, int h) {
 		DataBufferByte db = new DataBufferByte(pix, w * h, 0);
-		SampleModel smod = sm.createCompatibleSampleModel(w, h);
+		SampleModel smod = cm.createCompatibleSampleModel(w, h);
 		WritableRaster raster = Raster.createWritableRaster(smod, db, null);
 
 		BufferedImage bImage = new BufferedImage(cm, raster, false, null);
