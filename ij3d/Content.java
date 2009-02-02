@@ -115,6 +115,7 @@ public class Content extends BranchGroup implements UniverseListener {
 					"Specified type is neither VOLUME, ORTHO," +
 					"SURFACE or SURFACEPLOT2D");
 		}
+		display(contentNode);
 		// update type
 		this.type = type;
 	}
