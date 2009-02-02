@@ -176,11 +176,23 @@ public class Texture_By_Ref_col implements PlugInFilter,
 	public void imageClosed(ImagePlus image) {}
 
 	public void imageUpdated(ImagePlus image) {
-		if(image == imp) {
-//			bImage.createGraphics().drawImage(
-//					bProcessor.createImage(), 0, 0, null);
-//			bComp.updateData(updater, 0, 0, w, h);
+		if(image != imp)
+			return;
+		WritableRaster newRaster = bImage.getRaster();
+		byte[] byteData = ((DataBufferByte) newRaster.getDataBuffer()).getData();
+		int[] pixels = (int[])bProcessor.getPixels();
+		for(int i = 0, j = 0; i < pixels.length; i++) {
+			int c = pixels[i];
+			int r = (c & 0xff0000) >> 16;
+			int g = (c & 0xff00) >> 8;
+			int b = c & 0xff;
+			int a = Math.min(255, r + g + b);
+			byteData[j++] = (byte)r;
+			byteData[j++] = (byte)g;
+			byteData[j++] = (byte)b;
+			byteData[j++] = (byte)a;
 		}
+		bComp.updateData(updater, 0, 0, w, h);
 	}
 
 	public Appearance createAppearance() {
@@ -248,15 +260,15 @@ public class Texture_By_Ref_col implements PlugInFilter,
 		byte[] byteData = ((DataBufferByte) newRaster.getDataBuffer()).getData();
 		for(int i = 0, j = 0; i < n; i++) {
 			int c = pixels[i];
-			int b1 = (c & 0xff0000) >> 16;
-			int b2 = (c & 0xff00) >> 8;
-			int b3 = c & 0xff;
-			byteData[j++] = (byte)((b1 + b2 + b3) / 3);
-			byteData[j++] = (byte)b1;
-			byteData[j++] = (byte)b2;
-			byteData[j++] = (byte)b3;
+			int r = (c & 0xff0000) >> 16;
+			int g = (c & 0xff00) >> 8;
+			int b = c & 0xff;
+			int a = (r + g + b) / 3;
+			byteData[j++] = (byte)r;
+			byteData[j++] = (byte)g;
+			byteData[j++] = (byte)b;
+			byteData[j++] = (byte)a;
 		}
-		
 		return new BufferedImage(cm, newRaster, false, null);
 	}
 	
