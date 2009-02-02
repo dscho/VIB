@@ -31,7 +31,7 @@ public class VoltexVolume extends Volume {
 	public final float xTexGenScale, yTexGenScale, zTexGenScale;
 
 	/** The mid point in the data */
-	final Point3d volRefPt = new Point3d();
+	public final Point3d volRefPt = new Point3d();
 
 	/** The particular loader which loads the actual data into the arrays */
 	protected Loader loader;
