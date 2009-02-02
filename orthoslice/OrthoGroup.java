@@ -29,6 +29,7 @@ public class OrthoGroup extends VoltexGroup {
 		renderer = new Orthoslice(imp, c.getColor(), 
 				c.getTransparency(), c.getChannels());
 		renderer.fullReload();
+		calculateMinMaxCenterPoint();
 		addChild(renderer.getVolumeNode());
 	}
 

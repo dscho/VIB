@@ -36,6 +36,7 @@ public class MeshGroup extends ContentNode {
 		}
 		mesh = new CustomTriangleMesh(tri, color, c.getTransparency());
 		calculateMinMaxCenterPoint();
+		addChild(mesh);
 	}
 
 	public CustomTriangleMesh getMesh() {
