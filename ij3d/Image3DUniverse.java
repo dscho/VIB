@@ -363,6 +363,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		float range = (float)(globalMax.x - globalMin.x);
 		ensureScale(range);
 		fireContentAdded(content);
+		this.addUniverseListener(content);
 		return content;
 	}
 
@@ -401,6 +402,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		float range = (float)(globalMax.x - globalMin.x);
 		ensureScale(range);
 		fireContentAdded(content);
+		this.addUniverseListener(content);
 		return content;
 	}
 
@@ -415,6 +417,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		float range = (float)(globalMax.x - globalMin.x);
 		ensureScale(range);
 		fireContentAdded(c);
+		this.addUniverseListener(c);
 		return c;
 	}
 
