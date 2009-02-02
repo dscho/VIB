@@ -71,6 +71,7 @@ public class VoltexGroup extends ContentNode {
 		renderer = new VolumeRenderer(imp, c.getColor(),
 				c.getTransparency(), c.getChannels());
 		renderer.fullReload();
+		calculateMinMaxCenterPoint();
 		addChild(renderer.getVolumeNode());
 	}
 
