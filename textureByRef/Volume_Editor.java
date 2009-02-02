@@ -22,7 +22,7 @@ public class Volume_Editor implements PlugInFilter {
 	public static void main(String[] args) {
 		new ij.ImageJ();
 		ImagePlus imp = NewImage.createByteImage(
-				"Edit volume", 256, 256, 64, NewImage.FILL_BLACK);
+				"Edit volume", 250, 233, 57, NewImage.FILL_BLACK);
 		imp.show();
 		Volume_Editor vol = (Volume_Editor)IJ.
 				runPlugIn("textureByRef.Volume_Editor", "");

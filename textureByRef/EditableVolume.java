@@ -12,8 +12,6 @@ import javax.media.j3d.ImageComponent;
 import javax.media.j3d.ImageComponent2D;
 
 import ij.ImagePlus;
-import ij.ImageStack;
-import ij.process.ImageProcessor;
 import voltex.VoltexVolume;
 
 public class EditableVolume extends VoltexVolume {
@@ -48,18 +46,14 @@ public class EditableVolume extends VoltexVolume {
 	 * effct when reading color images.
 	 */
 	public EditableVolume(ImagePlus imp, boolean[] ch) {
-		super(makePowerOfTwo(imp), ch);
-		xy = new byte[zDim][];
-		xz = new byte[yDim][xDim * zDim];
-		yz = new byte[xDim][yDim * zDim];
+		super(imp, ch);
+		xy = new byte[zDim][xTexSize * yTexSize];
+		xz = new byte[yDim][xTexSize * zTexSize];
+		yz = new byte[xDim][yTexSize * zTexSize];
 		xyComp = new ImageComponent2D[zDim];
 		xzComp = new ImageComponent2D[yDim];
 		yzComp = new ImageComponent2D[xDim];
-		
-		ImageStack stack = imp.getStack();
-		for(int z = 0; z < zDim; z++)
-			xy[z] = (byte[])stack.getPixels(z+1);
-		
+
 		updateData();
 
 		cm = getGreyColorModel();
@@ -67,11 +61,11 @@ public class EditableVolume extends VoltexVolume {
 		sm = wr.getSampleModel();
 		
 		for(int z = 0; z < zDim; z++)
-			xyComp[z] = createImageComponent(xy[z], xDim, yDim);
+			xyComp[z] = createImageComponent(xy[z], xTexSize, yTexSize);
 		for(int y = 0; y < yDim; y++)
-			xzComp[y] = createImageComponent(xz[y], xDim, zDim);
+			xzComp[y] = createImageComponent(xz[y], xTexSize, zTexSize);
 		for(int x = 0; x < xDim; x++)
-			yzComp[x] = createImageComponent(yz[x], yDim, zDim);
+			yzComp[x] = createImageComponent(yz[x], yTexSize, zTexSize);
 	}
 	
 	public ImageComponent2D getImageComponentZ(int index) {
@@ -85,11 +79,11 @@ public class EditableVolume extends VoltexVolume {
 	public ImageComponent2D getImageComponentX(int index) {
 		return yzComp[index];
 	}
-	
+
 	public final void setNoCheck(int x, int y, int z, int v) {
-		xy[z][y * xDim + x] = (byte)v;
-		xz[y][z * xDim + x] = (byte)v;
-		yz[x][z * yDim + y] = (byte)v;	
+		xy[z][y * xTexSize + x] = (byte)v;
+		xz[y][z * xTexSize + x] = (byte)v;
+		yz[x][z * yTexSize + y] = (byte)v;	
 		xyComp[z].updateData(updater, x, y, 1, 1);
 		xzComp[y].updateData(updater, x, z, 1, 1);
 		yzComp[x].updateData(updater, y, z, 1, 1);
@@ -102,6 +96,8 @@ public class EditableVolume extends VoltexVolume {
 	}
 	
 	void updateData() {
+		for(int z = 0; z < zDim; z++)
+			loadZ(z, xy[z]);
 		for(int y = 0; y < yDim; y++)
 			loadY(y, xz[y]);
 		for(int x = 0; x < xDim; x++)
@@ -119,32 +115,6 @@ public class EditableVolume extends VoltexVolume {
 		bComp.setCapability(ImageComponent.ALLOW_IMAGE_WRITE);
 		bComp.set(bImage);
 		return bComp;
-	}
-
-	private static ImagePlus makePowerOfTwo(ImagePlus image) {
-		int w_old = image.getWidth();
-		int h_old = image.getHeight();
-		int d_old = image.getStackSize();
-		
-		int w_new = powerOfTwo(w_old);
-		int h_new = powerOfTwo(h_old);
-		int d_new = powerOfTwo(d_old);
-		
-		ImageStack oldStack = image.getStack();
-		ImageStack newStack = new ImageStack(w_new, h_new);
-		ImageProcessor ip_old = null, ip_new = null;
-		int z = 0;
-		for(z = 0; z < d_old; z++) {
-			ip_old = oldStack.getProcessor(z+1);
-			ip_new = ip_old.createProcessor(w_new, h_new);
-			ip_new.insert(ip_old, 0, 0);
-			newStack.addSlice("", ip_new);
-		}
-		for(; z < d_new; z++) {
-			newStack.addSlice("", ip_old.createProcessor(w_new, h_new));
-		}
-		image.setStack(null, newStack);
-		return image;
 	}
 
 	private static IndexColorModel getGreyColorModel() {
