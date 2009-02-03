@@ -91,4 +91,8 @@ public abstract class RegistrationAlgorithm {
 		throw new RuntimeException( "transformTemplateToDomainWorld() not implemented for this objects of this class ("+this.getClass()+")" );		
 	}
 
+	public ImagePlus register() {
+		throw new RuntimeException( "register() not implemented for this objects of this class ("+this.getClass()+")" );
+	}
+
 }

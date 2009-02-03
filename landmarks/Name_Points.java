@@ -30,7 +30,8 @@ import stacks.ThreePaneCrop;
 import util.BatchOpener;
 import util.Penalty;
 import vib.FastMatrix;
-
+import vib.oldregistration.RegistrationAlgorithm;
+import util.Overlay_Registered;
 
 /* FIXME:
 
@@ -70,8 +71,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	Panel buttonsPanel;
 	Panel templatePanel;
 	Panel registrationPanel;
-	Panel optionsPanel;
-	Checkbox tryManyRotations;
+	Checkbox overlayResult;
 
 	Name_Points plugin;
 
@@ -303,6 +303,11 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		registrationPanel.add( registerBookstein, rc );
 		registerBookstein.addActionListener( this );
 
+		overlayResult = new Checkbox("Overlay result");
+		rc.gridx = 0;
+		rc.gridy = 1;
+		registrationPanel.add( overlayResult, rc );
+
 		outerc.gridy = 4;
 		add(registrationPanel,outerc);
 
@@ -355,13 +360,13 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			pointsPanel.setEnabled(false);
 			buttonsPanel.setEnabled(false);
 			templatePanel.setEnabled(false);
-			optionsPanel.setEnabled(false);
+			registrationPanel.setEnabled(false);
 		} else {
 			instructions.setText(defaultInstructions);
 			pointsPanel.setEnabled(true);
 			buttonsPanel.setEnabled(true);
 			templatePanel.setEnabled(true);
-			optionsPanel.setEnabled(true);
+			registrationPanel.setEnabled(true);
 		}
 	}
 
@@ -441,11 +446,11 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			templateFileName.setText("[None chosen]");
 			pack();
 		} else if( source == registerRigid ) {
-			plugin.doRigid();
+			plugin.doRegistration(Name_Points.RIGID);
 		} else if( source == registerAffine ) {
-			plugin.doAffine();
+			plugin.doRegistration(Name_Points.AFFINE);
 		} else if( source == registerBookstein ) {
-			plugin.doBookstein();
+			plugin.doRegistration(Name_Points.BOOKSTEIN);
 		}
 	}
 
@@ -2030,42 +2035,42 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		}
 	}
 
-	public void doRigid() {
-		if( templatePoints == null ) {
-			IJ.error("You must have a template file loaded in order to perform register the images");
-			return;
-		}
-		if( ! loadTemplateImage() )
-			return;
-		Rigid_From_Landmarks r = new Rigid_From_Landmarks();
-		r.setImages( templateImage, imp );
-		ImagePlus transformed = r.register();
-		transformed.show();
-	}
+	final static int AFFINE = 1;
+	final static int RIGID = 2;
+	final static int BOOKSTEIN = 3;
 
-	public void doAffine() {
+	public void doRegistration( int method ) {
+		RegistrationAlgorithm r = null;
+		switch( method ) {
+		case AFFINE:
+			r = new Affine_From_Landmarks();
+			break;
+		case RIGID:
+			r = new Rigid_From_Landmarks();
+			break;
+		case BOOKSTEIN:
+			r = new Bookstein_From_Landmarks();
+			break;
+		default:
+			IJ.error("BUG: unknown registration method requested");
+			return;
+		}
 		if( templatePoints == null ) {
 			IJ.error("You must have a template file loaded in order to perform register the images");
 			return;
 		}
 		if( ! loadTemplateImage() )
 			return;
-		Affine_From_Landmarks r = new Affine_From_Landmarks();
+		boolean overlayResult = dialog.overlayResult.getState();
 		r.setImages( templateImage, imp );
 		ImagePlus transformed = r.register();
-		transformed.show();
-	}
-
-	public void doBookstein() {
-		if( templatePoints == null ) {
-			IJ.error("You must have a template file loaded in order to perform register the images");
+		if( transformed == null )
 			return;
-		}
-		if( ! loadTemplateImage() )
-			return;
-		Bookstein_From_Landmarks r = new Bookstein_From_Landmarks();
-		r.setImages( templateImage, imp );
-		ImagePlus transformed = r.register();
-		transformed.show();
+		if( overlayResult ) {
+			ImagePlus merged = Overlay_Registered.overlayToImagePlus( templateImage, transformed );
+			merged.setTitle( "Registered and Overlayed" );
+			merged.show();
+		} else
+			transformed.show();
 	}
 }
