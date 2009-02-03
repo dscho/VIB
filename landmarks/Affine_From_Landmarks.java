@@ -189,8 +189,8 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 		ImagePlus transformed = register();
 
 		if( overlayResult ) {
-			ImageStack mergedStack = Overlay_Registered.overlay( sourceImages[0], transformed );
-			ImagePlus merged = new ImagePlus( "Registered and Overlayed", mergedStack );
+			ImagePlus merged = Overlay_Registered.overlayToImagePlus( sourceImages[0], transformed );
+			merged.setTitle( "Registered and Overlayed" );
 			merged.show();
 		} else
 			transformed.show();

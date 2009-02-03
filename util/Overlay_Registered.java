@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 public class Overlay_Registered implements PlugIn {
 
-	public static ImageStack overlay( ImagePlus a, ImagePlus b ) {
+	public static ImageStack overlayToStack( ImagePlus a, ImagePlus b ) {
 
 		float[] valueRange;
 		{
@@ -69,6 +69,15 @@ public class Overlay_Registered implements PlugIn {
 			a.getStack(),
 			true);
 
+		return merged;
+	}
+
+	public static ImagePlus overlayToImagePlus( ImagePlus a, ImagePlus b ) {
+
+		ImageStack merged = overlayToStack( a, b );
+
+		ImagePlus result = new ImagePlus( "Merged", merged );
+
 		Calibration ca = a.getCalibration();
 		Calibration cb = b.getCalibration();
 		if( ca == null && cb == null ) {
@@ -78,12 +87,13 @@ public class Overlay_Registered implements PlugIn {
 				IJ.error("The calibrations of the two images differ");
 				return null;
 			}
+			result.setCalibration( ca );
 		} else {
 			IJ.error("Calibration is set in one image but not the other.");
 			return null;
 		}
 
-		return merged;
+		return result;
 	}
 
 	public static float[] getValuesRange(ImagePlus imagePlus) {
@@ -201,9 +211,7 @@ public class Overlay_Registered implements PlugIn {
 		sourceImages[0] = matchingImages.get(index[0]);
 		sourceImages[1] = matchingImages.get(index[1]);
 
-		ImageStack rgbStack = overlay( sourceImages[0], sourceImages[1] );
-
-		ImagePlus rgbResult = new ImagePlus( "Merged", rgbStack );
+		ImagePlus rgbResult = overlayToImagePlus( sourceImages[0], sourceImages[1] );
 		rgbResult.show();
 
 		ModelessQuestions q=new ModelessQuestions("Rate This Registration",rgbResult);
