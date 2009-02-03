@@ -20,18 +20,17 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Comparator;
 
-import vib.transforms.FastMatrixTransform;
 import landmarks.NamedPointWorld;
 import vib.FastMatrix;
 import vib.TransformedImage;
 
+import vib.oldregistration.RegistrationAlgorithm;
+
 import util.Overlay_Registered;
 
-public class Rigid_From_Landmarks implements PlugIn {
+public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugIn {
 
 	boolean allowScaling;
-
-	ImagePlus sourceImages [];
 
 	public void run(String arg) {
 
@@ -65,10 +64,7 @@ public class Rigid_From_Landmarks implements PlugIn {
 		index[0] = gd.getNextChoiceIndex();
 		index[1] = gd.getNextChoiceIndex();
 
-		sourceImages = new ImagePlus[2];
-
-		sourceImages[0] = WindowManager.getImage(wList[index[0]]);
-		sourceImages[1] = WindowManager.getImage(wList[index[1]]);
+		setImages( WindowManager.getImage(wList[index[0]]), WindowManager.getImage(wList[index[1]]) );
 
 		allowScaling = gd.getNextBoolean();
 

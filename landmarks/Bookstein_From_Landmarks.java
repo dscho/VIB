@@ -64,10 +64,7 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                 keepSourceImages = gd.getNextBoolean();
 		boolean overlayResult = gd.getNextBoolean();
 
-                sourceImages = new ImagePlus[2];
-
-                sourceImages[0] = WindowManager.getImage(wList[index[0]]);
-                sourceImages[1] = WindowManager.getImage(wList[index[1]]);
+		setImages( WindowManager.getImage(wList[index[0]]), WindowManager.getImage(wList[index[1]]) );
 
 		ImagePlus transformed = register();
 

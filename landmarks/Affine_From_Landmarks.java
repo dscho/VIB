@@ -179,10 +179,7 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                 index[0] = gd.getNextChoiceIndex();
                 index[1] = gd.getNextChoiceIndex();
 
-                sourceImages = new ImagePlus[2];
-
-                sourceImages[0] = WindowManager.getImage(wList[index[0]]);
-                sourceImages[1] = WindowManager.getImage(wList[index[1]]);
+		setImages( WindowManager.getImage(wList[index[0]]), WindowManager.getImage(wList[index[1]]) );
 
 		boolean overlayResult = gd.getNextBoolean();
 
