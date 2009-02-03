@@ -11,14 +11,14 @@ import util.FileAndChannel;
 import math3d.Point3d;
 
 public abstract class RegistrationAlgorithm {
-	
+
 	public boolean keepSourceImages;
 	public ImagePlus[] sourceImages;
-	
+
 	public ImagePlus getTemplate() {
 		return sourceImages[0];
 	}
-	
+
 	public ImagePlus getDomain() {
 		return sourceImages[1];
 	}
@@ -34,12 +34,12 @@ public abstract class RegistrationAlgorithm {
 	}
 
 	public void loadImages( FileAndChannel f0, FileAndChannel f1 ) {
-		
+
 		ImagePlus[] f0imps=BatchOpener.open(f0.getPath());
 		ImagePlus[] f1imps=BatchOpener.open(f1.getPath());
 
 		sourceImages=new ImagePlus[2];
-		
+
 		sourceImages[0]=f0imps[f0.getChannelZeroIndexed()];
 		sourceImages[1]=f1imps[f1.getChannelZeroIndexed()];
 		invalidateTransformation();
@@ -80,7 +80,7 @@ public abstract class RegistrationAlgorithm {
 	}
 
 	public void transformDomainToTemplateWorld( double x, double y, double z, Point3d result ) {
-		throw new RuntimeException( "transformDomainToTemplateWorld() not implemented for this objects of this class ("+this.getClass()+")" );		
+		throw new RuntimeException( "transformDomainToTemplateWorld() not implemented for this objects of this class ("+this.getClass()+")" );
 	}
 
 	public void transformTemplateToDomain( int x, int y, int z, ImagePoint result ) {
@@ -88,7 +88,7 @@ public abstract class RegistrationAlgorithm {
 	}
 
 	public void transformTemplateToDomainWorld( double x, double y, double z, Point3d result ) {
-		throw new RuntimeException( "transformTemplateToDomainWorld() not implemented for this objects of this class ("+this.getClass()+")" );		
+		throw new RuntimeException( "transformTemplateToDomainWorld() not implemented for this objects of this class ("+this.getClass()+")" );
 	}
 
 	public ImagePlus register() {
