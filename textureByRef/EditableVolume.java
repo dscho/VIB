@@ -1,14 +1,5 @@
 package textureByRef;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.DataBufferByte;
-import java.awt.image.IndexColorModel;
-import java.awt.image.Raster;
-import java.awt.image.SampleModel;
-import java.awt.image.WritableRaster;
-
-import javax.media.j3d.ImageComponent;
 import javax.media.j3d.ImageComponent2D;
 
 import ij.ImagePlus;
@@ -24,8 +15,6 @@ public class EditableVolume extends VoltexVolume {
 	private ImageComponent2D[] xzComp;
 	private ImageComponent2D[] yzComp;
 
-	private ColorModel cm;
-	
 	private ImageUpdater updater = new ImageUpdater();
 	
 	/**
@@ -54,15 +43,12 @@ public class EditableVolume extends VoltexVolume {
 		yzComp = new ImageComponent2D[xDim];
 
 		updateData();
-
-		cm = getGreyColorModel();
-		
 		for(int z = 0; z < zDim; z++)
-			xyComp[z] = createImageComponent(xy[z], xTexSize, yTexSize);
+			xyComp[z] = createGreyComponent(xy[z], xTexSize, yTexSize);
 		for(int y = 0; y < yDim; y++)
-			xzComp[y] = createImageComponent(xz[y], xTexSize, zTexSize);
+			xzComp[y] = createGreyComponent(xz[y], xTexSize, zTexSize);
 		for(int x = 0; x < xDim; x++)
-			yzComp[x] = createImageComponent(yz[x], yTexSize, zTexSize);
+			yzComp[x] = createGreyComponent(yz[x], yTexSize, zTexSize);
 	}
 	
 	public ImageComponent2D getImageComponentZ(int index) {
@@ -99,27 +85,6 @@ public class EditableVolume extends VoltexVolume {
 			loadY(y, xz[y]);
 		for(int x = 0; x < xDim; x++)
 			loadX(x, yz[x]);
-	}
-
-	private ImageComponent2D createImageComponent(byte[] pix, int w, int h) {
-		DataBufferByte db = new DataBufferByte(pix, w * h, 0);
-		SampleModel smod = cm.createCompatibleSampleModel(w, h);
-		WritableRaster raster = Raster.createWritableRaster(smod, db, null);
-
-		BufferedImage bImage = new BufferedImage(cm, raster, false, null);
-		ImageComponent2D bComp = new ImageComponent2D(
-				ImageComponent.FORMAT_CHANNEL8, w, h, true, true);
-		bComp.setCapability(ImageComponent.ALLOW_IMAGE_WRITE);
-		bComp.set(bImage);
-		return bComp;
-	}
-
-	private static IndexColorModel getGreyColorModel() {
-		byte[] r = new byte[256], g = new byte[256], b = new byte[256];
-		for(int i = 0; i < 256; i++) {
-			r[i] = (byte)i;
-		}
-		return new IndexColorModel(8, 256, r, g, b);
 	}
 
 	private class ImageUpdater implements ImageComponent2D.Updater {

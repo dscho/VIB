@@ -1,13 +1,23 @@
 package voltex;
 
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
+import java.awt.image.IndexColorModel;
+import java.awt.image.Raster;
+import java.awt.image.SampleModel;
+import java.awt.image.WritableRaster;
 
 import ij.ImagePlus;
+import ij.process.ColorProcessor;
 import ij3d.Volume;
 import ij.IJ;
 
+import javax.media.j3d.ImageComponent;
 import javax.media.j3d.ImageComponent2D;
 import javax.vecmath.Point3d;
 
@@ -35,6 +45,12 @@ public class VoltexVolume extends Volume {
 
 	/** The particular loader which loads the actual data into the arrays */
 	protected Loader loader;
+
+	/** The ColorModel used for 8-bit textures */
+	protected static final ColorModel greyCM = createGreyColorModel();
+
+	/** The ColorModel used for RGB textures */
+	protected static final ColorModel rgbCM = createRGBColorModel();
 
 	/**
 	 * Initializes this Volume with the specified image.
@@ -177,6 +193,51 @@ public class VoltexVolume extends Volume {
 		loader.loadX(x, dst);
 	}
 	
+	protected ImageComponent2D createGreyComponent(byte[] pix, int w, int h) {
+		DataBufferByte db = new DataBufferByte(pix, w * h, 0);
+		SampleModel smod = greyCM.createCompatibleSampleModel(w, h);
+		WritableRaster raster = Raster.createWritableRaster(smod, db, null);
+
+		BufferedImage bImage = new BufferedImage(
+				greyCM, raster, false, null);
+		ImageComponent2D bComp = new ImageComponent2D(
+				ImageComponent.FORMAT_CHANNEL8, w, h, false, true);
+		bComp.setCapability(ImageComponent.ALLOW_IMAGE_WRITE);
+		bComp.set(bImage);
+		return bComp;
+	}
+
+	protected ImageComponent2D createColorComponent(byte[] pix, int w, int h) {
+		int[] bandOffset = { 0, 1, 2, 3 };
+
+		DataBufferByte db = new DataBufferByte(pix, w * h * 4, 0);
+		WritableRaster raster = Raster.createInterleavedRaster(
+						db, w, h, w * 4, 4, bandOffset, null);
+
+		BufferedImage bImage =  new BufferedImage(
+				rgbCM, raster, false, null);
+		ImageComponent2D bComp = new ImageComponent2D(
+				ImageComponent.FORMAT_RGBA, w, h, false, true);
+		bComp.setCapability(ImageComponent.ALLOW_IMAGE_WRITE);
+		bComp.set(bImage);
+		return bComp;
+	}
+
+	private static final ColorModel createGreyColorModel() {
+		byte[] r = new byte[256], g = new byte[256], b = new byte[256];
+		for(int i = 0; i < 256; i++)
+			r[i] = (byte)i;
+		return new IndexColorModel(8, 256, r, g, b);
+	}
+
+	private static final ColorModel createRGBColorModel() {
+		ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+		int[] nBits = { 8, 8, 8, 8 };
+		return new ComponentColorModel(
+				cs, nBits, true, false, BufferedImage.TRANSLUCENT,
+				DataBuffer.TYPE_BYTE);
+	}
+
 	/**
 	 * Abstract interface for the loader classes.
 	 */
@@ -188,7 +249,7 @@ public class VoltexVolume extends Volume {
 		ImageComponent2D getComponentY(int i);
 		ImageComponent2D getComponentX(int i);
 	}
-	
+
 	/*
 	 * This class loads bytes from byte data.
 	 */
@@ -198,42 +259,21 @@ public class VoltexVolume extends Volume {
 		}
 
 		public ImageComponent2D getComponentZ(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_CHANNEL8,
-					xTexSize, yTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(xTexSize, yTexSize,
-						BufferedImage.TYPE_BYTE_GRAY);
-			byte[] data = ((DataBufferByte)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[xTexSize * yTexSize];
 			loadZ(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createGreyComponent(data, xTexSize, yTexSize);
 		}
 
 		public ImageComponent2D getComponentY(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_CHANNEL8,
-					xTexSize, zTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(xTexSize, zTexSize,
-						BufferedImage.TYPE_BYTE_GRAY);
-			byte[] data = ((DataBufferByte)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[xTexSize * zTexSize];
 			loadY(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createGreyComponent(data, xTexSize, zTexSize);
 		}
 
 		public ImageComponent2D getComponentX(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_CHANNEL8,
-					yTexSize, zTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(yTexSize, zTexSize,
-						BufferedImage.TYPE_BYTE_GRAY);
-			byte[] data = ((DataBufferByte)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[yTexSize * zTexSize];
 			loadX(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createGreyComponent(data, yTexSize, zTexSize);
 		}
 
 		public void loadZ(int zValue, Object arr) {
@@ -242,8 +282,7 @@ public class VoltexVolume extends Volume {
 			for (int y=0; y < yDim; y++){
 				int offsSrc = y * xDim;
 				int offsDst = y * xTexSize;
-				System.arraycopy(
-					src, offsSrc, dst, offsDst, xDim);
+				System.arraycopy(src, offsSrc, dst, offsDst, xDim);
 			}
 		}
 
@@ -257,8 +296,7 @@ public class VoltexVolume extends Volume {
 				byte[] src = fData[z];
 				int offsSrc = yValue * xDim;
 				int offsDst = z * xTexSize;
-				System.arraycopy(
-					src, offsSrc, dst, offsDst, xDim);
+				System.arraycopy(src, offsSrc, dst, offsDst, xDim);
 			}
 		}
 
@@ -288,51 +326,40 @@ public class VoltexVolume extends Volume {
 		}
 
 		public ImageComponent2D getComponentZ(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_RGBA,
-					xTexSize, yTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(xTexSize, yTexSize,
-						BufferedImage.TYPE_INT_ARGB);
-			int[] data = ((DataBufferInt)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[xTexSize * yTexSize * 4];
 			loadZ(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createColorComponent(data, xTexSize, yTexSize);
 		}
 
 		public ImageComponent2D getComponentY(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_RGBA,
-					xTexSize, zTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(xTexSize, zTexSize,
-						BufferedImage.TYPE_INT_ARGB);
-			int[] data = ((DataBufferInt)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[xTexSize * zTexSize * 4];
 			loadY(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createColorComponent(data, xTexSize, zTexSize);
 		}
 
 		public ImageComponent2D getComponentX(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_RGBA,
-					yTexSize, zTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(yTexSize, zTexSize,
-						BufferedImage.TYPE_INT_ARGB);
-			int[] data = ((DataBufferInt)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[yTexSize * zTexSize * 4];
 			loadX(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createColorComponent(data, yTexSize, zTexSize);
 		}
 
 		public void loadZ(int zValue, Object arr) {
-			int[] dst = (int[])arr;
+			byte[] dst = (byte[])arr;
 			int[] src = fData[zValue];
 			for (int y=0; y < yDim; y++){
 				int offsSrc = y * xDim;
-				int offsDst = y * xTexSize;
-				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+				int offsDst = y * xTexSize * 4;
+				for(int x = 0; x < xDim; x++) {
+					int c = src[offsSrc + x];
+					int r = (c & 0xff0000) >> 16;
+					int g = (c & 0xff00) >> 8;
+					int b = c & 0xff;
+					int a = Math.min(255, r + g + b);
+					dst[offsDst++] = (byte)r;
+					dst[offsDst++] = (byte)g;
+					dst[offsDst++] = (byte)b;
+					dst[offsDst++] = (byte)a;
+				}
 			}
 		}
 
@@ -341,12 +368,22 @@ public class VoltexVolume extends Volume {
 		 * texture map is stored in x,z format (x changes fastest)
 		 */
 		public void loadY(int yValue, Object arr)  {
-			int[] dst = (int[])arr;
+			byte[] dst = (byte[])arr;
 			for (int z=0; z < zDim; z++){
 				int[] src = fData[z];
 				int offsSrc = yValue * xDim;
-				int offsDst = z * xTexSize;
-				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+				int offsDst = z * xTexSize * 4;
+				for(int x = 0; x < xDim; x++) {
+					int c = src[offsSrc + x];
+					int r = (c & 0xff0000) >> 16;
+					int g = (c & 0xff00) >> 8;
+					int b = c & 0xff;
+					int a = Math.min(255, r + g + b);
+					dst[offsDst++] = (byte)r;
+					dst[offsDst++] = (byte)g;
+					dst[offsDst++] = (byte)b;
+					dst[offsDst++] = (byte)a;
+				}
 			}
 		}
 
@@ -355,12 +392,20 @@ public class VoltexVolume extends Volume {
 		 * byteData in y,z order (y changes fastest)
 		 */
 		public void loadX(int xValue, Object arr)  {
-			int[] dst = (int[])arr;
+			byte[] dst = (byte[])arr;
 			for (int z=0; z < zDim; z++){
-				int offsDst = z * yTexSize;
+				int offsDst = z * yTexSize * 4;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;
-					dst[offsDst + y] = fData[z][offsSrc];
+					int c = fData[z][offsSrc];
+					int r = (c & 0xff0000) >> 16;
+					int g = (c & 0xff00) >> 8;
+					int b = c & 0xff;
+					int a = Math.min(255, r + g + b);
+					dst[offsDst++] = (byte)r;
+					dst[offsDst++] = (byte)g;
+					dst[offsDst++] = (byte)b;
+					dst[offsDst++] = (byte)a;
 				}
 			}
 		}
@@ -377,54 +422,41 @@ public class VoltexVolume extends Volume {
 		}
 
 		public ImageComponent2D getComponentZ(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_RGBA,
-					xTexSize, yTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(xTexSize, yTexSize,
-						BufferedImage.TYPE_INT_ARGB);
-			int[] data = ((DataBufferInt)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[xTexSize * yTexSize * 4];
 			loadZ(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createColorComponent(data, xTexSize, yTexSize);
 		}
 
 		public ImageComponent2D getComponentY(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_RGBA,
-					xTexSize, zTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(xTexSize, zTexSize,
-						BufferedImage.TYPE_INT_ARGB);
-			int[] data = ((DataBufferInt)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[xTexSize * zTexSize * 4];
 			loadY(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createColorComponent(data, xTexSize, zTexSize);
 		}
 
 		public ImageComponent2D getComponentX(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_RGBA,
-					yTexSize, zTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(yTexSize, zTexSize,
-						BufferedImage.TYPE_INT_ARGB);
-			int[] data = ((DataBufferInt)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[yTexSize * zTexSize * 4];
 			loadX(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createColorComponent(data, yTexSize, zTexSize);
 		}
 
 		public void loadZ(int zValue, Object arr) {
-			int[] dst = (int[])arr;
+			byte[] dst = (byte[])arr;
 			int[] src = fData[zValue];
 			for (int y=0; y < yDim; y++){
 				int offsSrc = y * xDim;
-				int offsDst = y * xTexSize;
-				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+				int offsDst = y * xTexSize * 4;
+				for (int x=0; x < xDim; x++){
+					int c = src[offsSrc + x];
+					int a = (c & 0xff000000) >> 24;
+					int r = (c & 0xff0000) >> 16;
+					int g = (c & 0xff00) >> 8;
+					int b = c & 0xff;
+					dst[offsDst++] = ch[0] ? (byte)r : 0;
+					dst[offsDst++] = ch[1] ? (byte)g : 0;
+					dst[offsDst++] = ch[2] ? (byte)b : 0;
+					dst[offsDst++] = (byte)a;
+				}
 			}
-			for(int i = 0; i < dst.length; i++)
-				dst[i] &= mask;
 		}
 
 		/* 
@@ -432,15 +464,23 @@ public class VoltexVolume extends Volume {
 		 * texture map is stored in x,z format (x changes fastest)
 		 */
 		public void loadY(int yValue, Object arr)  {
-			int[] dst = (int[])arr;
+			byte[] dst = (byte[])arr;
 			for (int z=0; z < zDim; z++){
 				int[] src = fData[z];
 				int offsSrc = yValue * xDim;
-				int offsDst = z * xTexSize;
-				System.arraycopy(src,offsSrc,dst,offsDst,xDim);
+				int offsDst = z * xTexSize * 4;
+				for (int x=0; x < xDim; x++){
+					int c = src[offsSrc + x];
+					int a = (c & 0xff000000) >> 24;
+					int r = (c & 0xff0000) >> 16;
+					int g = (c & 0xff00) >> 8;
+					int b = c & 0xff;
+					dst[offsDst++] = ch[0] ? (byte)r : 0;
+					dst[offsDst++] = ch[1] ? (byte)g : 0;
+					dst[offsDst++] = ch[2] ? (byte)b : 0;
+					dst[offsDst++] = (byte)a;
+				}
 			}
-			for(int i = 0; i < dst.length; i++)
-				dst[i] &= mask;
 		}
 
 		/* 
@@ -448,16 +488,22 @@ public class VoltexVolume extends Volume {
 		 * byteData in y,z order (y changes fastest)
 		 */
 		public void loadX(int xValue, Object arr)  {
-			int[] dst = (int[])arr;
+			byte[] dst = (byte[])arr;
 			for (int z=0; z < zDim; z++){
-				int offsDst = z * yTexSize;
+				int offsDst = z * yTexSize * 4;
 				for (int y=0; y < yDim; y++){
 					int offsSrc = y * xDim + xValue;
-					dst[offsDst + y] = fData[z][offsSrc];
+					int c = fData[z][offsSrc];
+					int a = (c & 0xff000000) >> 24;
+					int r = (c & 0xff0000) >> 16;
+					int g = (c & 0xff00) >> 8;
+					int b = c & 0xff;
+					dst[offsDst++] = ch[0] ? (byte)r : 0;
+					dst[offsDst++] = ch[1] ? (byte)g : 0;
+					dst[offsDst++] = ch[2] ? (byte)b : 0;
+					dst[offsDst++] = (byte)a;
 				}
 			}
-			for(int i = 0; i < dst.length; i++)
-				dst[i] &= mask;
 		}
 	}
 
@@ -471,42 +517,21 @@ public class VoltexVolume extends Volume {
 		}
 
 		public ImageComponent2D getComponentZ(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_CHANNEL8,
-					xTexSize, yTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(xTexSize, yTexSize,
-						BufferedImage.TYPE_BYTE_GRAY);
-			byte[] data = ((DataBufferByte)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[xTexSize * yTexSize];
 			loadZ(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createGreyComponent(data, xTexSize, yTexSize);
 		}
 
 		public ImageComponent2D getComponentY(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_CHANNEL8,
-					xTexSize, zTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(xTexSize, zTexSize,
-						BufferedImage.TYPE_BYTE_GRAY);
-			byte[] data = ((DataBufferByte)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[xTexSize * zTexSize];
 			loadY(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createGreyComponent(data, xTexSize, zTexSize);
 		}
 
 		public ImageComponent2D getComponentX(int i) {
-			ImageComponent2D pArray = new ImageComponent2D(
-					ImageComponent2D.FORMAT_CHANNEL8,
-					yTexSize, zTexSize, false, true);
-			BufferedImage bImage = new BufferedImage(yTexSize, zTexSize,
-						BufferedImage.TYPE_BYTE_GRAY);
-			byte[] data = ((DataBufferByte)bImage.getRaster()
-					.getDataBuffer()).getData();
+			byte[] data = new byte[yTexSize * zTexSize];
 			loadX(i, data);
-			pArray.set(bImage);
-			return pArray;
+			return createGreyComponent(data, yTexSize, zTexSize);
 		}
 
 		public void loadZ(int zValue, Object arr) {
