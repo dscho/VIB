@@ -1027,7 +1027,37 @@ public class FloatMatrix {
 			eps > (float)Math.abs(a21) &&
 			eps > (float)Math.abs(a23);
 	}
-	
+
+	public void copyToFlatDoubleArray( float [] result ) {
+		result[0] = a00;
+		result[1] = a01;
+		result[2] = a02;
+		result[3] = a03;
+		result[4] = a10;
+		result[5] = a11;
+		result[6] = a12;
+		result[7] = a13;
+		result[8] = a20;
+		result[9] = a21;
+		result[10] = a22;
+		result[11] = a23;
+	}
+
+	public void setFromFlatDoubleArray( float [] result ) {
+		a00 = result[0];
+		a01 = result[1];
+		a02 = result[2];
+		a03 = result[3];
+		a10 = result[4];
+		a11 = result[5];
+		a12 = result[6];
+		a13 = result[7];
+		a20 = result[8];
+		a21 = result[9];
+		a22 = result[10];
+		a23 = result[11];
+	}
+
 	public String resultToString() {
 		return "" + x + " " + y + " " + z;
 	}
