@@ -57,11 +57,9 @@ public class NamedPointWorld {
 		this.set = false;
 	}
 
-	public void transformWith(FastMatrix m) {
+	public NamedPointWorld transformWith( FastMatrix m ) {
 		m.apply(x,y,z);
-		x=m.x;
-		y=m.y;
-		z=m.z;
+		return new NamedPointWorld( name, m.x, m.y, m.z );
 	}
 
 	public NamedPointWorld transformWith(OrderedTransformations o) {
