@@ -51,6 +51,8 @@ public class Overlay_Registered implements PlugIn {
 		float [] range0 = getValuesRange(a);
 		float [] range1 = getValuesRange(b);
 
+		// FIXME: this does change the original images to GRAY_8, so this isn't ideal.
+
 		a.getProcessor().setMinAndMax(range0[0],range0[1]);
 		StackConverter converter=new StackConverter(a);
 		converter.convertToGray8();
