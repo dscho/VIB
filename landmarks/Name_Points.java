@@ -51,6 +51,10 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	Button[] renameButtons;
 	Button[] deleteButtons;
 
+	Button registerRigid;
+	Button registerAffine;
+	Button registerBookstein;
+
 	HashMap< Button, Integer > buttonToAction;
 	HashMap< Button, Integer > buttonToIndex;
 
@@ -65,6 +69,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	Panel pointsPanel;
 	Panel buttonsPanel;
 	Panel templatePanel;
+	Panel registrationPanel;
 	Panel optionsPanel;
 	Checkbox tryManyRotations;
 
@@ -279,12 +284,27 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		outerc.fill = GridBagConstraints.NONE;
 		add(templatePanel,outerc);
 
-		optionsPanel = new Panel();
-		tryManyRotations=new Checkbox(" Try 24 initial starting rotations?",true);
-		// For the moment, don't add this:
-		// optionsPanel.add(tryManyRotations);
+		registrationPanel = new Panel();
+		registrationPanel.setLayout( new GridBagLayout() );
+		GridBagConstraints rc = new GridBagConstraints();
+		rc.gridx = 0;
+		rc.gridy = 0;
+		registrationPanel.add( new Label("Register to template based on common points:"), rc );
+		registerRigid = new Button( "Best Rigid Registration" );
+		registerAffine = new Button( "Affine Registration From Best 4 Points" );
+		registerBookstein = new Button( "Thin-Plate Spline Registration" );
+		++ rc.gridx;
+		registrationPanel.add( registerRigid, rc );
+		registerRigid.addActionListener( this );
+		++ rc.gridx;
+		registrationPanel.add( registerAffine, rc );
+		registerAffine.addActionListener( this );
+		++ rc.gridx;
+		registrationPanel.add( registerBookstein, rc );
+		registerBookstein.addActionListener( this );
+
 		outerc.gridy = 4;
-		add(optionsPanel,outerc);
+		add(registrationPanel,outerc);
 
 		pack();
 		setVisible(true);
@@ -420,6 +440,12 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			plugin.useTemplate( null );
 			templateFileName.setText("[None chosen]");
 			pack();
+		} else if( source == registerRigid ) {
+			plugin.doRigid();
+		} else if( source == registerAffine ) {
+			plugin.doAffine();
+		} else if( source == registerBookstein ) {
+			plugin.doBookstein();
 		}
 	}
 
@@ -576,19 +602,8 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		if( dialog != null )
 			dialog.setFineTuning(true);
 
-		// If the templateImage hasn't already been loaded, load it now:
-		if( templateImage == null ) {
-			File templateImageFile = new File( templateImageFilename );
-			if( ! templateImageFile.exists() ) {
-				IJ.error("The template file ('"+templateImageFile.getAbsolutePath()+"') does not exist");
-				return false;
-			}
-			templateImage = BatchOpener.openFirstChannel(templateImageFile.getAbsolutePath());
-			if( templateImage == null ) {
-				IJ.error( "Couldn't load the template image from: " + templateImageFilename );
-				return false;
-			}
-		}
+		if( ! loadTemplateImage() )
+			return false;
 
 		int templateWidth = templateImage.getWidth();
 		int templateHeight = templateImage.getHeight();
@@ -906,6 +921,23 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			}
 		}
 
+		return true;
+	}
+
+	boolean loadTemplateImage( ) {
+		// If the templateImage hasn't already been loaded, load it now:
+		if( templateImage == null ) {
+			File templateImageFile = new File( templateImageFilename );
+			if( ! templateImageFile.exists() ) {
+				IJ.error("The template file ('"+templateImageFile.getAbsolutePath()+"') does not exist");
+				return false;
+			}
+			templateImage = BatchOpener.openFirstChannel(templateImageFile.getAbsolutePath());
+			if( templateImage == null ) {
+				IJ.error( "Couldn't load the template image from: " + templateImageFilename );
+				return false;
+			}
+		}
 		return true;
 	}
 
@@ -1996,5 +2028,44 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 				}
 			}
 		}
+	}
+
+	public void doRigid() {
+		if( templatePoints == null ) {
+			IJ.error("You must have a template file loaded in order to perform register the images");
+			return;
+		}
+		if( ! loadTemplateImage() )
+			return;
+		Rigid_From_Landmarks r = new Rigid_From_Landmarks();
+		r.setImages( templateImage, imp );
+		ImagePlus transformed = r.register();
+		transformed.show();
+	}
+
+	public void doAffine() {
+		if( templatePoints == null ) {
+			IJ.error("You must have a template file loaded in order to perform register the images");
+			return;
+		}
+		if( ! loadTemplateImage() )
+			return;
+		Affine_From_Landmarks r = new Affine_From_Landmarks();
+		r.setImages( templateImage, imp );
+		ImagePlus transformed = r.register();
+		transformed.show();
+	}
+
+	public void doBookstein() {
+		if( templatePoints == null ) {
+			IJ.error("You must have a template file loaded in order to perform register the images");
+			return;
+		}
+		if( ! loadTemplateImage() )
+			return;
+		Bookstein_From_Landmarks r = new Bookstein_From_Landmarks();
+		r.setImages( templateImage, imp );
+		ImagePlus transformed = r.register();
+		transformed.show();
 	}
 }
