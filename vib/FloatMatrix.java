@@ -680,6 +680,8 @@ public class FloatMatrix {
 	public static FloatMatrix bestLinear(Point3d[] x, Point3d[] y) {
 		if (x.length != y.length)
 			throw new RuntimeException("different lengths");
+		if (x.length != 4 )
+			throw new RuntimeException("The arrays passed to bestLinear must be of length 4");
 		
 		float[][] a = new float[4][4];
 		float[][] b = new float[4][4];
@@ -1011,6 +1013,23 @@ public class FloatMatrix {
 	
 	final public boolean isIdentity() {
 		return isIdentity((float)1e-10);
+	}
+
+	final public boolean equals( FloatMatrix other ) {
+		float eps = (float)1e-10;
+		return eps > (float)Math.abs( a00 - other.a00 ) &&
+			eps > (float)Math.abs( a01 - other.a01 ) &&
+			eps > (float)Math.abs( a02 - other.a02 ) &&
+			eps > (float)Math.abs( a03 - other.a03 ) &&
+			eps > (float)Math.abs( a10 - other.a10 ) &&
+			eps > (float)Math.abs( a11 - other.a11 ) &&
+			eps > (float)Math.abs( a12 - other.a12 ) &&
+			eps > (float)Math.abs( a13 - other.a13 ) &&
+			eps > (float)Math.abs( a20 - other.a20 ) &&
+			eps > (float)Math.abs( a21 - other.a21 ) &&
+			eps > (float)Math.abs( a22 - other.a22 ) &&
+			eps > (float)Math.abs( a23 - other.a23 );
+
 	}
 	
 	final public boolean isIdentity(float eps) {
