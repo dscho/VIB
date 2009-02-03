@@ -60,6 +60,8 @@ public abstract class RegistrationAlgorithm {
 	}
 
 	public void setImages( ImagePlus template, ImagePlus domain ) {
+		if( sourceImages == null )
+			sourceImages = new ImagePlus[2];
 		sourceImages[0] = template;
 		sourceImages[1] = domain;
 		invalidateTransformation();
