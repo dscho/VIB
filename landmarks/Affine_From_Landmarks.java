@@ -79,13 +79,10 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                                 (p1_transformed[2] - p0.z) * (p1_transformed[2] - p0.z)
                                 );
 
-                        // Obviously we don't need to do the square
-                        // root, but it's useful to have for debugging...
-
                         sum_squared_differences += distance * distance;
                 }
 
-                return Math.sqrt(sum_squared_differences/common.size());
+                return sum_squared_differences / common.size();
 
         }
 

@@ -7,6 +7,7 @@ import ij.process.*;
 import ij.gui.*;
 import ij.plugin.*;
 import ij.plugin.filter.*;
+import ij.measure.Calibration;
 import vib.TransformedImage;
 
 import java.util.ArrayList;
@@ -67,6 +68,20 @@ public class Overlay_Registered implements PlugIn {
 			b.getStack(),
 			a.getStack(),
 			true);
+
+		Calibration ca = a.getCalibration();
+		Calibration cb = b.getCalibration();
+		if( ca == null && cb == null ) {
+			// Then that's fine...
+		} else if( ca != null ) {
+			if( ! ca.equals( cb ) ) {
+				IJ.error("The calibrations of the two images differ");
+				return null;
+			}
+		} else {
+			IJ.error("Calibration is set in one image but not the other.");
+			return null;
+		}
 
 		return merged;
 	}
