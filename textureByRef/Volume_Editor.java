@@ -3,6 +3,9 @@ package textureByRef;
 import javax.media.j3d.View;
 import javax.vecmath.Tuple3d;
 
+import voltex.VoltexVolume;
+import voltex.VolumeRenderer;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
@@ -15,22 +18,22 @@ import ij3d.Image3DUniverse;
 public class Volume_Editor implements PlugInFilter {
 	
 	private ImagePlus image;
-	private EditableVolumeRenderer renderer;
-	private EditableVolume volume;
+	private VolumeRenderer renderer;
+	private VoltexVolume volume;
 	private ContentNode customNode;
 	
 	public static void main(String[] args) {
 		new ij.ImageJ();
-		ImagePlus imp = NewImage.createByteImage(
+		ImagePlus imp = NewImage.createRGBImage(
 				"Edit volume", 250, 233, 57, NewImage.FILL_BLACK);
 		imp.show();
 		Volume_Editor vol = (Volume_Editor)IJ.
 				runPlugIn("textureByRef.Volume_Editor", "");
-		EditableVolume volume = vol.getVolume();
+		VoltexVolume volume = vol.getVolume();
 		drawSpiral(volume, 128, 128);
 	}
 	
-	public static void drawSpiral(EditableVolume v, float cx, float cy) {
+	public static void drawSpiral(VoltexVolume v, float cx, float cy) {
 		final int circles = 3;
 		final int dzPerCircle = 19;
 		final int drPerCircle = 40;
@@ -48,7 +51,7 @@ public class Volume_Editor implements PlugInFilter {
 		final float drPerStep = (float)drPerCircle / stepsPerCircle;
 
 		for(int s = 0; s < steps; s++) {
-			v.set(Math.round(x), Math.round(y), Math.round(z), 255);
+			v.set(Math.round(x), Math.round(y), Math.round(z), 0xffff0000);
 			a += daPerStep;
 			r += drPerStep;
 			x = (float)(cx + r * Math.cos(a));
@@ -62,12 +65,13 @@ public class Volume_Editor implements PlugInFilter {
 		}
 	}
 	
-	public EditableVolume getVolume() {
+	public VoltexVolume getVolume() {
 		return volume;
 	}
 
 	public void run(ImageProcessor arg0) {
-		renderer = new EditableVolumeRenderer(image);
+		renderer = new VolumeRenderer(image,
+				null, 0f, new boolean[] {true, true, true});
 		renderer.fullReload();
 		volume = renderer.getVolume();
 		customNode = new MyNode(volume);
@@ -80,14 +84,14 @@ public class Volume_Editor implements PlugInFilter {
 
 	public int setup(String arg0, ImagePlus arg1) {
 		this.image = arg1;
-		return DOES_8G;
+		return DOES_8G | DOES_RGB;
 	}
 	
 	private class MyNode extends ContentNode {
 		
-		private EditableVolume volume;
+		private VoltexVolume volume;
 		
-		public MyNode(EditableVolume volume) {
+		public MyNode(VoltexVolume volume) {
 			this.volume = volume;
 			addChild(renderer.getVolumeNode());
 		}

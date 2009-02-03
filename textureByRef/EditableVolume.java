@@ -42,13 +42,13 @@ public class EditableVolume extends VoltexVolume {
 		xzComp = new ImageComponent2D[yDim];
 		yzComp = new ImageComponent2D[xDim];
 
-		updateData();
-		for(int z = 0; z < zDim; z++)
-			xyComp[z] = createGreyComponent(xy[z], xTexSize, yTexSize);
-		for(int y = 0; y < yDim; y++)
-			xzComp[y] = createGreyComponent(xz[y], xTexSize, zTexSize);
-		for(int x = 0; x < xDim; x++)
-			yzComp[x] = createGreyComponent(yz[x], yTexSize, zTexSize);
+//		updateData();
+//		for(int z = 0; z < zDim; z++)
+//			xyComp[z] = createGreyComponent(xy[z], xTexSize, yTexSize);
+//		for(int y = 0; y < yDim; y++)
+//			xzComp[y] = createGreyComponent(xz[y], xTexSize, zTexSize);
+//		for(int x = 0; x < xDim; x++)
+//			yzComp[x] = createGreyComponent(yz[x], yTexSize, zTexSize);
 	}
 	
 	public ImageComponent2D getImageComponentZ(int index) {
@@ -78,14 +78,14 @@ public class EditableVolume extends VoltexVolume {
 			setNoCheck(x, y, z, v);
 	}
 	
-	void updateData() {
-		for(int z = 0; z < zDim; z++)
-			loadZ(z, xy[z]);
-		for(int y = 0; y < yDim; y++)
-			loadY(y, xz[y]);
-		for(int x = 0; x < xDim; x++)
-			loadX(x, yz[x]);
-	}
+//	void updateData() {
+//		for(int z = 0; z < zDim; z++)
+//			loadZ(z, xy[z]);
+//		for(int y = 0; y < yDim; y++)
+//			loadY(y, xz[y]);
+//		for(int x = 0; x < xDim; x++)
+//			loadX(x, yz[x]);
+//	}
 
 	private class ImageUpdater implements ImageComponent2D.Updater {
 		public void updateData(ImageComponent2D comp, int x, int y, int w, int h) {
