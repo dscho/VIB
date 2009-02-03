@@ -220,6 +220,8 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 			saveButton = new Button("Save");
 			saveButton.addActionListener(this);
+			loadButton = new Button("Load");
+			loadButton.addActionListener(this);
 			igsSaveButton = new Button("Export to IGS");
 			igsSaveButton.addActionListener(this);
 			resetButton = new Button("Reset All");
@@ -228,6 +230,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			closeButton.addActionListener(this);
 
 			buttonsPanel.add(saveButton);
+			buttonsPanel.add(loadButton);
 			buttonsPanel.add(igsSaveButton);
 			buttonsPanel.add(resetButton);
 			buttonsPanel.add(closeButton);
@@ -288,6 +291,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 	}
 
 	Button saveButton;
+	Button loadButton;
 	Button igsSaveButton;
 	Button resetButton;
 	Button closeButton;
@@ -379,6 +383,8 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			dispose();
 		} else if (source == saveButton) {
 			plugin.save(".points");
+		} else if (source == loadButton) {
+			plugin.load();
 		} else if (source == igsSaveButton) {
 			plugin.save(".landmarks");
 		} else if (source == resetButton) {
@@ -1748,6 +1754,49 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 					   archiveClient,
 					   loadedTemplate ? templateParameter : null,
 					   this );
+	}
+
+
+	public void load() {
+
+		OpenDialog od;
+
+		FileInfo info = imp.getOriginalFileInfo();
+		String fileName, url, directory;
+		if( info == null ) {
+			fileName = null;
+			url = null;
+			directory = null;
+		} else {
+			fileName = info.fileName;
+			url = info.url;
+			directory = info.directory;
+		}
+
+		String openTitle = "Select points file...";
+
+		if( directory == null )
+			od = new OpenDialog( openTitle, null );
+		else
+			od = new OpenDialog( openTitle, directory, null );
+		if( od.getFileName() == null )
+			return;
+		else {
+			File f = new File( od.getDirectory(), od.getFileName() );
+			NamedPointSet newNamedPoints = null;
+			try {
+				newNamedPoints = NamedPointSet.fromFile( f.getAbsolutePath() );
+			} catch( NamedPointSet.PointsFileException pfe ) {
+				IJ.error( "Failed to load points file: "+pfe );
+			}
+			if( newNamedPoints == null )
+				return;
+			else {
+				points = newNamedPoints;
+				dialog.recreatePointsPanel();
+				dialog.pack();
+			}
+		}
 	}
 
 	public boolean loadAtStart() {
