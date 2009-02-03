@@ -27,9 +27,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.io.*;
 
-
 import amira.AmiraParameters;
-
 
 import ij.*;
 import ij.io.*;
@@ -37,9 +35,7 @@ import ij.process.ColorProcessor;
 
 import ij.gui.*;
 
-
 import ij.plugin.PlugIn;
-
 
 import landmarks.Bookstein_From_Landmarks;
 
@@ -47,6 +43,7 @@ import vib.transforms.OrderedTransformations;
 
 import util.BatchOpener;
 import util.FileAndChannel;
+import vib.oldregistration.RegistrationAlgorithm;
 
 public class CreateTracingVolume_ implements PlugIn {
 	
@@ -93,7 +90,7 @@ public class CreateTracingVolume_ implements PlugIn {
 		
                 Bookstein_From_Landmarks matcher=new Bookstein_From_Landmarks();
                 matcher.loadImages(standardBrainFC,realImageFC);
-                OrderedTransformations transformation=matcher.register();
+		matcher.generateTransformation();
 		
                 ImageStack realImageStack=matcher.getDomain().getStack();
 		
@@ -177,7 +174,7 @@ public class CreateTracingVolume_ implements PlugIn {
 			}
 		}
 		
-		double [] transformedPoint = new double[3];
+		RegistrationAlgorithm.ImagePoint imagePoint = new RegistrationAlgorithm.ImagePoint();
 		
 		if( allPaths != null ) {
 			// if (verbose) System.out.println("Have some allPaths paths to draw.");
@@ -197,11 +194,11 @@ public class CreateTracingVolume_ implements PlugIn {
 					int y_in_domain = p.getYUnscaled(k);
 					int z_in_domain = p.getZUnscaled(k);
 					
-					transformation.apply(x_in_domain,y_in_domain,z_in_domain,transformedPoint);
+					matcher.transformDomainToTemplate( x_in_domain, y_in_domain, z_in_domain, imagePoint );
 					
-					int x_in_template=(int)transformedPoint[0];
-					int y_in_template=(int)transformedPoint[1];
-					int z_in_template=(int)transformedPoint[2];
+					int x_in_template=imagePoint.x;
+					int y_in_template=imagePoint.y;
+					int z_in_template=imagePoint.z;
 					
 					if( (last_x_in_template >= 0) &&
 					    (last_y_in_template >= 0) &&

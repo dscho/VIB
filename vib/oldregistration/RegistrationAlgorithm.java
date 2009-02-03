@@ -8,6 +8,7 @@ import ij.WindowManager;
 
 import util.BatchOpener;
 import util.FileAndChannel;
+import math3d.Point3d;
 
 public abstract class RegistrationAlgorithm {
 	
@@ -31,16 +32,61 @@ public abstract class RegistrationAlgorithm {
 	public ImagePlus getFloating() {
 		return sourceImages[1];
 	}
-	
+
 	public void loadImages( FileAndChannel f0, FileAndChannel f1 ) {
 		
 		ImagePlus[] f0imps=BatchOpener.open(f0.getPath());
 		ImagePlus[] f1imps=BatchOpener.open(f1.getPath());
-		
+
 		sourceImages=new ImagePlus[2];
 		
 		sourceImages[0]=f0imps[f0.getChannelZeroIndexed()];
 		sourceImages[1]=f1imps[f1.getChannelZeroIndexed()];
+		invalidateTransformation();
+	}
+
+	boolean validTransformation = false;
+
+	public void invalidateTransformation( ) {
+		validTransformation = false;
+	}
+
+	public void validateTransformation( ) {
+		validTransformation = true;
+	}
+
+	public boolean isTransformationValid( ) {
+		return validTransformation;
+	}
+
+	public void setImages( ImagePlus template, ImagePlus domain ) {
+		sourceImages[0] = template;
+		sourceImages[1] = domain;
+		invalidateTransformation();
+	}
+
+	public void generateTransformation( ) {
+		throw new RuntimeException( "generateTransformation() not implemented for this objects of this class ("+this.getClass()+")" );
+	}
+
+	public static class ImagePoint {
+		public int x, y, z;
+	}
+
+	public void transformDomainToTemplate( int x, int y, int z, ImagePoint result ) {
+		throw new RuntimeException( "transformDomainToTemplate() not implemented for this objects of this class ("+this.getClass()+")" );
+	}
+
+	public void transformDomainToTemplateWorld( double x, double y, double z, Point3d result ) {
+		throw new RuntimeException( "transformDomainToTemplateWorld() not implemented for this objects of this class ("+this.getClass()+")" );		
+	}
+
+	public void transformTemplateToDomain( int x, int y, int z, ImagePoint result ) {
+		throw new RuntimeException( "transformTemplateToDomain() not implemented for this objects of this class ("+this.getClass()+")" );
+	}
+
+	public void transformTemplateToDomainWorld( double x, double y, double z, Point3d result ) {
+		throw new RuntimeException( "transformTemplateToDomainWorld() not implemented for this objects of this class ("+this.getClass()+")" );		
 	}
 
 }

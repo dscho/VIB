@@ -20,6 +20,7 @@ import ij.plugin.PlugIn;
 import landmarks.Bookstein_From_Landmarks;
 
 import vib.transforms.OrderedTransformations;
+import vib.oldregistration.RegistrationAlgorithm;
 
 import util.FileAndChannel;
 import util.BatchOpener;
@@ -123,7 +124,7 @@ public class AnalyzeTracings_ implements PlugIn {
 		
 		Bookstein_From_Landmarks matcher=new Bookstein_From_Landmarks();
 		matcher.loadImages(standardBrainFC,fc);
-		OrderedTransformations transformation=matcher.register();
+		matcher.generateTransformation();
 		
 		ImagePlus labels;
 		{
@@ -171,6 +172,8 @@ public class AnalyzeTracings_ implements PlugIn {
 		ArrayList< GraphNode > endPoints = new ArrayList< GraphNode >();
 		ArrayList< GraphNode > allNodes = new ArrayList< GraphNode >();
 		
+		RegistrationAlgorithm.ImagePoint imagePoint = new RegistrationAlgorithm.ImagePoint();
+
 		int paths = allPaths.size();
 		// System.out.println("Paths to draw: "+paths);
 		for( int i = 0; i < paths; ++i ) {
@@ -181,12 +184,12 @@ public class AnalyzeTracings_ implements PlugIn {
 				int x_in_domain = path.getXUnscaled(k);
 				int y_in_domain = path.getYUnscaled(k);
 				int z_in_domain = path.getZUnscaled(k);
-				
-				transformation.apply(x_in_domain,y_in_domain,z_in_domain,transformedPoint);
-				
-				int x_in_template=(int)transformedPoint[0];
-				int y_in_template=(int)transformedPoint[1];
-				int z_in_template=(int)transformedPoint[2];
+
+				matcher.transformDomainToTemplate( x_in_domain, y_in_domain, z_in_domain, imagePoint );
+
+				int x_in_template=imagePoint.x;
+				int y_in_template=imagePoint.y;
+				int z_in_template=imagePoint.z;
 				
 				int label_value=label_data[z_in_template][y_in_template*templateWidth+x_in_template]&0xFF;
 				

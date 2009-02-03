@@ -27,127 +27,8 @@ import vib.oldregistration.RegistrationAlgorithm;
 
 import util.Overlay_Registered;
 
-// FIXME: TOREMOVE
-import vib.transforms.OrderedTransformations;
-import vib.transforms.FastMatrixTransform;
-import vib.transforms.BooksteinTransform;
-
-
 public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements PlugIn {
 
-        OrderedTransformations transformation;
-
-        OrderedTransformations getTransformation( ) {
-                return transformation;
-        }
-
-        public ImagePlus produceOverlayed( ) {
-                transformation=register();
-                return transformation.createNewImage(sourceImages[0],sourceImages[1],true);
-        }
-
-        public ImagePlus produceMapped( ) {
-                transformation=register();
-                return transformation.createNewImageSingle(sourceImages[0],sourceImages[1],true);
-        }
-
-        public ImagePlus produceMappedRanges( int xmin, int xmax,
-                                               int ymin, int ymax,
-                                               int zmin, int zmax ) {
-                transformation=register();
-                return transformation.createNewImageSingle( sourceImages[1],
-                                                            xmin, xmax,
-                                                            ymin, ymax,
-                                                            zmin, zmax );
-        }
-
-        public OrderedTransformations register() {
-
-                if(transformation!=null)
-                        return transformation;
-
-                FastMatrixTransform toCorrectAspect0 = new FastMatrixTransform(FastMatrix.fromCalibration(sourceImages[0]));
-                FastMatrixTransform fromCorrectAspect0=toCorrectAspect0.inverse();
-
-                FastMatrixTransform toCorrectAspect1 = new FastMatrixTransform(FastMatrix.fromCalibration(sourceImages[1]));
-                FastMatrixTransform fromCorrectAspect1=toCorrectAspect1.inverse();
-
-                NamedPointSet points0 = null;
-                NamedPointSet points1 = null;
-
-		try {
-			points0 = NamedPointSet.forImage(sourceImages[0]);
-		} catch( NamedPointSet.PointsFileException e ) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[0].getTitle()+"\"");
-                        System.out.println("for 0 in Bookstein_From_Landmarks.register()");
-                        return null;
-                }
-
-		try {
-			points1 =  NamedPointSet.forImage(sourceImages[1]);
-		} catch( NamedPointSet.PointsFileException e ) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[1].getTitle()+"\"");
-                        System.out.println("for 1 in Bookstein_From_Landmarks.register()");
-                        return null;
-                }
-
-                ArrayList<String> commonPointNames = points0.namesSharedWith( points1, true );
-
-                Point3d[] domainPoints=new Point3d[commonPointNames.size()];
-                Point3d[] templatePoints=new Point3d[commonPointNames.size()];
-
-                int i_index=0;
-                for (Iterator i=commonPointNames.listIterator();i.hasNext();) {
-
-                        String s = (String)i.next();
-
-                        // System.out.println("Point "+i_index+" is: "+s);
-
-			// FIXME: now these NamedPoint are all in world coordinates
-
-                        NamedPointWorld p0 = null;
-                        NamedPointWorld p1 = null;
-
-                        for (Iterator i0=points0.listIterator();i0.hasNext();) {
-                                NamedPointWorld current=(NamedPointWorld)i0.next();
-                                if (s.equals(current.getName())) {
-                                        Point3d p=new Point3d(current.x,
-                                                              current.y,
-                                                              current.z);
-                                        templatePoints[i_index]=p;
-                                        break;
-                                }
-                        }
-
-                        for (Iterator i1=points1.listIterator();i1.hasNext();) {
-                                NamedPointWorld current=(NamedPointWorld)i1.next();
-                                if (s.equals(current.getName())) {
-                                        Point3d p=new Point3d(current.x,
-                                                              current.y,
-                                                              current.z);
-                                        domainPoints[i_index]=p;
-                                        break;
-                                }
-                        }
-
-                        ++i_index;
-                }
-
-                BooksteinTransform b=new BooksteinTransform(domainPoints,templatePoints);
-
-                transformation=new OrderedTransformations();
-
-                transformation.addLast(toCorrectAspect1);
-                transformation.addLast(b);
-                transformation.addLast(fromCorrectAspect0);
-
-                // System.out.println("Found transformation:\n"+transformation);
-                OrderedTransformations inverted=transformation.inverse();
-
-                return transformation;
-        }
 
         public void run(String arg) {
 
@@ -188,7 +69,7 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                 sourceImages[0] = WindowManager.getImage(wList[index[0]]);
                 sourceImages[1] = WindowManager.getImage(wList[index[1]]);
 
-		ImagePlus transformed = newRegister();
+		ImagePlus transformed = register();
 
 		if( overlayResult ) {
 			ImagePlus merged = Overlay_Registered.overlayToImagePlus( sourceImages[0], transformed );
@@ -196,18 +77,36 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
 			merged.show();
 		} else
 			transformed.show();
-
-
-		/*
-                System.out.println("REMOVEME: about to register");
-                transformation=register();
-                System.out.println("REMOVEME: found registration, now producing image.");
-                ImagePlus newImage=transformation.createNewImage(sourceImages[0],sourceImages[1],true);
-                newImage.show();
-		*/
         }
 
-	public ImagePlus newRegister() {
+	double xSpacingTemplate;
+	double xSpacingDomain;
+	double ySpacingTemplate;
+	double ySpacingDomain;
+	double zSpacingTemplate;
+	double zSpacingDomain;
+
+	int templateWidth;
+	int templateHeight;
+	int templateDepth;
+
+	int domainWidth;
+	int domainHeight;
+	int domainDepth;
+
+	Bookstein templateToDomain;
+	Bookstein domainToTemplate;
+
+	Calibration templateCalibration;
+	Calibration domainCalibration;
+
+	public void generateTransformation( ) {
+		if( sourceImages == null )
+			throw new RuntimeException( "Bookstein_From_Landmarks: The source images must be set before calling generateTransformation()");
+		if( sourceImages[0] == null )
+			throw new RuntimeException( "Bookstein_From_Landmarks: The template image is null in generateTransformation()");
+		if( sourceImages[1] == null )
+			throw new RuntimeException( "Bookstein_From_Landmarks: The image to transform is null in generateTransformation()");
 
                 NamedPointSet points0 = null;
                 NamedPointSet points1 = null;
@@ -215,19 +114,15 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
 		try {
 			points0 = NamedPointSet.forImage(sourceImages[0]);
 		} catch( NamedPointSet.PointsFileException e ) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[0].getTitle()+"\"");
-                        System.out.println("for 0 in Bookstein_From_Landmarks.register()");
-                        return null;
+                        throw new RuntimeException( "No corresponding .points file found "+
+						    "for image: \""+sourceImages[0].getTitle()+"\"" );
                 }
 
 		try {
 			points1 =  NamedPointSet.forImage(sourceImages[1]);
 		} catch( NamedPointSet.PointsFileException e ) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[1].getTitle()+"\"");
-                        System.out.println("for 1 in Bookstein_From_Landmarks.register()");
-                        return null;
+                        throw new RuntimeException( "No corresponding .points file found "+
+						    "for image: \""+sourceImages[1].getTitle()+"\"" );
                 }
 
                 ArrayList<String> commonPointNames = points0.namesSharedWith( points1, true );
@@ -262,48 +157,119 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                         ++i_index;
                 }
 
-		Bookstein b = new Bookstein( templatePoints, domainPoints );
+		templateToDomain = new Bookstein( templatePoints, domainPoints );
 
 		ImagePlus template = sourceImages[0];
 		ImagePlus domain = sourceImages[1];
 
-		double xSpacingTemplate = 1;
-		double ySpacingTemplate = 1;
-		double zSpacingTemplate = 1;
-		Calibration templateCalibration = template.getCalibration();
+		xSpacingTemplate = 1;
+		ySpacingTemplate = 1;
+		zSpacingTemplate = 1;
+		templateCalibration = template.getCalibration();
 		if( templateCalibration != null ) {
 			xSpacingTemplate = templateCalibration.pixelWidth;
 			ySpacingTemplate = templateCalibration.pixelHeight;
 			zSpacingTemplate = templateCalibration.pixelDepth;
 		}
 
-		double xSpacingDomain = 1;
-		double ySpacingDomain = 1;
-		double zSpacingDomain = 1;
-		Calibration domainCalibration = domain.getCalibration();
+		xSpacingDomain = 1;
+		ySpacingDomain = 1;
+		zSpacingDomain = 1;
+		domainCalibration = domain.getCalibration();
 		if( domainCalibration != null ) {
 			xSpacingDomain = domainCalibration.pixelWidth;
 			ySpacingDomain = domainCalibration.pixelHeight;
 			zSpacingDomain = domainCalibration.pixelDepth;
 		}
 
-		int templateWidth = template.getWidth();
-		int templateHeight = template.getHeight();
-		int templateDepth = template.getStackSize();
+		templateWidth = template.getWidth();
+		templateHeight = template.getHeight();
+		templateDepth = template.getStackSize();
 
-		int domainWidth = domain.getWidth();
-		int domainHeight = domain.getHeight();
-		int domainDepth = domain.getStackSize();
+		domainWidth = domain.getWidth();
+		domainHeight = domain.getHeight();
+		domainDepth = domain.getStackSize();
+
+		validateTransformation();
+	}
+
+	/* We really don't want to have to construct a new Point3d
+	   each time we transform a point; obviously this will all go
+	   horribly wrong if you're using this from multiple threads. */
+
+	Point3d p = new Point3d();
+
+	public void transformTemplateToDomainWorld( double x, double y, double z, Point3d result ) {
+		if( ! isTransformationValid() )
+			throw new RuntimeException( "Trying to use Bookstein_From_Landmarks.transformWorld() with an invalid transformation." );
+		p.x = x; p.y = y; p.z = z;
+		templateToDomain.apply( p );
+		result.x = templateToDomain.x;
+		result.y = templateToDomain.y;
+		result.z = templateToDomain.z;
+	}
+
+	public void transformTemplateToDomain( int x, int y, int z, RegistrationAlgorithm.ImagePoint result ) {
+		if( ! isTransformationValid() )
+			throw new RuntimeException( "Trying to use Bookstein_From_Landmarks.transform() with an invalid transformation." );
+
+		p.x = x * xSpacingTemplate;
+		p.y = y * ySpacingTemplate;
+		p.z = z * zSpacingTemplate;
+
+		templateToDomain.apply( p );
+
+		double dxd = templateToDomain.x / xSpacingDomain;
+		double dyd = templateToDomain.y / ySpacingDomain;
+		double dzd = templateToDomain.z / zSpacingDomain;
+
+		result.x = (int)Math.round( dxd );
+		result.y = (int)Math.round( dyd );
+		result.z = (int)Math.round( dzd );
+	}
+
+	public void transformDomainToTemplateWorld( double x, double y, double z, Point3d result ) {
+		if( ! isTransformationValid() )
+			throw new RuntimeException( "Trying to use Bookstein_From_Landmarks.transformWorld() with an invalid transformation." );
+		p.x = x; p.y = y; p.z = z;
+		domainToTemplate.apply( p );
+		result.x = domainToTemplate.x;
+		result.y = domainToTemplate.y;
+		result.z = domainToTemplate.z;
+	}
+
+	public void transformDomainToTemplate( int x, int y, int z, RegistrationAlgorithm.ImagePoint result ) {
+		if( ! isTransformationValid() )
+			throw new RuntimeException( "Trying to use Bookstein_From_Landmarks.transform() with an invalid transformation." );
+
+		p.x = x * xSpacingDomain;
+		p.y = y * ySpacingDomain;
+		p.z = z * zSpacingDomain;
+
+		domainToTemplate.apply( p );
+
+		double dxd = domainToTemplate.x / xSpacingTemplate;
+		double dyd = domainToTemplate.y / ySpacingTemplate;
+		double dzd = domainToTemplate.z / zSpacingTemplate;
+
+		result.x = (int)Math.round( dxd );
+		result.y = (int)Math.round( dyd );
+		result.z = (int)Math.round( dzd );
+	}
+
+	public ImagePlus register() {
+
+		generateTransformation();
 
 		ImageStack newStack = new ImageStack( templateWidth, templateHeight );
 
-		ImageStack domainStack = domain.getStack();
+		ImageStack domainStack = sourceImages[1].getStack();
 
 		byte [][] domainPixels = new byte[domainDepth][];
 		for( int z = 0; z < domainDepth; ++z )
 			domainPixels[z] = ( byte[] ) domainStack.getPixels( z + 1 );
 
-		Point3d p = new Point3d();
+		RegistrationAlgorithm.ImagePoint result = new RegistrationAlgorithm.ImagePoint();
 
 		IJ.showProgress( 0 );
 
@@ -314,19 +280,11 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
 			for( int y = 0; y < templateHeight; ++y )
 				for( int x = 0; x < templateWidth; ++x ) {
 
-					p.x = x * xSpacingTemplate;
-					p.y = y * ySpacingTemplate;
-					p.z = z * zSpacingTemplate;
+					transformTemplateToDomain( x, y, z, result );
 
-					b.apply( p );
-
-					double dxd = b.x / xSpacingDomain;
-					double dyd = b.y / ySpacingDomain;
-					double dzd = b.z / zSpacingDomain;
-
-					int dx = (int)Math.round( dxd );
-					int dy = (int)Math.round( dyd );
-					int dz = (int)Math.round( dzd );
+					int dx = result.x;
+					int dy = result.y;
+					int dz = result.z;
 
 					if( dx < 0 || dy < 0 || dz < 0 ||
 					    dx >= domainWidth ||
@@ -347,11 +305,11 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
 
 		IJ.showProgress( 1.0 );
 
-		ImagePlus result = new ImagePlus( "Transformed", newStack );
+		ImagePlus transformed = new ImagePlus( "Transformed", newStack );
 
 		if( templateCalibration != null )
-			result.setCalibration( templateCalibration );
+			transformed.setCalibration( templateCalibration );
 
-		return result;
+		return transformed;
 	}
 }
