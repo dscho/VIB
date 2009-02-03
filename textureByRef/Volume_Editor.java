@@ -1,10 +1,7 @@
 package textureByRef;
 
-import javax.media.j3d.View;
-import javax.vecmath.Tuple3d;
-
+import voltex.VoltexGroup;
 import voltex.VoltexVolume;
-import voltex.VolumeRenderer;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -12,16 +9,30 @@ import ij.gui.NewImage;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
 import ij3d.Content;
-import ij3d.ContentNode;
 import ij3d.Image3DUniverse;
 
 public class Volume_Editor implements PlugInFilter {
 	
 	private ImagePlus image;
-	private VolumeRenderer renderer;
 	private VoltexVolume volume;
-	private ContentNode customNode;
 	
+	public VoltexVolume getVolume() {
+		return volume;
+	}
+
+	public void run(ImageProcessor arg0) {
+		Image3DUniverse univ = new Image3DUniverse(512, 512);
+		Content c = univ.addVoltex(image, null, image.getTitle(),
+					0, new boolean[] {true, true, true}, 1);
+		volume = ((VoltexGroup)c.getContent()).getRenderer().getVolume();
+		univ.show();
+	}
+
+	public int setup(String arg0, ImagePlus arg1) {
+		this.image = arg1;
+		return DOES_8G | DOES_RGB;
+	}
+
 	public static void main(String[] args) {
 		new ij.ImageJ();
 		ImagePlus imp = NewImage.createRGBImage(
@@ -32,7 +43,7 @@ public class Volume_Editor implements PlugInFilter {
 		VoltexVolume volume = vol.getVolume();
 		drawSpiral(volume, 128, 128);
 	}
-	
+
 	public static void drawSpiral(VoltexVolume v, float cx, float cy) {
 		final int circles = 3;
 		final int dzPerCircle = 19;
@@ -62,88 +73,6 @@ public class Volume_Editor implements PlugInFilter {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		}
-	}
-	
-	public VoltexVolume getVolume() {
-		return volume;
-	}
-
-	public void run(ImageProcessor arg0) {
-		renderer = new VolumeRenderer(image,
-				null, 0f, new boolean[] {true, true, true});
-		renderer.fullReload();
-		volume = renderer.getVolume();
-		customNode = new MyNode(volume);
-		Image3DUniverse univ = new Image3DUniverse(512, 512);
-		univ.show();
-		Content c = new Content("blubber");
-		c.display(customNode);
-		univ.addContent(c);
-	}
-
-	public int setup(String arg0, ImagePlus arg1) {
-		this.image = arg1;
-		return DOES_8G | DOES_RGB;
-	}
-	
-	private class MyNode extends ContentNode {
-		
-		private VoltexVolume volume;
-		
-		public MyNode(VoltexVolume volume) {
-			this.volume = volume;
-			addChild(renderer.getVolumeNode());
-		}
-
-		@Override
-		public void channelsUpdated() {
-			// do nothing
-		}
-
-		@Override
-		public void colorUpdated() {
-			// do nothing
-		}
-
-		@Override
-		public void eyePtChanged(View view) {
-			renderer.eyePtChanged(view);
-		}
-
-		@Override
-		public void getCenter(Tuple3d center) {
-			center.set(volume.volRefPt);
-		}
-
-		@Override
-		public void getMax(Tuple3d max) {
-			max.set(volume.maxCoord);
-		}
-
-		@Override
-		public void getMin(Tuple3d min) {
-			min.set(volume.minCoord);
-		}
-
-		@Override
-		public float getVolume() {
-			return 0;
-		}
-
-		@Override
-		public void shadeUpdated() {
-			// do nothing
-		}
-
-		@Override
-		public void thresholdUpdated() {
-			// do nothing
-		}
-
-		@Override
-		public void transparencyUpdated() {
-			// do nothing
 		}
 	}
 }
