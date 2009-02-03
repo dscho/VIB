@@ -194,6 +194,10 @@ public class Volume {
 		}
 	}
 
+	public void setNoCheck(int x, int y, int z, int v) {
+		loader.setNoCheck(x, y, z, v);
+	}
+	
 	public void set(int x, int y, int z, int v) {
 		loader.set(x, y, z, v);
 	}
@@ -215,6 +219,7 @@ public class Volume {
 	protected interface Loader {
 		int load(int x, int y, int z);
 		void set(int x, int y, int z, int v);
+		void setNoCheck(int x, int y, int z, int v);
 	}
 
 	/*
@@ -237,8 +242,15 @@ public class Volume {
 			return (int)fData[z][y * w + x] & 0xff;
 		}
 
-		public final void set(int x, int y, int z, int v) {
+		public void set(int x, int y, int z, int v) {
 			fData[z][y * w + x] = (byte)v;
+		}
+		
+		public void setNoCheck(int x, int y, int z, int v) {
+			if(x >= 0 && x < xDim &&
+					y >= 0 && y < yDim && z > 0 && z < zDim) {
+				set(x, y, z, v);
+			}
 		}
 	}
 
@@ -277,8 +289,15 @@ public class Volume {
 			return fData[z][y * w + x];
 		}
 
-		public final void set(int x, int y, int z, int v) {
+		public void set(int x, int y, int z, int v) {
 			fData[z][y * w + x] = v;
+		}
+		
+		public void setNoCheck(int x, int y, int z, int v) {
+			if(x >= 0 && x < xDim &&
+					y >= 0 && y < yDim && z > 0 && z < zDim) {
+				set(x, y, z, v);
+			}
 		}
 	}
 
@@ -323,12 +342,19 @@ public class Volume {
 				}
 			}
 		}
+		
+		public void setNoCheck(int x, int y, int z, int v) {
+			if(x >= 0 && x < xDim &&
+					y >= 0 && y < yDim && z > 0 && z < zDim) {
+				set(x, y, z, v);
+			}
+		}
 
 		public final int load(int x, int y, int z) {
 			return fData[z][y * w + x] & mask;
 		}
 
-		public final void set(int x, int y, int z, int v) {
+		public void set(int x, int y, int z, int v) {
 			fData[z][y * w + x] = v;
 		}
 	}
@@ -356,8 +382,15 @@ public class Volume {
 				if(channels[i]) usedCh++;
 		}
 
-		final public void set(int x, int y, int z, int v) {
+		public void set(int x, int y, int z, int v) {
 			fdata[z][y * w + x] = v;
+		}
+
+		public void setNoCheck(int x, int y, int z, int v) {
+			if(x >= 0 && x < xDim &&
+					y >= 0 && y < yDim && z > 0 && z < zDim) {
+				set(x, y, z, v);
+			}
 		}
 
 		final public int load(int x, int y, int z) {

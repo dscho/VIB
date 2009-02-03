@@ -181,7 +181,7 @@ public class VoltexGroup extends ContentNode {
 					Point2d onCanvas = volumePointInCanvas(
 							canvas, volToIP, x, y, z);
 					if(p.contains(onCanvas.x, onCanvas.y)) {
-						vol.set(x, y, z, fillValue);
+						vol.setNoCheck(x, y, z, fillValue);
 					}
 				}
 			}
