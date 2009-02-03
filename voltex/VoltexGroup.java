@@ -74,6 +74,13 @@ public class VoltexGroup extends ContentNode {
 		calculateMinMaxCenterPoint();
 		addChild(renderer.getVolumeNode());
 	}
+	
+	/**
+	 * Get a reference VolumeRenderer which is used by this class
+	 */
+	public VolumeRenderer getRenderer() {
+		return renderer;
+	}
 
 	/**
 	 * @see ContentNode#getMin(Tupe3d) getMin
