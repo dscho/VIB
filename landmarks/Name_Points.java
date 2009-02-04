@@ -190,6 +190,8 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 		super(IJ.getInstance(),title,false);
 
+		addWindowListener( this );
+
 		this.plugin = plugin;
 		this.archiveClient = archiveClient;
 
@@ -396,7 +398,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		if(source == addButton) {
 			plugin.addNewPoint();
 		} else if (source == closeButton) {
-			dispose();
+			closeSafely();
 		} else if (source == saveButton) {
 			plugin.save(".points");
 		} else if (source == loadButton) {
@@ -445,9 +447,21 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		}
 	}
 
-	public void windowClosing( WindowEvent e ) {
+	public void closeSafely() {
+		if( plugin.unsaved ) {
+			YesNoCancelDialog d = new YesNoCancelDialog(
+				IJ.getInstance(), "Really quit?",
+				"There are unsaved changes. Do you really want to quit?" );
+			if( ! d.yesPressed() )
+				return;
+		}
 		plugin.stopFineTuneThreads();
 		dispose();
+	}
+
+	public void windowClosing( WindowEvent e ) {
+		System.out.println("Got windowClosing...");
+		closeSafely();
 	}
 
 	public void windowActivated( WindowEvent e ) { }
@@ -460,6 +474,8 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 }
 
 public class Name_Points implements PlugIn, FineTuneProgressListener {
+
+	boolean unsaved = false;
 
 	String templateImageFilename=Prefs.get("landmarks.Name_Points.templateImageFilename",null);
 	ImagePlus templateImage;
@@ -1409,6 +1425,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 	public void reset(int i) {
 		points.unset(i);
 		dialog.reset(i);
+		unsaved = true;
 	}
 
 	public void reset() {
@@ -1453,6 +1470,8 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 
 			NamedPointWorld point = points.get(i);
 			point.set( xWorld, yWorld, zWorld );
+
+			unsaved = true;
 
 		} else {
 			IJ.error("You must have a current point selection in "+
@@ -1508,6 +1527,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			this.points = nps;
 			dialog.recreatePointsPanel();
 			dialog.pack();
+			unsaved = false;
 		}
 	}
 
@@ -1863,6 +1883,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			if (!foundName)
 				points.add(current);
 		}
+		unsaved = false;
 		return true;
 	}
 
@@ -1946,6 +1967,8 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			point.z = r.point_would_be_moved_to_z;
 			point.set = true;
 			System.out.println("Got a result, changed point to: "+point);
+
+			unsaved = true;
 
 			if( dialog != null ) {
 				dialog.setCoordinateLabel( indexOfPointBeingFineTuned,
