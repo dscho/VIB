@@ -336,15 +336,6 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		pack();
 	}
 
-	public void resetAll() {
-		for(int i = 0; i < coordinateLabels.length; ++i) {
-			coordinateLabels[i].setText("<unset>");
-			showButtons[i].setEnabled(false);
-			resetButtons[i].setEnabled(false);
-		}
-		pack();
-	}
-
 	public void setCoordinateLabel(int i, double x, double y, double z) {
 		DecimalFormat f = new DecimalFormat("0.000");
 		String newText = "";
@@ -1421,7 +1412,9 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 	}
 
 	public void reset() {
-		dialog.resetAll();
+		for( int i = 0; i < points.size(); ++i ) {
+			reset( i );
+		}
 	}
 
 	public void mark(int i) {
