@@ -1880,6 +1880,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 	public void setDefaultTemplate( String defaultTemplateImageFilename ) {
 		System.out.println("setDefaultTemplate called with: "+defaultTemplateImageFilename);
 		Prefs.set("landmarks.Name_Points.templateImageFilename", defaultTemplateImageFilename );
+		System.out.println("After setting preference, the value got back was: "+Prefs.get("landmarks.Name_Points.templateImageFilename",null));
 	}
 
 	public boolean useTemplate( String possibleTemplateImageFilename ) {
