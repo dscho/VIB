@@ -438,6 +438,11 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 			IJ.error( "Failed to find a corresponding points file for: "+sourceImages[1].getTitle() );
 		}
 
+		return register( points0, points1 );
+	}
+
+	public ImagePlus register( NamedPointSet points0, NamedPointSet points1 ) {
+
                 FastMatrix affine=bestBetweenPoints( points0, sourceImages[0], points1, sourceImages[1] );
 
 		TransformedImage ti = new TransformedImage( sourceImages[0], sourceImages[1] );

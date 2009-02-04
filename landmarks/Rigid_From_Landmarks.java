@@ -103,6 +103,11 @@ public class Rigid_From_Landmarks extends RegistrationAlgorithm implements PlugI
 			return null;
 		}
 
+		return register( points0, points1 );
+	}
+
+	public ImagePlus register( NamedPointSet points0, NamedPointSet points1 ) {
+
 		ArrayList< String > sharedNames = points0.namesSharedWith( points1, true );
 
 		Point3d[] fromPoints = new Point3d[sharedNames.size()];

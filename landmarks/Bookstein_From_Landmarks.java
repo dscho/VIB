@@ -29,7 +29,6 @@ import util.Overlay_Registered;
 
 public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements PlugIn {
 
-
         public void run(String arg) {
 
                 int[] wList = WindowManager.getIDList();
@@ -98,12 +97,6 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
 	Calibration domainCalibration;
 
 	public void generateTransformation( ) {
-		if( sourceImages == null )
-			throw new RuntimeException( "Bookstein_From_Landmarks: The source images must be set before calling generateTransformation()");
-		if( sourceImages[0] == null )
-			throw new RuntimeException( "Bookstein_From_Landmarks: The template image is null in generateTransformation()");
-		if( sourceImages[1] == null )
-			throw new RuntimeException( "Bookstein_From_Landmarks: The image to transform is null in generateTransformation()");
 
                 NamedPointSet points0 = null;
                 NamedPointSet points1 = null;
@@ -121,6 +114,18 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
                         throw new RuntimeException( "No corresponding .points file found "+
 						    "for image: \""+sourceImages[1].getTitle()+"\"" );
                 }
+
+		generateTransformation( points0, points1 );
+	}
+
+	public void generateTransformation( NamedPointSet points0, NamedPointSet points1 ) {
+
+		if( sourceImages == null )
+			throw new RuntimeException( "Bookstein_From_Landmarks: The source images must be set before calling generateTransformation()");
+		if( sourceImages[0] == null )
+			throw new RuntimeException( "Bookstein_From_Landmarks: The template image is null in generateTransformation()");
+		if( sourceImages[1] == null )
+			throw new RuntimeException( "Bookstein_From_Landmarks: The image to transform is null in generateTransformation()");
 
                 ArrayList<String> commonPointNames = points0.namesSharedWith( points1, true );
 
@@ -256,7 +261,29 @@ public class Bookstein_From_Landmarks extends RegistrationAlgorithm implements P
 
 	public ImagePlus register() {
 
-		generateTransformation();
+                NamedPointSet points0 = null;
+                NamedPointSet points1 = null;
+
+		try {
+			points0 = NamedPointSet.forImage(sourceImages[0]);
+		} catch( NamedPointSet.PointsFileException e ) {
+                        throw new RuntimeException( "No corresponding .points file found "+
+						    "for image: \""+sourceImages[0].getTitle()+"\"" );
+                }
+
+		try {
+			points1 =  NamedPointSet.forImage(sourceImages[1]);
+		} catch( NamedPointSet.PointsFileException e ) {
+                        throw new RuntimeException( "No corresponding .points file found "+
+						    "for image: \""+sourceImages[1].getTitle()+"\"" );
+                }
+
+		return register( points0, points1 );
+	}
+
+	public ImagePlus register( NamedPointSet points0, NamedPointSet points1 ) {
+
+		generateTransformation( points0, points1 );
 
 		ImageStack newStack = new ImageStack( templateWidth, templateHeight );
 

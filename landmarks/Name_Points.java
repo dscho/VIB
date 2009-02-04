@@ -2064,7 +2064,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			return;
 		boolean overlayResult = dialog.overlayResult.getState();
 		r.setImages( templateImage, imp );
-		ImagePlus transformed = r.register();
+		ImagePlus transformed = r.register( templatePoints, points );
 		if( transformed == null )
 			return;
 		if( overlayResult ) {

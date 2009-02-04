@@ -10,6 +10,8 @@ import util.BatchOpener;
 import util.FileAndChannel;
 import math3d.Point3d;
 
+import landmarks.NamedPointSet;
+
 public abstract class RegistrationAlgorithm {
 
 	public boolean keepSourceImages;
@@ -93,6 +95,10 @@ public abstract class RegistrationAlgorithm {
 
 	public ImagePlus register() {
 		throw new RuntimeException( "register() not implemented for this objects of this class ("+this.getClass()+")" );
+	}
+
+	public ImagePlus register( NamedPointSet templatePointSet, NamedPointSet floatingPointSet ) {
+		throw new RuntimeException( "register(NamedPointSet,NamedPointSet) not implemented for this objects of this class ("+this.getClass()+")" );
 	}
 
 }
