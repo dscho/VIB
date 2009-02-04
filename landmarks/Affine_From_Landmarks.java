@@ -24,12 +24,19 @@ import vib.oldregistration.RegistrationAlgorithm;
 
 import vib.transforms.OrderedTransformations;
 import vib.transforms.FastMatrixTransform;
-import landmarks.NamedPoint;
+import vib.FastMatrix;
+import landmarks.NamedPointWorld;
 
 import util.CombinationGenerator;
 
+import util.Overlay_Registered;
+import vib.TransformedImage;
+
+import pal.math.ConjugateDirectionSearch;
+import pal.math.MultivariateFunction;
+
 /* This method doesn't work terribly well, and is here largely for
- * comparison purposes. */
+   comparison purposes. */
 
 public class Affine_From_Landmarks extends RegistrationAlgorithm implements PlugIn {
 
@@ -44,11 +51,11 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 
                 for (Iterator i=common.listIterator();i.hasNext();) {
                         String s = (String)i.next();
-                        NamedPoint p0 = null;
-                        NamedPoint p1 = null;
+                        NamedPointWorld p0 = null;
+                        NamedPointWorld p1 = null;
 
                         for (Iterator i0=inImage0.listIterator();i0.hasNext();) {
-                                NamedPoint current=(NamedPoint)i0.next();
+                                NamedPointWorld current=(NamedPointWorld)i0.next();
                                 if (s.equals(current.getName())) {
                                         p0 = current;
                                         break;
@@ -56,7 +63,7 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                         }
 
                         for (Iterator i1=inImage1.listIterator();i1.hasNext();) {
-                                NamedPoint current=(NamedPoint)i1.next();
+                                NamedPointWorld current=(NamedPointWorld)i1.next();
                                 if (s.equals(current.getName())) {
                                         p1 = current;
                                         break;
@@ -72,28 +79,27 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                                 (p1_transformed[2] - p0.z) * (p1_transformed[2] - p0.z)
                                 );
 
-                        // Obviously we don't need to do the square
-                        // root, but it's useful to have for debugging...
-
                         sum_squared_differences += distance * distance;
                 }
 
-                return Math.sqrt(sum_squared_differences/common.size());
+                return sum_squared_differences / common.size();
 
         }
 
-        // This finds an affine mapping that maps a1 onto a2,
-        // b1 onto b2, etc.
+        /* This finds an affine mapping that maps a1 onto a2, b1 onto
+	   b2, etc.  (I suspect this is exactly equivalent to
+	   FastMatrix.bestLinear, but I haven't done the maths to
+	   prove that.)  */
 
-        public static FastMatrixTransform generateAffine(NamedPoint a1,
-							 NamedPoint b1,
-							 NamedPoint c1,
-							 NamedPoint d1,
-							 
-							 NamedPoint a2,
-							 NamedPoint b2,
-							 NamedPoint c2,
-							 NamedPoint d2) {
+        public static FastMatrix generateAffine(NamedPointWorld a1,
+						NamedPointWorld b1,
+						NamedPointWorld c1,
+						NamedPointWorld d1,
+
+						NamedPointWorld a2,
+						NamedPointWorld b2,
+						NamedPointWorld c2,
+						NamedPointWorld d2) {
 
                 double[][] p = new double[3][4];
 
@@ -109,6 +115,7 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                 p[2][1] = c1.z - a1.z;
                 p[2][2] = d1.z - a1.z;
 
+
                 double[][] q = new double[3][4];
 
                 q[0][0] = b2.x - a2.x;
@@ -123,19 +130,23 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                 q[2][1] = c2.z - a2.z;
                 q[2][2] = d2.z - a2.z;
 
-                FastMatrixTransform P = new FastMatrixTransform(p);
-                FastMatrixTransform Q = new FastMatrixTransform(q);
+		FastMatrix Pfm = new FastMatrix(p);
+		FastMatrix Qfm = new FastMatrix(q);
 
-                FastMatrixTransform M = Q.times(P.inverse());
+		FastMatrix Mfm = Qfm.times(Pfm.inverse());
 
-                M.apply( a1.x, a1.y, a1.z );
+		Mfm.apply( a1.x, a1.y, a1.z );
 
-                double ox = a2.x - M.x;
-                double oy = a2.y - M.y;
-                double oz = a2.z - M.z;
+                double ox = a2.x - Mfm.x;
+                double oy = a2.y - Mfm.y;
+                double oz = a2.z - Mfm.z;
 
-                return M.composeWithFastMatrix(FastMatrixTransform.translate(ox,oy,oz));
+		FastMatrix resultFM = FastMatrix.translate( ox, oy, oz ).times( Mfm );
+
+		return resultFM;
         }
+
+	boolean allowScaling;
 
         public void run(String arg) {
 
@@ -158,18 +169,7 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                 gd.addChoice("Template stack:", titles, titles[0]);
                 gd.addChoice("Stack to transform:", titles, titles[1]);
 
-                gd.addCheckbox("Keep source images", true);
-
-                /*
-                  String[] labels = {
-                      "Pick best based on least-squares",
-                      "Pick best from best 4 points"
-                  };
-
-                  boolean[] defaultValues = { false, true };
-
-                  gd.addCheckboxGroup(2,1,labels,defaultValues);
-                */
+		gd.addCheckbox("Overlay result",true);
 
                 gd.showDialog();
                 if (gd.wasCanceled())
@@ -178,31 +178,93 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                 int[] index = new int[2];
                 index[0] = gd.getNextChoiceIndex();
                 index[1] = gd.getNextChoiceIndex();
-                keepSourceImages = gd.getNextBoolean();
 
-                sourceImages = new ImagePlus[2];
+		setImages( WindowManager.getImage(wList[index[0]]), WindowManager.getImage(wList[index[1]]) );
 
-                sourceImages[0] = WindowManager.getImage(wList[index[0]]);
-                sourceImages[1] = WindowManager.getImage(wList[index[1]]);
+		boolean overlayResult = gd.getNextBoolean();
 
-                System.out.println("REMOVEME: about to register");
-                transformation=register();
-                System.out.println("REMOVEME: found registration, now producing image.");
-                ImagePlus newImage=transformation.createNewImage(sourceImages[0],sourceImages[1],true);
-                newImage.show();
+		ImagePlus transformed = register();
 
+		if( overlayResult ) {
+			ImagePlus merged = Overlay_Registered.overlayToImagePlus( sourceImages[0], transformed );
+			merged.setTitle( "Registered and Overlayed" );
+			merged.show();
+		} else
+			transformed.show();
         }
 
-        public ImagePlus produceOverlayed( ) {
+	public static double evaluateFastMatrix( FastMatrix fm,
+						 NamedPointSet from,
+						 NamedPointSet to ) {
+		if( from.size() != to.size() ) {
+			throw new RuntimeException("In evaluateFastMatrix, 'from' (size "+from.size()+") and 'to' (size "+to.size()+") must be equal");
+		}
+		double sumDistances = 0;
+		int n = from.size();
+		for( int i = 0; i < n; ++i ) {
+			NamedPointWorld fromPoint = from.get( i );
+			NamedPointWorld toPoint = to.get( i );
+			if( ! fromPoint.name.equals(toPoint.name) )
+				throw new RuntimeException("In evaluateFastMatrix, point index "+i+" has a name mismatch: fromPoint = "+fromPoint+", toPoint = "+toPoint);
+			fm.apply( fromPoint.x, fromPoint.y, fromPoint.z );
+			double xdiff = fm.x - toPoint.x;
+			double ydiff = fm.y - toPoint.y;
+			double zdiff = fm.z - toPoint.z;
+			sumDistances += Math.sqrt( xdiff * xdiff + ydiff * ydiff + zdiff * zdiff );
+		}
+		return sumDistances / n;
+	}
 
-                transformation=register();
-                return transformation.createNewImage(sourceImages[0],sourceImages[1],true);
-        }
+	public static class CandidateAffine implements MultivariateFunction {
 
+		FastMatrix m = new FastMatrix();
+		NamedPointSet from, to;
+		double bestScore = Double.MAX_VALUE;
+		double [] bestArgument = new double[12];
+		double sizeOfLargestDimension;
 
-        public static FastMatrixTransform bestBetweenPoints( NamedPointSet points0, NamedPointSet points1 ) {
+		public CandidateAffine( NamedPointSet from, NamedPointSet to, double sizeOfLargestDimension ) {
+			this.from = from;
+			this.to = to;
+			this.sizeOfLargestDimension = sizeOfLargestDimension;
+		}
 
-                ArrayList<String> commonPointNames = points0.namesSharedWith( points1 );
+		public double evaluate( double[] argument ) {
+			double [] argumentAdjusted = argument.clone();
+			argumentAdjusted[3] *= sizeOfLargestDimension;
+			argumentAdjusted[7] *= sizeOfLargestDimension;
+			argumentAdjusted[11] *= sizeOfLargestDimension;
+			m.setFromFlatDoubleArray( argumentAdjusted );
+			System.out.println("Trying m: "+m.toStringIndented("  "));
+			double score = evaluateFastMatrix( m, from, to );
+			if( score < bestScore ) {
+				bestScore = score;
+				System.arraycopy( argument, 0, bestArgument, 0, 12 );
+			}
+			System.out.println("Got score: "+score);
+			return score;
+		}
+
+		public int getNumArguments() {
+			return 12;
+		}
+
+		// We might need to set these values to something more sensible:
+
+		public double getLowerBound(int n) {
+			// return Double.MIN_VALUE;
+			return -1;
+		}
+
+		public double getUpperBound(int n) {
+			// return Double.MAX_VALUE;
+			return 1;
+		}
+	}
+
+        public static FastMatrix bestBetweenPoints( NamedPointSet points0, ImagePlus image0, NamedPointSet points1, ImagePlus image1 ) {
+
+                ArrayList<String> commonPointNames = points0.namesSharedWith( points1, true );
 
                 int n = commonPointNames.size();
 
@@ -220,18 +282,23 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                         return null;
                 }
 
+		NamedPointSet fromCommon = new NamedPointSet();
+		NamedPointSet toCommon = new NamedPointSet();
+
+		for( String name : commonPointNames ) {
+			System.out.println("Common point of name: '"+name+"'");
+			toCommon.add( points0.get( name ) );
+			fromCommon.add( points1.get( name ) );
+		}
+
                 int[] indices = new int[n];
                 for(int i=0;i<n;++i)
                         indices[i] = i;
 
                 CombinationGenerator generator = new CombinationGenerator(n,4);
 
-                int[] bestChoiceSoFar;
-                OrderedTransformations bestTranformationSoFar = null;
-                FastMatrixTransform bestAsFastMatrix = null;
-                double minimumScoreSoFar = -1.0; // Negative scores
-                                                 // won't occur in
-                                                 // practice...
+		FastMatrix bestFastMatrixSoFar = null;
+                double minimumScoreSoFar = Double.MAX_VALUE;
 
                 double totalCombinations = generator.getTotal().doubleValue();
 
@@ -239,6 +306,32 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                         IJ.error("There are over 1024 combinations; you probably"+
                                  "shouldn't be using this method.");
                 }
+
+		double sizeOfLargestDimension = Double.MIN_VALUE;
+		double xSpacing0 = 1, ySpacing0 = 1, zSpacing0 = 1;
+		double xSpacing1 = 1, ySpacing1 = 1, zSpacing1 = 1;
+		Calibration c0 = image0.getCalibration();
+		if( c0 != null ) {
+			xSpacing0 = c0.pixelWidth;
+			ySpacing0 = c0.pixelHeight;
+			zSpacing0 = c0.pixelDepth;
+		}
+		Calibration c1 = image1.getCalibration();
+		if( c1 != null ) {
+			xSpacing1 = c1.pixelWidth;
+			ySpacing1 = c1.pixelHeight;
+			zSpacing1 = c1.pixelDepth;
+		}
+		double [] sides = new double[6];
+		sides[0] = Math.abs( image0.getWidth() * xSpacing0 );
+		sides[1] = Math.abs( image0.getHeight() * ySpacing0 );
+		sides[2] = Math.abs( image0.getStackSize() * zSpacing0 );
+		sides[3] = Math.abs( image1.getWidth() * xSpacing1 );
+		sides[4] = Math.abs( image1.getHeight() * ySpacing1 );
+		sides[5] = Math.abs( image1.getStackSize() * zSpacing1 );
+		for( int i = 0; i < 6; ++i )
+			if( sides[i] > sizeOfLargestDimension )
+				sizeOfLargestDimension = sides[i];
 
                 IJ.showProgress(0.0);
 
@@ -251,62 +344,70 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                         // So, for each set of 4, generate an affine
                         // transformation between the two...
 
-                        FastMatrixTransform affine = generateAffine(
-                                points1.get(choice[0]),
-                                points1.get(choice[1]),
-                                points1.get(choice[2]),
-                                points1.get(choice[3]),
-                                points0.get(choice[0]),
-                                points0.get(choice[1]),
-                                points0.get(choice[2]),
-                                points0.get(choice[3]) );
+                        FastMatrix affine = generateAffine(
+                                fromCommon.get(choice[0]),
+                                fromCommon.get(choice[1]),
+                                fromCommon.get(choice[2]),
+                                fromCommon.get(choice[3]),
+                                toCommon.get(choice[0]),
+                                toCommon.get(choice[1]),
+                                toCommon.get(choice[2]),
+                                toCommon.get(choice[3]) );
 
-                        /*
-                        System.out.println("--------------------------------------");
-                        for(int j=0;j<4;++j) {
 
-                                double x, y, z, x_ideal, y_ideal, z_ideal;
+			Point3d [] from = new Point3d[4];
+			Point3d [] to = new Point3d[4];
+			for( int i = 0; i < 4; ++i ) {
+				NamedPointWorld npw1 = fromCommon.get(choice[i]);
+				NamedPointWorld npw0 = toCommon.get(choice[i]);
+				System.out.println("npw1 (from) is: "+npw1);
+				System.out.println("npw0 (to) is: "+npw0);
+				from[i] = npw1.toPoint3d();
+				to[i] = npw0.toPoint3d();
+			}
 
-                                x = points1.get(choice[j]).x;
-                                y = points1.get(choice[j]).y;
-                                z = points1.get(choice[j]).z;
+			double [] initialValues = new double[12];
+			affine.copyToFlatDoubleArray( initialValues );
+			initialValues[3] /= sizeOfLargestDimension;
+			initialValues[7] /= sizeOfLargestDimension;
+			initialValues[11] /= sizeOfLargestDimension;
 
-                                x_ideal = points0.get(choice[j]).x;
-                                y_ideal = points0.get(choice[j]).y;
-                                z_ideal = points0.get(choice[j]).z;
+			ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
+			optimizer.scbd = 1;
+			optimizer.step = 1;
+			optimizer.illc = true;
 
-                                System.out.println("point ("+x+","+y+","+z+")");
+			CandidateAffine candidate = new CandidateAffine( fromCommon, toCommon, sizeOfLargestDimension );
 
-                                System.out.println("which should map onto point ("+
-                                                   x_ideal+","+
-                                                   y_ideal+","+
-                                                   z_ideal+")");
-                                System.out.println("...actually maps onto:");
-                                affine.apply(x,y,z);
-                                System.out.println("point ("+affine.x+","+affine.y+","+
-                                                   affine.z+")");
-                        }
-                        */
+			optimizer.optimize(candidate, initialValues, 2, 2);
 
-                        OrderedTransformations t = new OrderedTransformations();
-                        t.addLast(affine);
+			// This will leave the optimized values in initialValues.
+			// Work out the score that we would get from this:
 
-                        double scoreFromLandmarks = scoreFromAllLandmarks(
-                                t,
-                                commonPointNames,
-                                points0,
-                                points1);
+			FastMatrix fm = new FastMatrix();
+			double [] initialValuesAdjusted = initialValues.clone();
+			initialValuesAdjusted[3] *= sizeOfLargestDimension;
+			initialValuesAdjusted[7] *= sizeOfLargestDimension;
+			initialValuesAdjusted[11] *= sizeOfLargestDimension;
+			fm.setFromFlatDoubleArray( initialValuesAdjusted );
+			double score = evaluateFastMatrix( fm, fromCommon, toCommon );
 
-                        // System.out.println("Score was: "+scoreFromLandmarks);
+			if( score < minimumScoreSoFar ) {
+				minimumScoreSoFar = score;
+				bestFastMatrixSoFar = fm;
+			}
 
-                        if((minimumScoreSoFar<0)||(scoreFromLandmarks<minimumScoreSoFar)) {
+			FastMatrix bestFromOptimization = new FastMatrix();
+			double [] candidateBestArgumentAdjusted = candidate.bestArgument.clone();
+			candidateBestArgumentAdjusted[3] *= sizeOfLargestDimension;
+			candidateBestArgumentAdjusted[7] *= sizeOfLargestDimension;
+			candidateBestArgumentAdjusted[11] *= sizeOfLargestDimension;
+			bestFromOptimization.setFromFlatDoubleArray( candidateBestArgumentAdjusted ) ;
 
-                                bestTranformationSoFar = t;
-                                bestAsFastMatrix = affine;
-                                minimumScoreSoFar = scoreFromLandmarks;
-                                bestChoiceSoFar = choice;
-
-                        }
+			if( candidate.bestScore < minimumScoreSoFar ) {
+				minimumScoreSoFar = candidate.bestScore;
+				bestFastMatrixSoFar = bestFromOptimization;
+			}
 
                         ++ done;
                         IJ.showProgress( done / totalCombinations );
@@ -314,35 +415,41 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 
                 IJ.showProgress(1.0);
 
-                // System.out.println("Best score was: "+minimumScoreSoFar);
+		System.out.println("Best score was: "+minimumScoreSoFar);
+		System.out.println("With matrix:");
+		System.out.println(bestFastMatrixSoFar.toStringIndented("  "));
 
-                return bestAsFastMatrix;
+                return bestFastMatrixSoFar;
         }
 
-        public OrderedTransformations register() {
+        public ImagePlus register() {
 
-		NamedPointSet points0 = NamedPointSet.forImage(sourceImages[0]);
-		NamedPointSet points1 = NamedPointSet.forImage(sourceImages[1]);
+		NamedPointSet points0 = null;
+		NamedPointSet points1 = null;
 
-                if(points0==null) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[0].getTitle()+"\"");
-                        System.out.println("for 0 in Affine_From_Landmarks.register()");
-                        return null;
-                }
+		try {
+			points0 = NamedPointSet.forImage( sourceImages[0] );
+		} catch( NamedPointSet.PointsFileException e ) {
+			IJ.error( "Failed to find a corresponding points file for: "+sourceImages[0].getTitle() );
+		}
+		try {
+			points1 = NamedPointSet.forImage( sourceImages[1] );
+		} catch( NamedPointSet.PointsFileException e ) {
+			IJ.error( "Failed to find a corresponding points file for: "+sourceImages[1].getTitle() );
+		}
 
-                if(points1==null) {
-                        IJ.error("No corresponding .points file found "+
-                                 "for image: \""+sourceImages[1].getTitle()+"\"");
-                        System.out.println("for 1 in Affine_From_Landmarks.register()");
-                        return null;
-                }
+		return register( points0, points1 );
+	}
 
-                FastMatrixTransform affine=bestBetweenPoints( points0, points1 );
+	public ImagePlus register( NamedPointSet points0, NamedPointSet points1 ) {
 
-                OrderedTransformations t = new OrderedTransformations();
-                t.addLast(affine);
-                transformation=t;
-                return t;
+                FastMatrix affine=bestBetweenPoints( points0, sourceImages[0], points1, sourceImages[1] );
+
+		TransformedImage ti = new TransformedImage( sourceImages[0], sourceImages[1] );
+		ti.setTransformation( affine );
+
+		ImagePlus transformed = ti.getTransformed();
+		transformed.setTitle( "Transformed" );
+		return transformed;
         }
 }
