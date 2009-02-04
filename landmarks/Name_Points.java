@@ -147,14 +147,16 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			buttonToAction.put( b, RESET );
 			pointsPanel.add( b, c );
 
-			c.anchor = GridBagConstraints.LINE_START;
-			++ c.gridx;
-			fineTuneButtons[counter] = b = new Button("Fine Tune");
-			b.addActionListener(this);
-			b.setEnabled(true);
-			buttonToIndex.put( b, counter );
-			buttonToAction.put( b, FINE_TUNE );
-			pointsPanel.add( b, c );
+			if( Name_Points.offerFineTuning ) {
+				c.anchor = GridBagConstraints.LINE_START;
+				++ c.gridx;
+				fineTuneButtons[counter] = b = new Button("Fine Tune");
+				b.addActionListener(this);
+				b.setEnabled(true);
+				buttonToIndex.put( b, counter );
+				buttonToAction.put( b, FINE_TUNE );
+				pointsPanel.add( b, c );
+			}
 
 			c.anchor = GridBagConstraints.LINE_START;
 			++ c.gridx;
@@ -476,6 +478,8 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 public class Name_Points implements PlugIn, FineTuneProgressListener {
 
 	boolean unsaved = false;
+
+	static final boolean offerFineTuning = false;
 
 	String templateImageFilename=Prefs.get("landmarks.Name_Points.templateImageFilename",null);
 	ImagePlus templateImage;
