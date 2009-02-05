@@ -264,7 +264,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 		templatePanel=new Panel();
 		templatePanel.add(new Label("Template File:"));
-		if( plugin.templateImageFilename == null )
+		if( plugin.templateImageFilename == null || plugin.templateImageFilename.length() == 0 )
 			templateFileName = new Label("[None chosen]");
 		else
 			templateFileName = new Label(plugin.templateImageFilename);
@@ -421,7 +421,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 			OpenDialog od;
 			String openTitle = "Select template image file...";
 			File templateImageFile = null;
-			if( plugin.templateImageFilename != null )
+			if( plugin.templateImageFilename != null && plugin.templateImageFilename.length() > 0 )
 				templateImageFile = new File( plugin.templateImageFilename );
 			if( templateImageFile == null )
 				od = new OpenDialog( openTitle, null );
@@ -481,7 +481,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 
 	static final boolean offerFineTuning = false;
 
-	String templateImageFilename=Prefs.get("landmarks.Name_Points.templateImageFilename",null);
+	String templateImageFilename=Prefs.get("landmarks.Name_Points.templateImageFilename","");
 	ImagePlus templateImage;
 	NamedPointSet templatePoints;
 	String templateUnits;
@@ -1675,7 +1675,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 
 
 		File templateImageFile = null;
-		if( templateImageFilename != null )
+		if( templateImageFilename != null && templateImageFilename.length() > 0 )
 			templateImageFile = new File(templateImageFilename);
 
 		if (promptForTemplate) {
@@ -1690,7 +1690,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 				useTemplate( templateImageFilename );
 				setDefaultTemplate( templateImageFilename );
 			}
-		} else if( templateImageFilename != null ) {
+		} else if( templateImageFilename != null && templateImageFilename.length() > 0 ) {
 			if( templateImageFile.exists() ) {
 				useTemplate( templateImageFilename );
 			} else {
@@ -1896,6 +1896,8 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 	}
 
 	public void setDefaultTemplate( String defaultTemplateImageFilename ) {
+		if( defaultTemplateImageFilename == null )
+			defaultTemplateImageFilename = "";
 		System.out.println("setDefaultTemplate called with: "+defaultTemplateImageFilename);
 		Prefs.set("landmarks.Name_Points.templateImageFilename", defaultTemplateImageFilename );
 		System.out.println("After setting preference, the value got back was: "+Prefs.get("landmarks.Name_Points.templateImageFilename",null));
