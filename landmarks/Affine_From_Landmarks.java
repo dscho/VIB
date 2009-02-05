@@ -260,6 +260,8 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 		}
 	}
 
+	public static final boolean tryOptimizing = false;
+
         public static FastMatrix bestBetweenPoints( NamedPointSet points0, ImagePlus image0, NamedPointSet points1, ImagePlus image1 ) {
 
                 ArrayList<String> commonPointNames = points0.namesSharedWith( points1, true );
@@ -351,60 +353,74 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                                 toCommon.get(choice[2]),
                                 toCommon.get(choice[3]) );
 
+			double originalScore = evaluateFastMatrix( affine, fromCommon, toCommon );
+			if( originalScore < minimumScoreSoFar ) {
+				minimumScoreSoFar = originalScore;
+				bestFastMatrixSoFar = affine;
+			}
 
 			Point3d [] from = new Point3d[4];
 			Point3d [] to = new Point3d[4];
 			for( int i = 0; i < 4; ++i ) {
 				NamedPointWorld npw1 = fromCommon.get(choice[i]);
 				NamedPointWorld npw0 = toCommon.get(choice[i]);
-				System.out.println("npw1 (from) is: "+npw1);
-				System.out.println("npw0 (to) is: "+npw0);
 				from[i] = npw1.toPoint3d();
 				to[i] = npw0.toPoint3d();
 			}
 
-			double [] initialValues = new double[12];
-			affine.copyToFlatDoubleArray( initialValues );
-			initialValues[3] /= sizeOfLargestDimension;
-			initialValues[7] /= sizeOfLargestDimension;
-			initialValues[11] /= sizeOfLargestDimension;
+			if( tryOptimizing ) {
 
-			ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
-			optimizer.scbd = 1;
-			optimizer.step = 1;
-			optimizer.illc = true;
+				double [] initialValues = new double[12];
+				affine.copyToFlatDoubleArray( initialValues );
+				initialValues[3] /= sizeOfLargestDimension;
+				initialValues[7] /= sizeOfLargestDimension;
+				initialValues[11] /= sizeOfLargestDimension;
 
-			CandidateAffine candidate = new CandidateAffine( fromCommon, toCommon, sizeOfLargestDimension );
+				ConjugateDirectionSearch optimizer = new ConjugateDirectionSearch();
+				optimizer.scbd = 1;
+				optimizer.step = 1;
+				optimizer.illc = true;
 
-			optimizer.optimize(candidate, initialValues, 2, 2);
+				CandidateAffine candidate = new CandidateAffine( fromCommon, toCommon, sizeOfLargestDimension );
+				optimizer.optimize(candidate, initialValues, 2, 2);
 
-			// This will leave the optimized values in initialValues.
-			// Work out the score that we would get from this:
+				/* This will leave the optimized
+				   values in initialValues.  Work out
+				   the score that we would get from
+				   this: */
 
-			FastMatrix fm = new FastMatrix();
-			double [] initialValuesAdjusted = initialValues.clone();
-			initialValuesAdjusted[3] *= sizeOfLargestDimension;
-			initialValuesAdjusted[7] *= sizeOfLargestDimension;
-			initialValuesAdjusted[11] *= sizeOfLargestDimension;
-			fm.setFromFlatDoubleArray( initialValuesAdjusted );
-			double score = evaluateFastMatrix( fm, fromCommon, toCommon );
+				FastMatrix fm = new FastMatrix();
+				double [] initialValuesAdjusted = initialValues.clone();
+				initialValuesAdjusted[3] *= sizeOfLargestDimension;
+				initialValuesAdjusted[7] *= sizeOfLargestDimension;
+				initialValuesAdjusted[11] *= sizeOfLargestDimension;
+				fm.setFromFlatDoubleArray( initialValuesAdjusted );
+				double score = evaluateFastMatrix( fm, fromCommon, toCommon );
 
-			if( score < minimumScoreSoFar ) {
-				minimumScoreSoFar = score;
-				bestFastMatrixSoFar = fm;
+				if( score < minimumScoreSoFar ) {
+					minimumScoreSoFar = score;
+					bestFastMatrixSoFar = fm;
+				}
+
+				/* Strangely, it seems that sometimes
+				   one gets a better score than the
+				   final one during the search, so
+				   check for that as well: */
+
+				FastMatrix bestFromOptimization = new FastMatrix();
+				double [] candidateBestArgumentAdjusted = candidate.bestArgument.clone();
+				candidateBestArgumentAdjusted[3] *= sizeOfLargestDimension;
+				candidateBestArgumentAdjusted[7] *= sizeOfLargestDimension;
+				candidateBestArgumentAdjusted[11] *= sizeOfLargestDimension;
+				bestFromOptimization.setFromFlatDoubleArray( candidateBestArgumentAdjusted ) ;
+
+				if( candidate.bestScore < minimumScoreSoFar ) {
+					minimumScoreSoFar = candidate.bestScore;
+					bestFastMatrixSoFar = bestFromOptimization;
+				}
 			}
 
-			FastMatrix bestFromOptimization = new FastMatrix();
-			double [] candidateBestArgumentAdjusted = candidate.bestArgument.clone();
-			candidateBestArgumentAdjusted[3] *= sizeOfLargestDimension;
-			candidateBestArgumentAdjusted[7] *= sizeOfLargestDimension;
-			candidateBestArgumentAdjusted[11] *= sizeOfLargestDimension;
-			bestFromOptimization.setFromFlatDoubleArray( candidateBestArgumentAdjusted ) ;
 
-			if( candidate.bestScore < minimumScoreSoFar ) {
-				minimumScoreSoFar = candidate.bestScore;
-				bestFastMatrixSoFar = bestFromOptimization;
-			}
 
                         ++ done;
                         IJ.showProgress( done / totalCombinations );
