@@ -235,13 +235,11 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 			argumentAdjusted[7] *= sizeOfLargestDimension;
 			argumentAdjusted[11] *= sizeOfLargestDimension;
 			m.setFromFlatDoubleArray( argumentAdjusted );
-			System.out.println("Trying m: "+m.toStringIndented("  "));
 			double score = evaluateFastMatrix( m, from, to );
 			if( score < bestScore ) {
 				bestScore = score;
 				System.arraycopy( argument, 0, bestArgument, 0, 12 );
 			}
-			System.out.println("Got score: "+score);
 			return score;
 		}
 
@@ -286,7 +284,6 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
 		NamedPointSet toCommon = new NamedPointSet();
 
 		for( String name : commonPointNames ) {
-			System.out.println("Common point of name: '"+name+"'");
 			toCommon.add( points0.get( name ) );
 			fromCommon.add( points1.get( name ) );
 		}
@@ -414,10 +411,6 @@ public class Affine_From_Landmarks extends RegistrationAlgorithm implements Plug
                 }
 
                 IJ.showProgress(1.0);
-
-		System.out.println("Best score was: "+minimumScoreSoFar);
-		System.out.println("With matrix:");
-		System.out.println(bestFastMatrixSoFar.toStringIndented("  "));
 
                 return bestFastMatrixSoFar;
         }
