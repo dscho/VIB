@@ -198,12 +198,13 @@ public class NamedPointSet {
 			y /= c.pixelHeight;
 			z /= c.pixelDepth;
 		}
-		int slice = (int)z;
-		if(slice < 0)
-			slice = 0;
-		if(slice > imp.getStackSize())
-			slice = imp.getStackSize()-1;
-		imp.setSlice(slice+1);
+		int sliceAllChannels = (int)z;
+		System.out.println("sliceAllChannels: "+sliceAllChannels);
+		int channels = imp.getNChannels();
+		int currentChannel = imp.getChannel();
+		int slice = sliceAllChannels * channels + currentChannel;
+		System.out.println("slice: "+slice);
+		imp.setSlice(slice);
 		Roi roi = new PointRoi( (int)x, (int)y );
 		imp.setRoi(roi);
 	}

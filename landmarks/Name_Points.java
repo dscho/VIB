@@ -1422,6 +1422,7 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 		if( ! saveResult )
 			IJ.error("Error saving to: "+savePath+"\n");
 
+		unsaved = false;
 		IJ.showStatus("Saved point annotations.");
 
 	}
@@ -1458,6 +1459,8 @@ public class Name_Points implements PlugIn, FineTuneProgressListener {
 			int x = p.xpoints[0];
 			int y = p.ypoints[0];
 			int z = imp.getCurrentSlice()-1;
+			int channels = imp.getNChannels();
+			z /= channels;
 
 			Calibration c = imp.getCalibration();
 			double xWorld = x, yWorld = y, zWorld = z;
