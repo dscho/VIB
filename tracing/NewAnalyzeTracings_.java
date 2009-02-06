@@ -26,6 +26,7 @@ import util.FileAndChannel;
 import landmarks.Bookstein_From_Landmarks;
 
 import util.BatchOpener;
+import vib.oldregistration.RegistrationAlgorithm;
 
 class ImagesFromLine {
 	
@@ -461,21 +462,21 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 			
 			Bookstein_From_Landmarks matcher=new Bookstein_From_Landmarks();
 			matcher.loadImages(standardBrainFC,fc);
-			OrderedTransformations transformation=matcher.register();
+			matcher.generateTransformation();
 		
 			transformed_label_data = new byte[depth][width*height];
-			double [] transformedPoint = new double[3];
-			
+			RegistrationAlgorithm.ImagePoint imagePoint = new RegistrationAlgorithm.ImagePoint();
+
 			for( int z = 0; z < depth; ++z ) {
 				System.out.println("doing slice: "+z);
 				for( int y = 0; y < height; ++y ) {
 					for( int x = 0; x < width; ++x ) {
 						
-						transformation.apply(x,y,z,transformedPoint);
+						matcher.transformDomainToTemplate( x, y, z, imagePoint );
 				
-						int x_in_template=(int)transformedPoint[0];
-						int y_in_template=(int)transformedPoint[1];
-						int z_in_template=(int)transformedPoint[2];
+						int x_in_template=imagePoint.x;
+						int y_in_template=imagePoint.y;
+						int z_in_template=imagePoint.z;
 						
 						int label_value = 0;
 

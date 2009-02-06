@@ -6,7 +6,7 @@
  * Released under the General Public License, latest version.
  */
 
-package ij3d;
+package customnode;
 
 import ij.IJ;
 import ij.WindowManager;
@@ -18,17 +18,11 @@ import java.util.List;
 import java.util.ArrayList;
 import java.awt.Color;
 import ij3d.Image3DUniverse;
+import ij3d.Content;
+import ij3d.Pipe;
 
 public class Mesh_Maker implements PlugIn {
 	
-	public static void main(String[] args) {
-		ij.ImageJ ij = new ij.ImageJ();
-		IJ.runPlugIn("ij3d.Mesh_Maker", "");
-		Image3DUniverse univ =  (Image3DUniverse) ((ImageWindow3D)WindowManager
-					.getCurrentWindow()).getUniverse();
-		System.out.println("bla");
-	}
-
 	public void run(String arg) {
 		Image3DUniverse univ = new Image3DUniverse(512, 512);
 		univ.show();

@@ -680,6 +680,8 @@ public class FloatMatrix {
 	public static FloatMatrix bestLinear(Point3d[] x, Point3d[] y) {
 		if (x.length != y.length)
 			throw new RuntimeException("different lengths");
+		if (x.length != 4 )
+			throw new RuntimeException("The arrays passed to bestLinear must be of length 4");
 		
 		float[][] a = new float[4][4];
 		float[][] b = new float[4][4];
@@ -1012,6 +1014,23 @@ public class FloatMatrix {
 	final public boolean isIdentity() {
 		return isIdentity((float)1e-10);
 	}
+
+	final public boolean equals( FloatMatrix other ) {
+		float eps = (float)1e-10;
+		return eps > (float)Math.abs( a00 - other.a00 ) &&
+			eps > (float)Math.abs( a01 - other.a01 ) &&
+			eps > (float)Math.abs( a02 - other.a02 ) &&
+			eps > (float)Math.abs( a03 - other.a03 ) &&
+			eps > (float)Math.abs( a10 - other.a10 ) &&
+			eps > (float)Math.abs( a11 - other.a11 ) &&
+			eps > (float)Math.abs( a12 - other.a12 ) &&
+			eps > (float)Math.abs( a13 - other.a13 ) &&
+			eps > (float)Math.abs( a20 - other.a20 ) &&
+			eps > (float)Math.abs( a21 - other.a21 ) &&
+			eps > (float)Math.abs( a22 - other.a22 ) &&
+			eps > (float)Math.abs( a23 - other.a23 );
+
+	}
 	
 	final public boolean isIdentity(float eps) {
 		return eps > (float)Math.abs(a00 - 1) &&
@@ -1027,7 +1046,37 @@ public class FloatMatrix {
 			eps > (float)Math.abs(a21) &&
 			eps > (float)Math.abs(a23);
 	}
-	
+
+	public void copyToFlatDoubleArray( float [] result ) {
+		result[0] = a00;
+		result[1] = a01;
+		result[2] = a02;
+		result[3] = a03;
+		result[4] = a10;
+		result[5] = a11;
+		result[6] = a12;
+		result[7] = a13;
+		result[8] = a20;
+		result[9] = a21;
+		result[10] = a22;
+		result[11] = a23;
+	}
+
+	public void setFromFlatDoubleArray( float [] result ) {
+		a00 = result[0];
+		a01 = result[1];
+		a02 = result[2];
+		a03 = result[3];
+		a10 = result[4];
+		a11 = result[5];
+		a12 = result[6];
+		a13 = result[7];
+		a20 = result[8];
+		a21 = result[9];
+		a22 = result[10];
+		a23 = result[11];
+	}
+
 	public String resultToString() {
 		return "" + x + " " + y + " " + z;
 	}

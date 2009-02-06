@@ -30,6 +30,11 @@ public abstract class ContentNode extends BranchGroup {
 		p.set(center);
 	}
 
+	public void addChild(Node n) {
+		calculateMinMaxCenterPoint();
+		super.addChild(n);
+	}
+
 	public abstract void channelsUpdated();
 
 	public abstract void thresholdUpdated();
