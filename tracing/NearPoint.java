@@ -304,4 +304,5 @@ public class NearPoint implements Comparable {
 				  ydiff * ydiff +
 				  zdiff * zdiff );
 	}
+
 }

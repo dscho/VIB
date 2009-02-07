@@ -32,6 +32,8 @@ import java.awt.event.*;
 import java.io.*;
 
 import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import features.Sigma_Palette;
 import ij.gui.GenericDialog;
@@ -883,6 +885,16 @@ class NeuriteTracerResultsDialog
 			}
 			IJ.showStatus("Export complete.");
 			changeState( preExportingState );
+
+			/* FIXME: test code: */
+
+			File tracesFile = new File("/media/LaCie/corpus/flybrain/Data/1/lo15r202.fitted.traces");
+			File fittedTracesFile = new File("/media/LaCie/corpus/flybrain/Data/1/LO15R202.traces");
+
+			plugin.showCorrespondencesTo( tracesFile, Color.YELLOW, 2.5 );
+			plugin.showCorrespondencesTo( fittedTracesFile, Color.RED, 2.5 );
+
+			/* end of FIXME */
 
 		} else if( source == loadLabelsButton ) {
 
