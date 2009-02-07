@@ -210,16 +210,20 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		instructionsPanel.add(instructions,BorderLayout.WEST);
 
 		outerc.gridx = 0;
-		outerc.gridy = 0;
+		++ outerc.gridy;
 		outerc.anchor = GridBagConstraints.LINE_START;
 		outerc.fill = GridBagConstraints.HORIZONTAL;
 		add(instructionsPanel,outerc);
 
 		recreatePointsPanel();
 
-		outerc.gridy = 1;
+		++ outerc.gridy;
 		outerc.anchor = GridBagConstraints.CENTER;
 		add(pointsPanel,outerc);
+
+		// Leave some space below:
+		++ outerc.gridy;
+		add(new Label(""),outerc);
 
 		addButton = new Button("Add New Point");
 		addButton.addActionListener(this);
@@ -259,7 +263,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 
 		}
 
-		outerc.gridy = 2;
+		++ outerc.gridy;
 		add(buttonsPanel,outerc);
 
 		templatePanel=new Panel();
@@ -283,7 +287,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		clearTemplate.addActionListener(this);
 		templatePanel.add(clearTemplate);
 
-		outerc.gridy = 3;
+		++ outerc.gridy;
 		outerc.anchor = GridBagConstraints.LINE_START;
 		outerc.fill = GridBagConstraints.NONE;
 		add(templatePanel,outerc);
@@ -312,7 +316,7 @@ class PointsDialog extends Dialog implements ActionListener, WindowListener {
 		rc.gridy = 1;
 		registrationPanel.add( overlayResult, rc );
 
-		outerc.gridy = 4;
+		++ outerc.gridy;
 		add(registrationPanel,outerc);
 
 		pack();
