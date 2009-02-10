@@ -375,12 +375,21 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	/**
 	 * @deprecated This method will not be supported in the future.
+	 * The specified 'scale' will be ignored, and the applied scale is 
+	 * will be calculated automatically from the minimum and maximum 
+	 * coordinates of the specified mesh.
 	 * Use addTriangleMesh instead.
-	 * @param mesh
-	 * @param color
-	 * @param name
-	 * @param threshold
-	 * @return
+	 */
+	public Content addMesh(List mesh, Color3f color, String name,
+						float scale, int threshold) {
+		Content c = addMesh(mesh, color, name, threshold);
+		ensureScale(scale);
+		return c;
+	}
+
+	/**
+	 * @deprecated This method will not be supported in the future.
+	 * Use addTriangleMesh instead.
 	 */
 	public Content addMesh(List<Point3f> mesh, Color3f color, String name,
 				int threshold) {
