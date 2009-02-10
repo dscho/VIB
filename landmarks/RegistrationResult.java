@@ -22,11 +22,10 @@ public class RegistrationResult implements Comparable {
 
 	double pointMoved;
 	
-	/* These are indices into the current image, not the cropped
-	 * one. */
-	int point_would_be_moved_to_x;
-	int point_would_be_moved_to_y;
-	int point_would_be_moved_to_z;
+	/* These should now be world co-ordinates */
+	double point_would_be_moved_to_x;
+	double point_would_be_moved_to_y;
+	double point_would_be_moved_to_z;
 	
 	public int compareTo(Object otherRegistrationResult) {
 		RegistrationResult other = (RegistrationResult) otherRegistrationResult;

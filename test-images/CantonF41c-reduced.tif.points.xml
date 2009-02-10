@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE namedpointset [
+  <!ELEMENT namedpointset (pointworld*)>
+  <!ELEMENT pointworld EMPTY>
+  <!ATTLIST namedpointset version CDATA #REQUIRED>
+  <!ATTLIST pointworld set (true|false) #REQUIRED>
+  <!ATTLIST pointworld name CDATA #REQUIRED>
+  <!ATTLIST pointworld x CDATA #IMPLIED>
+  <!ATTLIST pointworld y CDATA #IMPLIED>
+  <!ATTLIST pointworld z CDATA #IMPLIED>
+]>
+
+<namedpointset version="1.0">
+  <pointworld set="true" name="the centre of the ellipsoid body" x="295.00580720092915" y="157.95586527293844" z="91.85064935064935"/>
+  <pointworld set="false" name="the left tip of the protocerebral bridge"/>
+  <pointworld set="false" name="the right tip of the protocerebral bridge"/>
+  <pointworld set="false" name="the most dorsal point of the left part of the protocerebral bridge"/>
+  <pointworld set="false" name="the most dorsal point of the right part of the protocerebral bridge"/>
+  <pointworld set="false" name="the top of the left alpha lobe of the mushroom body"/>
+  <pointworld set="true" name="the top of the right alpha lobe of the mushroom body" x="360.04645760743324" y="72.00929152148665" z="100.81168831168831"/>
+  <pointworld set="false" name="the most lateral part of the mushroom body on the left"/>
+  <pointworld set="false" name="the most lateral part of the mushroom body on the right"/>
+</namedpointset>

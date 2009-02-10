@@ -10,7 +10,7 @@ import ij.gui.GenericDialog;
 
 public class Tubeness_ implements PlugIn {
 
-	static final String PLUGIN_VERSION = "1.1";
+	static final String PLUGIN_VERSION = "1.2";
 
 	public void run(String ignored) {
 
