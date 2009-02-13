@@ -68,13 +68,13 @@ public class IFT_ implements PlugInFilter {
 		if(gd.wasCanceled())
 			return;
 
-		String seedtitle = gd.getNextChoice();
-		if(seedtitle.equals("use seeds from point list"))
+		int seed = gd.getNextChoiceIndex();
+		if(seed == titles.length - 1)
 			initFromPointList();
-		else if(seedtitle.equals("use local minima"))
+		else if(seed == titles.length - 2)
 			initFromMinima();
 		else
-			initFromImage(WindowManager.getImage(seedtitle));
+			initFromImage(WindowManager.getImage(titles[seed]));
 		propagate();
 
 		if(gd.getNextBoolean())
