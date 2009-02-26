@@ -180,6 +180,7 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard voltex/*.java)\
 	$(wildcard view4d/*.java) $(wildcard view4d/icons/*.png) \
 	$(wildcard surfaceplot/*.java) \
 	$(wildcard octree/*.java) \
+	$(wildcard customnode/*.java) \
 	$(wildcard nrrd/*.java) \
 	vib/segment/ImageButton.java vib/segment/Border.java \
 	vib/Resample_.java vib/InterpolatedImage.java \
