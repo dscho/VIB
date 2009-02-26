@@ -2,6 +2,8 @@
 package isosurface;
 
 import ij3d.Content;
+import customnode.CustomMeshNode;
+import customnode.CustomMesh;
 
 import ij.IJ;
 import ij.io.SaveDialog;
@@ -81,13 +83,16 @@ public class MeshExporter {
 		StringBuffer sb_data = new StringBuffer("0\nSECTION\n2\nENTITIES\n");   //header of file
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content ob = (Content)it.next();
-			int t = ob.getType();
-			if (t != Content.SURFACE || t != Content.CUSTOM)
-				continue;
-			final MeshGroup mg = (MeshGroup)ob.getContent();
-			List triangles = mg.getMesh().getMesh();
+
+			if (!(ob.getContent() instanceof CustomMeshNode)) continue;
+
+			final CustomMeshNode cmeshnode = (CustomMeshNode) ob.getContent();
+			final CustomMesh cmesh = cmeshnode.getMesh();
+
+			final List triangles = cmesh.getMesh();
+
 			String title = ob.getName().replaceAll(" ", "_").replaceAll("#", "--");
-			Mtl mat = new Mtl(1 - ob.getTransparency(), mg.getMesh().getColor());
+			Mtl mat = new Mtl(1 - ob.getTransparency(), cmesh.getColor());
 			writeTrianglesDXF(sb_data, triangles, title, "" + mat.getAsSingle());
 		}
 		sb_data.append("0\nENDSEC\n0\nEOF\n");         //TRAILER of the file
@@ -146,14 +151,15 @@ public class MeshExporter {
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content mob = (Content)it.next();
 			int t = mob.getType();
-			if (t != Content.SURFACE && t != Content.CUSTOM)
-				continue;
-			final MeshGroup mg = (MeshGroup)mob.getContent();
 
-			List triangles = mg.getMesh().getMesh();
+			if (!(mob.getContent() instanceof CustomMeshNode)) continue;
+
+			final CustomMeshNode cmeshnode = (CustomMeshNode) mob.getContent();
+			final CustomMesh cmesh = cmeshnode.getMesh();
+
+			final List triangles = cmesh.getMesh();
 			// make material, and see whether it exists already
-			Mtl mat = new Mtl(1 - mob.getTransparency(),
-						mg.getMesh().getColor());
+			Mtl mat = new Mtl(1 - mob.getTransparency(), cmesh.getColor());
 			Object mat2 = ht_mat.get(mat);
 			if (null != mat2) mat = (Mtl)mat2; // recycling
 			else ht_mat.put(mat, mat); // !@#$% Can't get the object in a HashSet easily
