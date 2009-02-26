@@ -46,6 +46,10 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
 
+	protected final Point3d globalMin = new Point3d();
+	protected final Point3d globalMax = new Point3d();
+	protected final Point3d globalCenter = new Point3d();
+
 	protected final InteractiveBehavior mouseBehavior;
 	protected final ContentTransformer contentTransformer;
 	protected final Picker picker;

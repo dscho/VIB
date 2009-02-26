@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.util.Properties;
 import javax.media.j3d.View;
 import javax.vecmath.Color3f;
+import javax.vecmath.Point3d;
 
 public class UniverseSettings {
 
@@ -107,6 +108,12 @@ public class UniverseSettings {
 		
 		showLocalCoordinateSystemsByDefault = gd.getNextBoolean();
 		globalRotationCenter = v2[gd.getNextChoiceIndex()];
+		if(globalRotationCenter == ROTATION_AROUND_ORIGIN)
+			univ.getViewPlatformTransformer().
+				setRotationCenter(new Point3d());
+		else
+			univ.getViewPlatformTransformer().setRotationCenter(
+				univ.getGlobalCenterPoint());
 
 		save();
 		if(apply)

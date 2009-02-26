@@ -19,7 +19,6 @@ import javax.vecmath.Vector3d;
 public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 	private Vector3d rotationAxis = new Vector3d();
-	private Point3d rotationCenter = new Point3d();
 
 	private Transform3D centerXform = new Transform3D();
 	private Transform3D animationXform = new Transform3D();
@@ -124,7 +123,8 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	}
 
 	public void rotateY(double rad) {
-		viewTransformer.rotateY(rotationCenter, rad);
+		viewTransformer.rotateY(
+			viewTransformer.getRotationCenter(), rad);
 		transformChanged(-1, rotationTG);
 	}
 
@@ -150,7 +150,6 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	}
 
 	public void pauseAnimation() {
-		System.out.println("animation.pause");
 		animation.pause();
 	}
 
@@ -186,7 +185,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 //		sphere = new BoundingSphere(new Point3f(rotationCenter), 10);
 //		scene.addChild(sphere);
 		rotationXform.setIdentity();
-	
+
 		if(rotateAroundViewAxis) {
 			viewTransformer.getYDir(rotationAxis);
 			v1.set(0, 1, 0);
@@ -196,7 +195,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			rotationXform.set(aa);
 		}
 
-		centerV.set(rotationCenter);
+		centerV.set(viewTransformer.getRotationCenter());
 		viewTransformer.getZoomTranslation(tmpV);
 		centerV.sub(tmpV);
 		viewTransformer.getCenterTranslation(tmpV);

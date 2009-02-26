@@ -35,10 +35,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private Executer executer;
 
-	private Point3d globalMin = new Point3d();
-	private Point3d globalMax = new Point3d();
-	private Point3d globalCenter = new Point3d();
-
 	PointListDialog pld;
 
 	static{
@@ -180,6 +176,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		globalCenter.z = globalMin.z + (globalMax.z - globalMin.z) / 2;
 
 		getViewPlatformTransformer().centerAt(globalCenter);
+	}
+
+	/**
+	 * Get a reference to the global center point.
+	 * Attention: Changing the returned point results in unspecified
+	 * behavior.
+	 */
+	public Point3d getGlobalCenterPoint() {
+		return globalCenter;
 	}
 
 	public void getGlobalCenterPoint(Point3d p) {
