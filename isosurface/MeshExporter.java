@@ -80,6 +80,8 @@ public class MeshExporter {
 		SaveDialog sd = new SaveDialog("Save as DXF", "untitled", ".dxf");
 		String dir = sd.getDirectory();
 		if (null == dir) return;
+		if (IJ.isWindows()) dir = dir.replace('\\', '/');
+		if (!dir.endsWith("/")) dir += "/";
 		String dxf_filename = sd.getFileName();
 		if (!dxf_filename.toLowerCase().endsWith(".dxf")) dxf_filename += ".dxf";
 
@@ -92,11 +94,20 @@ public class MeshExporter {
 			}
 		}
 
-		saveToFile(new File(dir + "/" + dxf_filename), createDXF(meshgroups));
+		OutputStreamWriter dos = null;
+		try {
+			dos = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(dxf_file)), "8859_1"); // encoding in Latin 1 (for macosx not to mess around
+			writeDXF(meshgroups, dos);
+			dos.flush();
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+		} finally {
+			try { if (null != dos) dos.close(); } catch (Exception e) {}
+		}
 	}
 
-	static public String createDXF(final Collection contents) {
-		StringBuffer sb_data = new StringBuffer("0\nSECTION\n2\nENTITIES\n");   //header of file
+	static public void writeDXF(final Collection contents, final Writer w) throws IOException {
+		w.write("0\nSECTION\n2\nENTITIES\n");   //header of file
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content ob = (Content)it.next();
 
@@ -109,14 +120,32 @@ public class MeshExporter {
 
 			String title = ob.getName().replaceAll(" ", "_").replaceAll("#", "--");
 			Mtl mat = new Mtl(1 - ob.getTransparency(), cmesh.getColor());
-			writeTrianglesDXF(sb_data, triangles, title, "" + mat.getAsSingle());
+			writeTrianglesDXF(w, triangles, title, "" + mat.getAsSingle());
 		}
-		sb_data.append("0\nENDSEC\n0\nEOF\n");         //TRAILER of the file
-		return sb_data.toString();
+		w.append("0\nENDSEC\n0\nEOF\n");         //TRAILER of the file
 	}
 
+	@Deprecated
+	static public String createDXF(final Collection contents) {
+		StringWriter sw = new StringWriter();
+		try {
+			writeDXF(contents, sw);
+		} catch (IOException ioe) {}
+		return sw.toString();
+	}
 
+	@Deprecated
 	static public void writeTrianglesDXF(final StringBuffer sb, final List triangles, final String the_group, final String the_color) {
+		try {
+			StringWriter sw = new StringWriter();
+			writeTrianglesDXF(sw, triangles, the_group, the_color);
+			sb.append(sw.getBuffer());
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+	}
+
+	static private void writeTrianglesDXF(final Writer w, final List triangles, final String the_group, final String the_color) throws IOException {
 
 		final char L = '\n';
 		final String s10 = "10\n"; final String s11 = "11\n"; final String s12 = "12\n"; final String s13 = "13\n";
@@ -127,10 +156,14 @@ public class MeshExporter {
 		final int len = triangles.size();
 		final Point3f[] vert = new Point3f[len];
 		triangles.toArray(vert);
+
+		final StringBuffer sb = new StringBuffer(150);
+
 		for (int i=0; i<len; i+=3) {
 
-			sb.append(triangle_header)
+			w.write(triangle_header);
 
+			sb
 			.append(s10).append(vert[i].x).append(L)
 			.append(s20).append(vert[i].y).append(L)
 			.append(s30).append(vert[i].z).append(L)
@@ -146,6 +179,9 @@ public class MeshExporter {
 			.append(s13).append(vert[i+2].x).append(L) // repeated point
 			.append(s23).append(vert[i+2].y).append(L)
 			.append(s33).append(vert[i+2].z).append(L);
+
+			w.write(sb.toString());
+			sb.setLength(0);
 		}
 	}
 
@@ -155,6 +191,7 @@ public class MeshExporter {
 	 * - the contents of the .obj file with mesh data
 	 * - the contents of the .mtl file with material data
 	 */
+	@Deprecated
 	static public String[] createWaveFront(Collection contents, String mtl_filename) {
 		StringWriter sw_obj = new StringWriter();
 		StringWriter sw_mtl = new StringWriter();
