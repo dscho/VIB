@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.ArrayList;
 
 import javax.vecmath.Point3f;
 import javax.vecmath.Color3f;
@@ -30,10 +31,27 @@ public class MeshExporter {
 
 	private MeshExporter() {}
 
+	// The test for CustomMeshNode does not work with a 3D texture object that was converted to a surface on the menus!
+	// This test is also done later, at each specific method. So must update there as well on figuring out how to properly detect a mesh.
+	static private Collection filterMeshes(final Collection contents) {
+		ArrayList meshes = new ArrayList();
+		for (Iterator it = contents.iterator(); it.hasNext(); ) {
+			Content ob = (Content)it.next();
+			if (!(ob.getContent() instanceof CustomMeshNode)) continue;
+			meshes.add(ob);
+		}
+		return meshes;
+	}
+
 	/** Accepts a collection of MeshGroup objects. */
-	static public void saveAsWaveFront(final Collection contents) {
+	static public void saveAsWaveFront(Collection contents) {
 		if (null == contents || 0 == contents.size())
 			return;
+		contents = filterMeshes(contents);
+		if (0 == contents.size()) {
+			IJ.log("No meshes to export!");
+			return;
+		}
 		SaveDialog sd = new SaveDialog(
 				"Save WaveFront", "untitled", ".obj");
 		String dir = sd.getDirectory();
@@ -75,8 +93,13 @@ public class MeshExporter {
 		}
 	}
 
-	static public void saveAsDXF(final Collection meshgroups) {
+	static public void saveAsDXF(Collection meshgroups) {
 		if (null == meshgroups || 0 == meshgroups.size()) return;
+		meshgroups = filterMeshes(meshgroups);
+		if (0 == meshgroups.size()) {
+			IJ.log("No meshes to export!");
+			return;
+		}
 		SaveDialog sd = new SaveDialog("Save as DXF", "untitled", ".dxf");
 		String dir = sd.getDirectory();
 		if (null == dir) return;
