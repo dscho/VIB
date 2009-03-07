@@ -156,7 +156,7 @@ public class MaterialList extends ScrollPane implements ActionListener,
 		boolean[] newlocked = new boolean[num];
 		System.arraycopy(locked, 0, newlocked, 0, locked.length);
 		locked = newlocked;
-		select(num);
+		select(num-1);
 		doLayout();
 		list.repaint();
 	}
