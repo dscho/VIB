@@ -26,7 +26,6 @@ import vib.FastMatrix;
 
 import orthoslice.OrthoGroup;
 import voltex.VoltexGroup;
-import voltex.Renderer;
 import isosurface.MeshGroup;
 import isosurface.MeshExporter;
 import isosurface.MeshEditor;

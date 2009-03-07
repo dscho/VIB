@@ -21,7 +21,7 @@ public class MeshProperties {
 	 * @param cm contains the center of gravity after the calculation
 	 * @param inertia contains the inertia matrix after the calculation.
 	 */
-	public static double compute(List p, Point3f cm, double[][] inertia) {
+	public static double compute(List p, Point3d cm, double[][] inertia) {
 
 		int tmax = p.size() / 3;
 		final double[] mult = {1d/6, 1d/24, 1d/24,1d/24, 1d/60, 1d/60,
@@ -107,6 +107,25 @@ public class MeshProperties {
 		fg[3] = fg[1] + w0 * (fg[0] + w0);
 		fg[4] = fg[1] + w1 * (fg[0] + w1);
 		fg[5] = fg[1] + w2 * (fg[0] + w2);
+	}
+
+	public static void calculateMinMaxPoint(
+			List mesh, Point3d min, Point3d max) {
+
+		if(mesh == null)
+			return;
+
+		min.x = min.y = min.z = Double.MAX_VALUE;
+		max.x = max.y = max.z = Double.MIN_VALUE;
+		for(int i = 0; i < mesh.size(); i++) {
+			Point3f p = (Point3f)mesh.get(i);
+			if(p.x < min.x) min.x = p.x;
+			if(p.y < min.y) min.y = p.y;
+			if(p.z < min.z) min.z = p.z;
+			if(p.x > max.x) max.x = p.x;
+			if(p.y > max.y) max.y = p.y;
+			if(p.z > max.z) max.z = p.z;
+		}
 	}
 }
 

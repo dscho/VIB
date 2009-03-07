@@ -545,8 +545,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void contentSelected(Content c) {
 		delete.setEnabled(c != null);
 		center.setEnabled(c != null);
-		exportObj.setEnabled(c != null);
-		exportDXF.setEnabled(c != null);
 		fill.setEnabled(c != null);
 		smoothMesh.setEnabled(c != null);
 
@@ -586,8 +584,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		fill.setEnabled(t == Content.VOLUME);
 		shaded.setEnabled(t == Content.SURFACE_PLOT2D ||
 			t == Content.SURFACE || t == Content.CUSTOM);
-		exportObj.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
-		exportDXF.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
 		smoothMesh.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
 
 		coordinateSystem.setState(c.hasCoord());

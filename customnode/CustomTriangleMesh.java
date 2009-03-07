@@ -8,6 +8,7 @@ import javax.media.j3d.Geometry;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.TriangleArray;
 import javax.vecmath.Color3f;
+import javax.vecmath.Point3d;
 import javax.vecmath.Point3f;
 
 import com.sun.j3d.utils.geometry.GeometryInfo;
@@ -21,7 +22,7 @@ public class CustomTriangleMesh extends CustomMesh {
 	public CustomTriangleMesh(List<Point3f> mesh, Color3f color, float trans) {
 		super(mesh, color, trans);
 		if(mesh != null) {
-			Point3f center = new Point3f();
+			Point3d center = new Point3d();
 			double[][] inertia = new double[3][3];
 			volume = MeshProperties.compute(mesh, center, inertia);
 		}

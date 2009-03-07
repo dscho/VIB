@@ -10,6 +10,10 @@ public class BoundingBox extends BranchGroup {
 
 	private Point3f min, max;
 
+	public BoundingBox(Point3d min, Point3d max) {
+		this(new Point3f(min), new Point3f(max));
+	}
+
 	public BoundingBox(Point3f min, Point3f max) {
 		this(min, max, new Color3f(1, 0, 0));
 	}

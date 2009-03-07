@@ -1,18 +1,18 @@
 package isosurface;
 
-import java.util.List;
-import java.awt.Color;
 import ij.IJ;
-
 import ij3d.Content;
 import ij3d.ContentNode;
 
-import marchingcubes.MCTriangulator;
+import java.awt.Color;
+import java.util.List;
 
 import javax.media.j3d.View;
-import javax.vecmath.Point3f;
 import javax.vecmath.Color3f;
+import javax.vecmath.Point3f;
+import javax.vecmath.Tuple3d;
 
+import marchingcubes.MCTriangulator;
 import customnode.CustomTriangleMesh;
 
 public class MeshGroup extends ContentNode {
@@ -20,6 +20,7 @@ public class MeshGroup extends ContentNode {
 	private CustomTriangleMesh mesh;
 	private Triangulator triangulator = new MCTriangulator();
 	private Content c;
+	private Point3f min, max, center;
 
 	public MeshGroup (Content c) {
 		super();
@@ -35,10 +36,23 @@ public class MeshGroup extends ContentNode {
 		}
 		mesh = new CustomTriangleMesh(tri, color, c.getTransparency());
 		calculateMinMaxCenterPoint();
+		addChild(mesh);
 	}
 
 	public CustomTriangleMesh getMesh() {
 		return mesh;
+	}
+
+	public void getMin(Tuple3d min) {
+		min.set(this.min);
+	}
+
+	public void getMax(Tuple3d max) {
+		max.set(this.max);
+	}
+
+	public void getCenter(Tuple3d center) {
+		center.set(this.center);
 	}
 
 	public void eyePtChanged(View view) {

@@ -2,7 +2,7 @@ package ij3d;
 
 import ij3d.shapes.CoordinateSystem;
 import ij3d.shapes.Scalebar;
-import ij3d.behaviors.MouseBehavior;
+import ij3d.behaviors.InteractiveBehavior;
 import ij.gui.Toolbar;
 
 import java.awt.Dimension;
@@ -16,7 +16,6 @@ import com.sun.j3d.utils.picking.behaviors.PickingCallback;
 
 import com.sun.j3d.utils.behaviors.keyboard.*;
 import com.sun.j3d.utils.behaviors.mouse.*;
-import com.sun.j3d.utils.geometry.Sphere;
 import com.sun.j3d.utils.universe.*;
 
 import ij3d.behaviors.BehaviorCallback;
@@ -47,7 +46,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 	protected BoundingSphere bounds;
 	protected ImageWindow3D win;
 
-	protected final MouseBehavior mouseBehavior;
+	protected final InteractiveBehavior mouseBehavior;
 	protected final ContentTransformer contentTransformer;
 	protected final Picker picker;
 	protected final InteractiveViewPlatformTransformer viewTransformer;
@@ -149,7 +148,7 @@ public abstract class DefaultUniverse extends SimpleUniverse implements
 		viewTransformer = new InteractiveViewPlatformTransformer(this, this);
 		contentTransformer = new ContentTransformer(this, this);
 		picker = new Picker(this);
-		mouseBehavior = new MouseBehavior(this);
+		mouseBehavior = new InteractiveBehavior(this);
 		mouseBehavior.setSchedulingBounds(bounds);
 		scene.addChild(mouseBehavior);
 

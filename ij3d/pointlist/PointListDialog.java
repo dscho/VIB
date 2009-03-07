@@ -2,8 +2,6 @@ package ij3d.pointlist;
 
 import ij3d.*;
 import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Button;
 import java.awt.Color;
 import java.awt.Dialog;
 import java.awt.Frame;
@@ -15,11 +13,11 @@ import java.awt.GridBagConstraints;
 
 public class PointListDialog extends Dialog {
 
-	GridBagConstraints c;
-	GridBagLayout gridbag;
-	ScrollPane scroll;
-	Panel panel;
-	Panel extraPanel;
+	private GridBagConstraints c;
+	private GridBagLayout gridbag;
+	private ScrollPane scroll;
+	private Panel panel;
+	private Panel extraPanel;
 
 	public PointListDialog(Frame owner) {
 		super(owner, "Point list");
@@ -88,7 +86,6 @@ public class PointListDialog extends Dialog {
 		}
 	}
 		
-
 	private void print() {
 		Component[] c = panel.getComponents();
 		for(int i = 0; i < c.length; i++) {
