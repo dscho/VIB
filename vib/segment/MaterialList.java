@@ -267,7 +267,9 @@ public class MaterialList extends ScrollPane implements ActionListener,
 			if (e.isPopupTrigger()) {
 				int index = e.getY() / lineHeight;
 				if (index < getItemCount()) {
-					lock.setState(locked[e.getY() / lineHeight]);
+					selectedIndex = index;
+					repaint();
+					lock.setState(locked[index]);
 					popup.show(this, e.getX(), e.getY());
 				}
 			}
