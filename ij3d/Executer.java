@@ -48,7 +48,7 @@ import octree.VolumeOctree;
 
 public class Executer {
 
-	// These strings are the names of the stataic methods in
+	// These strings are the names of the static methods in
 	// ImageJ3DViewer.
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
@@ -771,7 +771,7 @@ public class Executer {
 				"required for registration");
 			return;
 		}
-		RegistrationMenubar rm = univ.getRegistrationMenubar();
+		RegistrationMenubar rm = univ.getRegistrationMenuBar();
 		univ.setMenubar(rm);
 		rm.register();
 	}
@@ -981,7 +981,8 @@ public class Executer {
 		gd.addStringField("Units", sc.getUnit(), 5);
 		gd.addChoice("Color", ColorTable.colorNames, 
 				ColorTable.getColorName(sc.getColor()));
-		gd.addCheckbox("show", univ.isAttributeVisible(Image3DUniverse.SCALEBAR));
+		gd.addCheckbox("show", univ.isAttributeVisible(
+				Image3DUniverse.ATTRIBUTE_SCALEBAR));
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
@@ -991,7 +992,7 @@ public class Executer {
 		sc.setUnit(gd.getNextString());
 		sc.setColor(ColorTable.getColor(gd.getNextChoice()));
 		boolean vis = gd.getNextBoolean();
-		univ.showAttribute(Image3DUniverse.SCALEBAR, vis);
+		univ.showAttribute(Image3DUniverse.ATTRIBUTE_SCALEBAR, vis);
 	}
 
 

@@ -126,8 +126,8 @@ public class UniverseSettings {
 
 		univ.setSize(startupWidth, startupHeight);
 		univ.getViewer().getView().setProjectionPolicy(projection);
-		univ.showAttribute(Image3DUniverse.COORD_SYSTEM, showGlobalCoordinateSystem);
-		univ.showAttribute(Image3DUniverse.SCALEBAR, showScalebar);
+		univ.showAttribute(Image3DUniverse.ATTRIBUTE_COORD_SYSTEM, showGlobalCoordinateSystem);
+		univ.showAttribute(Image3DUniverse.ATTRIBUTE_SCALEBAR, showScalebar);
 	}
 
 	private static final String str(int i) {
