@@ -17,6 +17,11 @@ public class ImageJ3DViewer implements PlugIn {
 
 	private static Image3DUniverse univ;
 
+	public static void main(String[] args) {
+		  new ij.ImageJ();
+		  IJ.runPlugIn("ij3d.ImageJ3DViewer", "");
+	}
+
 	public void run(String arg) {
 		ImagePlus image = WindowManager.getCurrentImage();
 		try {
