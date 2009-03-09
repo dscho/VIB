@@ -55,8 +55,10 @@ public class AmiraMeshWriter_ implements PlugIn {
 		SaveDialog od = new SaveDialog("AmiraFile", null, ".am");
 		String dir=od.getDirectory();
 		String name=od.getFileName();
-		if(name==null)
+		if(name==null) {
+			IJ.error("No name was chosen: not saved");
 			return;
+		}
 
 		if (frame instanceof TextWindow) {
 			TextWindow t = (TextWindow)frame;

@@ -292,7 +292,7 @@ public class Particle_Analyzer_3D implements PlugInFilter {
 		for(int d=1;d<=z;d++){
 			byte[] pixels = 
 				(byte[])image.getStack().getProcessor(d).getPixels();
-			int[] classes = new int[pixels.length];
+			int[] classes = new int[w * h];
 			int[] classesBefore = d > 1 ? 
 				(int[])resStack.getProcessor(d-1).getPixels() : null;
 			for(int i=0;i<h;i++){
