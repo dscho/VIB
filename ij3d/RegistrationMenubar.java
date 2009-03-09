@@ -107,7 +107,7 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 		univ.setMenubar(mb);
 		univ.clearSelection();
 		univ.setStatus("");
-		univ.pld.removeExtraPanel();
+		univ.getPointListDialog().removeExtraPanel();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
 	}
 
@@ -142,7 +142,7 @@ public class RegistrationMenubar extends MenuBar implements ActionListener,
 			p.add(b);
 		}
 
-		univ.pld.addPanel(p);
+		univ.getPointListDialog().addPanel(p);
 	}
 
 	public void initRegistration() {
