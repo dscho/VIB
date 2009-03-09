@@ -42,7 +42,7 @@ import javax.media.j3d.RenderingErrorListener;
 import javax.media.j3d.Screen3D;
 import javax.vecmath.Color3f;
 
-public class ImageWindow3D extends ImageWindow implements UniverseListener, 
+public class ImageWindow3D extends ImageWindow implements UniverseListener,
 							WindowStateListener,
 							KeyListener {
 	DefaultUniverse universe;
@@ -164,6 +164,10 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	public void updateImagePlus() {
 		//this.imp = getNewImagePlus();
 		imp_updater.update();
+	}
+
+	public void updateImagePlusAndWait() {
+		imp_updater.updateAndWait();
 	}
 
 	final ImagePlusUpdater imp_updater = new ImagePlusUpdater(this);
@@ -290,8 +294,8 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	}
 
 	/**
-	 * Override windowActivated() in ij.gui.ImageWindow. 
-	 * The default implementation sets ImageJ's menubar to this 
+	 * Override windowActivated() in ij.gui.ImageWindow.
+	 * The default implementation sets ImageJ's menubar to this
 	 * ImageWindow, however, we have our own menubar here.
 	 */
 	public void windowActivated(WindowEvent e) {

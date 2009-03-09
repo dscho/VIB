@@ -122,7 +122,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			animationTG.setTransform(rotate);
 			fireTransformationUpdated();
 			getCanvas().getView().renderOnce();
-			win.updateImagePlus();
+			win.updateImagePlusAndWait();
 			ImageProcessor ip = win.getImagePlus().getProcessor();
 			int w = ip.getWidth(), h = ip.getHeight();
 			if(stack == null)
