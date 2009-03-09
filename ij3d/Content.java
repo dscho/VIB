@@ -326,8 +326,8 @@ public class Content extends BranchGroup implements UniverseListener {
 		localRotate.getTransform(t2);
 		t1.mul(t2);
 
-		transform.mul(t1);
-		setTransform(transform);
+		t1.mul(transform, t1);
+		setTransform(t1);
 	}
 
 	public void setTransform(Transform3D transform) {
@@ -409,7 +409,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	/* ************************************************************
-	 * Universe Listener interface
+	 * UniverseListener interface
 	 *
 	 *************************************************************/
 	public void transformationStarted(View view) {}
@@ -430,6 +430,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	public void transformationUpdated(View view) {
 		eyePtChanged(view);
 	}
+
 	public void transformationFinished(View view) {
 		eyePtChanged(view);
 	}
