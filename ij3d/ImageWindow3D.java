@@ -82,10 +82,11 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		addWindowStateListener(this);
 		// this listener first, to interrupt events
 		canvas3D.addKeyListener(this);
-		canvas3D.addKeyListener(ij);
 		ImageJ ij = IJ.getInstance();
-		if (ij != null)
+		if (ij != null) {
+			canvas3D.addKeyListener(ij);
 			addKeyListener(ij);
+		}
 		universe.addUniverseListener(this);
 		updateImagePlus();
 		Toolbar.getInstance().setTool(Toolbar.HAND);
@@ -310,12 +311,18 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		if (null == universe) return;
 		universe.removeUniverseListener(this);
 
-		// Must remove the listener so this instance can be garbage collected and removed from the Canvas3D, overcomming the limit of 32 total Canvas3D instances.
+		// Must remove the listener so this instance can be garbage
+		// collected and removed from the Canvas3D, overcomming the limit
+		// of 32 total Canvas3D instances.
 		try {
-			Method m = SimpleUniverse.class.getMethod("removeRenderingErrorListener", new Class[]{RenderingErrorListener.class});
-			if (null != m) m.invoke(universe, new Object[]{error_listener});
+			Method m = SimpleUniverse.class.getMethod(
+					"removeRenderingErrorListener",
+					new Class[]{RenderingErrorListener.class});
+			if (null != m)
+				m.invoke(universe, new Object[]{error_listener});
 		} catch (Exception ex) {
-			System.out.println("Could NOT remove the RenderingErrorListener!");
+			System.out.println(
+					"Could NOT remove the RenderingErrorListener!");
 			ex.printStackTrace();
 		}
 
@@ -361,7 +368,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	private int lastToolID = Toolbar.HAND;
 
 	public void keyPressed(KeyEvent e) {
-		if (e.getKeyCode() == e.VK_ESCAPE) {
+		if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			if (Toolbar.getToolId() == Toolbar.HAND)
 				Toolbar.getInstance().setTool(lastToolID);
 			else {
@@ -369,9 +376,10 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 				Toolbar.getInstance().setTool(Toolbar.HAND);
 			}
 		}
-		// AVOID forwarding the x,y,z commands to ImageJ when manipulating an orthoslice
+		// AVOID forwarding the x,y,z commands to ImageJ when manipulating
+		// an orthoslice
 		Content c = universe.getSelected();
-		if (null != c && c.getType() == Content.ORTHO) {
+		if (null != c) {
 			switch (e.getKeyCode()) {
 				case KeyEvent.VK_X:
 				case KeyEvent.VK_Y:
