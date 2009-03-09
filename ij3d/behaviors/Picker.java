@@ -17,7 +17,7 @@ import vib.BenesNamedPoint;
 
 /**
  * This class is a helper class which implements functions for picking.
- * 
+ *
  * @author Benjamin Schmid
  */
 public class Picker {
@@ -54,7 +54,7 @@ public class Picker {
 	}
 
 	private int movingIndex = -1;
-	
+
 	/**
 	 * Moves the picked landmark point to the position specified by the
 	 * MouseEvent.
@@ -84,6 +84,26 @@ public class Picker {
 	}
 
 	/**
+	 * Adds a landmark point specfied by the canvas position
+	 * @param c
+	 * @param x position in the canvas
+	 * @param y position in the canvas
+	 */
+	public void addPoint(Content c, int x, int y) {
+		if(c == null) {
+			IJ.error("Selection required");
+			return;
+		}
+		Point3d p3d = getPickPointGeometry(c, x, y);
+		if(p3d == null)
+			return;
+		BenesNamedPoint bnp = c.getPointListPointAt(p3d);
+		if(bnp == null) {
+			c.addPointListPoint(p3d);
+		}
+	}
+
+	/**
 	 * Adds a landmark point specfied by the position of the MouseEvent.
 	 * @param c
 	 * @param e
@@ -101,7 +121,7 @@ public class Picker {
 			c.addPointListPoint(p3d);
 		}
 	}
-	
+
 	/*
 	private Point3d start = new Point3d();
 	private Transform3D tmp = new Transform3D();
