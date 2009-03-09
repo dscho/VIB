@@ -141,7 +141,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public MenuBar getMenuBar() {
 		return menubar;
 	}
-	
+
 	/**
 	 * Returns a reference to the registration menu bar.
 	 */
@@ -156,7 +156,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Executer getExecuter() {
 		return executer;
 	}
-	
+
 	/**
 	 * Returns a reference to the PointListDialog used by this universe
 	 */
@@ -287,7 +287,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
-	 * Copies the global minimum point into the specified Point3d. 
+	 * Copies the global minimum point into the specified Point3d.
 	 * @param p
 	 */
 	public void getGlobalMinPoint(Point3d p) {
@@ -421,7 +421,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * type is one of the constants defined in Content, e.g. VOLUME, SURFACE
 	 * etc. For meaning about color, threshold, channels, ... see the
 	 * documentation for Content.
-	 * 
+	 *
 	 * @param image the image to display
 	 * @param color the color in which the Content is displayed
 	 * @param name a name for the Content to be added
@@ -460,27 +460,55 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
+	 * Add the specified image as a new Content to the universe. The specified
+	 * type is one of the constants defined in Content, e.g. VOLUME, SURFACE
+	 * etc. For meaning about color, threshold, channels, ... see the
+	 * documentation for Content.
+	 * Default parameters are used for its attributes:
+	 * <ul><li>color: null
+	 * <li>name: title of the image
+	 * <li>threshold: the default threshold, as returned by
+	 *                Content.getDefaultTreshold()
+	 * <li>channels: all color channels r, g, b
+	 * <li>resampling factor: the default resampling factor, as returned
+	 *                by Content.getDefaultResamplingFactor() </li>
+	 * </ul>
+	 *
+	 * @param image the image to display
+	 * @param type the type which determines how the image is displayed.
+	 * @return The Content which is added, null if any error occurred.
+	 */
+	public Content addContent(ImagePlus image, int type) {
+		int res = Content.getDefaultResamplingFactor(image, type);
+		int thr = Content.getDefaultThreshold(image, type);
+		return addContent(image, null, image.getTitle(), thr,
+			new boolean[] {true, true, true}, res, type);
+	}
+
+	/**
 	 * Add a new image as a content, displaying it as a volume rendering.
 	 * Default parameters are used for its attributes:
 	 * <ul><li>color: null
 	 * <li>name: title of the image
-	 * <li>threshold: 0
+	 * <li>threshold: the default threshold, as returned by
+	 *                Content.getDefaultTreshold()
 	 * <li>channels: all color channels r, g, b
-	 * <li>resampling factor: 1</li></ul>
-	 * 
+	 * <li>resampling factor: the default resampling factor, as returned
+	 *                by Content.getDefaultResamplingFactor() </li>
+	 * </ul>
+	 *
 	 * @param image the image to display
 	 * @return the Content which was added, null if any error occurred.
 	 */
 	public Content addVoltex(ImagePlus image) {
-		return addVoltex(image, null, image.getTitle(), 0,
-			new boolean[] {true, true, true}, 1);
+		return addContent(image, Content.VOLUME);
 	}
 
 	/**
 	 * Add a new image as a content, displaying it as a volume rendering.
 	 * For the meaning of color, threshold, channels, resampling factor etc
 	 * see the documentation of Content.
-	 * 
+	 *
 	 * @param image the image to display
 	 * @param color the color in which this volume rendering is displayed.
 	 * @param name the name of the displayed Content.
@@ -498,9 +526,28 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	/**
 	 * Add a new image as a content, displaying it as orthoslices.
+	 * Default parameters are used for its attributes:
+	 * <ul><li>color: null
+	 * <li>name: title of the image
+	 * <li>threshold: the default threshold, as returned by
+	 *                Content.getDefaultTreshold()
+	 * <li>channels: all color channels r, g, b
+	 * <li>resampling factor: the default resampling factor, as returned
+	 *                by Content.getDefaultResamplingFactor() </li>
+	 * </ul>
+	 *
+	 * @param image the image to display
+	 * @return the Content which was added, null if any error occurred.
+	 */
+	public Content addOrthoslice(ImagePlus image) {
+		return addContent(image, Content.ORTHO);
+	}
+
+	/**
+	 * Add a new image as a content, displaying it as orthoslices.
 	 * For the meaning of color, threshold, channels, resampling factor etc
 	 * see the documentation of Content.
-	 * 
+	 *
 	 * @param image the image to display
 	 * @param color the color in which these orthoslices are displayed.
 	 * @param name the name of the displayed Content.
@@ -517,10 +564,29 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
+	 * Add a new image as a content, displaying it as an isosurface.
+	 * Default parameters are used for its attributes:
+	 * <ul><li>color: null
+	 * <li>name: title of the image
+	 * <li>threshold: the default threshold, as returned by
+	 *                Content.getDefaultTreshold()
+	 * <li>channels: all color channels r, g, b
+	 * <li>resampling factor: the default resampling factor, as returned
+	 *                by Content.getDefaultResamplingFactor() </li>
+	 * </ul>
+	 *
+	 * @param image the image to display
+	 * @return the Content which was added, null if any error occurred.
+	 */
+	public Content addMesh(ImagePlus img) {
+		return addContent(img, Content.SURFACE);
+	}
+
+	/**
 	 * Add a new image as a content, displaying it as an iso-surface.
 	 * For the meaning of color, threshold, channels, resampling factor etc
 	 * see the documentation of Content.
-	 * 
+	 *
 	 * @param image the image to display
 	 * @param color the color in which this surface is displayed.
 	 * @param name the name of the displayed Content.
@@ -532,14 +598,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 */
 	public Content addMesh(ImagePlus image, Color3f color, String name,
 		int threshold, boolean[] channels, int resamplingF) {
-		
+
 		return addContent(image, color, name, threshold, channels,
 				resamplingF, Content.SURFACE);
 	}
 
 	/**
 	 * Add a custom mesh to the universe.
-	 * 
+	 *
 	 * For more details on custom meshes, read the package API docs of
 	 * the package customnode.
 	 * @param mesh the CustomMesh to display
@@ -582,10 +648,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * continuously, i.e.the 1st point is connected to the 2nd, the 2nd to
 	 * the 2rd, the 3rd to the 4th, and so on.
 	 * </li></ul>
-	 * 
+	 *
 	 * * For more details on custom meshes, read the package API docs of
 	 * the package customnode.
-	 * 
+	 *
 	 * @param mesh a list of points which make up the mesh
 	 * @param color the color in which the line is displayed
 	 * @param name a name for the added Content
@@ -603,10 +669,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	/**
 	 * Add a custom mesh, in particular a triangle, to the universe.
-	 * 
+	 *
 	 * For more details on custom meshes, read the package API docs of
 	 * the package customnode.
-	 * 
+	 *
 	 * @param mesh a list of points which make up the mesh. The number of
 	 *        points must be devidable by 3. 3 successive points make up one
 	 *        triangle.
@@ -776,7 +842,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewer().getView().setBackClipDistance(2 * d);
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
-	
+
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/
@@ -786,7 +852,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	private float oldRange = 2f;
-	
+
 	private void ensureScale(float range) {
 		if(range > oldRange) {
 			oldRange = range;
