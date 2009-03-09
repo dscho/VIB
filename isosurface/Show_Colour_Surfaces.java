@@ -43,7 +43,10 @@ import java.awt.image.IndexColorModel;
 
 import java.util.HashMap;
 
-/* 
+import vib.Resample_;
+import process3d.Smooth_;
+
+/*
   This plugin should be used with 8-bit indexed colour images where
   each colour represents a different material.  Each of this materials
   will be displayed as a surface in the 3D viewer.
@@ -51,8 +54,15 @@ import java.util.HashMap;
 
 public class Show_Colour_Surfaces implements PlugIn {
 
-	/* If backgroundColorIndex is -1, then ask for the background colour. */
-	public void displayAsSurfaces( Image3DUniverse univ, ImagePlus image, int backgroundColorIndex ) {
+	/* If backgroundColorIndex is -1, then ask for the background colour.
+	   If resampling is < 0, then automatically pick a resampling factor,
+           otherwise, use that parameter. */
+
+	public void displayAsSurfaces( Image3DUniverse univ, ImagePlus image, int backgroundColorIndex, double smoothingSigma ) {
+		displayAsSurfaces( univ, image, backgroundColorIndex, smoothingSigma, -1 );
+	}
+
+	public void displayAsSurfaces( Image3DUniverse univ, ImagePlus image, int backgroundColorIndex, double smoothingSigma, int requestedResampling ) {
 		if( image == null ) {
 			IJ.error( "Show_Colour_Surfaces.displayAsSurfaces was passed a null 'image'" );
 			return;
@@ -66,6 +76,33 @@ public class Show_Colour_Surfaces implements PlugIn {
 			IJ.error( "Show_Colour_Surfaces only works with 8-bit indexed color images." );
 			return;
 		}
+		int width = image.getWidth();
+		int height = image.getHeight();
+		int depth = image.getStackSize();
+		Calibration calibration = image.getCalibration();
+		if( calibration == null )
+			calibration = new Calibration( image );
+		int maxSampleSide = Math.max( width, Math.max( height, depth ) );
+		int resamplingFactor = 1;
+		if( requestedResampling < 0 ) {
+			System.out.println("resamplingFactor is now: "+resamplingFactor);
+			while( (maxSampleSide / resamplingFactor) > 512 ) {
+				resamplingFactor *= 2;
+			}
+		} else {
+			resamplingFactor = requestedResampling;
+		}
+		if( resamplingFactor != 1 ) {
+			image = Resample_.resample( image, resamplingFactor );
+			width = image.getWidth();
+			height = image.getHeight();
+			depth = image.getStackSize();
+			calibration = image.getCalibration();
+			if( calibration == null )
+				calibration = new Calibration( image );
+			maxSampleSide = Math.max( width, Math.max( height, depth ) );
+		}
+
 		ImageStack stack = image.getStack();
 		IndexColorModel cm = (IndexColorModel)stack.getColorModel();
 		if( cm == null ) {
@@ -92,18 +129,6 @@ public class Show_Colour_Surfaces implements PlugIn {
 			IJ.error("The background colour must have an index from 0 to "+(colours-1)+" inclusive");
 			return;
 		}
-		int width = image.getWidth();
-		int height = image.getHeight();
-		int depth = image.getStackSize();
-		Calibration calibration = image.getCalibration();
-		double maxSide = Math.max( Math.abs( width * calibration.pixelWidth ), 
-					   Math.max( Math.abs( height * calibration.pixelHeight ),
-						     Math.abs( depth * calibration.pixelDepth ) ) );
-		int resamplingFactor = 1;
-		while( (maxSide / resamplingFactor) > 512 ) {
-			resamplingFactor *= 2;
-		}
-		System.out.println("Got resampling factor: "+2);
 		HashMap<Integer,Boolean> coloursUsedInImage = new HashMap();
 		for( int c = 0; c < colours; ++c ) {
 			coloursUsedInImage.put( c, false );
@@ -141,13 +166,18 @@ public class Show_Colour_Surfaces implements PlugIn {
 				newStack.addSlice("",bp);
 			}
 			ImagePlus colourImage = new ImagePlus("Image for colour index: "+i,newStack);
+			colourImage.setCalibration(calibration);
+			if( smoothingSigma > 0 ) {
+				colourImage = Smooth_.smooth( colourImage, true, (float)smoothingSigma, true );
+				colourImage.setTitle( "Smoothed image for colour index: "+i );
+			}
 			// FIXME: It might be worth smoothing here to
 			// improve the look of the surfaces:
 			boolean [] channels = { true, true, true };
 			Content content = univ.addContent(colourImage,
 							  c,
 							  colourImage.getTitle(),
-							  10, // threshold
+							  40, // threshold
 							  channels,
 							  resamplingFactor,
 							  Content.SURFACE);
@@ -163,10 +193,48 @@ public class Show_Colour_Surfaces implements PlugIn {
 			IJ.error("There is no image to view.");
 			return;
 		}
+		Calibration c = image.getCalibration();
+		if( c == null )
+			c = new Calibration( image );
+		double maxSampleSeparation = Math.max( Math.max( Math.abs( c.pixelWidth ), Math.abs( c.pixelHeight ) ),
+						       Math.abs( c.pixelDepth ) );
+
+		int type = image.getType();
+		if( type != ImagePlus.COLOR_256 ) {
+			IJ.error( "Show_Colour_Surfaces only works with 8-bit indexed color images." );
+			return;
+		}
+		ImageStack stack = image.getStack();
+
+		IndexColorModel cm = (IndexColorModel)stack.getColorModel();
+		if( cm == null ) {
+			IJ.error( "The color model for this image stack was null" );
+			return;
+		}
+		int colours = cm.getMapSize();
+
+		int maxSampleSide = Math.max( Math.max( image.getWidth(), image.getHeight() ),
+					      image.getStackSize() );
+		int suggestedResamplingFactor = 1;
+		while( (maxSampleSide / suggestedResamplingFactor) > 512 ) {
+			suggestedResamplingFactor *= 2;
+		}
+
+		GenericDialog gd = new GenericDialog("Show Colour Surfaces");
+		gd.addNumericField( "Resampling factor: ", suggestedResamplingFactor, 0 );
+		gd.addNumericField( "Index of background colour (from 0 to "+
+				    (colours-1)+" inclusive):", 0, 0 );
+		gd.addNumericField( "Radius of smoothing, or -1 for no smoothing (much faster)", maxSampleSeparation, 2 );
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return;
+		int resamplingFactor = (int)gd.getNextNumber();
+		int backgroundColorIndex = (int)gd.getNextNumber();
+		double smoothingSigma = gd.getNextNumber();
+
 		Image3DUniverse univ = new Image3DUniverse(512, 512);
 		univ.show();
 		GUI.center(univ.getWindow());
-		displayAsSurfaces( univ, image, 0 );
+		displayAsSurfaces( univ, image, backgroundColorIndex, smoothingSigma, resamplingFactor );
 	}
-
 }
