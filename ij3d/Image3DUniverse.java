@@ -564,6 +564,45 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
+	 * Add a new image as a content, displaying it as a 2D surface plot.
+	 * Default parameters are used for its attributes:
+	 * <ul><li>color: null
+	 * <li>name: title of the image
+	 * <li>threshold: the default threshold, as returned by
+	 *                Content.getDefaultTreshold()
+	 * <li>channels: all color channels r, g, b
+	 * <li>resampling factor: the default resampling factor, as returned
+	 *                by Content.getDefaultResamplingFactor() </li>
+	 * </ul>
+	 *
+	 * @param image the image to display
+	 * @return the Content which was added, null if any error occurred.
+	 */
+	public Content addSurfacePlot(ImagePlus image) {
+		return addContent(image, Content.SURFACE_PLOT2D);
+	}
+
+	/**
+	 * Add a new image as a content, displaying it as a 2D surface plot.
+	 * For the meaning of color, threshold, channels, resampling factor etc
+	 * see the documentation of Content.
+	 *
+	 * @param image the image to display
+	 * @param color the color in which this surface plot is displayed.
+	 * @param name the name of the displayed Content.
+	 * @param threshold the threshold used for the displayed surface plot
+	 * @param channels the displayed color channels,
+	 *        must be a boolean array of length 3
+	 * @param resamplingF a resampling factor.
+	 * @return the added Content, null if any error occurred
+	 */
+	public Content addSurfacePlot(ImagePlus image, Color3f color,
+		String name, int thresh, boolean[] channels, int resamplingF) {
+		return addContent(image, color, name, thresh, channels,
+			resamplingF, Content.SURFACE_PLOT2D);
+	}
+
+	/**
 	 * Add a new image as a content, displaying it as an isosurface.
 	 * Default parameters are used for its attributes:
 	 * <ul><li>color: null
