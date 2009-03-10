@@ -1,5 +1,7 @@
 package voltex;
 
+import ij3d.AxisConstants;
+
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
@@ -31,7 +33,7 @@ import javax.vecmath.Vector4f;
  * 
  * @author Benjamin Schmid
  */
-public class AppearanceCreator implements VolRendConstants {
+public class AppearanceCreator implements AxisConstants {
 
 	/** The volume from which the textures are created */
 	private Volume volume;

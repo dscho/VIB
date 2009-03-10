@@ -1,4 +1,4 @@
-package voltex;
+package ij3d;
 
 /**
  * This interface stores some common constants.
@@ -6,7 +6,7 @@ package voltex;
  * @author Benjamin Schmid
  */
 
-abstract public interface VolRendConstants {
+abstract public interface AxisConstants {
 
     static final int 	X_AXIS = 0;
     static final int 	Y_AXIS = 1;
