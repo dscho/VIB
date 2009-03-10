@@ -14,6 +14,7 @@ import javax.media.j3d.SceneGraphPath;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 import vib.BenesNamedPoint;
+import vib.PointList;
 
 /**
  * This class is a helper class which implements functions for picking.
@@ -47,9 +48,11 @@ public class Picker {
 		Point3d p3d = getPickPointGeometry(c, e);
 		if(p3d == null)
 			return;
-		int ind = c.getPointListPointIndexAt(p3d);
+		PointList pl = c.getPointList();
+		float tol = c.getLandmarkPointSize();
+		int ind = pl.indexOfPointAt(p3d.x, p3d.y, p3d.z, tol);
 		if(ind != -1) {
-			c.deletePointListPoint(ind);
+			pl.remove(ind);
 		}
 	}
 
@@ -69,10 +72,13 @@ public class Picker {
 		Point3d p3d = getPickPointGeometry(c, e);
 		if(p3d == null)
 			return;
+
+		PointList pl = c.getPointList();
 		if(movingIndex == -1)
-			movingIndex = c.getPointListPointIndexAt(p3d);
+			movingIndex = pl.indexOfPointAt(
+					p3d.x, p3d.y, p3d.z, c.getLandmarkPointSize());
 		if(movingIndex != -1) {
-			c.setListPointPos(movingIndex, p3d);
+			pl.placePoint(pl.get(movingIndex), p3d.x, p3d.y, p3d.z);
 		}
 	}
 
@@ -97,9 +103,11 @@ public class Picker {
 		Point3d p3d = getPickPointGeometry(c, x, y);
 		if(p3d == null)
 			return;
-		BenesNamedPoint bnp = c.getPointListPointAt(p3d);
+		PointList pl = c.getPointList();
+		float tol = c.getLandmarkPointSize();
+		BenesNamedPoint bnp = pl.pointAt(p3d.x, p3d.y, p3d.z, tol);
 		if(bnp == null) {
-			c.addPointListPoint(p3d);
+			pl.add(p3d.x, p3d.y, p3d.z);
 		}
 	}
 
@@ -116,59 +124,13 @@ public class Picker {
 		Point3d p3d = getPickPointGeometry(c, e);
 		if(p3d == null)
 			return;
-		BenesNamedPoint bnp = c.getPointListPointAt(p3d);
+		PointList pl = c.getPointList();
+		float tol = c.getLandmarkPointSize();
+		BenesNamedPoint bnp = pl.pointAt(p3d.x, p3d.y, p3d.z, tol);
 		if(bnp == null) {
-			c.addPointListPoint(p3d);
+			pl.add(p3d.x, p3d.y, p3d.z);
 		}
 	}
-
-	/*
-	private Point3d start = new Point3d();
-	private Transform3D tmp = new Transform3D();
-	private double z = 0.004245426;
-	private Point3d getPickPoint2(Content c, MouseEvent e) {
-		int x = e.getX(), y = e.getY();
-		PickTool pickTool = new PickTool(c);
-//		ic3d.getPixelLocationInImagePlate(x, y, start);
-//		ic3d.getImagePlateToVworld(tmp);
-//		tmp.transform(start);
-
-		c.getLocalToVworld(tmp);
-		Point3f cInW = new Point3f();
-		c.getContent().getCenter(cInW);
-//		tmp.transform(cInW);
-		System.out.println("cInW" + cInW);
-//		start.z += 500;
-		c.addPointListPoint(new Point3d(cInW));
-		pickTool.setShapeCylinderSegment(new Point3d(cInW), new Point3d(0, 0 ,-1), 3);
-
-		pickTool.setMode(PickInfo.PICK_GEOMETRY);
-		pickTool.setFlags(PickInfo.NODE | PickInfo.ALL_GEOM_INFO);
-		try {
-			PickInfo[] result = pickTool.pickAllSorted();
-			if(result == null || result.length == 0) {
-				System.out.println("not picking anything");
-				return null;
-			}
-
-			for(int i = 0; i < result.length; i++) {
-				Node picked = result[i].getNode();
-				String name = picked.getName();
-				if(name == null || !name.equals("BB"))
-					continue;
-				PickInfo.IntersectionInfo[] iinfos = result[i].getIntersectionInfos();
-				for(int j = 0; j < iinfos.length; j++) {
-					Point3d intersection = iinfos[j].getIntersectionPoint();
-					System.out.println("iinfo[" + j + "] inters = " + intersection);
-					c.addPointListPoint(intersection);
-				}
-			}
-			return null;
-		} catch(Exception ex) {
-			ex.printStackTrace();
-			return null;
-		}
-	}*/
 
 	/**
 	 * Get the picked point using geometry picking. The pick line is specified
