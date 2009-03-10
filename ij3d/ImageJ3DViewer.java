@@ -154,7 +154,7 @@ public class ImageJ3DViewer implements PlugIn {
 			VoltexGroup vg = (VoltexGroup)univ.
 						getSelected().getContent();
 			ImageCanvas3D canvas = (ImageCanvas3D)univ.getCanvas();
-			vg.fillRoiBlack(canvas, canvas.getRoi(), (byte)0);
+			vg.fillRoi(canvas, canvas.getRoi(), (byte)0);
 		}
 	}
 

@@ -357,7 +357,7 @@ public class Executer {
 			public void run() {
 				ImageCanvas3D canvas = (ImageCanvas3D)univ.getCanvas();
 				((VoltexGroup)c.getContent()).
-					fillRoiBlack(canvas, canvas.getRoi(), (byte)0);
+					fillRoi(canvas, canvas.getRoi(), (byte)0);
 				univ.fireContentChanged(c);
 				record(FILL_SELECTION);
 			}
