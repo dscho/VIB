@@ -49,7 +49,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	private Executer executer;
 
 
-	private PointListDialog pld;
+	private PointListDialog plDialog;
 
 	static{
 		UniverseSettings.load();
@@ -73,6 +73,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
 		executer = new Executer(this);
+		plDialog = new PointListDialog(win);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -105,7 +106,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		menubar = new Image3DMenubar(this);
 		registrationMenubar = new RegistrationMenubar(this);
 		setMenubar(menubar);
-		pld = new PointListDialog(win);
 	}
 
 	/**
@@ -161,7 +161,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * Returns a reference to the PointListDialog used by this universe
 	 */
 	public PointListDialog getPointListDialog() {
-		return pld;
+		return plDialog;
 	}
 
 	/* *************************************************************
@@ -443,7 +443,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.threshold = thresh;
 		content.channels = channels;
 		content.resamplingF = resf;
-		content.setPointListDialog(pld);
+		content.setPointListDialog(plDialog);
 		content.showCoordinateSystem(UniverseSettings.
 				showLocalCoordinateSystemsByDefault);
 		content.displayAs(type);
@@ -662,7 +662,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		content.showCoordinateSystem(
 				UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.display(new CustomMeshNode(mesh, content));
-		content.setPointListDialog(pld);
+		content.setPointListDialog(plDialog);
 		scene.addChild(content);
 		contents.put(name, content);
 		recalculateGlobalMinMax(content);
@@ -727,7 +727,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		  content.showCoordinateSystem(UniverseSettings.
 				  showLocalCoordinateSystemsByDefault);
 		  content.display(new CustomMeshNode(tmesh, content));
-		  content.setPointListDialog(pld);
+		  content.setPointListDialog(plDialog);
 		  scene.addChild(content);
 		  contents.put(name, content);
 		  recalculateGlobalMinMax(content);
