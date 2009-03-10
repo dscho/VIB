@@ -7,6 +7,7 @@ import vib.PointList;
 
 import java.awt.Component;
 import java.text.DecimalFormat;
+import java.awt.Container;
 import java.awt.Font;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -66,6 +67,16 @@ public class PointListPanel extends Panel
 		setBackground(Color.WHITE);
 		c = new GridBagConstraints();
 
+		recreatePointsPanel();
+	}
+
+	/**
+	 * Set the PointList which should be displayed by this PointListPanel
+	 */
+	public void setPointList(PointList pl) {
+		this.points.removePointListListener(this);
+		this.points = pl;
+		this.points.addPointListListener(this);
 		recreatePointsPanel();
 	}
 
@@ -219,10 +230,15 @@ public class PointListPanel extends Panel
 	 */
 	public void added(BenesNamedPoint p) {
 		int i = points.size();
-		if(i == 1)
+		if(i == 1) {
 			recreatePointsPanel();
-		else
+		} else {
 			addRow(p, points.size());
+			Container parent = getParent();
+			while(parent.getParent() != null)
+				parent = parent.getParent();
+			parent.validate();
+		}
 	}
 
 	/**
