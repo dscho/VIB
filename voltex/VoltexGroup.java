@@ -47,7 +47,7 @@ public class VoltexGroup extends ContentNode {
 	private Point3d center;
 
 	/**
-	 * This constructor only exists to allow supclasses to access the super
+	 * This constructor only exists to allow subclasses to access the super
 	 * constructor of BranchGroup.
 	 */
 	protected VoltexGroup() {
