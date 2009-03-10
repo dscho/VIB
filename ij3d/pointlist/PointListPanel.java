@@ -1,9 +1,4 @@
 package ij3d.pointlist;
-/**
- * @author Benjamin Schmid
- *
- * @date 07.08.2006
- */
 
 import ij.gui.GenericDialog;
 
@@ -162,7 +157,7 @@ public class PointListPanel extends Panel
 					current = p;
 					popup.show(label, e.getX(),e.getY());
 				} else {
-					highlightPoint(p);
+					points.highlight(p);
 				}
 			}
 			public void mouseReleased(MouseEvent e){
@@ -185,10 +180,11 @@ public class PointListPanel extends Panel
 		add(coordinateLabel,c);
 	}
 
-	public void removePoint(BenesNamedPoint p){
-		points.remove(p);
-	}
-
+	/**
+	 * Opens an input dialog to ask the user for a new name for the
+	 * specified point
+	 * @param p
+	 */
 	public void renamePoint(BenesNamedPoint p){
 		GenericDialog gd = new GenericDialog("Rename point");
 		gd.addStringField("New name ", p.getName());
@@ -198,32 +194,29 @@ public class PointListPanel extends Panel
 		points.rename(p, gd.getNextString());
 	}
 
-	public void highlightPoint(BenesNamedPoint p) {
-		points.highlight(p);
-	}
-
-	public void up(BenesNamedPoint p) {
-		points.up(p);
-	}
-
-	public void down(BenesNamedPoint p) {
-		points.down(p);
-	}
-
+	/**
+	 * Handling the events coming from the popup menu.
+	 */
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
 		if (command.equals("Rename")){
 			renamePoint(current);
 		} else if (command.equals("Remove")){
-			removePoint(current);
+			points.remove(current);
 		} else if (command.equals("Up")) {
-			up(current);
+			points.up(current);
 		} else if(command.equals("Down")) {
-			down(current);
+			points.down(current);
 		}
 	}
 
-	// PointListListener interface
+	/* ******************************************************************
+	 * PointListListener interface
+	 * ******************************************************************/
+
+	/**
+	 * @see PointList.PointListListener#added(BenesNamedPoint)
+	 */
 	public void added(BenesNamedPoint p) {
 		int i = points.size();
 		if(i == 1)
@@ -232,21 +225,36 @@ public class PointListPanel extends Panel
 			addRow(p, points.size());
 	}
 
+	/**
+	 * @see PointList.PointListListener#removed(BenesNamedPoint)
+	 */
 	public void removed(BenesNamedPoint p) {
 		recreatePointsPanel();
 	}
 
+	/**
+	 * @see PointList.PointListListener#renamed(BenesNamedPoint)
+	 */
 	public void renamed(BenesNamedPoint p) {
 		recreatePointsPanel();
 	}
 
+	/**
+	 * @see PointList.PointListListener#highlighted(BenesNamedPoint)
+	 */
 	public void highlighted(BenesNamedPoint p) {
 	}
 
+	/**
+	 * @see PointList.PointListListener#reordered(BenesNamedPoint)
+	 */
 	public void reordered() {
 		recreatePointsPanel();
 	}
 
+	/**
+	 * @see PointList.PointListListener#moved(BenesNamedPoint)
+	 */
 	public void moved(BenesNamedPoint p) {
 		Component[] c = getComponents();
 		boolean found = false;
