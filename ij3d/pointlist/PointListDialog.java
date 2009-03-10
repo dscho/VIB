@@ -1,6 +1,5 @@
 package ij3d.pointlist;
 
-import ij3d.*;
 import java.awt.Component;
 import java.awt.Color;
 import java.awt.Dialog;
@@ -11,14 +10,33 @@ import java.awt.ScrollPane;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 
+/**
+ * This class represents a window which can hold a set of PointListPanels. These
+ * panels can dynamically be added and removed from the window.
+ * @author Benjamin Schmid
+ *
+ */
 public class PointListDialog extends Dialog {
 
+	/** The constraints for the layout. */
 	private GridBagConstraints c;
+
+	/** The layout itself */
 	private GridBagLayout gridbag;
-	private ScrollPane scroll;
+
+	/** The parent panel of the PointListPanels */
 	private Panel panel;
+
+	/**
+	 * An additional panel which is layed out at the bottom of the window
+	 * and may be used for showing some buttons.
+	 */
 	private Panel extraPanel;
 
+	/**
+	 * Constructs an empty PointListDialog
+	 * @param owner
+	 */
 	public PointListDialog(Frame owner) {
 		super(owner, "Point list");
 		panel = new Panel();
@@ -32,11 +50,16 @@ public class PointListDialog extends Dialog {
 		c.anchor = GridBagConstraints.NORTHWEST;
 		c.weighty = 0.1f;
 		c.fill = GridBagConstraints.NONE;
-		scroll = new ScrollPane();
+		ScrollPane scroll = new ScrollPane();
 		scroll.add(panel);
 		add(scroll);
 	}
 
+	/**
+	 * Adds the specified PointListPanel. The window is made visible.
+	 * @param name
+	 * @param plp
+	 */
 	public void addPointList(String name, PointListPanel plp) {
 		if(!containsPointList(plp)) {
 			plp.setName(name);
@@ -51,6 +74,11 @@ public class PointListDialog extends Dialog {
 		}
 	}
 
+	/**
+	 * Removes the specified PointListPanel and hides the window, if it
+	 * was the last one.
+	 * @param plp
+	 */
 	public void removePointList(PointListPanel plp) {
 		if(containsPointList(plp)) {
 			panel.remove(plp);
@@ -61,6 +89,11 @@ public class PointListDialog extends Dialog {
 		}
 	}
 
+	/**
+	 * Returns true if the specified PointListPanel is already displayed
+	 * @param plp
+	 * @return
+	 */
 	public boolean containsPointList(PointListPanel plp) {
 		Component[] c = panel.getComponents();
 		for(int i = 0; i < c.length; i++) {
@@ -70,6 +103,11 @@ public class PointListDialog extends Dialog {
 		return false;
 	}
 
+	/**
+	 * Displays an optional panel at the bottom of the window. This may
+	 * be used for showing a panel with some buttons, for example.
+	 * @param p
+	 */
 	public void addPanel(Panel p) {
 		if(extraPanel != null)
 			remove(extraPanel);
@@ -78,6 +116,10 @@ public class PointListDialog extends Dialog {
 		update();
 	}
 
+	/**
+	 * Remove the optional panel at the bottom of the window (if there is
+	 * one).
+	 */
 	public void removeExtraPanel() {
 		if(extraPanel != null) {
 			remove(extraPanel);
@@ -85,14 +127,10 @@ public class PointListDialog extends Dialog {
 			update();
 		}
 	}
-		
-	private void print() {
-		Component[] c = panel.getComponents();
-		for(int i = 0; i < c.length; i++) {
-			System.out.println(c[i].getName());
-		}
-	}
 
+	/**
+	 * Update the layout.
+	 */
 	public void update() {
  		validateTree();
 	}
