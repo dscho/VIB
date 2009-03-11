@@ -13,6 +13,8 @@ import java.util.Iterator;
 import java.util.Collection;
 
 import customnode.CustomLineMesh;
+import customnode.CustomPointMesh;
+import customnode.CustomQuadMesh;
 import customnode.CustomMesh;
 import customnode.CustomMeshNode;
 import customnode.CustomTriangleMesh;
@@ -649,6 +651,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			IJ.error("Mesh named '"+name+"' exists already");
 			return null;
 		}
+		if(mesh.getColor().epsilonEquals(col, 0.01f))
+			mesh.setColor(col);
 		Content content = new Content(name);
 		content.color = col;
 		content.showCoordinateSystem(
@@ -691,7 +695,44 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
-	 * Add a custom mesh, in particular a triangle, to the universe.
+	 * Add a custom mesh, in particular a point mesh, to the universe.
+	 *
+	 * For more details on custom meshes, read the package API docs of
+	 * the package customnode.
+	 *
+	 * @param mesh a list of points which make up the mesh.
+	 * @param color the color in which the points is displayed
+	 * @param name a name for the added Content
+	 * @return the connected Content.
+	 */
+	public Content addPointMesh(List<Point3f> mesh,
+			    Color3f color, String name) {
+		  CustomPointMesh tmesh = new CustomPointMesh(mesh, color, 0);
+		  return addCustomMesh(tmesh, color, name);
+	}
+
+	/**
+	 * Add a custom mesh, in particular a mesh consisting of quads, to the
+	 * universe.
+	 * The number of points in the specified list must be devidable by 4.
+	 * 4 consecutive points represent one quad.
+	 *
+	 * For more details on custom meshes, read the package API docs of
+	 * the package customnode.
+	 *
+	 * @param mesh a list of points which make up the mesh.
+	 * @param color the color in which the points is displayed
+	 * @param name a name for the added Content
+	 * @return the connected Content.
+	 */
+	public Content addQuadMesh(List<Point3f> mesh,
+			    Color3f color, String name) {
+		  CustomQuadMesh tmesh = new CustomQuadMesh(mesh, color, 0);
+		  return addCustomMesh(tmesh, color, name);
+	}
+
+	/**
+	 * Add a custom mesh, in particular a triangle mesh, to the universe.
 	 *
 	 * For more details on custom meshes, read the package API docs of
 	 * the package customnode.
