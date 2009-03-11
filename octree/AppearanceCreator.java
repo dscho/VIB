@@ -3,9 +3,9 @@ package octree;
 import java.awt.image.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
-import voltex.VolRendConstants;
+import ij3d.AxisConstants;
 
-public class AppearanceCreator implements VolRendConstants {
+public class AppearanceCreator implements AxisConstants {
 
 	private static final int TEX_MODE = Texture.INTENSITY;
 	private static final int COMP_TYPE = ImageComponent.FORMAT_CHANNEL8;

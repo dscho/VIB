@@ -7,9 +7,9 @@ import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Transform3D;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
-import voltex.VolRendConstants;
+import ij3d.AxisConstants;
 
-public class Cube implements VolRendConstants {
+public class Cube implements AxisConstants {
 
 	public static final int RESOLUTION_SUFFICIENT   = 0;
 	public static final int RESOLUTION_UNSUFFICIENT = 1;
