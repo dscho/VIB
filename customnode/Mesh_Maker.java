@@ -22,7 +22,7 @@ import ij3d.Content;
 import ij3d.Pipe;
 
 public class Mesh_Maker implements PlugIn {
-	
+
 	public void run(String arg) {
 		Image3DUniverse univ = new Image3DUniverse(512, 512);
 		univ.show();
@@ -64,13 +64,13 @@ public class Mesh_Maker implements PlugIn {
 
 		// Add both spheres and the tubes
 		//     Last parameter is the resampling (1 means no resampling)
-		
+
 		Content sph1 = univ.addMesh(createSphere(x1, y1, z1, r1, 12, 12), color1, "Sphere 1", 1);
 		Content sph2 = univ.addMesh(createSphere(x2, y2, z2, r2, 12, 12), color2, "Sphere 2", 1);
 		Content tube1 = univ.addMesh(createTube(px, py, pz, pr, 12, false), colort, "Tube", 1);
 		Content tube2 = univ.addMesh(createTube(px2, py2, pz2, pr2, 12, false), color_t2, "Tube spiral", 1);
 		Content disc1 = univ.addMesh(createDisc(100,100,50,3,3,3,50,12), new Color3f(Color.blue), "Disc 1", 1);
-		
+
 		// Extra:
 		// Now modify some attributes:
 

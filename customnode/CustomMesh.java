@@ -14,20 +14,20 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Point3f;
 
 public abstract class CustomMesh extends Shape3D {
-	
+
 	public static final Color3f DEFAULT_COLOR = new Color3f(0, 1, 0);
-	
+
 	protected Color3f color = DEFAULT_COLOR;
 	protected List<Point3f> mesh = null;
 	protected float transparency = 0;
 	protected boolean shaded = true;
-	
+
 	protected CustomMesh() {}
-	
+
 	protected CustomMesh(List<Point3f> mesh) {
 		this(mesh, DEFAULT_COLOR, 0);
 	}
-	
+
 	protected CustomMesh(List<Point3f> mesh, Color3f color, float transp) {
 		this.mesh = mesh;
 		this.color = color;
@@ -152,6 +152,6 @@ public abstract class CustomMesh extends Shape3D {
 		appearance.setMaterial(material);
 		return appearance;
 	}
-	
+
 	protected abstract Geometry createGeometry();
 }

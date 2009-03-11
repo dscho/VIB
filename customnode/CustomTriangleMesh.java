@@ -16,23 +16,27 @@ import com.sun.j3d.utils.geometry.NormalGenerator;
 import com.sun.j3d.utils.geometry.Stripifier;
 
 public class CustomTriangleMesh extends CustomMesh {
-	
+
 	private double volume = 0.0;
-	
-	public CustomTriangleMesh(List<Point3f> mesh, Color3f color, float trans) {
-		super(mesh, color, trans);
+
+	public CustomTriangleMesh(List<Point3f> mesh) {
+		this(mesh, DEFAULT_COLOR, 0);
+	}
+
+	public CustomTriangleMesh(List<Point3f> mesh, Color3f col, float trans) {
+		super(mesh, col, trans);
 		if(mesh != null) {
 			Point3d center = new Point3d();
 			double[][] inertia = new double[3][3];
 			volume = MeshProperties.compute(mesh, center, inertia);
 		}
 	}
-	
+
 	public void setMesh(List<Point3f> mesh) {
 		this.mesh = mesh;
 		update();
 	}
-	
+
 	@Override
 	protected Geometry createGeometry() {
 		List<Point3f> tri = mesh;

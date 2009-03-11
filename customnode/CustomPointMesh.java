@@ -15,26 +15,26 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Point3f;
 
 public class CustomPointMesh extends CustomMesh {
-	
+
 	public static final float DEFAULT_POINT_SIZE = 1f;
 
 	public CustomPointMesh(List<Point3f> mesh) {
 		super(mesh);
 	}
-	
+
 	public CustomPointMesh(List<Point3f> mesh,
 						Color3f color, float transparency) {
 		super(mesh, color, transparency);
 	}
-	
+
 	public void setPointSize(float pointsize) {
 		getAppearance().getPointAttributes().setPointSize(pointsize);
 	}
-	
+
 	public void setAntiAliasing(boolean b) {
 		getAppearance().getPointAttributes().setPointAntialiasingEnable(b);
 	}
-	
+
 	@Override
 	public float getVolume() {
 		return 0;
@@ -44,13 +44,13 @@ public class CustomPointMesh extends CustomMesh {
 		Appearance appearance = new Appearance();
 		appearance.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
 		appearance.setCapability(Appearance.ALLOW_LINE_ATTRIBUTES_READ);
-		
+
 		PointAttributes pointAttrib = new PointAttributes();
 		pointAttrib.setCapability(PointAttributes.ALLOW_ANTIALIASING_WRITE);
 		pointAttrib.setCapability(PointAttributes.ALLOW_SIZE_WRITE);
 		pointAttrib.setPointSize(DEFAULT_POINT_SIZE);
 		appearance.setPointAttributes(pointAttrib);
-		
+
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
 		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
@@ -80,7 +80,7 @@ public class CustomPointMesh extends CustomMesh {
 		appearance.setMaterial(material);
 		return appearance;
 	}
-	
+
 	@Override
 	protected Geometry createGeometry() {
 		List<Point3f> tri = mesh;
