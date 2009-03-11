@@ -646,15 +646,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @param name the name for the added Content
 	 * @return the added Content
 	 */
-	public Content addCustomMesh(CustomMesh mesh, Color3f col, String name) {
+	public Content addCustomMesh(CustomMesh mesh, String name) {
 		if(contents.containsKey(name)) {
 			IJ.error("Mesh named '"+name+"' exists already");
 			return null;
 		}
-		if(mesh.getColor().epsilonEquals(col, 0.01f))
-			mesh.setColor(col);
 		Content content = new Content(name);
-		content.color = col;
+		content.color = mesh.getColor();
+		content.transparency = mesh.getTransparency();
+		content.shaded = mesh.isShaded();
 		content.showCoordinateSystem(
 				UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.display(new CustomMeshNode(mesh, content));
@@ -665,6 +665,9 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/**
 	 * Add a custom mesh, in particular a line mesh (a set of lines in 3D)
 	 * to the universe.
+	 * For the line parameters, default values are used: The width of
+	 * the line is 1.0 and the pattern is solid.
+	 *
 	 * There exist two styles of line meshes:
 	 * <ul><li>a normal line mesh. In this case, the specified strips flag
 	 * should be false. <code>mesh</code> is a list of points which are
@@ -676,7 +679,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * the 2rd, the 3rd to the 4th, and so on.
 	 * </li></ul>
 	 *
-	 * * For more details on custom meshes, read the package API docs of
+	 * For more details on custom meshes, read the package API docs of
 	 * the package customnode.
 	 *
 	 * @param mesh a list of points which make up the mesh
@@ -691,11 +694,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		  int mode = strips ? CustomLineMesh.CONTINUOUS
 				  	: CustomLineMesh.PAIRWISE;
 		  CustomLineMesh lmesh = new CustomLineMesh(mesh, mode, color, 0);
-		  return addCustomMesh(lmesh, color, name);
+		  return addCustomMesh(lmesh, name);
 	}
 
 	/**
 	 * Add a custom mesh, in particular a point mesh, to the universe.
+	 * For the size of the points, a default value is used which is 1.0.
 	 *
 	 * For more details on custom meshes, read the package API docs of
 	 * the package customnode.
@@ -708,7 +712,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addPointMesh(List<Point3f> mesh,
 			    Color3f color, String name) {
 		  CustomPointMesh tmesh = new CustomPointMesh(mesh, color, 0);
-		  return addCustomMesh(tmesh, color, name);
+		  return addCustomMesh(tmesh, name);
 	}
 
 	/**
@@ -728,7 +732,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addQuadMesh(List<Point3f> mesh,
 			    Color3f color, String name) {
 		  CustomQuadMesh tmesh = new CustomQuadMesh(mesh, color, 0);
-		  return addCustomMesh(tmesh, color, name);
+		  return addCustomMesh(tmesh, name);
 	}
 
 	/**
@@ -747,7 +751,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addTriangleMesh(List<Point3f> mesh,
 			    Color3f color, String name) {
 		  CustomTriangleMesh tmesh = new CustomTriangleMesh(mesh, color, 0);
-		  return addCustomMesh(tmesh, color, name);
+		  return addCustomMesh(tmesh, name);
 	}
 
 	/**
