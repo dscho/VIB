@@ -448,15 +448,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				showLocalCoordinateSystemsByDefault);
 		content.displayAs(type);
 		content.compile();
-		scene.addChild(content);
-		contents.put(name, content);
-		recalculateGlobalMinMax(content);
-		getViewPlatformTransformer().centerAt(globalCenter);
-		ensureScale(image);
-		fireContentAdded(content);
-		fireTransformationFinished();
-		this.addUniverseListener(content);
-		return content;
+		return addContent(content);
 	}
 
 	/**
@@ -663,15 +655,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.display(new CustomMeshNode(mesh, content));
 		content.setPointListDialog(plDialog);
-		scene.addChild(content);
-		contents.put(name, content);
-		recalculateGlobalMinMax(content);
-		getViewPlatformTransformer().centerAt(globalCenter);
-		float range = (float)(globalMax.x - globalMin.x);
-			ensureScale(range);
-		fireContentAdded(content);
-		this.addUniverseListener(content);
-		return content;
+		return addContent(content);
 	}
 
 	/**
@@ -722,21 +706,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addTriangleMesh(List<Point3f> mesh,
 			    Color3f color, String name) {
 		  CustomTriangleMesh tmesh = new CustomTriangleMesh(mesh, color, 0);
-		  Content content = new Content(name);
-		  content.color = color;
-		  content.showCoordinateSystem(UniverseSettings.
-				  showLocalCoordinateSystemsByDefault);
-		  content.display(new CustomMeshNode(tmesh, content));
-		  content.setPointListDialog(plDialog);
-		  scene.addChild(content);
-		  contents.put(name, content);
-		  recalculateGlobalMinMax(content);
-		  getViewPlatformTransformer().centerAt(globalCenter);
-		  float range = (float)(globalMax.x - globalMin.x);
-		  ensureScale(range);
-		  fireContentAdded(content);
-		  this.addUniverseListener(content);
-		  return content;
+		  return addCustomMesh(tmesh, color, name);
 	}
 
 	/**
@@ -885,11 +855,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/
-	private void ensureScale(ImagePlus image) {
-		ensureScale(image.getWidth() *
-				(float)image.getCalibration().pixelWidth);
-	}
-
 	private float oldRange = 2f;
 
 	private void ensureScale(float range) {
