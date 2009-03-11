@@ -45,7 +45,8 @@ public class CustomLineMesh extends CustomMesh {
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
 		this.setCapability(ALLOW_APPEARANCE_READ);
 		this.setCapability(ALLOW_APPEARANCE_WRITE);
-		this.color = color;
+		if(color != null)
+			this.color = color;
 		this.mesh = mesh;
 		this.mode = mode;
 		this.transparency = transparency;

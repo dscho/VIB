@@ -8,6 +8,7 @@ import javax.media.j3d.Geometry;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.Material;
 import javax.media.j3d.PolygonAttributes;
+import javax.media.j3d.RenderingAttributes;
 import javax.media.j3d.Shape3D;
 import javax.media.j3d.TransparencyAttributes;
 import javax.vecmath.Color3f;
@@ -30,7 +31,8 @@ public abstract class CustomMesh extends Shape3D {
 
 	protected CustomMesh(List<Point3f> mesh, Color3f color, float transp) {
 		this.mesh = mesh;
-		this.color = color;
+		if(color != null)
+			this.color = color;
 		this.transparency = transp;
 		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
@@ -126,8 +128,8 @@ public abstract class CustomMesh extends Shape3D {
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
 		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
-		polyAttrib.setCullFace(PolygonAttributes.CULL_BACK);
-		polyAttrib.setBackFaceNormalFlip(false);
+		polyAttrib.setCullFace(PolygonAttributes.CULL_NONE);
+		polyAttrib.setBackFaceNormalFlip(true);
 		appearance.setPolygonAttributes(polyAttrib);
 
 		ColoringAttributes colorAttrib = new ColoringAttributes();
