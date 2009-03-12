@@ -22,7 +22,7 @@ import java.util.Arrays;
 /**
  * Implements the functionality for the 4D viewer, like loading
  * and animation.
- * 
+ *
  * @author Benjamin Schmid
  */
 public class Viewer4D {
@@ -171,7 +171,7 @@ public class Viewer4D {
 	/**
 	 * Opens a dialog, which asks the user for a directory with Contents
 	 * to load, and loads them
-	 * 
+	 *
 	 * @return false, if something went wrong and the Contents could
 	 * not be loaded.
 	 */
@@ -179,7 +179,7 @@ public class Viewer4D {
 
 		// remove all contents from the universe
 		univ.removeAllContents();
-		
+
 		GenericDialog gd = new GenericDialog("Load time lapse");
 
 		gd.addMessage("Select either a file containing a hyperstack\n" +
@@ -229,7 +229,7 @@ public class Viewer4D {
 		type = (int)gd.getNextChoiceIndex();
 		threshold = (int)gd.getNextNumber();
 		resf = (int)gd.getNextNumber();
-		
+
 		File dir = new File(directory);
 		if(!dir.exists()) {
 			IJ.showMessage(directory + " does not exist");
@@ -245,6 +245,20 @@ public class Viewer4D {
 			IJ.showMessage("Could not load any of the images");
 			return false;
 		}
+
+		load(images, threshold, resf, type);
+		return true;
+	}
+
+	/**
+	 * Loads the specified images, each as an individual Content with
+	 * the specified threshold, resampling factor and type.
+	 * @param images
+	 * @param thresh
+	 * @param resf
+	 * @param type
+	 */
+	public void load(ImagePlus[] images, int thresh, int resf, int type) {
 		Content[] c = new Content[images.length];
 
 		for(int j = 0; j < images.length; j++) {
@@ -252,7 +266,7 @@ public class Viewer4D {
 			ImagePlus image = images[j];
 			Executer.convert(image);
 			c[j] = univ.addContent(image, null, image.getTitle(),
-				threshold, new boolean[] {true, true, true}, 
+				thresh, new boolean[] {true, true, true},
 				resf, type);
 			c[j].showCoordinateSystem(false);
 
@@ -263,11 +277,16 @@ public class Viewer4D {
 		System.arraycopy(c, 0, contents, 0, contents.length);
 		univ.setStatus("");
 		current = 0;
-		
-		return true;
 	}
 
-	private ImagePlus[] getImages(ImagePlus imp) {
+	/**
+	 * Get an array of images of the specified image, which is assumed to
+	 * be a hyperstack. The hyperstack should contain of only one channes,
+	 * with the different images as different frames.
+	 * @param imp
+	 * @return
+	 */
+	public ImagePlus[] getImages(ImagePlus imp) {
 		int nChannels = imp.getNChannels();
 		if(nChannels != 1) {
 			IJ.showMessage(
@@ -296,7 +315,16 @@ public class Viewer4D {
 		return ret;
 	}
 
-	private ImagePlus[] getImages(File dir) {
+	/**
+	 * First sorts all the files in the specified directory alphabetically
+	 * and then tries to load each of them, failing silently if an image
+	 * can not be opened by IJ.openImage().
+	 * @param dir
+	 * @return
+	 */
+	public ImagePlus[] getImages(File dir) {
+		if(!dir.isDirectory())
+			return null;
 		// get the file names
 		String[] names = dir.list();
 		if (names.length == 0) {
@@ -313,6 +341,5 @@ public class Viewer4D {
 				ret[j++] = imp;
 		}
 		return ret;
-
 	}
 }
