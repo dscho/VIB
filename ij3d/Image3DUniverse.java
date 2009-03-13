@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Collection;
+import java.util.ArrayList;
 
 import customnode.CustomLineMesh;
 import customnode.CustomMesh;
@@ -25,6 +26,8 @@ import octree.FilePreparer;
 import octree.VolumeOctree;
 
 public class Image3DUniverse extends DefaultAnimatableUniverse {
+
+	public static ArrayList<Image3DUniverse> universes = new ArrayList<Image3DUniverse>();
 
 	private Content selected;
 	private Hashtable<String, Content> contents =
@@ -74,6 +77,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				select(c);
 			}
 		});
+
+		universes.add(this);
 	}
 
 	public void select(Content c) {
@@ -113,6 +118,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		super.close();
 		removeAllContents();
 		contents = null;
+		universes.remove(this);
 	}
 
 	public Executer getExecuter() {
