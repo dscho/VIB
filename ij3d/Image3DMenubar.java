@@ -17,8 +17,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private Executer executer;
 
 	private MenuItem add;
-	private MenuItem addOctree;
-	private MenuItem removeOctree;
 	private MenuItem color;
 	private MenuItem bgColor;
 	private MenuItem channels;
@@ -112,16 +110,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		delete.setEnabled(false);
 		delete.addActionListener(this);
 		file.add(delete);
-
-		file.addSeparator();
-
-		addOctree = new MenuItem("Load large volume");
-		addOctree.addActionListener(this);
-		file.add(addOctree);
-
-		removeOctree = new MenuItem("Remove large volume");
-		removeOctree.addActionListener(this);
-		file.add(removeOctree);
 
 		file.addSeparator();
 
@@ -281,14 +269,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		bgColor.addActionListener(this);
 		view.add(bgColor);
 
-		MenuItem tmp = new MenuItem("Update Octree");
-		tmp.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				univ.cancelOctree();
-			}
-		});
-		view.add(tmp);
-
 		return view;
 	}
 
@@ -414,10 +394,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.editScalebar();
 		else if(src == viewer4d)
 			executer.load4D();
-		else if(src == addOctree)
-			executer.loadOctree();
-		else if(src == removeOctree)
-			executer.removeOctree();
 		else if(src == channels)
 			executer.changeChannels(univ.getSelected());
 		else if(src == transparency)
