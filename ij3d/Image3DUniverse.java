@@ -496,5 +496,19 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		selected = null;
 		fireContentSelected(null);
 	}
-}
 
+	public String allContentsString() {
+		StringBuffer sb = new StringBuffer();
+		boolean first = true;
+		for(String s : contents.keySet()) {
+			if(first)
+				first = false;
+			else
+				sb.append(", ");
+			sb.append("\"");
+			sb.append(s);
+			sb.append("\"");
+		}
+		return sb.toString();
+	}
+}
