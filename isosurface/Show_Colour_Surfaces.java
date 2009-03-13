@@ -221,6 +221,16 @@ public class Show_Colour_Surfaces implements PlugIn {
 		}
 
 		GenericDialog gd = new GenericDialog("Show Colour Surfaces");
+
+		String [] choices = new String[Image3DUniverse.universes.size()+1];
+		String useNewString = "Create New 3D Viewer";
+		choices[choices.length-1] = useNewString;
+		for( int i = 0; i < choices.length - 1; ++i ) {
+			String contentsString = Image3DUniverse.universes.get(i).allContentsString();
+			String shortContentsString = contentsString.substring(0,Math.min(20,contentsString.length()-1));
+			choices[i] = "["+i+"] containing " + shortContentsString;
+		}
+		gd.addChoice( "Use 3D Viewer", choices, useNewString );
 		gd.addNumericField( "Resampling factor: ", suggestedResamplingFactor, 0 );
 		gd.addNumericField( "Index of background colour (from 0 to "+
 				    (colours-1)+" inclusive):", 0, 0 );
@@ -228,13 +238,23 @@ public class Show_Colour_Surfaces implements PlugIn {
 		gd.showDialog();
 		if(gd.wasCanceled())
 			return;
+
+		String chosenViewer = gd.getNextChoice();
+		int chosenIndex;
+		for( chosenIndex = 0; chosenIndex < choices.length; ++chosenIndex )
+			if( choices[chosenIndex].equals(chosenViewer) )
+				break;
 		int resamplingFactor = (int)gd.getNextNumber();
 		int backgroundColorIndex = (int)gd.getNextNumber();
 		double smoothingSigma = gd.getNextNumber();
 
-		Image3DUniverse univ = new Image3DUniverse(512, 512);
-		univ.show();
-		GUI.center(univ.getWindow());
+		Image3DUniverse univ;
+		if( chosenIndex == choices.length - 1 ) {
+			univ = new Image3DUniverse(512, 512);
+			univ.show();
+			GUI.center(univ.getWindow());
+		} else
+			univ = Image3DUniverse.universes.get(chosenIndex);
 		displayAsSurfaces( univ, image, backgroundColorIndex, smoothingSigma, resamplingFactor );
 	}
 }
