@@ -153,7 +153,7 @@ public class Viewer4D {
 	}
 
 	/**
-	 * Release all loaded contents.
+	 * Releases all loaded contents but the currently displayed one.
 	 */
 	public void releaseContents() {
 		pause();
