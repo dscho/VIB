@@ -46,7 +46,10 @@ JUNIT4JAR=$(shell pwd)/junit-4.4.jar
 TESTCLASSES=math3d.TestEigenvalueDecompositions \
 	distance.TestMutualInformation \
 	distance.TestEuclidean \
-	distance.TestCorrelation
+	distance.TestCorrelation \
+	landmarks.TestLoading \
+	util.TestPenalty \
+	vib.TestFastMatrix
 
 TESTMEM=512m
 
@@ -177,6 +180,7 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard voltex/*.java)\
 	$(wildcard view4d/*.java) $(wildcard view4d/icons/*.png) \
 	$(wildcard surfaceplot/*.java) \
 	$(wildcard octree/*.java) \
+	$(wildcard customnode/*.java) \
 	$(wildcard nrrd/*.java) \
 	vib/segment/ImageButton.java vib/segment/Border.java \
 	vib/Resample_.java vib/InterpolatedImage.java \

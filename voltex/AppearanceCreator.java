@@ -1,5 +1,7 @@
 package voltex;
 
+import ij3d.AxisConstants;
+
 import javax.media.j3d.Appearance;
 import javax.media.j3d.ColoringAttributes;
 import javax.media.j3d.ImageComponent2D;
@@ -26,7 +28,7 @@ import javax.vecmath.Vector4f;
  * 
  * @author Benjamin Schmid
  */
-public class AppearanceCreator implements VolRendConstants {
+public class AppearanceCreator implements AxisConstants {
 
 	/** The volume from which the textures are created */
 	private VoltexVolume volume;

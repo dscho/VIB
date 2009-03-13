@@ -2,6 +2,7 @@ package ij3d;
 
 import ij3d.shapes.CoordinateSystem;
 import ij3d.shapes.BoundingBox;
+import ij3d.pointlist.PointListPanel;
 import ij3d.pointlist.PointListShape;
 import ij3d.pointlist.PointListDialog;
 import ij.ImagePlus;
@@ -10,7 +11,6 @@ import ij.io.FileInfo;
 import ij.io.OpenDialog;
 
 import vib.PointList;
-import vib.BenesNamedPoint;
 import isosurface.MeshGroup;
 import voltex.VoltexGroup;
 import orthoslice.OrthoGroup;
@@ -45,13 +45,19 @@ public class Content extends BranchGroup implements UniverseListener {
 	// visibility flags
 	private boolean locked = false;
 	private boolean visible = true;
-	private boolean coordVisible = UniverseSettings.showLocalCoordinateSystemsByDefault;
+	private boolean coordVisible = UniverseSettings.
+					showLocalCoordinateSystemsByDefault;
 	private boolean showPL = false;
 	protected boolean selected = false;
 
 	// entries
 	private ContentNode contentNode = null;
-	private PointListShape pointlist = null;
+
+	// point list
+	private PointListShape plShape   = null;
+	private PointListDialog plDialog = null;
+	private PointListPanel plPanel   = null;
+	private PointList points;
 
 	// scene graph entries
 	private Switch bbSwitch;
@@ -59,10 +65,6 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	protected TransformGroup localRotate;
 	protected TransformGroup localTranslate;
-
-	// reference to the point list dialog
-	private PointListDialog plw;
-
 
 	// global constants
 	public static final int CO = 0;
@@ -99,6 +101,12 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.setCapability(Switch.ALLOW_CHILDREN_WRITE);
 		bbSwitch.setCapability(Switch.ALLOW_CHILDREN_EXTEND);
 		localRotate.addChild(bbSwitch);
+
+		// create the point list
+		points = new PointList();
+		plShape = new PointListShape(points);
+		plShape.setPickable(false);
+		plPanel = new PointListPanel(name, points);
 	}
 
 	public void displayAs(int type) {
@@ -172,10 +180,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(cs);
 
 		// create point list and add it to the switch
-		pointlist = new PointListShape(name);
-		pointlist.setPickable(false);
-		bbSwitch.addChild(pointlist);
-
+		bbSwitch.addChild(plShape);
 
 		// initialize child mask of the switch
 		whichChild.set(BB, selected);
@@ -226,25 +231,26 @@ public class Content extends BranchGroup implements UniverseListener {
 	 * ***********************************************************/
 
 	public void setPointListDialog(PointListDialog p) {
-		this.plw = p;
+		this.plDialog = p;
 	}
 
 	public void showPointList(boolean b) {
-		if(pointlist == null)
+		if(plShape == null)
 			return;
 
 		whichChild.set(PL, b);
 		showPL = b;
 		bbSwitch.setChildMask(whichChild);
-		if(b && plw != null)
-			plw.addPointList(name, pointlist.getPanel());
-		else if(!b && plw != null)
-			plw.removePointList(pointlist.getPanel());
+		if(b && plDialog != null)
+			plDialog.addPointList(name, plPanel);
+		else if(!b && plDialog != null)
+			plDialog.removePointList(plPanel);
 	}
 
 	public void loadPointList() {
-		pointlist.setColor(color);
-		pointlist.load(image);
+		points = PointList.load(image);
+		plPanel.setPointList(points);
+		plShape.setPointList(points);
 	}
 
 	public void savePointList() {
@@ -255,56 +261,48 @@ public class Content extends BranchGroup implements UniverseListener {
 			dir = fi.directory;
 			n = fi.fileName;
 		}
-		pointlist.save(dir, n);
+		points.save(dir, n);
 	}
 
+	/**
+	 * @deprecated
+	 * @param p
+	 */
 	public void addPointListPoint(Point3d p) {
-		int size = pointlist.size();
-		int point = 1;
-		if(size != 0) {
-			String lastp = pointlist.getPointList().
-						get(size-1).getName();
-			try {
-				point = Integer.parseInt(lastp.substring(
-					5, lastp.length())) + 1;
-			} catch(Exception e) {
-				point = size;
-			}
-		}
-		String n = "point" + point;
-		pointlist.addPoint(n, p.x, p.y, p.z);
-		if(plw != null)
-			plw.update();
+		points.add(p.x, p.y, p.z);
+		if(plDialog != null)
+			plDialog.update();
 	}
 
+	/**
+	 * @deprecated
+	 * @param i
+	 * @param pos
+	 */
 	public void setListPointPos(int i, Point3d pos) {
-		pointlist.setPos(i, pos);
+		points.placePoint(points.get(i), pos.x, pos.y, pos.z);
 	}
 
 	public float getLandmarkPointSize() {
-		return pointlist.getRadius();
+		return plShape.getRadius();
 	}
 
 	public void setLandmarkPointSize(float r) {
-		pointlist.setRadius(r);
+		plShape.setRadius(r);
 	}
 
 	public PointList getPointList() {
-		return pointlist.getPointList();
+		return points;
 	}
 
-	public BenesNamedPoint getPointListPointAt(Point3d p) {
-		return pointlist.getPoint(p);
-	}
-
-	public int getPointListPointIndexAt(Point3d p) {
-		return pointlist.getIndex(p);
-	}
-
+	/**
+	 * @deprecated
+	 * @param i
+	 */
 	public void deletePointListPoint(int i) {
-		pointlist.delete(i);
-		if(plw != null)
-			plw.update();
+		points.remove(i);
+		if(plDialog != null)
+			plDialog.update();
 	}
 
 	/* ************************************************************
@@ -326,8 +324,8 @@ public class Content extends BranchGroup implements UniverseListener {
 		localRotate.getTransform(t2);
 		t1.mul(t2);
 
-		transform.mul(t1);
-		setTransform(transform);
+		t1.mul(transform, t1);
+		setTransform(t1);
 	}
 
 	public void setTransform(Transform3D transform) {
@@ -395,7 +393,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		if(!colorChanged)
 			return;
 		this.color = color;
- 		pointlist.setColor(color);
+ 		plShape.setColor(color);
 		contentNode.colorUpdated();
 	}
 
@@ -409,27 +407,28 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	/* ************************************************************
-	 * Universe Listener interface
+	 * UniverseListener interface
 	 *
 	 *************************************************************/
 	public void transformationStarted(View view) {}
 	public void contentAdded(Content c) {}
 	public void contentRemoved(Content c) {
-		if(plw != null && this == c)
-			plw.removePointList(pointlist.getPanel());
+		if(plDialog != null && this == c)
+			plDialog.removePointList(plPanel);
 	}
 	public void canvasResized() {}
 	public void contentSelected(Content c) {}
 	public void contentChanged(Content c) {}
 
 	public void universeClosed() {
-		if(plw != null)
-			plw.removePointList(pointlist.getPanel());
+		if(plDialog != null)
+			plDialog.removePointList(plPanel);
 	}
 
 	public void transformationUpdated(View view) {
 		eyePtChanged(view);
 	}
+
 	public void transformationFinished(View view) {
 		eyePtChanged(view);
 	}

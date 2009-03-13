@@ -68,13 +68,13 @@ public class IFT_ implements PlugInFilter {
 		if(gd.wasCanceled())
 			return;
 
-		String seedtitle = gd.getNextChoice();
-		if(seedtitle.equals("use seeds from point list"))
+		int seed = gd.getNextChoiceIndex();
+		if(seed == titles.length - 1)
 			initFromPointList();
-		else if(seedtitle.equals("use local minima"))
+		else if(seed == titles.length - 2)
 			initFromMinima();
 		else
-			initFromImage(WindowManager.getImage(seedtitle));
+			initFromImage(WindowManager.getImage(titles[seed]));
 		propagate();
 
 		if(gd.getNextBoolean())
@@ -87,7 +87,9 @@ public class IFT_ implements PlugInFilter {
 				createSummaryString(), 400, 500);
 	}
 
+	Cls[] classes;
 	public void initFromImage(ImagePlus seeds) {
+		List<Cls> classlist = new ArrayList<Cls>();
 		w = image.getWidth();
 		h = image.getHeight();
 		wh = w * h;
@@ -113,17 +115,19 @@ public class IFT_ implements PlugInFilter {
 					int index = z*b.length + i;
 					int cost = 0;
 					C[index] = cost;
-					result[z][i] = (b[i] & 0xff0000) << 16 + (b[i] & 0xff00) << 8 + (b[i] & 0xff);
+					result[z][i] = b[i] & 0xff;
 					queue.add(index, cost);
+					addClass(classlist, x, y, z, b[i]);
 				}
 			}
 		}
+		classes = new Cls[classlist.size()];
+		classlist.toArray(classes);
 	}
 
-	Cls[] classes;
 	public void initFromMinima() {
 		IJ.showStatus("Find minima");
-		List<Cls>classlist = new ArrayList<Cls>();
+		List<Cls> classlist = new ArrayList<Cls>();
 		w = image.getWidth();
 		h = image.getHeight();
 		wh = w * h;
@@ -155,12 +159,8 @@ public class IFT_ implements PlugInFilter {
 					C[index] = cost;
 					result[z][i] = counter++;
 					queue.add(index, cost);
-					Cls cls = new Cls();
-					cls.add(x, y, z, data[z][y * w + x]);
-					cls.originx = x;
-					cls.originy = y;
-					cls.originz = z;
-					classlist.add(cls);
+					addClass(classlist, x, y, z,
+							data[z][y * w + x]);
 					Flood_Fill.fill(minima, x, y, z, (byte)0);
 				}
 			}
@@ -171,7 +171,18 @@ System.out.println(counter + " classes");
 		classlist.toArray(classes);
 	}
 
+	protected static void addClass(List<Cls> classlist,
+			int x, int y, int z, byte value) {
+		Cls cls = new Cls();
+		cls.add(x, y, z, value);
+		cls.originx = x;
+		cls.originy = y;
+		cls.originz = z;
+		classlist.add(cls);
+	}
+
 	public void initFromPointList() {
+		List<Cls> classlist = new ArrayList<Cls>();
 		w = image.getWidth();
 		h = image.getHeight();
 		wh = w * h;
@@ -199,7 +210,11 @@ System.out.println(counter + " classes");
 			m += 10;
 			result[z][i] = m;
 			queue.add(index, cost);
+			addClass(classlist,
+				(int)p.x, (int)p.y, (int)p.z, (byte)m);
 		}
+		classes = new Cls[classlist.size()];
+		classlist.toArray(classes);
 	}
 
 	private int[] neighbors = new int[6];

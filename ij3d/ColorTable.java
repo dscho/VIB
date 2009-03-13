@@ -250,7 +250,7 @@ public class ColorTable {
 		for(int z = 0; z < d; z++) {
 			byte[] bytes = 
 			(byte[])imp.getStack().getProcessor(z+1).getPixels();
-			byte[] newB = new byte[bytes.length];
+			byte[] newB = new byte[w * h];
 			for(int i = 0; i < w*h; i++) {
 				int index = bytes[i] & 0xff;
 				int value = (weight[0] * (int)(r[index]&0xff) + 

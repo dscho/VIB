@@ -20,7 +20,7 @@ public class TubenessProcessor extends HessianEvalueProcessor {
 		   direction - towards higher instensities rather than
 		   lower. */
 
-		if ((evalues[1] >= 0) || (evalues[0] >= 0))
+		if (evalues[1] >= 0)
 			return 0;
 		else
 			return (float)Math.abs(evalues[1]);

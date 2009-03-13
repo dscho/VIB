@@ -1,9 +1,9 @@
 package octree;
 
 import javax.media.j3d.*;
-import voltex.VolRendConstants;
+import ij3d.AxisConstants;
 
-public class GeometryCreator implements VolRendConstants {
+public class GeometryCreator implements AxisConstants {
 
 	private float[] quadCoords = new float[12];
 	private static GeometryCreator instance;

@@ -17,8 +17,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private Executer executer;
 
 	private MenuItem add;
-	private MenuItem addOctree;
-	private MenuItem removeOctree;
 	private MenuItem color;
 	private MenuItem bgColor;
 	private MenuItem channels;
@@ -112,16 +110,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		delete.setEnabled(false);
 		delete.addActionListener(this);
 		file.add(delete);
-
-		file.addSeparator();
-
-		addOctree = new MenuItem("Load large volume");
-		addOctree.addActionListener(this);
-		file.add(addOctree);
-
-		removeOctree = new MenuItem("Remove large volume");
-		removeOctree.addActionListener(this);
-		file.add(removeOctree);
 
 		file.addSeparator();
 
@@ -281,14 +269,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		bgColor.addActionListener(this);
 		view.add(bgColor);
 
-		MenuItem tmp = new MenuItem("Update Octree");
-		tmp.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				univ.cancelOctree();
-			}
-		});
-		view.add(tmp);
-
 		return view;
 	}
 
@@ -414,10 +394,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.editScalebar();
 		else if(src == viewer4d)
 			executer.load4D();
-		else if(src == addOctree)
-			executer.loadOctree();
-		else if(src == removeOctree)
-			executer.removeOctree();
 		else if(src == channels)
 			executer.changeChannels(univ.getSelected());
 		else if(src == transparency)
@@ -545,8 +521,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	public void contentSelected(Content c) {
 		delete.setEnabled(c != null);
 		center.setEnabled(c != null);
-		exportObj.setEnabled(c != null);
-		exportDXF.setEnabled(c != null);
 		fill.setEnabled(c != null);
 		smoothMesh.setEnabled(c != null);
 
@@ -586,8 +560,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		fill.setEnabled(t == Content.VOLUME);
 		shaded.setEnabled(t == Content.SURFACE_PLOT2D ||
 			t == Content.SURFACE || t == Content.CUSTOM);
-		exportObj.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
-		exportDXF.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
 		smoothMesh.setEnabled(t == Content.SURFACE || t == Content.CUSTOM);
 
 		coordinateSystem.setState(c.hasCoord());

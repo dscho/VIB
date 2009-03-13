@@ -17,6 +17,11 @@ public class ImageJ3DViewer implements PlugIn {
 
 	private static Image3DUniverse univ;
 
+	public static void main(String[] args) {
+		  new ij.ImageJ();
+		  IJ.runPlugIn("ij3d.ImageJ3DViewer", "");
+	}
+
 	public void run(String arg) {
 		ImagePlus image = WindowManager.getCurrentImage();
 		try {
@@ -149,7 +154,7 @@ public class ImageJ3DViewer implements PlugIn {
 			VoltexGroup vg = (VoltexGroup)univ.
 						getSelected().getContent();
 			ImageCanvas3D canvas = (ImageCanvas3D)univ.getCanvas();
-			vg.fillRoiBlack(canvas, canvas.getRoi(), (byte)0);
+			vg.fillRoi(canvas, canvas.getRoi(), (byte)0);
 		}
 	}
 

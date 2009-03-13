@@ -12,11 +12,11 @@ import vib.segment.ImageButton;
 
 /**
  * This class implements the window with the controls for the 4D viewer.
- * 
+ *
  * @author Benjamin Schmid
  */
 public class Viewer4DController implements ActionListener {
-	
+
 	private static final String[] FILES = new String[] {
 				"icons/first.png",
 				"icons/previous.png",
@@ -28,13 +28,13 @@ public class Viewer4DController implements ActionListener {
 				"icons/slower.png"};
 
 	private static final String[] COMMANDS = new String[] {
-			"FIRST", "PREV", "NEXT", "LAST", 
+			"FIRST", "PREV", "NEXT", "LAST",
 			"PLAY", "PAUSE", "FASTER", "SLOWER"};
 
-	
+
 	private ImageButton[] buttons = new ImageButton[FILES.length];
 	private Viewer4D viewer4d;
-	
+
 	/**
 	 * Initializes a new Viewer4DController;
 	 * opens a new new window with the control buttons for the 4D viewer.
@@ -43,7 +43,7 @@ public class Viewer4DController implements ActionListener {
 	public Viewer4DController(Viewer4D viewer) {
 		this.viewer4d = viewer;
 
-		GenericDialog gd = new GenericDialog("Test Button");
+		GenericDialog gd = new GenericDialog("4D Viewer");
 		Panel p = new Panel(new FlowLayout());
 		for(int i = 0; i < FILES.length; i++) {
 			buttons[i] = new ImageButton(loadIcon(FILES[i]));

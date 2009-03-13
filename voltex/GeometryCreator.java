@@ -1,5 +1,7 @@
 package voltex;
 
+import ij3d.AxisConstants;
+
 import javax.media.j3d.*;
 
 /**
@@ -9,7 +11,7 @@ import javax.media.j3d.*;
  * 
  * @author Benjamin Schmid
  */
-public class GeometryCreator implements VolRendConstants {
+public class GeometryCreator implements AxisConstants {
 
 	/** Temporary array of the coordinates of one rectangle */
 	private double[] quadCoords = new double[12];

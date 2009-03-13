@@ -17,6 +17,7 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 
 	private static final double ONE_RAD = 2 * Math.PI / 360;
 	private int xLast, yLast;
+	private Point3d rotCenter;
 
 	/**
 	 * Initializes a new InteractiveViewPlatformTransformer.
@@ -25,6 +26,29 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 	 */
 	public InteractiveViewPlatformTransformer(DefaultUniverse univ, BehaviorCallback callback) {
 		super(univ, callback);
+		// Set the initial rotation center to whatever is set in UniverseSettings
+		if(UniverseSettings.globalRotationCenter == 
+				UniverseSettings.ROTATION_AROUND_CENTER)
+			rotCenter = ((Image3DUniverse)univ).getGlobalCenterPoint();
+		else
+			rotCenter = new Point3d();
+	}
+
+	/**
+	 * Returns a reference to the rotation center.
+	 * Attention: Changing the returned point results in unspecified
+	 * behavior.
+	 */
+	public Point3d getRotationCenter() {
+		return rotCenter;
+	}
+
+	/**
+	 * Sets the rotation center to the specified point.
+	 * Attention: No copy is made.
+	 */
+	public void setRotationCenter(Point3d rotCenter) {
+		this.rotCenter = rotCenter;
 	}
 
 	/**
@@ -51,7 +75,6 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 		yLast = e.getY();
 	}
 
-	private final Point3d rotCenter = new Point3d();
 	/**
 	 * This method should be called during the mouse is dragged, if
 	 * the mouse event should result in a rotation.
@@ -60,11 +83,6 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 	public void rotate(MouseEvent e) {
 		int dx = xLast - e.getX();
 		int dy = yLast - e.getY();
-		if(UniverseSettings.globalRotationCenter == 
-				UniverseSettings.ROTATION_AROUND_CENTER)
-			((Image3DUniverse)univ).getGlobalCenterPoint(rotCenter);
-		else
-			rotCenter.set(0, 0, 0);
 		rotateXY(rotCenter, dy * ONE_RAD, dx * ONE_RAD);
 		xLast = e.getX();
 		yLast = e.getY();

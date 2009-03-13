@@ -16,67 +16,66 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Point3f;
 
 public class CustomLineMesh extends CustomMesh {
-	
+
 	public static final int PAIRWISE = 0;
 	public static final int CONTINUOUS = 1;
-	
+
 	public static final int SOLID    = LineAttributes.PATTERN_SOLID;
 	public static final int DOT      = LineAttributes.PATTERN_DOT;
 	public static final int DASH     = LineAttributes.PATTERN_DASH;
 	public static final int DASH_DOT = LineAttributes.PATTERN_DASH_DOT;
-	
+
 	public static final int DEFAULT_MODE = CONTINUOUS;
 	public static final int DEFAULT_PATTERN = SOLID;
 	public static final float DEFAULT_LINEWIDTH = 1.0f;
 
 	private int mode = DEFAULT_MODE;
-	
-	public CustomLineMesh(List<Point3f> mesh, int mode) {
-		this.setCapability(ALLOW_GEOMETRY_READ);
-		this.setCapability(ALLOW_GEOMETRY_WRITE);
-		this.setCapability(ALLOW_APPEARANCE_READ);
-		this.setCapability(ALLOW_APPEARANCE_WRITE);
-		this.mode = mode;
-		this.mesh = mesh;
-		this.update();
+
+	public CustomLineMesh(List<Point3f> mesh) {
+		this(mesh, DEFAULT_MODE);
 	}
-	
-	public CustomLineMesh(List<Point3f> mesh, int mode, 
+
+	public CustomLineMesh(List<Point3f> mesh, int mode) {
+		this(mesh, mode, DEFAULT_COLOR, 0);
+	}
+
+	public CustomLineMesh(List<Point3f> mesh, int mode,
 			Color3f color, float transparency) {
 		this.setCapability(ALLOW_GEOMETRY_READ);
 		this.setCapability(ALLOW_GEOMETRY_WRITE);
 		this.setCapability(ALLOW_APPEARANCE_READ);
 		this.setCapability(ALLOW_APPEARANCE_WRITE);
-		this.color = color;
+		if(color != null)
+			this.color = color;
 		this.mesh = mesh;
 		this.mode = mode;
 		this.transparency = transparency;
 		this.update();
 	}
-		
+
 	public void setPattern(int pattern) {
 		getAppearance().getLineAttributes().setLinePattern(pattern);
 	}
-	
+
 	public void setAntiAliasing(boolean b) {
 		getAppearance().getLineAttributes().setLineAntialiasingEnable(b);
 	}
-	
+
 	public void setLineWidth(float w) {
 		getAppearance().getLineAttributes().setLineWidth(w);
 	}
-	
+
 	@Override
 	public float getVolume() {
 		return 0;
 	}
-	
+
 	@Override
 	protected Appearance createAppearance() {
 		Appearance appearance = new Appearance();
 		appearance.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_READ);
 		appearance.setCapability(Appearance.ALLOW_LINE_ATTRIBUTES_READ);
-		
+
 		LineAttributes lineAttrib = new LineAttributes();
 		lineAttrib.setCapability(LineAttributes.ALLOW_ANTIALIASING_WRITE);
 		lineAttrib.setCapability(LineAttributes.ALLOW_PATTERN_WRITE);
@@ -84,7 +83,7 @@ public class CustomLineMesh extends CustomMesh {
 		lineAttrib.setLineWidth(DEFAULT_LINEWIDTH);
 		lineAttrib.setLinePattern(DEFAULT_PATTERN);
 		appearance.setLineAttributes(lineAttrib);
-		
+
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
 		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
@@ -114,7 +113,7 @@ public class CustomLineMesh extends CustomMesh {
 		appearance.setMaterial(material);
 		return appearance;
 	}
-	
+
 	@Override
 	protected Geometry createGeometry() {
 		List<Point3f> tri = mesh;
