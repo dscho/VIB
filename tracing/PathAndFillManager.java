@@ -678,7 +678,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			}
 			pw.println("</tracings>");
 		} finally {
-			pw.close();
+			if( pw != null )
+				pw.close();
 		}
 	}
 
