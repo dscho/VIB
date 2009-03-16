@@ -1590,10 +1590,8 @@ public class Path implements Comparable {
 	}
 */
 
-
 	Content content3D;
 	String nameWhenAddedToViewer;
-
 
 	/* FIXME: this should be based on distance between points in
 	   the path, not a static number: */
@@ -1718,16 +1716,12 @@ public class Path implements Comparable {
 	}
 
 	public void setSelected(boolean newSelectedStatus) {
-		if( newSelectedStatus != selected ) {
+		if( newSelectedStatus != selected )
 			selected = newSelectedStatus;
-			Path viewerPath = useFitted ? fitted : this;
-			if( viewerPath.content3D != null ) {
-				if( selected )
-					viewerPath.content3D.setColor(new Color3f(Color.green));
-				else
-					viewerPath.content3D.setColor(new Color3f(Color.magenta));
-			}
-		}
+	}
+
+	public boolean getSelected() {
+		return selected;
 	}
 
 }

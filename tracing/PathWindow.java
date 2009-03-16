@@ -286,6 +286,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				updateButtonsManySelected();
 			pathAndFillManager.setSelected(paths,this);
 		}
+		plugin.update3DViewerContents();
 	}
 
 	public static class PathTreeNode extends DefaultMutableTreeNode {
