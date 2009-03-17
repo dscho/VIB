@@ -242,14 +242,14 @@ public class Volume {
 			return (int)fData[z][y * w + x] & 0xff;
 		}
 
-		public void set(int x, int y, int z, int v) {
+		public void setNoCheck(int x, int y, int z, int v) {
 			fData[z][y * w + x] = (byte)v;
 		}
 		
-		public void setNoCheck(int x, int y, int z, int v) {
+		public void set(int x, int y, int z, int v) {
 			if(x >= 0 && x < xDim &&
 					y >= 0 && y < yDim && z > 0 && z < zDim) {
-				set(x, y, z, v);
+				setNoCheck(x, y, z, v);
 			}
 		}
 	}
@@ -289,14 +289,14 @@ public class Volume {
 			return fData[z][y * w + x];
 		}
 
-		public void set(int x, int y, int z, int v) {
+		public void setNoCheck(int x, int y, int z, int v) {
 			fData[z][y * w + x] = v;
 		}
 		
-		public void setNoCheck(int x, int y, int z, int v) {
+		public void set(int x, int y, int z, int v) {
 			if(x >= 0 && x < xDim &&
 					y >= 0 && y < yDim && z > 0 && z < zDim) {
-				set(x, y, z, v);
+				this.setNoCheck(x, y, z, v);
 			}
 		}
 	}
@@ -343,10 +343,10 @@ public class Volume {
 			}
 		}
 		
-		public void setNoCheck(int x, int y, int z, int v) {
+		public void set(int x, int y, int z, int v) {
 			if(x >= 0 && x < xDim &&
 					y >= 0 && y < yDim && z > 0 && z < zDim) {
-				set(x, y, z, v);
+				setNoCheck(x, y, z, v);
 			}
 		}
 
@@ -354,7 +354,7 @@ public class Volume {
 			return fData[z][y * w + x] & mask;
 		}
 
-		public void set(int x, int y, int z, int v) {
+		public void setNoCheck(int x, int y, int z, int v) {
 			fData[z][y * w + x] = v;
 		}
 	}
@@ -382,14 +382,14 @@ public class Volume {
 				if(channels[i]) usedCh++;
 		}
 
-		public void set(int x, int y, int z, int v) {
+		public void setNoCheck(int x, int y, int z, int v) {
 			fdata[z][y * w + x] = v;
 		}
 
-		public void setNoCheck(int x, int y, int z, int v) {
+		public void set(int x, int y, int z, int v) {
 			if(x >= 0 && x < xDim &&
 					y >= 0 && y < yDim && z > 0 && z < zDim) {
-				set(x, y, z, v);
+				setNoCheck(x, y, z, v);
 			}
 		}
 
