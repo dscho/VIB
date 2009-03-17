@@ -89,6 +89,9 @@ public class TracerCanvas extends ThreePanesCanvas {
 
 		boolean showOnlySelectedPaths = pathAndFillManager.plugin.getShowOnlySelectedPaths();
 
+		Color selectedColor = pathAndFillManager.plugin.selectedColor;
+		Color deselectedColor = pathAndFillManager.plugin.deselectedColor;
+
 		if( pathAndFillManager != null ) {
 			for( int i = 0; i < pathAndFillManager.size(); ++i ) {
 
@@ -106,9 +109,9 @@ public class TracerCanvas extends ThreePanesCanvas {
 					drawPath = p.fitted;
 				}
 
-				Color color = Color.MAGENTA;
+				Color color = deselectedColor;
 				if( pathAndFillManager.isSelected(p) ) {
-					color = Color.GREEN;
+					color = selectedColor;
 				} else if( showOnlySelectedPaths )
 					continue;
 
