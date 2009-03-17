@@ -1095,7 +1095,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				long megaBytesExtra = ( ((long)width) * height * depth * byteDepth * 2 ) / (1024 * 1024);
 				extraMemoryNeeded += megaBytesExtra + "MiB of memory)";
 
-				gd.addCheckbox("Use three pane view?"+extraMemoryNeeded, true);
+				gd.addCheckbox("Use three pane view?"+extraMemoryNeeded, false);
 
 				if( ! java3DAvailable ) {
 					gd.addMessage("(Java3D classes don't seem to be available, so no 3D viewer option is available.)");
@@ -1103,7 +1103,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					gd.addMessage("(3D viewer option is only currently available for 8 bit images)");
 				} else {
 					showed3DViewerOption = true;
-					gd.addCheckbox("Use 3D viewer? (Experimental)",false);
+					gd.addCheckbox("Use 3D viewer? (Experimental)",true);
 				}
 
 				gd.showDialog();
