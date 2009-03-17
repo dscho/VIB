@@ -94,7 +94,6 @@ public class Texture_By_Ref_col implements PlugInFilter,
 		bg.addChild(createShape());
 		bg.compile();
 		univ.getScene().addChild(bg);
-		univ.ensureScale(w);
 		univ.show();
 
 		univ.getCanvas().addMouseListener(this);
