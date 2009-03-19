@@ -168,11 +168,11 @@ public class Show_Colour_Surfaces implements PlugIn {
 			ImagePlus colourImage = new ImagePlus("Image for colour index: "+i,newStack);
 			colourImage.setCalibration(calibration);
 			if( smoothingSigma > 0 ) {
-				colourImage = Smooth_.smooth( colourImage, true, (float)smoothingSigma, true );
-				colourImage.setTitle( "Smoothed image for colour index: "+i );
+				ImagePlus smoothedColourImage = Smooth_.smooth( colourImage, true, (float)smoothingSigma, true );
+				smoothedColourImage.setTitle( "Smoothed image for colour index: "+i );
+				colourImage.close();
+				colourImage = smoothedColourImage;
 			}
-			// FIXME: It might be worth smoothing here to
-			// improve the look of the surfaces:
 			boolean [] channels = { true, true, true };
 			Content content = univ.addContent(colourImage,
 							  c,
