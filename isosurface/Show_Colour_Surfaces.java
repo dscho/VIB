@@ -227,7 +227,11 @@ public class Show_Colour_Surfaces implements PlugIn {
 		choices[choices.length-1] = useNewString;
 		for( int i = 0; i < choices.length - 1; ++i ) {
 			String contentsString = Image3DUniverse.universes.get(i).allContentsString();
-			String shortContentsString = contentsString.substring(0,Math.min(20,contentsString.length()-1));
+			String shortContentsString;
+			if( contentsString.length() == 0 )
+				shortContentsString = "[Empty]";
+			else
+				shortContentsString = contentsString.substring(0,Math.min(20,contentsString.length()-1));
 			choices[i] = "["+i+"] containing " + shortContentsString;
 		}
 		gd.addChoice( "Use 3D Viewer", choices, useNewString );
