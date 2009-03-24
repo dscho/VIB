@@ -712,12 +712,14 @@ public class CMTK_Transformation {
 			PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(headerFile),"UTF-8"));
 			pw.println("NRRD0005");
 			pw.println("type: short");
+			pw.println("endian: big");
 			pw.println("dimension: 4");
 			pw.println("sizes: "+modelWidth+" "+modelHeight+" "+modelDepth+" 3");
 			pw.println("encoding: gz");
-			pw.println("data file: "+xFile.getName());
-			pw.println("data file: "+yFile.getName());
-			pw.println("data file: "+zFile.getName());
+			pw.println("data file: LIST");
+			pw.println(xFile.getName());
+			pw.println(yFile.getName());
+			pw.println(zFile.getName());
 			// FIXME: how do we output the model calibration in NRRD?  Or not bother?
 			pw.close();
 
@@ -728,19 +730,19 @@ public class CMTK_Transformation {
 			DataOutputStream dosX = new DataOutputStream(new GZIPOutputStream(new FileOutputStream(xFile)));
 			DataOutputStream dosY = new DataOutputStream(new GZIPOutputStream(new FileOutputStream(yFile)));
 			DataOutputStream dosZ = new DataOutputStream(new GZIPOutputStream(new FileOutputStream(zFile)));
-		
+
 			for( int miz = 0; miz < modelDepth; ++miz )
 				for( int miy = 0; miy < modelHeight; ++miy )
-					for( int mix = 0; mix < modelDepth; ++mix ) {
+					for( int mix = 0; mix < modelWidth; ++mix ) {
 						int pi = ((int)miy) * modelWidth + (int)mix;
 						if( distanceSquared[miz][pi] < Float.MAX_VALUE ) {
-							dosX.writeFloat( templateX[miz][pi] );
-							dosY.writeFloat( templateY[miz][pi] );
-							dosZ.writeFloat( templateZ[miz][pi] );
+							dosX.writeShort( templateX[miz][pi] );
+							dosY.writeShort( templateY[miz][pi] );
+							dosZ.writeShort( templateZ[miz][pi] );
 						} else {
-							dosX.writeFloat( Float.NaN );
-							dosY.writeFloat( Float.NaN );
-							dosZ.writeFloat( Float.NaN );							
+							dosX.writeShort( Short.MIN_VALUE );
+							dosY.writeShort( Short.MIN_VALUE );
+							dosZ.writeShort( Short.MIN_VALUE );
 						}
 					}
 
