@@ -147,6 +147,9 @@ public final class MCCube {
 		int threshold;
 
 		final int intensity(final Point3f p) {
+			if(p.x < 0 || p.y < 0 || p.z < 0
+				|| p.x >= w || p.y >= h || p.z >= d)
+				return 0;
 			return volume.load((int)p.x, (int)p.y, (int)p.z);
 		}
 	}
@@ -170,9 +173,9 @@ public final class MCCube {
 		int SIZE = 1;
 		MCCube.SIZE = SIZE;
 		MCCube cube = new MCCube();
-		for(int z = 0; z < car.d-1; z+=SIZE){
-			for(int x = 0; x < car.w-SIZE; x+=SIZE){
-				for(int y = SIZE; y < car.h; y+=SIZE){
+		for(int z = -1; z < car.d+1; z+=SIZE){
+			for(int x = -1; x < car.w+1; x+=SIZE){
+				for(int y = -SIZE; y < car.h+2; y+=SIZE){
 					cube.init(x, y, z);
 					cube.computeEdges(car);
 					cube.getTriangles(tri, car);
@@ -184,9 +187,9 @@ public final class MCCube {
 		// convert pixel coordinates 
 		for(int i = 0; i < tri.size(); i++) {
 			Point3f p = (Point3f)tri.get(i);
-			p.x *= volume.pw;
-			p.y *= volume.ph;
-			p.z *= volume.pd;
+			p.x = (float) (p.x * volume.pw + volume.minCoord.x);
+			p.y = (float) (p.y * volume.ph + volume.minCoord.y);
+			p.z = (float) (p.z * volume.pd + volume.minCoord.z);
 		}	
 		return tri;
 	}
