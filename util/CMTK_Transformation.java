@@ -577,7 +577,7 @@ public class CMTK_Transformation {
 		File zFile = new File( directoryOfOriginalFile, "inverse_z.gz" );
 		if( headerFile.exists() && xFile.exists() && yFile.exists() && zFile.exists() ) {
 			inverse = Inverse.load( headerFile, xFile, yFile, zFile,
-						model, template );
+						template, model );
 			return inverse;
 		}
 
@@ -758,7 +758,7 @@ public class CMTK_Transformation {
 
 		System.out.println("Loading back in now:");
 
-		Inverse result = Inverse.load( headerFile, xFile, yFile, zFile, model, template );
+		Inverse result = Inverse.load( headerFile, xFile, yFile, zFile, template, model );
 
 		return result;
 	}
