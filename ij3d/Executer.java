@@ -950,8 +950,8 @@ public class Executer {
 		univ.getViewPlatformTransformer().centerAt(center);
 	}
 
-	public void record() {
-		ImagePlus movie = univ.record();
+	public void record360() {
+		ImagePlus movie = univ.record360();
 		if(movie != null)
 			movie.show();
 		record(START_RECORD);

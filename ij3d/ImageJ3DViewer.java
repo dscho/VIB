@@ -69,7 +69,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void startRecord() {
-		if(univ != null) univ.record();
+		//if(univ != null) univ.startFreehandRecording();
 	}
 
 	public static void close() {

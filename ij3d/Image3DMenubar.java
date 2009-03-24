@@ -409,7 +409,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		else if(src == center)
 			executer.centerSelected(univ.getSelected());
 		else if(src == startRecord)
-			executer.record();
+			executer.record360();
 //		else if(src == stopRecord)
 //			executer.stopRecording();
 		else if(src == startAnimation)

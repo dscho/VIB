@@ -56,7 +56,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	/**
 	 * ImageStack holding the image series after recording an animation.
 	 */
-	private ImageStack stack;
+	private ImageStack freehandStack;
 
 	/**
 	 * Constructor
@@ -78,7 +78,8 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		animation.setStartTime(System.currentTimeMillis());
 		BranchGroup bg = new BranchGroup();
 		rotpol = new RotationInterpolator(animation, animationTG) {
-			@Override public void processStimulus(java.util.Enumeration e) {
+			@Override
+			public void processStimulus(java.util.Enumeration e) {
 				super.processStimulus(e);
 				if(!animation.isPaused()) {
 					fireTransformationUpdated();
@@ -101,7 +102,16 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	 * Records a full 360 degree rotation and returns an ImagePlus
 	 * containing the frames of the animation.
 	 */
-	private ImagePlus record360() {
+	public ImagePlus record360() {
+		if(animation.isPaused())
+			return null;
+
+		// stop the animation
+		pauseAnimation();
+		// create a new stack
+		ImageProcessor ip = win.getImagePlus().getProcessor();
+		ImageStack stack = new ImageStack(ip.getWidth(), ip.getHeight());
+		// prepare everything
 		updateRotationAxisAndCenter();
 		try {
 			Thread.sleep(1000);
@@ -114,6 +124,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 		double alpha = 0;
 
+		// update transformation and record
 		for(int i = 0; i < steps; i++) {
 			alpha = i * deg2;
 			rotationXform.rotY(alpha);
@@ -123,13 +134,18 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			fireTransformationUpdated();
 			getCanvas().getView().renderOnce();
 			win.updateImagePlusAndWait();
-			ImageProcessor ip = win.getImagePlus().getProcessor();
+			ip = win.getImagePlus().getProcessor();
 			int w = ip.getWidth(), h = ip.getHeight();
 			if(stack == null)
 				stack = new ImageStack(w, h);
 			stack.addSlice("", ip);
 		}
+
+		// restart the view and animation
 		getCanvas().getView().startView();
+		startAnimation();
+
+		// cleanup
 		incorporateAnimationInRotation();
 
 		if(stack.getSize() == 0)
@@ -147,22 +163,6 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		viewTransformer.rotateY(
 			viewTransformer.getRotationCenter(), rad);
 		fireTransformationUpdated();
-	}
-
-	/**
-	 * Records a full 360 degree rotation and returns an ImagePlus
-	 * containing the frames of the animation.
-	 */
-	public ImagePlus record() {
-		ImagePlus ret = null;
-		if(!animation.isPaused()) {
-			pauseAnimation();
-			ImageProcessor ip = win.getImagePlus().getProcessor();
-			stack = new ImageStack(ip.getWidth(), ip.getHeight());
-			ret = record360();
-			startAnimation();
-		}
-		return ret;
 	}
 
 	/**
