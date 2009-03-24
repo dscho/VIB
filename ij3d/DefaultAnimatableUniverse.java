@@ -1,5 +1,6 @@
 package ij3d;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
 import ij.ImageStack;
@@ -160,6 +161,11 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	 * containing the frames of the animation.
 	 */
 	public ImagePlus record360() {
+		// check if freehand recording is running
+		if(freehandStack != null) {
+			IJ.error("Freehand recording is active. Stop first.");
+			return null;
+		}
 		// stop the animation
 		if(!animation.isPaused())
 			pauseAnimation();
