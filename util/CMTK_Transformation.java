@@ -962,5 +962,57 @@ public class CMTK_Transformation {
 				transformed[2] = templateZ[miz][ miy * modelWidth + mix ] * templatePixelDepth;
 			}
 		}
+
+		/* 'model' is the image that is transformed into the
+		   space of 'template'.  This is just here for testing
+		   - if you want to do this, do it with
+		   CMTK_Transformation.transform(), rather than with
+		   the inverse... */
+
+		public ImagePlus transformImage( ImagePlus template, ImagePlus model ) {
+
+			int modelWidth = model.getWidth();
+			int modelHeight = model.getHeight();
+			int modelDepth = model.getStackSize();
+
+			int templateWidth = template.getWidth();
+			int templateHeight = template.getHeight();
+			int templateDepth = template.getStackSize();
+
+			Calibration templateCalibration = template.getCalibration();
+
+			byte [][] transformedData = new byte[templateDepth][templateWidth*templateHeight];
+			int [] transformed = new int[3];
+
+			byte [][] originalData = new byte[modelDepth][];
+			ImageStack stack = model.getStack();
+			for( int z = 0; z < modelDepth; ++z )
+				originalData[z] = (byte [])stack.getPixels( z + 1 );
+
+			for( int z = 0; z < modelDepth; ++z ) {
+				for( int y = 0; y < modelHeight; ++y ) {
+					for( int x = 0; x < modelWidth; ++x ) {
+						transformPoint( x, y, z, transformed );
+						int nx = transformed[0];
+						int ny = transformed[1];
+						int nz = transformed[2];
+						if( nx < 0 || ny < 0 || nz < 0 ||
+						    nx >= templateWidth || ny >= templateHeight || nz >= templateDepth )
+							continue;
+						transformedData[nz][ny*templateWidth+nx] = originalData[z][y*modelWidth+x];
+					}
+				}
+			}
+
+			ImageStack newStack = new ImageStack( templateWidth, templateHeight );
+			for( int z = 0; z < templateDepth; ++z ) {
+				ByteProcessor bp = new ByteProcessor( templateWidth, templateHeight );
+				bp.setPixels( transformedData[z] );
+				newStack.addSlice( "", bp );
+			}
+
+			ImagePlus result = new ImagePlus( "Transformed "+model.getTitle(), newStack );
+			return result;
+		}
 	}
 }
