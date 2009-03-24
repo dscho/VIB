@@ -56,10 +56,10 @@ public class Volume {
 	public final float xTexGenScale, yTexGenScale, zTexGenScale;
 
 	/** The minimum coordinate of the data */
-	final Point3d minCoord = new Point3d();
+	public final Point3d minCoord = new Point3d();
 
 	/** The maximum coordinate of the data */
-	final Point3d maxCoord = new Point3d();
+	public final Point3d maxCoord = new Point3d();
 
 	/** The mid point in the data */
 	final Point3d volRefPt = new Point3d();
@@ -102,9 +102,9 @@ public class Volume {
 		float zSpace = (float)pd;
 
 		// real coords
-		minCoord.x = c.xOrigin * xSpace;
-		minCoord.y = c.yOrigin * ySpace;
-		minCoord.z = c.zOrigin * zSpace;
+		minCoord.x = c.xOrigin;
+		minCoord.y = c.yOrigin;
+		minCoord.z = c.zOrigin;
 
 		maxCoord.x = minCoord.x + xDim * xSpace;
 		maxCoord.y = minCoord.y + yDim * ySpace;
