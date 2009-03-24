@@ -9,7 +9,11 @@ import java.awt.event.*;
 import java.io.*;
 import java.util.zip.*;
 import java.util.Enumeration;
+import java.util.ArrayList;
 import java.util.Vector;
+
+import java.net.*;
+import java.util.regex.*;
 
 public class Install_Java3D implements PlugIn, ActionListener {
 	
@@ -64,9 +68,41 @@ public class Install_Java3D implements PlugIn, ActionListener {
 			IJ.error("Error: " + e.getMessage());
 			e.printStackTrace();
 		}
-
 	}
 
+	/**
+	 * Returns an array of Strings with the Java extension directories
+	 * which contain a j3dcore.jar in their ext/ folder.
+	 */
+	public String[] getJavaExtDirsWithJ3D() {
+		String[] candidates = getJavaExtDirs();
+		ArrayList<String> result = new ArrayList<String>();
+		for(String c : candidates) {
+			if(new File(c + "/ext/j3dcore.jar").exists())
+				result.add(c);
+		}
+		return result.toArray(new String[] {});
+	}
+
+	/**
+	 * Returns an array of Strings with the Java extension directories;
+	 * One of these directories is the one in which Java3D is installed.
+	 */
+	public String[] getJavaExtDirs() {
+		File java_home = new File(System.getProperty("java.home"));
+		String value = System.getProperty("java.ext.dirs");
+		if(value == null || value.trim().length() == 0) {
+			System.out.println("Could not figure out the Java ext dirs");
+			return null;
+		}
+		return value.split(System.getProperty("path.separator"));
+	}
+
+	/**
+	 * Install the specified file (which was downloaded from the
+	 * java homepage) in the corresponding directories of the
+	 * specified JRE home directory.
+	 */
 	public void install(File file, File java_home) throws Exception {
 		File tempdir = new File(java_home, "tmp");
 		tempdir.mkdir();
@@ -84,6 +120,10 @@ public class Install_Java3D implements PlugIn, ActionListener {
 		tempdir.delete();
 	}
 
+	/**
+	 * Extracts fileToExtract from the zipfile in the specified directory.
+	 * Returns a Vector with the extracted files.
+	 */
 	public Vector unzip(File zipfile, File dir, String fileToExtract) 
 							throws Exception {
 		ZipFile zfile = new ZipFile(zipfile);
@@ -124,6 +164,9 @@ public class Install_Java3D implements PlugIn, ActionListener {
 		return extracted;
 	}
 
+	/**
+	 * Checks if the specified file is a directory.
+	 */
 	private boolean checkDir(File f) {
 		if(f.isDirectory())
 			return true;
@@ -131,6 +174,9 @@ public class Install_Java3D implements PlugIn, ActionListener {
 		return false;
 	}
 
+	/**
+	 * Check if the specified file is writable.
+	 */
 	private boolean checkWrite(File f) {
 		if(f.canWrite())
 			return true;
@@ -151,8 +197,67 @@ public class Install_Java3D implements PlugIn, ActionListener {
 		}
 	}
 
-	public static String[] getPaths(String env) {
-		String ps = System.getProperty("path.separator");
-		return Tools.split(System.getProperty(env), ps); 
+	/**
+	 * Checks which OS we are running, and returns the tail of 
+	 * the file to download.
+	 */
+	private static String getAppropriateDownloadPattern() {
+		if(IJ.isLinux()) {
+			if(IJ.is64Bit())
+				return "linux-amd64.zip";
+			else
+				return "linux-i586.zip";
+		} 
+		if(IJ.isWindows()) {
+			if(IJ.is64Bit())
+				return "windows-amd64.zip";
+			else
+				return "windows-i586.zip";
+		}
+		if(IJ.isMacOSX())
+			return "macosx.zip";
+
+		return null;
+	}
+
+	/**
+	 * Scans the https://java3d.dev.java.net/binary-builds.html for
+	 * zip-files containing 'linux', 'macosx', 'solaris' or 'windows' in 
+	 * their names; the result is returned as a String[] array.
+	 */
+	public static String[] getDownloadCandidates() throws Exception {
+		// Create a url connection and scan the contents of the html 
+		// file for zip  files.
+		URL url = new URL("https://java3d.dev.java.net/binary-builds.html");
+		URLConnection conn = url.openConnection();
+		InputStream is = conn.getInputStream();
+		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		int c = 0;
+		while((c = is.read()) != -1)
+			buf.write(c);
+		is.close();
+		String content = buf.toString();
+
+		Pattern p = Pattern.compile("(http://download.java.net.*?zip)");
+		Matcher m = p.matcher(content);
+		ArrayList results = new ArrayList();
+		while(m.find()) {
+			String cand = m.group();
+			if(cand.contains("linux") || cand.contains("windows") ||
+				cand.contains("solaris") || cand.contains("macosx"))
+				results.add(cand);
+		}
+
+		return (String[])results.toArray(new String[] {});
+	}
+
+	public static void main(String[] args) throws Exception {
+		String[] cand = getDownloadCandidates();
+		String recommended = null;
+		String p = getAppropriateDownloadPattern();
+		for(String s : cand) {
+			if(s.contains(p))
+				recommended = p;
+		}
 	}
 }

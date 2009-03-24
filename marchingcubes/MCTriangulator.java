@@ -5,6 +5,7 @@ import ij.ImageStack;
 import ij.process.ImageProcessor;
 import ij.process.ColorProcessor;
 import ij.process.ByteProcessor;
+import ij.measure.Calibration;
 import java.util.List;
 
 import vib.Resample_;
@@ -20,8 +21,10 @@ public class MCTriangulator implements Triangulator {
 
 		if(resamplingF != 1)
 			image = Resample_.resample(image, resamplingF);
-		// zero-padding the resampled mesh
-		zeroPad(image);
+		// There is no need to zero pad any more. MCCube automatically
+		// scans one pixel more in each direction, assuming a value
+		// of zero outside the image.
+		// zeroPad(image);
 		// create Volume
 		Volume volume = new Volume(image, channels);
 		volume.setAverage(true);
@@ -45,6 +48,7 @@ public class MCTriangulator implements Triangulator {
 		
 		// enlarge it and add it as a first slide.
 		ImageProcessor ne = createProcessor(w+2, h+2, type);
+		st.addSlice("", ne);
 
 		// now do the same for all slices in the old stack
 		for(int z = 0; z < d; z++) {
@@ -59,6 +63,13 @@ public class MCTriangulator implements Triangulator {
 		st.addSlice(Integer.toString(d+1), ne);
 
 		imp.setStack(null, st);
+
+		// update the origin
+		Calibration cal = imp.getCalibration();
+		cal.xOrigin -= cal.pixelWidth;
+		cal.yOrigin -= cal.pixelHeight;
+		cal.zOrigin -= cal.pixelDepth;
+		imp.setCalibration(cal);
 	}
 
 	private static final ImageProcessor createProcessor(

@@ -88,9 +88,9 @@ public class Volume {
 		float zSpace = (float)pd;
 
 		// real coords
-		minCoord.x = c.xOrigin * xSpace;
-		minCoord.y = c.yOrigin * ySpace;
-		minCoord.z = c.zOrigin * zSpace;
+		minCoord.x = c.xOrigin;
+		minCoord.y = c.yOrigin;
+		minCoord.z = c.zOrigin;
 
 		maxCoord.x = minCoord.x + xDim * xSpace;
 		maxCoord.y = minCoord.y + yDim * ySpace;
