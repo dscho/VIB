@@ -971,6 +971,8 @@ public class CMTK_Transformation {
 
 		public ImagePlus transformImage( ImagePlus template, ImagePlus model ) {
 
+			boolean debug = false;
+
 			int modelWidth = model.getWidth();
 			int modelHeight = model.getHeight();
 			int modelDepth = model.getStackSize();
@@ -989,6 +991,10 @@ public class CMTK_Transformation {
 			for( int z = 0; z < modelDepth; ++z )
 				originalData[z] = (byte [])stack.getPixels( z + 1 );
 
+			byte [][] foundMappingData = null;
+			if( debug )
+				foundMappingData = new byte[modelDepth][modelWidth*modelHeight];
+
 			for( int z = 0; z < modelDepth; ++z ) {
 				for( int y = 0; y < modelHeight; ++y ) {
 					for( int x = 0; x < modelWidth; ++x ) {
@@ -999,6 +1005,8 @@ public class CMTK_Transformation {
 						if( nx < 0 || ny < 0 || nz < 0 ||
 						    nx >= templateWidth || ny >= templateHeight || nz >= templateDepth )
 							continue;
+						if( debug )
+							foundMappingData[z][y*modelWidth+x] = (byte)0xFF;
 						transformedData[nz][ny*templateWidth+nx] = originalData[z][y*modelWidth+x];
 					}
 				}
@@ -1012,6 +1020,19 @@ public class CMTK_Transformation {
 			}
 
 			ImagePlus result = new ImagePlus( "Transformed "+model.getTitle(), newStack );
+			result.setCalibration( templateCalibration );
+
+			if( debug ) {
+				ImageStack debugStack = new ImageStack( modelWidth, modelHeight );
+				for( int z = 0; z < modelDepth; ++z ) {
+					ByteProcessor bp = new ByteProcessor( modelWidth, modelHeight );
+					bp.setPixels( foundMappingData[z] );
+					debugStack.addSlice( "", bp );
+				}
+				ImagePlus debugImage = new ImagePlus( "Debug Stack", debugStack );
+				debugImage.show();
+			}
+
 			return result;
 		}
 	}
