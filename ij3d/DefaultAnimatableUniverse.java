@@ -9,6 +9,7 @@ import javax.media.j3d.Alpha;
 import javax.media.j3d.RotationInterpolator;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
+import javax.media.j3d.View;
 
 import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Vector3d;
@@ -96,6 +97,62 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		rotpol.setEnable(false);
 		bg.addChild(rotpol);
 		animationTG.addChild(bg);
+
+		addUniverseListener(new UniverseListener() {
+				public void transformationStarted(View view) {}
+				public void transformationFinished(View view) {}
+				public void contentAdded(Content c) {}
+				public void contentRemoved(Content c) {}
+				public void canvasResized() {}
+				public void universeClosed() {}
+				public void contentSelected(Content c) {}
+
+				public void transformationUpdated(View view) {
+					addFreehandRecordingFrame();
+				}
+
+				public void contentChanged(Content c) {
+					addFreehandRecordingFrame();
+				}
+		});
+	}
+
+	/**
+	 * Add a new frame to the freehand recording stack.
+	 */
+	private void addFreehandRecordingFrame() {
+		if(freehandStack == null)
+			return;
+
+		win.updateImagePlus();
+		ImageProcessor ip = win.getImagePlus().getProcessor();
+		freehandStack.addSlice("", ip);
+	}
+
+	/**
+	 * Start freehand recording.
+	 */
+	public void startFreehandRecording() {
+		// check if is's already running.
+		if(freehandStack != null)
+			return;
+
+		// create a new stack
+		ImageProcessor ip = win.getImagePlus().getProcessor();
+		freehandStack = new ImageStack(ip.getWidth(), ip.getHeight());
+	}
+
+	/**
+	 * Stop freehand recording.
+	 * Returns an ImagePlus whose stack contains the frames of the movie.
+	 */
+	public ImagePlus stopFreehandRecording() {
+		if(freehandStack == null || freehandStack.getSize() == 0)
+			return null;
+
+		ImagePlus imp = new ImagePlus("Movie", freehandStack);
+		freehandStack = null;
+		return imp;
 	}
 
 	/**
