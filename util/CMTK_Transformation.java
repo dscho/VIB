@@ -26,6 +26,8 @@ import landmarks.Rigid_From_Landmarks;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
+import java.util.Arrays;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,6 +38,9 @@ import util.Overlay_Registered;
 
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import nrrd.NrrdHeader;
+import nrrd.NrrdInfo;
 
 public class CMTK_Transformation {
 
@@ -685,7 +690,7 @@ public class CMTK_Transformation {
 								float ds = (float)doubleDistanceSquared;
 								int pi = nearmiy * modelWidth + nearmix;
 								if( ds < distanceSquared[nearmiz][pi] ) {
-									distanceSquared[nearmiz][pi] = ds;	
+									distanceSquared[nearmiz][pi] = ds;
 									templateX[nearmiz][pi] = (short)tix;
 									templateY[nearmiz][pi] = (short)tiy;
 									templateZ[nearmiz][pi] = (short)tiz;
@@ -803,8 +808,93 @@ public class CMTK_Transformation {
 		}
 
 		public static Inverse load( File headerFile, File xFile, File yFile, File zFile, ImagePlus template, ImagePlus model ) {
-			// FIXME: implement
-			return null;
+
+			int modelWidth = model.getWidth();
+			int modelHeight = model.getHeight();
+			int modelDepth = model.getStackSize();
+			System.out.println("On loading, model is: "+model);
+			System.out.println("Got modelDepth: "+modelDepth);
+
+			Inverse result = null;
+
+			long p = -1;
+
+			try {
+				NrrdHeader nh=null;
+				NrrdInfo ni=null;
+				nh=new NrrdHeader();
+				nh.readHeader(headerFile.getAbsolutePath());
+				ni = new NrrdInfo(nh);
+				ni.parseHeader();
+
+				// Check that the dimension is 4:
+				int [] dimensions = ni.getIntegerFieldChecked( "dimension", 1, true );
+				if( dimensions[0] != 4 )
+					throw new Exception("The inverse file must have 4 dimensions (not "+dimensions[0]+")");
+
+				// That the type is short:
+				String type = ni.getStandardType( ni.getStringFieldChecked("type", 1, true )[0] );
+				if( ! type.equals( "int16" )  )
+					throw new Exception("The inverse's data must be of type signed short (int16), not "+type);
+
+				// That the sizes in each dimension match:
+				long [] requiredSizes = new long[4];
+				requiredSizes[0] = modelWidth;
+				requiredSizes[1] = modelHeight;
+				requiredSizes[2] = modelDepth;
+				requiredSizes[3] = 3;
+				long [] sizes = ni.getLongFieldChecked("sizes", dimensions[0], true );
+				if( ! Arrays.equals( sizes, requiredSizes ) ) {
+					IJ.error("Sizes in one of the dimensions didn't match - required "+
+						 "["+requiredSizes[0]+","+requiredSizes[1]+","+requiredSizes[2]+","+requiredSizes[3]+"] but got"+
+						 "["+sizes[0]+","+sizes[1]+","+sizes[2]+","+sizes[3]+"]");
+				}
+
+				// There are only three data files:
+				if( ni.dataFiles.length != 3 )
+					throw new Exception("There must be exactly three data files, not: "+ni.dataFiles.length);
+
+				for( int i = 0; i < ni.dataFiles.length; ++i ) {
+					System.out.println("ni.dataFiles["+i+"] is '"+ni.dataFiles[i]+"'");
+				}
+
+				// Then create the object and read in the data files:
+				result = new Inverse( template, model );
+
+				for( int i = 0; i < ni.dataFiles.length; ++i ) {
+					File f = ni.dataFiles[i];
+					short [][] target = null;
+					switch( i ) {
+					case 0:
+						target = result.templateX;
+						break;
+					case 1:
+						target = result.templateY;
+						break;
+					case 2:
+						target = result.templateZ;
+						break;
+					default:
+						throw new RuntimeException( "BUG: i is surprising (" + i + ")" );
+					}
+					DataInputStream dis = new DataInputStream( new GZIPInputStream( new BufferedInputStream(new FileInputStream(f)) ));
+					long expectedShorts = modelWidth * modelHeight * modelDepth;
+					for( p = 0; p < expectedShorts; ++p ) {
+						int modelX = (int)( p % modelWidth );
+						int modelY = (int)( (p / modelWidth) % modelHeight );
+						int modelZ = (int)( (p / (modelWidth * modelHeight)) % modelDepth );
+						target[modelZ][modelY*modelWidth+modelX] = dis.readShort();
+					}
+				}
+
+			} catch( Exception e ) {
+				IJ.error("There was an error loading the CMTK inverse: "+e);
+				System.out.println("p was: "+p);
+				e.printStackTrace();
+				return null;
+			}
+
+			return result;
 		}
 
 		public void transformPoint( double modelX, double modelY, double modelZ, double [] transformed ) {
