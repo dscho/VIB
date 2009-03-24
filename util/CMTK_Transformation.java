@@ -576,7 +576,7 @@ public class CMTK_Transformation {
 			throw new RuntimeException( "Can't use CMTK_Transformation.inverse without originalFile being set." );
 
 		File directoryOfOriginalFile = originalFile.getParentFile();
-		File headerFile = new File( directoryOfOriginalFile, "inverse.nhrd" );
+		File headerFile = new File( directoryOfOriginalFile, "inverse.nhdr" );
 		File xFile = new File( directoryOfOriginalFile, "inverse_x.gz" );
 		File yFile = new File( directoryOfOriginalFile, "inverse_y.gz" );
 		File zFile = new File( directoryOfOriginalFile, "inverse_z.gz" );
