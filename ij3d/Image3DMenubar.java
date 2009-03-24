@@ -27,8 +27,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem delete;
 	private MenuItem properties;
 	private MenuItem resetView;
+	private MenuItem record360;
 	private MenuItem startRecord;
-//	private MenuItem stopRecord;
+	private MenuItem stopRecord;
 	private MenuItem startAnimation;
 	private MenuItem stopAnimation;
 	private MenuItem viewPreferences;
@@ -235,13 +236,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		view.addSeparator();
 
-		startRecord = new MenuItem("Start recording");
+		record360 = new MenuItem("Record 360 deg rotation");
+		record360.addActionListener(this);
+		view.add(record360);
+
+		startRecord = new MenuItem("Start freehand recording");
 		startRecord.addActionListener(this);
 		view.add(startRecord);
 
-//		stopRecord = new MenuItem("Stop recording");
-//		stopRecord.addActionListener(this);
-//		view.add(stopRecord);
+		stopRecord = new MenuItem("Stop freehand recording");
+		stopRecord.addActionListener(this);
+		view.add(stopRecord);
 
 		view.addSeparator();
 
@@ -408,10 +413,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.resetView();
 		else if(src == center)
 			executer.centerSelected(univ.getSelected());
-		else if(src == startRecord)
+		else if(src == record360)
 			executer.record360();
-//		else if(src == stopRecord)
-//			executer.stopRecording();
+		else if(src == startRecord)
+			executer.startFreehandRecording();
+		else if(src == stopRecord)
+			executer.stopFreehandRecording();
 		else if(src == startAnimation)
 			executer.startAnimation();
 		else if(src == stopAnimation)

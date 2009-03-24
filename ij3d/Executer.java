@@ -957,6 +957,16 @@ public class Executer {
 		record(START_RECORD);
 	}
 
+	public void startFreehandRecording() {
+		univ.startFreehandRecording();
+	}
+
+	public void stopFreehandRecording() {
+		ImagePlus movie = univ.stopFreehandRecording();
+		if(movie != null)
+			movie.show();
+	}
+
 	public void startAnimation() {
 		univ.startAnimation();
 		record(START_ANIMATE);
