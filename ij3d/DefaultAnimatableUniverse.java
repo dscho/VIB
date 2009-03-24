@@ -160,11 +160,9 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	 * containing the frames of the animation.
 	 */
 	public ImagePlus record360() {
-		if(animation.isPaused())
-			return null;
-
 		// stop the animation
-		pauseAnimation();
+		if(!animation.isPaused())
+			pauseAnimation();
 		// create a new stack
 		ImageProcessor ip = win.getImagePlus().getProcessor();
 		ImageStack stack = new ImageStack(ip.getWidth(), ip.getHeight());
@@ -200,7 +198,6 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 		// restart the view and animation
 		getCanvas().getView().startView();
-		startAnimation();
 
 		// cleanup
 		incorporateAnimationInRotation();
