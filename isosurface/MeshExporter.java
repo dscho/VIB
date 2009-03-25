@@ -137,10 +137,16 @@ public class MeshExporter {
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content ob = (Content)it.next();
 
-			if (!(ob.getContent() instanceof CustomMeshNode)) continue;
+			CustomMesh cmesh=null;
 
-			final CustomMeshNode cmeshnode = (CustomMeshNode) ob.getContent();
-			final CustomMesh cmesh = cmeshnode.getMesh();
+			if (ob.getContent() instanceof CustomMeshNode) {
+				CustomMeshNode cmeshnode = (CustomMeshNode) ob.getContent();
+				cmesh = cmeshnode.getMesh();
+			} else if (ob.getContent() instanceof MeshGroup) {
+				MeshGroup mg = (MeshGroup)ob.getContent();
+				cmesh = mg.getMesh();
+			} else
+				continue;
 
 			final List triangles = cmesh.getMesh();
 
