@@ -301,7 +301,7 @@ public class Lasso_ implements PlugIn {
 				if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h)
 					continue;
 				double newC = cost + stepW[i] + (ratioSpaceColor
-					 + difference.difference(x, y, x2, y2));
+					 * difference.difference(x, y, x2, y2));
 				if (dijkstra[x2 + w * y2] > newC) {
 					queue.add(newC, new PixelCost(x2,
 								y2, newC));
