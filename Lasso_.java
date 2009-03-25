@@ -76,13 +76,18 @@ public class Lasso_ implements PlugIn {
 		"    call('Lasso_.callOptionDialog');\n" +
 		"}\n";
 
+	protected boolean macroInstalled = false;
+
 	public void run(String arg){
 		if (IJ.versionLessThan("1.37j"))
 			return;
 
+		if (macroInstalled)
+			return;
 		MacroInstaller installer = new MacroInstaller();
 		installer.install(MACRO_CMD);
 		Toolbar.getInstance().setTool(Toolbar.SPARE1);
+		macroInstalled = true;
 	}
 
 	private static Lasso_ instance;
