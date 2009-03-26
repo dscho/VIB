@@ -594,6 +594,21 @@ public class Executer {
 				transp_adjuster.exec((int)e.getValue(), c, univ);
 			}
 		});
+		((TextField)gd.getNumericFields().get(0)).
+			addTextListener(new TextListener() {
+			public void textValueChanged(TextEvent e) {
+				if(!transp_adjuster.go)
+					transp_adjuster.start();
+				TextField input = (TextField)e.getSource();
+				String text = input.getText();
+				try {
+					int value = Integer.parseInt(text);
+					transp_adjuster.exec(value, c, univ);
+				} catch (Exception exception) {
+					// ignore intermediately invalid number
+				}
+			}
+		});
 		gd.setModal(false);
 		gd.addWindowListener(new WindowAdapter() {
 			@Override
