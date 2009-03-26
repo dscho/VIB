@@ -23,9 +23,9 @@ import javax.media.j3d.Transform3D;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
 
-import voltex.VolRendConstants;
+import ij3d.AxisConstants;
 
-public class VolumeOctree implements UniverseListener, VolRendConstants {
+public class VolumeOctree implements UniverseListener, AxisConstants {
 
 	public static final int SIZE = 256;
 

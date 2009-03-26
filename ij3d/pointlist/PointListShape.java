@@ -1,61 +1,87 @@
 package ij3d.pointlist;
 
-import ij.ImagePlus;
-import vib.PointList;
-import vib.BenesNamedPoint;
-import com.sun.j3d.utils.universe.*;
-import com.sun.j3d.utils.geometry.*;
-import com.sun.j3d.utils.behaviors.mouse.*;
-import javax.media.j3d.*;
-import javax.vecmath.*;
+import javax.media.j3d.Alpha;
+import javax.media.j3d.Appearance;
+import javax.media.j3d.BoundingSphere;
+import javax.media.j3d.BranchGroup;
+import javax.media.j3d.ColoringAttributes;
+import javax.media.j3d.Group;
+import javax.media.j3d.Material;
+import javax.media.j3d.ScaleInterpolator;
+import javax.media.j3d.Shape3D;
+import javax.media.j3d.Transform3D;
+import javax.media.j3d.TransformGroup;
+import javax.vecmath.Color3f;
+import javax.vecmath.Point3d;
+import javax.vecmath.Point3f;
+import javax.vecmath.Vector3f;
 
-public class PointListShape extends BranchGroup 
+import vib.BenesNamedPoint;
+import vib.PointList;
+
+import com.sun.j3d.utils.geometry.Sphere;
+
+/**
+ * This class extends BranchGroup to represent a PointList as a number
+ * of spheres in the universe.
+ *
+ * @author Benjamin Schmid
+ *
+ */
+public class PointListShape extends BranchGroup
 			implements PointList.PointListListener{
 
-	private PointListPanel pld;
+	/** The PointList which is represented by this PointListShape */
 	private PointList points;
-	private Color3f color = new Color3f(1, 1, 0);
-	private Appearance appearance;
-	private float radius = 10;
-	private String name = "";
 
-	public PointListShape(String name) {
-		this(name, new PointList());
-	}
-	
-	public PointListShape(String name, PointList points) {
-		this.name = name;
+	/** The color of the points */
+	private Color3f color = new Color3f(1, 1, 0);
+
+	/** The default appearance which is used for new points */
+	private Appearance appearance;
+
+	/** The radius of the points */
+	private float radius = 10;
+
+	/**
+	 * Constructor.
+	 * Creates a new BranchGroup, and adds all points from the specified
+	 * PointList as points to it.
+	 * @param points
+	 */
+	public PointListShape(PointList points) {
 		setCapability(ALLOW_CHILDREN_EXTEND);
 		setCapability(ALLOW_CHILDREN_WRITE);
 		setCapability(ALLOW_DETACH);
 		this.points = points;
 		points.addPointListListener(this);
-		pld = new PointListPanel(name, points);
 		initAppearance(color);
-		initGeom();
+		recreate();
 	}
 
-	public PointListPanel getPanel() {
-		return pld;
-	}
-
-	public void load(ImagePlus image) {
-		while(points.size() > 0)
-			points.remove(0);
-		points = PointList.load(image);
+	/**
+	 * Set the PointList which is represented by this PointListShape.
+	 * @param pl
+	 */
+	public void setPointList(PointList pl) {
+		points.removePointListListener(this);
+		points = pl;
 		points.addPointListListener(this);
-		pld = new PointListPanel(name, points);
-		initGeom();
+		recreate();
 	}
 
-	public int size() {
-		return points.size();
-	}
-
+	/**
+	 * Returns the radius of the points.
+	 * @return
+	 */
 	public float getRadius() {
 		return radius;
 	}
 
+	/**
+	 * Set the radius of the points.
+	 * @param r
+	 */
 	public void setRadius(float r) {
 		this.radius = r;
 		Transform3D t3d = new Transform3D();
@@ -71,65 +97,10 @@ public class PointListShape extends BranchGroup
 		}
 	}
 
-	public void save(String dir, String name) {
-		points.save(dir, name);
-	}
-
-	public int getIndex(BenesNamedPoint p) {
-		return points.indexOf(p);
-	}
-
-	public int getIndex(Point3d p) {
-		Point3d existing = new Point3d();
-		float r_sq = radius * radius;
-		for(int i = 0; i < points.size(); i++) {
-			BenesNamedPoint bnp = (BenesNamedPoint)points.get(i);
-			existing.x = bnp.x;
-			existing.y = bnp.y;
-			existing.z = bnp.z;
-			if(p.distanceSquared(existing) < 2*r_sq)
-				return i;
-		}
-		return -1;
-	}
-
-	public BenesNamedPoint getPoint(Point3d p) {
-		int ind = getIndex(p);
-		if(ind == -1)
-			return null;
-		return points.get(ind);
-	}
-
-	public PointList getPointList() {
-		return points;
-	}
-
-	public void addPoint(String name, double x, double y, double z) {
-		points.add(new BenesNamedPoint(name, x, y, z));
-		// the listener gets informed about that and updates the
-		// geometry automatically - see added() below
-	}
-
-	public void delete(int i) {
-		BenesNamedPoint bnp = points.get(i);
-		points.remove(bnp);
-		// the listener gets informed about that and updates the
-		// geometry automatically - see removed() below
-	}
-
-	public void delete(BenesNamedPoint bnp) {
-		points.remove(bnp);
-		// the listener gets informed about that and updates the
-		// geometry automatically - see removed() below
-	}
-
-	public void setPos(int i, Point3d pos) {
-		BenesNamedPoint bnp = points.get(i);
-		points.placePoint(bnp, pos.x, pos.y, pos.z);
-		// the listener gets informed about that and updates the
-		// geometry automatically - see moved() below
-	}
-
+	/**
+	 * Set the color of the points.
+	 * @param c
+	 */
 	public void setColor(Color3f c) {
 		color = c == null ? new Color3f(1, 1, 0) : c;
 		initAppearance(color);
@@ -143,31 +114,51 @@ public class PointListShape extends BranchGroup
 	}
 
 
-	// listener interface
+	/* *************************************************************
+	 * PointList.PointListListener interface
+	 * *************************************************************/
+	/**
+	 * @see PointList.PointListListener#added(BenesNamedPoint)
+	 */
 	public void added(BenesNamedPoint p) {
 		Point3f p3f = new Point3f((float)p.x, (float)p.y, (float)p.z);
 		addPointToGeometry(p3f, p.getName());
 	}
 
+	/**
+	 * @see PointList.PointListListener#removed(BenesNamedPoint)
+	 */
 	public void removed(BenesNamedPoint p) {
 		deletePointFromGeometry(p.getName());
 	}
 
+	/**
+	 * @see PointList.PointListListener#renamed(BenesNamedPoint)
+	 */
 	public void renamed(BenesNamedPoint p) {
 		int i = points.indexOf(p);
 		getChild(i).setName(points.get(i).getName());
 	}
 
+	/**
+	 * @see PointList.PointListListener#moved(BenesNamedPoint)
+	 */
 	public void moved(BenesNamedPoint p) {
 		int i = points.indexOf(p);
 		if(i >= 0 && i < points.size())
 			updatePositionInGeometry(i, new Point3d(p.x, p.y, p.z));
 	}
 
+	/**
+	 * @see PointList.PointListListener#reordered(BenesNamedPoint)
+	 */
 	public void reordered() {
-		initGeom();
+		recreate();
 	}
 
+	/**
+	 * @see PointList.PointListListener#highlighted(BenesNamedPoint)
+	 */
 	public void highlighted(final BenesNamedPoint p) {
 		final int i = points.indexOf(p);
 		BranchGroup bg = (BranchGroup)getChild(i);
@@ -183,10 +174,16 @@ public class PointListShape extends BranchGroup
 		si.setEnable(false);
 	}
 
-	// private methods responsible for updating the universe
+	/* *************************************************************
+	 * Private methods for updating the scenegraph
+	 * *************************************************************/
 	private Transform3D t3d = new Transform3D();
 	private Vector3f v3f = new Vector3f();
 
+	/**
+	 * Delete the child with the specified name from the scenegraph.
+	 * @param name
+	 */
 	private void deletePointFromGeometry(String name) {
 		for(int i = 0; i < numChildren(); i++) {
 			BranchGroup bg = (BranchGroup)getChild(i);
@@ -197,6 +194,11 @@ public class PointListShape extends BranchGroup
 		}
 	}
 
+	/**
+	 * Add a new Point with the specified name to the scenegraph
+	 * @param p
+	 * @param name
+	 */
 	private void addPointToGeometry(Point3f p, String name) {
 		v3f.x = p.x; v3f.y = p.y; v3f.z = p.z;
 
@@ -237,6 +239,11 @@ public class PointListShape extends BranchGroup
 		si.setEnable(true);
 	}
 
+	/**
+	 * Update the position of the child at the specified index.
+	 * @param i
+	 * @param pos
+	 */
 	private void updatePositionInGeometry(int i, Point3d pos) {
 		BranchGroup bg = (BranchGroup)getChild(i);
 		TransformGroup tg = (TransformGroup)bg.getChild(0);
@@ -247,7 +254,11 @@ public class PointListShape extends BranchGroup
 		tg.setTransform(t3d);
 	}
 
-	private void initGeom() {
+	/**
+	 * Removes all children from this BranchGroup and adds all
+	 * the points from the underlying PointList (again).
+	 */
+	private void recreate() {
 		removeAllChildren();
 		for(int i = 0; i < points.size(); i++) {
 			BenesNamedPoint po = points.get(i);
@@ -257,6 +268,10 @@ public class PointListShape extends BranchGroup
 		}
 	}
 
+	/**
+	 * Create a default Appearance object using the specified color.
+	 * @param color
+	 */
 	private void initAppearance(Color3f color) {
 		appearance = new Appearance();
 		ColoringAttributes colorAttrib = new ColoringAttributes();
@@ -270,9 +285,12 @@ public class PointListShape extends BranchGroup
 
 	}
 
+	/**
+	 * Returns a string representation of the underlying PointList.
+	 */
 	@Override
 	public String toString() {
 		return points.toString();
 	}
-} 
+}
 

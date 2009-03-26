@@ -34,24 +34,12 @@ else
 endif
 
 JAVACOPTSCOMPAT= -source 1.5 -target 1.5
-JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar $(JAVACOPTSCOMPAT)
+JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar $(JAVACOPTSCOMPAT)
 
 all: $(CLASSES)
 
 show:
 	echo $(JAVAS)
-
-JUNIT4JAR=$(shell pwd)/junit-4.4.jar
-
-TESTCLASSES=math3d.TestEigenvalueDecompositions \
-	distance.TestMutualInformation \
-	distance.TestEuclidean \
-	distance.TestCorrelation \
-	landmarks.TestLoading \
-	util.TestPenalty \
-	vib.TestFastMatrix
-
-TESTMEM=512m
 
 TRACERSOURCES=stacks/ThreePanes.java \
 	stacks/ThreePanesCanvas.java \
@@ -96,7 +84,8 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	amira/AmiraTable.java
 
 test :
-	java -Xmx$(TESTMEM) -classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar org.junit.runner.JUnitCore $(TESTCLASSES)
+	@echo "Run these tests from Fiji instead."
+	@echo "( cd ../tests && ./vib-junit-tests.sh )"
 
 %.class: %.java
 	javac -O $(JAVACOPTS) "$<"
@@ -180,6 +169,7 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard voltex/*.java)\
 	$(wildcard view4d/*.java) $(wildcard view4d/icons/*.png) \
 	$(wildcard surfaceplot/*.java) \
 	$(wildcard octree/*.java) \
+	$(wildcard customnode/*.java) \
 	$(wildcard nrrd/*.java) \
 	vib/segment/ImageButton.java vib/segment/Border.java \
 	vib/Resample_.java vib/InterpolatedImage.java \

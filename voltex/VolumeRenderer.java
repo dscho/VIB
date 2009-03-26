@@ -2,6 +2,8 @@ package voltex;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij3d.AxisConstants;
+
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
@@ -26,7 +28,7 @@ import javax.vecmath.Vector3d;
  * 
  * @author Benjamin Schmid
  */
-public class VolumeRenderer implements VolRendConstants {
+public class VolumeRenderer implements AxisConstants {
 
 	/** The image data which is rendered by this VolumeRenderer */
 	protected final Volume volume;

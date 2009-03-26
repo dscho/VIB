@@ -7,9 +7,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import javax.media.j3d.TexCoordGeneration;
 import javax.vecmath.Vector4f;
-import voltex.VolRendConstants;
+import ij3d.AxisConstants;
 
-public class CubeData implements VolRendConstants {
+public class CubeData implements AxisConstants {
 
 	private static final int SIZE = VolumeOctree.SIZE;
 	private static final int B_IMG_TYPE = BufferedImage.TYPE_BYTE_GRAY;
@@ -76,7 +76,7 @@ public class CubeData implements VolRendConstants {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * min[0])));
 		tg.setPlaneT(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * min[1])));
-		axis = VolRendConstants.Z_AXIS;
+		axis = Z_AXIS;
 		createShapes();
 	}
 
@@ -98,7 +98,7 @@ public class CubeData implements VolRendConstants {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * min[1])));
 		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * min[2])));
-		axis = VolRendConstants.X_AXIS;
+		axis = X_AXIS;
 		createShapes();
 	}
 
@@ -117,7 +117,7 @@ public class CubeData implements VolRendConstants {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * min[0])));
 		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * min[2])));
-		axis = VolRendConstants.Y_AXIS;
+		axis = Y_AXIS;
 		createShapes();
 	}
 

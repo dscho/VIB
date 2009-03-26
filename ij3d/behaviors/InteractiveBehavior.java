@@ -62,7 +62,7 @@ public class InteractiveBehavior extends Behavior {
 	public InteractiveBehavior(DefaultUniverse univ) {
 		this.univ = univ;
 		this.canvas = (ImageCanvas3D)univ.getCanvas();
-		this.contentTransformer = univ.getRotator();
+		this.contentTransformer = univ.getContentTransformer();
 		this.picker = univ.getPicker();
 		this.viewTransformer = univ.getViewPlatformTransformer();
 		mouseEvents = new WakeupOnAWTEvent[5];

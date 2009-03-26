@@ -8,32 +8,32 @@ import ij3d.Content;
 import ij3d.ContentNode;
 
 public class CustomMeshNode extends ContentNode {
-	
+
 	private CustomMesh mesh;
 	private Content content;
 	private Point3f min, max, center;
-	
+
 	public CustomMeshNode(CustomMesh mesh, Content content) {
 		this.mesh = mesh;
 		this.content = content;
 		calculateMinMaxCenterPoint();
 		addChild(mesh);
 	}
-	
+
 	public CustomMesh getMesh() {
 		return mesh;
 	}
-	
+
 	@Override
 	public void getMin(Tuple3d min) {
 		min.set(this.min);
 	}
-	
+
 	@Override
 	public void getMax(Tuple3d max) {
 		max.set(this.max);
 	}
-	
+
 	@Override
 	public void getCenter(Tuple3d center) {
 		center.set(this.center);

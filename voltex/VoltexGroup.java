@@ -47,7 +47,7 @@ public class VoltexGroup extends ContentNode {
 	private Point3d center;
 
 	/**
-	 * This constructor only exists to allow supclasses to access the super
+	 * This constructor only exists to allow subclasses to access the super
 	 * constructor of BranchGroup.
 	 */
 	protected VoltexGroup() {
@@ -164,7 +164,7 @@ public class VoltexGroup extends ContentNode {
 	 * @param universe
 	 * @param fillValue
 	 */
-	public void fillRoiBlack(Canvas3D canvas, Roi roi, byte fillValue) {
+	public void fillRoi(Canvas3D canvas, Roi roi, byte fillValue) {
 		if(roi == null)
 			return;
 

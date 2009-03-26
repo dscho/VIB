@@ -13,11 +13,15 @@ import com.sun.j3d.utils.geometry.NormalGenerator;
 import com.sun.j3d.utils.geometry.Stripifier;
 
 public class CustomQuadMesh extends CustomTriangleMesh {
-	
+
+	public CustomQuadMesh(List<Point3f> mesh) {
+		super(mesh);
+	}
+
 	public CustomQuadMesh(List<Point3f> mesh, Color3f color, float trans) {
 		super(mesh, color, trans);
 	}
-	
+
 	@Override
 	protected Geometry createGeometry() {
 		List<Point3f> tri = mesh;

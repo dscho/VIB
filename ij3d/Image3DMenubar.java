@@ -17,8 +17,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private Executer executer;
 
 	private MenuItem add;
-	private MenuItem addOctree;
-	private MenuItem removeOctree;
 	private MenuItem color;
 	private MenuItem bgColor;
 	private MenuItem channels;
@@ -29,8 +27,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem delete;
 	private MenuItem properties;
 	private MenuItem resetView;
+	private MenuItem record360;
 	private MenuItem startRecord;
-//	private MenuItem stopRecord;
+	private MenuItem stopRecord;
 	private MenuItem startAnimation;
 	private MenuItem stopAnimation;
 	private MenuItem viewPreferences;
@@ -112,16 +111,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		delete.setEnabled(false);
 		delete.addActionListener(this);
 		file.add(delete);
-
-		file.addSeparator();
-
-		addOctree = new MenuItem("Load large volume");
-		addOctree.addActionListener(this);
-		file.add(addOctree);
-
-		removeOctree = new MenuItem("Remove large volume");
-		removeOctree.addActionListener(this);
-		file.add(removeOctree);
 
 		file.addSeparator();
 
@@ -247,13 +236,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 		view.addSeparator();
 
-		startRecord = new MenuItem("Start recording");
+		record360 = new MenuItem("Record 360 deg rotation");
+		record360.addActionListener(this);
+		view.add(record360);
+
+		startRecord = new MenuItem("Start freehand recording");
 		startRecord.addActionListener(this);
 		view.add(startRecord);
 
-//		stopRecord = new MenuItem("Stop recording");
-//		stopRecord.addActionListener(this);
-//		view.add(stopRecord);
+		stopRecord = new MenuItem("Stop freehand recording");
+		stopRecord.addActionListener(this);
+		view.add(stopRecord);
 
 		view.addSeparator();
 
@@ -280,14 +273,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		bgColor = new MenuItem("Change background color");
 		bgColor.addActionListener(this);
 		view.add(bgColor);
-
-		MenuItem tmp = new MenuItem("Update Octree");
-		tmp.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				univ.cancelOctree();
-			}
-		});
-		view.add(tmp);
 
 		return view;
 	}
@@ -414,10 +399,6 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.editScalebar();
 		else if(src == viewer4d)
 			executer.load4D();
-		else if(src == addOctree)
-			executer.loadOctree();
-		else if(src == removeOctree)
-			executer.removeOctree();
 		else if(src == channels)
 			executer.changeChannels(univ.getSelected());
 		else if(src == transparency)
@@ -432,10 +413,12 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.resetView();
 		else if(src == center)
 			executer.centerSelected(univ.getSelected());
+		else if(src == record360)
+			executer.record360();
 		else if(src == startRecord)
-			executer.record();
-//		else if(src == stopRecord)
-//			executer.stopRecording();
+			executer.startFreehandRecording();
+		else if(src == stopRecord)
+			executer.stopFreehandRecording();
 		else if(src == startAnimation)
 			executer.startAnimation();
 		else if(src == stopAnimation)

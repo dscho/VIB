@@ -1,37 +1,70 @@
 package ij3d;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
 import ij.ImageStack;
-import ij3d.behaviors.ViewPlatformTransformer;
-import ij3d.shapes.BoundingSphere;
+
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Alpha;
 import javax.media.j3d.RotationInterpolator;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.media.j3d.View;
+
 import javax.vecmath.AxisAngle4d;
-import javax.vecmath.Point3d;
-import javax.vecmath.Point3f;
 import javax.vecmath.Vector3d;
 
 public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
+	/** The axis of rotation */
 	private Vector3d rotationAxis = new Vector3d();
-	private Point3d rotationCenter = new Point3d();
 
+	/* Temporary Transform3D objects which are re-used in the methods below */
 	private Transform3D centerXform = new Transform3D();
 	private Transform3D animationXform = new Transform3D();
 	private Transform3D rotationXform = new Transform3D();
+	private Transform3D rotate = new Transform3D();
+	private Transform3D centerXformInv = new Transform3D();
 
+	/**
+	 * Flag indicating whether rotation should take place around the
+	 * view axis and not the vworld axis.
+	 */
 	private boolean rotateAroundViewAxis = true;
 
+	/**
+	 * A reference to the RotationInterpolator used for animation.
+	 */
 	private RotationInterpolator rotpol;
+
+	/**
+	 * The Alpha object used for interpolation.
+	 */
 	private Alpha animation;
+
+	/**
+	 * A reference to the TransformGroup of the universe's viewing platform
+	 * which is responsible for animation.
+	 */
 	private TransformGroup animationTG;
+
+	/**
+	 * A reference to the TransformGroup of the universe's viewing platform
+	 * which is responsible for rotation.
+	 */
 	private TransformGroup rotationTG;
 
+	/**
+	 * ImageStack holding the image series after recording an animation.
+	 */
+	private ImageStack freehandStack;
+
+	/**
+	 * Constructor
+	 * @param width of the universe
+	 * @param height of the universe
+	 */
 	public DefaultAnimatableUniverse(int width, int height) {
 		super(width, height);
 
@@ -47,11 +80,11 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		animation.setStartTime(System.currentTimeMillis());
 		BranchGroup bg = new BranchGroup();
 		rotpol = new RotationInterpolator(animation, animationTG) {
-			@Override public void processStimulus(java.util.Enumeration e) {
+			@Override
+			public void processStimulus(java.util.Enumeration e) {
 				super.processStimulus(e);
 				if(!animation.isPaused()) {
-					TransformGroup tg = null;
-					transformChanged(0, tg);
+					fireTransformationUpdated();
 				} else {
 					// this is the point where we actually know that
 					// the animation has stopped
@@ -67,26 +100,82 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		animationTG.addChild(bg);
 
 		addUniverseListener(new UniverseListener() {
-			public void transformationStarted(View view) {}
-			public void transformationFinished(View view) {}
-			public void contentAdded(Content c) {}
-			public void contentRemoved(Content c) {}
-			public void canvasResized() {}
-			public void universeClosed() {}
-			public void contentSelected(Content c) {}
-			public void transformationUpdated(View view) {}
-			public void contentChanged(Content c) {}
+				public void transformationStarted(View view) {}
+				public void transformationFinished(View view) {}
+				public void contentAdded(Content c) {}
+				public void contentRemoved(Content c) {}
+				public void canvasResized() {}
+				public void universeClosed() {}
+				public void contentSelected(Content c) {}
+
+				public void transformationUpdated(View view) {
+					addFreehandRecordingFrame();
+				}
+
+				public void contentChanged(Content c) {
+					addFreehandRecordingFrame();
+				}
 		});
 	}
 
-	private ImageStack stack;
+	/**
+	 * Add a new frame to the freehand recording stack.
+	 */
+	private void addFreehandRecordingFrame() {
+		if(freehandStack == null)
+			return;
 
-	private Transform3D rotate = new Transform3D();
-	private Transform3D centerXformInv = new Transform3D();
+		win.updateImagePlus();
+		ImageProcessor ip = win.getImagePlus().getProcessor();
+		freehandStack.addSlice("", ip);
+	}
+
+	/**
+	 * Start freehand recording.
+	 */
+	public void startFreehandRecording() {
+		// check if is's already running.
+		if(freehandStack != null)
+			return;
+
+		// create a new stack
+		ImageProcessor ip = win.getImagePlus().getProcessor();
+		freehandStack = new ImageStack(ip.getWidth(), ip.getHeight());
+	}
+
+	/**
+	 * Stop freehand recording.
+	 * Returns an ImagePlus whose stack contains the frames of the movie.
+	 */
+	public ImagePlus stopFreehandRecording() {
+		if(freehandStack == null || freehandStack.getSize() == 0)
+			return null;
+
+		ImagePlus imp = new ImagePlus("Movie", freehandStack);
+		freehandStack = null;
+		return imp;
+	}
+
+	/**
+	 * Records a full 360 degree rotation and returns an ImagePlus
+	 * containing the frames of the animation.
+	 */
 	public ImagePlus record360() {
+		// check if freehand recording is running
+		if(freehandStack != null) {
+			IJ.error("Freehand recording is active. Stop first.");
+			return null;
+		}
+		// stop the animation
+		if(!animation.isPaused())
+			pauseAnimation();
+		// create a new stack
+		ImageProcessor ip = win.getImagePlus().getProcessor();
+		ImageStack stack = new ImageStack(ip.getWidth(), ip.getHeight());
+		// prepare everything
 		updateRotationAxisAndCenter();
 		try {
-			Thread.currentThread().sleep(1000);
+			Thread.sleep(1000);
 		} catch (Exception e) {e.printStackTrace();}
 		centerXformInv.invert(centerXform);
 		double deg2 = 2 * Math.PI * 2 / 360;
@@ -96,25 +185,27 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 		double alpha = 0;
 
+		// update transformation and record
 		for(int i = 0; i < steps; i++) {
 			alpha = i * deg2;
 			rotationXform.rotY(alpha);
 			rotate.mul(centerXform, rotationXform);
 			rotate.mul(rotate, centerXformInv);
 			animationTG.setTransform(rotate);
-			transformChanged(-1, animationTG);
+			fireTransformationUpdated();
 			getCanvas().getView().renderOnce();
-//			try {
-//				Thread.currentThread().sleep(100);
-//			} catch (Exception e) {e.printStackTrace();}
-			win.updateImagePlus();
-			ImageProcessor ip = win.getImagePlus().getProcessor();
+			win.updateImagePlusAndWait();
+			ip = win.getImagePlus().getProcessor();
 			int w = ip.getWidth(), h = ip.getHeight();
-			if(stack == null) 
+			if(stack == null)
 				stack = new ImageStack(w, h);
 			stack.addSlice("", ip);
 		}
+
+		// restart the view and animation
 		getCanvas().getView().startView();
+
+		// cleanup
 		incorporateAnimationInRotation();
 
 		if(stack.getSize() == 0)
@@ -123,23 +214,20 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		return imp;
 	}
 
+	/**
+	 * Convenience method which rotates the universe around the
+	 * y-axis (regarding the view, not the vworld) the specified amount
+	 * of degrees (in rad).
+	 */
 	public void rotateY(double rad) {
-		viewTransformer.rotateY(rotationCenter, rad);
-		transformChanged(-1, rotationTG);
+		viewTransformer.rotateY(
+			viewTransformer.getRotationCenter(), rad);
+		fireTransformationUpdated();
 	}
 
-	public ImagePlus record() {
-		ImagePlus ret = null;
-		if(!animation.isPaused()) {
-			pauseAnimation();
-			ImageProcessor ip = win.getImagePlus().getProcessor();
-			stack = new ImageStack(ip.getWidth(), ip.getHeight());
-			ret = record360();
-			startAnimation();
-		}
-		return ret;
-	}
-
+	/**
+	 * Starts animating the universe.
+	 */
 	public void startAnimation() {
 		animationTG.getTransform(animationXform);
 		updateRotationAxisAndCenter();
@@ -149,23 +237,36 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		fireTransformationStarted();
 	}
 
+	/**
+	 * Pauses the animation.
+	 */
 	public void pauseAnimation() {
-		System.out.println("animation.pause");
 		animation.pause();
 	}
 
-	public void animationPaused() {
+	/**
+	 * Called from the RotationInterpolator, indicating that the
+	 * animation was paused.
+	 */
+	private void animationPaused() {
 		rotpol.setEnable(false);
 		incorporateAnimationInRotation();
 		animation.setStartTime(System.currentTimeMillis());
-		TransformGroup tg = null;
-		transformChanged(0, tg);
+		fireTransformationUpdated();
 		fireTransformationFinished();
 	}
 
 	private Vector3d tmpV = new Vector3d();
 	private Vector3d centerV = new Vector3d();
 
+	/**
+	 * After animation was stopped, the transformation of the animation
+	 * TransformGroup is incorporated in the rotation TransformGroup and
+	 * the animation TransformGroup is set to identity.
+	 *
+	 * This is necessary, because otherwise a following rotation by the
+	 * mouse would not take place around the expected axis.
+	 */
 	private void incorporateAnimationInRotation() {
 		rotationTG.getTransform(rotationXform);
 		animationTG.getTransform(animationXform);
@@ -180,13 +281,9 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	private Vector3d v2 = new Vector3d();
 	private AxisAngle4d aa = new AxisAngle4d();
 
-//	private BoundingSphere sphere;
-
 	private void updateRotationAxisAndCenter() {
-//		sphere = new BoundingSphere(new Point3f(rotationCenter), 10);
-//		scene.addChild(sphere);
 		rotationXform.setIdentity();
-	
+
 		if(rotateAroundViewAxis) {
 			viewTransformer.getYDir(rotationAxis);
 			v1.set(0, 1, 0);
@@ -196,7 +293,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			rotationXform.set(aa);
 		}
 
-		centerV.set(rotationCenter);
+		centerV.set(viewTransformer.getRotationCenter());
 		viewTransformer.getZoomTranslation(tmpV);
 		centerV.sub(tmpV);
 		viewTransformer.getCenterTranslation(tmpV);
@@ -207,4 +304,4 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 		centerXform.mul(rotationXform);
 	}
-} 
+}
