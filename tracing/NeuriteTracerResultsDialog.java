@@ -96,6 +96,7 @@ class NeuriteTracerResultsDialog
 
 	TextField nearbyField;
 
+	Checkbox justShowSelected;
 	Checkbox preprocess;
 	Checkbox usePreprocessed;
 
@@ -151,7 +152,6 @@ class NeuriteTracerResultsDialog
 				p.setSelected( false );
 			}
 		}
-		plugin.repaintAllPanes();
 	}
 
 	// ------------------------------------------------------------------------
@@ -542,10 +542,18 @@ class NeuriteTracerResultsDialog
 			otherOptionsPanel.add(viewPathChoice,co);
 
 			co.gridx = 0;
-			co.gridy = 1;
+			++ co.gridy;
 			co.gridwidth = 2;
 			co.anchor = GridBagConstraints.LINE_END;
 			otherOptionsPanel.add(nearbyPanel,co);
+
+			justShowSelected = new Checkbox( "Show only selected paths" );
+			justShowSelected.addItemListener( this );
+			co.gridx = 0;
+			++ co.gridy;
+			co.gridwidth = 2;
+			co.anchor = GridBagConstraints.LINE_START;
+			otherOptionsPanel.add(justShowSelected,co);
 
 			preprocess = new Checkbox("Hessian-based analysis");
 			preprocess.addItemListener( this );
@@ -1005,6 +1013,10 @@ class NeuriteTracerResultsDialog
 			if( usePreprocessed.getState() ) {
 				preprocess.setState(false);
 			}
+
+		}  else if( source == justShowSelected ) {
+
+			plugin.setShowOnlySelectedPaths( justShowSelected.getState() );
 
 		}
 

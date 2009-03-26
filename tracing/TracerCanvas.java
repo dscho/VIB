@@ -87,6 +87,11 @@ public class TracerCanvas extends ThreePanesCanvas {
 				i.next().drawProgressOnSlice( plane, current_z, this, g );
 		}
 
+		boolean showOnlySelectedPaths = pathAndFillManager.plugin.getShowOnlySelectedPaths();
+
+		Color selectedColor = pathAndFillManager.plugin.selectedColor;
+		Color deselectedColor = pathAndFillManager.plugin.deselectedColor;
+
 		if( pathAndFillManager != null ) {
 			for( int i = 0; i < pathAndFillManager.size(); ++i ) {
 
@@ -104,10 +109,11 @@ public class TracerCanvas extends ThreePanesCanvas {
 					drawPath = p.fitted;
 				}
 
-				Color color = Color.MAGENTA;
+				Color color = deselectedColor;
 				if( pathAndFillManager.isSelected(p) ) {
-					color = Color.GREEN;
-				}
+					color = selectedColor;
+				} else if( showOnlySelectedPaths )
+					continue;
 
 				if( just_near_slices ) {
 					drawPath.drawPathAsPoints( this, g, color, plane, current_z, eitherSide );

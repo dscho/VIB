@@ -76,13 +76,18 @@ public class Lasso_ implements PlugIn {
 		"    call('Lasso_.callOptionDialog');\n" +
 		"}\n";
 
+	protected boolean macroInstalled = false;
+
 	public void run(String arg){
 		if (IJ.versionLessThan("1.37j"))
 			return;
 
+		if (macroInstalled)
+			return;
 		MacroInstaller installer = new MacroInstaller();
 		installer.install(MACRO_CMD);
 		Toolbar.getInstance().setTool(Toolbar.SPARE1);
+		macroInstalled = true;
 	}
 
 	private static Lasso_ instance;
@@ -301,7 +306,7 @@ public class Lasso_ implements PlugIn {
 				if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h)
 					continue;
 				double newC = cost + stepW[i] + (ratioSpaceColor
-					 + difference.difference(x, y, x2, y2));
+					 * difference.difference(x, y, x2, y2));
 				if (dijkstra[x2 + w * y2] > newC) {
 					queue.add(newC, new PixelCost(x2,
 								y2, newC));

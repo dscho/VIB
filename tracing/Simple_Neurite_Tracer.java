@@ -1095,7 +1095,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				long megaBytesExtra = ( ((long)width) * height * depth * byteDepth * 2 ) / (1024 * 1024);
 				extraMemoryNeeded += megaBytesExtra + "MiB of memory)";
 
-				gd.addCheckbox("Use three pane view?"+extraMemoryNeeded, true);
+				gd.addCheckbox("Use three pane view?"+extraMemoryNeeded, false);
 
 				if( ! java3DAvailable ) {
 					gd.addMessage("(Java3D classes don't seem to be available, so no 3D viewer option is available.)");
@@ -1103,7 +1103,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					gd.addMessage("(3D viewer option is only currently available for 8 bit images)");
 				} else {
 					showed3DViewerOption = true;
-					gd.addCheckbox("Use 3D viewer? (Experimental)",false);
+					gd.addCheckbox("Use 3D viewer? (Experimental)",true);
 				}
 
 				gd.showDialog();
@@ -1704,4 +1704,31 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			++done;
 		}
 	}
+
+	private boolean showOnlySelectedPaths;
+
+	public void setShowOnlySelectedPaths(boolean showOnlySelectedPaths) {
+		this.showOnlySelectedPaths = showOnlySelectedPaths;
+		update3DViewerContents();
+		repaintAllPanes();
+	}
+
+	public boolean getShowOnlySelectedPaths() {
+		return showOnlySelectedPaths;
+	}
+
+	/* Whatever the state of the paths, update the 3D viewer to
+	   make sure that they're the right colour, the right version
+	   (fitted or unfitted) is being used and whether the path
+	   should be displayed at all - it shouldn't if the "Show only
+	   selected paths" option is set. */
+
+	public void update3DViewerContents() {
+		pathAndFillManager.update3DViewerContents();
+	}
+
+	public Color3f selectedColor3f = new Color3f( Color.green );
+	public Color3f deselectedColor3f = new Color3f( Color.magenta );
+	public Color selectedColor = Color.GREEN;
+	public Color deselectedColor = Color.MAGENTA;
 }
