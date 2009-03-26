@@ -499,7 +499,9 @@ public class CMTK_Transformation {
 					}
 					int pointsExpected = dimsx * dimsy * dimsz;
 					if( pointsExpected != added ) {
-						IJ.error("Number of coefficients ("+added+") didn't match expected number ("+pointsExpected+")");
+						String error = "Number of coefficients ("+added+") didn't match expected number ("+pointsExpected+")";
+						IJ.error(error);
+						System.out.println("Error is: "+error);
 						return null;
 					}
 					break;
@@ -776,9 +778,7 @@ public class CMTK_Transformation {
 		System.gc();
 
 		System.out.println("Loading back in now:");
-
 		Inverse result = Inverse.load( headerFile, xFile, yFile, zFile, template, model );
-
 		return result;
 	}
 
