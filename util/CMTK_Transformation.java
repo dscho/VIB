@@ -621,11 +621,23 @@ public class CMTK_Transformation {
 
 		int pointsEitherSide = 3;
 
-		short [][] templateX = new short[modelDepth][modelWidth*modelHeight];
-		short [][] templateY = new short[modelDepth][modelWidth*modelHeight];
-		short [][] templateZ = new short[modelDepth][modelWidth*modelHeight];
+		short [][] templateX;
+		short [][] templateY;
+		short [][] templateZ;
+		float [][] distanceSquared;
 
-		float [][] distanceSquared = new float[modelDepth][modelWidth*modelHeight];
+		try {
+
+			templateX = new short[modelDepth][modelWidth*modelHeight];
+			templateY = new short[modelDepth][modelWidth*modelHeight];
+			templateZ = new short[modelDepth][modelWidth*modelHeight];
+
+			distanceSquared = new float[modelDepth][modelWidth*modelHeight];
+
+		} catch( OutOfMemoryError oome ) {
+			System.out.println("Got an OOME with: "+model+" - trying to struggle on");
+			return null;
+		}
 
 		double [] transformed = new double[3];
 
