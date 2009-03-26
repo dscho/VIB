@@ -100,21 +100,25 @@ public class Lasso_ implements PlugIn {
 	};
 	private int mode = BLOW;
 
-	public synchronized static void setMode(String mode) {
+	public synchronized static void setMode(int mode) {
 		if (instance == null)
 			instance = new Lasso_();
+		instance.mode = mode;
+		IJ.showStatus(modeTitles[mode]);
+	}
+
+	public synchronized static void setMode(String mode) {
 		if (mode.equals("lasso"))
-			instance.mode = LASSO;
+			setMode(LASSO);
 		else if (mode.equals("blow"))
-			instance.mode = BLOW;
+			setMode(BLOW);
 		else
 			IJ.error("Unknown Lasso/Blow mode: " + mode);
 	}
 
 	public synchronized static void toggleMode() {
-		if (instance == null)
-			instance = new Lasso_();
-		instance.mode = ((instance.mode + 1) % (MAX_TOOL + 1));
+		int mode = instance == null ? 0 : instance.mode;
+		setMode((mode + 1) % (MAX_TOOL + 1));
 	}
 
 	public synchronized static void callOptionDialog() {
