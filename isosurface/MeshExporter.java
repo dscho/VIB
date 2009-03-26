@@ -2,6 +2,7 @@
 package isosurface;
 
 import ij3d.Content;
+import ij3d.ContentNode;
 import customnode.CustomMeshNode;
 import customnode.CustomMesh;
 
@@ -37,7 +38,9 @@ public class MeshExporter {
 		ArrayList meshes = new ArrayList();
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content ob = (Content)it.next();
-			if (!(ob.getContent() instanceof CustomMeshNode)) continue;
+			if (!(ob.getContent() instanceof CustomMeshNode)
+				&& !(ob.getContent() instanceof MeshGroup) )
+				continue;
 			meshes.add(ob);
 		}
 		return meshes;
@@ -134,10 +137,16 @@ public class MeshExporter {
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content ob = (Content)it.next();
 
-			if (!(ob.getContent() instanceof CustomMeshNode)) continue;
+			CustomMesh cmesh=null;
 
-			final CustomMeshNode cmeshnode = (CustomMeshNode) ob.getContent();
-			final CustomMesh cmesh = cmeshnode.getMesh();
+			if (ob.getContent() instanceof CustomMeshNode) {
+				CustomMeshNode cmeshnode = (CustomMeshNode) ob.getContent();
+				cmesh = cmeshnode.getMesh();
+			} else if (ob.getContent() instanceof MeshGroup) {
+				MeshGroup mg = (MeshGroup)ob.getContent();
+				cmesh = mg.getMesh();
+			} else
+				continue;
 
 			final List triangles = cmesh.getMesh();
 
@@ -242,12 +251,19 @@ public class MeshExporter {
 
 		for (Iterator it = contents.iterator(); it.hasNext(); ) {
 			Content mob = (Content)it.next();
+
 			int t = mob.getType();
 
-			if (!(mob.getContent() instanceof CustomMeshNode)) continue;
+			CustomMesh cmesh=null;
 
-			final CustomMeshNode cmeshnode = (CustomMeshNode) mob.getContent();
-			final CustomMesh cmesh = cmeshnode.getMesh();
+			if (mob.getContent() instanceof CustomMeshNode) {
+				CustomMeshNode cmeshnode = (CustomMeshNode) mob.getContent();
+				cmesh = cmeshnode.getMesh();
+			} else if (mob.getContent() instanceof MeshGroup) {
+				MeshGroup mg = (MeshGroup)mob.getContent();
+				cmesh = mg.getMesh();
+			} else
+				continue;
 
 			final List triangles = cmesh.getMesh();
 			// make material, and see whether it exists already
