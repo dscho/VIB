@@ -96,7 +96,7 @@ TRACERSOURCES=stacks/ThreePanes.java \
 	amira/AmiraTable.java
 
 test :
-	java -Xmx$(TESTMEM) -classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar org.junit.runner.JUnitCore $(TESTCLASSES)
+	java -Xmx$(TESTMEM) -classpath ../misc/headless.jar$(CPSEP)$(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$.$(CPSEP)$(JUNIT4JAR)$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar org.junit.runner.JUnitCore $(TESTCLASSES)
 
 %.class: %.java
 	javac -O $(JAVACOPTS) "$<"
