@@ -91,19 +91,30 @@ public class Lasso_ implements PlugIn {
 	}
 
 	private static Lasso_ instance;
-	private static boolean doBlowToolInstead = true;
+
+	private final static int BLOW = 0;
+	private final static int LASSO = 1;
+	private final static int MAX_TOOL = 1;
+	private final static String[] modeTitles = {
+		"Blow tool", "Lasso tool"
+	};
+	private int mode = BLOW;
 
 	public synchronized static void setMode(String mode) {
+		if (instance == null)
+			instance = new Lasso_();
 		if (mode.equals("lasso"))
-			doBlowToolInstead = false;
+			instance.mode = LASSO;
 		else if (mode.equals("blow"))
-			doBlowToolInstead = true;
+			instance.mode = BLOW;
 		else
 			IJ.error("Unknown Lasso/Blow mode: " + mode);
 	}
 
 	public synchronized static void toggleMode() {
-		doBlowToolInstead = !doBlowToolInstead;
+		if (instance == null)
+			instance = new Lasso_();
+		instance.mode = ((instance.mode + 1) % (MAX_TOOL + 1));
 	}
 
 	public synchronized static void callOptionDialog() {
@@ -113,15 +124,13 @@ public class Lasso_ implements PlugIn {
 	}
 
 	public void optionDialog() {
-		String[] modes = { "lasso", "blow" };
 		GenericDialog gd = new GenericDialog("Lasso Tool Options");
-		gd.addChoice("mode", modes,
-				doBlowToolInstead ? "blow" : "lasso");
+		gd.addChoice("mode", modeTitles, modeTitles[mode]);
 		gd.addNumericField("ratio space/color", ratioSpaceColor, 2);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
-		setMode(gd.getNextChoice());
+		mode = gd.getNextChoiceIndex();
 		ratioSpaceColor = gd.getNextNumber();
 	}
 
@@ -141,7 +150,7 @@ public class Lasso_ implements PlugIn {
 		if (y < 0) y = 0;
 		if (y >= instance.h) y = instance.h - 1;
 		try {
-				if (doBlowToolInstead)
+				if (instance.mode == BLOW)
 					instance.moveBlow(x, y);
 				else
 					instance.moveLasso(x, y);
