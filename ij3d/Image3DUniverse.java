@@ -904,19 +904,53 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
 
+	/**
+	 * Select the view at the selected Content.
+	 */
+	public void centerSelected(Content c) {
+		Point3d center = new Point3d();
+		Point3d min = new Point3d(), max = new Point3d();
+
+		c.getContent().getCenter(center);
+		c.getContent().getMin(min);
+		c.getContent().getMax(max);
+
+		Transform3D localToVWorld = new Transform3D();
+		c.getContent().getLocalToVworld(localToVWorld);
+		localToVWorld.transform(center);
+		localToVWorld.transform(min);
+		localToVWorld.transform(max);
+
+		getViewPlatformTransformer().centerAt(center);
+		globalMin.set(min);
+		globalMax.set(max);
+		globalCenter.set(center);
+
+// 		Point3d cmin = new Point3d(); c.getContent().getMin(cmin);
+// 		Point3d cmax = new Point3d(); c.getContent().getMax(cmax);
+// 		globalMin.set(cmin);
+// 		globalMax.set(cmax);
+// 		globalCenter.x = globalMin.x + (globalMax.x - globalMin.x) / 2;
+// 		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y) / 2;
+// 		globalCenter.z = globalMin.z + (globalMax.z - globalMin.z) / 2;
+//
+// 		float range = (float)(globalMax.x - globalMin.x);
+// 		ensureScale(range);
+	}
+
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/
 	private float oldRange = 2f;
 
 	private void ensureScale(float range) {
-		if(range > oldRange) {
+// 		if(range > oldRange) {
 			oldRange = range;
 			double d = (range) / Math.tan(Math.PI/8);
 			getViewPlatformTransformer().zoomTo(d);
 			getViewer().getView().setBackClipDistance(2 * d);
 			getViewer().getView().setFrontClipDistance(2 * d / 100);
-		}
+// 		}
 	}
 
 	public String allContentsString() {

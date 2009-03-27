@@ -957,12 +957,7 @@ public class Executer {
 		if(!checkSel(c))
 			return;
 
-		Point3d center = new Point3d();
-		c.getContent().getCenter(center);
-		Transform3D localToVWorld = new Transform3D();
-		c.getContent().getLocalToVworld(localToVWorld);
-		localToVWorld.transform(center);
-		univ.getViewPlatformTransformer().centerAt(center);
+		univ.centerSelected(c);
 	}
 
 	public void record360() {

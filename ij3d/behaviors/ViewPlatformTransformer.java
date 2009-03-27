@@ -133,13 +133,25 @@ public class ViewPlatformTransformer {
 	 * @param center
 	 */
 	public void centerAt(Point3d center) {
+		// Take rotation into account
 		centerV.set(center.x, center.y, center.z);
 		centerXform.set(centerV);
 		centerTG.setTransform(centerXform);
 		centerXform.setIdentity();
 		translateTG.setTransform(centerXform);
 		transformChanged(BehaviorCallback.TRANSLATE, centerXform);
-//		((Image3DUniverse)univ).getGlobalCenterPoint().set(center);
+
+// 		Point2d canvasP = new Point2d();
+// 		pointInCanvas(center, canvasP);
+// 		canvas.getImagePlateToVworld(ipToVWorld);
+
+// 		centerV.set(center);
+// 		getCenterTranslation(tmpV);
+// 		tmpV.sub(centerV);
+// 		translateXform.set(tmpV);
+// 		centerTG.setTransform(translateXform);
+// 		v3f.set(centerV);
+// 		transformChanged(BehaviorCallback.TRANSLATE, translateXform);
 	}
 
 	private Point2d originInCanvas = new Point2d();
