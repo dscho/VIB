@@ -916,6 +916,71 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
+	 * Rotate the univere so that the user looks in the negative direction
+	 * of the z-axis.
+	 */
+	public void rotateToNegativeXY() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		fireTransformationFinished();
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the positive direction
+	 * of the z-axis.
+	 */
+	public void rotateToPositiveXY() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(0, 1, 0), Math.PI);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the negative direction
+	 * of the y-axis.
+	 */
+	public void rotateToNegativeXZ() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(1, 0, 0), Math.PI / 2);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the positive direction
+	 * of the y-axis.
+	 */
+	public void rotateToPositiveXZ() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(0, 1, 0), -Math.PI / 2);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the negative direction
+	 * of the x-axis.
+	 */
+	public void rotateToNegativeYZ() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(0, 1, 0), Math.PI / 2);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the positive direction
+	 * of the x-axis.
+	 */
+	public void rotateToPositiveYZ() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(1, 0, 0), -Math.PI / 2);
+	}
+
+	/**
 	 * Reset the zoom of this universe.
 	 */
 	public void resetZoom() {
