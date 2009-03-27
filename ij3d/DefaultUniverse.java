@@ -4,6 +4,7 @@ import ij3d.shapes.CoordinateSystem;
 import ij3d.shapes.Scalebar;
 import ij3d.behaviors.InteractiveBehavior;
 import ij.gui.Toolbar;
+import ij.ImagePlus;
 
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
