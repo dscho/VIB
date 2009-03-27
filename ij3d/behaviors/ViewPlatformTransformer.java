@@ -234,6 +234,40 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the x-axis
 	 */
 	public void rotateX(Point3d center, double angle){
+		getXDir(xDir);
+		rotate(center, xDir, angle);
+	}
+
+	/**
+	 * Rotates the view around the specified center by the specified
+	 * angle around the y axis (of the image plate).
+	 * @param center The rotation center
+	 * @param angle The angle (in rad) around the y-axis
+	 */
+	public void rotateY(Point3d center, double angle){
+		getYDir(yDir);
+		rotate(center, yDir, angle);
+	}
+
+	/**
+	 * Rotates the view around the specified center by the specified
+	 * angle around the z axis (of the image plate).
+	 * @param center The rotation center
+	 * @param angle The angle (in rad) around the z-axis
+	 */
+	public void rotateZ(Point3d center, double angle){
+		getZDir(zDir);
+		rotate(center, zDir, angle);
+	}
+
+	/**
+	 * Rotates the view around the specified center by the specified
+	 * angle around the given axis (of the image plate).
+	 * @param center The rotation center
+	 * @param axis The axis of rotation (in image plate coordinate system)
+	 * @param angle The angle (in rad) around the z-axis
+	 */
+	public void rotate(Point3d center, Vector3d axis, double angle) {
 		// compose the translation to center
 		centerV.set(-center.x, -center.y, -center.z);
 		getZoomTranslation(tmpV);
@@ -244,8 +278,9 @@ public class ViewPlatformTransformer {
 		centerV.add(tmpV);
 		centerXform.set(centerV);
 
-		getXDir(xDir);
-		aa.set(xDir, angle);
+		Vector3d axisVW = new Vector3d();
+		getAxisVworld(axis, axisVW);
+		aa.set(axisVW, angle);
 		tmp.set(aa);
 
 		// first apply the old transform
@@ -260,74 +295,8 @@ public class ViewPlatformTransformer {
 		rotationXform.mul(centerXform, rotationXform);
 
 		rotationTG.setTransform(rotationXform);
-	}
 
-	/**
-	 * Rotates the view around the specified center by the specified
-	 * angle around the y axis (of the image plate).
-	 * @param center The rotation center
-	 * @param angle The angle (in rad) around the y-axis
-	 */
-	public void rotateY(Point3d center, double angle){
-		centerV.set(-center.x, -center.y, -center.z);
-		getZoomTranslation(tmpV);
-		centerV.add(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.add(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.add(tmpV);
-		centerXform.set(centerV);
-
-		getYDir(yDir);
-		aa.set(yDir, angle);
-		tmp.set(aa);
-
-		// first apply the old transform
-		rotationTG.getTransform(rotationXform);
-		// then transform back to the center of rotation
-		rotationXform.mul(centerXform, rotationXform);
-		// rotate
-		rotationXform.mul(tmp, rotationXform);
-		centerV.set(-centerV.x, -centerV.y, -centerV.z);
-		centerXform.set(centerV);
-		// translate back
-		rotationXform.mul(centerXform, rotationXform);
-
-		rotationTG.setTransform(rotationXform);
-	}
-
-	/**
-	 * Rotates the view around the specified center by the specified
-	 * angle around the z axis (of the image plate).
-	 * @param center The rotation center
-	 * @param angle The angle (in rad) around the z-axis
-	 */
-	public void rotateZ(Point3d center, double angle){
-		centerV.set(-center.x, -center.y, -center.z);
-		getZoomTranslation(tmpV);
-		centerV.add(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.add(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.add(tmpV);
-		centerXform.set(centerV);
-
-		getZDir(zDir);
-		aa.set(zDir, angle);
-		tmp.set(aa);
-
-		// first apply the old transform
-		rotationTG.getTransform(rotationXform);
-		// then transform back to the center of rotation
-		rotationXform.mul(centerXform, rotationXform);
-		// rotate
-		rotationXform.mul(tmp, rotationXform);
-		centerV.set(-centerV.x, -centerV.y, -centerV.z);
-		centerXform.set(centerV);
-		// translate back
-		rotationXform.mul(centerXform, rotationXform);
-
-		rotationTG.setTransform(rotationXform);
+		transformChanged(BehaviorCallback.ROTATE, rotationXform);
 	}
 
 	private AxisAngle4d aa2 = new AxisAngle4d();
@@ -491,6 +460,20 @@ public class ViewPlatformTransformer {
 	public double distanceEyeOrigin() {
 		origin.set(0, 0, 0);
 		return distanceEyeTo(origin);
+	}
+
+	/**
+	 * Calculates from the specified axis in image plate coordinate
+	 * system the corresponding vector in the vworld coordinate system.
+	 */
+	public void getAxisVworld(Vector3d axis, Vector3d axisVW) {
+		canvas.getImagePlateToVworld(ipToVWorld);
+		origin.set(0, 0, 0);
+		oneInX.set(axis);
+		ipToVWorld.transform(oneInX);
+		ipToVWorld.transform(origin);
+		axisVW.sub(oneInX, origin);
+		axisVW.normalize();
 	}
 
 	/**
