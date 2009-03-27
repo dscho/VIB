@@ -455,6 +455,14 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		return win;
 	}
 
+	/**
+	 * Returns a snapshot of the current viewer image.
+	 */
+	public ImagePlus takeSnapshot() {
+		win.updateImagePlusAndWait();
+		return win.getImagePlus();
+	}
+
 
 	/**
 	 * Register the specified UniverseListener
