@@ -88,8 +88,16 @@ public class Path implements Comparable {
 		return startJoins;
 	}
 
+	public PointInImage getStartJoinsPoint() {
+		return startJoinsPoint;
+	}
+
 	public Path getEndJoins() {
 		return endJoins;
+	}
+
+	public PointInImage getEndJoinsPoint() {
+		return endJoinsPoint;
 	}
 
 	public static final int PATH_START = 0;
