@@ -546,6 +546,18 @@ public class CMTK_Transformation {
 		return result;
 	}
 
+	public boolean precalculatedInverseExists() {
+		if( originalFile == null )
+			throw new RuntimeException( "Can't use find an inverse without originalFile being set" );
+
+		File directoryOfOriginalFile = originalFile.getParentFile();
+		File headerFile = new File( directoryOfOriginalFile, "inverse.nhdr" );
+		File xFile = new File( directoryOfOriginalFile, "inverse_x.gz" );
+		File yFile = new File( directoryOfOriginalFile, "inverse_y.gz" );
+		File zFile = new File( directoryOfOriginalFile, "inverse_z.gz" );
+		return headerFile.exists() && xFile.exists() && yFile.exists() && zFile.exists();
+	}
+
 	/* The CMTK creates a mapping from the template to the model.
 	   In order to go back, we need to create an inverse
 	   transformation.  We do this with a nearest neighbour
