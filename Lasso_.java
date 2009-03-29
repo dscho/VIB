@@ -91,19 +91,35 @@ public class Lasso_ implements PlugIn {
 	}
 
 	private static Lasso_ instance;
-	private static boolean doBlowToolInstead = true;
+
+	private final static int BLOW = 0;
+	private final static int LASSO = 1;
+	private final static int MIN_LASSO = 2;
+	private final static int MAX_TOOL = 2;
+	private final static String[] modeTitles = {
+		"Blow tool", "Lasso tool", "Lasso minimum tool"
+	};
+	private int mode = BLOW;
+
+	public synchronized static void setMode(int mode) {
+		if (instance == null)
+			instance = new Lasso_();
+		instance.mode = mode;
+		IJ.showStatus(modeTitles[mode]);
+	}
 
 	public synchronized static void setMode(String mode) {
 		if (mode.equals("lasso"))
-			doBlowToolInstead = false;
+			setMode(LASSO);
 		else if (mode.equals("blow"))
-			doBlowToolInstead = true;
+			setMode(BLOW);
 		else
 			IJ.error("Unknown Lasso/Blow mode: " + mode);
 	}
 
 	public synchronized static void toggleMode() {
-		doBlowToolInstead = !doBlowToolInstead;
+		int mode = instance == null ? 0 : instance.mode;
+		setMode((mode + 1) % (MAX_TOOL + 1));
 	}
 
 	public synchronized static void callOptionDialog() {
@@ -113,15 +129,13 @@ public class Lasso_ implements PlugIn {
 	}
 
 	public void optionDialog() {
-		String[] modes = { "lasso", "blow" };
 		GenericDialog gd = new GenericDialog("Lasso Tool Options");
-		gd.addChoice("mode", modes,
-				doBlowToolInstead ? "blow" : "lasso");
+		gd.addChoice("mode", modeTitles, modeTitles[mode]);
 		gd.addNumericField("ratio space/color", ratioSpaceColor, 2);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
-		setMode(gd.getNextChoice());
+		mode = gd.getNextChoiceIndex();
 		ratioSpaceColor = gd.getNextNumber();
 	}
 
@@ -141,7 +155,7 @@ public class Lasso_ implements PlugIn {
 		if (y < 0) y = 0;
 		if (y >= instance.h) y = instance.h - 1;
 		try {
-				if (doBlowToolInstead)
+				if (instance.mode == BLOW)
 					instance.moveBlow(x, y);
 				else
 					instance.moveLasso(x, y);
@@ -193,6 +207,14 @@ public class Lasso_ implements PlugIn {
 	}
 
 	Difference getDifference(ImageProcessor ip) {
+		if (mode == MIN_LASSO) {
+			if (ip instanceof ByteProcessor)
+				return new ByteMinValue((byte[])ip.getPixels());
+			if (ip instanceof ColorProcessor)
+				return new ColorMinValue((int[])ip.getPixels());
+			return new MinValue(ip);
+		}
+
 		if (ip instanceof ByteProcessor)
 			return new ByteDifference((byte[])ip.getPixels());
 		if (ip instanceof ColorProcessor)
@@ -242,6 +264,49 @@ public class Lasso_ implements PlugIn {
 			int g = ((v1 >> 8) & 0xff) - ((v0 >> 8) & 0xff);
 			int b = (v1 & 0xff) - (v0 & 0xff);
 			return Math.abs(r) + Math.abs(g) + Math.abs(b);
+		}
+	}
+
+	private class MinValue extends Difference {
+		ImageProcessor ip;
+
+		MinValue(ImageProcessor ip) {
+			super(null);
+			this.ip = ip;
+		}
+
+		double difference(int x0, int y0, int x1, int y1) {
+			return ip.getPixelValue(x1, y1);
+		}
+	}
+
+	private class ByteMinValue extends Difference {
+		byte[] pixels;
+
+		ByteMinValue(byte[] pixels) {
+			super(null);
+			this.pixels = pixels;
+		}
+
+		final double difference(int x0, int y0, int x1, int y1) {
+			return pixels[x1 + w * y1] & 0xff;
+		}
+	}
+
+	private class ColorMinValue extends Difference {
+		int[] pixels;
+
+		ColorMinValue(int[] pixels) {
+			super(null);
+			this.pixels = pixels;
+		}
+
+		final double difference(int x0, int y0, int x1, int y1) {
+			int v1 = pixels[x1 + w * y1];
+			int r = (v1 >> 16) & 0xff;
+			int g = (v1 >> 8) & 0xff;
+			int b = v1 & 0xff;
+			return r + g + b; // TODO: use correct weighting
 		}
 	}
 

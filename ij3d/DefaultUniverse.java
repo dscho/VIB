@@ -4,6 +4,7 @@ import ij3d.shapes.CoordinateSystem;
 import ij3d.shapes.Scalebar;
 import ij3d.behaviors.InteractiveBehavior;
 import ij.gui.Toolbar;
+import ij.ImagePlus;
 
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
@@ -21,6 +22,7 @@ import com.sun.j3d.utils.universe.SimpleUniverse;
 import ij3d.behaviors.BehaviorCallback;
 
 import ij3d.behaviors.Picker;
+import ij3d.behaviors.WaitForNextFrameBehavior;
 import ij3d.behaviors.ContentTransformer;
 import ij3d.behaviors.InteractiveViewPlatformTransformer;
 import java.util.BitSet;
@@ -153,6 +155,12 @@ public abstract class DefaultUniverse extends SimpleUniverse
 	 */
 	protected final InteractiveViewPlatformTransformer viewTransformer;
 
+	/**
+	 * Reference to the WaitForNextFrameBehavior. This provides a way to
+	 * wait until the next frame is rendered.
+	 */
+	protected final WaitForNextFrameBehavior frameBehavior;
+
 
 	/**
 	 * Switch which holds the optionally displayable scalebar and coordinate
@@ -229,6 +237,12 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		mouseBehavior = new InteractiveBehavior(this);
 		mouseBehavior.setSchedulingBounds(bounds);
 		scene.addChild(mouseBehavior);
+
+		// add frame behavior
+		frameBehavior = new WaitForNextFrameBehavior();
+		frameBehavior.setSchedulingBounds(bounds);
+		frameBehavior.setEnable(true);
+		scene.addChild(frameBehavior);
 
 		// add the scene to the universe
 		scene.compile();
@@ -377,6 +391,18 @@ public abstract class DefaultUniverse extends SimpleUniverse
 	}
 
 	/**
+	 * Waits until the next frame is rendered.
+	 */
+	public void waitForNextFrame() {
+		frameBehavior.postId(WaitForNextFrameBehavior.TRIGGER_ID);
+		synchronized(frameBehavior) {
+			try {
+				frameBehavior.wait();
+			} catch(Exception e) {}
+		}
+	}
+
+	/**
 	 * Flag indicating if the window of this universe should be brought
 	 * to front when
 	 */
@@ -453,6 +479,14 @@ public abstract class DefaultUniverse extends SimpleUniverse
 	 */
 	public ImageWindow3D getWindow() {
 		return win;
+	}
+
+	/**
+	 * Returns a snapshot of the current viewer image.
+	 */
+	public ImagePlus takeSnapshot() {
+		win.updateImagePlusAndWait();
+		return win.getImagePlus();
 	}
 
 

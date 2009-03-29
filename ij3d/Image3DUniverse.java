@@ -895,6 +895,92 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
+	 * Rotate the universe, using the given axis of rotation and angle;
+	 * The center of rotation is the global center.
+	 * @param axis The axis of rotation (in the image plate coordinate system)
+	 * @param angle The angle in radians.
+	 */
+	public void rotateUniverse(Vector3d axis, double angle) {
+		viewTransformer.rotate(globalCenter, axis, angle);
+	}
+
+	/**
+	 * Rotate the universe, using the given axis of rotation and angle;
+	 * The center of rotation is the given center.
+	 * @param axis The axis of rotation (in the image plate coordinate system)
+	 * @param center The center of rotation (in vworld coordinates)
+	 * @param angle The angle in radians.
+	 */
+	public void rotateUniverse(Vector3d axis, Point3d center, double angle) {
+		viewTransformer.rotate(center, axis, angle);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the negative direction
+	 * of the z-axis.
+	 */
+	public void rotateToNegativeXY() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		fireTransformationFinished();
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the positive direction
+	 * of the z-axis.
+	 */
+	public void rotateToPositiveXY() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(0, 1, 0), Math.PI);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the negative direction
+	 * of the y-axis.
+	 */
+	public void rotateToNegativeXZ() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(1, 0, 0), Math.PI / 2);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the positive direction
+	 * of the y-axis.
+	 */
+	public void rotateToPositiveXZ() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(0, 1, 0), -Math.PI / 2);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the negative direction
+	 * of the x-axis.
+	 */
+	public void rotateToNegativeYZ() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(0, 1, 0), Math.PI / 2);
+	}
+
+	/**
+	 * Rotate the univere so that the user looks in the positive direction
+	 * of the x-axis.
+	 */
+	public void rotateToPositiveYZ() {
+		fireTransformationStarted();
+		getRotationTG().setTransform(new Transform3D());
+		waitForNextFrame();
+		rotateUniverse(new Vector3d(1, 0, 0), -Math.PI / 2);
+	}
+
+	/**
 	 * Reset the zoom of this universe.
 	 */
 	public void resetZoom() {
@@ -904,19 +990,53 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
 
+	/**
+	 * Select the view at the selected Content.
+	 */
+	public void centerSelected(Content c) {
+		Point3d center = new Point3d();
+		Point3d min = new Point3d(), max = new Point3d();
+
+		c.getContent().getCenter(center);
+		c.getContent().getMin(min);
+		c.getContent().getMax(max);
+
+		Transform3D localToVWorld = new Transform3D();
+		c.getContent().getLocalToVworld(localToVWorld);
+		localToVWorld.transform(center);
+		localToVWorld.transform(min);
+		localToVWorld.transform(max);
+
+		getViewPlatformTransformer().centerAt(center);
+		globalMin.set(min);
+		globalMax.set(max);
+		globalCenter.set(center);
+
+// 		Point3d cmin = new Point3d(); c.getContent().getMin(cmin);
+// 		Point3d cmax = new Point3d(); c.getContent().getMax(cmax);
+// 		globalMin.set(cmin);
+// 		globalMax.set(cmax);
+// 		globalCenter.x = globalMin.x + (globalMax.x - globalMin.x) / 2;
+// 		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y) / 2;
+// 		globalCenter.z = globalMin.z + (globalMax.z - globalMin.z) / 2;
+//
+// 		float range = (float)(globalMax.x - globalMin.x);
+// 		ensureScale(range);
+	}
+
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/
 	private float oldRange = 2f;
 
 	private void ensureScale(float range) {
-		if(range > oldRange) {
+// 		if(range > oldRange) {
 			oldRange = range;
 			double d = (range) / Math.tan(Math.PI/8);
 			getViewPlatformTransformer().zoomTo(d);
 			getViewer().getView().setBackClipDistance(2 * d);
 			getViewer().getView().setFrontClipDistance(2 * d / 100);
-		}
+// 		}
 	}
 
 	public String allContentsString() {
