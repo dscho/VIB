@@ -1008,7 +1008,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				YesNoCancelDialog queryRGB = new YesNoCancelDialog( IJ.getInstance(),
 										    "Convert RGB image",
 										    "Convert this RGB image to an 8 bit luminance image first?\n" +
-										    "(If you want to trace a particular channel instead, cancel and do RGB Split first.)" );
+										    "(If you want to trace a particular channel instead, cancel and \"Split Channels\" first.)" );
 
 				if( ! queryRGB.yesPressed() ) {
 					return;
@@ -1157,10 +1157,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 									this,
 									applet != null );
 
-			// FIXME: the first could be changed to add
-			// 'this', and move the small implementation
-			// out of NeuriteTracerResultsDialog into this
-			// class.
+			/* FIXME: the first could be changed to add
+			   'this', and move the small implementation
+			   out of NeuriteTracerResultsDialog into this
+			   class. */
 			pathAndFillManager.addPathAndFillListener(resultsDialog);
 			pathAndFillManager.addPathAndFillListener(resultsDialog.pw);
 			pathAndFillManager.addPathAndFillListener(resultsDialog.fw);
