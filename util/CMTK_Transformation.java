@@ -47,6 +47,10 @@ public class CMTK_Transformation {
 	File originalFile;
 	Inverse inverse;
 
+	public void setOriginalFile( File originalFile ) {
+		this.originalFile = originalFile;
+	}
+
 	public CMTK_Transformation( ) { }
 
 	int dimsx = -1, dimsy = -1, dimsz = -1;
