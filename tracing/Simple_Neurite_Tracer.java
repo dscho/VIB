@@ -960,9 +960,24 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	public void run( String ignoredArguments ) {
 
+		/* The useful macro options are:
+
+		     imagefilename=<FILENAME>
+		     tracesfilename=<FILENAME>
+		     use_3d
+		     use_three_pane
+		*/
+
+		String macroOptions = Macro.getOptions();
+
+		String macroImageFilename = Macro.getValue(
+			macroOptions, "imagefilename", null );
+		String macroTracesFilename = Macro.getValue(
+			macroOptions, "tracesfilename", null );
+
 		Applet applet = IJ.getApplet();
 		if( applet != null ) {
-			archiveClient = new ArchiveClient( applet, Macro.getOptions() );
+			archiveClient = new ArchiveClient( applet, macroOptions );
 		}
 
 		if( archiveClient != null )
@@ -970,7 +985,17 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		try {
 
-			ImagePlus currentImage = IJ.getImage();
+			ImagePlus currentImage = null;
+			if( macroImageFilename == null ) {
+				currentImage = IJ.getImage();
+			} else {
+				currentImage = BatchOpener.openFirstChannel( macroImageFilename );
+				if( currentImage == null ) {
+					IJ.error("Opening the image file specified in the macro parameters ("+macroImageFilename+") failed.");
+					return;
+				}
+				currentImage.show();
+			}
 
 			if( currentImage == null ) {
 				IJ.error( "There's no current image to trace." );
@@ -1095,15 +1120,19 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				long megaBytesExtra = ( ((long)width) * height * depth * byteDepth * 2 ) / (1024 * 1024);
 				extraMemoryNeeded += megaBytesExtra + "MiB of memory)";
 
-				gd.addCheckbox("Use three pane view?"+extraMemoryNeeded, false);
+				gd.addCheckbox("Use_three_pane view?"+extraMemoryNeeded, false);
 
 				if( ! java3DAvailable ) {
-					gd.addMessage("(Java3D classes don't seem to be available, so no 3D viewer option is available.)");
+					String message = "(Java3D classes don't seem to be available, so no 3D viewer option is available.)";
+					System.out.println(message);
+					gd.addMessage(message);
 				} else if( currentImage.getBitDepth() != 8 ) {
-					gd.addMessage("(3D viewer option is only currently available for 8 bit images)");
+					String message = "(3D viewer option is only currently available for 8 bit images)";
+					System.out.println(message);
+					gd.addMessage(message);
 				} else {
 					showed3DViewerOption = true;
-					gd.addCheckbox("Use 3D viewer? (Experimental)",true);
+					gd.addCheckbox("Use_3D viewer? (Experimental)",true);
 				}
 
 				gd.showDialog();
@@ -1111,8 +1140,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					return;
 
 				single_pane = ! gd.getNextBoolean();
-				if( showed3DViewerOption )
+				if( showed3DViewerOption ) {
 					use3DViewer = gd.getNextBoolean();
+					System.out.println("showed3DViewerOption && use3DViewer: "+use3DViewer);
+				}
 			}
 
 			initialize(currentImage);
@@ -1228,12 +1259,19 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				c.setTransparency(0.5f);
 			}
 
+			File tracesFileToLoad = null;
+			if( macroTracesFilename != null ) {
+				tracesFileToLoad = new File( macroTracesFilename );
+				if( tracesFileToLoad.exists() )
+					pathAndFillManager.load( tracesFileToLoad.getAbsolutePath() );
+				else
+					IJ.error("The traces file suggested by the macro parameters ("+macroTracesFilename+") does not exist");
+			}
+
 			resultsDialog.displayOnStarting();
 
 		} finally {
-
 			IJ.getInstance().addKeyListener( IJ.getInstance() );
-
 		}
 	}
 
