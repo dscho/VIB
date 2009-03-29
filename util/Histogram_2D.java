@@ -108,6 +108,8 @@ public class Histogram_2D implements PlugIn {
 			IJ.error("Image pairs must be 8 bit or 16 bit images at the moment.");
 			return;
 		}
+
+		IJ.showProgress(0);
 		
 		for (int z = 0; z < depth; ++z) {
 
@@ -162,7 +164,9 @@ public class Histogram_2D implements PlugIn {
 					++totalValues;					
 				}
 			}
+			IJ.showProgress(z/depth);
 		}
+		IJ.showProgress(1);
 	}
 
 	public void calculateCorrelation( ) {
@@ -520,7 +524,7 @@ public class Histogram_2D implements PlugIn {
                 ImagePlus [] onlyMatchingImagePlus = new ImagePlus[totalMatchingTitles];
                 System.arraycopy(matchingImagePlus, 0, onlyMatchingImagePlus, 0, totalMatchingTitles);
 
-		GenericDialog gd = new GenericDialog("Overlay Transformed");
+		GenericDialog gd = new GenericDialog("2D Histogram");
 		gd.addChoice("A:", onlyMatchingTitles, onlyMatchingTitles[0]);
 		gd.addChoice("B:", onlyMatchingTitles, onlyMatchingTitles[1]);
 		gd.addCheckbox("Keep source images", true);
@@ -538,6 +542,7 @@ public class Histogram_2D implements PlugIn {
 		sourceImages[0] = onlyMatchingImagePlus[index[0]];
 		sourceImages[1] = onlyMatchingImagePlus[index[1]];
 		
+		IJ.showStatus( "Calculating values range..." );
                 float[] valueRange;
                 {
                     TransformedImage ti = new TransformedImage(
@@ -563,14 +568,12 @@ public class Histogram_2D implements PlugIn {
 			return;
 		}
 		
-		ImagePlus [] imagesA = { sourceImages[0] };
-		ImagePlus [] imagesB = { sourceImages[1] };
-		
 		start2DHistogram(
 			valueRange[0],
 			valueRange[1],
 			256 );
-		
+
+		IJ.showStatus("Binning values from the images...");
 		addImagePlusPair(sourceImages[0],sourceImages[1]);
 		
 		ImagePlus[] results = getHistograms();
