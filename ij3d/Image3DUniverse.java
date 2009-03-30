@@ -723,6 +723,25 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
+	 * Add a custom mesh, in particular a point mesh, to the universe.
+	 *
+	 * For more details on custom meshes, read the package API docs of
+	 * the package customnode.
+	 *
+	 * @param mesh a list of points which make up the mesh.
+	 * @param color the color in which the points is displayed
+	 * @param name a name for the added Content
+	 * @param ptsize the size of the points.
+	 * @return the connected Content.
+	 */
+	public Content addPointMesh(List<Point3f> mesh, Color3f color,
+						float ptsize, String name) {
+		  CustomPointMesh tmesh = new CustomPointMesh(mesh, color, 0);
+		  tmesh.setPointSize(ptsize);
+		  return addCustomMesh(tmesh, name);
+	}
+
+	/**
 	 * Add a custom mesh, in particular a mesh consisting of quads, to the
 	 * universe.
 	 * The number of points in the specified list must be devidable by 4.
