@@ -937,9 +937,20 @@ public class CMTK_Transformation {
 				transformed[1] = Double.NaN;
 				transformed[2] = Double.NaN;
 			} else {
-				transformed[0] = templateX[miz][ miy * modelWidth + mix ] * templatePixelWidth;
-				transformed[1] = templateY[miz][ miy * modelWidth + mix ] * templatePixelHeight;
-				transformed[2] = templateZ[miz][ miy * modelWidth + mix ] * templatePixelDepth;
+				short transformedX = templateX[miz][ miy * modelWidth + mix ];
+				short transformedY = templateY[miz][ miy * modelWidth + mix ];
+				short transformedZ = templateZ[miz][ miy * modelWidth + mix ];
+				if( transformedX == Short.MIN_VALUE ||
+				    transformedY == Short.MIN_VALUE ||
+				    transformedZ == Short.MIN_VALUE ) {
+					transformed[0] = Double.NaN;
+					transformed[1] = Double.NaN;
+					transformed[2] = Double.NaN;
+				} else {
+					transformed[0] = transformedX * templatePixelWidth;
+					transformed[1] = transformedY * templatePixelHeight;
+					transformed[2] = transformedZ * templatePixelDepth;
+				}
 			}
 		}
 
@@ -953,9 +964,20 @@ public class CMTK_Transformation {
 				transformed[1] = Integer.MIN_VALUE;
 				transformed[2] = Integer.MIN_VALUE;
 			} else {
-				transformed[0] = (int) templateX[miz][ miy * modelWidth + mix ];
-				transformed[1] = (int) templateY[miz][ miy * modelWidth + mix ];
-				transformed[2] = (int) templateZ[miz][ miy * modelWidth + mix ];
+				short transformedX = templateX[miz][ miy * modelWidth + mix ];
+				short transformedY = templateY[miz][ miy * modelWidth + mix ];
+				short transformedZ = templateZ[miz][ miy * modelWidth + mix ];
+				if( transformedX == Short.MIN_VALUE ||
+				    transformedY == Short.MIN_VALUE ||
+				    transformedZ == Short.MIN_VALUE ) {
+					transformed[0] = Integer.MIN_VALUE;
+					transformed[1] = Integer.MIN_VALUE;
+					transformed[2] = Integer.MIN_VALUE;
+				} else {
+					transformed[0] = (int) transformedX;
+					transformed[1] = (int) transformedY;
+					transformed[2] = (int) transformedZ;
+				}
 			}
 		}
 
@@ -969,9 +991,20 @@ public class CMTK_Transformation {
 				transformed[1] = Integer.MIN_VALUE;
 				transformed[2] = Integer.MIN_VALUE;
 			} else {
-				transformed[0] = (int) templateX[miz][ miy * modelWidth + mix ];
-				transformed[1] = (int) templateY[miz][ miy * modelWidth + mix ];
-				transformed[2] = (int) templateZ[miz][ miy * modelWidth + mix ];
+				short transformedX = templateX[miz][ miy * modelWidth + mix ];
+				short transformedY = templateY[miz][ miy * modelWidth + mix ];
+				short transformedZ = templateZ[miz][ miy * modelWidth + mix ];
+				if( transformedX == Short.MIN_VALUE ||
+				    transformedY == Short.MIN_VALUE ||
+				    transformedZ == Short.MIN_VALUE ) {
+					transformed[0] = Integer.MIN_VALUE;
+					transformed[1] = Integer.MIN_VALUE;
+					transformed[2] = Integer.MIN_VALUE;
+				} else {
+					transformed[0] = (int) transformedX;
+					transformed[1] = (int) transformedY;
+					transformed[2] = (int) transformedZ;
+				}
 			}
 		}
 
@@ -985,9 +1018,20 @@ public class CMTK_Transformation {
 				transformed[1] = Double.NaN;
 				transformed[2] = Double.NaN;
 			} else {
-				transformed[0] = templateX[miz][ miy * modelWidth + mix ] * templatePixelWidth;
-				transformed[1] = templateY[miz][ miy * modelWidth + mix ] * templatePixelHeight;
-				transformed[2] = templateZ[miz][ miy * modelWidth + mix ] * templatePixelDepth;
+				short transformedX = templateX[miz][ miy * modelWidth + mix ];
+				short transformedY = templateY[miz][ miy * modelWidth + mix ];
+				short transformedZ = templateZ[miz][ miy * modelWidth + mix ];
+				if( transformedX == Short.MIN_VALUE ||
+				    transformedY == Short.MIN_VALUE ||
+				    transformedZ == Short.MIN_VALUE ) {
+					transformed[0] = Double.NaN;
+					transformed[1] = Double.NaN;
+					transformed[2] = Double.NaN;
+				} else {
+					transformed[0] = transformedX * templatePixelWidth;
+					transformed[1] = transformedY * templatePixelHeight;
+					transformed[2] = transformedZ * templatePixelDepth;
+				}
 			}
 		}
 
