@@ -970,10 +970,15 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		String macroOptions = Macro.getOptions();
 
-		String macroImageFilename = Macro.getValue(
-			macroOptions, "imagefilename", null );
-		String macroTracesFilename = Macro.getValue(
-			macroOptions, "tracesfilename", null );
+		String macroImageFilename = null;
+		String macroTracesFilename = null;
+
+		if( macroOptions != null ) {
+			macroImageFilename = Macro.getValue(
+				macroOptions, "imagefilename", null );
+			macroTracesFilename = Macro.getValue(
+				macroOptions, "tracesfilename", null );
+		}
 
 		Applet applet = IJ.getApplet();
 		if( applet != null ) {
