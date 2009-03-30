@@ -25,16 +25,30 @@ package tracing;
 
 import util.CMTK_Transformation;
 
-/** The int values are indexes into the image's samples, with z being 0-based.
-    The double values are world coordinates (i.e. scaled with Calibration).
-    If the corresponding point is not found, the transformed values are set to
-    Integer.MIN_VALUE or Double.NaN */
+/* And now some helpful implementations: */
 
-public interface PathTransformer {
+public class CMTKInversePathTransformer implements PathTransformer {
 
-	public void transformPoint( double x, double y, double z, double [] transformed );
-	public void transformPoint( double x, double y, double z, int [] transformed );
-	public void transformPoint( int x, int y, int z, int [] transformed );
-	public void transformPoint( int x, int y, int z, double [] transformed );
+	private CMTK_Transformation.Inverse t;
+
+	public CMTKInversePathTransformer( CMTK_Transformation.Inverse t ) {
+		this.t = t;
+	}
+
+	public void transformPoint( double modelX, double modelY, double modelZ, double [] transformed ) {
+		t.transformPoint( modelX, modelY, modelZ, transformed );
+	}
+
+	public void transformPoint( double modelX, double modelY, double modelZ, int [] transformed ) {
+		t.transformPoint( modelX, modelY, modelZ, transformed );
+	}
+
+	public void transformPoint( int modelX, int modelY, int modelZ, int [] transformed ) {
+		t.transformPoint( modelX, modelY, modelZ, transformed );
+	}
+
+	public void transformPoint( int modelX, int modelY, int modelZ, double [] transformed ) {
+		t.transformPoint( modelX, modelY, modelZ, transformed );
+	}
 
 }
