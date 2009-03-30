@@ -265,9 +265,9 @@ public class CMTK_Transformation {
 		int gridj = Math.min( uncappedgridj, dimsy - 4 );
 		int gridk = Math.min( uncappedgridk, dimsz - 4 );
 
-		double u = cellxD - uncappedgridi;
-		double v = cellyD - uncappedgridj;
-		double w = cellzD - uncappedgridk;
+		double u = cellxD - gridi;
+		double v = cellyD - gridj;
+		double w = cellzD - gridk;
 
 		result[0] = 0;
 		result[1] = 0;
