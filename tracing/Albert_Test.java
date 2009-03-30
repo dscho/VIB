@@ -124,7 +124,7 @@ public class Albert_Test implements PlugIn {
 
 		try {
 			tmpFile = File.createTempFile("albert-test-", ".xml");
-			manager.writeXML(tmpFile.getAbsolutePath(), null, false);
+			manager.writeXML(tmpFile.getAbsolutePath(), false);
 		} catch (IOException e) {
 			IJ.error("IOException while trying to write the path to a temporary file: " + e);
 			return;

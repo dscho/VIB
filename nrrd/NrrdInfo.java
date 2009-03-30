@@ -52,7 +52,7 @@ public class NrrdInfo {
 	// this will point either to a combined nrrd file or the header file
 	public String primaryFileDirectory=null;
 	public String primaryFileName=null;
-	File[] dataFiles=null;
+	public File[] dataFiles=null;
 	
 	Object data;
 	NrrdAxisInfo[] nai;
@@ -356,7 +356,7 @@ public class NrrdInfo {
 		return -1;
 	}
 	
-	String getStandardType(String stype) {
+	public String getStandardType(String stype) {
 		if(stype.equals("float") || stype.equals("double") || stype.equals("block")) return stype;		
 		if(Arrays.binarySearch(int8Types, stype)>=0) return "int8";
 		if(Arrays.binarySearch(uint8Types, stype)>=0) return "uint8";
@@ -407,13 +407,13 @@ public class NrrdInfo {
 		return true;
 	}
 	
-	String[] getStringField(String key){
+	public String[] getStringField(String key){
 		if(nh.fields.containsKey(key)){
 			return (String[]) nh.fields.get(key);
 		} else return null;
 	}
 		 
-	double[] getDoubleField(String key){
+	public double[] getDoubleField(String key){
 		if(nh.fields.containsKey(key)){
 			String[] sa=(String[]) nh.fields.get(key);
 			double[] da=new double[sa.length];
@@ -426,7 +426,7 @@ public class NrrdInfo {
 		} else return null;
 	}
 
-	long[] getLongField(String key){
+	public long[] getLongField(String key){
 		if(nh.fields.containsKey(key)){
 			String[] sa=(String[]) nh.fields.get(key);
 			long[] la=new long[sa.length];
@@ -436,7 +436,7 @@ public class NrrdInfo {
 			return la;
 		} else return null;
 	}
-	int[] getIntegerField(String key){
+	public int[] getIntegerField(String key){
 		if(nh.fields.containsKey(key)){
 			String[] sa=(String[]) nh.fields.get(key);
 			int[] ia=new int[sa.length];
@@ -447,7 +447,7 @@ public class NrrdInfo {
 		} else return null;
 	}
 
-	String[] getStringFieldChecked(String key, int n, boolean required) throws Exception {
+	public String[] getStringFieldChecked(String key, int n, boolean required) throws Exception {
 		String[] sa;
 		sa=getStringField(key);
 		if(sa==null){
@@ -458,7 +458,7 @@ public class NrrdInfo {
 		return sa;
 	}
 
-	int[] getIntegerFieldChecked(String key, int n, boolean required) throws Exception {
+	public int[] getIntegerFieldChecked(String key, int n, boolean required) throws Exception {
 		int[] ia;
 		ia=getIntegerField(key);
 		if(ia==null){
@@ -469,7 +469,7 @@ public class NrrdInfo {
 		return ia;
 	}
 
-	long[] getLongFieldChecked(String key, int n, boolean required) throws Exception {
+	public long[] getLongFieldChecked(String key, int n, boolean required) throws Exception {
 		long[] la;
 		la=getLongField(key);
 		if(la==null){
@@ -479,7 +479,7 @@ public class NrrdInfo {
 		if(la!=null && la.length!=n) throw new Exception("Field: "+key+" must have exactly "+n+" values");
 		return la;
 	}
-	double[] getDoubleFieldChecked(String key, int n, boolean required) throws Exception {
+	public double[] getDoubleFieldChecked(String key, int n, boolean required) throws Exception {
 		double[] da;
 		da=getDoubleField(key);
 		if(da==null){

@@ -60,6 +60,8 @@ import javax.vecmath.Color3f;
 import ij3d.Content;
 import ij3d.UniverseListener;
 
+import util.CMTK_Transformation;
+
 class TracesFileFormatException extends SAXException {
 	public TracesFileFormatException(String message) {
 		super(message);
@@ -200,9 +202,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				// The source of the message already knows the states:
 				pafl.setSelectedPaths( selectedPathsSet, this );
 		}
-		plugin.repaintAllPanes();
-		plugin.update3DViewerContents();
-
+		if( plugin != null ) {
+			plugin.repaintAllPanes();
+			plugin.update3DViewerContents();
+		}
 	}
 
 	public synchronized boolean isSelected( Path path ) {
@@ -517,7 +520,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	// FIXME: should probably use XMLStreamWriter instead of this ad-hoc approach:
 	synchronized public void writeXML( String fileName,
-					   Simple_Neurite_Tracer plugin,
 					   boolean compress ) throws IOException {
 
 		PrintWriter pw = null;
@@ -2114,5 +2116,79 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				plugin.univ.removeContent(wrongContentName);
 
 		}
+	}
+
+	/** A base class for all the methods we might want to use to
+	    transform paths. */
+
+	public PathAndFillManager transformPaths( PathTransformer transformation, ImagePlus templateImage ) {
+
+		double pixelWidth = 1;
+		double pixelHeight = 1;
+		double pixelDepth = 1;
+		String units = "pixels";
+
+		Calibration templateCalibration = templateImage.getCalibration();
+		if( templateCalibration != null ) {
+			pixelWidth = templateCalibration.pixelWidth;
+			pixelHeight = templateCalibration.pixelHeight;
+			pixelDepth = templateCalibration.pixelDepth;
+			units = templateCalibration.getUnits();
+		}
+
+		PathAndFillManager pafmResult = new PathAndFillManager( templateImage.getWidth(),
+									templateImage.getHeight(),
+									templateImage.getStackSize(),
+									(float)pixelWidth,
+									(float)pixelHeight,
+									(float)pixelDepth,
+									units );
+
+		int [] startJoinsIndices = new int[size()];
+		int [] endJoinsIndices = new int[size()];
+
+		PointInImage [] startJoinsPoints = new PointInImage[size()];
+		PointInImage [] endJoinsPoints = new PointInImage[size()];
+
+		Path [] addedPaths = new Path[size()];
+
+		int i = 0;
+		for( Path p : allPaths ) {
+
+			Path startJoin = p.getStartJoins();
+			if( startJoin == null ) {
+				startJoinsIndices[i] = -1;
+				endJoinsPoints[i] = null;
+			} else {
+				startJoinsIndices[i] = allPaths.indexOf(startJoin);
+				startJoinsPoints[i] =
+					p.getStartJoinsPoint().transform( transformation );
+			}
+
+			Path endJoin = p.getEndJoins();
+			if( endJoin == null ) {
+				endJoinsIndices[i] = -1;
+				endJoinsPoints[i] = null;
+			} else {
+				endJoinsIndices[i] = allPaths.indexOf(endJoin);
+				endJoinsPoints[i] =
+					p.getEndJoinsPoint().transform( transformation );
+			}
+
+			Path transformedPath = p.transform( transformation, templateImage, imagePlus );
+			addedPaths[i] = transformedPath;
+			pafmResult.addPath( transformedPath );
+
+			++i;
+		}
+
+		for( i = 0; i < size(); ++i ) {
+			if( startJoinsIndices[i] >= 0 )
+				addedPaths[i].setStartJoin( addedPaths[startJoinsIndices[i]], startJoinsPoints[i] );
+			if( endJoinsIndices[i] >= 0 )
+				addedPaths[i].setEndJoin( addedPaths[endJoinsIndices[i]], endJoinsPoints[i] );
+		}
+
+		return pafmResult;
 	}
 }

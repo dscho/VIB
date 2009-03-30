@@ -744,7 +744,6 @@ public class NewAnalyzeTracings_ implements PlugIn, TraceLoaderListener {
 		if( writePathsTo != null ) {
 			try {
 				manager.writeXML( writePathsTo.getAbsolutePath(),
-						  null,
 						  true );
 			} catch( IOException e ) {
 				System.out.println("Writing to: "+writePathsTo+" failed");

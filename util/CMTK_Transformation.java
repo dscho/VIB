@@ -26,6 +26,8 @@ import landmarks.Rigid_From_Landmarks;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
+import java.util.Arrays;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,7 +36,20 @@ import util.FileCreation;
 
 import util.Overlay_Registered;
 
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import nrrd.NrrdHeader;
+import nrrd.NrrdInfo;
+
 public class CMTK_Transformation {
+
+	File originalFile;
+	Inverse inverse;
+
+	public void setOriginalFile( File originalFile ) {
+		this.originalFile = originalFile;
+	}
 
 	public CMTK_Transformation( ) { }
 
@@ -401,7 +416,20 @@ public class CMTK_Transformation {
 		// flexible it is...
 
 		try {
-			BufferedReader br = new BufferedReader( new FileReader(f) );
+			byte[] buf = new byte[2];
+			InputStream is = new FileInputStream(f);
+                        is.read(buf, 0, 2);
+                        is.close();
+
+			boolean compressed = (buf[0] == (byte)0x1f) && (buf[1] == (byte)0x8b);
+
+			if( compressed )
+				is = new GZIPInputStream( new BufferedInputStream(new FileInputStream(f)) );
+			else
+				is = new BufferedInputStream(new FileInputStream(f));
+
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+
 			String line;
 			// Skip over everything up to "\tspline_warp"
 			while( true ) {
@@ -475,7 +503,9 @@ public class CMTK_Transformation {
 					}
 					int pointsExpected = dimsx * dimsy * dimsz;
 					if( pointsExpected != added ) {
-						IJ.error("Number of coefficients ("+added+") didn't match expected number ("+pointsExpected+")");
+						String error = "Number of coefficients ("+added+") didn't match expected number ("+pointsExpected+")";
+						IJ.error(error);
+						System.out.println("Error is: "+error);
 						return null;
 					}
 					break;
@@ -483,7 +513,7 @@ public class CMTK_Transformation {
 			}
 
 		} catch( IOException e ) {
-			IJ.error("IOException in parseTypedStreamAffine: "+e);
+			IJ.error("IOException in parseTypedStreamWarp: "+e);
 			return null;
 		}
 
@@ -507,10 +537,575 @@ public class CMTK_Transformation {
 			return null;
 		}
 
-		return new CMTK_Transformation(
+		CMTK_Transformation result = new CMTK_Transformation(
 			dimsx, dimsy, dimsz,
 			domainx, domainy, domainz,
 			originx, originy, originz,
 			coeffs );
+		result.originalFile = f;
+		return result;
+	}
+
+	public boolean precalculatedInverseExists() {
+		if( originalFile == null )
+			throw new RuntimeException( "Can't use find an inverse without originalFile being set" );
+
+		File directoryOfOriginalFile = originalFile.getParentFile();
+		File headerFile = new File( directoryOfOriginalFile, "inverse.nhdr" );
+		File xFile = new File( directoryOfOriginalFile, "inverse_x.gz" );
+		File yFile = new File( directoryOfOriginalFile, "inverse_y.gz" );
+		File zFile = new File( directoryOfOriginalFile, "inverse_z.gz" );
+		return headerFile.exists() && xFile.exists() && yFile.exists() && zFile.exists();
+	}
+
+	/* The CMTK creates a mapping from the template to the model.
+	   In order to go back, we need to create an inverse
+	   transformation.  We do this with a nearest neighbour
+	   approach - this could be a lot better, but probably good
+	   enough for my purposes, and it's fairly fast to implement.
+
+	   We do this by mapping every point in the template to the
+	   model space; then we mark the template co-ordinates and
+	   distance to each point where that seems to be the nearest
+	   for points in some neighbourhood around the transformed
+	   point.  (Configured with 'pointsEitherSide'.)
+
+	   This is a bad approach for a number of reasons: (a) off the
+	   edges of the image, the nearest point is not very helpful
+	   (b) the 'pointsEitherSide' business isn't very robust.
+
+	   TODO: change this so that what we do is to is: for each
+	   point in the template, map that point and all the adjacent
+	   ones to the model.  Then look at the points contained
+	   within each of the tetrahedra made by the original point
+	   and three of the adjacent points - then we have more
+	   interpolation options, e.g. inverse distance weighting,
+	   nearest neighbour with the problems (a) or (b), or possibly
+	   natural neighbour with rather more thought...
+
+	*/
+
+	public Inverse inverse( ImagePlus template, ImagePlus model ) {
+
+		if( inverse != null )
+			return inverse;
+
+		if( originalFile == null )
+			throw new RuntimeException( "Can't use CMTK_Transformation.inverse without originalFile being set." );
+
+		File directoryOfOriginalFile = originalFile.getParentFile();
+		File headerFile = new File( directoryOfOriginalFile, "inverse.nhdr" );
+		File xFile = new File( directoryOfOriginalFile, "inverse_x.gz" );
+		File yFile = new File( directoryOfOriginalFile, "inverse_y.gz" );
+		File zFile = new File( directoryOfOriginalFile, "inverse_z.gz" );
+		if( headerFile.exists() && xFile.exists() && yFile.exists() && zFile.exists() ) {
+			inverse = Inverse.load( headerFile, xFile, yFile, zFile,
+						template, model );
+			return inverse;
+		}
+
+		int modelWidth = model.getWidth();
+		int modelHeight = model.getHeight();
+		int modelDepth = model.getStackSize();
+
+		int templateWidth = template.getWidth();
+		int templateHeight = template.getHeight();
+		int templateDepth = template.getStackSize();
+
+		double templatePixelWidth = 1;
+		double templatePixelHeight = 1;
+		double templatePixelDepth = 1;
+
+		Calibration templateCalibration = template.getCalibration();
+		if( templateCalibration != null ) {
+			templatePixelWidth = templateCalibration.pixelWidth;
+			templatePixelHeight = templateCalibration.pixelHeight;
+			templatePixelDepth = templateCalibration.pixelDepth;
+		}
+
+		double modelPixelWidth = 1;
+		double modelPixelHeight = 1;
+		double modelPixelDepth = 1;
+
+		Calibration modelCalibration = model.getCalibration();
+		if( modelCalibration != null ) {
+			modelPixelWidth = modelCalibration.pixelWidth;
+			modelPixelHeight = modelCalibration.pixelHeight;
+			modelPixelDepth = modelCalibration.pixelDepth;
+		}
+
+		template.close();
+		model.close();
+
+		int pointsEitherSide = 3;
+
+		short [][] templateX;
+		short [][] templateY;
+		short [][] templateZ;
+		float [][] distanceSquared;
+
+		try {
+
+			templateX = new short[modelDepth][modelWidth*modelHeight];
+			templateY = new short[modelDepth][modelWidth*modelHeight];
+			templateZ = new short[modelDepth][modelWidth*modelHeight];
+
+			distanceSquared = new float[modelDepth][modelWidth*modelHeight];
+
+		} catch( OutOfMemoryError oome ) {
+			System.out.println("Got an OOME with: "+model+" - trying to struggle on");
+			return null;
+		}
+
+		double [] transformed = new double[3];
+
+		for( int z = 0; z < modelDepth; ++z ) {
+			for( int p = 0; p < (modelWidth * modelHeight); ++p ) {
+				distanceSquared[z][p] = Float.MAX_VALUE;
+				templateX[z][p] = Short.MIN_VALUE;
+				templateY[z][p] = Short.MIN_VALUE;
+				templateZ[z][p] = Short.MIN_VALUE;
+			}
+		}
+
+		for( int tiz = 0; tiz < templateDepth; ++tiz ) {
+			System.out.println("New template z: "+tiz);
+			for( int tiy = 0; tiy < templateHeight; ++tiy ) {
+				// System.out.println("New template y: "+tiy);
+				for( int tix = 0; tix < templateWidth; ++tix ) {
+/*
+					if( true ) {
+						int indexOfMaximum = 0;
+						int pi = (tiy * templateWidth + tix) % (modelWidth * modelHeight);
+						int pz = tiz % modelDepth;
+						distanceSquared[indexOfMaximum][pz][pi] = 3.4f;
+						templateX[indexOfMaximum][pz][pi] = (short)(templateWidth - tix);
+						templateY[indexOfMaximum][pz][pi] = (short)(templateHeight - tiy);
+						templateZ[indexOfMaximum][pz][pi] = (short)(templateDepth - tiz);
+						continue;
+					}
+*/
+					double tx = tix * templatePixelWidth;
+					double ty = tiy * templatePixelHeight;
+					double tz = tiz * templatePixelDepth;
+					transformPoint( tx, ty, tz, transformed );
+					double mx = transformed[0];
+					double my = transformed[1];
+					double mz = transformed[2];
+					int mix = (int)Math.round( mx / modelPixelWidth );
+					int miy = (int)Math.round( my / modelPixelHeight );
+					int miz = (int)Math.round( mz / modelPixelDepth );
+					for( int nearmiz = miz - pointsEitherSide;
+					     nearmiz <= miz + pointsEitherSide;
+					     ++nearmiz )
+						for( int nearmiy = miy - pointsEitherSide;
+						     nearmiy <= miy + pointsEitherSide;
+						     ++nearmiy )
+							for( int nearmix = mix - pointsEitherSide;
+							     nearmix <= mix + pointsEitherSide;
+							     ++nearmix ) {
+								if( nearmix < 0 || nearmiy < 0 || nearmiz < 0 ||
+								    nearmix >= modelWidth ||
+								    nearmiy >= modelHeight ||
+								    nearmiz >= modelDepth )
+									continue;
+								double nearmx = nearmix * modelPixelWidth;
+								double nearmy = nearmiy * modelPixelHeight;
+								double nearmz = nearmiz * modelPixelDepth;
+								double xdiff = nearmx - mx;
+								double ydiff = nearmy - my;
+								double zdiff = nearmz - mz;
+								double doubleDistanceSquared =
+									xdiff * xdiff + ydiff * ydiff + zdiff * zdiff;
+								float ds = (float)doubleDistanceSquared;
+								int pi = nearmiy * modelWidth + nearmix;
+								if( ds < distanceSquared[nearmiz][pi] ) {
+									distanceSquared[nearmiz][pi] = ds;
+									templateX[nearmiz][pi] = (short)tix;
+									templateY[nearmiz][pi] = (short)tiy;
+									templateZ[nearmiz][pi] = (short)tiz;
+								}
+							}
+				}
+			}
+		}
+
+		/* I'm so short of memory on my desktop machine that I
+		   have to write this straight out to disk and then
+		   read it in again.  It'd so tedious to calculate
+		   that this probably isn't a bad thing anyway... */
+
+		try {
+			System.out.println("Writing to "+headerFile.getAbsolutePath());
+
+			// Write the header file first:
+			PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(headerFile),"UTF-8"));
+			pw.println("NRRD0005");
+			pw.println("type: short");
+			pw.println("endian: big");
+			pw.println("dimension: 4");
+			pw.println("sizes: "+modelWidth+" "+modelHeight+" "+modelDepth+" 3");
+			pw.println("encoding: gz");
+			pw.println("data file: LIST");
+			pw.println(xFile.getName());
+			pw.println(yFile.getName());
+			pw.println(zFile.getName());
+			// FIXME: how do we output the model calibration in NRRD?  Or not bother?
+			pw.close();
+
+			System.out.println("  Writing to "+xFile.getAbsolutePath());
+			System.out.println("  Writing to "+yFile.getAbsolutePath());
+			System.out.println("  Writing to "+zFile.getAbsolutePath());
+
+			DataOutputStream dosX = new DataOutputStream(new GZIPOutputStream(new FileOutputStream(xFile)));
+			DataOutputStream dosY = new DataOutputStream(new GZIPOutputStream(new FileOutputStream(yFile)));
+			DataOutputStream dosZ = new DataOutputStream(new GZIPOutputStream(new FileOutputStream(zFile)));
+
+			for( int miz = 0; miz < modelDepth; ++miz )
+				for( int miy = 0; miy < modelHeight; ++miy )
+					for( int mix = 0; mix < modelWidth; ++mix ) {
+						int pi = ((int)miy) * modelWidth + (int)mix;
+						if( distanceSquared[miz][pi] < Float.MAX_VALUE ) {
+							dosX.writeShort( templateX[miz][pi] );
+							dosY.writeShort( templateY[miz][pi] );
+							dosZ.writeShort( templateZ[miz][pi] );
+						} else {
+							dosX.writeShort( Short.MIN_VALUE );
+							dosY.writeShort( Short.MIN_VALUE );
+							dosZ.writeShort( Short.MIN_VALUE );
+						}
+					}
+
+			dosX.close();
+			dosY.close();
+			dosZ.close();
+
+		} catch( IOException e ) {
+			IJ.error( "Writing the inverse to disk failed: "+e);
+			e.printStackTrace();
+		}
+
+		templateX = null;
+		templateY = null;
+		templateZ = null;
+		distanceSquared = null;
+
+		// Shouldn't make a difference, but maybe it does on some old or broken VMs...
+		System.gc();
+
+		System.out.println("Loading back in now:");
+		Inverse result = Inverse.load( headerFile, xFile, yFile, zFile, template, model );
+		return result;
+	}
+
+	static public class Inverse {
+
+		int modelWidth, modelHeight, modelDepth;
+		int templateWidth, templateHeight, templateDepth;
+
+		short templateX [][];
+		short templateY [][];
+		short templateZ [][];
+
+		Calibration templateCalibration;
+		Calibration modelCalibration;
+
+		double modelPixelWidth = 1, modelPixelHeight = 1, modelPixelDepth = 1;
+		double templatePixelWidth = 1, templatePixelHeight = 1, templatePixelDepth = 1;
+
+		public Inverse( ImagePlus template, ImagePlus model ) {
+			modelWidth = model.getWidth();
+			modelHeight = model.getHeight();
+			modelDepth = model.getStackSize();
+			modelCalibration = model.getCalibration();
+			if( modelCalibration != null ) {
+				modelPixelWidth = modelCalibration.pixelWidth;
+				modelPixelHeight = modelCalibration.pixelHeight;
+				modelPixelDepth = modelCalibration.pixelDepth;
+			}
+			templateWidth = template.getWidth();
+			templateHeight = template.getHeight();
+			templateDepth = template.getStackSize();
+			templateCalibration = template.getCalibration();
+			if( templateCalibration != null ) {
+				templatePixelWidth = templateCalibration.pixelWidth;
+				templatePixelHeight = templateCalibration.pixelHeight;
+				templatePixelDepth = templateCalibration.pixelDepth;
+			}
+			templateX = new short[modelDepth][modelWidth*modelHeight];
+			templateY = new short[modelDepth][modelWidth*modelHeight];
+			templateZ = new short[modelDepth][modelWidth*modelHeight];
+		}
+
+		public static Inverse load( File headerFile, File xFile, File yFile, File zFile, ImagePlus template, ImagePlus model ) {
+
+			int modelWidth = model.getWidth();
+			int modelHeight = model.getHeight();
+			int modelDepth = model.getStackSize();
+			System.out.println("On loading, model is: "+model);
+			System.out.println("Got modelDepth: "+modelDepth);
+
+			Inverse result = null;
+
+			long p = -1;
+
+			try {
+				NrrdHeader nh=null;
+				NrrdInfo ni=null;
+				nh=new NrrdHeader();
+				nh.readHeader(headerFile.getAbsolutePath());
+				ni = new NrrdInfo(nh);
+				ni.parseHeader();
+
+				// Check that the dimension is 4:
+				int [] dimensions = ni.getIntegerFieldChecked( "dimension", 1, true );
+				if( dimensions[0] != 4 )
+					throw new Exception("The inverse file must have 4 dimensions (not "+dimensions[0]+")");
+
+				// That the type is short:
+				String type = ni.getStandardType( ni.getStringFieldChecked("type", 1, true )[0] );
+				if( ! type.equals( "int16" )  )
+					throw new Exception("The inverse's data must be of type signed short (int16), not "+type);
+
+				// That the sizes in each dimension match:
+				long [] requiredSizes = new long[4];
+				requiredSizes[0] = modelWidth;
+				requiredSizes[1] = modelHeight;
+				requiredSizes[2] = modelDepth;
+				requiredSizes[3] = 3;
+				long [] sizes = ni.getLongFieldChecked("sizes", dimensions[0], true );
+				if( ! Arrays.equals( sizes, requiredSizes ) ) {
+					IJ.error("Sizes in one of the dimensions didn't match - required "+
+						 "["+requiredSizes[0]+","+requiredSizes[1]+","+requiredSizes[2]+","+requiredSizes[3]+"] but got"+
+						 "["+sizes[0]+","+sizes[1]+","+sizes[2]+","+sizes[3]+"]");
+				}
+
+				// There are only three data files:
+				if( ni.dataFiles.length != 3 )
+					throw new Exception("There must be exactly three data files, not: "+ni.dataFiles.length);
+
+				for( int i = 0; i < ni.dataFiles.length; ++i ) {
+					System.out.println("ni.dataFiles["+i+"] is '"+ni.dataFiles[i]+"'");
+				}
+
+				// Then create the object and read in the data files:
+				result = new Inverse( template, model );
+
+				for( int i = 0; i < ni.dataFiles.length; ++i ) {
+					File f = ni.dataFiles[i];
+					short [][] target = null;
+					switch( i ) {
+					case 0:
+						target = result.templateX;
+						break;
+					case 1:
+						target = result.templateY;
+						break;
+					case 2:
+						target = result.templateZ;
+						break;
+					default:
+						throw new RuntimeException( "BUG: i is surprising (" + i + ")" );
+					}
+					DataInputStream dis = new DataInputStream( new BufferedInputStream( new GZIPInputStream(new FileInputStream(f)) ));
+					long expectedShorts = modelWidth * modelHeight * modelDepth;
+					for( p = 0; p < expectedShorts; ++p ) {
+						int modelX = (int)( p % modelWidth );
+						int modelY = (int)( (p / modelWidth) % modelHeight );
+						int modelZ = (int)( (p / (modelWidth * modelHeight)) % modelDepth );
+						target[modelZ][modelY*modelWidth+modelX] = dis.readShort();
+					}
+				}
+
+			} catch( Exception e ) {
+				IJ.error("There was an error loading the CMTK inverse: "+e);
+				System.out.println("p was: "+p);
+				e.printStackTrace();
+				return null;
+			}
+
+			return result;
+		}
+
+		public void transformPoint( double modelX, double modelY, double modelZ, double [] transformed ) {
+			int mix = (int)Math.round( modelX / modelPixelWidth );
+			int miy = (int)Math.round( modelY / modelPixelHeight );
+			int miz = (int)Math.round( modelZ / modelPixelDepth );
+			if( mix < 0 || miy < 0 || miz < 0 ||
+			    mix >= modelWidth || miy >= modelHeight || miz >= modelDepth ) {
+				transformed[0] = Double.NaN;
+				transformed[1] = Double.NaN;
+				transformed[2] = Double.NaN;
+			} else {
+				short transformedX = templateX[miz][ miy * modelWidth + mix ];
+				short transformedY = templateY[miz][ miy * modelWidth + mix ];
+				short transformedZ = templateZ[miz][ miy * modelWidth + mix ];
+				if( transformedX == Short.MIN_VALUE ||
+				    transformedY == Short.MIN_VALUE ||
+				    transformedZ == Short.MIN_VALUE ) {
+					transformed[0] = Double.NaN;
+					transformed[1] = Double.NaN;
+					transformed[2] = Double.NaN;
+				} else {
+					transformed[0] = transformedX * templatePixelWidth;
+					transformed[1] = transformedY * templatePixelHeight;
+					transformed[2] = transformedZ * templatePixelDepth;
+				}
+			}
+		}
+
+		public void transformPoint( double modelX, double modelY, double modelZ, int [] transformed ) {
+			int mix = (int)Math.round( modelX / modelPixelWidth );
+			int miy = (int)Math.round( modelY / modelPixelHeight );
+			int miz = (int)Math.round( modelZ / modelPixelDepth );
+			if( mix < 0 || miy < 0 || miz < 0 ||
+			    mix >= modelWidth || miy >= modelHeight || miz >= modelDepth ) {
+				transformed[0] = Integer.MIN_VALUE;
+				transformed[1] = Integer.MIN_VALUE;
+				transformed[2] = Integer.MIN_VALUE;
+			} else {
+				short transformedX = templateX[miz][ miy * modelWidth + mix ];
+				short transformedY = templateY[miz][ miy * modelWidth + mix ];
+				short transformedZ = templateZ[miz][ miy * modelWidth + mix ];
+				if( transformedX == Short.MIN_VALUE ||
+				    transformedY == Short.MIN_VALUE ||
+				    transformedZ == Short.MIN_VALUE ) {
+					transformed[0] = Integer.MIN_VALUE;
+					transformed[1] = Integer.MIN_VALUE;
+					transformed[2] = Integer.MIN_VALUE;
+				} else {
+					transformed[0] = (int) transformedX;
+					transformed[1] = (int) transformedY;
+					transformed[2] = (int) transformedZ;
+				}
+			}
+		}
+
+		public void transformPoint( int modelX, int modelY, int modelZ, int [] transformed ) {
+			int mix = modelX;
+			int miy = modelY;
+			int miz = modelZ;
+			if( mix < 0 || miy < 0 || miz < 0 ||
+			    mix >= modelWidth || miy >= modelHeight || miz >= modelDepth ) {
+				transformed[0] = Integer.MIN_VALUE;
+				transformed[1] = Integer.MIN_VALUE;
+				transformed[2] = Integer.MIN_VALUE;
+			} else {
+				short transformedX = templateX[miz][ miy * modelWidth + mix ];
+				short transformedY = templateY[miz][ miy * modelWidth + mix ];
+				short transformedZ = templateZ[miz][ miy * modelWidth + mix ];
+				if( transformedX == Short.MIN_VALUE ||
+				    transformedY == Short.MIN_VALUE ||
+				    transformedZ == Short.MIN_VALUE ) {
+					transformed[0] = Integer.MIN_VALUE;
+					transformed[1] = Integer.MIN_VALUE;
+					transformed[2] = Integer.MIN_VALUE;
+				} else {
+					transformed[0] = (int) transformedX;
+					transformed[1] = (int) transformedY;
+					transformed[2] = (int) transformedZ;
+				}
+			}
+		}
+
+		public void transformPoint( int modelX, int modelY, int modelZ, double [] transformed ) {
+			int mix = modelX;
+			int miy = modelY;
+			int miz = modelZ;
+			if( mix < 0 || miy < 0 || miz < 0 ||
+			    mix >= modelWidth || miy >= modelHeight || miz >= modelDepth ) {
+				transformed[0] = Double.NaN;
+				transformed[1] = Double.NaN;
+				transformed[2] = Double.NaN;
+			} else {
+				short transformedX = templateX[miz][ miy * modelWidth + mix ];
+				short transformedY = templateY[miz][ miy * modelWidth + mix ];
+				short transformedZ = templateZ[miz][ miy * modelWidth + mix ];
+				if( transformedX == Short.MIN_VALUE ||
+				    transformedY == Short.MIN_VALUE ||
+				    transformedZ == Short.MIN_VALUE ) {
+					transformed[0] = Double.NaN;
+					transformed[1] = Double.NaN;
+					transformed[2] = Double.NaN;
+				} else {
+					transformed[0] = transformedX * templatePixelWidth;
+					transformed[1] = transformedY * templatePixelHeight;
+					transformed[2] = transformedZ * templatePixelDepth;
+				}
+			}
+		}
+
+		/* 'model' is the image that is transformed into the
+		   space of 'template'.  This is just here for testing
+		   - if you want to do this, do it with
+		   CMTK_Transformation.transform(), rather than with
+		   the inverse... */
+
+		public ImagePlus transformImage( ImagePlus template, ImagePlus model ) {
+
+			boolean debug = false;
+
+			int modelWidth = model.getWidth();
+			int modelHeight = model.getHeight();
+			int modelDepth = model.getStackSize();
+
+			int templateWidth = template.getWidth();
+			int templateHeight = template.getHeight();
+			int templateDepth = template.getStackSize();
+
+			Calibration templateCalibration = template.getCalibration();
+
+			byte [][] transformedData = new byte[templateDepth][templateWidth*templateHeight];
+			int [] transformed = new int[3];
+
+			byte [][] originalData = new byte[modelDepth][];
+			ImageStack stack = model.getStack();
+			for( int z = 0; z < modelDepth; ++z )
+				originalData[z] = (byte [])stack.getPixels( z + 1 );
+
+			byte [][] foundMappingData = null;
+			if( debug )
+				foundMappingData = new byte[modelDepth][modelWidth*modelHeight];
+
+			for( int z = 0; z < modelDepth; ++z ) {
+				for( int y = 0; y < modelHeight; ++y ) {
+					for( int x = 0; x < modelWidth; ++x ) {
+						transformPoint( x, y, z, transformed );
+						int nx = transformed[0];
+						int ny = transformed[1];
+						int nz = transformed[2];
+						if( nx < 0 || ny < 0 || nz < 0 ||
+						    nx >= templateWidth || ny >= templateHeight || nz >= templateDepth )
+							continue;
+						if( debug )
+							foundMappingData[z][y*modelWidth+x] = (byte)0xFF;
+						transformedData[nz][ny*templateWidth+nx] = originalData[z][y*modelWidth+x];
+					}
+				}
+			}
+
+			ImageStack newStack = new ImageStack( templateWidth, templateHeight );
+			for( int z = 0; z < templateDepth; ++z ) {
+				ByteProcessor bp = new ByteProcessor( templateWidth, templateHeight );
+				bp.setPixels( transformedData[z] );
+				newStack.addSlice( "", bp );
+			}
+
+			ImagePlus result = new ImagePlus( "Transformed "+model.getTitle(), newStack );
+			result.setCalibration( templateCalibration );
+
+			if( debug ) {
+				ImageStack debugStack = new ImageStack( modelWidth, modelHeight );
+				for( int z = 0; z < modelDepth; ++z ) {
+					ByteProcessor bp = new ByteProcessor( modelWidth, modelHeight );
+					bp.setPixels( foundMappingData[z] );
+					debugStack.addSlice( "", bp );
+				}
+				ImagePlus debugImage = new ImagePlus( "Debug Stack", debugStack );
+				debugImage.show();
+			}
+
+			return result;
+		}
 	}
 }

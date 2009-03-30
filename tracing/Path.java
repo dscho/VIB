@@ -28,6 +28,7 @@ import java.awt.*;
 import ij.gui.*;
 import ij.*;
 import ij.process.*;
+import ij.measure.Calibration;
 
 import pal.math.*;
 
@@ -45,6 +46,8 @@ import java.util.Set;
 import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Arrays;
+
+import util.CMTK_Transformation;
 
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
@@ -85,8 +88,16 @@ public class Path implements Comparable {
 		return startJoins;
 	}
 
+	public PointInImage getStartJoinsPoint() {
+		return startJoinsPoint;
+	}
+
 	public Path getEndJoins() {
 		return endJoins;
+	}
+
+	public PointInImage getEndJoinsPoint() {
+		return endJoinsPoint;
 	}
 
 	public static final int PATH_START = 0;
@@ -239,11 +250,11 @@ public class Path implements Comparable {
 		endJoinsPoint = null;
 	}
 
-	void setStartJoin( Path other, PointInImage joinPoint ) {
+	public void setStartJoin( Path other, PointInImage joinPoint ) {
 		setJoin( PATH_START, other, joinPoint );
 	}
 
-	void setEndJoin( Path other, PointInImage joinPoint ) {
+	public void setEndJoin( Path other, PointInImage joinPoint ) {
 		setJoin( PATH_END, other, joinPoint );
 	}
 
@@ -273,6 +284,42 @@ public class Path implements Comparable {
 		}
 		if( other.somehowJoins.indexOf(this) < 0 ) {
 			other.somehowJoins.add(this);
+		}
+	}
+
+	public void unsetStartJoin() {
+		unsetJoin( PATH_START );
+	}
+
+	public void unsetEndJoin() {
+		unsetJoin( PATH_END );
+	}
+
+	void unsetJoin( int startOrEnd ) {
+		Path other;
+		Path leaveAloneJoin;
+		if( startOrEnd == PATH_START ) {
+			other = startJoins;
+			leaveAloneJoin = endJoins;
+		} else {
+			other = endJoins;
+			leaveAloneJoin = startJoins;
+		}
+		if( other == null ) {
+			throw new RuntimeException( "Don't call unsetJoin if the other Path is already null" );
+		}
+		if( ! (other.startJoins == this ||
+		       other.endJoins == this ||
+		       leaveAloneJoin == other ) ) {
+			somehowJoins.remove(other);
+			other.somehowJoins.remove(this);
+		}
+		if( startOrEnd == PATH_START ) {
+			startJoins = null;
+			startJoinsPoint = null;
+		} else {
+			endJoins = null;
+			endJoinsPoint = null;
 		}
 	}
 
@@ -747,7 +794,7 @@ public class Path implements Comparable {
 
 	}
 
-        int indexNearestTo( double x, double y, double z ) {
+        public int indexNearestTo( double x, double y, double z ) {
 
 		if( size() < 1 )
 			throw new RuntimeException("indexNearestTo called on a Path of size() = 0");
@@ -1724,4 +1771,77 @@ public class Path implements Comparable {
 		return selected;
 	}
 
+	/* This doesn't deal with the startJoins, endJoins or fitted
+	   fields, since they involve other paths which were probably
+	   also transformed by the caller. */
+
+	public Path transform( PathTransformer transformation, ImagePlus template, ImagePlus model ) {
+
+		int modelWidth = model.getWidth();
+		int modelHeight = model.getHeight();
+		int modelDepth = model.getStackSize();
+
+		int templateWidth = template.getWidth();
+		int templateHeight = template.getHeight();
+		int templateDepth = template.getStackSize();
+
+		double templatePixelWidth = 1;
+		double templatePixelHeight = 1;
+		double templatePixelDepth = 1;
+		String templateUnits = "pixels";
+
+		Calibration templateCalibration = template.getCalibration();
+		if( templateCalibration != null ) {
+			templatePixelWidth = templateCalibration.pixelWidth;
+			templatePixelHeight = templateCalibration.pixelHeight;
+			templatePixelDepth = templateCalibration.pixelDepth;
+			templateUnits = templateCalibration.getUnits();
+		}
+
+		double modelPixelWidth = 1;
+		double modelPixelHeight = 1;
+		double modelPixelDepth = 1;
+
+		Calibration modelCalibration = model.getCalibration();
+		if( modelCalibration != null ) {
+			modelPixelWidth = modelCalibration.pixelWidth;
+			modelPixelHeight = modelCalibration.pixelHeight;
+			modelPixelDepth = modelCalibration.pixelDepth;
+		}
+
+		Path result = new Path( templatePixelWidth, templatePixelHeight, templatePixelDepth, templateUnits, size() );
+		double [] transformed = new double[3];
+
+		// Actually, just say you'll have to refit all the
+		// previously fitted paths...
+
+		for( int i = 0; i < points; ++i ) {
+			double original_x = precise_x_positions[i];
+			double original_y = precise_y_positions[i];
+			double original_z = precise_z_positions[i];
+			transformation.transformPoint( original_x, original_y, original_z, transformed );
+			double new_x = transformed[0];
+			double new_y = transformed[1];
+			double new_z = transformed[2];
+			if( Double.isNaN(new_x) ||
+			    Double.isNaN(new_y) ||
+			    Double.isNaN(new_z) )
+				continue;
+			result.addPointDouble( new_x, new_y, new_z );
+		}
+
+		result.primary = primary;
+		result.id = id;
+		result.selected = selected;
+		result.name = name;
+
+		result.x_spacing = x_spacing;
+		result.y_spacing = y_spacing;
+		result.z_spacing = z_spacing;
+		result.spacing_units = spacing_units;
+
+		result.swcType = swcType;
+
+		return result;
+	}
 }
