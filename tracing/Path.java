@@ -250,11 +250,11 @@ public class Path implements Comparable {
 		endJoinsPoint = null;
 	}
 
-	void setStartJoin( Path other, PointInImage joinPoint ) {
+	public void setStartJoin( Path other, PointInImage joinPoint ) {
 		setJoin( PATH_START, other, joinPoint );
 	}
 
-	void setEndJoin( Path other, PointInImage joinPoint ) {
+	public void setEndJoin( Path other, PointInImage joinPoint ) {
 		setJoin( PATH_END, other, joinPoint );
 	}
 
@@ -758,7 +758,7 @@ public class Path implements Comparable {
 
 	}
 
-        int indexNearestTo( double x, double y, double z ) {
+        public int indexNearestTo( double x, double y, double z ) {
 
 		if( size() < 1 )
 			throw new RuntimeException("indexNearestTo called on a Path of size() = 0");
