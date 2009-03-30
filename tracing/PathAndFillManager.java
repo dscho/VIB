@@ -519,7 +519,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	// FIXME: should probably use XMLStreamWriter instead of this ad-hoc approach:
 	synchronized public void writeXML( String fileName,
-					   Simple_Neurite_Tracer plugin,
 					   boolean compress ) throws IOException {
 
 		PrintWriter pw = null;
