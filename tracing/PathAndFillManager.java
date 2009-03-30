@@ -60,6 +60,8 @@ import javax.vecmath.Color3f;
 import ij3d.Content;
 import ij3d.UniverseListener;
 
+import util.CMTK_Transformation;
+
 class TracesFileFormatException extends SAXException {
 	public TracesFileFormatException(String message) {
 		super(message);
@@ -2114,5 +2116,40 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				plugin.univ.removeContent(wrongContentName);
 
 		}
+	}
+
+	PathAndFillManager transformPaths( CMTK_Transformation transformation, ImagePlus templateImage ) {
+
+		double pixelWidth = 1;
+		double pixelHeight = 1;
+		double pixelDepth = 1;
+		String units = "pixels";
+
+		Calibration templateCalibration = templateImage.getCalibration();
+		if( templateCalibration != null ) {
+			pixelWidth = templateCalibration.pixelWidth;
+			pixelHeight = templateCalibration.pixelHeight;
+			pixelDepth = templateCalibration.pixelDepth;
+			units = templateCalibration.getUnits();
+		}
+
+		PathAndFillManager pafmResult = new PathAndFillManager( templateImage.getWidth(),
+									templateImage.getHeight(),
+									templateImage.getStackSize(),
+									(float)pixelWidth,
+									(float)pixelHeight,
+									(float)pixelDepth,
+									units );
+
+		for( Path p : allPaths ) {
+			Path transformedPath = p.transform( transformation, templateImage, imagePlus );
+
+
+
+		}
+
+		// FIXME:
+
+		return null;
 	}
 }

@@ -28,6 +28,7 @@ import java.awt.*;
 import ij.gui.*;
 import ij.*;
 import ij.process.*;
+import ij.measure.Calibration;
 
 import pal.math.*;
 
@@ -45,6 +46,8 @@ import java.util.Set;
 import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Arrays;
+
+import util.CMTK_Transformation;
 
 /* This class represents a list of points, and has methods for drawing
  * them onto ThreePanes-style image canvases. */
@@ -1724,4 +1727,62 @@ public class Path implements Comparable {
 		return selected;
 	}
 
+	/* This doesn't deal with the startJoins, endJoins or fitted
+	   fields, since they involve other paths which were probably
+	   also transformed by the caller. */
+
+	public Path transform( CMTK_Transformation transformation, ImagePlus template, ImagePlus model ) {
+
+		int modelWidth = model.getWidth();
+		int modelHeight = model.getHeight();
+		int modelDepth = model.getStackSize();
+
+		int templateWidth = template.getWidth();
+		int templateHeight = template.getHeight();
+		int templateDepth = template.getStackSize();
+
+		double templatePixelWidth = 1;
+		double templatePixelHeight = 1;
+		double templatePixelDepth = 1;
+		String templateUnits = "pixels";
+
+		Calibration templateCalibration = template.getCalibration();
+		if( templateCalibration != null ) {
+			templatePixelWidth = templateCalibration.pixelWidth;
+			templatePixelHeight = templateCalibration.pixelHeight;
+			templatePixelDepth = templateCalibration.pixelDepth;
+			templateUnits = templateCalibration.getUnits();
+		}
+
+		double modelPixelWidth = 1;
+		double modelPixelHeight = 1;
+		double modelPixelDepth = 1;
+
+		Calibration modelCalibration = model.getCalibration();
+		if( modelCalibration != null ) {
+			modelPixelWidth = modelCalibration.pixelWidth;
+			modelPixelHeight = modelCalibration.pixelHeight;
+			modelPixelDepth = modelCalibration.pixelDepth;
+		}
+
+		Path result = new Path( templatePixelWidth, templatePixelHeight, templatePixelDepth, templateUnits, size() );
+		double [] transformed = new double[3];
+
+		CMTK_Transformation.Inverse inverse = transformation.inverse( template, model );
+
+		// Actually, just say you'll have to refit all the
+		// previously fitted paths...
+
+		for( int i = 0; i < points; ++i ) {
+			double original_x = precise_x_positions[i];
+			double original_y = precise_y_positions[i];
+			double original_z = precise_z_positions[i];
+			inverse.transformPoint( original_x, original_y, original_z, transformed );
+			result.addPointDouble( transformed[0], transformed[1], transformed[2] );
+		}
+
+		result.primary = primary;
+
+		return result;
+	}
 }
