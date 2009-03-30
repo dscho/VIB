@@ -1111,6 +1111,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			}
 
 			single_pane = true;
+			Image3DUniverse universeToUse = null;
+			String [] choices3DViewer = null;;
 
 			if( ! singleSlice ) {
 				boolean java3DAvailable = haveJava3D();
@@ -1137,7 +1139,21 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					gd.addMessage(message);
 				} else {
 					showed3DViewerOption = true;
-					gd.addCheckbox("Use_3D viewer? (Experimental)",true);
+					choices3DViewer = new String[Image3DUniverse.universes.size()+2];
+					String no3DViewerString = "No 3D view";
+					String useNewString = "Create New 3D Viewer";
+					choices3DViewer[choices3DViewer.length-2] = useNewString;
+					choices3DViewer[choices3DViewer.length-1] = no3DViewerString;
+					for( int i = 0; i < choices3DViewer.length - 2; ++i ) {
+						String contentsString = Image3DUniverse.universes.get(i).allContentsString();
+						String shortContentsString;
+						if( contentsString.length() == 0 )
+							shortContentsString = "[Empty]";
+						else
+							shortContentsString = contentsString.substring(0,Math.min(40,contentsString.length()-1));
+						choices3DViewer[i] = "Use 3D viewer ["+i+"] containing " + shortContentsString;
+					}
+					gd.addChoice( "Choice of 3D Viewer:", choices3DViewer, useNewString );
 				}
 
 				gd.showDialog();
@@ -1146,7 +1162,21 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 				single_pane = ! gd.getNextBoolean();
 				if( showed3DViewerOption ) {
-					use3DViewer = gd.getNextBoolean();
+					String chosenViewer = gd.getNextChoice();
+					int chosenIndex;
+					for( chosenIndex = 0; chosenIndex < choices3DViewer.length; ++chosenIndex )
+						if( choices3DViewer[chosenIndex].equals(chosenViewer) )
+							break;
+					if( chosenIndex == choices3DViewer.length - 2 ) {
+						use3DViewer = true;
+						universeToUse = null;
+					} else if( chosenIndex == choices3DViewer.length - 1 ) {
+						use3DViewer = false;
+						universeToUse = null;
+					} else {
+						use3DViewer = true;
+						universeToUse = Image3DUniverse.universes.get(chosenIndex);;
+					}
 					System.out.println("showed3DViewerOption && use3DViewer: "+use3DViewer);
 				}
 			}
@@ -1245,17 +1275,27 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			if( use3DViewer ) {
 
-				String title = "Original image for tracing";
-
-				univ = new Image3DUniverse(512, 512);
+				boolean reusing;
+				if( universeToUse == null ) {
+					reusing = false;
+					univ = new Image3DUniverse(512, 512);
+				} else {
+					reusing = true;
+					univ = universeToUse;
+				}
 				univ.setUseToFront(false);
 				univ.addUniverseListener(pathAndFillManager);
-				univ.show();
-				GUI.center(univ.getWindow());
+				if( ! reusing ) {
+					univ.show();
+					GUI.center(univ.getWindow());
+				}
 				boolean [] channels = { true, true, true };
+
+				String title = "Image for tracing ["+currentImage.getTitle()+"]";
+				String contentName = univ.getSafeContentName( title );
 				Content c = univ.addContent(xy,
 							    new Color3f(Color.white),
-							    title,
+							    contentName,
 							    10, // threshold
 							    channels,
 							    2, // resampling factor
@@ -1768,6 +1808,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	public void update3DViewerContents() {
 		pathAndFillManager.update3DViewerContents();
+	}
+
+	public Image3DUniverse get3DUniverse() {
+		return univ;
 	}
 
 	public Color3f selectedColor3f = new Color3f( Color.green );

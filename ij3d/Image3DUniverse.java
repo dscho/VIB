@@ -1053,4 +1053,16 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 		return sb.toString();
 	}
+
+    public String getSafeContentName( String suggested ) {
+		String originalName = suggested;
+		String attempt = suggested;
+		int tryNumber = 2;
+		while( contains(attempt) ) {
+            attempt = originalName + " (" + tryNumber + ")";
+            ++ tryNumber;
+        }
+		return attempt;
+    }
+
 }

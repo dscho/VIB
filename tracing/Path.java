@@ -1746,18 +1746,17 @@ public class Path implements Comparable {
 		java.util.List triangles = Pipe.generateTriangles(allPoints,
 								  1); // scale
 
-		String title = getName();
-		nameWhenAddedToViewer = title;
+		nameWhenAddedToViewer = univ.getSafeContentName( getName() );
 
 		univ.resetView();
 
 		univ.addMesh(triangles,
 			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
-			     title,
+			     nameWhenAddedToViewer,
 			     // 1f,  // scale
 			     1); // threshold
 
-		content3D = univ.getContent(title);
+		content3D = univ.getContent(nameWhenAddedToViewer);
 		content3D.setLocked(true);
 		return content3D;
 	}
