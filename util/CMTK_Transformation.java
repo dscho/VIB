@@ -387,9 +387,9 @@ public class CMTK_Transformation {
 			boolean compressed = (buf[0] == (byte)0x1f) && (buf[1] == (byte)0x8b);
 
 			if( compressed )
-				is = new GZIPInputStream( new BufferedInputStream(new FileInputStream(f)) );
+				is = new GZIPInputStream(new FileInputStream(f));
 			else
-				is = new BufferedInputStream(new FileInputStream(f));
+				is = new FileInputStream(f);
 
 			BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
