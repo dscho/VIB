@@ -96,6 +96,8 @@ class NeuriteTracerResultsDialog
 
 	TextField nearbyField;
 
+	PathColorsCanvas pathColorsCanvas;
+
 	Checkbox justShowSelected;
 	Checkbox preprocess;
 	Checkbox usePreprocessed;
@@ -547,12 +549,28 @@ class NeuriteTracerResultsDialog
 			co.anchor = GridBagConstraints.LINE_END;
 			otherOptionsPanel.add(nearbyPanel,co);
 
+			co.gridx = 0;
+			++ co.gridy;
+			co.gridwidth = 2;
+			co.anchor = GridBagConstraints.LINE_START;
+			otherOptionsPanel.add(new Label("Click to change Path colours:"),co);
+
+			System.out.println("Creating with plugin: "+plugin);
+			pathColorsCanvas = new PathColorsCanvas( plugin, 150, 18 );
+			co.gridx = 0;
+			++ co.gridy;
+			co.gridwidth = 2;
+			co.anchor = GridBagConstraints.CENTER;
+			co.insets = new Insets( 3, 3, 3, 3 );
+			otherOptionsPanel.add(pathColorsCanvas,co);
+
 			justShowSelected = new Checkbox( "Show only selected paths" );
 			justShowSelected.addItemListener( this );
 			co.gridx = 0;
 			++ co.gridy;
 			co.gridwidth = 2;
 			co.anchor = GridBagConstraints.LINE_START;
+			co.insets = new Insets( 0, 0, 0, 0 );
 			otherOptionsPanel.add(justShowSelected,co);
 
 			preprocess = new Checkbox("Hessian-based analysis");
