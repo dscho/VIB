@@ -422,7 +422,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	public synchronized void deletePath( Path p ) {
 		int i = getPathIndex( p );
 		if( i < 0 )
-			throw new RuntimeException("Trying to delete a non-existent path");
+			throw new RuntimeException("Trying to delete a non-existent path: "+p);
 		deletePath( i );
 	}
 
@@ -437,29 +437,46 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	private synchronized void deletePath( int index, boolean updateInterface ) {
 
-		// if (verbose) System.out.println("About to remove index: "+index+", leaving: "+allPaths.size()+" items.");
-		Path deleted = allPaths.remove(index);
-		// if (verbose) System.out.println("After, left "+allPaths.size()+" items.");
+		Path originalPathToDelete = allPaths.get(index);
+
+		Path unfittedPathToDelete = null;
+		Path fittedPathToDelete = null;
+
+		if( originalPathToDelete.fittedVersionOf == null ) {
+			unfittedPathToDelete = originalPathToDelete;
+			fittedPathToDelete = originalPathToDelete.fitted;
+		} else {
+			unfittedPathToDelete = originalPathToDelete.fittedVersionOf;
+			fittedPathToDelete = originalPathToDelete;
+		}
+
+		allPaths.remove(unfittedPathToDelete);
+		if( fittedPathToDelete != null )
+			allPaths.remove(fittedPathToDelete);
 
 		// We don't just delete; have to fix up the references
-		// in other paths (for start and end joins).
+		// in other paths (for start and end joins):
 
 		for( Iterator i = allPaths.iterator(); i.hasNext(); ) {
 			Path p = (Path)i.next();
-			if( p.startJoins == p ) {
+			if( p.startJoins == unfittedPathToDelete ) {
 				p.startJoins = null;
 				p.startJoinsPoint = null;
 			}
-			if( p.endJoins == p ) {
+			if( p.endJoins == unfittedPathToDelete ) {
 				p.endJoins = null;
 				p.endJoinsPoint = null;
 			}
 		}
 
-		selectedPathsSet.remove(deleted);
+		selectedPathsSet.remove(fittedPathToDelete);
+		selectedPathsSet.remove(unfittedPathToDelete);
 
-		if( plugin != null && plugin.use3DViewer && deleted.content3D != null ) {
-			deleted.removeFrom3DViewer(plugin.univ);
+		if( plugin != null && plugin.use3DViewer ) {
+			if( fittedPathToDelete != null && fittedPathToDelete.content3D != null )
+				fittedPathToDelete.removeFrom3DViewer(plugin.univ);
+			if( unfittedPathToDelete.content3D != null )
+				unfittedPathToDelete.removeFrom3DViewer(plugin.univ);
 		}
 
 		if( updateInterface )
