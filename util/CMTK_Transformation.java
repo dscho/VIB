@@ -907,7 +907,7 @@ public class CMTK_Transformation {
 					default:
 						throw new RuntimeException( "BUG: i is surprising (" + i + ")" );
 					}
-					DataInputStream dis = new DataInputStream( new GZIPInputStream( new BufferedInputStream(new FileInputStream(f)) ));
+					DataInputStream dis = new DataInputStream( new BufferedInputStream( new GZIPInputStream(new FileInputStream(f)) ));
 					long expectedShorts = modelWidth * modelHeight * modelDepth;
 					for( p = 0; p < expectedShorts; ++p ) {
 						int modelX = (int)( p % modelWidth );
