@@ -287,6 +287,42 @@ public class Path implements Comparable {
 		}
 	}
 
+	public void unsetStartJoin() {
+		unsetJoin( PATH_START );
+	}
+
+	public void unsetEndJoin() {
+		unsetJoin( PATH_END );
+	}
+
+	void unsetJoin( int startOrEnd ) {
+		Path other;
+		Path leaveAloneJoin;
+		if( startOrEnd == PATH_START ) {
+			other = startJoins;
+			leaveAloneJoin = endJoins;
+		} else {
+			other = endJoins;
+			leaveAloneJoin = startJoins;
+		}
+		if( other == null ) {
+			throw new RuntimeException( "Don't call unsetJoin if the other Path is already null" );
+		}
+		if( ! (other.startJoins == this ||
+		       other.endJoins == this ||
+		       leaveAloneJoin == other ) ) {
+			somehowJoins.remove(other);
+			other.somehowJoins.remove(this);
+		}
+		if( startOrEnd == PATH_START ) {
+			startJoins = null;
+			startJoinsPoint = null;
+		} else {
+			endJoins = null;
+			endJoinsPoint = null;
+		}
+	}
+
 	double x_spacing;
 	double y_spacing;
 	double z_spacing;
