@@ -1775,7 +1775,7 @@ public class Path implements Comparable {
 	   fields, since they involve other paths which were probably
 	   also transformed by the caller. */
 
-	public Path transform( CMTK_Transformation transformation, ImagePlus template, ImagePlus model ) {
+	public Path transform( PathTransformer transformation, ImagePlus template, ImagePlus model ) {
 
 		int modelWidth = model.getWidth();
 		int modelHeight = model.getHeight();
@@ -1812,8 +1812,6 @@ public class Path implements Comparable {
 		Path result = new Path( templatePixelWidth, templatePixelHeight, templatePixelDepth, templateUnits, size() );
 		double [] transformed = new double[3];
 
-		CMTK_Transformation.Inverse inverse = transformation.inverse( template, model );
-
 		// Actually, just say you'll have to refit all the
 		// previously fitted paths...
 
@@ -1821,11 +1819,28 @@ public class Path implements Comparable {
 			double original_x = precise_x_positions[i];
 			double original_y = precise_y_positions[i];
 			double original_z = precise_z_positions[i];
-			inverse.transformPoint( original_x, original_y, original_z, transformed );
-			result.addPointDouble( transformed[0], transformed[1], transformed[2] );
+			transformation.transformPoint( original_x, original_y, original_z, transformed );
+			double new_x = transformed[0];
+			double new_y = transformed[1];
+			double new_z = transformed[2];
+			if( Double.isNaN(new_x) ||
+			    Double.isNaN(new_y) ||
+			    Double.isNaN(new_z) )
+				continue;
+			result.addPointDouble( new_x, new_y, new_z );
 		}
 
 		result.primary = primary;
+		result.id = id;
+		result.selected = selected;
+		result.name = name;
+
+		result.x_spacing = x_spacing;
+		result.y_spacing = y_spacing;
+		result.z_spacing = z_spacing;
+		result.spacing_units = spacing_units;
+
+		result.swcType = swcType;
 
 		return result;
 	}
