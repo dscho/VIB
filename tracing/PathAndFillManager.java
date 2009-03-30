@@ -1782,36 +1782,18 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	// Methods we need to implement for UniverseListener:
-
 	public void transformationStarted(View view) { }
 	public void transformationUpdated(View view) { }
 	public void transformationFinished(View view) { }
-
 	public void contentAdded(Content c) { }
 	public void contentRemoved(Content c) { }
 	public void contentChanged(Content c) { }
-	/* If someone selects a path in the 3D viewer, it would be
-	   good to update the path list's selections with that: */
-	public void contentSelected(Content c) {
-		Path selectedPath = null;
-		for( Iterator<Path> j = allPaths.iterator(); j.hasNext(); ) {
-			Path p = j.next();
-			if( p.content3D == c )
-				selectedPath = p;
-		}
-		if( selectedPath == null ) {
-			// This is probably someone accidentally
-			// selecting the original image...
-		} else {
-			Path [] newSelectedPaths = new Path[1];
-			newSelectedPaths[0] = selectedPath;
-			setSelected(newSelectedPaths, this);
-		}
-	}
+	public void contentSelected(Content c) { }
 	public void canvasResized() { }
 	public void universeClosed() {
 		plugin.use3DViewer = false;
 	}
+	// ... end of methods for UniverseListener
 
 	private static void replaceAll( StringBuffer s, String substring, String replacement ) {
 		int fromIndex = 0;
