@@ -182,21 +182,24 @@ class NeuriteTracerResultsDialog
 	public void setSigma( double sigma, boolean mayStartGaussian ) {
 		currentSigma = sigma;
 		updateLabel( );
-		if( mayStartGaussian && ! preprocess.getState() ) {
-			// Turn on the checkbox:
-			preprocess.setState( true );
-			/* According to the documentation this doesn't
-			   generate an event, so we do would if the
-			   option was turned on manually: */
-			turnOnHessian();
+		if( mayStartGaussian ) {
+			if( preprocess.getState() ) {
+				IJ.error( "[BUG] The preprocess checkbox should never be on when setSigma is called" );
+			} else {
+				// Turn on the checkbox:
+				preprocess.setState( true );
+				/* ... according to the documentation
+				   this doesn't generate an event, so
+				   we manually turn on the Gaussian
+				   calculation */
+				turnOnHessian();
+			}
 		}
 	}
 
 	public void turnOnHessian( ) {
 		preGaussianState = currentState;
 		plugin.enableHessian(true);
-		if( usePreprocessed.isEnabled() )
-			usePreprocessed.setState(false);
 	}
 
 	DecimalFormat threeDecimalPlaces = new DecimalFormat("0.0000");
@@ -297,8 +300,8 @@ class NeuriteTracerResultsDialog
 			viewPathChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
-			editSigma.setEnabled(true);
-			sigmaWizard.setEnabled(true);
+			editSigma.setEnabled( ! preprocess.getState() );
+			sigmaWizard.setEnabled( ! preprocess.getState() );
 
 			fw.setEnabledWhileNotFilling();
 
@@ -334,8 +337,8 @@ class NeuriteTracerResultsDialog
 			viewPathChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
-			editSigma.setEnabled(true);
-			sigmaWizard.setEnabled(true);
+			editSigma.setEnabled( ! preprocess.getState() );
+			sigmaWizard.setEnabled( ! preprocess.getState() );
 
 			quitButton.setEnabled(false);
 

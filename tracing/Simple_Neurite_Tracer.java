@@ -1177,7 +1177,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 						use3DViewer = true;
 						universeToUse = Image3DUniverse.universes.get(chosenIndex);;
 					}
-					System.out.println("showed3DViewerOption && use3DViewer: "+use3DViewer);
 				}
 			}
 
@@ -1364,7 +1363,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		Sigma_Palette sp = new Sigma_Palette();
 		sp.setListener( resultsDialog );
 		sp.makePalette( xy, x_min, x_max, y_min, y_max, z_min, z_max, new TubenessProcessor(true), sigmas, 256 / resultsDialog.getMultiplier(), 3, 3, z );
-
 	}
 
 	public void startFillerThread( FillerThread filler ) {
