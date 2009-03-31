@@ -15,6 +15,17 @@ import java.awt.FontMetrics;
 import java.awt.image.ColorModel;
 import vib.TransformedImage;
 
+/* TODOs:
+
+    The problem with this plugin is that it's not enough like the
+    Colocalization Threshold plugin. :) It can draw best fit lines,
+    but doesn't look for the threshold above which it makes sense.
+
+    I think this should work by producing candidate histogram images
+    and allowing the user to pick LUT and method before clicking
+    "Frame" to add the axes, legend, etc.
+*/
+
 public class Histogram_2D implements PlugIn {
 
 	// These values are set when calling start2DHistogram:
