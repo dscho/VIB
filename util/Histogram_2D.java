@@ -210,7 +210,6 @@ public class Histogram_2D implements PlugIn {
 			ImageStack newStack=new ImageStack(bins,bins);
 			newStack.addSlice("", fp);
 			newImagePlus=new ImagePlus("2D Histogram Probabilities",newStack);
-			newImagePlus.show();
 
 		}
 		
@@ -230,15 +229,14 @@ public class Histogram_2D implements PlugIn {
 			ImageStack selfNewStack=new ImageStack(bins,bins);
 			selfNewStack.addSlice("", selfFP);
 			selfNewImagePlus=new ImagePlus("Self Information",selfNewStack);
-			selfNewImagePlus.show();
 
 		}
 		
 		
 		ImagePlus [] result = new ImagePlus[2];
-		result[0] = newImagePlus;
-		result[1] = selfNewImagePlus;
-		
+		result[PROBABILITIES] = newImagePlus;
+		result[SELF_INFORMATION] = selfNewImagePlus;
+
 		return result;
 	}
 
@@ -246,8 +244,8 @@ public class Histogram_2D implements PlugIn {
 	    String title,
 	    ImagePlus histogram,
 	    String xLabel, float xmin, float xmax,
-	    String yLabel, float ymin, float ymax
-	    ) {
+	    String yLabel, float ymin, float ymax,
+	    int method ) {
 
 		int tickSize = 5;
 		int tickMargin = 10;
@@ -487,6 +485,9 @@ public class Histogram_2D implements PlugIn {
 		
 		return newImagePlus;
 	}      	
+
+	public final static int PROBABILITIES = 0;
+	public final static int SELF_INFORMATION = 1;
 		
 	public void run(String ignored) {
                 
@@ -524,10 +525,12 @@ public class Histogram_2D implements PlugIn {
                 ImagePlus [] onlyMatchingImagePlus = new ImagePlus[totalMatchingTitles];
                 System.arraycopy(matchingImagePlus, 0, onlyMatchingImagePlus, 0, totalMatchingTitles);
 
+		String [] methods = { "p (Probability)", "-log\u2082(p) (Self-information)" };
+
 		GenericDialog gd = new GenericDialog("2D Histogram");
 		gd.addChoice("A:", onlyMatchingTitles, onlyMatchingTitles[0]);
 		gd.addChoice("B:", onlyMatchingTitles, onlyMatchingTitles[1]);
-		gd.addCheckbox("Keep source images", true);
+		gd.addChoice("Values to plot: ", methods, methods[0]);
 		gd.showDialog();
 		if (gd.wasCanceled()) {
 			return;
@@ -536,6 +539,8 @@ public class Histogram_2D implements PlugIn {
 		int[] index = new int[2];
 		index[0] = gd.getNextChoiceIndex();
 		index[1] = gd.getNextChoiceIndex();
+
+		int method = gd.getNextChoiceIndex();
 
 		ImagePlus [] sourceImages = new ImagePlus[2];
 		
@@ -579,11 +584,12 @@ public class Histogram_2D implements PlugIn {
 		ImagePlus[] results = getHistograms();
 		
 		frame2DHistogram(
-		    "2D Histogram of Values",
-		    results[1],
+		    methods[method] + " for Pairs of Values",
+		    results[method],
 		    sourceImages[0].getTitle(),
 		    valueRange[0], valueRange[1],
 		    sourceImages[1].getTitle(),
-		    valueRange[0], valueRange[1] );
+		    valueRange[0], valueRange[1],
+		    method );
 	}
 }

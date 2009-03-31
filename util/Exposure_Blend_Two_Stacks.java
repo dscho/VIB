@@ -242,7 +242,8 @@ public class Exposure_Blend_Two_Stacks implements PlugIn {
 			    sourceImages[0].getTitle(),
 			    range[0], range[1],
 			    sourceImages[1].getTitle(),
-			    range[0], range[1]);
+			    range[0], range[1],
+			    Histogram_2D.SELF_INFORMATION);
 
 			// So we have a and b from which we can calculate m and n:
 
