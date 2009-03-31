@@ -12,6 +12,7 @@ import ij.plugin.PlugIn;
 import ij.process.FloatProcessor;
 import java.awt.Font;
 import java.awt.FontMetrics;
+import java.awt.image.ColorModel;
 import vib.TransformedImage;
 
 public class Histogram_2D implements PlugIn {
@@ -190,32 +191,44 @@ public class Histogram_2D implements PlugIn {
 		for( int avalue = 0; avalue < bins; ++avalue )
 			for( int bvalue = 0; bvalue < bins; ++bvalue ) {
 
-
 				p[avalue][bvalue] = (double)counts[avalue][bvalue] / totalValues;
 				selfInformation[avalue][bvalue] = - Math.log(p[avalue][bvalue]) / Math.log(2);
 			}
 
-		ImagePlus newImagePlus;
+		ImagePlus probImagePlus;
 		{
-
 			float floatValues [] = new float[bins*bins];
 
 			for( int avalue = 0; avalue < bins; ++avalue )
 				for( int bvalue = 0; bvalue < bins; ++bvalue ) {
-					floatValues[((bins-1)-bvalue)*bins+avalue] = (float)Math.log(p[avalue][bvalue]);
+					floatValues[((bins-1)-bvalue)*bins+avalue] = (float)p[avalue][bvalue];
 				}
 
 			FloatProcessor fp = new FloatProcessor(bins,bins);
 			fp.setPixels(floatValues);
 			ImageStack newStack=new ImageStack(bins,bins);
 			newStack.addSlice("", fp);
-			newImagePlus=new ImagePlus("2D Histogram Probabilities",newStack);
+			probImagePlus=new ImagePlus("2D Histogram Log Probabilities",newStack);
+		}
 
+		ImagePlus logProbImagePlus;
+		{
+			float floatValues [] = new float[bins*bins];
+
+			for( int avalue = 0; avalue < bins; ++avalue )
+				for( int bvalue = 0; bvalue < bins; ++bvalue ) {
+					floatValues[((bins-1)-bvalue)*bins+avalue] = (float)Math.log( p[avalue][bvalue] );
+				}
+
+			FloatProcessor fp = new FloatProcessor(bins,bins);
+			fp.setPixels(floatValues);
+			ImageStack newStack=new ImageStack(bins,bins);
+			newStack.addSlice("", fp);
+			logProbImagePlus=new ImagePlus("2D Histogram Probabilities",newStack);
 		}
 
 		ImagePlus selfNewImagePlus;
 		{
-
 			float selfValues [] = new float[bins*bins];
 
 			for( int avalue = 0; avalue < bins; ++avalue )
@@ -228,13 +241,12 @@ public class Histogram_2D implements PlugIn {
 			selfFP.setPixels(selfValues);
 			ImageStack selfNewStack=new ImageStack(bins,bins);
 			selfNewStack.addSlice("", selfFP);
-			selfNewImagePlus=new ImagePlus("Self Information",selfNewStack);
-
+			selfNewImagePlus=new ImagePlus("2D Histogram Self Information",selfNewStack);
 		}
 
-
-		ImagePlus [] result = new ImagePlus[2];
-		result[PROBABILITIES] = newImagePlus;
+		ImagePlus [] result = new ImagePlus[3];
+		result[PROBABILITIES] = probImagePlus;
+		result[LOG_PROBABILITIES] = logProbImagePlus;
 		result[SELF_INFORMATION] = selfNewImagePlus;
 
 		return result;
@@ -267,6 +279,8 @@ public class Histogram_2D implements PlugIn {
 			IJ.error("The histogram must not be a stack.");
 			return null;
 		}
+
+		ColorModel colorModel = histogram.getProcessor().getColorModel();
 
 		int oldWidth=histogram.getWidth();
 		int oldHeight=histogram.getHeight();
@@ -319,6 +333,10 @@ public class Histogram_2D implements PlugIn {
 		ImagePlus newImagePlus=new ImagePlus(
 		    "Framed Histogram",
 		    newFP );
+
+		if( colorModel != null ) {
+			newImagePlus.getProcessor().setColorModel( colorModel );
+		}
 
 		String fontName = serifFont ? "Serif" : "SanSerif";
 		int fontType = false ? Font.BOLD : Font.PLAIN;
@@ -476,9 +494,7 @@ public class Histogram_2D implements PlugIn {
 						newFP.drawPixel( leftBorder+xBin, topBorder+oldHeight-yBin );
 					}
 				}
-
 			}
-
 		}
 
 		newImagePlus.updateAndRepaintWindow();
@@ -487,7 +503,8 @@ public class Histogram_2D implements PlugIn {
 	}
 
 	public final static int PROBABILITIES = 0;
-	public final static int SELF_INFORMATION = 1;
+	public final static int LOG_PROBABILITIES = 1;
+	public final static int SELF_INFORMATION = 2;
 
 	public void run(String ignored) {
 
@@ -499,38 +516,38 @@ public class Histogram_2D implements PlugIn {
 			return;
 		}
 
-                String [] matchingTitles=new String[wList.length];
-                ImagePlus [] matchingImagePlus=new ImagePlus[wList.length];
-                ImagePlus [] allImages=new ImagePlus[wList.length];
+		String [] matchingTitles=new String[wList.length];
+		ImagePlus [] matchingImagePlus=new ImagePlus[wList.length];
+		ImagePlus [] allImages=new ImagePlus[wList.length];
 
-                int totalMatchingTitles = 0;
+		int totalMatchingTitles = 0;
 		for (int i = 0; i < wList.length; i++) {
 			ImagePlus imp = WindowManager.getImage(wList[i]);
-                        String title = (imp == null) ? "" : imp.getTitle();
-                        if(title.indexOf(titleSubstring) >= 0) {
-                            matchingTitles[totalMatchingTitles] = title;
-                            matchingImagePlus[totalMatchingTitles] = imp;
-                            ++totalMatchingTitles;
-                        }
-                        allImages[i] = imp;
+			String title = (imp == null) ? "" : imp.getTitle();
+			if(title.indexOf(titleSubstring) >= 0) {
+				matchingTitles[totalMatchingTitles] = title;
+				matchingImagePlus[totalMatchingTitles] = imp;
+				++totalMatchingTitles;
+			}
+			allImages[i] = imp;
 		}
 
-                if( totalMatchingTitles < 2 ) {
-                    IJ.error("There are only "+totalMatchingTitles+" matching images; need at least 2.");
-                    return;
-                }
+		if( totalMatchingTitles < 2 ) {
+		    IJ.error("There are only "+totalMatchingTitles+" matching images; need at least 2.");
+		    return;
+		}
 
-                String [] onlyMatchingTitles = new String[totalMatchingTitles];
-                System.arraycopy(matchingTitles,0,onlyMatchingTitles,0,totalMatchingTitles);
-                ImagePlus [] onlyMatchingImagePlus = new ImagePlus[totalMatchingTitles];
-                System.arraycopy(matchingImagePlus, 0, onlyMatchingImagePlus, 0, totalMatchingTitles);
+		String [] onlyMatchingTitles = new String[totalMatchingTitles];
+		System.arraycopy(matchingTitles,0,onlyMatchingTitles,0,totalMatchingTitles);
+		ImagePlus [] onlyMatchingImagePlus = new ImagePlus[totalMatchingTitles];
+		System.arraycopy(matchingImagePlus, 0, onlyMatchingImagePlus, 0, totalMatchingTitles);
 
-		String [] methods = { "p (Probability)", "-log\u2082(p) (Self-information)" };
+		String [] methods = { "p (Probability)", "ln(p) (Log Probabilities)", "-log\u2082(p) (Self-information)" };
 
 		GenericDialog gd = new GenericDialog("2D Histogram");
 		gd.addChoice("A:", onlyMatchingTitles, onlyMatchingTitles[0]);
 		gd.addChoice("B:", onlyMatchingTitles, onlyMatchingTitles[1]);
-		gd.addChoice("Values to plot: ", methods, methods[0]);
+		gd.addChoice("Values to plot: ", methods, methods[LOG_PROBABILITIES]);
 		gd.showDialog();
 		if (gd.wasCanceled()) {
 			return;
@@ -548,17 +565,17 @@ public class Histogram_2D implements PlugIn {
 		sourceImages[1] = onlyMatchingImagePlus[index[1]];
 
 		IJ.showStatus( "Calculating values range..." );
-                float[] valueRange;
-                {
-                    TransformedImage ti = new TransformedImage(
-                        sourceImages[0],
-                        sourceImages[1]);
+		float[] valueRange;
+		{
+		    TransformedImage ti = new TransformedImage(
+			sourceImages[0],
+			sourceImages[1]);
 
-                    valueRange = ti.getValuesRange();
-                }
+		    valueRange = ti.getValuesRange();
+		}
 
-                sourceImages[0].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
-                sourceImages[1].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+		sourceImages[0].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+		sourceImages[1].getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
 
 		int width = sourceImages[0].getWidth();
 		int height = sourceImages[0].getHeight();
@@ -583,13 +600,15 @@ public class Histogram_2D implements PlugIn {
 
 		ImagePlus[] results = getHistograms();
 
+		IJ.runPlugIn( results[method], "ij.plugin.LutLoader", "fire" );
+
 		frame2DHistogram(
-		    methods[method] + " for Pairs of Values",
-		    results[method],
-		    sourceImages[0].getTitle(),
-		    valueRange[0], valueRange[1],
-		    sourceImages[1].getTitle(),
-		    valueRange[0], valueRange[1],
-		    method );
+			methods[method] + " for Corresponding Values",
+			results[method],
+			sourceImages[0].getTitle(),
+			valueRange[0], valueRange[1],
+			sourceImages[1].getTitle(),
+			valueRange[0], valueRange[1],
+			method );
 	}
 }
