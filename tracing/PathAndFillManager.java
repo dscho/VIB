@@ -60,6 +60,8 @@ import javax.vecmath.Color3f;
 import ij3d.Content;
 import ij3d.UniverseListener;
 
+import util.CMTK_Transformation;
+
 class TracesFileFormatException extends SAXException {
 	public TracesFileFormatException(String message) {
 		super(message);
@@ -200,9 +202,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				// The source of the message already knows the states:
 				pafl.setSelectedPaths( selectedPathsSet, this );
 		}
-		plugin.repaintAllPanes();
-		plugin.update3DViewerContents();
-
+		if( plugin != null ) {
+			plugin.repaintAllPanes();
+			plugin.update3DViewerContents();
+		}
 	}
 
 	public synchronized boolean isSelected( Path path ) {
@@ -419,7 +422,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	public synchronized void deletePath( Path p ) {
 		int i = getPathIndex( p );
 		if( i < 0 )
-			throw new RuntimeException("Trying to delete a non-existent path");
+			throw new RuntimeException("Trying to delete a non-existent path: "+p);
 		deletePath( i );
 	}
 
@@ -434,29 +437,46 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	private synchronized void deletePath( int index, boolean updateInterface ) {
 
-		// if (verbose) System.out.println("About to remove index: "+index+", leaving: "+allPaths.size()+" items.");
-		Path deleted = allPaths.remove(index);
-		// if (verbose) System.out.println("After, left "+allPaths.size()+" items.");
+		Path originalPathToDelete = allPaths.get(index);
+
+		Path unfittedPathToDelete = null;
+		Path fittedPathToDelete = null;
+
+		if( originalPathToDelete.fittedVersionOf == null ) {
+			unfittedPathToDelete = originalPathToDelete;
+			fittedPathToDelete = originalPathToDelete.fitted;
+		} else {
+			unfittedPathToDelete = originalPathToDelete.fittedVersionOf;
+			fittedPathToDelete = originalPathToDelete;
+		}
+
+		allPaths.remove(unfittedPathToDelete);
+		if( fittedPathToDelete != null )
+			allPaths.remove(fittedPathToDelete);
 
 		// We don't just delete; have to fix up the references
-		// in other paths (for start and end joins).
+		// in other paths (for start and end joins):
 
 		for( Iterator i = allPaths.iterator(); i.hasNext(); ) {
 			Path p = (Path)i.next();
-			if( p.startJoins == p ) {
+			if( p.startJoins == unfittedPathToDelete ) {
 				p.startJoins = null;
 				p.startJoinsPoint = null;
 			}
-			if( p.endJoins == p ) {
+			if( p.endJoins == unfittedPathToDelete ) {
 				p.endJoins = null;
 				p.endJoinsPoint = null;
 			}
 		}
 
-		selectedPathsSet.remove(deleted);
+		selectedPathsSet.remove(fittedPathToDelete);
+		selectedPathsSet.remove(unfittedPathToDelete);
 
-		if( plugin != null && plugin.use3DViewer && deleted.content3D != null ) {
-			deleted.removeFrom3DViewer(plugin.univ);
+		if( plugin != null && plugin.use3DViewer ) {
+			if( fittedPathToDelete != null && fittedPathToDelete.content3D != null )
+				fittedPathToDelete.removeFrom3DViewer(plugin.univ);
+			if( unfittedPathToDelete.content3D != null )
+				unfittedPathToDelete.removeFrom3DViewer(plugin.univ);
 		}
 
 		if( updateInterface )
@@ -517,7 +537,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	// FIXME: should probably use XMLStreamWriter instead of this ad-hoc approach:
 	synchronized public void writeXML( String fileName,
-					   Simple_Neurite_Tracer plugin,
 					   boolean compress ) throws IOException {
 
 		PrintWriter pw = null;
@@ -1120,7 +1139,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				pathToAdd = p.fitted;
 			else
 				pathToAdd = p;
-			pathToAdd.addTo3DViewer(plugin.univ,Color.MAGENTA);
+			pathToAdd.addTo3DViewer(plugin.univ,plugin.deselectedColor);
 		}
 	}
 
@@ -1780,36 +1799,18 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	// Methods we need to implement for UniverseListener:
-
 	public void transformationStarted(View view) { }
 	public void transformationUpdated(View view) { }
 	public void transformationFinished(View view) { }
-
 	public void contentAdded(Content c) { }
 	public void contentRemoved(Content c) { }
 	public void contentChanged(Content c) { }
-	/* If someone selects a path in the 3D viewer, it would be
-	   good to update the path list's selections with that: */
-	public void contentSelected(Content c) {
-		Path selectedPath = null;
-		for( Iterator<Path> j = allPaths.iterator(); j.hasNext(); ) {
-			Path p = j.next();
-			if( p.content3D == c )
-				selectedPath = p;
-		}
-		if( selectedPath == null ) {
-			// This is probably someone accidentally
-			// selecting the original image...
-		} else {
-			Path [] newSelectedPaths = new Path[1];
-			newSelectedPaths[0] = selectedPath;
-			setSelected(newSelectedPaths, this);
-		}
-	}
+	public void contentSelected(Content c) { }
 	public void canvasResized() { }
 	public void universeClosed() {
 		plugin.use3DViewer = false;
 	}
+	// ... end of methods for UniverseListener
 
 	private static void replaceAll( StringBuffer s, String substring, String replacement ) {
 		int fromIndex = 0;
@@ -2114,5 +2115,79 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				plugin.univ.removeContent(wrongContentName);
 
 		}
+	}
+
+	/** A base class for all the methods we might want to use to
+	    transform paths. */
+
+	public PathAndFillManager transformPaths( PathTransformer transformation, ImagePlus templateImage ) {
+
+		double pixelWidth = 1;
+		double pixelHeight = 1;
+		double pixelDepth = 1;
+		String units = "pixels";
+
+		Calibration templateCalibration = templateImage.getCalibration();
+		if( templateCalibration != null ) {
+			pixelWidth = templateCalibration.pixelWidth;
+			pixelHeight = templateCalibration.pixelHeight;
+			pixelDepth = templateCalibration.pixelDepth;
+			units = templateCalibration.getUnits();
+		}
+
+		PathAndFillManager pafmResult = new PathAndFillManager( templateImage.getWidth(),
+									templateImage.getHeight(),
+									templateImage.getStackSize(),
+									(float)pixelWidth,
+									(float)pixelHeight,
+									(float)pixelDepth,
+									units );
+
+		int [] startJoinsIndices = new int[size()];
+		int [] endJoinsIndices = new int[size()];
+
+		PointInImage [] startJoinsPoints = new PointInImage[size()];
+		PointInImage [] endJoinsPoints = new PointInImage[size()];
+
+		Path [] addedPaths = new Path[size()];
+
+		int i = 0;
+		for( Path p : allPaths ) {
+
+			Path startJoin = p.getStartJoins();
+			if( startJoin == null ) {
+				startJoinsIndices[i] = -1;
+				endJoinsPoints[i] = null;
+			} else {
+				startJoinsIndices[i] = allPaths.indexOf(startJoin);
+				startJoinsPoints[i] =
+					p.getStartJoinsPoint().transform( transformation );
+			}
+
+			Path endJoin = p.getEndJoins();
+			if( endJoin == null ) {
+				endJoinsIndices[i] = -1;
+				endJoinsPoints[i] = null;
+			} else {
+				endJoinsIndices[i] = allPaths.indexOf(endJoin);
+				endJoinsPoints[i] =
+					p.getEndJoinsPoint().transform( transformation );
+			}
+
+			Path transformedPath = p.transform( transformation, templateImage, imagePlus );
+			addedPaths[i] = transformedPath;
+			pafmResult.addPath( transformedPath );
+
+			++i;
+		}
+
+		for( i = 0; i < size(); ++i ) {
+			if( startJoinsIndices[i] >= 0 )
+				addedPaths[i].setStartJoin( addedPaths[startJoinsIndices[i]], startJoinsPoints[i] );
+			if( endJoinsIndices[i] >= 0 )
+				addedPaths[i].setEndJoin( addedPaths[endJoinsIndices[i]], endJoinsPoints[i] );
+		}
+
+		return pafmResult;
 	}
 }

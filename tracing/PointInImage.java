@@ -48,4 +48,22 @@ public class PointInImage {
 	public double distanceSquaredTo( PointInImage o ) {
 		return distanceSquaredTo( o.x, o.y, o.z );
 	}
+
+	public double distanceTo( PointInImage o ) {
+		double xdiff = x - o.x;
+		double ydiff = y - o.y;
+		double zdiff = z - o.z;		
+		return Math.sqrt( xdiff * xdiff + ydiff * ydiff + zdiff * zdiff );
+	}
+
+	public String toString() {
+		return "( "+x+", "+y+", "+z+" ) [onPath "+onPath+"]";
+	}
+
+	public PointInImage transform( PathTransformer transformer ) {
+		double [] result = new double [3];
+		transformer.transformPoint( x, y, z, result );
+		return new PointInImage( result[0], result[1], result[2] );
+	}
+
 }

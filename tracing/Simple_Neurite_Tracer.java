@@ -79,7 +79,7 @@ import features.TubenessProcessor;
 public class Simple_Neurite_Tracer extends ThreePanes
 	implements PlugIn, SearchProgressCallback, FillerProgressCallback, GaussianGenerationCallback {
 
-	public static final String PLUGIN_VERSION = "1.4.0";
+	public static final String PLUGIN_VERSION = "1.5.0";
 	static final boolean verbose = false;
 
 	PathAndFillManager pathAndFillManager;
@@ -960,9 +960,29 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	public void run( String ignoredArguments ) {
 
+		/* The useful macro options are:
+
+		     imagefilename=<FILENAME>
+		     tracesfilename=<FILENAME>
+		     use_3d
+		     use_three_pane
+		*/
+
+		String macroOptions = Macro.getOptions();
+
+		String macroImageFilename = null;
+		String macroTracesFilename = null;
+
+		if( macroOptions != null ) {
+			macroImageFilename = Macro.getValue(
+				macroOptions, "imagefilename", null );
+			macroTracesFilename = Macro.getValue(
+				macroOptions, "tracesfilename", null );
+		}
+
 		Applet applet = IJ.getApplet();
 		if( applet != null ) {
-			archiveClient = new ArchiveClient( applet, Macro.getOptions() );
+			archiveClient = new ArchiveClient( applet, macroOptions );
 		}
 
 		if( archiveClient != null )
@@ -970,7 +990,17 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		try {
 
-			ImagePlus currentImage = IJ.getImage();
+			ImagePlus currentImage = null;
+			if( macroImageFilename == null ) {
+				currentImage = IJ.getImage();
+			} else {
+				currentImage = BatchOpener.openFirstChannel( macroImageFilename );
+				if( currentImage == null ) {
+					IJ.error("Opening the image file specified in the macro parameters ("+macroImageFilename+") failed.");
+					return;
+				}
+				currentImage.show();
+			}
 
 			if( currentImage == null ) {
 				IJ.error( "There's no current image to trace." );
@@ -983,7 +1013,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				YesNoCancelDialog queryRGB = new YesNoCancelDialog( IJ.getInstance(),
 										    "Convert RGB image",
 										    "Convert this RGB image to an 8 bit luminance image first?\n" +
-										    "(If you want to trace a particular channel instead, cancel and do RGB Split first.)" );
+										    "(If you want to trace a particular channel instead, cancel and \"Split Channels\" first.)" );
 
 				if( ! queryRGB.yesPressed() ) {
 					return;
@@ -1081,6 +1111,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			}
 
 			single_pane = true;
+			Image3DUniverse universeToUse = null;
+			String [] choices3DViewer = null;;
 
 			if( ! singleSlice ) {
 				boolean java3DAvailable = haveJava3D();
@@ -1095,15 +1127,33 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				long megaBytesExtra = ( ((long)width) * height * depth * byteDepth * 2 ) / (1024 * 1024);
 				extraMemoryNeeded += megaBytesExtra + "MiB of memory)";
 
-				gd.addCheckbox("Use three pane view?"+extraMemoryNeeded, false);
+				gd.addCheckbox("Use_three_pane view?"+extraMemoryNeeded, false);
 
 				if( ! java3DAvailable ) {
-					gd.addMessage("(Java3D classes don't seem to be available, so no 3D viewer option is available.)");
+					String message = "(Java3D classes don't seem to be available, so no 3D viewer option is available.)";
+					System.out.println(message);
+					gd.addMessage(message);
 				} else if( currentImage.getBitDepth() != 8 ) {
-					gd.addMessage("(3D viewer option is only currently available for 8 bit images)");
+					String message = "(3D viewer option is only currently available for 8 bit images)";
+					System.out.println(message);
+					gd.addMessage(message);
 				} else {
 					showed3DViewerOption = true;
-					gd.addCheckbox("Use 3D viewer? (Experimental)",true);
+					choices3DViewer = new String[Image3DUniverse.universes.size()+2];
+					String no3DViewerString = "No 3D view";
+					String useNewString = "Create New 3D Viewer";
+					choices3DViewer[choices3DViewer.length-2] = useNewString;
+					choices3DViewer[choices3DViewer.length-1] = no3DViewerString;
+					for( int i = 0; i < choices3DViewer.length - 2; ++i ) {
+						String contentsString = Image3DUniverse.universes.get(i).allContentsString();
+						String shortContentsString;
+						if( contentsString.length() == 0 )
+							shortContentsString = "[Empty]";
+						else
+							shortContentsString = contentsString.substring(0,Math.min(40,contentsString.length()-1));
+						choices3DViewer[i] = "Use 3D viewer ["+i+"] containing " + shortContentsString;
+					}
+					gd.addChoice( "Choice of 3D Viewer:", choices3DViewer, useNewString );
 				}
 
 				gd.showDialog();
@@ -1111,8 +1161,23 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					return;
 
 				single_pane = ! gd.getNextBoolean();
-				if( showed3DViewerOption )
-					use3DViewer = gd.getNextBoolean();
+				if( showed3DViewerOption ) {
+					String chosenViewer = gd.getNextChoice();
+					int chosenIndex;
+					for( chosenIndex = 0; chosenIndex < choices3DViewer.length; ++chosenIndex )
+						if( choices3DViewer[chosenIndex].equals(chosenViewer) )
+							break;
+					if( chosenIndex == choices3DViewer.length - 2 ) {
+						use3DViewer = true;
+						universeToUse = null;
+					} else if( chosenIndex == choices3DViewer.length - 1 ) {
+						use3DViewer = false;
+						universeToUse = null;
+					} else {
+						use3DViewer = true;
+						universeToUse = Image3DUniverse.universes.get(chosenIndex);;
+					}
+				}
 			}
 
 			initialize(currentImage);
@@ -1126,10 +1191,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 									this,
 									applet != null );
 
-			// FIXME: the first could be changed to add
-			// 'this', and move the small implementation
-			// out of NeuriteTracerResultsDialog into this
-			// class.
+			/* FIXME: the first could be changed to add
+			   'this', and move the small implementation
+			   out of NeuriteTracerResultsDialog into this
+			   class. */
 			pathAndFillManager.addPathAndFillListener(resultsDialog);
 			pathAndFillManager.addPathAndFillListener(resultsDialog.pw);
 			pathAndFillManager.addPathAndFillListener(resultsDialog.fw);
@@ -1209,17 +1274,27 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 			if( use3DViewer ) {
 
-				String title = "Original image for tracing";
-
-				univ = new Image3DUniverse(512, 512);
+				boolean reusing;
+				if( universeToUse == null ) {
+					reusing = false;
+					univ = new Image3DUniverse(512, 512);
+				} else {
+					reusing = true;
+					univ = universeToUse;
+				}
 				univ.setUseToFront(false);
 				univ.addUniverseListener(pathAndFillManager);
-				univ.show();
-				GUI.center(univ.getWindow());
+				if( ! reusing ) {
+					univ.show();
+					GUI.center(univ.getWindow());
+				}
 				boolean [] channels = { true, true, true };
+
+				String title = "Image for tracing ["+currentImage.getTitle()+"]";
+				String contentName = univ.getSafeContentName( title );
 				Content c = univ.addContent(xy,
 							    new Color3f(Color.white),
-							    title,
+							    contentName,
 							    10, // threshold
 							    channels,
 							    2, // resampling factor
@@ -1228,12 +1303,19 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				c.setTransparency(0.5f);
 			}
 
+			File tracesFileToLoad = null;
+			if( macroTracesFilename != null ) {
+				tracesFileToLoad = new File( macroTracesFilename );
+				if( tracesFileToLoad.exists() )
+					pathAndFillManager.load( tracesFileToLoad.getAbsolutePath() );
+				else
+					IJ.error("The traces file suggested by the macro parameters ("+macroTracesFilename+") does not exist");
+			}
+
 			resultsDialog.displayOnStarting();
 
 		} finally {
-
 			IJ.getInstance().addKeyListener( IJ.getInstance() );
-
 		}
 	}
 
@@ -1281,7 +1363,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		Sigma_Palette sp = new Sigma_Palette();
 		sp.setListener( resultsDialog );
 		sp.makePalette( xy, x_min, x_max, y_min, y_max, z_min, z_max, new TubenessProcessor(true), sigmas, 256 / resultsDialog.getMultiplier(), 3, 3, z );
-
 	}
 
 	public void startFillerThread( FillerThread filler ) {
@@ -1727,8 +1808,27 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		pathAndFillManager.update3DViewerContents();
 	}
 
+	public Image3DUniverse get3DUniverse() {
+		return univ;
+	}
+
 	public Color3f selectedColor3f = new Color3f( Color.green );
 	public Color3f deselectedColor3f = new Color3f( Color.magenta );
 	public Color selectedColor = Color.GREEN;
 	public Color deselectedColor = Color.MAGENTA;
+
+	public void setSelectedColor( Color newColor ) {
+		selectedColor = newColor;
+		selectedColor3f = new Color3f( newColor );
+		repaintAllPanes();
+		update3DViewerContents();
+	}
+
+	public void setDeselectedColor( Color newColor ) {
+		deselectedColor = newColor;
+		deselectedColor3f = new Color3f( newColor );
+		repaintAllPanes();
+		update3DViewerContents();
+	}
+
 }
