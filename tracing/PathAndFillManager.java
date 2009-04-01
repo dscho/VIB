@@ -402,6 +402,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			++ numberSuffix;
 		}
 		p.setName( candidateName );
+		/* Generate a new content3D, since it matters that the
+		   path is added with the right name via
+		   update3DViewerContents: */
+		if( plugin != null && plugin.use3DViewer ) {
+			p.removeFrom3DViewer( plugin.univ );
+			p.addTo3DViewer( plugin.univ );
+		}
 		allPaths.add(p);
 		resetListeners( p );
 	}
@@ -2104,6 +2111,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				if( ! in3DViewer ) {
 					plugin.univ.resetView();
 					plugin.univ.addContent( c );
+					c.setLocked(true);
+					plugin.univ.resetView();
 				}
 			} else {
 				if( in3DViewer )
