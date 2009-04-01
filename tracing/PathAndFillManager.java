@@ -2111,6 +2111,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				if( ! in3DViewer ) {
 					plugin.univ.resetView();
 					plugin.univ.addContent( c );
+					c.setLocked(true);
+					plugin.univ.resetView();
 				}
 			} else {
 				if( in3DViewer )

@@ -1290,6 +1290,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 				String title = "Image for tracing ["+currentImage.getTitle()+"]";
 				String contentName = univ.getSafeContentName( title );
+				univ.resetView();
 				Content c = univ.addContent(xy,
 							    new Color3f(Color.white),
 							    contentName,
@@ -1299,6 +1300,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 							    Content.VOLUME);
 				c.setLocked(true);
 				c.setTransparency(0.5f);
+				univ.resetView();
 			}
 
 			File tracesFileToLoad = null;
@@ -1744,12 +1746,15 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		java.util.List triangles = Pipe.generateTriangles(allPoints,
 								  1); // scale
 
+		String nameWhenAddedToViewer = univ.getSafeContentName( name );
 		univ.resetView();
-
 		univ.addMesh(triangles,
 			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
-			     name,
+			     nameWhenAddedToViewer,
 			     1); // threshold
+		Content content = univ.getContent(nameWhenAddedToViewer);
+		content.setLocked(true);
+		univ.resetView();
 	}
 
 	public void showCorrespondencesTo( File tracesFile, Color c, double maxDistance ) {

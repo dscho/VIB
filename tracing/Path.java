@@ -1749,9 +1749,7 @@ public class Path implements Comparable {
 								  1); // scale
 
 		nameWhenAddedToViewer = univ.getSafeContentName( getName() );
-
 		univ.resetView();
-
 		univ.addMesh(triangles,
 			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
 			     nameWhenAddedToViewer,
@@ -1760,6 +1758,7 @@ public class Path implements Comparable {
 
 		content3D = univ.getContent(nameWhenAddedToViewer);
 		content3D.setLocked(true);
+		univ.resetView();
 		return content3D;
 	}
 
