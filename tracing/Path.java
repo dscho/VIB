@@ -1645,8 +1645,10 @@ public class Path implements Comparable {
 	public static final int noMoreThanOneEvery = 2;
 
 	public void removeFrom3DViewer(Image3DUniverse univ) {
-		if( content3D != null )
+		if( content3D != null ) {
 			univ.removeContent( nameWhenAddedToViewer );
+			content3D = null;
+		}
 	}
 
 	public Content addTo3DViewer(Image3DUniverse univ) {
