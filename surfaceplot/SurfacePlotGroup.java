@@ -4,6 +4,7 @@ import ij.ImagePlus;
 import ij.gui.StackWindow;
 import ij3d.Content;
 import ij3d.ContentNode;
+import ij3d.Volume;
 
 import java.awt.Component;
 import java.awt.Scrollbar;
@@ -15,7 +16,6 @@ import javax.vecmath.Point3d;
 import javax.vecmath.Tuple3d;
 
 import vib.Resample_;
-import voltex.Volume;
 
 /**
  * This class extends ContentNode to render a Content as a surface plot.

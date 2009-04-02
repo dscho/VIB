@@ -778,8 +778,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 */
 	public Content addTriangleMesh(List<Point3f> mesh,
 			    Color3f color, String name) {
-		  CustomTriangleMesh tmesh = new CustomTriangleMesh(mesh, color, 0);
-		  return addCustomMesh(tmesh, name);
+		CustomTriangleMesh tmesh = new CustomTriangleMesh(mesh, color, 0);
+		return addCustomMesh(tmesh, name);
 	}
 
 	/**
@@ -789,19 +789,19 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @return the added Content, or null if an error occurred.
 	 */
 	public Content addContent(Content c) {
-		  if(contents.containsKey(c.name)) {
-			    IJ.error("Mesh named '" + c.name + "' exists already");
-			    return null;
-		  }
-		  scene.addChild(c);
-		  contents.put(c.name, c);
-		  recalculateGlobalMinMax(c);
-		  getViewPlatformTransformer().centerAt(globalCenter);
-		  float range = (float)(globalMax.x - globalMin.x);
-		  ensureScale(range);
-		  fireContentAdded(c);
-		  this.addUniverseListener(c);
-		  return c;
+		if(contents.containsKey(c.name)) {
+			IJ.error("Mesh named '" + c.name + "' exists already");
+			return null;
+		}
+		scene.addChild(c);
+		contents.put(c.name, c);
+		recalculateGlobalMinMax(c);
+		getViewPlatformTransformer().centerAt(globalCenter);
+		float range = (float)(globalMax.x - globalMin.x);
+		ensureScale(range);
+		fireContentAdded(c);
+		this.addUniverseListener(c);
+		return c;
 	}
 
 	/**
