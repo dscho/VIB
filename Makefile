@@ -34,7 +34,7 @@ else
 endif
 
 JAVACOPTSCOMPAT= -source 1.5 -target 1.5
-JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar $(JAVACOPTSCOMPAT)
+JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar$(CPSEP)$(PLUGINSHOME)/junit-4.4.jar $(JAVACOPTSCOMPAT)
 
 all: $(CLASSES)
 
