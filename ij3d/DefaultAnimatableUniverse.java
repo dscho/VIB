@@ -216,13 +216,30 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 	/**
 	 * Convenience method which rotates the universe around the
+	 * x-axis (regarding the view, not the vworld) the specified amount
+	 * of degrees (in rad).
+	 */
+	public void rotateX(double rad) {
+		viewTransformer.rotateX(rad);
+	}
+
+	/**
+	 * Convenience method which rotates the universe around the
 	 * y-axis (regarding the view, not the vworld) the specified amount
 	 * of degrees (in rad).
 	 */
 	public void rotateY(double rad) {
-		viewTransformer.rotateY(
-			viewTransformer.getRotationCenter(), rad);
+		viewTransformer.rotateY(rad);
 		fireTransformationUpdated();
+	}
+
+	/**
+	 * Convenience method which rotates the universe around the
+	 * z-axis (regarding the view, not the vworld) the specified amount
+	 * of degrees (in rad).
+	 */
+	public void rotateZ(double rad) {
+		viewTransformer.rotateZ(rad);
 	}
 
 	/**
