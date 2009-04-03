@@ -17,7 +17,7 @@ public class WaitForNextFrameBehavior extends Behavior {
 	public WaitForNextFrameBehavior() {
 		boolean passive = false;
 		postCrit = new WakeupOnBehaviorPost(null, TRIGGER_ID);
-		frameCrit = new WakeupOnElapsedFrames(0, passive);
+		frameCrit = new WakeupOnElapsedFrames(1, passive);
 	}
 
 	public void initialize() {
