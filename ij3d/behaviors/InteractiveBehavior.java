@@ -54,6 +54,8 @@ public class InteractiveBehavior extends Behavior {
 	private static final int DELETE_POINT_MASK = InputEvent.SHIFT_DOWN_MASK |
 						MouseEvent.BUTTON1_DOWN_MASK;
 
+	public static final double TWO_RAD = 2 * Math.PI / 180;
+
 
 	/**
 	 * Initializes a new InteractiveBehavior.
@@ -187,12 +189,18 @@ public class InteractiveBehavior extends Behavior {
 			}
 		} else {
 			switch(code) {
-//				case KeyEvent.VK_RIGHT: rotate(c, 5, 0); return;
-//				case KeyEvent.VK_LEFT: rotate(c, -5, 0); return;
-//				case KeyEvent.VK_UP: rotate(c, 0, -5); return;
-//				case KeyEvent.VK_DOWN: rotate(c, 0, 5); return;
-				case KeyEvent.VK_UP: viewTransformer.zoom(1); return;
-				case KeyEvent.VK_DOWN: viewTransformer.zoom(-1); return;
+				case KeyEvent.VK_RIGHT:
+					viewTransformer.rotateY(-TWO_RAD); return;
+				case KeyEvent.VK_LEFT:
+					viewTransformer.rotateY(TWO_RAD); return;
+				case KeyEvent.VK_UP:
+					viewTransformer.rotateX(TWO_RAD); return;
+				case KeyEvent.VK_DOWN:
+					viewTransformer.rotateX(-TWO_RAD); return;
+				case KeyEvent.VK_PAGE_UP:
+					viewTransformer.zoom(1); return;
+				case KeyEvent.VK_PAGE_DOWN:
+					viewTransformer.zoom(-1); return;
 
 			}
 		}
