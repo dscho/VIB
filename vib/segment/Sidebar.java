@@ -110,6 +110,18 @@ public class Sidebar extends Panel implements CustomCanvas.CanvasListener,
 			image = InterpolatedImage.cloneDimensionsOnly(
 					cc.getImage(),ImagePlus.COLOR_256)
 						.getImage();
+			// Make sure the new labels image has a helpful title:
+			String originalTitle = cc.getImage().getTitle();
+			String newName = "New Labels";
+			if (originalTitle.length() > 0) {
+				int lastDot = originalTitle.lastIndexOf('.');
+				if( lastDot >= 0 )
+					newName = originalTitle.substring(0,lastDot)+".labels";
+				else
+					newName = originalTitle+".labels";
+			} else
+				image.setTitle(newName);
+			image.setTitle(newName);
 			// TODO: get initial parameters
 		}
 		cc.setLabels(image);
