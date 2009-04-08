@@ -531,17 +531,6 @@ public class AmiraParameters {
 			v.add(Macro.getValue(Macro.getOptions(),
 						"window", "(null)"));
 		else {
-			MenuBar mbar = Menus.getMenuBar();
-			Menu menu = null;
-			for (int i = 0; i < mbar.getMenuCount(); i++) {
-				Menu m = mbar.getMenu(i);
-				if (m.getLabel().equals("Window")) {
-					menu = m;
-					break;
-				}
-			}
-			if (menu == null)
-				throw new RuntimeException("no Window menu?");
 			int count = WindowManager.getWindowCount();
 			for (int i = 0; i < count; i++) {
 				ImagePlus img = WindowManager.getImage(i + 1);
@@ -549,14 +538,6 @@ public class AmiraParameters {
 						!isAmiraMesh(img))
 					continue;
 				v.add(img.getTitle());
-			}
-			for (int i = 0; i < menu.getItemCount(); i++) {
-				String t = menu.getItem(i).getLabel();
-				Frame f = WindowManager.getFrame(t);
-				if (f != null &&
-						(!onlyWithAmiraParameters
-						 || f instanceof AmiraTable))
-					v.add(t);
 			}
 		}
 		Frame front = WindowManager.getFrontWindow();
