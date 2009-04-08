@@ -15,8 +15,6 @@ import voltex.VolumeRenderer;
 
 public class ImageJ3DViewer implements PlugIn {
 
-	private static Image3DUniverse univ;
-
 	public static void main(String[] args) {
 		  new ij.ImageJ();
 		  IJ.runPlugIn("ij3d.ImageJ3DViewer", "");
@@ -24,8 +22,13 @@ public class ImageJ3DViewer implements PlugIn {
 
 	public void run(String arg) {
 		ImagePlus image = WindowManager.getCurrentImage();
+		if(checkJava3D()) {
+			IJ.showMessage("Please restart ImageJ now");
+			return;
+		}
+
 		try {
-			univ = new Image3DUniverse();
+			Image3DUniverse univ = new Image3DUniverse();
 			univ.show();
 			GUI.center(univ.getWindow());
 			int type = -1;
@@ -55,30 +58,60 @@ public class ImageJ3DViewer implements PlugIn {
 		}
 	}
 
+	public static boolean checkJava3D() {
+		String version = Install_J3D.getJava3DVersion();
+		System.out.println("version = " + version);
+		if(version != null && Float.parseFloat(version) >= 1.5)
+			return false;
+
+		boolean inst = IJ.showMessageWithCancel("Outdated Java 3D version",
+			"Java 3D version " + version + " detected,\n" +
+			"but version >= 1.5 is required.\n" +
+			"Auto-install new version?");
+
+		if(inst) {
+			Install_J3D.autoInstall();
+			return true;
+		}
+		return false;
+	}
+
+	private static Image3DUniverse getUniv() {
+		if(Image3DUniverse.universes.size() > 0)
+			return Image3DUniverse.universes.get(0);
+		return null;
+	}
+
 	// View menu
 	public static void resetView() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null) univ.resetView();
 	}
 
 	public static void startAnimate() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null) univ.startAnimation();
 	}
 
 	public static void stopAnimate() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null) univ.pauseAnimation();
 	}
 
 	public static void startRecord() {
+		Image3DUniverse univ = getUniv();
 		//if(univ != null) univ.startFreehandRecording();
 	}
 
 	public static void close() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null) {
 			univ.close();
 		}
 	}
 
 	public static void select(String name) {
+		Image3DUniverse univ = getUniv();
 		if(univ != null) univ.select(
 			(Content)univ.getContent(name));
 	}
@@ -88,6 +121,7 @@ public class ImageJ3DViewer implements PlugIn {
 		String th, String r, String g, String b,
 		String resamplingF, String type) {
 
+		Image3DUniverse univ = getUniv();
 		ImagePlus grey = WindowManager.getImage(image);
 		Color3f color = ColorTable.getColor(c);
 
@@ -104,6 +138,7 @@ public class ImageJ3DViewer implements PlugIn {
 	public static void addVolume(String image, String c, String name,
 			String r, String g, String b, String resamplingF) {
 
+		Image3DUniverse univ = getUniv();
 		ImagePlus grey = WindowManager.getImage(image);
 		Color3f color = ColorTable.getColor(c);
 
@@ -117,6 +152,7 @@ public class ImageJ3DViewer implements PlugIn {
 	public static void addOrthoslice(String image, String c, String name,
 			String r, String g, String b, String resamplingF) {
 
+		Image3DUniverse univ = getUniv();
 		ImagePlus grey = WindowManager.getImage(image);
 		Color3f color = ColorTable.getColor(c);
 
@@ -128,6 +164,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void delete() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null) {
 			univ.removeContent(univ.getSelected().getName());
 		}
@@ -136,6 +173,7 @@ public class ImageJ3DViewer implements PlugIn {
 
 	// Individual content's menu
 	public static void setSlices(String x, String y, String z) {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null && 
 			univ.getSelected().getType() == Content.ORTHO) {
 
@@ -148,6 +186,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void fillSelection() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null && 
 			univ.getSelected().getType() == Content.VOLUME) {
 
@@ -159,18 +198,21 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void lock() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().setLocked(true);
 		}
 	}
 
 	public static void unlock() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().setLocked(false);
 		}
 	}
 
 	public static void setChannels(String red, String green, String blue) {
+		Image3DUniverse univ = getUniv();
 		boolean r = Boolean.valueOf(red).booleanValue();
 		boolean g = Boolean.valueOf(green).booleanValue();
 		boolean b = Boolean.valueOf(blue).booleanValue();
@@ -180,6 +222,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void setColor(String red, String green, String blue) {
+		Image3DUniverse univ = getUniv();
 		if(univ == null || univ.getSelected() == null)
 			return;
 		Content sel = univ.getSelected();
@@ -196,6 +239,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void setTransparency(String t) {
+		Image3DUniverse univ = getUniv();
 		float tr = Float.parseFloat(t);
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().setTransparency(tr);
@@ -203,6 +247,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void setCoordinateSystem(String s) {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().showCoordinateSystem(
 				getBoolean(s));
@@ -210,6 +255,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void setThreshold(String s) {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().setThreshold(getInt(s));
 		}
@@ -217,6 +263,7 @@ public class ImageJ3DViewer implements PlugIn {
 		
 
 	public static void applyTransform(String transform) {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null) {
 			String[] s = ij.util.Tools.split(transform);
 			float[] m = new float[s.length];
@@ -228,6 +275,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void resetTransform() {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null) {
 			univ.getSelected().setTransform(new Transform3D());
 		}
@@ -243,6 +291,7 @@ public class ImageJ3DViewer implements PlugIn {
 	}
 
 	public static void setTransform(String transform) {
+		Image3DUniverse univ = getUniv();
 		if(univ != null && univ.getSelected() != null) {
 			String[] s = ij.util.Tools.split(transform);
 			float[] m = new float[s.length];
