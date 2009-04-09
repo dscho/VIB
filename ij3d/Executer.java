@@ -52,8 +52,11 @@ public class Executer {
 	// ImageJ3DViewer.
 	public static final String START_ANIMATE = "startAnimate";
 	public static final String STOP_ANIMATE = "stopAnimate";
-	public static final String START_RECORD = "startRecord";
-	public static final String STOP_RECORD = "stopRecord";
+	public static final String START_FREEHAND_RECORDING
+		= "startFreehandRecording";
+	public static final String STOP_FREEHAND_RECORDING
+		= "stopFreehandRecording";
+	public static final String RECORD_360 = "record360";
 	public static final String RESET_VIEW = "resetView";
 	public static final String SCALEBAR = "scalebar";
 	public static final String CLOSE = "close";
@@ -964,17 +967,19 @@ public class Executer {
 		ImagePlus movie = univ.record360();
 		if(movie != null)
 			movie.show();
-		record(START_RECORD);
+		record(RECORD_360);
 	}
 
 	public void startFreehandRecording() {
 		univ.startFreehandRecording();
+		record(START_FREEHAND_RECORDING);
 	}
 
 	public void stopFreehandRecording() {
 		ImagePlus movie = univ.stopFreehandRecording();
 		if(movie != null)
 			movie.show();
+		record(STOP_FREEHAND_RECORDING);
 	}
 
 	public void startAnimation() {

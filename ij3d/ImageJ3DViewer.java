@@ -98,9 +98,27 @@ public class ImageJ3DViewer implements PlugIn {
 		if(univ != null) univ.pauseAnimation();
 	}
 
-	public static void startRecord() {
+	public static void record360() {
 		Image3DUniverse univ = getUniv();
-		//if(univ != null) univ.startFreehandRecording();
+		if(univ == null)
+			return;
+		ImagePlus movie = univ.record360();
+		if(movie != null)
+			movie.show();
+	}
+
+	public static void startFreehandRecording() {
+		Image3DUniverse univ = getUniv();
+		if(univ != null) univ.startFreehandRecording();
+	}
+
+	public static void stopFreehandRecording() {
+		Image3DUniverse univ = getUniv();
+		if(univ == null)
+			return;
+		ImagePlus movie = univ.stopFreehandRecording();
+		if(movie != null)
+			movie.show();
 	}
 
 	public static void close() {
