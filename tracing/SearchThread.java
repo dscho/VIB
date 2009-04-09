@@ -93,6 +93,12 @@ public abstract class SearchThread extends Thread {
 		}
 	}
 
+	public int pointsConsideredInSearch( ) {
+		return open_from_start.size() +
+			(bidirectional ? open_from_goal.size() : 0) +
+			closed_from_start.size() +
+			(bidirectional ? closed_from_goal.size() : 0);
+	}
 
 	/* This is a factory method for creating specialized search
 	   nodes, subclasses of SearchNode: */
