@@ -531,17 +531,6 @@ public class AmiraParameters {
 			v.add(Macro.getValue(Macro.getOptions(),
 						"window", "(null)"));
 		else {
-			MenuBar mbar = Menus.getMenuBar();
-			Menu menu = null;
-			for (int i = 0; i < mbar.getMenuCount(); i++) {
-				Menu m = mbar.getMenu(i);
-				if (m.getLabel().equals("Window")) {
-					menu = m;
-					break;
-				}
-			}
-			if (menu == null)
-				throw new RuntimeException("no Window menu?");
 			int count = WindowManager.getWindowCount();
 			for (int i = 0; i < count; i++) {
 				ImagePlus img = WindowManager.getImage(i + 1);
@@ -550,25 +539,12 @@ public class AmiraParameters {
 					continue;
 				v.add(img.getTitle());
 			}
-			for (int i = 0; i < menu.getItemCount(); i++) {
-				String t = menu.getItem(i).getLabel();
-				Frame f = WindowManager.getFrame(t);
-				if (f != null &&
-						(!onlyWithAmiraParameters
-						 || f instanceof AmiraTable))
-					v.add(t);
-			}
 		}
-		Frame front = WindowManager.getFrontWindow();
-		if (front != null)
-			return addChoice(g, title, v, front.getTitle());
-		else {
-			ImagePlus image = WindowManager.getCurrentImage();
-			if (image != null)
-				return addChoice(g, title, v, image.getTitle());
-			else
-				return addChoice(g, title, v);
-		}
+		ImagePlus image = WindowManager.getCurrentImage();
+		if (image != null)
+			return addChoice(g, title, v, image.getTitle());
+		else
+			return addChoice(g, title, v);
 	}
 
 	public static int addChoice(GenericDialog g, String title, Vector v) {
@@ -615,95 +591,122 @@ public class AmiraParameters {
 		public String toString(){return name;}
 	}
 
-    public static String defaultMaterialsString=
-    "    Materials {\n"+
-    "        Exterior {\n"+
-    "            Id 1\n"+
-    "        }\n"+
-    "        medulla_r {\n"+
-    "            Id -1,\n"+
-    "            Color 1 0 0,\n"+
-    "            Name \"outer_medulla_r\",\n"+
-    "            Group \"OL_r\"\n"+
-    "        }\n"+
-    "        medulla_l {\n"+
-    "            Id -1,\n"+
-    "            Color 1 0 0,\n"+
-    "            Name \"outer_medulla_l\",\n"+
-    "            Group \"OL_l\"\n"+
-    "        }\n"+
-    "        lobula_r {\n"+
-    "            Group \"OL_r\",\n"+
-    "            Color 1 0.552326 0\n"+
-    "        }\n"+
-    "        lobula_l {\n"+
-    "            Id -1,\n"+
-    "            Color 1 0.552326 0,\n"+
-    "            Group \"OL_l\"\n"+
-    "        }\n"+
-    "        lobula_plate_r {\n"+
-    "            Id -1,\n"+
-    "            Color 1 0.796512 0,\n"+
-    "            Group \"OL_r\"\n"+
-    "        }\n"+
-    "        lobula_plate_l {\n"+
-    "            Id -1,\n"+
-    "            Color 1 0.802326 0,\n"+
-    "            Group \"OL_l\"\n"+
-    "        }\n"+
-    "        mushroom_body_r {\n"+
-    "            Id -1,\n"+
-    "            Color 0.401163 0.0988372 0\n"+
-    "        }\n"+
-    "        mushroom_body_l {\n"+
-    "            Id -1,\n"+
-    "            Color 0.401163 0.104651 0\n"+
-    "        }\n"+
-    "        ellipsoid_body {\n"+
-    "            Id -1,\n"+
-    "            Color 0 0.619 0,\n"+
-    "            Group \"CC\"\n"+
-    "        }\n"+
-    "        noduli {\n"+
-    "            Id -1,\n"+
-    "            Color 0.598837 1 0,\n"+
-    "            Group \"CC\"\n"+
-    "        }\n"+
-    "        fan_shaped_body {\n"+
-    "            Id -1,\n"+
-    "            Color 0.110465 1 0.0404624,\n"+
-    "            Group \"CC\"\n"+
-    "        }\n"+
-    "        protocerebral_bridge {\n"+
-    "            Id -1,\n"+
-    "            Color 0 0.373 0,\n"+
-    "            Name \"protocebral_bridge\",\n"+
-    "            Group \"CC\"\n"+
-    "        }\n"+
-    "        antennal_lobe_r {\n"+
-    "            Id 18,\n"+
-    "            Color 0.156863 0.45098 0.8\n"+
-    "        }\n"+
-    "        antennal_lobe_l {\n"+
-    "            Id 19,\n"+
-    "            Color 0.156863 0.45098 0.8\n"+
-    "        }\n"+
-    "        lateral_horn_r {\n"+
-    "            Id 18,\n"+
-    "            Color 0.57 0.3534 0.171,\n"+
-    "            Name \"lateral horn\"\n"+
-    "        }\n"+
-    "        lateral_horn_l {\n"+
-    "            Id 19,\n"+
-    "            Color 0.57 0.352944 0.171\n"+
-    "        }\n"+
-    "    }\n";
+	public static String defaultMaterialsString=
+		"    Materials {\n"+
+		"        Exterior {\n"+
+		"            Id 1\n"+
+		"        }\n"+
+		"        medulla_r {\n"+
+		"            Id -1,\n"+
+		"            Color 1 0 0,\n"+
+		"            Name \"outer_medulla_r\",\n"+
+		"            Group \"OL_r\"\n"+
+		"        }\n"+
+		"        medulla_l {\n"+
+		"            Id -1,\n"+
+		"            Color 1 0 0,\n"+
+		"            Name \"outer_medulla_l\",\n"+
+		"            Group \"OL_l\"\n"+
+		"        }\n"+
+		"        lobula_r {\n"+
+		"            Group \"OL_r\",\n"+
+		"            Color 1 0.552326 0\n"+
+		"        }\n"+
+		"        lobula_l {\n"+
+		"            Id -1,\n"+
+		"            Color 1 0.552326 0,\n"+
+		"            Group \"OL_l\"\n"+
+		"        }\n"+
+		"        lobula_plate_r {\n"+
+		"            Id -1,\n"+
+		"            Color 1 0.796512 0,\n"+
+		"            Group \"OL_r\"\n"+
+		"        }\n"+
+		"        lobula_plate_l {\n"+
+		"            Id -1,\n"+
+		"            Color 1 0.802326 0,\n"+
+		"            Group \"OL_l\"\n"+
+		"        }\n"+
+		"        mushroom_body_r {\n"+
+		"            Id -1,\n"+
+		"            Color 0.401163 0.0988372 0\n"+
+		"        }\n"+
+		"        mushroom_body_l {\n"+
+		"            Id -1,\n"+
+		"            Color 0.401163 0.104651 0\n"+
+		"        }\n"+
+		"        ellipsoid_body {\n"+
+		"            Id -1,\n"+
+		"            Color 0 0.619 0,\n"+
+		"            Group \"CC\"\n"+
+		"        }\n"+
+		"        noduli {\n"+
+		"            Id -1,\n"+
+		"            Color 0.598837 1 0,\n"+
+		"            Group \"CC\"\n"+
+		"        }\n"+
+		"        fan_shaped_body {\n"+
+		"            Id -1,\n"+
+		"            Color 0.110465 1 0.0404624,\n"+
+		"            Group \"CC\"\n"+
+		"        }\n"+
+		"        protocerebral_bridge {\n"+
+		"            Id -1,\n"+
+		"            Color 0 0.373 0,\n"+
+		"            Name \"protocebral_bridge\",\n"+
+		"            Group \"CC\"\n"+
+		"        }\n"+
+		"        antennal_lobe_r {\n"+
+		"            Id 18,\n"+
+		"            Color 0.156863 0.45098 0.8\n"+
+		"        }\n"+
+		"        antennal_lobe_l {\n"+
+		"            Id 19,\n"+
+		"            Color 0.156863 0.45098 0.8\n"+
+		"        }\n"+
+		"        lateral_horn_r {\n"+
+		"            Id 18,\n"+
+		"            Color 0.57 0.3534 0.171,\n"+
+		"            Name \"lateral horn\"\n"+
+		"        }\n"+
+		"        lateral_horn_l {\n"+
+		"            Id 19,\n"+
+		"            Color 0.57 0.352944 0.171\n"+
+		"        }\n"+
+		"    }\n";
 
-    public static AmiraParameters defaultMaterials() {
-        return new AmiraParameters("Parameters {\n"+
-                                   defaultMaterialsString+
-                                   "}\n");
-    }
+	public static AmiraParameters defaultMaterials() {
+		return new AmiraParameters("Parameters {\n"+
+					   defaultMaterialsString+
+					   "}\n");
+	}
+
+	public static String[] getWindowList() {
+		Vector v = new Vector();
+		MenuBar mbar = Menus.getMenuBar();
+		Menu menu = null;
+		for (int i = 0; i < mbar.getMenuCount(); i++)
+			if (mbar.getMenu(i).getLabel().equals("Window")) {
+				menu = mbar.getMenu(i);
+				break;
+			}
+		if (menu == null)
+			throw new RuntimeException("no Window menu?");
+		for (int i = 0; i < WindowManager.getWindowCount(); i++) {
+			ImagePlus img = WindowManager.getImage(i + 1);
+			v.add(img.getTitle());
+		}
+		for (int i = 0; i < menu.getItemCount(); i++) {
+			String title = menu.getItem(i).getLabel();
+			if (WindowManager.getFrame(title) != null)
+				v.add(title);
+		}
+
+		String[] result = new String[v.size()];
+		for (int i = 0; i < result.length; i++)
+			result[i] = (String)v.get(i);
+		return result;
+	}
 
 }
 

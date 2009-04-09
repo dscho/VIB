@@ -78,33 +78,4 @@ public class AmiraMeshWriter_ implements PlugIn {
 		if(!e.write((ImagePlus)frame))
 			IJ.error("Error writing "+dir+name);
 	}
-
-	public static String[] getWindowList() {
-		Vector v = new Vector();
-		MenuBar mbar = Menus.getMenuBar();
-		Menu menu = null;
-		for (int i = 0; i < mbar.getMenuCount(); i++)
-			if (mbar.getMenu(i).getLabel().equals("Window")) {
-				menu = mbar.getMenu(i);
-				break;
-			}
-		if (menu == null)
-			throw new RuntimeException("no Window menu?");
-		for (int i = 0; i < WindowManager.getWindowCount(); i++) {
-			ImagePlus img = WindowManager.getImage(i + 1);
-			v.add(img.getTitle());
-		}
-		for (int i = 0; i < menu.getItemCount(); i++) {
-			String title = menu.getItem(i).getLabel();
-			if (WindowManager.getFrame(title) != null)
-				v.add(title);
-		}
-
-		String[] result = new String[v.size()];
-		for (int i = 0; i < result.length; i++)
-			result[i] = (String)v.get(i);
-		return result;
-	}
-};
-
-
+}
