@@ -48,7 +48,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 	DefaultUniverse universe;
 	ImageCanvas3D canvas3D;
 	Label status = new Label("");
-	private boolean noOffScreen = false;
+	private boolean noOffScreen = true;
 	private ErrorListener error_listener;
 
 	public ImageWindow3D(String title, DefaultUniverse universe) {
