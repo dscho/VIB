@@ -540,16 +540,11 @@ public class AmiraParameters {
 				v.add(img.getTitle());
 			}
 		}
-		Frame front = WindowManager.getFrontWindow();
-		if (front != null)
-			return addChoice(g, title, v, front.getTitle());
-		else {
-			ImagePlus image = WindowManager.getCurrentImage();
-			if (image != null)
-				return addChoice(g, title, v, image.getTitle());
-			else
-				return addChoice(g, title, v);
-		}
+		ImagePlus image = WindowManager.getCurrentImage();
+		if (image != null)
+			return addChoice(g, title, v, image.getTitle());
+		else
+			return addChoice(g, title, v);
 	}
 
 	public static int addChoice(GenericDialog g, String title, Vector v) {
