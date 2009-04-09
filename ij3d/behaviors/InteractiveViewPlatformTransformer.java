@@ -17,7 +17,6 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 
 	private static final double ONE_RAD = 2 * Math.PI / 360;
 	private int xLast, yLast;
-	private Point3d rotCenter;
 
 	/**
 	 * Initializes a new InteractiveViewPlatformTransformer.
@@ -26,29 +25,6 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 	 */
 	public InteractiveViewPlatformTransformer(DefaultUniverse univ, BehaviorCallback callback) {
 		super(univ, callback);
-		// Set the initial rotation center to whatever is set in UniverseSettings
-		if(UniverseSettings.globalRotationCenter == 
-				UniverseSettings.ROTATION_AROUND_CENTER)
-			rotCenter = ((Image3DUniverse)univ).getGlobalCenterPoint();
-		else
-			rotCenter = new Point3d();
-	}
-
-	/**
-	 * Returns a reference to the rotation center.
-	 * Attention: Changing the returned point results in unspecified
-	 * behavior.
-	 */
-	public Point3d getRotationCenter() {
-		return rotCenter;
-	}
-
-	/**
-	 * Sets the rotation center to the specified point.
-	 * Attention: No copy is made.
-	 */
-	public void setRotationCenter(Point3d rotCenter) {
-		this.rotCenter = rotCenter;
 	}
 
 	/**

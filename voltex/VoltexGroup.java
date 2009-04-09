@@ -74,6 +74,13 @@ public class VoltexGroup extends ContentNode {
 		calculateMinMaxCenterPoint();
 		addChild(renderer.getVolumeNode());
 	}
+	
+	/**
+	 * Get a reference VolumeRenderer which is used by this class
+	 */
+	public VolumeRenderer getRenderer() {
+		return renderer;
+	}
 
 	/**
 	 * @see ContentNode#getMin(Tupe3d) getMin
@@ -174,14 +181,14 @@ public class VoltexGroup extends ContentNode {
 		volToIP.invert();
 		volumeToImagePlate(volToIP);
 
-		Volume vol = renderer.getVolume();
+		VoltexVolume vol = renderer.getVolume();
 		for(int z = 0; z < vol.zDim; z++) {
 			for(int y = 0; y < vol.yDim; y++) {
 				for(int x = 0; x < vol.xDim; x++) {
 					Point2d onCanvas = volumePointInCanvas(
 							canvas, volToIP, x, y, z);
 					if(p.contains(onCanvas.x, onCanvas.y)) {
-						vol.set(x, y, z, fillValue);
+						vol.setNoCheck(x, y, z, fillValue);
 					}
 				}
 			}
@@ -195,7 +202,7 @@ public class VoltexGroup extends ContentNode {
 		if(image == null || factor == 1)
 			return;
 
-		vol = new Volume(image);
+		vol = new VoltexVolume(image);
 		for(int z = 0; z < vol.zDim; z++) {
 			for(int y = 0; y < vol.yDim; y++) {
 				for(int x = 0; x < vol.xDim; x++) {
@@ -224,7 +231,7 @@ public class VoltexGroup extends ContentNode {
 	private Point2d volumePointInCanvas(Canvas3D canvas, Transform3D volToIP,
 							int x, int y, int z) {
 		
-		Volume vol = renderer.volume;
+		VoltexVolume vol = renderer.volume;
 		double px = x * vol.pw;
 		double py = y * vol.ph;
 		double pz = z * vol.pd;

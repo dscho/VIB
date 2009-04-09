@@ -34,7 +34,7 @@ else
 endif
 
 JAVACOPTSCOMPAT= -source 1.5 -target 1.5
-JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar $(JAVACOPTSCOMPAT)
+JAVACOPTS=-classpath $(PLUGINSHOME)/$(IJ_JAR)$(CPSEP)$(PLUGINSHOME)/jzlib-1.0.7.jar$(CPSEP)$(PLUGINSHOME)/imagescience.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/jython.jar$(CPSEP).$(CPSEP)$(PLUGINSHOME)/Jama-1.0.2.jar$(CPSEP)$(PLUGINSHOME)/junit-4.4.jar $(JAVACOPTSCOMPAT)
 
 all: $(CLASSES)
 
@@ -170,6 +170,7 @@ ImageJ_3D_Viewer.jar: SOURCES=$(wildcard voltex/*.java)\
 	$(wildcard surfaceplot/*.java) \
 	$(wildcard octree/*.java) \
 	$(wildcard customnode/*.java) \
+	$(wildcard process3d/*.java) \
 	$(wildcard nrrd/*.java) \
 	vib/segment/ImageButton.java vib/segment/Border.java \
 	vib/Resample_.java vib/InterpolatedImage.java \

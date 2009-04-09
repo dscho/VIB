@@ -17,13 +17,13 @@ public class GeometryCreator implements AxisConstants {
 	private double[] quadCoords = new double[12];
 
 	/** Image data to be displayed */
-	private Volume volume;
+	private VoltexVolume volume;
 
 	/**
 	 * Initializes this GeometryCreator with the given volume
 	 * @param volume
 	 */
-	public GeometryCreator(Volume volume) {
+	public GeometryCreator(VoltexVolume volume) {
 		this.volume = volume;
 	}
 
@@ -31,7 +31,7 @@ public class GeometryCreator implements AxisConstants {
 	 * Change the image data for this GeometryCreator
 	 * @param volume
 	 */
-	public void setVolume(Volume volume) {
+	public void setVolume(VoltexVolume volume) {
 		this.volume = volume;
 	}
 

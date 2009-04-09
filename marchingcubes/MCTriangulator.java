@@ -10,6 +10,8 @@ import java.util.List;
 
 import vib.Resample_;
 
+import ij3d.Volume;
+
 import isosurface.Triangulator;
 
 public class MCTriangulator implements Triangulator {
@@ -24,8 +26,7 @@ public class MCTriangulator implements Triangulator {
 		// of zero outside the image.
 		// zeroPad(image);
 		// create Volume
-		voltex.Volume volume = new voltex.Volume(
-					image, channels);
+		Volume volume = new Volume(image, channels);
 		volume.setAverage(true);
 
 		// get triangles

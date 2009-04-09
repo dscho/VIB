@@ -79,7 +79,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
 		executer = new Executer(this);
-		plDialog = new PointListDialog(win);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -111,6 +110,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	@Override
 	public void show() {
 		super.show();
+		plDialog = new PointListDialog(win);
 		menubar = new Image3DMenubar(this);
 		registrationMenubar = new RegistrationMenubar(this);
 		setMenubar(menubar);
@@ -132,7 +132,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @param text
 	 */
 	public void setStatus(String text) {
-		win.getStatusLabel().setText("  " + text);
+		if(win != null)
+			win.getStatusLabel().setText("  " + text);
 	}
 
 	/**
@@ -140,7 +141,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @param mb
 	 */
 	public void setMenubar(MenuBar mb) {
-		win.setMenuBar(mb);
+		if(win != null)
+			win.setMenuBar(mb);
 	}
 
 	/**
@@ -776,8 +778,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 */
 	public Content addTriangleMesh(List<Point3f> mesh,
 			    Color3f color, String name) {
-		  CustomTriangleMesh tmesh = new CustomTriangleMesh(mesh, color, 0);
-		  return addCustomMesh(tmesh, name);
+		CustomTriangleMesh tmesh = new CustomTriangleMesh(mesh, color, 0);
+		return addCustomMesh(tmesh, name);
 	}
 
 	/**
@@ -787,19 +789,19 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @return the added Content, or null if an error occurred.
 	 */
 	public Content addContent(Content c) {
-		  if(contents.containsKey(c.name)) {
-			    IJ.error("Mesh named '" + c.name + "' exists already");
-			    return null;
-		  }
-		  scene.addChild(c);
-		  contents.put(c.name, c);
-		  recalculateGlobalMinMax(c);
-		  getViewPlatformTransformer().centerAt(globalCenter);
-		  float range = (float)(globalMax.x - globalMin.x);
-		  ensureScale(range);
-		  fireContentAdded(c);
-		  this.addUniverseListener(c);
-		  return c;
+		if(contents.containsKey(c.name)) {
+			IJ.error("Mesh named '" + c.name + "' exists already");
+			return null;
+		}
+		scene.addChild(c);
+		contents.put(c.name, c);
+		recalculateGlobalMinMax(c);
+		getViewPlatformTransformer().centerAt(globalCenter);
+		float range = (float)(globalMax.x - globalMin.x);
+		ensureScale(range);
+		fireContentAdded(c);
+		this.addUniverseListener(c);
+		return c;
 	}
 
 	/**

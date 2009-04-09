@@ -1,5 +1,6 @@
 package ij3d.behaviors;
 
+import ij3d.UniverseSettings;
 import ij3d.DefaultUniverse;
 import ij3d.Image3DUniverse;
 import ij3d.ImageCanvas3D;
@@ -14,29 +15,31 @@ import javax.vecmath.Vector3d;
  * This class is a helper class which implements some functions for
  * transforming the view part of the scene graph.
  * The view transformation consists of 5 single transformations:
- * 
+ *
  * A center transformation, which is responsible for shifting the view
  * to a position so that the content of the universe is centered.
- * 
+ *
  * A zoom transformation, which translates the view backward and forward
- * 
+ *
  * A translate transformation, which is adjusted manually, either explicitly
  * or interactively, when the user translates the view with the mouse.
- * 
+ *
  * An animation transformation, which is changed when the universe is animated.
- * 
+ *
  * A rotation transformation, which is adjusted manually, either explicitly
  * or interactively, when the user rotates the view with the mouse.
- * 
+ *
  * The functions in this class mainly aim to facilitate transformations
  * related to the image plate.
- * 
+ *
  * @author bene
  */
 public class ViewPlatformTransformer {
 
 	protected DefaultUniverse univ;
 	protected ImageCanvas3D canvas;
+
+	protected Point3d rotCenter;
 
 	private BehaviorCallback callback;
 
@@ -78,6 +81,30 @@ public class ViewPlatformTransformer {
 		this.rotationTG = univ.getRotationTG();
 		this.zoomTG = univ.getZoomTG();
 		this.translateTG = univ.getTranslateTG();
+		// Set the initial rotation center to whatever is set in
+		// UniverseSettings
+		if(UniverseSettings.globalRotationCenter ==
+				UniverseSettings.ROTATION_AROUND_CENTER)
+			rotCenter = ((Image3DUniverse)univ).getGlobalCenterPoint();
+		else
+			rotCenter = new Point3d();
+	}
+
+	/**
+	 * Returns a reference to the rotation center.
+	 * Attention: Changing the returned point results in unspecified
+	 * behavior.
+	 */
+	public Point3d getRotationCenter() {
+		return rotCenter;
+	}
+
+	/**
+	 * Sets the rotation center to the specified point.
+	 * Attention: No copy is made.
+	 */
+	public void setRotationCenter(Point3d rotCenter) {
+		this.rotCenter = rotCenter;
 	}
 
 	/**
@@ -112,7 +139,7 @@ public class ViewPlatformTransformer {
 		Image3DUniverse u = (Image3DUniverse)univ;
 		u.getGlobalMaxPoint(p1);
 		u.getGlobalMinPoint(p2);
-		
+
 		float factor = 0.02f * (float)p1.distance(p2);
 		getZDir(zDir);
 		// let the factor be 1 percent of the distance between
@@ -234,8 +261,16 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the x-axis
 	 */
 	public void rotateX(Point3d center, double angle){
-		getXDir(xDir);
-		rotate(center, xDir, angle);
+		rotate(center, new Vector3d(1, 0, 0), angle);
+	}
+
+	/**
+	 * Rotates the view around the global rotation center by the specified
+	 * angle around the x axis (of the image plate).
+	 * @param angle The angle (in rad) around the x-axis
+	 */
+	public void rotateX(double angle){
+		rotateX(rotCenter, angle);
 	}
 
 	/**
@@ -245,8 +280,16 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the y-axis
 	 */
 	public void rotateY(Point3d center, double angle){
-		getYDir(yDir);
-		rotate(center, yDir, angle);
+		rotate(center, new Vector3d(0, 1, 0), angle);
+	}
+
+	/**
+	 * Rotates the view around the global rotation center by the specified
+	 * angle around the y axis (of the image plate).
+	 * @param angle The angle (in rad) around the y-axis
+	 */
+	public void rotateY(double angle){
+		rotateY(rotCenter, angle);
 	}
 
 	/**
@@ -256,8 +299,16 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the z-axis
 	 */
 	public void rotateZ(Point3d center, double angle){
-		getZDir(zDir);
-		rotate(center, zDir, angle);
+		rotate(center, new Vector3d(0, 0, 1), angle);
+	}
+
+	/**
+	 * Rotates the view around the global rotation center by the specified
+	 * angle around the z axis (of the image plate).
+	 * @param angle The angle (in rad) around the z-axis
+	 */
+	public void rotateZ(double angle){
+		rotateZ(rotCenter, angle);
 	}
 
 	/**
@@ -424,7 +475,7 @@ public class ViewPlatformTransformer {
 		pointInCanvas(origin, out);
 	}
 
-	private Point3d tmpP = new Point3d();	
+	private Point3d tmpP = new Point3d();
 	private Transform3D ipToVWorldInverse = new Transform3D();
 	/**
 	 * Calculates where the specified point in the vworld space is
@@ -479,7 +530,7 @@ public class ViewPlatformTransformer {
 	/**
 	 * Transforms the x-direction of the image plate to a normalized
 	 * vector representing this direction in the vworld space.
-	 * 
+	 *
 	 * @param v Vector3d in which the result in stored.
 	 */
 	public void getXDir(Vector3d v) {
@@ -490,7 +541,7 @@ public class ViewPlatformTransformer {
 	/**
 	 * Transforms the x-direction of the image plate to a normalized
 	 * vector representing this direction in the vworld space.
-	 * 
+	 *
 	 * @param v Vector3d in which the result in stored.
 	 * @param ipToVWorld the image plate to vworld transformation.
 	 */
@@ -516,7 +567,7 @@ public class ViewPlatformTransformer {
 	/**
 	 * Transforms the y-direction of the image plate to a normalized
 	 * vector representing this direction in the vworld space.
-	 * 
+	 *
 	 * @param v Vector3d in which the result in stored.
 	 * @param ipToVWorld the image plate to vworld transformation.
 	 */
@@ -532,7 +583,7 @@ public class ViewPlatformTransformer {
 	/**
 	 * Transforms the z-direction of the image plate to a normalized
 	 * vector representing this direction in the vworld space.
-	 * 
+	 *
 	 * @param v Vector3d in which the result in stored.
 	 */
 	public void getZDir(Vector3d v) {
@@ -543,7 +594,7 @@ public class ViewPlatformTransformer {
 	/**
 	 * Transforms the z-direction of the image plate to a normalized
 	 * vector representing this direction in the vworld space.
-	 * 
+	 *
 	 * @param v Vector3d in which the result in stored.
 	 * @param ipToVWorld the image plate to vworld transformation.
 	 */

@@ -2,13 +2,8 @@ package voltex;
 
 import ij3d.AxisConstants;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferInt;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.ColoringAttributes;
-import javax.media.j3d.ImageComponent;
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Material;
 import javax.media.j3d.PolygonAttributes;
@@ -36,12 +31,10 @@ import javax.vecmath.Vector4f;
 public class AppearanceCreator implements AxisConstants {
 
 	/** The volume from which the textures are created */
-	private Volume volume;
+	private VoltexVolume volume;
 
 	/** Texture mode, e.g. Texture.RGB or so */
 	private int textureMode;
-	/** Component type, e.g. ImageComponent.FORMAT_RGBA or so */
-	private int componentType;
 
 	/** Indicates if transparent or opaque texture modes should be used */
 	private boolean opaque = false;
@@ -52,20 +45,6 @@ public class AppearanceCreator implements AxisConstants {
 	private TexCoordGeneration yTg;
 	/** TexCoordGeneration object for z direction */
 	private TexCoordGeneration zTg;
-
-	/** Temporary BufferedImage in x direction */
-	private BufferedImage xImage;
-	/** Temporary BufferedImage in y direction */
-	private BufferedImage yImage;
-	/** Temporary BufferedImage in z direction */
-	private BufferedImage zImage;
-
-	/** Temporary DataBuffer Object in x direction */
-	private Object xData;
-	/** Temporary DataBuffer Object in y direction */
-	private Object yData;
-	/** Temporary DataBuffer Object in z direction */
-	private Object zData;
 
 	/** texture attributes */
 	private TextureAttributes texAttr;
@@ -85,7 +64,7 @@ public class AppearanceCreator implements AxisConstants {
 	 * Initializes this AppearanceCreator with the given image data.
 	 * @param volume
 	 */
-	public AppearanceCreator(Volume volume) {
+	public AppearanceCreator(VoltexVolume volume) {
 		this(volume, null, 0.1f);
 	}
 
@@ -96,7 +75,7 @@ public class AppearanceCreator implements AxisConstants {
 	 * @param color
 	 * @param transparency
 	 */
-	public AppearanceCreator(Volume volume,
+	public AppearanceCreator(VoltexVolume volume,
 			Color3f color, float transparency) {
 		initAttributes(color, transparency);
 		setVolume(volume);
@@ -108,15 +87,13 @@ public class AppearanceCreator implements AxisConstants {
 	public void release() {
 		xTg = null; yTg = null; zTg = null;
 		volume = null;
-		xImage = null; yImage = null; zImage = null;
-		xData = null; yData = null; zData = null;
 	}
 
 	/**
 	 * Change the image data of this AppearanceCreator
 	 * @param v
 	 */
-	public void setVolume(Volume v) {
+	public void setVolume(VoltexVolume v) {
 		this.volume = v;
 		zTg = new TexCoordGeneration();
 		zTg.setPlaneS(new Vector4f(v.xTexGenScale, 0f, 0f,
@@ -133,29 +110,12 @@ public class AppearanceCreator implements AxisConstants {
 				-(float)(v.yTexGenScale * v.minCoord.y)));
 		xTg.setPlaneT(new Vector4f(0f, 0f, v.zTexGenScale,
 				-(float)(v.zTexGenScale * v.minCoord.z)));
-		boolean rgb = v.getDataType() == Volume.INT_DATA;
+		boolean rgb = v.getDataType() == VoltexVolume.INT_DATA;
 
-		int bImgType = rgb ? BufferedImage.TYPE_INT_ARGB
-					 : BufferedImage.TYPE_BYTE_GRAY;
-		xImage = new BufferedImage(v.yTexSize, v.zTexSize, bImgType);
-		yImage = new BufferedImage(v.xTexSize, v.zTexSize, bImgType);
-		zImage = new BufferedImage(v.xTexSize, v.yTexSize, bImgType);
-
-		DataBuffer dbx = xImage.getRaster().getDataBuffer();
-		DataBuffer dby = yImage.getRaster().getDataBuffer();
-		DataBuffer dbz = zImage.getRaster().getDataBuffer();
 		if(rgb) {
 			textureMode = opaque ? Texture.RGB : Texture.RGBA;
-			componentType = ImageComponent.FORMAT_RGBA;
-			xData = ((DataBufferInt)dbx).getData();
-			yData = ((DataBufferInt)dby).getData();
-			zData = ((DataBufferInt)dbz).getData();
 		} else {
 			textureMode = opaque ? Texture.LUMINANCE : Texture.INTENSITY;
-			componentType = ImageComponent.FORMAT_CHANNEL8;
-			xData = ((DataBufferByte)dbx).getData();
-			yData = ((DataBufferByte)dby).getData();
-			zData = ((DataBufferByte)dbz).getData();
 		}
 	}
 
@@ -219,36 +179,27 @@ public class AppearanceCreator implements AxisConstants {
 	 * @return
 	 */
 	public Texture2D getTexture(int axis, int index) {
-		boolean byRef = false;
-//		boolean byRef = true;
-		boolean yUp = true;
 		int sSize = 0, tSize = 0;
-		BufferedImage bImage = null;
+		ImageComponent2D pArray = null;
 		switch (axis) {
 			case Z_AXIS:
-				volume.loadZ(index, zData);
 				sSize = volume.xTexSize;
 				tSize = volume.yTexSize;
-				bImage = zImage;
+				pArray = volume.getImageComponentZ(index);
 				break;
 			case Y_AXIS:
-				volume.loadY(index, yData);
 				sSize = volume.xTexSize;
 				tSize = volume.zTexSize;
-				bImage = yImage;
+				pArray = volume.getImageComponentY(index);
 				break;
 			case X_AXIS:
-				volume.loadX(index, xData);
 				sSize = volume.yTexSize;
 				tSize = volume.zTexSize;
-				bImage = xImage;
+				pArray = volume.getImageComponentX(index);
 				break;
 		}
 		Texture2D tex = new Texture2D(Texture.BASE_LEVEL,
 			textureMode, sSize, tSize);
-		ImageComponent2D pArray = new ImageComponent2D(
-			componentType, sSize, tSize, byRef, yUp);
-		pArray.set(bImage);
 
 		tex.setImage(0, pArray);
 		tex.setEnable(true);
