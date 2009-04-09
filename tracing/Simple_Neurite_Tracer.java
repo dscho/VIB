@@ -1005,6 +1005,17 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				return;
 			}
 
+			// Check this isn't a composite image or hyperstack:
+			if( currentImage.getNFrames() > 1 ) {
+				IJ.error("This plugin only works with single images, not multiple images in a time series.");
+				return;
+			}
+
+			if( currentImage.getNChannels() > 1 ) {
+				IJ.error("This plugin only works with single channel images: use 'Image>Color>Split Channels' and choose a channel");
+				return;
+			}
+
 			imageType = currentImage.getType();
 
 			if( imageType == ImagePlus.COLOR_RGB ) {
