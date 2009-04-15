@@ -2,10 +2,11 @@
 
 import re
 import sys
+import os
 
 if len(sys.argv) < 3:
-	print "Invalid invocation"
-	exit(1)
+	print "Invalid invocation:", ' '.join(sys.argv)
+	sys.exit(1)
 
 if sys.argv[2] in ["vib/FloatMatrix.java", "math3d/FloatMatrixN.java", \
 		"math3d/JacobiFloat.java"]:
@@ -29,7 +30,13 @@ elif sys.argv[2] == "FibonacciHeapInt.java":
 
 if replace == None or len(replace) == 0 or (len(replace) % 2) != 0:
 	print "Invalid replace array"
-	exit(1)
+	sys.exit(1)
+
+dir = os.path.dirname(sys.argv[0])
+for i in range(1,3):
+	path = dir + '/' + sys.argv[i]
+	if not os.path.exists(sys.argv[i]) and os.path.exists(path):
+		sys.argv[i] = path
 
 f = open(sys.argv[1], 'r')
 buf = ''.join(f.readlines())
