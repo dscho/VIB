@@ -86,9 +86,7 @@ public class RohlfingSBA implements PlugIn {
 
 	private ImagePlus d_kl(int l, int k) {
 		File file = fg.get(k);
-		ImagePlus image = new Opener().openImage(
-			file.getParentFile().getAbsolutePath(),
-			file.getName());
+		ImagePlus image = BatchOpener.openFirstChannel( file.getAbsolutePath() );
 		// Remember: need signed dist transform
 		// Outside EDT
 		ImagePlus im1 = new Distance_Transform_3D()
@@ -119,9 +117,7 @@ public class RohlfingSBA implements PlugIn {
 
 	public void init() {
 		File file = fg.get(0);
-		image = new Opener().openImage(
-			file.getParentFile().getAbsolutePath(),
-			file.getName());
+		image = BatchOpener.openFirstChannel( file.getAbsolutePath() );
 		w = image.getWidth();
 		h = image.getHeight();
 		d = image.getStackSize();
