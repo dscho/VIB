@@ -41,6 +41,10 @@ public class Rohlfing_SBA implements PlugIn {
 		doit();
 	}
 
+	public void setFileGroup( FileGroup fg ) {
+		this.fg = fg;
+	}
+
 	private void doit() {
 		ImagePlus D = null;
 		for(int l = 0; l < L; l++) {
