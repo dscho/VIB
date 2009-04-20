@@ -7,7 +7,7 @@ import java.io.File;
 import process3d.Distance_Transform_3D;
 
 import ij.gui.GenericDialog;
-import ij.plugin.ImageCalculator;
+import ij.WindowManager;
 import ij.plugin.PlugIn;
 import ij.process.FloatProcessor;
 import ij.process.ByteProcessor;
@@ -45,6 +45,12 @@ public class RohlfingSBA implements PlugIn {
 		doit();
 	}
 
+	ImagePlus calculate( ImagePlus a, String operation, ImagePlus b ) {
+		String parameter=operation+" 32 stack";
+		ImageCalculatorRevised calculator=new ImageCalculatorRevised();
+		return calculator.calculateResult(parameter,a,b);
+	}
+
 	public void setFileGroup( FileGroup fg ) {
 		this.fg = fg;
 	}
@@ -56,13 +62,19 @@ public class RohlfingSBA implements PlugIn {
 				&& l != 132 && l != 153 && l != 170) {
 				continue;
 			}
+			System.out.println("At level "+l);
 			// Sum up the distance maps of all input images
 			for(int k = 0; k < K; k++) {
-				if(D == null)
+				System.out.println("  Doing image "+k);
+				if(D == null) {
 					D = d_kl(l, k);
-				else
-					new ImageCalculator().calculate(
-						"add 32 stack", D, d_kl(l, k));
+				} else {
+					ImagePlus tmp=d_kl(l, k);
+					ImagePlus result=calculate(D,"add",tmp);
+					D.close();
+					tmp.close();
+					D = result;
+				}
 			}
 			for(int z = 0; z < d; z++) {
 				// Devide it by the number of input images
@@ -91,15 +103,19 @@ public class RohlfingSBA implements PlugIn {
 		ImagePlus image = BatchOpener.openFirstChannel( file.getAbsolutePath() );
 		// Remember: need signed dist transform
 		// Outside EDT
+		ImagePlus binary = createBinary(image, l);
+		image.close();
 		ImagePlus im1 = new Distance_Transform_3D()
-			.getTransformed(createBinary(image, l), 0);
+			.getTransformed(binary, 0);
 		// Inside EDT
 		ImagePlus im2 = new Distance_Transform_3D()
-			.getTransformed(createBinary(image, l), 255);
+			.getTransformed(binary, 255);
+		binary.close();
 		// Subtract Inside EDT from Outside EDT
-		new ImageCalculator().calculate(
-			"sub 32 stack", im1, im2);
-		return im1;
+		ImagePlus result=calculate(im1,"sub",im2);
+		im1.close();
+		im2.close();
+		return result;
 	}
 
 	private ImagePlus createBinary(ImagePlus image, int value) {
