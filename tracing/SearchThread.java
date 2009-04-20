@@ -1,6 +1,6 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
-/* Copyright 2006, 2007 Mark Longair */
+/* Copyright 2006, 2007, 2008, 2009 Mark Longair */
 
 /*
   This file is part of the ImageJ plugin "Simple Neurite Tracer".
@@ -93,6 +93,12 @@ public abstract class SearchThread extends Thread {
 		}
 	}
 
+	public int pointsConsideredInSearch( ) {
+		return open_from_start.size() +
+			(bidirectional ? open_from_goal.size() : 0) +
+			closed_from_start.size() +
+			(bidirectional ? closed_from_goal.size() : 0);
+	}
 
 	/* This is a factory method for creating specialized search
 	   nodes, subclasses of SearchNode: */

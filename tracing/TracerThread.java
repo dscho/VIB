@@ -1,6 +1,6 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
-/* Copyright 2006, 2007 Mark Longair */
+/* Copyright 2006, 2007, 2008, 2009 Mark Longair */
 
 /*
   This file is part of the ImageJ plugin "Simple Neurite Tracer".
@@ -211,9 +211,9 @@ public class TracerThread extends SearchThread {
 
 					// Just use the absolute value
 					// of the largest eigenvalue
-					// (if they're < 0)
+					// (if it's < 0)
 
-					if( real && (hessianEigenValues[0] < 0) && (hessianEigenValues[1] < 0) ) {
+					if( real && (hessianEigenValues[1] < 0) ) {
 
 						double measure = Math.abs( hessianEigenValues[1] );
 						if( measure == 0 ) // This should never happen in practice...

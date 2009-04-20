@@ -42,7 +42,11 @@ public class IDT_Interpolate_Binary implements PlugInFilter {
 				lastIndex = i;
 			}
 		}
-				
+		if (firstIndex == -1) {
+			IJ.error("There must be at least one selection in order to interpolate.");
+			return;
+		}
+
 		for(int i = firstIndex; i <= lastIndex; i++) {
 			ByteProcessor bp = new ByteProcessor(w, h);
 			if(rois[i] != null) {
