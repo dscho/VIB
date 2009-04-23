@@ -315,6 +315,8 @@ else
 $(TARGET_JAR): $(SOURCES)
 	test ! -d tempdir || rm -rf tempdir
 	mkdir tempdir
+	test ! -f `basename $(TARGET_JAR) .jar`.config || \
+		cp `basename $(TARGET_JAR) .jar`.config tempdir/plugins.config
 	tar cvf - $(SOURCES) $(EXTRAS) | \
 		(cd tempdir; tar xvf -)
 	(cd tempdir && \
