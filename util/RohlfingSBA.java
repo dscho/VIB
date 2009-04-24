@@ -3,6 +3,7 @@
 package util;
 
 import java.io.File;
+import java.util.Arrays;
 
 import process3d.Distance_Transform_3D;
 
@@ -11,6 +12,7 @@ import ij.WindowManager;
 import ij.plugin.PlugIn;
 import ij.process.FloatProcessor;
 import ij.process.ByteProcessor;
+import ij.process.ShortProcessor;
 import ij.process.ImageProcessor;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -57,10 +59,16 @@ public class RohlfingSBA implements PlugIn {
 	public ImagePlus doit() {
 		ImagePlus D = null;
 		for(int l = 0; l < L; l++) {
+			/*
 			if(l != 0 && l != 85 && l != 120
 				&& l != 132 && l != 153 && l != 170) {
 				continue;
 			}
+			*/
+			/*
+			if( ! (l == 255 || (l % 16) == 0) )
+				continue;
+			*/
 			System.out.println("At level "+l);
 			// Sum up the distance maps of all input images
 			for(int k = 0; k < K; k++) {
@@ -95,24 +103,24 @@ public class RohlfingSBA implements PlugIn {
 			}
 		}
 		output.show();
-        return output;
+		return output;
 	}
 
 	private ImagePlus d_kl(int l, int k) {
 		File file = fg.get(k);
 		ImagePlus image = BatchOpener.openFirstChannel( file.getAbsolutePath() );
 		// Remember: need signed dist transform
-		// Outside EDT
+		// Inside EDT
 		ImagePlus binary = createBinary(image, l);
 		image.close();
 		ImagePlus im1 = new Distance_Transform_3D()
 			.getTransformed(binary, 0);
-		// Inside EDT
+		// Outside EDT
 		ImagePlus im2 = new Distance_Transform_3D()
 			.getTransformed(binary, 255);
 		binary.close();
 		// Subtract Inside EDT from Outside EDT
-		ImagePlus result=calculate(im1,"sub",im2);
+		ImagePlus result=calculate(im2,"sub",im1);
 		im1.close();
 		im2.close();
 		return result;
@@ -142,8 +150,7 @@ public class RohlfingSBA implements PlugIn {
 		d = image.getStackSize();
 		image.close();
 
-		// The number of labels; this value is used to represent
-		// "reject" as well:
+		// The number of labels:
 		L = 256;
 		// The number of images:
 		K = fg.size();
@@ -151,9 +158,7 @@ public class RohlfingSBA implements PlugIn {
 		// Initialize the output values to L:
 		ImageStack stack = new ImageStack(w, h);
 		for(int z = 0; z < d; z++) {
-			short [] pixels = new short[w*h];
-			Arrays.fill( pixels, L );
-			stack.addSlice("", new ShortProcessor(w, h, pixels, null));
+			stack.addSlice("", new ByteProcessor(w, h));
 		}
 		output = new ImagePlus("Output", stack);
 

@@ -150,7 +150,8 @@ public class ImageCalculatorRevised implements PlugIn {
 
 	/** img1 = img2 op img2 (e.g. img1 = img2/img1) */
 	void doStackOperation(ImagePlus img1, ImagePlus img2) {
-		doStackOperationResult(img1, img2);
+		ImagePlus result = doStackOperationResult(img1, img2);
+		result.show();
 	}
 
 	ImagePlus doStackOperationResult(ImagePlus img1, ImagePlus img2) {
@@ -166,7 +167,6 @@ public class ImageCalculatorRevised implements PlugIn {
 				IJ.error("Calculator", "Out of memory");
 				return null;
 			}
-			img1.show();
 		}
 		int mode = getBlitterMode();
 		ImageWindow win = img1.getWindow();
@@ -194,7 +194,8 @@ public class ImageCalculatorRevised implements PlugIn {
 	}
 
 	void doOperation(ImagePlus img1, ImagePlus img2) {
-		doOperationResult(img1, img2);
+		ImagePlus result = doOperationResult(img1, img2);
+		result.show();
 	}
 
 	ImagePlus doOperationResult(ImagePlus img1, ImagePlus img2) {
@@ -225,7 +226,6 @@ public class ImageCalculatorRevised implements PlugIn {
 		if (createWindow) {
 			ImagePlus img3 = new ImagePlus("Result of "+img1.getShortTitle(), ip1);
 			img3.setCalibration(cal1);
-			img3.show();
 			return img3;
 
 		} else {
