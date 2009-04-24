@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import process3d.Distance_Transform_3D;
 
+import ij.IJ;
 import ij.gui.GenericDialog;
 import ij.WindowManager;
 import ij.plugin.PlugIn;
@@ -58,6 +59,7 @@ public class RohlfingSBA implements PlugIn {
 
 	public ImagePlus doit() {
 		ImagePlus D = null;
+		IJ.showProgress(0.0);
 		for(int l = 0; l < L; l++) {
 			/*
 			if(l != 0 && l != 85 && l != 120
@@ -82,6 +84,7 @@ public class RohlfingSBA implements PlugIn {
 					tmp.close();
 					D = result;
 				}
+				IJ.showProgress((l*K+k)/(double)(L*K));
 			}
 			for(int z = 0; z < d; z++) {
 				// Devide it by the number of input images
@@ -102,6 +105,7 @@ public class RohlfingSBA implements PlugIn {
 				}
 			}
 		}
+		IJ.showProgress(1);
 		output.show();
 		return output;
 	}
