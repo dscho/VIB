@@ -167,18 +167,6 @@ public class ViewPlatformTransformer {
 		centerXform.setIdentity();
 		translateTG.setTransform(centerXform);
 		transformChanged(BehaviorCallback.TRANSLATE, centerXform);
-
-// 		Point2d canvasP = new Point2d();
-// 		pointInCanvas(center, canvasP);
-// 		canvas.getImagePlateToVworld(ipToVWorld);
-
-// 		centerV.set(center);
-// 		getCenterTranslation(tmpV);
-// 		tmpV.sub(centerV);
-// 		translateXform.set(tmpV);
-// 		centerTG.setTransform(translateXform);
-// 		v3f.set(centerV);
-// 		transformChanged(BehaviorCallback.TRANSLATE, translateXform);
 	}
 
 	private Point2d originInCanvas = new Point2d();
