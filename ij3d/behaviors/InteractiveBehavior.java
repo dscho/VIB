@@ -167,10 +167,14 @@ public class InteractiveBehavior extends Behavior {
 		try {
 		if(e.isShiftDown()) {
 			switch(code) {
-//				case KeyEvent.VK_RIGHT:translator.translate(c,5,0); return;
-//				case KeyEvent.VK_LEFT: translator.translate(c,-5,0);return;
-//				case KeyEvent.VK_UP:   translator.translate(c,0,-5);return;
-//				case KeyEvent.VK_DOWN: translator.translate(c,0,5); return;
+				case KeyEvent.VK_RIGHT:
+					viewTransformer.translateXY(-2, 0); return;
+				case KeyEvent.VK_LEFT:
+					viewTransformer.translateXY(2, 0);return;
+				case KeyEvent.VK_UP:
+					viewTransformer.translateXY(0, 2);return;
+				case KeyEvent.VK_DOWN:
+					viewTransformer.translateXY(0, -2); return;
 			}
 		} else if(e.isAltDown()) {
 			switch(code) {

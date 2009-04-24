@@ -1047,7 +1047,7 @@ public class FloatMatrix {
 			eps > (float)Math.abs(a23);
 	}
 
-	public void copyToFlatDoubleArray( float [] result ) {
+	public void copyToFlatFloatArray( float [] result ) {
 		result[0] = a00;
 		result[1] = a01;
 		result[2] = a02;
@@ -1062,7 +1062,7 @@ public class FloatMatrix {
 		result[11] = a23;
 	}
 
-	public void setFromFlatDoubleArray( float [] result ) {
+	public void setFromFlatFloatArray( float [] result ) {
 		a00 = result[0];
 		a01 = result[1];
 		a02 = result[2];
