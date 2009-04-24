@@ -30,7 +30,6 @@ public class RohlfingSBA implements PlugIn {
 	private ImagePlus D_min;
 	private ImagePlus output;
 
-	private ImagePlus image;
 	private int w, h, d, L, K;
 
 	public void run(String arg) {
@@ -55,7 +54,7 @@ public class RohlfingSBA implements PlugIn {
 		this.fg = fg;
 	}
 
-	public void doit() {
+	public ImagePlus doit() {
 		ImagePlus D = null;
 		for(int l = 0; l < L; l++) {
 			if(l != 0 && l != 85 && l != 120
@@ -96,6 +95,7 @@ public class RohlfingSBA implements PlugIn {
 			}
 		}
 		output.show();
+        return output;
 	}
 
 	private ImagePlus d_kl(int l, int k) {
@@ -134,25 +134,34 @@ public class RohlfingSBA implements PlugIn {
 	}
 
 	public void init() {
+		// Open the first image just to get the dimensions:
 		File file = fg.get(0);
-		image = BatchOpener.openFirstChannel( file.getAbsolutePath() );
+		ImagePlus image = BatchOpener.openFirstChannel( file.getAbsolutePath() );
 		w = image.getWidth();
 		h = image.getHeight();
 		d = image.getStackSize();
-		L = 255;
+		image.close();
+
+		// The number of labels; this value is used to represent
+		// "reject" as well:
+		L = 256;
+		// The number of images:
 		K = fg.size();
 
-		// output value initialized to 0
+		// Initialize the output values to L:
 		ImageStack stack = new ImageStack(w, h);
-		for(int z = 0; z < d; z++)
-			stack.addSlice("", new ByteProcessor(w, h));
+		for(int z = 0; z < d; z++) {
+			short [] pixels = new short[w*h];
+			Arrays.fill( pixels, L );
+			stack.addSlice("", new ShortProcessor(w, h, pixels, null));
+		}
 		output = new ImagePlus("Output", stack);
-		// D_min initialized to Infinity
+
+		// Initialize D_min to "infinity":
 		stack = new ImageStack(w, h);
 		for(int z = 0; z < d; z++) {
 			float[] f = new float[w*h];
-			for(int i = 0; i < w*h; i++)
-				f[i] = Float.MAX_VALUE;
+			Arrays.fill( f, Float.MAX_VALUE );
 			stack.addSlice("", new FloatProcessor(w, h, f, null));
 		}
 		D_min = new ImagePlus("D_min", stack);
