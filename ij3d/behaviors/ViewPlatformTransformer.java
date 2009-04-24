@@ -136,16 +136,26 @@ public class ViewPlatformTransformer {
 	 * @param units
 	 */
 	public void zoom(int units) {
-		Image3DUniverse u = (Image3DUniverse)univ;
-		u.getGlobalMaxPoint(p1);
-		u.getGlobalMinPoint(p2);
+		origin.set(0, 0, 0);
+		canvas.getCenterEyeInImagePlate(eyePos);
+		canvas.getImagePlateToVworld(ipToVWorld);
+		ipToVWorld.transform(eyePos);
+		float dD = (float)eyePos.distance(origin);
 
-		float factor = 0.02f * (float)p1.distance(p2);
+		originInCanvas(originInCanvas);
+		canvas.getPixelLocationInImagePlate(originInCanvas, originOnIp);
+		ipToVWorld.transform(originOnIp);
+		float dd = (float)eyePos.distance(originOnIp);
+
+		canvas.getPixelLocationInImagePlate(
+			(int)Math.round(originInCanvas.x+1),
+			(int)Math.round(originInCanvas.y), currentPtOnIp);
+		ipToVWorld.transform(currentPtOnIp);
+		float dx = (float)originOnIp.distance(currentPtOnIp);
+
 		getZDir(zDir);
-		// let the factor be 1 percent of the distance between
-		// eye position and origin
-
-		zDir.scale(factor * units);
+		float factor = dx * dD / dd;
+		zDir.scale(2 * units * factor);
 
 		zoomTG.getTransform(zoomXform);
 		tmp.set(zDir);
