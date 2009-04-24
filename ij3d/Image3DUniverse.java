@@ -798,7 +798,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		recalculateGlobalMinMax(c);
 		getViewPlatformTransformer().centerAt(globalCenter);
 		float range = (float)(globalMax.x - globalMin.x);
-		ensureScale(range);
+		// only call 'ensureScale' when adding the first Content,
+		// since this results in unwanted movements.
+		if(contents.size() == 1)
+			ensureScale(range);
 		fireContentAdded(c);
 		this.addUniverseListener(c);
 		return c;
@@ -814,7 +817,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addMesh(List mesh, Color3f color, String name,
 			    float scale, int threshold) {
 		  Content c = addMesh(mesh, color, name, threshold);
-		  ensureScale(scale);
 		  return c;
 	}
 
