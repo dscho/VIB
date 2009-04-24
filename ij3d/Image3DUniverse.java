@@ -1005,7 +1005,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * Reset the zoom of this universe.
 	 */
 	public void resetZoom() {
-		double d = oldRange / Math.tan(Math.PI/8);
+		double d = 2f / Math.tan(Math.PI/8);
 		getViewPlatformTransformer().zoomTo(new Vector3d(0, 0, -1), d);
 		getViewer().getView().setBackClipDistance(2 * d);
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
@@ -1032,32 +1032,16 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		globalMin.set(min);
 		globalMax.set(max);
 		globalCenter.set(center);
-
-// 		Point3d cmin = new Point3d(); c.getContent().getMin(cmin);
-// 		Point3d cmax = new Point3d(); c.getContent().getMax(cmax);
-// 		globalMin.set(cmin);
-// 		globalMax.set(cmax);
-// 		globalCenter.x = globalMin.x + (globalMax.x - globalMin.x) / 2;
-// 		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y) / 2;
-// 		globalCenter.z = globalMin.z + (globalMax.z - globalMin.z) / 2;
-//
-// 		float range = (float)(globalMax.x - globalMin.x);
-// 		ensureScale(range);
 	}
 
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/
-	private float oldRange = 2f;
-
 	private void ensureScale(float range) {
-// 		if(range > oldRange) {
-			oldRange = range;
-			double d = (range) / Math.tan(Math.PI/8);
-			getViewPlatformTransformer().zoomTo(d);
-			getViewer().getView().setBackClipDistance(2 * d);
-			getViewer().getView().setFrontClipDistance(2 * d / 100);
-// 		}
+		double d = (range) / Math.tan(Math.PI/8);
+		getViewPlatformTransformer().zoomTo(d);
+		getViewer().getView().setBackClipDistance(2 * d);
+		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
 
 	public String allContentsString() {
@@ -1085,5 +1069,4 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
         }
 		return attempt;
     }
-
 }
