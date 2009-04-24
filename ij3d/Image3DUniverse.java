@@ -1007,7 +1007,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * Reset the zoom of this universe.
 	 */
 	public void resetZoom() {
-		double d = 2f / Math.tan(Math.PI/8);
+		double d = oldRange / Math.tan(Math.PI/8);
 		getViewPlatformTransformer().zoomTo(new Vector3d(0, 0, -1), d);
 		getViewer().getView().setBackClipDistance(2 * d);
 		getViewer().getView().setFrontClipDistance(2 * d / 100);
@@ -1039,7 +1039,10 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/
+	private float oldRange = 2f;
+
 	private void ensureScale(float range) {
+		oldRange = range;
 		double d = (range) / Math.tan(Math.PI/8);
 		getViewPlatformTransformer().zoomTo(d);
 		getViewer().getView().setBackClipDistance(2 * d);
