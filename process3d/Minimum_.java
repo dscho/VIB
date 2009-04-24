@@ -18,6 +18,6 @@ public class Minimum_ implements PlugInFilter {
 
 	public int setup(String arg, ImagePlus img) {
 		this.image = img;
-		return DOES_8G | DOES_16 | NO_CHANGES;
+		return DOES_8G | DOES_16 | | DOES_32 || NO_CHANGES;
 	}
 }
