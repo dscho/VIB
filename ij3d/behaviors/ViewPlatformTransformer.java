@@ -116,6 +116,8 @@ public class ViewPlatformTransformer {
 		v.scale(-distance);
 		zoomXform.set(v);
 		zoomTG.setTransform(zoomXform);
+		univ.getViewer().getView().setBackClipDistance(2 * distance);
+		univ.getViewer().getView().setFrontClipDistance(2 * distance / 100);
 		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 
@@ -162,6 +164,10 @@ public class ViewPlatformTransformer {
 		zoomXform.mul(tmp, zoomXform);
 
 		zoomTG.setTransform(zoomXform);
+		zoomXform.get(centerV);
+		double distance = centerV.length();
+		univ.getViewer().getView().setBackClipDistance(2 * distance);
+		univ.getViewer().getView().setFrontClipDistance(2 * distance / 100);
 		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 

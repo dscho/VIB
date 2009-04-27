@@ -1045,8 +1045,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		oldRange = range;
 		double d = (range) / Math.tan(Math.PI/8);
 		getViewPlatformTransformer().zoomTo(d);
-		getViewer().getView().setBackClipDistance(2 * d);
-		getViewer().getView().setFrontClipDistance(2 * d / 100);
 	}
 
 	public String allContentsString() {
