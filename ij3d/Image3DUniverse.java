@@ -912,7 +912,9 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getZoomTG().setTransform(t);
 		recalculateGlobalMinMax();
 		getViewPlatformTransformer().centerAt(globalCenter);
-		resetZoom();
+		// reset zoom
+		double d = oldRange / Math.tan(Math.PI/8);
+		getViewPlatformTransformer().zoomTo(new Vector3d(0, 0, -1), d);
 		fireTransformationUpdated();
 		fireTransformationFinished();
 	}
@@ -1001,14 +1003,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getRotationTG().setTransform(new Transform3D());
 		waitForNextFrame();
 		rotateUniverse(new Vector3d(1, 0, 0), -Math.PI / 2);
-	}
-
-	/**
-	 * Reset the zoom of this universe.
-	 */
-	public void resetZoom() {
-		double d = oldRange / Math.tan(Math.PI/8);
-		getViewPlatformTransformer().zoomTo(new Vector3d(0, 0, -1), d);
 	}
 
 	/**
