@@ -17,8 +17,8 @@ public class UniverseSettings {
 	public static final int PERSPECTIVE = View.PERSPECTIVE_PROJECTION;
 	public static final int PARALLEL  = View.PARALLEL_PROJECTION;
 
-	public static final int ROTATION_AROUND_ORIGIN = 0;
-	public static final int ROTATION_AROUND_CENTER = 1;
+// 	public static final int ROTATION_AROUND_ORIGIN = 0;
+// 	public static final int ROTATION_AROUND_CENTER = 1;
 
 	public static int startupWidth                             = 512;
 	public static int startupHeight                            = 512;
@@ -27,7 +27,7 @@ public class UniverseSettings {
 	public static boolean showLocalCoordinateSystemsByDefault  = false;
 	public static boolean showScalebar                         = false;
 	public static Color3f defaultBackground                    = new Color3f();
-	public static int globalRotationCenter                     = ROTATION_AROUND_CENTER;
+// 	public static int globalRotationCenter                     = ROTATION_AROUND_CENTER;
 
 	public static void save() {
 		Properties properties = new Properties();
@@ -38,7 +38,7 @@ public class UniverseSettings {
 		properties.put("Show_Local_Coordinate_System_When_Adding_Content", str(showLocalCoordinateSystemsByDefault));
 		properties.put("Show_Scalebar", str(showScalebar));
 		properties.put("Background", str(defaultBackground));
-		properties.put("Center_Of_Global_Rotation", str(globalRotationCenter));
+// 		properties.put("Center_Of_Global_Rotation", str(globalRotationCenter));
 		try {
 			properties.store(new FileOutputStream(propsfile), "ImageJ 3D Viewer properties");
 		} catch(Exception e) {
@@ -57,7 +57,7 @@ public class UniverseSettings {
 			showLocalCoordinateSystemsByDefault = bool(properties.getProperty("Show_Local_Coordinate_System_When_Adding_Content", str(showLocalCoordinateSystemsByDefault)));
 			showScalebar = bool(properties.getProperty("Show_Scalebar", str(showScalebar)));
 			defaultBackground = col(properties.getProperty("Background", str(defaultBackground)));
-			globalRotationCenter = integer(properties.getProperty("Center_Of_Global_Rotation", str(globalRotationCenter)));
+// 			globalRotationCenter = integer(properties.getProperty("Center_Of_Global_Rotation", str(globalRotationCenter)));
 		} catch(Exception e) {
 			System.err.println(e.getMessage());
 		}
@@ -88,10 +88,10 @@ public class UniverseSettings {
 
 		gd.addCheckbox("Show local coordinate system by default", showLocalCoordinateSystemsByDefault);
 
-		choice = new String[] {"Origin", "Center"};
-		int[] v2 = new int[] {ROTATION_AROUND_ORIGIN, ROTATION_AROUND_CENTER};
-		def = globalRotationCenter == v2[0] ? choice[0] : choice[1];
-		gd.addChoice("Global rotation around", choice, def);
+// 		choice = new String[] {"Origin", "Center"};
+// 		int[] v2 = new int[] {ROTATION_AROUND_ORIGIN, ROTATION_AROUND_CENTER};
+// 		def = globalRotationCenter == v2[0] ? choice[0] : choice[1];
+// 		gd.addChoice("Global rotation around", choice, def);
 
 		gd.showDialog();
 		if(gd.wasCanceled())
@@ -107,13 +107,13 @@ public class UniverseSettings {
 		boolean apply = gd.getNextBoolean();
 		
 		showLocalCoordinateSystemsByDefault = gd.getNextBoolean();
-		globalRotationCenter = v2[gd.getNextChoiceIndex()];
-		if(globalRotationCenter == ROTATION_AROUND_ORIGIN)
-			univ.getViewPlatformTransformer().
-				setRotationCenter(new Point3d());
-		else
-			univ.getViewPlatformTransformer().setRotationCenter(
-				univ.getGlobalCenterPoint());
+// 		globalRotationCenter = v2[gd.getNextChoiceIndex()];
+// 		if(globalRotationCenter == ROTATION_AROUND_ORIGIN)
+// 			univ.getViewPlatformTransformer().
+// 				setRotationCenter(new Point3d());
+// 		else
+// 			univ.getViewPlatformTransformer().setRotationCenter(
+// 				univ.getGlobalCenterPoint());
 
 		save();
 		if(apply)

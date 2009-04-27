@@ -40,7 +40,7 @@ public class ViewPlatformTransformer {
 	protected DefaultUniverse univ;
 	protected ImageCanvas3D canvas;
 
-	protected Point3d rotCenter;
+	protected final Point3d rotCenter = new Point3d();
 
 	private BehaviorCallback callback;
 
@@ -82,13 +82,14 @@ public class ViewPlatformTransformer {
 		this.rotationTG = univ.getRotationTG();
 		this.zoomTG = univ.getZoomTG();
 		this.translateTG = univ.getTranslateTG();
-		// Set the initial rotation center to whatever is set in
-		// UniverseSettings
-		if(UniverseSettings.globalRotationCenter ==
-				UniverseSettings.ROTATION_AROUND_CENTER)
-			rotCenter = ((Image3DUniverse)univ).getGlobalCenterPoint();
-		else
-			rotCenter = new Point3d();
+		((Image3DUniverse)univ).getGlobalCenterPoint(rotCenter);
+// 		// Set the initial rotation center to whatever is set in
+// 		// UniverseSettings
+// 		if(UniverseSettings.globalRotationCenter ==
+// 				UniverseSettings.ROTATION_AROUND_CENTER)
+// 			rotCenter = ((Image3DUniverse)univ).getGlobalCenterPoint();
+// 		else
+// 			rotCenter = new Point3d();
 	}
 
 	/**
@@ -100,10 +101,9 @@ public class ViewPlatformTransformer {
 
 	/**
 	 * Sets the rotation center to the specified point.
-	 * Attention: No copy is made.
 	 */
 	public void setRotationCenter(Point3d rotCenter) {
-		this.rotCenter = rotCenter;
+		this.rotCenter.set(rotCenter);
 	}
 
 	/**
@@ -183,6 +183,8 @@ public class ViewPlatformTransformer {
 		centerXform.setIdentity();
 		translateTG.setTransform(centerXform);
 		transformChanged(BehaviorCallback.TRANSLATE, centerXform);
+		// update rotation center
+		rotCenter.set(center);
 	}
 
 	private Point2d originInCanvas = new Point2d();
