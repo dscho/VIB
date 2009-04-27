@@ -1010,22 +1010,13 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 */
 	public void centerSelected(Content c) {
 		Point3d center = new Point3d();
-		Point3d min = new Point3d(), max = new Point3d();
-
 		c.getContent().getCenter(center);
-		c.getContent().getMin(min);
-		c.getContent().getMax(max);
 
 		Transform3D localToVWorld = new Transform3D();
 		c.getContent().getLocalToVworld(localToVWorld);
 		localToVWorld.transform(center);
-		localToVWorld.transform(min);
-		localToVWorld.transform(max);
 
 		getViewPlatformTransformer().centerAt(center);
-		globalMin.set(min);
-		globalMax.set(max);
-		globalCenter.set(center);
 	}
 
 	/**
