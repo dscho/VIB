@@ -1028,6 +1028,13 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		globalCenter.set(center);
 	}
 
+	/**
+	 * Center the universe at the given point.
+	 */
+	public void centerAt(Point3d p) {
+		getViewPlatformTransformer().centerAt(p);
+	}
+
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/

@@ -963,6 +963,16 @@ public class Executer {
 		univ.centerSelected(c);
 	}
 
+	public void centerUniverse() {
+		Point3d c = new Point3d();
+		univ.getGlobalCenterPoint(c);
+		univ.centerAt(c);
+	}
+
+	public void centerOrigin() {
+		univ.centerAt(new Point3d());
+	}
+
 	public void record360() {
 		ImagePlus movie = univ.record360();
 		if(movie != null)
