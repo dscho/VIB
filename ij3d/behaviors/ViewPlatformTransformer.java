@@ -10,6 +10,7 @@ import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
+import javax.vecmath.Tuple3d;
 
 /**
  * This class is a helper class which implements some functions for
@@ -91,12 +92,10 @@ public class ViewPlatformTransformer {
 	}
 
 	/**
-	 * Returns a reference to the rotation center.
-	 * Attention: Changing the returned point results in unspecified
-	 * behavior.
+	 * Copies the rotation center into the given Tuple3d.
 	 */
-	public Point3d getRotationCenter() {
-		return rotCenter;
+	public void getRotationCenter(Tuple3d ret) {
+		ret.set(rotCenter);
 	}
 
 	/**

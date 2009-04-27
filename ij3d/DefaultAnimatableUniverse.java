@@ -310,7 +310,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			rotationXform.set(aa);
 		}
 
-		centerV.set(viewTransformer.getRotationCenter());
+		viewTransformer.getRotationCenter(centerV);
 		viewTransformer.getZoomTranslation(tmpV);
 		centerV.sub(tmpV);
 		viewTransformer.getCenterTranslation(tmpV);
