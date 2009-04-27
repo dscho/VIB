@@ -83,13 +83,6 @@ public class ViewPlatformTransformer {
 		this.zoomTG = univ.getZoomTG();
 		this.translateTG = univ.getTranslateTG();
 		((Image3DUniverse)univ).getGlobalCenterPoint(rotCenter);
-// 		// Set the initial rotation center to whatever is set in
-// 		// UniverseSettings
-// 		if(UniverseSettings.globalRotationCenter ==
-// 				UniverseSettings.ROTATION_AROUND_CENTER)
-// 			rotCenter = ((Image3DUniverse)univ).getGlobalCenterPoint();
-// 		else
-// 			rotCenter = new Point3d();
 	}
 
 	/**
@@ -238,8 +231,6 @@ public class ViewPlatformTransformer {
 		tmpV.sub(v);
 		translateXform.set(tmpV);
 		translateTG.setTransform(translateXform);
-		v3f.set(v);
-//		((Image3DUniverse)univ).getGlobalCenterPoint().sub(v3f);
 		transformChanged(BehaviorCallback.TRANSLATE, translateXform);
 	}
 
