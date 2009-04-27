@@ -132,7 +132,6 @@ public class ViewPlatformTransformer {
 	}
 
 	private Transform3D tmp = new Transform3D();
-	private Point3d p1 = new Point3d(), p2 = new Point3d();
 	/**
 	 * Zoom by the specified amounts of units.
 	 * @param units
@@ -400,6 +399,22 @@ public class ViewPlatformTransformer {
 
 		rotationTG.setTransform(rotationXform);
 		transformChanged(BehaviorCallback.ROTATE, rotationXform);
+	}
+
+	private Point3d p1 = new Point3d();
+	private Vector3d tmpV2 = new Vector3d();
+	/**
+	 * Rotates the view around the center of view by the specified
+	 * angles around the x and y axis (of the image plate).
+	 * @param angleX The angle (in rad) around the x-axis
+	 * @param angleY The angle (in rad) around the y-axis
+	 */
+	public void rotateXY(double angleX, double angleY) {
+		getTranslateTranslation(tmpV2);
+		p1.set(rotCenter);
+		p1.add(tmpV2);
+
+		rotateXY(p1, angleX, angleY);
 	}
 
 	/**
