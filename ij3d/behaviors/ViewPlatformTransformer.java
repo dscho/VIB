@@ -176,10 +176,12 @@ public class ViewPlatformTransformer {
 	 * @param center
 	 */
 	public void centerAt(Point3d center) {
-		// Take rotation into account
+		// set the center transformation to the translation given by
+		// the specified point
 		centerV.set(center.x, center.y, center.z);
 		centerXform.set(centerV);
 		centerTG.setTransform(centerXform);
+		// set the global translation to identity
 		centerXform.setIdentity();
 		translateTG.setTransform(centerXform);
 		transformChanged(BehaviorCallback.TRANSLATE, centerXform);
