@@ -51,6 +51,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem centerSelected;
 	private MenuItem centerOrigin;
 	private MenuItem centerUniverse;
+	private MenuItem fitViewToUniverse;
+	private MenuItem fitViewToContent;
 	private MenuItem regist;
 	private CheckboxMenuItem shaded;
 	private MenuItem pl_load;
@@ -247,6 +249,17 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		menu.add(centerUniverse);
 		view.add(menu);
 
+		// fit view submenu
+		menu = new Menu("Fit view to");
+		fitViewToUniverse = new MenuItem("Universe");
+		fitViewToUniverse.addActionListener(this);
+		menu.add(fitViewToUniverse);
+
+		fitViewToContent = new MenuItem("Selected content");
+		fitViewToContent.addActionListener(this);
+		menu.add(fitViewToContent);
+		view.add(menu);
+
 		view.addSeparator();
 
 		record360 = new MenuItem("Record 360 deg rotation");
@@ -430,6 +443,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.centerOrigin();
 		else if(src == centerUniverse)
 			executer.centerUniverse();
+		else if(src == fitViewToUniverse)
+			executer.fitViewToUniverse();
+		else if(src == fitViewToContent)
+			executer.fitViewToContent(univ.getSelected());
 		else if(src == record360)
 			executer.record360();
 		else if(src == startRecord)
