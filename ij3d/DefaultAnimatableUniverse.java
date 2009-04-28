@@ -18,7 +18,7 @@ import javax.vecmath.Vector3d;
 public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 
 	/** The axis of rotation */
-	private Vector3d rotationAxis = new Vector3d();
+	private Vector3d rotationAxis = new Vector3d(0, 1, 0);
 
 	/* Temporary Transform3D objects which are re-used in the methods below */
 	private Transform3D centerXform = new Transform3D();
@@ -273,9 +273,6 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 		fireTransformationFinished();
 	}
 
-	private Vector3d tmpV = new Vector3d();
-	private Vector3d centerV = new Vector3d();
-
 	/**
 	 * After animation was stopped, the transformation of the animation
 	 * TransformGroup is incorporated in the rotation TransformGroup and
@@ -287,7 +284,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	private void incorporateAnimationInRotation() {
 		rotationTG.getTransform(rotationXform);
 		animationTG.getTransform(animationXform);
-		rotationXform.mul(animationXform, rotationXform);
+		rotationXform.mul(rotationXform, animationXform);
 
 		animationXform.setIdentity();
 		animationTG.setTransform(animationXform);
@@ -299,26 +296,10 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	private AxisAngle4d aa = new AxisAngle4d();
 
 	private void updateRotationAxisAndCenter() {
-		rotationXform.setIdentity();
-
-		if(rotateAroundViewAxis) {
-			viewTransformer.getYDir(rotationAxis);
-			v1.set(0, 1, 0);
-			v2.cross(v1, rotationAxis);
-			double angle = Math.acos(v1.dot(rotationAxis));
-			aa.set(v2, angle);
-			rotationXform.set(aa);
-		}
-
-		viewTransformer.getRotationCenter(centerV);
-		viewTransformer.getZoomTranslation(tmpV);
-		centerV.sub(tmpV);
-		viewTransformer.getCenterTranslation(tmpV);
-		centerV.sub(tmpV);
-		viewTransformer.getTranslateTranslation(tmpV);
-		centerV.sub(tmpV);
-		centerXform.set(centerV);
-
-		centerXform.mul(rotationXform);
+		v1.set(0, 1, 0);
+		v2.cross(v1, rotationAxis);
+		double angle = Math.acos(v1.dot(rotationAxis));
+		aa.set(v2, angle);
+		centerXform.set(aa);
 	}
 }
