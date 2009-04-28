@@ -252,32 +252,13 @@ public class ViewPlatformTransformer {
 	private AxisAngle4d aa = new AxisAngle4d();
 	private Vector3d tmpV = new Vector3d();
 	/**
-	 * Rotates the view around the specified center by the specified
-	 * angle around the x axis (of the image plate).
-	 * @param center The rotation center
-	 * @param angle The angle (in rad) around the x-axis
-	 */
-	public void rotateX(Point3d center, double angle){
-		rotate(center, new Vector3d(1, 0, 0), angle);
-	}
-
-	/**
 	 * Rotates the view around the global rotation center by the specified
 	 * angle around the x axis (of the image plate).
 	 * @param angle The angle (in rad) around the x-axis
 	 */
 	public void rotateX(double angle){
-		rotateX(rotCenter, angle);
-	}
-
-	/**
-	 * Rotates the view around the specified center by the specified
-	 * angle around the y axis (of the image plate).
-	 * @param center The rotation center
-	 * @param angle The angle (in rad) around the y-axis
-	 */
-	public void rotateY(Point3d center, double angle){
-		rotate(center, new Vector3d(0, 1, 0), angle);
+		xDir.set(1, 0, 0);
+		rotate(rotCenter, xDir, angle);
 	}
 
 	/**
@@ -286,17 +267,8 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the y-axis
 	 */
 	public void rotateY(double angle){
-		rotateY(rotCenter, angle);
-	}
-
-	/**
-	 * Rotates the view around the specified center by the specified
-	 * angle around the z axis (of the image plate).
-	 * @param center The rotation center
-	 * @param angle The angle (in rad) around the z-axis
-	 */
-	public void rotateZ(Point3d center, double angle){
-		rotate(center, new Vector3d(0, 0, 1), angle);
+		yDir.set(0, 1, 0);
+		rotate(rotCenter, yDir, angle);
 	}
 
 	/**
@@ -305,7 +277,8 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the z-axis
 	 */
 	public void rotateZ(double angle){
-		rotateZ(rotCenter, angle);
+		zDir.set(0, 0, 1);
+		rotate(rotCenter, zDir, angle);
 	}
 
 	/**
