@@ -45,7 +45,7 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 	public void translate(MouseEvent e) {
 		int dx = xLast - e.getX();
 		int dy = yLast - e.getY();
-		translateXY(dx, dy);
+		translateXY(-dx, dy);
 		xLast = e.getX();
 		yLast = e.getY();
 	}

@@ -213,7 +213,7 @@ public class ViewPlatformTransformer {
 		ipToVWorld.transform(currentPtOnIp);
 		float dy = (float)originOnIp.distance(currentPtOnIp);
 
-		float dX = -dx * dxPix * dD / dd;
+		float dX = dx * dxPix * dD / dd;
 		float dY = dy * dyPix * dD / dd;
 
 		translateXY(dX, dY);
