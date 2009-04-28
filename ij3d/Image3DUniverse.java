@@ -926,18 +926,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @param angle The angle in radians.
 	 */
 	public void rotateUniverse(Vector3d axis, double angle) {
-		viewTransformer.rotate(globalCenter, axis, angle);
-	}
-
-	/**
-	 * Rotate the universe, using the given axis of rotation and angle;
-	 * The center of rotation is the given center.
-	 * @param axis The axis of rotation (in the image plate coordinate system)
-	 * @param center The center of rotation (in vworld coordinates)
-	 * @param angle The angle in radians.
-	 */
-	public void rotateUniverse(Vector3d axis, Point3d center, double angle) {
-		viewTransformer.rotate(center, axis, angle);
+		viewTransformer.rotate(axis, angle);
 	}
 
 	/**
