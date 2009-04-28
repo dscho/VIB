@@ -63,7 +63,7 @@ public class OctreeBehavior extends Behavior {
 
 	private Transform3D volumeToImagePlate = new Transform3D();
 	private Transform3D tmp = new Transform3D();
-	private final synchronized void display(Canvas3D canvas) {
+	private final void display(Canvas3D canvas) {
 		finished = false;
 
 		// calculate the current view parameters
