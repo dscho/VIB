@@ -93,27 +93,18 @@ public class ViewPlatformTransformer {
 	}
 
 	/**
-	 * Moves the view back (related ot the given direction)
-	 * to the specified distance.
-	 * @param distance
-	 */
-	public void zoomTo(Vector3d v, double distance) {
-		v.scale(-distance);
-		zoomXform.set(v);
-		zoomTG.setTransform(zoomXform);
-		univ.getViewer().getView().setBackClipDistance(2 * distance);
-		univ.getViewer().getView().setFrontClipDistance(2 * distance / 100);
-		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
-	}
-
-	/**
 	 * Moves the view back (i.e. in the z-direction of the image plate)
 	 * to the specified distance.
 	 * @param distance
 	 */
 	public void zoomTo(double distance) {
 		getZDir(zDir);
-		zoomTo(zDir, distance);
+		zDir.scale(-distance);
+		zoomXform.set(zDir);
+		zoomTG.setTransform(zoomXform);
+		univ.getViewer().getView().setBackClipDistance(5 * distance);
+		univ.getViewer().getView().setFrontClipDistance(5 * distance / 100);
+		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 
 	private Transform3D tmp = new Transform3D();

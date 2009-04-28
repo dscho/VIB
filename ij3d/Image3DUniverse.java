@@ -914,7 +914,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewPlatformTransformer().centerAt(globalCenter);
 		// reset zoom
 		double d = oldRange / Math.tan(Math.PI/8);
-		getViewPlatformTransformer().zoomTo(new Vector3d(0, 0, -1), d);
+		getViewPlatformTransformer().zoomTo(d);
 		fireTransformationUpdated();
 		fireTransformationFinished();
 	}
