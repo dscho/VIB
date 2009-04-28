@@ -170,16 +170,14 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		imp_updater.updateAndWait();
 	}
 
-	final ImagePlusUpdater imp_updater = new ImagePlusUpdater(this);
+	final ImagePlusUpdater imp_updater = new ImagePlusUpdater();
 
 	private class ImagePlusUpdater extends Thread {
 		boolean go = true;
 		int update = 0;
-		final ImageWindow3D iw;
-		ImagePlusUpdater(ImageWindow3D iw) {
+		ImagePlusUpdater() {
 			super("3D-V-IMP-updater");
 			try { setDaemon(true); } catch (Exception e) { e.printStackTrace(); }
-			this.iw = iw;
 			setPriority(Thread.NORM_PRIORITY);
 			start();
 		}
@@ -191,23 +189,27 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		}
 		void updateAndWait() {
 			update();
-			while (update > 0) {
-				synchronized (this) {
+			synchronized (this) {
+				while (update > 0) {
 					try { wait(); } catch (InterruptedException ie) { ie.printStackTrace(); }
 				}
 			}
 		}
 		public void run() {
 			while (go) {
-				if (0 == update) {
-					synchronized (this) {
+				final int u;
+				synchronized (this) {
+					if (0 == update) {
 						try { wait(); } catch (InterruptedException ie) { ie.printStackTrace(); }
 					}
+					u = update;
 				}
-				while (update > 0) {
-					synchronized (this) { update = 0; }
-					iw.imp = getNewImagePlus();
-					synchronized (this) { notify(); }
+				ImageWindow3D.this.imp = getNewImagePlus();
+				synchronized (this) {
+					if (u != update) continue; // try again, there was a new request
+					// Else, done:
+					update = 0;
+					notify(); // for updateAndWait
 				}
 			}
 		}
