@@ -20,15 +20,15 @@ import javax.vecmath.Tuple3d;
  * A center transformation, which is responsible for shifting the view
  * to a position so that the content of the universe is centered.
  *
- * A zoom transformation, which translates the view backward and forward
- *
  * A translate transformation, which is adjusted manually, either explicitly
  * or interactively, when the user translates the view with the mouse.
  *
- * An animation transformation, which is changed when the universe is animated.
- *
  * A rotation transformation, which is adjusted manually, either explicitly
  * or interactively, when the user rotates the view with the mouse.
+ *
+ * An animation transformation, which is changed when the universe is animated.
+ *
+ * A zoom transformation, which translates the view backward and forward
  *
  * The functions in this class mainly aim to facilitate transformations
  * related to the image plate.
