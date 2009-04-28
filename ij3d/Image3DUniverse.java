@@ -1015,6 +1015,30 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getViewPlatformTransformer().centerAt(p);
 	}
 
+	/**
+	 * Optimize the view for showing the whole universe.
+	 */
+	public void adjustView() {
+		recalculateGlobalMinMax();
+		float dx = (float)(globalMin.x - globalMax.x);
+		float dy = (float)(globalMin.y - globalMax.y);
+		float dz = (float)(globalMin.z - globalMax.z);
+		float d  = (float)Math.sqrt(dx * dx + dy * dy + dz * dz);
+		centerAt(globalCenter);
+		ensureScale(0.5f * d);
+	}
+
+	public void adjustView(Content c) {
+		centerSelected(c);
+		Point3d min = new Point3d(), max = new Point3d();
+		c.getContent().getMin(min);
+		c.getContent().getMax(max);
+		float dx = (float)(min.x - max.x);
+		float dy = (float)(min.y - max.y);
+		float dz = (float)(min.z - max.z);
+		float d  = (float)Math.sqrt(dx * dx + dy * dy + dz * dz);
+		ensureScale(0.5f * d);
+	}
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/
