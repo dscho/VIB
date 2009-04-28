@@ -98,8 +98,8 @@ public class ViewPlatformTransformer {
 	 * @param distance
 	 */
 	public void zoomTo(double distance) {
-		getZDir(zDir);
-		zDir.scale(-distance);
+		zDir.set(0, 0, 1);
+		zDir.scale(distance);
 		zoomXform.set(zDir);
 		zoomTG.setTransform(zoomXform);
 		univ.getViewer().getView().setBackClipDistance(5 * distance);
@@ -130,7 +130,7 @@ public class ViewPlatformTransformer {
 		ipToVWorld.transform(currentPtOnIp);
 		float dx = (float)originOnIp.distance(currentPtOnIp);
 
-		getZDir(zDir);
+		zDir.set(0, 0, -1);
 		float factor = dx * dD / dd;
 		zDir.scale(2 * units * factor);
 
@@ -141,8 +141,8 @@ public class ViewPlatformTransformer {
 		zoomTG.setTransform(zoomXform);
 		zoomXform.get(centerV);
 		double distance = centerV.length();
-		univ.getViewer().getView().setBackClipDistance(2 * distance);
-		univ.getViewer().getView().setFrontClipDistance(2 * distance / 100);
+		univ.getViewer().getView().setBackClipDistance(5 * distance);
+		univ.getViewer().getView().setFrontClipDistance(5 * distance / 100);
 		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 
@@ -273,16 +273,6 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the z-axis
 	 */
 	public void rotate(Point3d center, Vector3d axis, double angle) {
-		// compose the translation to center
-		centerV.set(-center.x, -center.y, -center.z);
-		getZoomTranslation(tmpV);
-		centerV.add(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.add(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.add(tmpV);
-		centerXform.set(centerV);
-
 		Vector3d axisVW = new Vector3d();
 		getAxisVworld(axis, axisVW);
 		aa.set(axisVW, angle);
@@ -290,17 +280,10 @@ public class ViewPlatformTransformer {
 
 		// first apply the old transform
 		rotationTG.getTransform(rotationXform);
-		// then transform back to the center of rotation
-		rotationXform.mul(centerXform, rotationXform);
 		// rotate
 		rotationXform.mul(tmp, rotationXform);
-		centerV.set(-centerV.x, -centerV.y, -centerV.z);
-		centerXform.set(centerV);
-		// translate back
-		rotationXform.mul(centerXform, rotationXform);
 
 		rotationTG.setTransform(rotationXform);
-
 		transformChanged(BehaviorCallback.ROTATE, rotationXform);
 	}
 
@@ -314,16 +297,6 @@ public class ViewPlatformTransformer {
 	 * @param angleY The angle (in rad) around the y-axis
 	 */
 	public void rotateXY(Point3d center, double angleX, double angleY) {
-
-		centerV.set(-center.x, -center.y, -center.z);
-		getZoomTranslation(tmpV);
-		centerV.add(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.add(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.add(tmpV);
-		centerXform.set(centerV);
-
 		getXDir(xDir);
 		aa.set(xDir, angleX);
 		tmp.set(aa);
@@ -334,17 +307,10 @@ public class ViewPlatformTransformer {
 
 		// first apply the old transform
 		rotationTG.getTransform(rotationXform);
-		// then transform back to the center of rotation
-		rotationXform.mul(centerXform, rotationXform);
 		// rotate x
 		rotationXform.mul(tmp, rotationXform);
 		// rotate y
 		rotationXform.mul(tmp2, rotationXform);
-		// update center back transform
-		centerV.set(-centerV.x, -centerV.y, -centerV.z);
-		centerXform.set(centerV);
-		// translate back
-		rotationXform.mul(centerXform, rotationXform);
 
 		rotationTG.setTransform(rotationXform);
 		transformChanged(BehaviorCallback.ROTATE, rotationXform);
