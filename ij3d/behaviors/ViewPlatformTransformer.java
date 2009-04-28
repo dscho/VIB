@@ -268,7 +268,7 @@ public class ViewPlatformTransformer {
 	 * Rotates the view around the center of view by the specified
 	 * angle around the given axis (of the image plate).
 	 * @param axis The axis of rotation (in image plate coordinate system)
-	 * @param angle The angle (in rad) around the z-axis
+	 * @param angle The angle (in rad) around the given axis
 	 */
 	public void rotate(Vector3d axis, double angle) {
 		Vector3d axisVW = new Vector3d();
@@ -311,46 +311,6 @@ public class ViewPlatformTransformer {
 
 		rotationTG.setTransform(rotationXform);
 		transformChanged(BehaviorCallback.ROTATE, rotationXform);
-	}
-
-	/**
-	 * Store inverse of the overall transformation from the view to vworld
-	 * in the specified Transform3D.
-	 * @param t
-	 */
-	public void viewPlatformToVworldInverse(Transform3D t) {
-		centerV.set(0, 0, 0);
-		getZoomTranslation(tmpV);
-		centerV.add(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.add(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.add(tmpV);
-		centerXform.set(centerV);
-
-		rotationTG.getTransform(rotationXform);
-		t.mul(centerXform, rotationXform);
-	}
-
-	/**
-	 * Store the overall transformation from the view to vworld
-	 * in the specified Transform3D.
-	 * @param t
-	 */
-	public void viewPlatformToVworld(Transform3D t) {
-		centerV.set(0, 0, 0);
-		getZoomTranslation(tmpV);
-		centerV.sub(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.sub(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.sub(tmpV);
-		centerXform.set(centerV);
-
-		rotationTG.getTransform(rotationXform);
-		rotationXform.invert();
-
-		t.mul(rotationXform, centerXform);
 	}
 
 	/**
