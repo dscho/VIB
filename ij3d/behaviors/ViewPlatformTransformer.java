@@ -93,13 +93,6 @@ public class ViewPlatformTransformer {
 	}
 
 	/**
-	 * Sets the rotation center to the specified point.
-	 */
-	public void setRotationCenter(Point3d rotCenter) {
-		this.rotCenter.set(rotCenter);
-	}
-
-	/**
 	 * Moves the view back (related ot the given direction)
 	 * to the specified distance.
 	 * @param distance
