@@ -125,14 +125,14 @@ public class ViewPlatformTransformer {
 		float dd = (float)eyePos.distance(originOnIp);
 
 		canvas.getPixelLocationInImagePlate(
-			(int)Math.round(originInCanvas.x+1),
+			(int)Math.round(originInCanvas.x+5),
 			(int)Math.round(originInCanvas.y), currentPtOnIp);
 		ipToVWorld.transform(currentPtOnIp);
 		float dx = (float)originOnIp.distance(currentPtOnIp);
 
 		zDir.set(0, 0, -1);
 		float factor = dx * dD / dd;
-		zDir.scale(2 * units * factor);
+		zDir.scale(units * factor);
 
 		zoomTG.getTransform(zoomXform);
 		tmp.set(zDir);
