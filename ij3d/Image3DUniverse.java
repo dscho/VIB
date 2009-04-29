@@ -1141,7 +1141,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 					univ.scene.addChild(c);
 					univ.contents.put(c.name, c);
 					univ.recalculateGlobalMinMax(c);
-					if(autoAdjustView) {
+					if(univ.autoAdjustView) {
 						univ.getViewPlatformTransformer()
 							.centerAt(univ.globalCenter);
 						float range = (float)(univ.globalMax.x
