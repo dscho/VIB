@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Collection;
+import java.util.Enumeration;
+import java.util.LinkedList;
 import java.util.ArrayList;
 
 import customnode.CustomLineMesh;
@@ -54,6 +56,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/** A reference to the Executer */
 	private Executer executer;
 
+	/** A behavior which does the actual content adding */
+	protected final AddContentBehavior addBehavior;
+
+	/**
+	 * A flag indicating whether the view is adjusted each time a
+	 * Content is added
+	 */
+	private boolean autoAdjustView = true;
 
 	private PointListDialog plDialog;
 
@@ -79,6 +89,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
 		executer = new Executer(this);
+
+		addBehavior = new AddContentBehavior(this);
+		addBehavior.setSchedulingBounds(bounds);
+		addBehavior.setEnable(true);
+
+		BranchGroup bg = new BranchGroup();
+		bg.addChild(addBehavior);
+		scene.addChild(bg);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -222,6 +240,22 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/* *************************************************************
 	 * Dimensions
 	 * *************************************************************/
+	/**
+	 * autoAdjustView indicates, whether the view is adjusted to
+	 * fit the whole universe each time a Content is added.
+	 */
+	public void setAutoAdjustView(boolean b) {
+		autoAdjustView = b;
+	}
+
+	/**
+	 * autoAdjustView indicates, whether the view is adjusted to
+	 * fit the whole universe each time a Content is added.
+	 */
+	public boolean getAutoAdjustView() {
+		return autoAdjustView;
+	}
+
 	/**
 	 * Calculates the global minimum, maximum and center point depending
 	 * on all the available contents.
@@ -793,14 +827,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			IJ.error("Mesh named '" + c.name + "' exists already");
 			return null;
 		}
-		scene.addChild(c);
-		contents.put(c.name, c);
-		recalculateGlobalMinMax(c);
-		getViewPlatformTransformer().centerAt(globalCenter);
-		float range = (float)(globalMax.x - globalMin.x);
-		ensureScale(range);
-		fireContentAdded(c);
-		this.addUniverseListener(c);
+		addBehavior.addContent(c);
+		addBehavior.postId(AddContentBehavior.TRIGGER_ID);
 		return c;
 	}
 
@@ -814,7 +842,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	public Content addMesh(List mesh, Color3f color, String name,
 			    float scale, int threshold) {
 		  Content c = addMesh(mesh, color, name, threshold);
-		  ensureScale(scale);
 		  return c;
 	}
 
@@ -910,7 +937,9 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		getZoomTG().setTransform(t);
 		recalculateGlobalMinMax();
 		getViewPlatformTransformer().centerAt(globalCenter);
-		resetZoom();
+		// reset zoom
+		double d = oldRange / Math.tan(Math.PI/8);
+		getViewPlatformTransformer().zoomTo(d);
 		fireTransformationUpdated();
 		fireTransformationFinished();
 	}
@@ -922,18 +951,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @param angle The angle in radians.
 	 */
 	public void rotateUniverse(Vector3d axis, double angle) {
-		viewTransformer.rotate(globalCenter, axis, angle);
-	}
-
-	/**
-	 * Rotate the universe, using the given axis of rotation and angle;
-	 * The center of rotation is the given center.
-	 * @param axis The axis of rotation (in the image plate coordinate system)
-	 * @param center The center of rotation (in vworld coordinates)
-	 * @param angle The angle in radians.
-	 */
-	public void rotateUniverse(Vector3d axis, Point3d center, double angle) {
-		viewTransformer.rotate(center, axis, angle);
+		viewTransformer.rotate(axis, angle);
 	}
 
 	/**
@@ -1002,62 +1020,59 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
-	 * Reset the zoom of this universe.
-	 */
-	public void resetZoom() {
-		double d = oldRange / Math.tan(Math.PI/8);
-		getViewPlatformTransformer().zoomTo(new Vector3d(0, 0, -1), d);
-		getViewer().getView().setBackClipDistance(2 * d);
-		getViewer().getView().setFrontClipDistance(2 * d / 100);
-	}
-
-	/**
 	 * Select the view at the selected Content.
 	 */
 	public void centerSelected(Content c) {
 		Point3d center = new Point3d();
-		Point3d min = new Point3d(), max = new Point3d();
-
 		c.getContent().getCenter(center);
-		c.getContent().getMin(min);
-		c.getContent().getMax(max);
 
 		Transform3D localToVWorld = new Transform3D();
 		c.getContent().getLocalToVworld(localToVWorld);
 		localToVWorld.transform(center);
-		localToVWorld.transform(min);
-		localToVWorld.transform(max);
 
 		getViewPlatformTransformer().centerAt(center);
-		globalMin.set(min);
-		globalMax.set(max);
-		globalCenter.set(center);
-
-// 		Point3d cmin = new Point3d(); c.getContent().getMin(cmin);
-// 		Point3d cmax = new Point3d(); c.getContent().getMax(cmax);
-// 		globalMin.set(cmin);
-// 		globalMax.set(cmax);
-// 		globalCenter.x = globalMin.x + (globalMax.x - globalMin.x) / 2;
-// 		globalCenter.y = globalMin.y + (globalMax.y - globalMin.y) / 2;
-// 		globalCenter.z = globalMin.z + (globalMax.z - globalMin.z) / 2;
-//
-// 		float range = (float)(globalMax.x - globalMin.x);
-// 		ensureScale(range);
 	}
 
+	/**
+	 * Center the universe at the given point.
+	 */
+	public void centerAt(Point3d p) {
+		getViewPlatformTransformer().centerAt(p);
+	}
+
+	/**
+	 * Optimize the view for showing the whole universe.
+	 */
+	public void adjustView() {
+		recalculateGlobalMinMax();
+		float dx = (float)(globalMin.x - globalMax.x);
+		float dy = (float)(globalMin.y - globalMax.y);
+		float dz = (float)(globalMin.z - globalMax.z);
+		float d  = (float)Math.sqrt(dx * dx + dy * dy + dz * dz);
+		centerAt(globalCenter);
+		ensureScale(0.5f * d);
+	}
+
+	public void adjustView(Content c) {
+		centerSelected(c);
+		Point3d min = new Point3d(), max = new Point3d();
+		c.getContent().getMin(min);
+		c.getContent().getMax(max);
+		float dx = (float)(min.x - max.x);
+		float dy = (float)(min.y - max.y);
+		float dz = (float)(min.z - max.z);
+		float d  = (float)Math.sqrt(dx * dx + dy * dy + dz * dz);
+		ensureScale(0.5f * d);
+	}
 	/* *************************************************************
 	 * Private methods
 	 * *************************************************************/
 	private float oldRange = 2f;
 
 	private void ensureScale(float range) {
-// 		if(range > oldRange) {
-			oldRange = range;
-			double d = (range) / Math.tan(Math.PI/8);
-			getViewPlatformTransformer().zoomTo(d);
-			getViewer().getView().setBackClipDistance(2 * d);
-			getViewer().getView().setFrontClipDistance(2 * d / 100);
-// 		}
+		oldRange = range;
+		double d = (range) / Math.tan(Math.PI/8);
+		getViewPlatformTransformer().zoomTo(d);
 	}
 
 	public String allContentsString() {
@@ -1075,15 +1090,70 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return sb.toString();
 	}
 
-    public String getSafeContentName( String suggested ) {
+	public String getSafeContentName( String suggested ) {
 		String originalName = suggested;
 		String attempt = suggested;
 		int tryNumber = 2;
 		while( contains(attempt) ) {
-            attempt = originalName + " (" + tryNumber + ")";
-            ++ tryNumber;
-        }
+			attempt = originalName + " (" + tryNumber + ")";
+			++ tryNumber;
+		}
 		return attempt;
-    }
+	}
 
+	private static class AddContentBehavior extends Behavior {
+
+		public static final int TRIGGER_ID = 1;
+
+		private WakeupOnBehaviorPost postCrit;
+
+		private LinkedList<Content> contentsToAdd
+						= new LinkedList<Content>();
+		private Image3DUniverse univ;
+
+		public AddContentBehavior(Image3DUniverse univ) {
+			this.univ = univ;
+			postCrit = new WakeupOnBehaviorPost(null, TRIGGER_ID);
+		}
+
+		public void initialize() {
+			wakeupOn(postCrit);
+		}
+
+		public synchronized void addContent(Content c) {
+			contentsToAdd.addLast(c);
+		}
+
+		private synchronized Content poll() {
+			if(contentsToAdd.isEmpty())
+				return null;
+			return contentsToAdd.removeFirst();
+		}
+
+		public void processStimulus(Enumeration criteria) {
+			while(criteria.hasMoreElements()) {
+				Object crit = criteria.nextElement();
+				if(!(crit instanceof WakeupOnBehaviorPost))
+					return;
+
+				Content c = null;
+				while((c = poll()) != null) {
+					univ.scene.addChild(c);
+					univ.contents.put(c.name, c);
+					univ.recalculateGlobalMinMax(c);
+					if(univ.autoAdjustView) {
+						univ.getViewPlatformTransformer()
+							.centerAt(univ.globalCenter);
+						float range = (float)(univ.globalMax.x
+							- univ.globalMin.x);
+						univ.ensureScale(range);
+					}
+					univ.fireContentAdded(c);
+					univ.addUniverseListener(c);
+				}
+				wakeupOn(postCrit);
+			}
+		}
+	}
 }
+

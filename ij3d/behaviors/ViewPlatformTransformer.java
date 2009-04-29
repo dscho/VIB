@@ -10,6 +10,7 @@ import javax.vecmath.AxisAngle4d;
 import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector3d;
+import javax.vecmath.Tuple3d;
 
 /**
  * This class is a helper class which implements some functions for
@@ -19,15 +20,15 @@ import javax.vecmath.Vector3d;
  * A center transformation, which is responsible for shifting the view
  * to a position so that the content of the universe is centered.
  *
- * A zoom transformation, which translates the view backward and forward
- *
  * A translate transformation, which is adjusted manually, either explicitly
  * or interactively, when the user translates the view with the mouse.
  *
- * An animation transformation, which is changed when the universe is animated.
- *
  * A rotation transformation, which is adjusted manually, either explicitly
  * or interactively, when the user rotates the view with the mouse.
+ *
+ * An animation transformation, which is changed when the universe is animated.
+ *
+ * A zoom transformation, which translates the view backward and forward
  *
  * The functions in this class mainly aim to facilitate transformations
  * related to the image plate.
@@ -39,7 +40,7 @@ public class ViewPlatformTransformer {
 	protected DefaultUniverse univ;
 	protected ImageCanvas3D canvas;
 
-	protected Point3d rotCenter;
+	protected final Point3d rotCenter = new Point3d();
 
 	private BehaviorCallback callback;
 
@@ -81,42 +82,14 @@ public class ViewPlatformTransformer {
 		this.rotationTG = univ.getRotationTG();
 		this.zoomTG = univ.getZoomTG();
 		this.translateTG = univ.getTranslateTG();
-		// Set the initial rotation center to whatever is set in
-		// UniverseSettings
-		if(UniverseSettings.globalRotationCenter ==
-				UniverseSettings.ROTATION_AROUND_CENTER)
-			rotCenter = ((Image3DUniverse)univ).getGlobalCenterPoint();
-		else
-			rotCenter = new Point3d();
+		((Image3DUniverse)univ).getGlobalCenterPoint(rotCenter);
 	}
 
 	/**
-	 * Returns a reference to the rotation center.
-	 * Attention: Changing the returned point results in unspecified
-	 * behavior.
+	 * Copies the rotation center into the given Tuple3d.
 	 */
-	public Point3d getRotationCenter() {
-		return rotCenter;
-	}
-
-	/**
-	 * Sets the rotation center to the specified point.
-	 * Attention: No copy is made.
-	 */
-	public void setRotationCenter(Point3d rotCenter) {
-		this.rotCenter = rotCenter;
-	}
-
-	/**
-	 * Moves the view back (related ot the given direction)
-	 * to the specified distance.
-	 * @param distance
-	 */
-	public void zoomTo(Vector3d v, double distance) {
-		v.scale(-distance);
-		zoomXform.set(v);
-		zoomTG.setTransform(zoomXform);
-		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
+	public void getRotationCenter(Tuple3d ret) {
+		ret.set(rotCenter);
 	}
 
 	/**
@@ -125,33 +98,51 @@ public class ViewPlatformTransformer {
 	 * @param distance
 	 */
 	public void zoomTo(double distance) {
-		getZDir(zDir);
-		zoomTo(zDir, distance);
+		zDir.set(0, 0, 1);
+		zDir.scale(distance);
+		zoomXform.set(zDir);
+		zoomTG.setTransform(zoomXform);
+		univ.getViewer().getView().setBackClipDistance(5 * distance);
+		univ.getViewer().getView().setFrontClipDistance(5 * distance / 100);
+		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 
 	private Transform3D tmp = new Transform3D();
-	private Point3d p1 = new Point3d(), p2 = new Point3d();
 	/**
 	 * Zoom by the specified amounts of units.
 	 * @param units
 	 */
 	public void zoom(int units) {
-		Image3DUniverse u = (Image3DUniverse)univ;
-		u.getGlobalMaxPoint(p1);
-		u.getGlobalMinPoint(p2);
+		origin.set(0, 0, 0);
+		canvas.getCenterEyeInImagePlate(eyePos);
+		canvas.getImagePlateToVworld(ipToVWorld);
+		ipToVWorld.transform(eyePos);
+		float dD = (float)eyePos.distance(origin);
 
-		float factor = 0.02f * (float)p1.distance(p2);
-		getZDir(zDir);
-		// let the factor be 1 percent of the distance between
-		// eye position and origin
+		originInCanvas(originInCanvas);
+		canvas.getPixelLocationInImagePlate(originInCanvas, originOnIp);
+		ipToVWorld.transform(originOnIp);
+		float dd = (float)eyePos.distance(originOnIp);
 
-		zDir.scale(factor * units);
+		canvas.getPixelLocationInImagePlate(
+			(int)Math.round(originInCanvas.x+5),
+			(int)Math.round(originInCanvas.y), currentPtOnIp);
+		ipToVWorld.transform(currentPtOnIp);
+		float dx = (float)originOnIp.distance(currentPtOnIp);
+
+		zDir.set(0, 0, -1);
+		float factor = dx * dD / dd;
+		zDir.scale(units * factor);
 
 		zoomTG.getTransform(zoomXform);
 		tmp.set(zDir);
 		zoomXform.mul(tmp, zoomXform);
 
 		zoomTG.setTransform(zoomXform);
+		zoomXform.get(centerV);
+		double distance = centerV.length();
+		univ.getViewer().getView().setBackClipDistance(5 * distance);
+		univ.getViewer().getView().setFrontClipDistance(5 * distance / 100);
 		transformChanged(BehaviorCallback.TRANSLATE, zoomXform);
 	}
 
@@ -160,25 +151,17 @@ public class ViewPlatformTransformer {
 	 * @param center
 	 */
 	public void centerAt(Point3d center) {
-		// Take rotation into account
+		// set the center transformation to the translation given by
+		// the specified point
 		centerV.set(center.x, center.y, center.z);
 		centerXform.set(centerV);
 		centerTG.setTransform(centerXform);
+		// set the global translation to identity
 		centerXform.setIdentity();
 		translateTG.setTransform(centerXform);
 		transformChanged(BehaviorCallback.TRANSLATE, centerXform);
-
-// 		Point2d canvasP = new Point2d();
-// 		pointInCanvas(center, canvasP);
-// 		canvas.getImagePlateToVworld(ipToVWorld);
-
-// 		centerV.set(center);
-// 		getCenterTranslation(tmpV);
-// 		tmpV.sub(centerV);
-// 		translateXform.set(tmpV);
-// 		centerTG.setTransform(translateXform);
-// 		v3f.set(centerV);
-// 		transformChanged(BehaviorCallback.TRANSLATE, translateXform);
+		// update rotation center
+		rotCenter.set(center);
 	}
 
 	private Point2d originInCanvas = new Point2d();
@@ -214,13 +197,12 @@ public class ViewPlatformTransformer {
 		ipToVWorld.transform(currentPtOnIp);
 		float dy = (float)originOnIp.distance(currentPtOnIp);
 
-		float dX = -dx * dxPix * dD / dd;
+		float dX = dx * dxPix * dD / dd;
 		float dY = dy * dyPix * dD / dd;
 
 		translateXY(dX, dY);
 	}
 
-	private Vector3d v3f = new Vector3d();
 	/**
 	 * Translates the view by the specified distances along the x, y
 	 * and z direction (of the vworld).
@@ -232,8 +214,6 @@ public class ViewPlatformTransformer {
 		tmpV.sub(v);
 		translateXform.set(tmpV);
 		translateTG.setTransform(translateXform);
-		v3f.set(v);
-//		((Image3DUniverse)univ).getGlobalCenterPoint().sub(v3f);
 		transformChanged(BehaviorCallback.TRANSLATE, translateXform);
 	}
 
@@ -255,32 +235,13 @@ public class ViewPlatformTransformer {
 	private AxisAngle4d aa = new AxisAngle4d();
 	private Vector3d tmpV = new Vector3d();
 	/**
-	 * Rotates the view around the specified center by the specified
-	 * angle around the x axis (of the image plate).
-	 * @param center The rotation center
-	 * @param angle The angle (in rad) around the x-axis
-	 */
-	public void rotateX(Point3d center, double angle){
-		rotate(center, new Vector3d(1, 0, 0), angle);
-	}
-
-	/**
 	 * Rotates the view around the global rotation center by the specified
 	 * angle around the x axis (of the image plate).
 	 * @param angle The angle (in rad) around the x-axis
 	 */
 	public void rotateX(double angle){
-		rotateX(rotCenter, angle);
-	}
-
-	/**
-	 * Rotates the view around the specified center by the specified
-	 * angle around the y axis (of the image plate).
-	 * @param center The rotation center
-	 * @param angle The angle (in rad) around the y-axis
-	 */
-	public void rotateY(Point3d center, double angle){
-		rotate(center, new Vector3d(0, 1, 0), angle);
+		xDir.set(1, 0, 0);
+		rotate(xDir, angle);
 	}
 
 	/**
@@ -289,17 +250,8 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the y-axis
 	 */
 	public void rotateY(double angle){
-		rotateY(rotCenter, angle);
-	}
-
-	/**
-	 * Rotates the view around the specified center by the specified
-	 * angle around the z axis (of the image plate).
-	 * @param center The rotation center
-	 * @param angle The angle (in rad) around the z-axis
-	 */
-	public void rotateZ(Point3d center, double angle){
-		rotate(center, new Vector3d(0, 0, 1), angle);
+		yDir.set(0, 1, 0);
+		rotate(yDir, angle);
 	}
 
 	/**
@@ -308,27 +260,17 @@ public class ViewPlatformTransformer {
 	 * @param angle The angle (in rad) around the z-axis
 	 */
 	public void rotateZ(double angle){
-		rotateZ(rotCenter, angle);
+		zDir.set(0, 0, 1);
+		rotate(zDir, angle);
 	}
 
 	/**
-	 * Rotates the view around the specified center by the specified
+	 * Rotates the view around the center of view by the specified
 	 * angle around the given axis (of the image plate).
-	 * @param center The rotation center
 	 * @param axis The axis of rotation (in image plate coordinate system)
-	 * @param angle The angle (in rad) around the z-axis
+	 * @param angle The angle (in rad) around the given axis
 	 */
-	public void rotate(Point3d center, Vector3d axis, double angle) {
-		// compose the translation to center
-		centerV.set(-center.x, -center.y, -center.z);
-		getZoomTranslation(tmpV);
-		centerV.add(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.add(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.add(tmpV);
-		centerXform.set(centerV);
-
+	public void rotate(Vector3d axis, double angle) {
 		Vector3d axisVW = new Vector3d();
 		getAxisVworld(axis, axisVW);
 		aa.set(axisVW, angle);
@@ -336,40 +278,22 @@ public class ViewPlatformTransformer {
 
 		// first apply the old transform
 		rotationTG.getTransform(rotationXform);
-		// then transform back to the center of rotation
-		rotationXform.mul(centerXform, rotationXform);
 		// rotate
 		rotationXform.mul(tmp, rotationXform);
-		centerV.set(-centerV.x, -centerV.y, -centerV.z);
-		centerXform.set(centerV);
-		// translate back
-		rotationXform.mul(centerXform, rotationXform);
 
 		rotationTG.setTransform(rotationXform);
-
 		transformChanged(BehaviorCallback.ROTATE, rotationXform);
 	}
 
 	private AxisAngle4d aa2 = new AxisAngle4d();
 	private Transform3D tmp2 = new Transform3D();
 	/**
-	 * Rotates the view around the specified center by the specified
+	 * Rotates the view around the center of view by the specified
 	 * angles around the x and y axis (of the image plate).
-	 * @param center The rotation center
 	 * @param angleX The angle (in rad) around the x-axis
 	 * @param angleY The angle (in rad) around the y-axis
 	 */
-	public void rotateXY(Point3d center, double angleX, double angleY) {
-
-		centerV.set(-center.x, -center.y, -center.z);
-		getZoomTranslation(tmpV);
-		centerV.add(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.add(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.add(tmpV);
-		centerXform.set(centerV);
-
+	public void rotateXY(double angleX, double angleY) {
 		getXDir(xDir);
 		aa.set(xDir, angleX);
 		tmp.set(aa);
@@ -380,60 +304,13 @@ public class ViewPlatformTransformer {
 
 		// first apply the old transform
 		rotationTG.getTransform(rotationXform);
-		// then transform back to the center of rotation
-		rotationXform.mul(centerXform, rotationXform);
 		// rotate x
 		rotationXform.mul(tmp, rotationXform);
 		// rotate y
 		rotationXform.mul(tmp2, rotationXform);
-		// update center back transform
-		centerV.set(-centerV.x, -centerV.y, -centerV.z);
-		centerXform.set(centerV);
-		// translate back
-		rotationXform.mul(centerXform, rotationXform);
 
 		rotationTG.setTransform(rotationXform);
 		transformChanged(BehaviorCallback.ROTATE, rotationXform);
-	}
-
-	/**
-	 * Store inverse of the overall transformation from the view to vworld
-	 * in the specified Transform3D.
-	 * @param t
-	 */
-	public void viewPlatformToVworldInverse(Transform3D t) {
-		centerV.set(0, 0, 0);
-		getZoomTranslation(tmpV);
-		centerV.add(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.add(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.add(tmpV);
-		centerXform.set(centerV);
-
-		rotationTG.getTransform(rotationXform);
-		t.mul(centerXform, rotationXform);
-	}
-
-	/**
-	 * Store the overall transformation from the view to vworld
-	 * in the specified Transform3D.
-	 * @param t
-	 */
-	public void viewPlatformToVworld(Transform3D t) {
-		centerV.set(0, 0, 0);
-		getZoomTranslation(tmpV);
-		centerV.sub(tmpV);
-		getCenterTranslation(tmpV);
-		centerV.sub(tmpV);
-		getTranslateTranslation(tmpV);
-		centerV.sub(tmpV);
-		centerXform.set(centerV);
-
-		rotationTG.getTransform(rotationXform);
-		rotationXform.invert();
-
-		t.mul(rotationXform, centerXform);
 	}
 
 	/**

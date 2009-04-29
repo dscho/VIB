@@ -5,7 +5,6 @@ import ij3d.Image3DUniverse;
 import ij3d.UniverseSettings;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import javax.vecmath.Point3d;
 
 /**
  * This class extends ViewPlatformTransformer, to transform mouse events into
@@ -46,7 +45,7 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 	public void translate(MouseEvent e) {
 		int dx = xLast - e.getX();
 		int dy = yLast - e.getY();
-		translateXY(dx, dy);
+		translateXY(-dx, dy);
 		xLast = e.getX();
 		yLast = e.getY();
 	}
@@ -59,7 +58,7 @@ public class InteractiveViewPlatformTransformer extends ViewPlatformTransformer 
 	public void rotate(MouseEvent e) {
 		int dx = xLast - e.getX();
 		int dy = yLast - e.getY();
-		rotateXY(rotCenter, dy * ONE_RAD, dx * ONE_RAD);
+		rotateXY(dy * ONE_RAD, dx * ONE_RAD);
 		xLast = e.getX();
 		yLast = e.getY();
 	}

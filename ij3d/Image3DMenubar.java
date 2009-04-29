@@ -48,7 +48,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem displayAsOrtho;
 	private MenuItem displayAsSurface;
 	private MenuItem displayAsSurfacePlot;
-	private MenuItem center;
+	private MenuItem centerSelected;
+	private MenuItem centerOrigin;
+	private MenuItem centerUniverse;
+	private MenuItem fitViewToUniverse;
+	private MenuItem fitViewToContent;
 	private MenuItem regist;
 	private CheckboxMenuItem shaded;
 	private MenuItem pl_load;
@@ -230,9 +234,31 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		resetView.addActionListener(this);
 		view.add(resetView);
 
-		center = new MenuItem("Center selected");
-		center.addActionListener(this);
-		view.add(center);
+		// center submenu
+		Menu menu = new Menu("Center");
+		centerSelected = new MenuItem("Selected content");
+		centerSelected.addActionListener(this);
+		menu.add(centerSelected);
+
+		centerOrigin = new MenuItem("Origin");
+		centerOrigin.addActionListener(this);
+		menu.add(centerOrigin);
+
+		centerUniverse = new MenuItem("Universe");
+		centerUniverse.addActionListener(this);
+		menu.add(centerUniverse);
+		view.add(menu);
+
+		// fit view submenu
+		menu = new Menu("Fit view to");
+		fitViewToUniverse = new MenuItem("Universe");
+		fitViewToUniverse.addActionListener(this);
+		menu.add(fitViewToUniverse);
+
+		fitViewToContent = new MenuItem("Selected content");
+		fitViewToContent.addActionListener(this);
+		menu.add(fitViewToContent);
+		view.add(menu);
 
 		view.addSeparator();
 
@@ -411,8 +437,16 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.delete(univ.getSelected());
 		else if(src == resetView)
 			executer.resetView();
-		else if(src == center)
+		else if(src == centerSelected)
 			executer.centerSelected(univ.getSelected());
+		else if(src == centerOrigin)
+			executer.centerOrigin();
+		else if(src == centerUniverse)
+			executer.centerUniverse();
+		else if(src == fitViewToUniverse)
+			executer.fitViewToUniverse();
+		else if(src == fitViewToContent)
+			executer.fitViewToContent(univ.getSelected());
 		else if(src == record360)
 			executer.record360();
 		else if(src == startRecord)
@@ -527,7 +561,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 
 	public void contentSelected(Content c) {
 		delete.setEnabled(c != null);
-		center.setEnabled(c != null);
+		centerSelected.setEnabled(c != null);
 		fill.setEnabled(c != null);
 		smoothMesh.setEnabled(c != null);
 

@@ -1,24 +1,18 @@
 package process3d;
 
-import ij.process.ImageProcessor;
-import ij.process.FloatProcessor;
-
-import ij.ImageStack;
 import ij.IJ;
 import ij.ImagePlus;
 
-import ij.gui.Roi;
-import ij.gui.ShapeRoi;
 import ij.gui.Toolbar;
+
+import ij.process.ByteProcessor;
+import ij.process.ShortProcessor;
+import ij.process.ColorProcessor;
+import ij.process.FloatProcessor;
+import ij.process.ImageProcessor;
 
 import ij.plugin.MacroInstaller;
 import ij.plugin.PlugIn;
-
-import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
-import java.util.LinkedList;
 
 public class Flood_Fill implements PlugIn {
 	
@@ -49,20 +43,33 @@ public class Flood_Fill implements PlugIn {
 	}
 
 	public synchronized static void fill(int sx, int sy, int sz) {
-		fill(IJ.getImage(), sx, sy, sz, (byte)Toolbar.getForegroundColor().getRGB());
+		fill(IJ.getImage(), sx, sy, sz,
+			Toolbar.getForegroundColor().getRGB());
 	}
 
-	public synchronized static void fill(ImagePlus imp, int sx, int sy, int sz, byte color) {
+	public synchronized static void fill(ImagePlus imp,
+					int sx, int sy, int sz, int color) {
+
 		IJ.showStatus("Flood fill");
+		long start = System.currentTimeMillis();
 		int w = imp.getWidth(), h = imp.getHeight();
 		int d = imp.getStackSize();
 		int wh = w * h;
-		byte[][] b = new byte[d][];
-		for(int z = 0; z < d; z++) {
-			b[z] = (byte[])imp.getStack().
-					getProcessor(z+1).getPixels();
-		}
-		int colorToFill = (int)(b[sz][sy * w + sx] & 0xff);
+		ImageProcessor[] b = new ImageProcessor[d];
+		for(int z = 0; z < d; z++)
+			b[z] = imp.getStack().getProcessor(z+1);
+
+		Difference diff = null;
+		if(b[0] instanceof ByteProcessor)
+			diff = new DifferenceInt();
+		else if(b[0] instanceof ShortProcessor)
+			diff = new DifferenceInt();
+		else if(b[0] instanceof FloatProcessor)
+			diff = new DifferenceFloat();
+		else if(b[0] instanceof ColorProcessor)
+			diff = new DifferenceRGB();
+
+		int colorToFill = b[sz].get(sx, sy);
 
 		Stack stack = new Stack();
 		stack.push(sz * wh + sy * w + sx);
@@ -73,21 +80,56 @@ public class Flood_Fill implements PlugIn {
 			int py = pi / w;
 			int px = pi % w;
 
-			int by = (int)(b[pz][pi] & 0xff);
-			if(Math.abs(colorToFill - by) > tol)
+			int by = b[pz].get(px, py);
+			if(diff.getDifference(by, colorToFill) > tol)
 				continue;
 
-			b[pz][pi] = color;
+			b[pz].set(px, py, color);
 
 			int pzwh = pz * wh;
-			if(pz > 0)     stack.push((pz - 1) * wh + pi);
-			if(pz < d - 1) stack.push((pz + 1) * wh + pi);
-			if(py > 0)     stack.push(pzwh + pi - w);
-			if(py < h- 1)  stack.push(pzwh + pi + w);
-			if(px > 0)     stack.push(pzwh + pi - 1);
-			if(px < w - 1) stack.push(pzwh + pi + 1);
+			if(px > 0 && b[pz].get(px-1, py) != color)
+				stack.push(pzwh + pi - 1);
+			if(px < w - 1 && b[pz].get(px+1, py) != color)
+				stack.push(pzwh + pi + 1);
+			if(py > 0 && b[pz].get(px, py-1) != color)
+				stack.push(pzwh + pi - w);
+			if(py < h - 1 && b[pz].get(px, py+1) != color)
+				stack.push(pzwh + pi + w);
+			if(pz > 0 && b[pz-1].get(px, py) != color)
+				stack.push((pz - 1) * wh + pi);
+			if(pz < d - 1 && b[pz+1].get(px, py) != color)
+				stack.push((pz + 1) * wh + pi);
 		}
 		imp.updateAndDraw();
+		long end = System.currentTimeMillis();
+		System.out.println("Needed " + ((end - start)/1000) + " seconds");
+		IJ.showStatus("");
+	}
+
+	static interface Difference {
+		float getDifference(int p1, int p2);
+	}
+
+	static final class DifferenceInt implements Difference {
+		public float getDifference(int p1, int p2) {
+			return (float)Math.abs(p2 - p1);
+		}
+	}
+
+	static final class DifferenceRGB implements Difference {
+		public final float getDifference(int p1, int p2) {
+			return (float)
+				Math.abs((p1&0xff0000)>>16 - (p2&0xff0000)>>16) +
+				Math.abs((p1&0xff00)>>8 - (p2&0xff00)>>8) +
+				Math.abs((p1&0xff) - (p2&0xff));
+		}
+	}
+
+	static final class DifferenceFloat implements Difference {
+		public float getDifference(int p1, int p2) {
+			return Math.abs(Float.intBitsToFloat(p2) -
+				Float.intBitsToFloat(p1));
+		}
 	}
 
 	static final class Stack {

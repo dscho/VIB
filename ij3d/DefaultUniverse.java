@@ -51,12 +51,12 @@ public abstract class DefaultUniverse extends SimpleUniverse
 	 * The index of the transform group in the viewing platform's
 	 * MultiTransformGroup which is responsible for zooming
 	 */
-	public static final int ZOOM_TG      = 1;
+	public static final int ZOOM_TG      = 4;
 	/**
 	 * The index of the transform group in the viewing platform's
 	 * MultiTransformGroup which is responsible for translation
 	 */
-	public static final int TRANSLATE_TG = 2;
+	public static final int TRANSLATE_TG = 1;
 	/**
 	 * The index of the transform group in the viewing platform's
 	 * MultiTransformGroup which is responsible for animation
@@ -66,7 +66,7 @@ public abstract class DefaultUniverse extends SimpleUniverse
 	 * The index of the transform group in the viewing platform's
 	 * MultiTransformGroup which is responsible for rotation
 	 */
-	public static final int ROTATION_TG  = 4;
+	public static final int ROTATION_TG  = 2;
 
 
 
@@ -187,7 +187,7 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		getViewer().getView().setProjectionPolicy(UniverseSettings.projection);
 
 		bounds = new BoundingSphere();
-		bounds.setRadius(10000.0);
+		bounds.setRadius(Double.POSITIVE_INFINITY);
 
 		scene = new BranchGroup();
 		scene.setCapability(Group.ALLOW_CHILDREN_EXTEND);
@@ -228,7 +228,7 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		lightS.setInfluencingBounds(bounds);
 		lightBG.addChild(lightS);
 
-		getRotationTG().addChild(lightBG);
+		getZoomTG().addChild(lightBG);
 
 		// setup global mouse behavior
 		viewTransformer = new InteractiveViewPlatformTransformer(this, this);

@@ -329,6 +329,8 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	public void setTransform(Transform3D transform) {
+		if(contentNode == null)
+			return;
 		Transform3D t = new Transform3D();
 		Point3d c = new Point3d(); contentNode.getCenter(c);
 
@@ -364,20 +366,23 @@ public class Content extends BranchGroup implements UniverseListener {
 		if(!channelsChanged)
 			return;
 		this.channels = channels;
-		contentNode.channelsUpdated();
+		if(contentNode != null)
+			contentNode.channelsUpdated();
 	}
 
 	public void setThreshold(int th) {
 		if(th != threshold) {
 			this.threshold = th;
-			contentNode.thresholdUpdated();
+			if(contentNode != null)
+				contentNode.thresholdUpdated();
 		}
 	}
 
 	public void setShaded(boolean b) {
 		if(b != shaded) {
 			this.shaded = b;
-			contentNode.shadeUpdated();
+			if(contentNode != null)
+				contentNode.shadeUpdated();
 		}
 	}
 
@@ -394,7 +399,8 @@ public class Content extends BranchGroup implements UniverseListener {
 			return;
 		this.color = color;
  		plShape.setColor(color);
-		contentNode.colorUpdated();
+		if(contentNode != null)
+			contentNode.colorUpdated();
 	}
 
 	public synchronized void setTransparency(float transparency) {
@@ -403,7 +409,8 @@ public class Content extends BranchGroup implements UniverseListener {
 		if(Math.abs(transparency - this.transparency) < 0.01)
 			return;
 		this.transparency = transparency;
-		contentNode.transparencyUpdated();
+		if(contentNode != null)
+			contentNode.transparencyUpdated();
 	}
 
 	/* ************************************************************
@@ -434,7 +441,8 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	public void eyePtChanged(View view) {
-		contentNode.eyePtChanged(view);
+		if(contentNode != null)
+			contentNode.eyePtChanged(view);
 	}
 
 	/* *************************************************************
