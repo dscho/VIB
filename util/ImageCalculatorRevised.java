@@ -82,7 +82,8 @@ public class ImageCalculatorRevised implements PlugIn {
       divides 'imp1' by i'mp2' and displays the result in a new 32-bit image.
 	*/
 	public void calculate(String params, ImagePlus img1, ImagePlus img2) {
-		calculateResult(params, img1, img2);
+		ImagePlus result = calculateResult(params, img1, img2);
+		result.show();
 	}
 
 	public ImagePlus calculateResult(String params, ImagePlus img1, ImagePlus img2) {
@@ -150,8 +151,7 @@ public class ImageCalculatorRevised implements PlugIn {
 
 	/** img1 = img2 op img2 (e.g. img1 = img2/img1) */
 	void doStackOperation(ImagePlus img1, ImagePlus img2) {
-		ImagePlus result = doStackOperationResult(img1, img2);
-		result.show();
+		doStackOperationResult(img1, img2);
 	}
 
 	ImagePlus doStackOperationResult(ImagePlus img1, ImagePlus img2) {
@@ -194,8 +194,7 @@ public class ImageCalculatorRevised implements PlugIn {
 	}
 
 	void doOperation(ImagePlus img1, ImagePlus img2) {
-		ImagePlus result = doOperationResult(img1, img2);
-		result.show();
+		doOperationResult(img1, img2);
 	}
 
 	ImagePlus doOperationResult(ImagePlus img1, ImagePlus img2) {
