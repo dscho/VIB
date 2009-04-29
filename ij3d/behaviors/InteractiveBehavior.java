@@ -236,7 +236,6 @@ public class InteractiveBehavior extends Behavior {
 				} else if(mask == DELETE_POINT_MASK) {
 					picker.deletePoint(c, e);
 				}
-				canvas.killRoi();
 			}
 		} else if(id == MouseEvent.MOUSE_DRAGGED) {
 			if(shouldTranslate(mask, toolID)) {

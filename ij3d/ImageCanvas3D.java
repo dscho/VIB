@@ -62,7 +62,8 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 		roiImageCanvas = new ImageCanvas(roiImagePlus) {
 			/* prevent ROI to enlarge/move on mouse click */
 			public void mousePressed(MouseEvent e) {
-				if(Toolbar.getToolId() != Toolbar.MAGNIFIER)
+				int id = Toolbar.getToolId();
+				if(id != Toolbar.MAGNIFIER && id != Toolbar.POINT)
 					super.mousePressed(e);
 			}
 		};
