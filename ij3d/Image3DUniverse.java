@@ -56,6 +56,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/** A reference to the Executer */
 	private Executer executer;
 
+	/** A behavior which does the actual content adding */
 	protected final AddContentBehavior addBehavior;
 
 	private PointListDialog plDialog;
