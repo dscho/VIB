@@ -187,7 +187,7 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		getViewer().getView().setProjectionPolicy(UniverseSettings.projection);
 
 		bounds = new BoundingSphere();
-		bounds.setRadius(10000.0);
+		bounds.setRadius(Double.POSITIVE_INFINITY);
 
 		scene = new BranchGroup();
 		scene.setCapability(Group.ALLOW_CHILDREN_EXTEND);
