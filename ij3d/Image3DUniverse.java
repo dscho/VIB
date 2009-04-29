@@ -59,6 +59,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/** A behavior which does the actual content adding */
 	protected final AddContentBehavior addBehavior;
 
+	/**
+	 * A flag indicating whether the view is adjusted each time a
+	 * Content is added
+	 */
+	private boolean autoAdjustView = true;
+
 	private PointListDialog plDialog;
 
 	static{
@@ -234,6 +240,22 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/* *************************************************************
 	 * Dimensions
 	 * *************************************************************/
+	/**
+	 * autoAdjustView indicates, whether the view is adjusted to
+	 * fit the whole universe each time a Content is added.
+	 */
+	public void setAutoAdjustView(boolean b) {
+		autoAdjustView = b;
+	}
+
+	/**
+	 * autoAdjustView indicates, whether the view is adjusted to
+	 * fit the whole universe each time a Content is added.
+	 */
+	public boolean getAutoAdjustView() {
+		return autoAdjustView;
+	}
+
 	/**
 	 * Calculates the global minimum, maximum and center point depending
 	 * on all the available contents.
@@ -1119,11 +1141,13 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 					univ.scene.addChild(c);
 					univ.contents.put(c.name, c);
 					univ.recalculateGlobalMinMax(c);
-					univ.getViewPlatformTransformer()
-						.centerAt(univ.globalCenter);
-					float range = (float)(univ.globalMax.x
-						- univ.globalMin.x);
-					univ.ensureScale(range);
+					if(autoAdjustView) {
+						univ.getViewPlatformTransformer()
+							.centerAt(univ.globalCenter);
+						float range = (float)(univ.globalMax.x
+							- univ.globalMin.x);
+						univ.ensureScale(range);
+					}
 					univ.fireContentAdded(c);
 					univ.addUniverseListener(c);
 				}
