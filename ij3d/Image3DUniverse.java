@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Collection;
+import java.util.Enumeration;
+import java.util.LinkedList;
 import java.util.ArrayList;
 
 import customnode.CustomLineMesh;
@@ -54,6 +56,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/** A reference to the Executer */
 	private Executer executer;
 
+	/** A behavior which does the actual content adding */
+	protected final AddContentBehavior addBehavior;
+
+	/**
+	 * A flag indicating whether the view is adjusted each time a
+	 * Content is added
+	 */
+	private boolean autoAdjustView = true;
 
 	private PointListDialog plDialog;
 
@@ -79,6 +89,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		super(width, height);
 		canvas = (ImageCanvas3D)getCanvas();
 		executer = new Executer(this);
+
+		addBehavior = new AddContentBehavior(this);
+		addBehavior.setSchedulingBounds(bounds);
+		addBehavior.setEnable(true);
+
+		BranchGroup bg = new BranchGroup();
+		bg.addChild(addBehavior);
+		scene.addChild(bg);
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -222,6 +240,22 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	/* *************************************************************
 	 * Dimensions
 	 * *************************************************************/
+	/**
+	 * autoAdjustView indicates, whether the view is adjusted to
+	 * fit the whole universe each time a Content is added.
+	 */
+	public void setAutoAdjustView(boolean b) {
+		autoAdjustView = b;
+	}
+
+	/**
+	 * autoAdjustView indicates, whether the view is adjusted to
+	 * fit the whole universe each time a Content is added.
+	 */
+	public boolean getAutoAdjustView() {
+		return autoAdjustView;
+	}
+
 	/**
 	 * Calculates the global minimum, maximum and center point depending
 	 * on all the available contents.
@@ -793,17 +827,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			IJ.error("Mesh named '" + c.name + "' exists already");
 			return null;
 		}
-		scene.addChild(c);
-		contents.put(c.name, c);
-		recalculateGlobalMinMax(c);
-		getViewPlatformTransformer().centerAt(globalCenter);
-		float range = (float)(globalMax.x - globalMin.x);
-		// only call 'ensureScale' when adding the first Content,
-		// since this results in unwanted movements.
-		if(contents.size() == 1)
-			ensureScale(range);
-		fireContentAdded(c);
-		this.addUniverseListener(c);
+		addBehavior.addContent(c);
+		addBehavior.postId(AddContentBehavior.TRIGGER_ID);
 		return c;
 	}
 
@@ -1065,14 +1090,70 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return sb.toString();
 	}
 
-    public String getSafeContentName( String suggested ) {
+	public String getSafeContentName( String suggested ) {
 		String originalName = suggested;
 		String attempt = suggested;
 		int tryNumber = 2;
 		while( contains(attempt) ) {
-            attempt = originalName + " (" + tryNumber + ")";
-            ++ tryNumber;
-        }
+			attempt = originalName + " (" + tryNumber + ")";
+			++ tryNumber;
+		}
 		return attempt;
-    }
+	}
+
+	private static class AddContentBehavior extends Behavior {
+
+		public static final int TRIGGER_ID = 1;
+
+		private WakeupOnBehaviorPost postCrit;
+
+		private LinkedList<Content> contentsToAdd
+						= new LinkedList<Content>();
+		private Image3DUniverse univ;
+
+		public AddContentBehavior(Image3DUniverse univ) {
+			this.univ = univ;
+			postCrit = new WakeupOnBehaviorPost(null, TRIGGER_ID);
+		}
+
+		public void initialize() {
+			wakeupOn(postCrit);
+		}
+
+		public synchronized void addContent(Content c) {
+			contentsToAdd.addLast(c);
+		}
+
+		private synchronized Content poll() {
+			if(contentsToAdd.isEmpty())
+				return null;
+			return contentsToAdd.removeFirst();
+		}
+
+		public void processStimulus(Enumeration criteria) {
+			while(criteria.hasMoreElements()) {
+				Object crit = criteria.nextElement();
+				if(!(crit instanceof WakeupOnBehaviorPost))
+					return;
+
+				Content c = null;
+				while((c = poll()) != null) {
+					univ.scene.addChild(c);
+					univ.contents.put(c.name, c);
+					univ.recalculateGlobalMinMax(c);
+					if(univ.autoAdjustView) {
+						univ.getViewPlatformTransformer()
+							.centerAt(univ.globalCenter);
+						float range = (float)(univ.globalMax.x
+							- univ.globalMin.x);
+						univ.ensureScale(range);
+					}
+					univ.fireContentAdded(c);
+					univ.addUniverseListener(c);
+				}
+				wakeupOn(postCrit);
+			}
+		}
+	}
 }
+
