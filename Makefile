@@ -255,6 +255,7 @@ VIB_Protocol.jar: SOURCES=$(wildcard vib/app/*.java) \
 	$(wildcard leica/*.java) \
 	$(wildcard amira/*.java) \
 	$(wildcard math3d/*.java) \
+	$(wildcard nrrd/*.java) \
 	$(wildcard pal/math/*.java) \
 	util/BatchOpener.java \
 	util/StupidLog.java \
