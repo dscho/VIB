@@ -16,7 +16,7 @@ import vib.app.*;
 public class ProgressIndicator implements ModuleListener {
 
 	private String[] modules = new String[] {
-				new SplitChannels().getName(), 
+				new SplitChannels().getName(),
 				new vib.app.module.Label().getName(),
 				new Resample().getName(),
 				new TissueStatistics().getName(),
@@ -44,13 +44,13 @@ public class ProgressIndicator implements ModuleListener {
 		}
 		showDialog();
 	}
-	
+
 	public static void main(String[] args) {
 		Options op = new Options();
-		op.loadFrom("/Users/bene/Desktop/VIB/options.config");
+		op.loadFrom("/home/bene/PhD/brains/VIB_Protocol/options.config");
 		new ProgressIndicator(op);
 	}
-	
+
 	public void moduleFinished(Module m, int index) {
 		if(index < 0)
 			return;
@@ -85,7 +85,7 @@ public class ProgressIndicator implements ModuleListener {
 		garten.image.show();
 		garten.draw();
 	}
-	
+
 	class Garten  {
 
 		Font f = new Font("Verdana", Font.BOLD, 12);
@@ -97,9 +97,10 @@ public class ProgressIndicator implements ModuleListener {
 		final int yIndent = 10;
 		final int strIndent = 5;
 		ImagePlus image;
+		ImageProcessor ip;
 
 		Garten() {
-			ImageProcessor ip = new ColorProcessor(
+			ip = new ColorProcessor(
 				colW * (cols+1) + 2 * xIndent,
 				rowH * (rows+1) + 2 * yIndent);
 			ip.setBackgroundValue((double)0);
@@ -107,13 +108,11 @@ public class ProgressIndicator implements ModuleListener {
 		}
 
 		public void draw() {
-			// FIXME: MHL - this throws an exception on some platforms...
-			Graphics g = image.getProcessor().
-					createImage().getGraphics();
-			g.setFont(f);
+			ip.setFont(f);
+			ip.setColor(Color.WHITE);
 			// draw horizontal lines
 			for(int i = 0; i < rows; i++) {
-				g.drawLine(xIndent, 
+				ip.drawLine(xIndent,
 					yIndent + strIndent + (i+1) * rowH,
 					(cols+1) * colW,
 					yIndent + strIndent + (i+1) * rowH);
@@ -121,7 +120,7 @@ public class ProgressIndicator implements ModuleListener {
 
 			// draw vertical lines
 			for(int i = 0; i < cols; i++) {
-				g.drawLine(
+				ip.drawLine(
 					xIndent + ((i+1)*colW),
 					yIndent,
 					xIndent + ((i+1)*colW),
@@ -130,14 +129,14 @@ public class ProgressIndicator implements ModuleListener {
 
 			// draw column names
 			for(int i = 0; i < modules.length; i++) {
-				g.drawString(modules[i], 
-						(i+1)*colW+xIndent+strIndent, 
+				ip.drawString(modules[i],
+						(i+1)*colW+xIndent+strIndent,
 						rowH + yIndent);
 			}
 
 			// draw file names
 			for(int i = 0; i < files.length; i++) {
-				g.drawString(files[i],
+				ip.drawString(files[i],
 						xIndent + strIndent,
 						yIndent + (i+2)*rowH);
 			}
@@ -146,11 +145,11 @@ public class ProgressIndicator implements ModuleListener {
 			for(int i = 0; i < files.length; i++) {
 				for(int j = 0; j < modules.length; j++) {
 					switch (done[i][j]) {
-						case DONE: drawOK(i, j, g);
+						case DONE: drawOK(i, j);
 								break;
-						case NOT_DONE: drawNY(i, j, g);
+						case NOT_DONE: drawNY(i, j);
 								break;
-						case EXCEPTION: drawEX(i, j, g);
+						case EXCEPTION: drawEX(i, j);
 								break;
 					}
 				}
@@ -158,49 +157,49 @@ public class ProgressIndicator implements ModuleListener {
 			image.updateAndDraw();
 		}
 
-		public void drawNY(int file, int mod, Graphics g) {
+		public void drawNY(int file, int mod) {
 			int xOffs = xIndent + (mod+1) * colW;
 			int yOffs = strIndent + yIndent + (file+1) * rowH;
 			int r = (rowH-5)/2;
 			int cx = xOffs + colW / 2;
 			int cy = yOffs + rowH / 2;
-			g.setColor(Color.GRAY);
-			g.fillOval(cx - r, cy - r, 2*r, 2*r);
-			g.setColor(Color.BLACK);
-			g.drawOval(cx - r, cy - r, 2*r, 2*r);
+			ip.setColor(Color.GRAY);
+			ip.fillOval(cx - r, cy - r, 2*r, 2*r);
+			ip.setColor(Color.BLACK);
+			ip.drawOval(cx - r, cy - r, 2*r, 2*r);
 		}
-		
-		public void drawOK(int file, int mod, Graphics g) {
+
+		public void drawOK(int file, int mod) {
 			int xOffs = xIndent + (mod+1) * colW;
 			int yOffs = strIndent + yIndent + (file+1) * rowH;
 			int r = (rowH-5)/2;
 			int cx = xOffs + colW / 2;
 			int cy = yOffs + rowH / 2;
-			g.setColor(Color.GREEN);
-			g.fillOval(cx - r, cy - r, 2*r, 2*r);
-			g.setColor(Color.BLACK);
+			ip.setColor(Color.GREEN);
+			ip.fillOval(cx - r, cy - r, 2*r, 2*r);
+			ip.setColor(Color.BLACK);
 			int cross = (int) (r * SIN45);
-			g.drawLine(cx-cross, cy, cx, cy+cross);
-			g.drawLine(cx, cy+cross, cx+cross, cy-cross);
-			g.setColor(Color.WHITE);
-			g.drawLine(cx+cross, cy-cross, cx+r, cy-r);
+			ip.drawLine(cx-cross, cy, cx, cy+cross);
+			ip.drawLine(cx, cy+cross, cx+cross, cy-cross);
+			ip.setColor(Color.WHITE);
+			ip.drawLine(cx+cross, cy-cross, cx+r, cy-r);
 		}
-		
-		public void drawEX(int file, int mod, Graphics g) {
+
+		public void drawEX(int file, int mod) {
 			int xOffs = xIndent + (mod+1) * colW;
 			int yOffs = strIndent + yIndent + (file+1) * rowH;
 			int r = (rowH-5)/2;
 			int cx = xOffs + colW / 2;
 			int cy = yOffs + rowH / 2;
-			g.setColor(Color.RED);
-			g.fillOval(cx - r, cy - r, 2*r, 2*r);
-			g.setColor(Color.BLACK);
-			g.drawOval(cx - r, cy - r, 2*r, 2*r);
+			ip.setColor(Color.RED);
+			ip.fillOval(cx - r, cy - r, 2*r, 2*r);
+			ip.setColor(Color.BLACK);
+			ip.drawOval(cx - r, cy - r, 2*r, 2*r);
 			int cross = (int) (r * SIN45);
-			g.drawLine(cx-cross, cy-cross, cx+cross, cy+cross);
-			g.drawLine(cx-cross, cy+cross, cx+cross, cy-cross);
+			ip.drawLine(cx-cross, cy-cross, cx+cross, cy+cross);
+			ip.drawLine(cx-cross, cy+cross, cx+cross, cy-cross);
 		}
-		
+
 		final float SIN45 = (float)(0.5 * Math.sqrt(2.0));
 		public int calculateColWidth() {
 			int w = 0;
@@ -217,7 +216,7 @@ public class ProgressIndicator implements ModuleListener {
 			}
 			return w + 10;
 		}
-		
+
 		public int calculateRowHeight() {
 			return new Frame().getFontMetrics(f).getHeight() + 10;
 		}
