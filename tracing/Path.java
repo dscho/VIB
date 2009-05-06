@@ -1750,11 +1750,9 @@ public class Path implements Comparable {
 
 		nameWhenAddedToViewer = univ.getSafeContentName( getName() );
 		univ.resetView();
-		univ.addMesh(triangles,
-			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
-			     nameWhenAddedToViewer,
-			     // 1f,  // scale
-			     1); // threshold
+		univ.addTriangleMesh(triangles,
+				     c == null ? new Color3f(Color.magenta) : new Color3f(c),
+				     nameWhenAddedToViewer);
 
 		content3D = univ.getContent(nameWhenAddedToViewer);
 		content3D.setLocked(true);
