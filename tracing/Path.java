@@ -35,6 +35,7 @@ import pal.math.*;
 import stacks.ThreePanes;
 
 import ij3d.Image3DUniverse;
+import ij3d.BlockingAdapter;
 import ij3d.Content;
 import ij3d.Pipe;
 import javax.vecmath.Color3f;
@@ -936,10 +937,10 @@ public class Path implements Comparable {
 			// Swap them around in the 3D viewer:
 			if( useFitted ) {
 				removeFrom3DViewer( plugin.univ );
-				fitted.addTo3DViewer( plugin.univ );
+				fitted.addTo3DViewer( plugin.univ, plugin.univBlocking );
 			} else {
 				fitted.removeFrom3DViewer( plugin.univ );
-				addTo3DViewer( plugin.univ );
+				addTo3DViewer( plugin.univ, plugin.univBlocking );
 			}
 		}
 
@@ -1651,11 +1652,11 @@ public class Path implements Comparable {
 		}
 	}
 
-	public Content addTo3DViewer(Image3DUniverse univ) {
-		return addTo3DViewer( univ, null );
+	public Content addTo3DViewer(Image3DUniverse univ, BlockingAdapter univBlocking) {
+		return addTo3DViewer( univ, univBlocking, null );
 	}
 
-	public Content addTo3DViewer(Image3DUniverse univ, Color c) {
+	public Content addTo3DViewer(Image3DUniverse univ, BlockingAdapter univBlocking, Color c) {
 
 		if(points <= 1) {
 			content3D = null;
@@ -1750,9 +1751,9 @@ public class Path implements Comparable {
 
 		nameWhenAddedToViewer = univ.getSafeContentName( getName() );
 		univ.resetView();
-		content3D = univ.addTriangleMesh(triangles,
-						 c == null ? new Color3f(Color.magenta) : new Color3f(c),
-						 nameWhenAddedToViewer);
+		content3D = univBlocking.addTriangleMesh(triangles,
+							 c == null ? new Color3f(Color.magenta) : new Color3f(c),
+							 nameWhenAddedToViewer);
 		content3D.setLocked(true);
 		univ.resetView();
 		return content3D;
