@@ -33,6 +33,7 @@ import ij.measure.Calibration;
 import ij.io.*;
 
 import ij3d.Image3DUniverse;
+import ij3d.BlockingAdapter;
 import ij3d.Image3DMenubar;
 import ij3d.Content;
 import ij3d.Pipe;
@@ -86,6 +87,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	boolean use3DViewer;
 	Image3DUniverse univ;
+	BlockingAdapter univBlocking;
 	Content imageContent;
 
 	boolean unsavedPaths = false;
@@ -553,7 +555,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				oldTemporaryPath.removeFrom3DViewer(univ);
 			}
 			if( temporaryPath != null )
-				temporaryPath.addTo3DViewer(univ,Color.BLUE);
+				temporaryPath.addTo3DViewer(univ,univBlocking,Color.BLUE);
 		}
 	}
 
@@ -576,7 +578,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				oldCurrentPath.removeFrom3DViewer(univ);
 			}
 			if( currentPath != null )
-				currentPath.addTo3DViewer(univ,Color.RED);
+				currentPath.addTo3DViewer(univ,univBlocking,Color.RED);
 		}
 	}
 
@@ -1291,6 +1293,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 					reusing = true;
 					univ = universeToUse;
 				}
+				univBlocking = new BlockingAdapter(univ);
 				univ.setUseToFront(false);
 				univ.addUniverseListener(pathAndFillManager);
 				if( ! reusing ) {
@@ -1759,11 +1762,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		String nameWhenAddedToViewer = univ.getSafeContentName( name );
 		univ.resetView();
-		univ.addMesh(triangles,
-			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
-			     nameWhenAddedToViewer,
-			     1); // threshold
-		Content content = univ.getContent(nameWhenAddedToViewer);
+		Content content = univ.addTriangleMesh(triangles,
+						       c == null ? new Color3f(Color.magenta) : new Color3f(c),
+						       nameWhenAddedToViewer);
 		content.setLocked(true);
 		univ.resetView();
 	}
