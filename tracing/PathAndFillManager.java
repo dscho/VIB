@@ -407,7 +407,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		   update3DViewerContents: */
 		if( plugin != null && plugin.use3DViewer ) {
 			p.removeFrom3DViewer( plugin.univ );
-			p.addTo3DViewer( plugin.univ, plugin.univBlocking );
+			p.addTo3DViewer( plugin.univ );
 		}
 		allPaths.add(p);
 		resetListeners( p );
@@ -1146,7 +1146,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				pathToAdd = p.fitted;
 			else
 				pathToAdd = p;
-			pathToAdd.addTo3DViewer(plugin.univ,plugin.univBlocking,plugin.deselectedColor);
+			pathToAdd.addTo3DViewer(plugin.univ,plugin.deselectedColor);
 		}
 	}
 
@@ -2110,7 +2110,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				// Then this path should be in the
 				if( ! in3DViewer ) {
 					plugin.univ.resetView();
-					plugin.univBlocking.addContent( c );
+					plugin.univ.addContent( c );
 					c.setLocked(true);
 					plugin.univ.resetView();
 				}
