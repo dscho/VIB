@@ -106,6 +106,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		bg.addChild(addBehavior);
 		scene.addChild(bg);
 
+		resetView();
+
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
 			@Override
@@ -949,8 +951,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 */
 	public void resetView() {
 		fireTransformationStarted();
+
+		// rotate so that y shows downwards
 		Transform3D t = new Transform3D();
+		AxisAngle4d aa = new AxisAngle4d(1, 0, 0, Math.PI);
+		t.set(aa);
 		getRotationTG().setTransform(t);
+
+		t.setIdentity();
 		getTranslateTG().setTransform(t);
 		getZoomTG().setTransform(t);
 		getZoomTG().setTransform(t);
@@ -1172,6 +1180,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 					}
 					univ.fireContentAdded(c);
 					univ.addUniverseListener(c);
+					univ.fireTransformationUpdated();
 				}
 				wakeupOn(postCrit);
 			}
