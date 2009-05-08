@@ -67,6 +67,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private PointListDialog plDialog;
 
+	/**
+	 * An object used for synchronizing.
+	 * Synchronized methods in a subclass of SimpleUniverse should
+	 * be avoided, since Java3D uses it obviously internally for
+	 * locking.
+	 */
+	private final Object lock = new Object();
+
 	static{
 		UniverseSettings.load();
 	}
@@ -823,13 +831,22 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @return the added Content, or null if an error occurred.
 	 */
 	public Content addContent(Content c) {
-		if(contents.containsKey(c.name)) {
-			IJ.error("Mesh named '" + c.name + "' exists already");
-			return null;
+		synchronized(lock) {
+			if(contents.containsKey(c.name)) {
+				IJ.error("Mesh named '" + c.name + "' exists already");
+				return null;
+			}
+			addBehavior.addContent(c);
+			synchronized(c) {
+				try {
+					addBehavior.postId(AddContentBehavior.TRIGGER_ID);
+					c.wait();
+				} catch(InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			return c;
 		}
-		addBehavior.addContent(c);
-		addBehavior.postId(AddContentBehavior.TRIGGER_ID);
-		return c;
 	}
 
 	/**
@@ -869,15 +886,17 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @param name
 	 */
 	public void removeContent(String name) {
-		  Content content = (Content)contents.get(name);
-		  if(content == null)
-			    return;
-		  scene.removeChild(content);
-		  contents.remove(name);
-		  if(selected == content)
-			    clearSelection();
-		  fireContentRemoved(content);
-		  this.removeUniverseListener(content);
+		synchronized(lock) {
+			Content content = (Content)contents.get(name);
+			if(content == null)
+				return;
+			scene.removeChild(content);
+			contents.remove(name);
+			if(selected == content)
+				clearSelection();
+			fireContentRemoved(content);
+			this.removeUniverseListener(content);
+		}
 	}
 
 	/* *************************************************************
@@ -1147,6 +1166,9 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 						float range = (float)(univ.globalMax.x
 							- univ.globalMin.x);
 						univ.ensureScale(range);
+					}
+					synchronized(c) {
+						c.notify();
 					}
 					univ.fireContentAdded(c);
 					univ.addUniverseListener(c);
