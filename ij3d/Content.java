@@ -32,7 +32,7 @@ import javax.vecmath.Vector3d;
 public class Content extends BranchGroup implements UniverseListener {
 
 	// attributes
-	protected String name;
+	protected final String name;
 	protected Color3f color = null;
 	protected ImagePlus image;
 	protected boolean[] channels = new boolean[] {true, true, true};
