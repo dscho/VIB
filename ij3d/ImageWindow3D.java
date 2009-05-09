@@ -189,8 +189,8 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		}
 		void updateAndWait() {
 			update();
-			while (update > 0) {
-				synchronized (this) {
+			synchronized (this) {
+				while (update > 0) {
 					try { wait(); } catch (InterruptedException ie) { ie.printStackTrace(); }
 				}
 			}
