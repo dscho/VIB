@@ -1188,28 +1188,24 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				}
 			}));
 		}
-		if (univ.autoAdjustView) {
-			new Thread() {
-				public void run() {
-					setPriority(Thread.NORM_PRIORITY);
-					// wait until all are added
-					for (Future<Content> fu : all) {
-						try {
-							fu.get();
-						} catch (InterruptedException ie) {
-						} catch (ExecutionException ee) {
-							ee.printStackTrace();
-						}
-					}
-					// Now adjust universe view
+		// Post actions: submit a new task to the single-threaded
+		// executor service, so it will be executed after all other
+		// tasks.
+		adder.submit(new Callable<Boolean>() {
+			public Boolean call() {
+				// Now adjust universe view
+				if (univ.autoAdjustView) {
 					univ.getViewPlatformTransformer()
 						.centerAt(univ.globalCenter);
 					float range = (float)(univ.globalMax.x
 						- univ.globalMin.x);
 					univ.ensureScale(range);
 				}
-			}.start();
-		}
+				// Notify listeners
+				univ.fireTransformationUpdated();
+				return true;
+			}
+		});
 		return all;
 	}
 }
