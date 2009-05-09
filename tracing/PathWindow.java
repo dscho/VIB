@@ -273,10 +273,8 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				TreePath tp = selectedPaths[i];
 				DefaultMutableTreeNode node =
 					(DefaultMutableTreeNode)(tp.getLastPathComponent());
-				if( node != root ) {
-					++ realPathsSelected;
-					paths[i] = (Path)node.getUserObject();
-				}
+				if( node != root )
+					paths[realPathsSelected++] = (Path)node.getUserObject();
 			}
 			if( realPathsSelected == 0 )
 				updateButtonsNoneSelected();
@@ -284,7 +282,9 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 				updateButtonsOneSelected(paths[0]);
 			else
 				updateButtonsManySelected();
-			pathAndFillManager.setSelected(paths,this);
+			Path [] nonNullPaths = new Path[realPathsSelected];
+			System.arraycopy(paths,0,nonNullPaths,0,realPathsSelected);
+			pathAndFillManager.setSelected(nonNullPaths,this);
 		}
 		plugin.update3DViewerContents();
 	}
