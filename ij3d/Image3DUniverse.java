@@ -67,6 +67,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	private PointListDialog plDialog;
 
+	/**
+	 * An object used for synchronizing.
+	 * Synchronized methods in a subclass of SimpleUniverse should
+	 * be avoided, since Java3D uses it obviously internally for
+	 * locking.
+	 */
+	private final Object lock = new Object();
+
 	static{
 		UniverseSettings.load();
 	}
@@ -97,6 +105,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		BranchGroup bg = new BranchGroup();
 		bg.addChild(addBehavior);
 		scene.addChild(bg);
+
+		resetView();
 
 		// add mouse listeners
 		canvas.addMouseMotionListener(new MouseMotionAdapter() {
@@ -823,13 +833,22 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @return the added Content, or null if an error occurred.
 	 */
 	public Content addContent(Content c) {
-		if(contents.containsKey(c.name)) {
-			IJ.error("Mesh named '" + c.name + "' exists already");
-			return null;
+		synchronized(lock) {
+			if(contents.containsKey(c.name)) {
+				IJ.error("Mesh named '" + c.name + "' exists already");
+				return null;
+			}
+			addBehavior.addContent(c);
+			synchronized(c) {
+				try {
+					addBehavior.postId(AddContentBehavior.TRIGGER_ID);
+					c.wait();
+				} catch(InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			return c;
 		}
-		addBehavior.addContent(c);
-		addBehavior.postId(AddContentBehavior.TRIGGER_ID);
-		return c;
 	}
 
 	/**
@@ -869,15 +888,17 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * @param name
 	 */
 	public void removeContent(String name) {
-		  Content content = (Content)contents.get(name);
-		  if(content == null)
-			    return;
-		  scene.removeChild(content);
-		  contents.remove(name);
-		  if(selected == content)
-			    clearSelection();
-		  fireContentRemoved(content);
-		  this.removeUniverseListener(content);
+		synchronized(lock) {
+			Content content = (Content)contents.get(name);
+			if(content == null)
+				return;
+			scene.removeChild(content);
+			contents.remove(name);
+			if(selected == content)
+				clearSelection();
+			fireContentRemoved(content);
+			this.removeUniverseListener(content);
+		}
 	}
 
 	/* *************************************************************
@@ -930,8 +951,14 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 */
 	public void resetView() {
 		fireTransformationStarted();
+
+		// rotate so that y shows downwards
 		Transform3D t = new Transform3D();
+		AxisAngle4d aa = new AxisAngle4d(1, 0, 0, Math.PI);
+		t.set(aa);
 		getRotationTG().setTransform(t);
+
+		t.setIdentity();
 		getTranslateTG().setTransform(t);
 		getZoomTG().setTransform(t);
 		getZoomTG().setTransform(t);
@@ -1148,8 +1175,12 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 							- univ.globalMin.x);
 						univ.ensureScale(range);
 					}
+					synchronized(c) {
+						c.notify();
+					}
 					univ.fireContentAdded(c);
 					univ.addUniverseListener(c);
+					univ.fireTransformationUpdated();
 				}
 				wakeupOn(postCrit);
 			}
