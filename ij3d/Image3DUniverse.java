@@ -29,6 +29,12 @@ import java.io.File;
 import octree.FilePreparer;
 import octree.VolumeOctree;
 
+import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
+
 public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	public static ArrayList<Image3DUniverse> universes =
@@ -55,9 +61,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 
 	/** A reference to the Executer */
 	private Executer executer;
-
-	/** A behavior which does the actual content adding */
-	protected final AddContentBehavior addBehavior;
 
 	/**
 	 * A flag indicating whether the view is adjusted each time a
@@ -98,12 +101,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		canvas = (ImageCanvas3D)getCanvas();
 		executer = new Executer(this);
 
-		addBehavior = new AddContentBehavior(this);
-		addBehavior.setSchedulingBounds(bounds);
-		addBehavior.setEnable(true);
-
 		BranchGroup bg = new BranchGroup();
-		bg.addChild(addBehavior);
 		scene.addChild(bg);
 
 		resetView();
@@ -153,6 +151,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		removeAllContents();
 		contents = null;
 		universes.remove(this);
+		adder.shutdownNow();
 	}
 
 	/**
@@ -827,31 +826,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	/**
-	 * Add the specified Content to the universe. The is assumed that the
-	 * specified Content is constructed correctly.
-	 * @param c
-	 * @return the added Content, or null if an error occurred.
-	 */
-	public Content addContent(Content c) {
-		synchronized(lock) {
-			if(contents.containsKey(c.name)) {
-				IJ.error("Mesh named '" + c.name + "' exists already");
-				return null;
-			}
-			addBehavior.addContent(c);
-			synchronized(c) {
-				try {
-					addBehavior.postId(AddContentBehavior.TRIGGER_ID);
-					c.wait();
-				} catch(InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-			return c;
-		}
-	}
-
-	/**
 	 * @deprecated This method will not be supported in the future.
 	 * The specified 'scale' will be ignored, and the applied scale
 	 * will be calculated automatically from the minimum and maximum
@@ -1128,63 +1102,115 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		return attempt;
 	}
 
-	private static class AddContentBehavior extends Behavior {
-
-		public static final int TRIGGER_ID = 1;
-
-		private WakeupOnBehaviorPost postCrit;
-
-		private LinkedList<Content> contentsToAdd
-						= new LinkedList<Content>();
-		private Image3DUniverse univ;
-
-		public AddContentBehavior(Image3DUniverse univ) {
-			this.univ = univ;
-			postCrit = new WakeupOnBehaviorPost(null, TRIGGER_ID);
+	/** Returns true on success. */
+	private boolean addContentToScene(Content c) {
+		synchronized (lock) {
+			if(contents.containsKey(c.name)) {
+				IJ.log("Mesh named '" + c.name + "' exists already");
+				return false;
+			}
+			this.scene.addChild(c);
+			this.contents.put(c.name, c);
+			this.recalculateGlobalMinMax(c);
 		}
+		return true;
+	}
 
-		public void initialize() {
-			wakeupOn(postCrit);
+	/**
+	 * Add the specified Content to the universe. It is assumed that the
+	 * specified Content is constructed correctly.
+	 * Will wait until the Content is fully added; for asynchronous
+	 * additions of Content, use the @addContentLater method.
+	 * @param c
+	 * @return the added Content, or null if an error occurred.
+	 */
+	public Content addContent(Content c) {
+		try {
+			return addContentLater(c).get();
+		} catch (InterruptedException ie) {
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+		return null;
+	}
 
-		public synchronized void addContent(Content c) {
-			contentsToAdd.addLast(c);
-		}
+	private ExecutorService adder = Executors.newFixedThreadPool(1);
 
-		private synchronized Content poll() {
-			if(contentsToAdd.isEmpty())
-				return null;
-			return contentsToAdd.removeFirst();
-		}
-
-		public void processStimulus(Enumeration criteria) {
-			while(criteria.hasMoreElements()) {
-				Object crit = criteria.nextElement();
-				if(!(crit instanceof WakeupOnBehaviorPost))
-					return;
-
-				Content c = null;
-				while((c = poll()) != null) {
-					univ.scene.addChild(c);
-					univ.contents.put(c.name, c);
-					univ.recalculateGlobalMinMax(c);
-					if(univ.autoAdjustView) {
+	/**
+	 * Add the specified Content to the universe. It is assumed that the
+	 * specified Content is constructed correctly.
+	 * The Content is added asynchronously, and this method returns immediately.
+	 * @param c The Content to add
+	 * @return a Future holding the added Content, or null if an error occurred.
+	 */
+	public Future<Content> addContentLater(final Content c) {
+		final Image3DUniverse univ = this;
+		return adder.submit(new Callable<Content>() {
+			public Content call() {
+				synchronized (lock) {
+					if (!addContentToScene(c)) return null;
+					if (univ.autoAdjustView) {
 						univ.getViewPlatformTransformer()
 							.centerAt(univ.globalCenter);
 						float range = (float)(univ.globalMax.x
 							- univ.globalMin.x);
 						univ.ensureScale(range);
 					}
-					synchronized(c) {
-						c.notify();
-					}
+				}
+				univ.fireContentAdded(c);
+				univ.addUniverseListener(c);
+				univ.fireTransformationUpdated();
+				return c;
+			}
+		});
+	}
+
+	/**
+	 * Add the specified collection of Content to the universe. It is
+	 * assumed that the specified Content is constructed correctly.
+	 * The Content is added asynchronously, and this method returns immediately.
+	 * @param c The Collection of Content to add
+	 * @return a Collection of Future objects, each holding an added Content.
+	 *         The returned Collection is never null, but its Future objects
+	 *         may return null on calling get() on them if an error ocurred
+	 *         when adding a specific Content object.
+	 */
+	public Collection<Future<Content>> addContentLater(Collection<Content> cc) {
+		final Image3DUniverse univ = this;
+		final ArrayList<Future<Content>> all = new ArrayList<Future<Content>>();
+		for (final Content c : cc) {
+			all.add(adder.submit(new Callable<Content>() {
+				public Content call() {
+					if (!addContentToScene(c)) return null;
 					univ.fireContentAdded(c);
 					univ.addUniverseListener(c);
-					univ.fireTransformationUpdated();
+					return c;
 				}
-				wakeupOn(postCrit);
-			}
+			}));
 		}
+		if (univ.autoAdjustView) {
+			new Thread() {
+				public void run() {
+					setPriority(Thread.NORM_PRIORITY);
+					// wait until all are added
+					for (Future<Content> fu : all) {
+						try {
+							fu.get();
+						} catch (InterruptedException ie) {
+						} catch (ExecutionException ee) {
+							ee.printStackTrace();
+						}
+					}
+					// Now adjust universe view
+					univ.getViewPlatformTransformer()
+						.centerAt(univ.globalCenter);
+					float range = (float)(univ.globalMax.x
+						- univ.globalMin.x);
+					univ.ensureScale(range);
+				}
+			}.start();
+		}
+		return all;
 	}
 }
 
