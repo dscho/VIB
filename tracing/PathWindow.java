@@ -92,67 +92,41 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
+		Set<Path> selectedPaths = getSelectedPaths();
 		if( source == deleteButton ) {
-			TreePath [] selectedPaths = tree.getSelectionPaths();
-			if( selectedPaths == null || selectedPaths.length == 0 ) {
+			if( selectedPaths.isEmpty() ) {
 				IJ.error("No paths were selected for deletion");
 				return;
 			}
-			for( int i = 0; i < selectedPaths.length; ++i ) {
-				TreePath tp = selectedPaths[i];
-				DefaultMutableTreeNode node =
-					(DefaultMutableTreeNode)(tp.getLastPathComponent());
-				if( node != root ) {
-					Path p = (Path)node.getUserObject();
-					p.disconnectFromAll();
-					pathAndFillManager.deletePath( p );
-				}
+			for( Path p : selectedPaths ) {
+				p.disconnectFromAll();
+				pathAndFillManager.deletePath( p );
 			}
 		} else if( source == makePrimaryButton ) {
-			TreePath [] selectedPaths = tree.getSelectionPaths();
-			if( selectedPaths == null || selectedPaths.length != 1 ) {
+			if( selectedPaths.size() != 1 ) {
 				IJ.error("You must have exactly one path selected");
 				return;
 			}
-			DefaultMutableTreeNode node =
-				(DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent());
-			if( node == root )
-				return;
-			Path p = (Path)node.getUserObject();
+			Path [] singlePath = selectedPaths.toArray( new Path[] {} );
+			Path p = singlePath[0];
 			HashSet<Path> pathsExplored = new HashSet<Path>();
 			p.setPrimary(true);
 			pathsExplored.add(p);
 			p.unsetPrimaryForConnected(pathsExplored);
 			pathAndFillManager.resetListeners(null);
 		} else if( source == fillOutButton ) {
-			Set<Path> selectedPaths = getSelectedPaths();
 			if( selectedPaths.size() < 1 ) {
 				IJ.error("You must have one or more paths in the list selected");
 				return;
 			}
 			plugin.startFillingPaths(selectedPaths);
 		} else if( source == fitVolumeButton ) {
-			TreePath [] selectedPaths = tree.getSelectionPaths();
-			if( selectedPaths == null || selectedPaths.length < 1 ) {
+			if( selectedPaths.size() < 1 ) {
 				IJ.error("You must have one or more paths in the list selected");
 				return;
 			}
-			boolean allAlreadyFitted = true;
-			for( int i = 0; i < selectedPaths.length; ++i ) {
-				DefaultMutableTreeNode node =
-					(DefaultMutableTreeNode)(selectedPaths[i].getLastPathComponent());
-				if( node == root )
-					continue;
-				Path p = (Path)node.getUserObject();
-				if( ! p.getUseFitted() )
-					allAlreadyFitted = false;
-			}
-			for( int i = 0; i < selectedPaths.length; ++i ) {
-				DefaultMutableTreeNode node =
-					(DefaultMutableTreeNode)(selectedPaths[i].getLastPathComponent());
-				if( node == root )
-					continue;
-				Path p = (Path)node.getUserObject();
+			boolean allAlreadyFitted = allUsingFittedVersion( selectedPaths );
+			for( Path p : selectedPaths ) {
 				if( allAlreadyFitted ) {
 					p.setUseFitted(false, plugin);
 				} else {
@@ -173,17 +147,12 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 			}
 			pathAndFillManager.resetListeners(null);
 		} else if( source == renameButton ) {
-			TreePath [] selectedPaths = tree.getSelectionPaths();
-			if( selectedPaths == null || selectedPaths.length != 1 ) {
+			if( selectedPaths.size() != 1 ) {
 				IJ.error("You must have exactly one path selected");
 				return;
 			}
-			DefaultMutableTreeNode node =
-				(DefaultMutableTreeNode)(selectedPaths[0].getLastPathComponent());
-			if( node == root )
-				return;
-			Path p = (Path)node.getUserObject();
-
+			Path [] singlePath = selectedPaths.toArray( new Path[] {} );
+			Path p = singlePath[0];
 			// Pop up the rename dialog:
 			String s = (String)JOptionPane.showInputDialog(
 				this,
@@ -236,21 +205,22 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 		deleteButton.setEnabled(true);
 	}
 
+	public boolean allSelectedUsingFittedVersion() {
+		return allUsingFittedVersion( getSelectedPaths() );
+	}
+
+	public boolean allUsingFittedVersion( Set<Path> paths ) {
+		for( Path p : paths )
+			if( ! p.getUseFitted() ) {
+				return false;
+			}
+		return true;
+	}
+
 	public void updateButtonsManySelected( ) {
 		renameButton.setEnabled(false);
 		{
-			TreePath [] selectedPaths = tree.getSelectionPaths();
-			boolean allAlreadyFitted = true;
-			for( int i = 0; i < selectedPaths.length; ++i ) {
-				DefaultMutableTreeNode node =
-					(DefaultMutableTreeNode)(selectedPaths[i].getLastPathComponent());
-				if( node == root )
-					continue;
-				Path p = (Path)node.getUserObject();
-				if( ! p.getUseFitted() )
-					allAlreadyFitted = false;
-			}
-			if( allAlreadyFitted )
+			if( allSelectedUsingFittedVersion() )
 				fitVolumeButton.setText("Un-fit Volumes");
 			else
 				fitVolumeButton.setText("Fit Volumes");
@@ -262,29 +232,19 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 	}
 
 	public void valueChanged( TreeSelectionEvent e ) {
-		TreePath [] selectedPaths = tree.getSelectionPaths();
-		if( selectedPaths == null ) {
+		Set<Path> selectedPaths = getSelectedPaths();
+		if( selectedPaths.isEmpty() ) {
 			pathAndFillManager.setSelected(new Path[]{},this);
 			updateButtonsNoneSelected();
 		} else {
-			Path [] paths = new Path[selectedPaths.length];
-			int realPathsSelected = 0;
-			for( int i = 0; i < selectedPaths.length; ++i ) {
-				TreePath tp = selectedPaths[i];
-				DefaultMutableTreeNode node =
-					(DefaultMutableTreeNode)(tp.getLastPathComponent());
-				if( node != root )
-					paths[realPathsSelected++] = (Path)node.getUserObject();
-			}
-			if( realPathsSelected == 0 )
+			Path paths [] = selectedPaths.toArray( new Path[]{} );
+			if( selectedPaths.isEmpty() )
 				updateButtonsNoneSelected();
-			else if( realPathsSelected == 1 )
+			else if( selectedPaths.size() == 1 ) {
 				updateButtonsOneSelected(paths[0]);
-			else
+			} else
 				updateButtonsManySelected();
-			Path [] nonNullPaths = new Path[realPathsSelected];
-			System.arraycopy(paths,0,nonNullPaths,0,realPathsSelected);
-			pathAndFillManager.setSelected(nonNullPaths,this);
+			pathAndFillManager.setSelected(paths,this);
 		}
 		plugin.update3DViewerContents();
 	}
