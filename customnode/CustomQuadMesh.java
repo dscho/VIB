@@ -1,10 +1,11 @@
 package customnode;
 
 import java.util.List;
+import java.util.Arrays;
 
 import javax.media.j3d.Geometry;
 import javax.media.j3d.GeometryArray;
-import javax.media.j3d.TriangleArray;
+import javax.media.j3d.QuadArray;
 import javax.vecmath.Color3f;
 import javax.vecmath.Point3f;
 
@@ -25,16 +26,19 @@ public class CustomQuadMesh extends CustomTriangleMesh {
 	@Override
 	protected Geometry createGeometry() {
 		List<Point3f> tri = mesh;
-		Point3f[] coords = (Point3f[]) tri.toArray(new Point3f[] {});
+		int nValid = tri.size();
+		int nAll = 2 * nValid;
 
-		int N = coords.length;
-		Color3f colors[] = new Color3f[N];
-		for (int i = 0; i < N; i++) {
-			colors[i] = color;
-		}
+		Point3f[] coords = new Point3f[nValid];
+		tri.toArray(coords);
 
-		GeometryArray ta = new TriangleArray(N, TriangleArray.COORDINATES
-				| TriangleArray.COLOR_3 | TriangleArray.NORMALS);
+		Color3f colors[] = new Color3f[nValid];
+		Arrays.fill(colors, color);
+
+		GeometryArray ta = new QuadArray(nAll,
+						QuadArray.COORDINATES |
+						QuadArray.COLOR_3 |
+						QuadArray.NORMALS);
 
 		ta.setCoordinates(0, coords);
 		ta.setColors(0, colors);

@@ -1,6 +1,7 @@
 package customnode;
 
 import java.util.List;
+import java.util.Arrays;
 
 import javax.media.j3d.Appearance;
 import javax.media.j3d.ColoringAttributes;
@@ -117,23 +118,26 @@ public class CustomLineMesh extends CustomMesh {
 	@Override
 	protected Geometry createGeometry() {
 		List<Point3f> tri = mesh;
-		Point3f[] coords = (Point3f[])tri.toArray(new Point3f[]{});
+		int nValid = tri.size();
+		int nAll = 2 * nValid;
 
-		int N = coords.length;
-		Color3f colors[] = new Color3f[N];
-		for(int i=0; i<N; i++)
-			colors[i] = color;
+		Point3f[] coords = new Point3f[nValid];
+		tri.toArray(coords);
+
+		Color3f colors[] = new Color3f[nValid];
+		Arrays.fill(colors, color);
 
 		GeometryArray ta = null;
 		if(mode == PAIRWISE) {
-			ta = new LineArray(N,
+			ta = new LineArray(nAll,
 					LineArray.COORDINATES |
 					LineArray.COLOR_3);
+			ta.setValidVertexCount(nValid);
 		} else if (mode == CONTINUOUS) {
-			ta = new LineStripArray(N,
+			ta = new LineStripArray(nAll,
 					LineArray.COORDINATES |
 					LineArray.COLOR_3,
-					new int[] {N});
+					new int[] {nValid});
 		}
 
 		ta.setCoordinates(0, coords);

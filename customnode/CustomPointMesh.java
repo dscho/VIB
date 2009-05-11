@@ -1,6 +1,7 @@
 package customnode;
 
 import java.util.List;
+import java.util.Arrays;
 
 import javax.media.j3d.Appearance;
 import javax.media.j3d.ColoringAttributes;
@@ -84,18 +85,21 @@ public class CustomPointMesh extends CustomMesh {
 	@Override
 	protected Geometry createGeometry() {
 		List<Point3f> tri = mesh;
-		Point3f[] coords = (Point3f[])tri.toArray(new Point3f[]{});
+		int nValid = tri.size();
+		int nAll = 2 * nValid;
 
-		int N = coords.length;
-		Color3f colors[] = new Color3f[N];
-		for(int i=0; i<N; i++)
-			colors[i] = color;
+		Point3f[] coords = new Point3f[nValid];
+		tri.toArray(coords);
+
+		Color3f colors[] = new Color3f[nValid];
+		Arrays.fill(colors, color);
 
 		GeometryArray ta = null;
-		ta = new PointArray(N,
+		ta = new PointArray(nAll,
 					PointArray.COORDINATES |
 					PointArray.COLOR_3);
 
+		ta.setValidVertexCount(nValid);
 
 		ta.setCoordinates(0, coords);
 		ta.setColors(0, colors);
