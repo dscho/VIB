@@ -46,14 +46,14 @@ public class CustomQuadMesh extends CustomTriangleMesh {
 		ta.setColors(0, colors);
 
 		GeometryInfo gi = new GeometryInfo(ta);
-		gi.recomputeIndices();
 		// generate normals
 		NormalGenerator ng = new NormalGenerator();
 		ng.generateNormals(gi);
-		// stripify
-		Stripifier st = new Stripifier();
-		st.stripify(gi);
+
 		GeometryArray result = gi.getGeometryArray();
+		result.setValidVertexCount(nValid);
+
+		result.setCapability(GeometryArray.ALLOW_NORMAL_WRITE);
 		result.setCapability(GeometryArray.ALLOW_COLOR_WRITE);
 		result.setCapability(GeometryArray.ALLOW_COUNT_READ);
 		result.setCapability(GeometryArray.ALLOW_INTERSECT);

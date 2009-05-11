@@ -61,17 +61,18 @@ public class CustomTriangleMesh extends CustomMesh {
 		ta.setColors(0, colors);
 
 		GeometryInfo gi = new GeometryInfo(ta);
-		gi.recomputeIndices();
+// 		gi.recomputeIndices();
 		// generate normals
 		NormalGenerator ng = new NormalGenerator();
 		ng.generateNormals(gi);
 		// stripify
-		Stripifier st = new Stripifier();
-		st.stripify(gi);
+// 		Stripifier st = new Stripifier();
+// 		st.stripify(gi);
 		GeometryArray result = gi.getGeometryArray();
 		result.setCapability(GeometryArray.ALLOW_COLOR_WRITE);
 		result.setCapability(GeometryArray.ALLOW_COUNT_READ);
 		result.setCapability(GeometryArray.ALLOW_INTERSECT);
+		result.setValidVertexCount(nValid);
 
 		return result;
 	}
