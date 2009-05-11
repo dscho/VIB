@@ -38,6 +38,21 @@ public class CustomTriangleMesh extends CustomMesh {
 		update();
 	}
 
+	public void addTriangles(Point3f[] v) {
+		if(v.length % 3 != 0)
+			throw new IllegalArgumentException(
+				"Number must be a multiple of 3");
+		addVertices(v);
+	}
+
+	private Point3f[] threePoints = new Point3f[3];
+	public void addTriangle(Point3f p1, Point3f p2, Point3f p3) {
+		threePoints[0] = p1;
+		threePoints[1] = p2;
+		threePoints[2] = p3;
+		addVertices(threePoints);
+	}
+
 	@Override
 	protected GeometryArray createGeometry() {
 		if(mesh.size() < 3)
@@ -69,8 +84,12 @@ public class CustomTriangleMesh extends CustomMesh {
 // 		Stripifier st = new Stripifier();
 // 		st.stripify(gi);
 		GeometryArray result = gi.getGeometryArray();
+		result.setCapability(GeometryArray.ALLOW_NORMAL_WRITE);
 		result.setCapability(GeometryArray.ALLOW_COLOR_WRITE);
+		result.setCapability(GeometryArray.ALLOW_COORDINATE_WRITE);
+		result.setCapability(GeometryArray.ALLOW_COUNT_WRITE);
 		result.setCapability(GeometryArray.ALLOW_COUNT_READ);
+		result.setCapability(GeometryArray.ALLOW_FORMAT_READ);
 		result.setCapability(GeometryArray.ALLOW_INTERSECT);
 		result.setValidVertexCount(nValid);
 

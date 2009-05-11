@@ -23,6 +23,22 @@ public class CustomQuadMesh extends CustomTriangleMesh {
 		super(mesh, color, trans);
 	}
 
+	public void addQuads(Point3f[] v) {
+		if(v.length % 4 != 0)
+			throw new IllegalArgumentException(
+				"Number must be a multiple of 4");
+		addVertices(v);
+	}
+
+	private Point3f[] fourPoints = new Point3f[4];
+	public void addQuad(Point3f p1, Point3f p2, Point3f p3, Point3f p4) {
+		fourPoints[0] = p1;
+		fourPoints[1] = p2;
+		fourPoints[2] = p3;
+		fourPoints[3] = p4;
+		addVertices(fourPoints);
+	}
+
 	@Override
 	protected GeometryArray createGeometry() {
 		if(mesh.size() < 4)
@@ -55,7 +71,10 @@ public class CustomQuadMesh extends CustomTriangleMesh {
 
 		result.setCapability(GeometryArray.ALLOW_NORMAL_WRITE);
 		result.setCapability(GeometryArray.ALLOW_COLOR_WRITE);
+		result.setCapability(GeometryArray.ALLOW_COORDINATE_WRITE);
+		result.setCapability(GeometryArray.ALLOW_COUNT_WRITE);
 		result.setCapability(GeometryArray.ALLOW_COUNT_READ);
+		result.setCapability(GeometryArray.ALLOW_FORMAT_READ);
 		result.setCapability(GeometryArray.ALLOW_INTERSECT);
 
 		return result;

@@ -67,6 +67,12 @@ public class CustomLineMesh extends CustomMesh {
 		getAppearance().getLineAttributes().setLineWidth(w);
 	}
 
+	public void addLines(Point3f[] v) {
+		if(mode == PAIRWISE && (v.length % 2) != 0)
+			throw new IllegalArgumentException("Even number expected");
+		addVertices(v);
+	}
+
 	@Override
 	public float getVolume() {
 		return 0;
@@ -147,6 +153,8 @@ public class CustomLineMesh extends CustomMesh {
 		ta.setColors(0, colors);
 
 		ta.setCapability(GeometryArray.ALLOW_COLOR_WRITE);
+		ta.setCapability(GeometryArray.ALLOW_COORDINATE_WRITE);
+		ta.setCapability(GeometryArray.ALLOW_COUNT_WRITE);
 		ta.setCapability(GeometryArray.ALLOW_COUNT_READ);
 		ta.setCapability(GeometryArray.ALLOW_INTERSECT);
 

@@ -36,6 +36,16 @@ public class CustomPointMesh extends CustomMesh {
 		getAppearance().getPointAttributes().setPointAntialiasingEnable(b);
 	}
 
+	public void addPoints(Point3f[] v) {
+		addVertices(v);
+	}
+
+	private Point3f[] onePoint = new Point3f[1];
+	public void addPoint(Point3f p) {
+		onePoint[0] = p;
+		addVertices(onePoint);
+	}
+
 	@Override
 	public float getVolume() {
 		return 0;
@@ -107,6 +117,8 @@ public class CustomPointMesh extends CustomMesh {
 		ta.setColors(0, colors);
 
 		ta.setCapability(GeometryArray.ALLOW_COLOR_WRITE);
+		ta.setCapability(GeometryArray.ALLOW_COORDINATE_WRITE);
+		ta.setCapability(GeometryArray.ALLOW_COUNT_WRITE);
 		ta.setCapability(GeometryArray.ALLOW_COUNT_READ);
 		ta.setCapability(GeometryArray.ALLOW_INTERSECT);
 

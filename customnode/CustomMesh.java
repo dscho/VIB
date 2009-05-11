@@ -1,6 +1,10 @@
 package customnode;
 
 import java.util.List;
+import java.util.Arrays;
+
+import com.sun.j3d.utils.geometry.GeometryInfo;
+import com.sun.j3d.utils.geometry.NormalGenerator;
 
 import javax.media.j3d.Appearance;
 import javax.media.j3d.ColoringAttributes;
@@ -13,6 +17,7 @@ import javax.media.j3d.RenderingAttributes;
 import javax.media.j3d.Shape3D;
 import javax.media.j3d.TransparencyAttributes;
 import javax.vecmath.Color3f;
+import javax.vecmath.Vector3f;
 import javax.vecmath.Point3f;
 
 public abstract class CustomMesh extends Shape3D {
@@ -97,6 +102,89 @@ public abstract class CustomMesh extends Shape3D {
 	}
 
 	public abstract float getVolume();
+
+	private int[] valid = new int[1];
+	protected void addVerticesToGeometryStripArray(Point3f[] v) {
+		mesh.addAll(Arrays.asList(v));
+
+		// check maximum vertex count
+		GeometryStripArray ga = (GeometryStripArray)getGeometry();
+		int max = ga.getVertexCount();
+		ga.getStripVertexCounts(valid);
+		int idx = valid[0];
+		if(idx + v.length > max) {
+			// enlarge arrays
+			setGeometry(createGeometry());
+			return;
+		}
+
+
+		valid[0] = idx + v.length;
+		ga.setStripVertexCounts(valid);
+
+		ga.setCoordinates(idx, v);
+
+		// update colors
+		Color3f[] colors = new Color3f[v.length];
+		Arrays.fill(colors, this.color);
+		ga.setColors(idx, colors);
+
+		recalculateNormals(ga);
+	}
+
+	protected void addVerticesToGeometryArray(Point3f[] v) {
+		mesh.addAll(Arrays.asList(v));
+
+		// check maximum vertex count
+		GeometryArray ga = (GeometryArray)getGeometry();
+		int max = ga.getVertexCount();
+		int idx = ga.getValidVertexCount();
+		if(idx + v.length > max) {
+			// enlarge arrays
+			setGeometry(createGeometry());
+			return;
+		}
+
+
+		ga.setValidVertexCount(idx + v.length);
+		ga.setCoordinates(idx, v);
+
+		// update colors
+		Color3f[] colors = new Color3f[v.length];
+		Arrays.fill(colors, this.color);
+		ga.setColors(idx, colors);
+
+		recalculateNormals(ga);
+	}
+
+	protected void recalculateNormals(GeometryArray ga) {
+		if(ga == null)
+			return;
+		if((ga.getVertexFormat() & GeometryArray.NORMALS) == 0)
+			return;
+		GeometryInfo gi = new GeometryInfo(ga);
+		NormalGenerator ng = new NormalGenerator();
+		ng.generateNormals(gi);
+
+		gi.unindexify();
+		ga.setNormals(0, gi.getNormals());
+	}
+
+	protected void addVertices(Point3f[] v) {
+		if(mesh == null)
+			return;
+		GeometryArray ga = (GeometryArray)getGeometry();
+		if(ga == null) {
+			mesh.addAll(Arrays.asList(v));
+			setGeometry(createGeometry());
+			return;
+		}
+
+		if(ga instanceof GeometryStripArray)
+			addVerticesToGeometryStripArray(v);
+		else
+			addVerticesToGeometryArray(v);
+	}
 
 	public void setColor(Color3f color) {
 		this.color = color != null ? color : DEFAULT_COLOR;
