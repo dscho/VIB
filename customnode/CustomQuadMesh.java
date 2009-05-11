@@ -24,7 +24,9 @@ public class CustomQuadMesh extends CustomTriangleMesh {
 	}
 
 	@Override
-	protected Geometry createGeometry() {
+	protected GeometryArray createGeometry() {
+		if(mesh.size() < 4)
+			return null;
 		List<Point3f> tri = mesh;
 		int nValid = tri.size();
 		int nAll = 2 * nValid;

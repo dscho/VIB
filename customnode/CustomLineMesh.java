@@ -6,6 +6,7 @@ import java.util.Arrays;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.ColoringAttributes;
 import javax.media.j3d.Geometry;
+import javax.media.j3d.GeometryStripArray;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.LineArray;
 import javax.media.j3d.LineAttributes;
@@ -116,7 +117,9 @@ public class CustomLineMesh extends CustomMesh {
 	}
 
 	@Override
-	protected Geometry createGeometry() {
+	protected GeometryArray createGeometry() {
+		if(mesh.size() < 2)
+			return null;
 		List<Point3f> tri = mesh;
 		int nValid = tri.size();
 		int nAll = 2 * nValid;

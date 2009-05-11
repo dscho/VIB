@@ -5,6 +5,7 @@ import java.util.List;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.ColoringAttributes;
 import javax.media.j3d.Geometry;
+import javax.media.j3d.GeometryStripArray;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.Material;
 import javax.media.j3d.PolygonAttributes;
@@ -155,5 +156,5 @@ public abstract class CustomMesh extends Shape3D {
 		return appearance;
 	}
 
-	protected abstract Geometry createGeometry();
+	protected abstract GeometryArray createGeometry();
 }
