@@ -120,6 +120,26 @@ public class AppearanceCreator implements AxisConstants {
 	}
 
 	/**
+	 * This flag indicates whether textures are opaque or not.
+	 * This changes effectively the texture mode, (depending on whether
+	 * RGB or 8-bit textures are used) between RGB <-> RGBA, or
+	 * LUMINANCE <-> INTENSITY.
+	 * This only effects newly loaded textures.
+	 * Opaque textures are for example needed for the orthoslices.
+	 */
+	public void setOpaqueTextures(boolean opaque) {
+		if(this.opaque != opaque) {
+			this.opaque = opaque;
+			boolean rgb = volume.getDataType() == VoltexVolume.INT_DATA;
+			if(rgb)
+				textureMode = opaque ? Texture.RGB : Texture.RGBA;
+			else
+				textureMode = opaque ? Texture.LUMINANCE
+							: Texture.INTENSITY;
+		}
+	}
+
+	/**
 	 * Returns the Appearance object for the specified direction and index.
 	 * This is composed of the shared Appearance attributes plus the
 	 * individual textures.
