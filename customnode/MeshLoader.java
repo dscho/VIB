@@ -9,7 +9,7 @@ import com.sun.j3d.loaders.Scene;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.TreeMap;
 
 import java.io.FileNotFoundException;
 
@@ -27,7 +27,7 @@ public class MeshLoader {
 			return null;
 		}
 
-		HashMap<String,CustomMesh> meshes = new HashMap<String,CustomMesh>();
+		Map<String,CustomMesh> meshes = new TreeMap<String,CustomMesh>();
 
 		BranchGroup root = scene.getSceneGroup();
 		int n = root.numChildren();
