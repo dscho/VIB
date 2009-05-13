@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.Map;
 
 import customnode.MeshLoader;
 import customnode.CustomLineMesh;
@@ -1167,13 +1168,15 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	}
 
 	public Collection<Future<Content>> addContentLater(String file) {
-		List<CustomMesh> meshes = MeshLoader.load(file);
+		Map<String,CustomMesh> meshes = MeshLoader.load(file);
 		if(meshes == null)
 			return null;
 
 		List<Content>contents = new ArrayList<Content>();
-		for(CustomMesh mesh : meshes) {
-			String name = getSafeContentName(file);
+		for(Map.Entry<String,CustomMesh> entry : meshes.entrySet()) {
+			String name = entry.getKey();
+			name = getSafeContentName(name);
+			CustomMesh mesh = entry.getValue();
 
 			Content content = new Content(name);
 			content.color = mesh.getColor();

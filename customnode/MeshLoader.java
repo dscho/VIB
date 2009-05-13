@@ -8,12 +8,14 @@ import com.sun.j3d.loaders.Scene;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 import java.io.FileNotFoundException;
 
 public class MeshLoader {
 
-	public static List<CustomMesh> load(String file) {
+	public static Map<String,CustomMesh> load(String file) {
 
 		ObjectFile of = new ObjectFile();
 		Scene scene = null;
@@ -25,7 +27,7 @@ public class MeshLoader {
 			return null;
 		}
 
-		List<CustomMesh> meshes = new ArrayList<CustomMesh>();
+		HashMap<String,CustomMesh> meshes = new HashMap<String,CustomMesh>();
 
 		BranchGroup root = scene.getSceneGroup();
 		int n = root.numChildren();
@@ -50,17 +52,22 @@ public class MeshLoader {
 					"geometry data is not in interleaved format.");
 				continue;
 			}
+
+			String name = shape.getName();
+			if (null == name)
+				name = "Mesh-" + (1 + meshes.size());
+
 			if(ga instanceof TriangleArray)
-				meshes.add(new CustomTriangleMesh(
+				meshes.put(name, new CustomTriangleMesh(
 					readCoordinatesFromInterleaved(ga)));
 			else if(ga instanceof QuadArray)
-				meshes.add(new CustomQuadMesh(
+				meshes.put(name, new CustomQuadMesh(
 					readCoordinatesFromInterleaved(ga)));
 			else if(ga instanceof PointArray)
-				meshes.add(new CustomPointMesh(
+				meshes.put(name, new CustomPointMesh(
 					readCoordinatesFromInterleaved(ga)));
 			else if(ga instanceof LineArray)
-				meshes.add(new CustomLineMesh(
+				meshes.put(name, new CustomLineMesh(
 					readCoordinatesFromInterleaved(ga),
 					CustomLineMesh.PAIRWISE));
 			// TODO LineStripArray

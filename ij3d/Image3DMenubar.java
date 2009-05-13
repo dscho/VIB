@@ -17,6 +17,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private Executer executer;
 
 	private MenuItem add;
+	private MenuItem importObj;
 	private MenuItem color;
 	private MenuItem bgColor;
 	private MenuItem channels;
@@ -110,6 +111,10 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		add = new MenuItem("Add content");
 		add.addActionListener(this);
 		file.add(add);
+
+		importObj = new MenuItem("Import WaveFront");
+		importObj.addActionListener(this);
+		file.add(importObj);
 
 		delete = new MenuItem("Delete");
 		delete.setEnabled(false);
@@ -492,6 +497,8 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.savePointList(univ.getSelected());
 		else if (src == pl_size)
 			executer.changePointSize(univ.getSelected());
+		else if (src == importObj)
+			executer.importWaveFront();
 		else if (src == exportDXF)
 			executer.saveAsDXF();
 		else if (src == exportObj)

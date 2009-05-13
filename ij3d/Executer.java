@@ -2,6 +2,7 @@ package ij3d;
 
 import ij3d.shapes.Scalebar;
 import ij.gui.GenericDialog;
+import ij.io.OpenDialog;
 import ij.IJ;
 import ij.WindowManager;
 import ij.ImagePlus;
@@ -250,6 +251,27 @@ public class Executer {
 		Viewer4D view4d = new Viewer4D(univ);
 		if(view4d.loadContents())
 			new Viewer4DController(view4d);
+	}
+
+	public void importWaveFront() {
+		OpenDialog od = new OpenDialog("Select .obj file", OpenDialog.getDefaultDirectory(), null);
+		String filename = od.getFileName();
+		if (null == filename) return;
+		if (!filename.toLowerCase().endsWith(".obj")) {
+			IJ.showMessage("Must select a wavefront .obj file!");
+			return;
+		}
+		String path = new StringBuilder(od.getDirectory()).append(filename).toString();
+		IJ.log("path: " + path);
+		Object ob;
+		try {
+			ob = univ.addContentLater(path);
+		} catch (Exception e) {
+			e.printStackTrace();
+			ob = null;
+		}
+		if (null == ob)
+			IJ.showMessage("Could not load the file:\n" + path);
 	}
 
 	public void saveAsDXF() {
