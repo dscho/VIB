@@ -86,12 +86,13 @@ public class MeshLoader {
 		float[] data = geom.getInterleavedVertices();
 		int dataPerVertex = data.length / valid;
 
+		int offs = 0;
 		for(int v = 0; v < valid; v++) {
-			int offs = v * dataPerVertex;
+			offs += dataPerVertex;
 			vertices.add(new Point3f(
-				data[offs],
-				data[offs + 1],
-				data[offs + 2]));
+				data[offs - 3],
+				data[offs - 2],
+				data[offs - 1]));
 		}
 
 		return vertices;
