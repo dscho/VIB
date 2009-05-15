@@ -41,6 +41,9 @@ public class CustomStackWindow extends StackWindow
 		this.cc = (CustomCanvas)getCanvas();
 		
 		savedRois = new Roi[imp.getStack().getSize() + 1];
+		if (sliceSelector == null)
+			sliceSelector = new Scrollbar(Scrollbar.HORIZONTAL,
+				1, 1, 1, 2);
 		oldSlice = sliceSelector.getValue();
 		sliceSelector.addAdjustmentListener(this);
 		
