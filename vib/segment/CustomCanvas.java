@@ -3,7 +3,6 @@ package vib.segment;
 import ij.measure.Calibration;
 import ij.ImagePlus;
 import ij.IJ;
-import ij.ImageListener;
 import vib.SegmentationViewerCanvas;
 import java.awt.*;
 import java.awt.event.*;
