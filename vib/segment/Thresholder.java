@@ -154,16 +154,43 @@ public class Thresholder {
 		byte[] c = (byte[])copy.getPixels();
 
 		int w = ip.getWidth(), h = ip.getHeight();
-
 		Rectangle bounds = roi.getBoundingRect();
 		int x1 = Math.min(0, bounds.x);
 		int y1 = Math.min(0, bounds.y);
 		int x2 = Math.max(w, x1 + bounds.width);
 		int y2 = Math.max(h, y1 + bounds.height);
 
+		if (erodeDilateIterations > 0) {
+			ByteProcessor bp = new ByteProcessor(w, h);
+			byte[] p1 = (byte[])bp.getPixels();
+			for (int y = y1; y < y2; y++)
+				System.arraycopy(p, y * w + x1,
+						p1, y * w + x1, x2 - x1);
+
+			apply(bp, roi, min, max, 0, true);
+
+			for (int i = 0; i < erodeDilateIterations; i++)
+				bp.erode(1, 0);
+			for (int i = 0; i < erodeDilateIterations; i++)
+				bp.dilate(1, 0);
+
+			for (int y = y1; y < y2; y++)
+				for (int x = x1; x < x2; x++) {
+					int index = y * w + x;
+					if (p1[index] != 0)
+						p[index] = (byte)255;
+					else if (makeBinary)
+						p[index] = 0;
+					else
+						p[index] = c[index];
+				}
+
+			return;
+		}
+
 		for(int y = y1; y < y2; y++)
 			for(int x = x1; x < x2; x++) {
-				int index = y*ip.getWidth() + x;
+				int index = y * w + x;
 				if(roi.contains(x, y) &&
 						(c[index]&0xff) >= min &&
 						(c[index]&0xff) <= max)
@@ -173,8 +200,5 @@ public class Thresholder {
 				else
 					p[index] = c[index];
 			}
-
-		if (erodeDilateIterations > 0)
-			IJ.error("TODO");
 	}
 }
