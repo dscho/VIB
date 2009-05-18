@@ -97,6 +97,8 @@ public class Thresholder {
 
 		image.updateAndDraw();
 		gd.showDialog();
+		restoreSlice();
+		image.updateAndDraw();
 		if (gd.wasCanceled())
 			return;
 
@@ -110,7 +112,7 @@ public class Thresholder {
 	void select() {
 		ImageProcessor ip = copy.duplicate();
 		ImagePlus dummy = new ImagePlus("dummy", ip);
-		byte[] p = (byte[])copy.getPixels();
+		byte[] p = (byte[])ip.getPixels();
 		ThresholdToSelection ts = new ThresholdToSelection();
 		for (int i = 1; i <= image.getStackSize(); i++) {
 			Roi roi = stackWindow.getRoi(i);
@@ -125,8 +127,6 @@ public class Thresholder {
 			ts.run(ip);
 			stackWindow.setRoi(i, dummy.getRoi());
 		}
-		restoreSlice();
-		image.updateAndDraw();
 	}
 
 	protected void initializeSlice() {
