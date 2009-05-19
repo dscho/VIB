@@ -145,7 +145,6 @@ public abstract class CustomMesh extends Shape3D {
 			return;
 		}
 
-
 		ga.setValidVertexCount(idx + v.length);
 		ga.setCoordinates(idx, v);
 
@@ -166,8 +165,11 @@ public abstract class CustomMesh extends Shape3D {
 		NormalGenerator ng = new NormalGenerator();
 		ng.generateNormals(gi);
 
-		gi.unindexify();
-		ga.setNormals(0, gi.getNormals());
+		GeometryArray tmp = gi.getGeometryArray();
+		int v = ga.getValidVertexCount();
+		float[] normals = new float[3 * v];
+		tmp.getNormals(0, normals);
+		ga.setNormals(0, normals);
 	}
 
 	protected void addVertices(Point3f[] v) {
