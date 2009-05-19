@@ -4,6 +4,7 @@ package vib;
 
 import amira.AmiraParameters;
 
+import ij.ImageListener;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
 
@@ -43,6 +44,15 @@ public class SegmentationViewerCanvas extends ImageCanvas {
 		contours=new Vector[d];
 		colors=new Vector[d];
 		indices=new Vector[d];
+
+		ImagePlus.addImageListener(new ImageListener() {
+			public void imageOpened(ImagePlus imp) { }
+			public void imageClosed(ImagePlus imp) { }
+			public void imageUpdated(ImagePlus imp) {
+				if (imp == labels)
+					setLabels(labels);
+			}
+		});
 	}
 
 	public SegmentationViewerCanvas(ImagePlus imp,ImagePlus labels) {

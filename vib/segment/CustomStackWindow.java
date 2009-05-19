@@ -41,6 +41,9 @@ public class CustomStackWindow extends StackWindow
 		this.cc = (CustomCanvas)getCanvas();
 		
 		savedRois = new Roi[imp.getStack().getSize() + 1];
+		if (sliceSelector == null)
+			sliceSelector = new Scrollbar(Scrollbar.HORIZONTAL,
+				1, 1, 1, 2);
 		oldSlice = sliceSelector.getValue();
 		sliceSelector.addAdjustmentListener(this);
 		
@@ -188,7 +191,7 @@ public class CustomStackWindow extends StackWindow
 	}
 
 	public void processThresholdButton() {
-		IJ.runPlugIn("vib.Local_Threshold", "");
+		new Thresholder(this).run();
 	}
 
 	public void processCloseButton() {
@@ -297,7 +300,36 @@ public class CustomStackWindow extends StackWindow
 			}
 		}
 		cc.updateSlice(slice);
-	}	
+	}
+
+	public boolean areAllRoisEmpty() {
+		if (cc.getImage().getRoi() != null)
+			return false;
+		for (int i = 0; i < savedRois.length; i++)
+			if (i != oldSlice && savedRois[i] != null)
+				return false;
+		return true;
+	}
+
+	public Roi getRoi(int slice) {
+		if (slice == oldSlice)
+			return cc.getImage().getRoi();
+		return savedRois[slice];
+	}
+
+	public void setRoi(int slice, Roi roi) {
+		if (slice != oldSlice)
+			savedRois[slice] = roi;
+		else if (roi == null)
+			cc.getImage().killRoi();
+		else
+			cc.getImage().setRoi(roi);
+	}
+
+	public void setCurrentSlice(int slice) {
+		cc.getImage().setSlice(slice + 1);
+		updateRois(slice);
+	}
 
 	/*
 	 * MouseMotionListener interface
@@ -391,8 +423,12 @@ public class CustomStackWindow extends StackWindow
 	}
 
 	public synchronized void updateRois() {
+		updateRois(sliceSelector.getValue());
+	}
+
+	public synchronized void updateRois(int newSlice) {
 		savedRois[oldSlice] = imp.getRoi();
-		oldSlice = sliceSelector.getValue();
+		oldSlice = newSlice;
 		if (savedRois[oldSlice] == null)
 			imp.killRoi();
 		else
