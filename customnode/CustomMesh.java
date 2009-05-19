@@ -188,6 +188,22 @@ public abstract class CustomMesh extends Shape3D {
 			addVerticesToGeometryArray(v);
 	}
 
+	protected void removeVertices(int[] indices) {
+		if(mesh == null)
+			return;
+		GeometryArray ga = (GeometryArray)getGeometry();
+		if(ga == null)
+			return;
+
+		for(int i = indices.length - 1; i >= 0; i--) {
+			if(indices[i] < 0 || indices[i] >= mesh.size())
+				continue;
+			mesh.remove(indices[i]);
+		}
+		setGeometry(createGeometry());
+	}
+
+
 	public void setColor(Color3f color) {
 		this.color = color != null ? color : DEFAULT_COLOR;
 		int N = ((GeometryArray)getGeometry()).getVertexCount();

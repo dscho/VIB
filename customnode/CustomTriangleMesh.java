@@ -53,6 +53,28 @@ public class CustomTriangleMesh extends CustomMesh {
 		addVertices(threePoints);
 	}
 
+	private int[] threeIndices = new int[3];
+	public void removeTriangle(int index) {
+		int offs = 3 * index;
+		threeIndices[0] = offs;
+		threeIndices[1] = offs + 1;
+		threeIndices[2] = offs + 2;
+		removeVertices(threeIndices);
+	}
+
+	public void removeTriangles(int[] indices) {
+		Arrays.sort(indices);
+		int[] vIndices = new int[indices.length * 3];
+		for(int i = 0, j = 0; i < indices.length; i++) {
+			int index = indices[i];
+			int offs = 3 * index;
+			vIndices[j++] = offs;
+			vIndices[j++] = offs + 1;
+			vIndices[j++] = offs + 2;
+		}
+		removeVertices(vIndices);
+	}
+
 	@Override
 	protected GeometryArray createGeometry() {
 		if(mesh.size() < 3)

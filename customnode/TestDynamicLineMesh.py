@@ -70,6 +70,8 @@ mesh.addTriangle(Point3f(-10, -10, 0), Point3f(+10, -10, 0), Point3f(0, 0, 0));
 Thread.sleep(1000);
 mesh.addTriangle(Point3f(+10, -10, 0), Point3f(+10, +10, 0), Point3f(0, 0, 0));
 Thread.sleep(1000);
+mesh.removeTriangle(1);
+Thread.sleep(1000);
 mesh.addTriangle(Point3f(+10, +10, 0), Point3f(-10, +10, 0), Point3f(0, 0, 0));
 Thread.sleep(1000);
 mesh.addTriangle(Point3f(-10, +10, 0), Point3f(-10, -10, 0), Point3f(0, 0, 0));
@@ -100,7 +102,7 @@ for y in xrange(0, 8):
 			xi = 8;
 		xi = -32 + xi + x * 16;
 		Thread.sleep(500);
-		mesh.addQuad(Point3f(xi, yi, 1), Point3f(xi+8, yi, 1), \
-			Point3f(xi+8, yi+8, 1), Point3f(xi, yi+8, 1));
+		mesh.addQuad(Point3f(xi, yi, -0.1), Point3f(xi+8, yi, -0.1), \
+			Point3f(xi+8, yi+8, -0.1), Point3f(xi, yi+8, -0.1));
 
 
