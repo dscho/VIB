@@ -63,7 +63,7 @@ mesh.addPoint(Point3f(-10, -10, 0));
 
 triangles = [];
 mesh = CustomTriangleMesh(triangles, Color3f(1, 0.8, 0), 0);
-univ.addCustomMesh(mesh, "triangles");
+c = univ.addCustomMesh(mesh, "triangles");
 
 Thread.sleep(1000);
 mesh.addTriangle(Point3f(-10, -10, 0), Point3f(+10, -10, 0), Point3f(0, 0, 0));
@@ -77,6 +77,22 @@ Thread.sleep(1000);
 mesh.addTriangle(Point3f(-10, +10, 0), Point3f(-10, -10, 0), Point3f(0, 0, 0));
 Thread.sleep(1000);
 mesh.addTriangle(Point3f(-10, +10, 0), Point3f(+10, +10, 0), Point3f(0, 20, 0));
+Thread.sleep(1000);
+
+c.setShaded(0);
+
+indices = mesh.indicesOfPoint(Point3f(0, 0, 0));
+transf = Point3f();
+for i in xrange(0, 10):
+	transf.set(i, i, 0);
+	mesh.setCoordinates(indices, transf);
+	Thread.sleep(500);
+
+for i in xrange(9, -1, -1):
+	transf.set(i, i/2.0, 0);
+	mesh.setCoordinates(indices, transf);
+	Thread.sleep(500);
+
 
 # TEST QUAD MESH
 

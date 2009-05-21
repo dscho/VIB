@@ -156,7 +156,39 @@ public abstract class CustomMesh extends Shape3D {
 		recalculateNormals(ga);
 	}
 
-	protected void recalculateNormals(GeometryArray ga) {
+	public int[] indicesOfPoint(Point3f p) {
+		GeometryArray ga = (GeometryArray)getGeometry();
+		int N = ga.getVertexCount();
+		Point3f[] vertices = new Point3f[N];
+		for(int i = 0; i < N; i++)
+			vertices[i] = new Point3f();
+		ga.getCoordinates(0, vertices);
+
+		int[] indices = new int[N];
+		int i = 0;
+		for(int v = 0; v < N; v++)
+			if(vertices[v] != null && vertices[v].equals(p))
+				indices[i++] = v;
+
+		int[] ret = new int[i];
+		System.arraycopy(indices, 0, ret, 0, i);
+		return ret;
+	}
+
+	public void setCoordinate(int i, Point3f p) {
+		((GeometryArray)getGeometry()).setCoordinate(i, p);
+		mesh.get(i).set(p);
+	}
+
+	public void setCoordinates(int[] indices, Point3f p) {
+		GeometryArray ga = (GeometryArray)getGeometry();
+		for(int i = 0; i < indices.length; i++) {
+			ga.setCoordinate(indices[i], p);
+			mesh.get(i).set(p);
+		}
+	}
+
+	public void recalculateNormals(GeometryArray ga) {
 		if(ga == null)
 			return;
 		if((ga.getVertexFormat() & GeometryArray.NORMALS) == 0)
