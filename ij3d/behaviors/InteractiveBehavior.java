@@ -145,7 +145,7 @@ public class InteractiveBehavior extends Behavior {
 	 * Process key events.
 	 * @param e
 	 */
-	private void doProcess(KeyEvent e) {
+	protected void doProcess(KeyEvent e) {
 		int id = e.getID();
 
 		if(id == KeyEvent.KEY_RELEASED || id == KeyEvent.KEY_TYPED)
@@ -219,7 +219,7 @@ public class InteractiveBehavior extends Behavior {
 	 * Process mouse events.
 	 * @param e
 	 */
-	private void doProcess(MouseEvent e) {
+	protected void doProcess(MouseEvent e) {
 		int id = e.getID();
 		int mask = e.getModifiersEx();
 		Content c = univ.getSelected();
