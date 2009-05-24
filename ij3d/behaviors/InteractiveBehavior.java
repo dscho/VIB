@@ -67,7 +67,7 @@ public class InteractiveBehavior extends Behavior {
 		this.contentTransformer = univ.getContentTransformer();
 		this.picker = univ.getPicker();
 		this.viewTransformer = univ.getViewPlatformTransformer();
-		mouseEvents = new WakeupOnAWTEvent[5];
+		mouseEvents = new WakeupOnAWTEvent[6];
 	}
 
 	/**
@@ -77,8 +77,9 @@ public class InteractiveBehavior extends Behavior {
 		mouseEvents[0]= new WakeupOnAWTEvent(MouseEvent.MOUSE_DRAGGED);
 		mouseEvents[1]= new WakeupOnAWTEvent(MouseEvent.MOUSE_PRESSED);
 		mouseEvents[2]= new WakeupOnAWTEvent(MouseEvent.MOUSE_RELEASED);
-		mouseEvents[3]= new WakeupOnAWTEvent(MouseEvent.MOUSE_WHEEL);
-		mouseEvents[4]= new WakeupOnAWTEvent(AWTEvent.KEY_EVENT_MASK);
+		mouseEvents[3]= new WakeupOnAWTEvent(MouseEvent.MOUSE_CLICKED);
+		mouseEvents[4]= new WakeupOnAWTEvent(MouseEvent.MOUSE_WHEEL);
+		mouseEvents[5]= new WakeupOnAWTEvent(AWTEvent.KEY_EVENT_MASK);
 		wakeupCriterion = new WakeupOr(mouseEvents);
 		this.wakeupOn(wakeupCriterion);
 	}
