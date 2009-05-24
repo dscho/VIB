@@ -184,7 +184,7 @@ public abstract class CustomMesh extends Shape3D {
 		GeometryArray ga = (GeometryArray)getGeometry();
 		for(int i = 0; i < indices.length; i++) {
 			ga.setCoordinate(indices[i], p);
-			mesh.get(i).set(p);
+			mesh.get(indices[i]).set(p);
 		}
 	}
 
