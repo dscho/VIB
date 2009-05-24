@@ -185,7 +185,7 @@ public class Picker {
 	 * @return
 	 */
 	public Point3d getPickPointGeometry(Content c, int x, int y) {
-		PickCanvas pickCanvas = new PickCanvas(canvas, univ.getScene());
+		PickCanvas pickCanvas = new PickCanvas(canvas, c);
 		pickCanvas.setMode(PickInfo.PICK_GEOMETRY);
 		pickCanvas.setFlags(PickInfo.CLOSEST_INTERSECTION_POINT);
 		pickCanvas.setTolerance(3.0f);
