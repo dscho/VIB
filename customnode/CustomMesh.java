@@ -218,9 +218,6 @@ public abstract class CustomMesh extends Shape3D {
 	protected void removeVertices(int[] indices) {
 		if(mesh == null)
 			return;
-		GeometryArray ga = (GeometryArray)getGeometry();
-		if(ga == null)
-			return;
 
 		for(int i = indices.length - 1; i >= 0; i--) {
 			if(indices[i] < 0 || indices[i] >= mesh.size())
