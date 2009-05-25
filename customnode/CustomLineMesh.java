@@ -32,6 +32,8 @@ public class CustomLineMesh extends CustomMesh {
 	public static final float DEFAULT_LINEWIDTH = 1.0f;
 
 	private int mode = DEFAULT_MODE;
+	private int pattern = DEFAULT_PATTERN;
+	private float linewidth = DEFAULT_LINEWIDTH;
 
 	public CustomLineMesh(List<Point3f> mesh) {
 		this(mesh, DEFAULT_MODE);
@@ -56,6 +58,7 @@ public class CustomLineMesh extends CustomMesh {
 	}
 
 	public void setPattern(int pattern) {
+		this.pattern = pattern;
 		getAppearance().getLineAttributes().setLinePattern(pattern);
 	}
 
@@ -64,6 +67,7 @@ public class CustomLineMesh extends CustomMesh {
 	}
 
 	public void setLineWidth(float w) {
+		this.linewidth = w;
 		getAppearance().getLineAttributes().setLineWidth(w);
 	}
 
@@ -88,8 +92,8 @@ public class CustomLineMesh extends CustomMesh {
 		lineAttrib.setCapability(LineAttributes.ALLOW_ANTIALIASING_WRITE);
 		lineAttrib.setCapability(LineAttributes.ALLOW_PATTERN_WRITE);
 		lineAttrib.setCapability(LineAttributes.ALLOW_WIDTH_WRITE);
-		lineAttrib.setLineWidth(DEFAULT_LINEWIDTH);
-		lineAttrib.setLinePattern(DEFAULT_PATTERN);
+		lineAttrib.setLineWidth(linewidth);
+		lineAttrib.setLinePattern(pattern);
 		appearance.setLineAttributes(lineAttrib);
 
 		PolygonAttributes polyAttrib = new PolygonAttributes();
