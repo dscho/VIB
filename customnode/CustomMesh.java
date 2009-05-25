@@ -47,11 +47,9 @@ public abstract class CustomMesh extends Shape3D {
 		this.update();
 	}
 
-	protected void update() {
-		if(mesh != null) {
-			this.setGeometry(createGeometry());
-			this.setAppearance(createAppearance());
-		}
+	public void update() {
+		this.setGeometry(createGeometry());
+		this.setAppearance(createAppearance());
 	}
 
 	public List getMesh() {

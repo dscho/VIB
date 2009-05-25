@@ -77,7 +77,7 @@ public class CustomTriangleMesh extends CustomMesh {
 
 	@Override
 	protected GeometryArray createGeometry() {
-		if(mesh.size() < 3)
+		if(mesh == null || mesh.size() < 3)
 			return null;
 		List<Point3f> tri = mesh;
 		int nValid = tri.size();

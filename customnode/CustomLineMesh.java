@@ -128,7 +128,7 @@ public class CustomLineMesh extends CustomMesh {
 
 	@Override
 	protected GeometryArray createGeometry() {
-		if(mesh.size() < 2)
+		if(mesh == null || mesh.size() < 2)
 			return null;
 		List<Point3f> tri = mesh;
 		int nValid = tri.size();

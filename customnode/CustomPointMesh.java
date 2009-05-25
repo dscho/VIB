@@ -97,7 +97,7 @@ public class CustomPointMesh extends CustomMesh {
 
 	@Override
 	protected GeometryArray createGeometry() {
-		if(mesh.size() == 0)
+		if(mesh == null || mesh.size() == 0)
 			return null;
 		List<Point3f> tri = mesh;
 		int nValid = tri.size();
