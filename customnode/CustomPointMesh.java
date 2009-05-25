@@ -19,6 +19,8 @@ public class CustomPointMesh extends CustomMesh {
 
 	public static final float DEFAULT_POINT_SIZE = 1f;
 
+	private float pointsize = DEFAULT_POINT_SIZE;
+
 	public CustomPointMesh(List<Point3f> mesh) {
 		super(mesh);
 	}
@@ -29,6 +31,7 @@ public class CustomPointMesh extends CustomMesh {
 	}
 
 	public void setPointSize(float pointsize) {
+		this.pointsize = pointsize;
 		getAppearance().getPointAttributes().setPointSize(pointsize);
 	}
 
@@ -59,7 +62,7 @@ public class CustomPointMesh extends CustomMesh {
 		PointAttributes pointAttrib = new PointAttributes();
 		pointAttrib.setCapability(PointAttributes.ALLOW_ANTIALIASING_WRITE);
 		pointAttrib.setCapability(PointAttributes.ALLOW_SIZE_WRITE);
-		pointAttrib.setPointSize(DEFAULT_POINT_SIZE);
+		pointAttrib.setPointSize(pointsize);
 		appearance.setPointAttributes(pointAttrib);
 
 		PolygonAttributes polyAttrib = new PolygonAttributes();
