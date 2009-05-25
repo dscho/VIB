@@ -258,7 +258,10 @@ public abstract class CustomMesh extends Shape3D {
 
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
-		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
+		if(this.shaded)
+			polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
+		else
+			polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_LINE);
 		polyAttrib.setCullFace(PolygonAttributes.CULL_NONE);
 		polyAttrib.setBackFaceNormalFlip(true);
 		appearance.setPolygonAttributes(polyAttrib);
