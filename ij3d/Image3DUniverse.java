@@ -14,7 +14,9 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.Map;
 
+import customnode.MeshLoader;
 import customnode.CustomLineMesh;
 import customnode.CustomPointMesh;
 import customnode.CustomQuadMesh;
@@ -1164,6 +1166,32 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			}
 		});
 	}
+
+	public Collection<Future<Content>> addContentLater(String file) {
+		Map<String,CustomMesh> meshes = MeshLoader.load(file);
+		if(meshes == null)
+			return null;
+
+		List<Content>contents = new ArrayList<Content>();
+		for(Map.Entry<String,CustomMesh> entry : meshes.entrySet()) {
+			String name = entry.getKey();
+			name = getSafeContentName(name);
+			CustomMesh mesh = entry.getValue();
+
+			Content content = new Content(name);
+			content.color = mesh.getColor();
+			content.transparency = mesh.getTransparency();
+			content.shaded = mesh.isShaded();
+			content.showCoordinateSystem(
+				UniverseSettings.showLocalCoordinateSystemsByDefault);
+			content.display(new CustomMeshNode(mesh, content));
+			content.setPointListDialog(plDialog);
+
+			contents.add(content);
+		}
+		return addContentLater(contents);
+	}
+
 
 	/**
 	 * Add the specified collection of Content to the universe. It is
