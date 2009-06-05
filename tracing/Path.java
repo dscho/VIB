@@ -1677,6 +1677,8 @@ public class Path implements Comparable {
 
 	public Content addTo3DViewer(Image3DUniverse univ, Color c) {
 
+		Color3f realColor = (c == null) ? new Color3f(Color.magenta) : new Color3f(c);
+
 		if(points <= 1) {
 			content3D = null;
 			return null;
