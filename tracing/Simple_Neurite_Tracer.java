@@ -959,6 +959,27 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	float stackMax = Float.MIN_VALUE;
 	float stackMin = Float.MAX_VALUE;
 
+
+	public int guessResamplingFactor() {
+		if( width == 0 || height == 0 || depth == 0 )
+			throw new RuntimeException("Can't call guessResamplingFactor() before width, height and depth are set...");
+		/* This is about right for me, but probably should be
+		   related to the free memory somehow.  However, those
+		   calls are so notoriously unreliable on Java that
+		   it's probably not worth it. */
+		long maxSamplePoints = 500 * 500 * 100;
+		int level = 0;
+		while( true ) {
+			long samplePoints =
+				(long)(width >> level) *
+				(long)(height >> level) *
+				(long)(depth >> level);
+			if( samplePoints < maxSamplePoints )
+				return (1 << level);
+			++ level;
+		}
+	}
+
 	public void run( String ignoredArguments ) {
 
 		/* The useful macro options are:
@@ -1310,7 +1331,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 							    contentName,
 							    10, // threshold
 							    channels,
-							    2, // resampling factor
+							    guessResamplingFactor(), // resampling factor
 							    Content.VOLUME);
 				c.setLocked(true);
 				c.setTransparency(0.5f);
