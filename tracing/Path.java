@@ -23,7 +23,8 @@
 
 package tracing;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics;
 
 import ij.gui.*;
 import ij.*;
@@ -47,6 +48,7 @@ import java.util.Set;
 import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Arrays;
+import java.util.List;
 
 import util.CMTK_Transformation;
 
