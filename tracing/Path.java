@@ -1666,9 +1666,13 @@ public class Path implements Comparable {
 		return linePoints;
 	}
 
-	public Content addAsLinesTo3DViewer(Image3DUniverse univ, Color c) {
+	public Content addAsLinesTo3DViewer(Image3DUniverse univ, Color c ) {
+		return addAsLinesTo3DViewer(univ,new Color3f(c));
+	}
+
+	public Content addAsLinesTo3DViewer(Image3DUniverse univ, Color3f c ) {
 		String safeName = univ.getSafeContentName(getName()+" as lines");
-		return univ.addLineMesh( getPoint3fList(), new Color3f(c), safeName, true );
+		return univ.addLineMesh( getPoint3fList(), c, safeName, true );
 	}
 
 	public Content addTo3DViewer(Image3DUniverse univ, Color c) {
