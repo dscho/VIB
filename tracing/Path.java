@@ -38,6 +38,7 @@ import ij3d.Image3DUniverse;
 import ij3d.Content;
 import ij3d.Pipe;
 import javax.vecmath.Color3f;
+import javax.vecmath.Point3f;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -1653,6 +1654,21 @@ public class Path implements Comparable {
 
 	public Content addTo3DViewer(Image3DUniverse univ) {
 		return addTo3DViewer( univ, null );
+	}
+
+	public java.util.List<Point3f> getPoint3fList() {
+		ArrayList<Point3f> linePoints = new ArrayList<Point3f>();
+		for( int i = 0; i < points; ++i ) {
+			linePoints.add( new Point3f( (float)precise_x_positions[i],
+						     (float)precise_y_positions[i],
+						     (float)precise_z_positions[i] ) );
+		}
+		return linePoints;
+	}
+
+	public Content addAsLinesTo3DViewer(Image3DUniverse univ, Color c) {
+		String safeName = univ.getSafeContentName(getName()+" as lines");
+		return univ.addLineMesh( getPoint3fList(), new Color3f(c), safeName, true );
 	}
 
 	public Content addTo3DViewer(Image3DUniverse univ, Color c) {
