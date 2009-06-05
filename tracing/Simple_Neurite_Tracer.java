@@ -1727,50 +1727,6 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		}
 	}
 
-	public void addLineTo3DViewer( double x1, double y1, double z1,
-				       double x2, double y2, double z2,
-				       double radius,
-				       Color c,
-				       String name ) {
-
-		if( ! use3DViewer )
-			return;
-
-		int points = 8;
-
-		double [] x_points_d = new double[points];
-		double [] y_points_d = new double[points];
-		double [] z_points_d = new double[points];
-		double [] radiuses = new double[points];
-
-		for( int i = 0; i < points; ++i ) {
-			x_points_d[i] = ( i * (x2 - x1) ) / points + x1;
-			y_points_d[i] = ( i * (y2 - y1) ) / points + y1;
-			z_points_d[i] = ( i * (z2 - z1) ) / points + z1;
-			radiuses[i] = radius;
-		}
-
-		double [][][] allPoints = Pipe.makeTube(x_points_d,
-							y_points_d,
-							z_points_d,
-							radiuses,
-							1,       // resample - 1 means just "use mean distance between points", 3 is three times that, etc.
-							8);     // "parallels" (12 means cross-sections are dodecagons)
-
-		java.util.List triangles = Pipe.generateTriangles(allPoints,
-								  1); // scale
-
-		String nameWhenAddedToViewer = univ.getSafeContentName( name );
-		univ.resetView();
-		univ.addMesh(triangles,
-			     c == null ? new Color3f(Color.magenta) : new Color3f(c),
-			     nameWhenAddedToViewer,
-			     1); // threshold
-		Content content = univ.getContent(nameWhenAddedToViewer);
-		content.setLocked(true);
-		univ.resetView();
-	}
-
 	public void showCorrespondencesTo( File tracesFile, Color c, double maxDistance ) {
 
 		PathAndFillManager pafmTraces = new PathAndFillManager(
