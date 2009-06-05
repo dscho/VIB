@@ -38,6 +38,7 @@ import ij3d.Content;
 import ij3d.Pipe;
 import ij3d.Mesh_Maker;
 import javax.vecmath.Color3f;
+import javax.vecmath.Point3f;
 import ij.gui.GUI;
 
 import java.applet.Applet;
@@ -1782,6 +1783,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			return;
 		}
 
+		List<Point3f> linePoints = new ArrayList<Point3f>();
+
 		// Now find corresponding points from the first one, and draw lines to them:
 		ArrayList< NearPoint > cp = pathAndFillManager.getCorrespondences( pafmTraces, 2.5 );
 		Iterator< NearPoint > i = cp.iterator();
@@ -1791,25 +1794,33 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			if( np != null ) {
 				// System.out.println("Drawing:");
 				// System.out.println(np.toString());
-				addLineTo3DViewer(
-					np.nearX, np.nearY, np.nearZ,
-					np.pathPointX, np.pathPointY, np.pathPointZ,
-					Math.abs(x_spacing) / 4,
-					c,
-					tracesFile.getName()+"-"+done);
-				String ballName = "ball "+done;
-				if( ! univ.contains(ballName) ) {
-					List sphere = Mesh_Maker.createSphere( np.nearX,
-									       np.nearY,
-									       np.nearZ,
-									       Math.abs(x_spacing/2) );
-					univ.addMesh( sphere, new Color3f(Color.pink), ballName, 1 );
-				}
+
+				linePoints.add(new Point3f((float)np.nearX,
+							   (float)np.nearY,
+							   (float)np.nearZ));
+				linePoints.add(new Point3f((float)np.pathPointX,
+							   (float)np.pathPointY,
+							   (float)np.pathPointZ));
+
+				String ballName = univ.getSafeContentName("ball "+done);
+				List sphere = Mesh_Maker.createSphere( np.nearX,
+								       np.nearY,
+								       np.nearZ,
+								       Math.abs(x_spacing/2) );
+				univ.addTriangleMesh( sphere, new Color3f(c), ballName );
 			}
-
-
 			++done;
 		}
+		univ.addLineMesh( linePoints, new Color3f(Color.magenta), "correspondences", false );
+
+		for( int pi = 0; pi < pafmTraces.size(); ++pi ) {
+			Path p = pafmTraces.getPath(pi);
+			if( p.getUseFitted() )
+				continue;
+			else
+				p.addAsLinesTo3DViewer(univ,c);
+		}
+		univ.resetView();
 	}
 
 	private boolean showOnlySelectedPaths;
