@@ -47,11 +47,9 @@ public abstract class CustomMesh extends Shape3D {
 		this.update();
 	}
 
-	protected void update() {
-		if(mesh != null) {
-			this.setGeometry(createGeometry());
-			this.setAppearance(createAppearance());
-		}
+	public void update() {
+		this.setGeometry(createGeometry());
+		this.setAppearance(createAppearance());
 	}
 
 	public List getMesh() {
@@ -156,7 +154,34 @@ public abstract class CustomMesh extends Shape3D {
 		recalculateNormals(ga);
 	}
 
-	protected void recalculateNormals(GeometryArray ga) {
+	public int[] vertexIndicesOfPoint(Point3f p) {
+		int N = mesh.size();
+
+		int[] indices = new int[N];
+		int i = 0;
+		for(int v = 0; v < N; v++)
+			if(mesh.get(v) != null && mesh.get(v).equals(p))
+				indices[i++] = v;
+
+		int[] ret = new int[i];
+		System.arraycopy(indices, 0, ret, 0, i);
+		return ret;
+	}
+
+	public void setCoordinate(int i, Point3f p) {
+		((GeometryArray)getGeometry()).setCoordinate(i, p);
+		mesh.get(i).set(p);
+	}
+
+	public void setCoordinates(int[] indices, Point3f p) {
+		GeometryArray ga = (GeometryArray)getGeometry();
+		for(int i = 0; i < indices.length; i++) {
+			ga.setCoordinate(indices[i], p);
+			mesh.get(indices[i]).set(p);
+		}
+	}
+
+	public void recalculateNormals(GeometryArray ga) {
 		if(ga == null)
 			return;
 		if((ga.getVertexFormat() & GeometryArray.NORMALS) == 0)
@@ -190,9 +215,6 @@ public abstract class CustomMesh extends Shape3D {
 
 	protected void removeVertices(int[] indices) {
 		if(mesh == null)
-			return;
-		GeometryArray ga = (GeometryArray)getGeometry();
-		if(ga == null)
 			return;
 
 		for(int i = indices.length - 1; i >= 0; i--) {
@@ -234,7 +256,10 @@ public abstract class CustomMesh extends Shape3D {
 
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
-		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
+		if(this.shaded)
+			polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
+		else
+			polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_LINE);
 		polyAttrib.setCullFace(PolygonAttributes.CULL_NONE);
 		polyAttrib.setBackFaceNormalFlip(true);
 		appearance.setPolygonAttributes(polyAttrib);

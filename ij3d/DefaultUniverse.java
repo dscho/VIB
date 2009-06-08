@@ -132,7 +132,7 @@ public abstract class DefaultUniverse extends SimpleUniverse
 	 * Reference to the InteractiveBehavior. This handles mouse and
 	 * keyboard input.
 	 */
-	protected final InteractiveBehavior mouseBehavior;
+	protected InteractiveBehavior mouseBehavior;
 
 	/**
 	 * Reference to the ContentTransformer. This handles the mouse and
@@ -234,9 +234,7 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		viewTransformer = new InteractiveViewPlatformTransformer(this, this);
 		contentTransformer = new ContentTransformer(this, this);
 		picker = new Picker(this);
-		mouseBehavior = new InteractiveBehavior(this);
-		mouseBehavior.setSchedulingBounds(bounds);
-		scene.addChild(mouseBehavior);
+		setInteractiveBehavior(new InteractiveBehavior(this));
 
 		// add frame behavior
 		frameBehavior = new WaitForNextFrameBehavior();
@@ -279,6 +277,17 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		});
 
 		fireTransformationUpdated();
+	}
+
+	public void setInteractiveBehavior(InteractiveBehavior b) {
+		if(mouseBehavior != null)
+			scene.removeChild(mouseBehavior.getParent());
+		mouseBehavior = b;
+		mouseBehavior.setSchedulingBounds(bounds);
+		BranchGroup bg = new BranchGroup();
+		bg.setCapability(BranchGroup.ALLOW_DETACH);
+		bg.addChild(mouseBehavior);
+		scene.addChild(bg);
 	}
 
 	/**
