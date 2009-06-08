@@ -1349,13 +1349,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		   calculate the minimum and maximum in each axis to
 		   test for this: */
 
-		double minX = Math.min( 0 * x_spacing, width * x_spacing );
-		double minY = Math.min( 0 * y_spacing, width * y_spacing );
-		double minZ = Math.min( 0 * z_spacing, width * z_spacing );
+		double minX = Math.min( 0, width * x_spacing );
+		double minY = Math.min( 0, width * y_spacing );
+		double minZ = Math.min( 0, width * z_spacing );
 
-		double maxX = Math.max( 0 * x_spacing, width * x_spacing );
-		double maxY = Math.max( 0 * y_spacing, width * y_spacing );
-		double maxZ = Math.max( 0 * z_spacing, width * z_spacing );
+		double maxX = Math.max( 0, width * x_spacing );
+		double maxY = Math.max( 0, width * y_spacing );
+		double maxZ = Math.max( 0, width * z_spacing );
 
 		String line;
 		while( (line = br.readLine()) != null ) {
