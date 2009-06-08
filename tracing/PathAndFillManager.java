@@ -1491,12 +1491,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			p.setStartJoin( previousPath, pointInImage );
 		}
 
-		for( Iterator<Path> i = allPaths.iterator();
-		     i.hasNext(); ) {
-			Path p = i.next();
-			addTo3DViewer( p );
-		}
-
 		resetListeners( null, true );
 		return true;
 	}
