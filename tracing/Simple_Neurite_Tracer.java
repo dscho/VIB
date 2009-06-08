@@ -1792,7 +1792,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			}
 			++done;
 		}
-		univ.addLineMesh( linePoints, new Color3f(Color.magenta), "correspondences", false );
+		univ.addLineMesh( linePoints, new Color3f(Color.red), "correspondences", false );
 
 		for( int pi = 0; pi < pafmTraces.size(); ++pi ) {
 			Path p = pafmTraces.getPath(pi);
