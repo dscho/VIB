@@ -101,6 +101,14 @@ class NeuriteTracerResultsDialog
 	PathColorsCanvas pathColorsCanvas;
 
 	Checkbox justShowSelected;
+
+	Choice paths3DChoice;
+	String [] paths3DChoicesStrings = {
+		"BUG",
+		"as surface reconstructions",
+		"as lines",
+		"as lines and discs" };
+
 	Checkbox preprocess;
 	Checkbox usePreprocessed;
 
@@ -268,6 +276,7 @@ class NeuriteTracerResultsDialog
 		sigmaWizard.setEnabled(false);
 
 		viewPathChoice.setEnabled(false);
+		paths3DChoice.setEnabled(false);
 		preprocess.setEnabled(false);
 
 		importSWCButton.setEnabled(false);
@@ -302,6 +311,7 @@ class NeuriteTracerResultsDialog
 			junkSegment.setVisible(false);
 
 			viewPathChoice.setEnabled(true);
+			paths3DChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
 			editSigma.setEnabled( ! preprocess.getState() );
@@ -340,6 +350,7 @@ class NeuriteTracerResultsDialog
 			cancelPath.setEnabled(true);
 
 			viewPathChoice.setEnabled(true);
+			paths3DChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
 			editSigma.setEnabled( ! preprocess.getState() );
@@ -534,7 +545,7 @@ class NeuriteTracerResultsDialog
 			viewPathChoice = new Choice();
 			viewPathChoice.addItem(projectionChoice);
 			viewPathChoice.addItem(partsNearbyChoice);
-			viewPathChoice.addItemListener( this );
+			viewPathChoice.addItemListener(this);
 
 			Panel nearbyPanel = new Panel();
 			nearbyPanel.setLayout(new BorderLayout());
@@ -546,10 +557,23 @@ class NeuriteTracerResultsDialog
 
 			co.gridx = 0;
 			co.gridy = 0;
-			otherOptionsPanel.add(new Label("View paths: "),co);
+			otherOptionsPanel.add(new Label("View paths (2D): "),co);
 			co.gridx = 1;
 			co.gridy = 0;
 			otherOptionsPanel.add(viewPathChoice,co);
+
+			if( plugin != null && plugin.use3DViewer ) {
+				paths3DChoice = new Choice();
+				for( int choice = 1; choice < paths3DChoicesStrings.length; ++choice )
+					paths3DChoice.addItem(paths3DChoicesStrings[choice]);
+				paths3DChoice.addItemListener(this);
+
+				co.gridx = 0;
+				++ co.gridy;
+				otherOptionsPanel.add(new Label("View paths (3D): "),co);
+				co.gridx = 1;
+				otherOptionsPanel.add(paths3DChoice,co);
+			}
 
 			co.gridx = 0;
 			++ co.gridy;
@@ -1087,6 +1111,11 @@ class NeuriteTracerResultsDialog
 		}  else if( source == justShowSelected ) {
 
 			plugin.setShowOnlySelectedPaths( justShowSelected.getState() );
+
+		} else if( source == paths3DChoice ) {
+
+			int selectedIndex = paths3DChoice.getSelectedIndex();
+			plugin.setPaths3DDisplay( selectedIndex + 1 );
 
 		}
 

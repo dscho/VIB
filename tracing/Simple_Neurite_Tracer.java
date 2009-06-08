@@ -85,6 +85,10 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	public static final String PLUGIN_VERSION = "1.5.0";
 	static final boolean verbose = false;
 
+	static final int DISPLAY_PATHS_SURFACE = 1;
+	static final int DISPLAY_PATHS_LINES = 2;
+	static final int DISPLAY_PATHS_LINES_AND_DISCS = 3;
+
 	PathAndFillManager pathAndFillManager;
 
 	boolean use3DViewer;
@@ -1325,7 +1329,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 				String title = "Image for tracing ["+currentImage.getTitle()+"]";
 				String contentName = univ.getSafeContentName( title );
-				univ.resetView();
+				// univ.resetView();
 				Content c = univ.addContent(xy,
 							    new Color3f(Color.white),
 							    contentName,
@@ -1335,7 +1339,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 							    Content.VOLUME);
 				c.setLocked(true);
 				c.setTransparency(0.5f);
-				univ.resetView();
+				// univ.resetView();
 			}
 
 			File tracesFileToLoad = null;
@@ -1797,7 +1801,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			else
 				p.addAsLinesTo3DViewer(univ,c);
 		}
-		univ.resetView();
+		// univ.resetView();
 	}
 
 	private boolean showOnlySelectedPaths;
@@ -1843,6 +1847,17 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		deselectedColor3f = new Color3f( newColor );
 		repaintAllPanes();
 		update3DViewerContents();
+	}
+
+	private int paths3DDisplay = 1;
+
+	public void setPaths3DDisplay( int paths3DDisplay ) {
+		this.paths3DDisplay = paths3DDisplay;
+		update3DViewerContents();
+	}
+
+	public int getPaths3DDisplay( ) {
+		return this.paths3DDisplay;
 	}
 
 }

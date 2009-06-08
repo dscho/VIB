@@ -407,7 +407,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		   update3DViewerContents: */
 		if( plugin != null && plugin.use3DViewer ) {
 			p.removeFrom3DViewer( plugin.univ );
-			p.addTo3DViewer( plugin.univ );
+			p.addTo3DViewer( plugin.univ, plugin.deselectedColor3f );
 		}
 		allPaths.add(p);
 		resetListeners( p );
@@ -2058,9 +2058,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	/* Whatever the state of the paths, update the 3D viewer to
 	   make sure that they're the right colour, the right version
-	   (fitted or unfitted) is being used and whether the path
-	   should be displayed at all - it shouldn't if the "Show only
-	   selected paths" option is set. */
+	   (fitted or unfitted) is being used, whether the line or
+	   surface representation is being used, or whether the path
+	   should be displayed at all (it shouldn't if the "Show only
+	   selected paths" option is set.) */
 
 	public void update3DViewerContents() {
 		if( plugin != null && ! plugin.use3DViewer )
@@ -2075,54 +2076,15 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			if( p.fittedVersionOf != null )
 				continue;
 
-			Content c = null;
-			Content cWrong = null;
-
-			if( p.getUseFitted() ) {
-				c = p.fitted.content3D;
-				cWrong = p.content3D;
-			} else {
-				c = p.content3D;
-				if( p.fitted != null )
-					cWrong = p.fitted.content3D;
-			}
 			boolean selected = p.getSelected();
 
-			if( c == null )
-				throw new RuntimeException( "content3D should never be null for any path if use3DViewer is true");
+			System.out.println("In update3DViewerContents, selected "+selected+" for "+p);
 
-			String contentName = c.getName();
-			Color3f contentColor = c.getColor();
-
-			String wrongContentName = null;
-			if( cWrong != null )
-				wrongContentName = cWrong.getName();
-
-			// Check that the color is right:
-			if( selected && ! contentColor.equals(plugin.selectedColor3f) )
-				c.setColor( plugin.selectedColor3f );
-			if( ! selected && ! contentColor.equals(plugin.deselectedColor3f ) )
-				c.setColor( plugin.deselectedColor3f );
-
-			boolean in3DViewer = plugin.univ.contains(contentName);
-
-			if( selected || ! showOnlySelectedPaths ) {
-				// Then this path should be in the
-				if( ! in3DViewer ) {
-					plugin.univ.resetView();
-					plugin.univ.addContent( c );
-					c.setLocked(true);
-					plugin.univ.resetView();
-				}
-			} else {
-				if( in3DViewer )
-					plugin.univ.removeContent(contentName);
-			}
-
-			// If the wrong content is in the viewer, remove that:
-			if( wrongContentName != null && plugin.univ.contains(wrongContentName) )
-				plugin.univ.removeContent(wrongContentName);
-
+			p.updateContent3D(
+				plugin.univ, // The appropriate 3D universe
+				(selected || ! showOnlySelectedPaths), // Visible at all?
+				plugin.getPaths3DDisplay(), // How to display?
+				selected ? plugin.selectedColor3f : plugin.deselectedColor3f ); // Colour?
 		}
 	}
 
