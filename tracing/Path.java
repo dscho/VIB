@@ -1726,9 +1726,9 @@ public class Path implements Comparable {
 	public java.util.List<Point3f> getPoint3fList() {
 		ArrayList<Point3f> linePoints = new ArrayList<Point3f>();
 		for( int i = 0; i < points; ++i ) {
-			linePoints.add( new Point3f( (float)precise_x_positions[i],
-						     (float)precise_y_positions[i],
-						     (float)precise_z_positions[i] ) );
+			linePoints.add( new Point3f( (float)precise_x_positions[i] + (float)(Simple_Neurite_Tracer.fudgeCoordinates ? (x_spacing / 2) : 0),
+						     (float)precise_y_positions[i] + (float)(Simple_Neurite_Tracer.fudgeCoordinates ? (y_spacing / 2) : 0),
+						     (float)precise_z_positions[i] + (float)(Simple_Neurite_Tracer.fudgeCoordinates ? (z_spacing / 2) : 0)) );
 		}
 		return linePoints;
 	}
@@ -1754,9 +1754,9 @@ public class Path implements Comparable {
 		List<Point3f> allTriangles = new ArrayList<Point3f>(edges*points);
 		for( int i = 0; i < points; ++i ) {
 			List<Point3f> discMesh =
-				Mesh_Maker.createDisc( precise_x_positions[i],
-						       precise_y_positions[i],
-						       precise_z_positions[i],
+				Mesh_Maker.createDisc( precise_x_positions[i] + (Simple_Neurite_Tracer.fudgeCoordinates ? (x_spacing / 2) : 0),
+						       precise_y_positions[i] + (Simple_Neurite_Tracer.fudgeCoordinates ? (y_spacing / 2) : 0),
+						       precise_z_positions[i] + (Simple_Neurite_Tracer.fudgeCoordinates ? (z_spacing / 2) : 0),
 						       tangents_x[i],
 						       tangents_y[i],
 						       tangents_z[i],
@@ -1891,6 +1891,16 @@ public class Path implements Comparable {
 
 		java.util.List triangles = Pipe.generateTriangles(allPoints,
 								  1); // scale
+
+		if( Simple_Neurite_Tracer.fudgeCoordinates ) {
+
+			for( Object o : triangles ) {
+				Point3f p = (Point3f)o;
+				p.x +=  (float)(x_spacing / 2);
+				p.y +=  (float)(y_spacing / 2);
+				p.z +=  (float)(z_spacing / 2);
+			}
+		}
 
 		nameWhenAddedToViewer = univ.getSafeContentName( getName() );
 		// univ.resetView();

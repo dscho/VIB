@@ -82,6 +82,10 @@ import features.TubenessProcessor;
 public class Simple_Neurite_Tracer extends ThreePanes
 	implements PlugIn, SearchProgressCallback, FillerProgressCallback, GaussianGenerationCallback {
 
+	// At the moment the 3D viewer seems to make the "A Pixel Is
+	// Not A Little Square" error...
+	static final boolean fudgeCoordinates = true;
+
 	public static final String PLUGIN_VERSION = "1.5.0";
 	static final boolean verbose = false;
 
@@ -1777,17 +1781,17 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				// System.out.println("Drawing:");
 				// System.out.println(np.toString());
 
-				linePoints.add(new Point3f((float)np.nearX,
-							   (float)np.nearY,
-							   (float)np.nearZ));
-				linePoints.add(new Point3f((float)np.pathPointX,
-							   (float)np.pathPointY,
-							   (float)np.pathPointZ));
+				linePoints.add(new Point3f((float)(np.nearX + (fudgeCoordinates ? (x_spacing / 2) : 0)),
+							   (float)(np.nearY + (fudgeCoordinates ? (y_spacing / 2) : 0)),
+							   (float)(np.nearZ + (fudgeCoordinates ? (z_spacing / 2) : 0))));
+				linePoints.add(new Point3f((float)(np.pathPointX + (fudgeCoordinates ? (x_spacing / 2) : 0)),
+							   (float)(np.pathPointY + (fudgeCoordinates ? (y_spacing / 2) : 0)),
+							   (float)(np.pathPointZ + (fudgeCoordinates ? (z_spacing / 2) : 0))));
 
 				String ballName = univ.getSafeContentName("ball "+done);
-				List sphere = Mesh_Maker.createSphere( np.nearX,
-								       np.nearY,
-								       np.nearZ,
+				List sphere = Mesh_Maker.createSphere( np.nearX + (fudgeCoordinates ? (x_spacing / 2) : 0),
+								       np.nearY + (fudgeCoordinates ? (y_spacing / 2) : 0),
+								       np.nearZ + (fudgeCoordinates ? (z_spacing / 2) : 0),
 								       Math.abs(x_spacing/2) );
 				univ.addTriangleMesh( sphere, new Color3f(c), ballName );
 			}
