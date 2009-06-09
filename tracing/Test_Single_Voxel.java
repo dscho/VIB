@@ -23,9 +23,9 @@ import java.awt.Color;
 import java.util.List;
 import java.util.ArrayList;
 
-/* A test for the 3D viewer.  The results are odd at the moment - one
-   end of the red line should always appear to be at the centre of the
-   voxel, since A Pixel Is Not A Little Square. */
+/* A test for the 3D viewer.  The results are odd at the moment - the
+   crossing point of the lines should always appear to be at the
+   centre of the voxel, since A Pixel Is Not A Little Square. */
 
 public class Test_Single_Voxel implements PlugIn {
 	public void run( String ignore ) {
@@ -52,9 +52,22 @@ public class Test_Single_Voxel implements PlugIn {
 					    1, // resampling factor
 					    Content.VOLUME);
 		List<Point3f> linePoints = new ArrayList<Point3f>();
-		linePoints.add(new Point3f(1,1,1));
-		linePoints.add(new Point3f(2,2,2));
-		univ.addLineMesh( linePoints, new Color3f(Color.red), "Line from (1,1,1) to (2,2,2)", false );
+		boolean fudgeCoordinates = false;
+		if( fudgeCoordinates ) {
+			// You shouldn't need to fudge the coordinates
+			// like this to make the cross appear in the
+			// centre of the voxel...
+			linePoints.add(new Point3f(0.5f,0.5f,1.5f));
+			linePoints.add(new Point3f(2.5f,2.5f,1.5f));
+			linePoints.add(new Point3f(0.5f,2.5f,1.5f));
+			linePoints.add(new Point3f(2.5f,0.5f,1.5f));
+		} else {
+			linePoints.add(new Point3f(0,0,1));
+			linePoints.add(new Point3f(2,2,1));
+			linePoints.add(new Point3f(0,2,1));
+			linePoints.add(new Point3f(2,0,1));
+		}
+		univ.addLineMesh( linePoints, new Color3f(Color.red), "Line that cross at (1,1,1)", false );
 		univ.resetView();
 	}
 }
