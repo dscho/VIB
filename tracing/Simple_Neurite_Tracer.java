@@ -504,6 +504,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		    ((xz_tracer_canvas != null) || single_pane) &&
 		    ((zy_tracer_canvas != null) || single_pane) ) {
 
+
+			String statusMessage = "Crosshairs nearest to: ("+ix+","+iy+","+iz+")";
 			setCrosshair( x, y, z );
 			if( labelData != null ) {
 
@@ -511,8 +513,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				int m = b & 0xFF;
 
 				String material = materialList[m];
-				IJ.showStatus( "Material at crosshairs is: "+material);
+				statusMessage += ", material: " + material;
 			}
+			IJ.showStatus(statusMessage);
 
 			repaintAllPanes( ); // Or the crosshair isn't updated....
 		}
@@ -662,7 +665,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	/* Start a search thread looking for the goal in the arguments: */
 
-	synchronized void testPathTo( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
+	synchronized void testPathTo( double x_in_pane_precise, double y_in_pane_precise, int plane, PointInImage joinPoint ) {
 
 		if( ! lastStartPointSet ) {
 			IJ.showStatus( "No initial start point has been set.  Do that with a mouse click." +
@@ -675,14 +678,14 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			return;
 		}
 
-		int [] p = new int[3];
-		findPointInStack( x_in_pane, y_in_pane, plane, p );
+		double [] p = new double[3];
+		findPointInStackPrecise( x_in_pane_precise, y_in_pane_precise, plane, p );
 
 		int x_end, y_end, z_end;
 		if( joinPoint == null ) {
-			x_end = p[0];
-			y_end = p[1];
-			z_end = p[2];
+			x_end = (int)Math.round(p[0]);
+			y_end = (int)Math.round(p[1]);
+			z_end = (int)Math.round(p[2]);
 		} else {
 			x_end = (int)Math.round(joinPoint.x / x_spacing);
 			y_end = (int)Math.round(joinPoint.y / y_spacing);
@@ -815,13 +818,13 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		repaintAllPanes( );
 	}
 
-	synchronized public void clickForTrace( int x_in_pane, int y_in_pane, int plane, boolean join ) {
+	synchronized public void clickForTrace( double x_in_pane_precise, double y_in_pane_precise, int plane, boolean join ) {
 
 		PointInImage joinPoint = null;
 
 		if( join ) {
-			int [] p = new int[3];
-			findPointInStack( x_in_pane, y_in_pane, plane, p );
+			double [] p = new double[3];
+			findPointInStackPrecise( x_in_pane_precise, y_in_pane_precise, plane, p );
 			joinPoint = pathAndFillManager.nearestJoinPointOnSelectedPaths( p[0], p[1], p[2] );
 		}
 
@@ -837,32 +840,32 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			return;
 
 		if( filler != null ) {
-			setFillThresholdFrom( x_in_pane, y_in_pane, plane );
+			setFillThresholdFrom( x_in_pane_precise, y_in_pane_precise, plane );
 			return;
 		}
 
 		if( pathUnfinished ) {
 			/* Then this is a succeeding point, and we
 			   should start a search. */
-			testPathTo( x_in_pane, y_in_pane, plane, joinPoint );
+			testPathTo( x_in_pane_precise, y_in_pane_precise, plane, joinPoint );
 			resultsDialog.changeState( NeuriteTracerResultsDialog.SEARCHING );
 		} else {
 			/* This is an initial point. */
-			startPath( x_in_pane, y_in_pane, plane, joinPoint );
+			startPath( x_in_pane_precise, y_in_pane_precise, plane, joinPoint );
 			resultsDialog.changeState( NeuriteTracerResultsDialog.PARTIAL_PATH );
 		}
 
 	}
 
-	public void setFillThresholdFrom( int x_in_pane, int y_in_pane, int plane ) {
+	public void setFillThresholdFrom( double x_in_pane, double y_in_pane, int plane ) {
 
-		int [] p = new int[3];
+		double [] p = new double[3];
 
-		findPointInStack( x_in_pane, y_in_pane, plane, p );
+		findPointInStackPrecise( x_in_pane, y_in_pane, plane, p );
 
-		int x = p[0];
-		int y = p[1];
-		int z = p[2];
+		double x = p[0];
+		double y = p[1];
+		double z = p[2];
 
 		float distance = filler.getDistanceAtPoint(x,y,z);
 
@@ -882,7 +885,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	}
 
-	synchronized void startPath( int x_in_pane, int y_in_pane, int plane, PointInImage joinPoint ) {
+	synchronized void startPath( double x_in_pane_precise, double y_in_pane_precise, int plane, PointInImage joinPoint ) {
 
 		endJoin = null;
 		endJoinPoint = null;
@@ -892,8 +895,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 			return;
 		}
 
-		int [] p = new int[3];
-		findPointInStack( x_in_pane, y_in_pane, plane, p );
+		double [] p = new double[3];
+		findPointInStackPrecise( x_in_pane_precise, y_in_pane_precise, plane, p );
 
 		setPathUnfinished( true );
 		lastStartPointSet = true;
@@ -902,9 +905,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 		path.setName("New Path");
 
 		if( joinPoint == null ) {
-			last_start_point_x = p[0];
-			last_start_point_y = p[1];
-			last_start_point_z = p[2];
+			last_start_point_x = (int)Math.round(p[0]);
+			last_start_point_y = (int)Math.round(p[1]);
+			last_start_point_z = (int)Math.round(p[2]);
 		} else {
 			last_start_point_x = (int)Math.round( joinPoint.x / x_spacing );
 			last_start_point_y = (int)Math.round( joinPoint.y / y_spacing );

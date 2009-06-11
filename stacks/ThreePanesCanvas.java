@@ -148,21 +148,21 @@ public class ThreePanesCanvas extends ImageCanvas {
 
 	/**Converts an offscreen x-coordinate to a screen x-coordinate.*/
 	public int myScreenX(int ox) {
-		return  (int)((ox-srcRect.x)*magnification+magnification/2);
+		return  (int)Math.round((ox-srcRect.x)*magnification+magnification/2);
 	}
 
 	/**Converts an offscreen y-coordinate to a screen y-coordinate.*/
 	public int myScreenY(int oy) {
-		return  (int)((oy-srcRect.y)*magnification+magnification/2);
+		return  (int)Math.round((oy-srcRect.y)*magnification+magnification/2);
 	}
 
 	/**Converts a floating-point offscreen x-coordinate to a screen x-coordinate.*/
 	public int myScreenXD(double ox) {
-		return  (int)((ox-srcRect.x)*magnification+magnification/2);
+		return  (int)Math.round((ox-srcRect.x)*magnification+magnification/2);
 	}
 
 	/**Converts a floating-point offscreen x-coordinate to a screen x-coordinate.*/
 	public int myScreenYD(double oy) {
-		return  (int)((oy-srcRect.y)*magnification+magnification/2);
+		return  (int)Math.round((oy-srcRect.y)*magnification+magnification/2);
 	}
 }

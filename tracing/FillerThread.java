@@ -42,8 +42,12 @@ public class FillerThread extends SearchThread {
 	
         double reciprocal_fudge = 0.5;
 
-        public float getDistanceAtPoint( int x, int y, int z ) {
-		
+        public float getDistanceAtPoint( double xd, double yd, double zd ) {
+
+		int x = (int)Math.round( xd );
+		int y = (int)Math.round( yd );
+		int z = (int)Math.round( zd );
+
                 SearchNode [] slice = nodes_as_image[z];
                 if( slice == null )
 			return -1.0f;
@@ -53,7 +57,6 @@ public class FillerThread extends SearchThread {
 			return -1.0f;
 		else
 			return n.g;
-		
         }	
 	
         // FIXME: may be buggy, synchronization issues
