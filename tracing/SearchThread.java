@@ -118,11 +118,7 @@ public abstract class SearchThread extends Thread {
 		   exciting news. */
 	}
 
-	protected boolean atStart( int x, int y, int z ) {
-		return false;
-	}
-
-	protected boolean atGoal( int x, int y, int z ) {
+	protected boolean atGoal( int x, int y, int z, boolean fromStart ) {
 		return false;
 	}
 
@@ -463,246 +459,173 @@ public abstract class SearchThread extends Thread {
 
 				boolean verbose = false;
 
-				SearchNode p = null;
-				SearchNode q = null;
+				boolean fromStart = true;
+				if( bidirectional && open_from_goal.size() > open_from_start.size() )
+					fromStart = false;
 
-				if( open_from_start.size() > 0 ) {
+				PriorityQueue<SearchNode> open_queue = fromStart ? open_from_start : open_from_goal;
+				PriorityQueue<SearchNode> closed_queue = fromStart ? closed_from_start : closed_from_goal;
+
+				SearchNode p = null;
+
+				if( open_queue.size() > 0 ) {
 
 					// p = get_highest_priority( open_from_start, open_from_start_hash );
-					p = open_from_start.poll();
+					p = open_queue.poll();
 					nodes_as_image[p.z][p.y*width+p.x] = null;
-				}
-
-				if( bidirectional && (open_from_goal.size() > 0) ) {
-
-					// q = get_highest_priority( open_from_goal, open_from_goal_hash );
-					q = open_from_goal.poll();
-					nodes_as_image[q.z][q.y*width+q.x] = null;
 				}
 
 				// Has the route from the start found the goal?
 
-				if( definedGoal && (p != null) && atGoal( p.x, p.y, p.z ) ) {
-					if (verbose) System.out.println( "Found the goal! (from start to end)" );
-					foundGoal( p.asPath( x_spacing, y_spacing, z_spacing, spacing_units ) );
+				if( definedGoal && (p != null) && atGoal( p.x, p.y, p.z, fromStart ) ) {
+					if (verbose) System.out.println( "Found the goal!" );
+					if( fromStart )
+						foundGoal( p.asPath( x_spacing, y_spacing, z_spacing, spacing_units ) );
+					else
+						foundGoal( p.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
 					setExitReason(SUCCESS);
 					reportFinished( true );
 					return;
 				}
 
-				// Has the route from the goal found the start?
+				if( p == null )
+					continue;
 
-				if( bidirectional && definedGoal && (q != null) && atStart( q.x, q.y, q.z ) ) {
-					if (verbose) System.out.println( "Found the goal! (from end to start)" );
-					foundGoal( q.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
-					setExitReason(SUCCESS);
-					reportFinished( true );
-					return;
-				}
+				p.searchStatus = fromStart ? CLOSED_FROM_START : CLOSED_FROM_GOAL;
+				closed_queue.add( p );
+				nodes_as_image[p.z][p.y*width+p.x] = p;
 
-				if( verbose ) {
+				// Now look at the neighbours of p.  We're going to consider
+				// the 26 neighbours in 3D.
 
-					if (verbose) System.out.println( "at loop: " + loops + " open_from_start: " +
-									 open_from_start.size() + " closed_from_start:" +
-									 closed_from_start.size() );
+				for( int zdiff = -1; zdiff <= 1; zdiff++ ) {
 
-					if (verbose) System.out.println( "         " + loops + " open_from_goal: " +
-									 open_from_goal.size() + " closed_from_goal: " +
-									 closed_from_goal.size() );
-
-				}
-
-				/* To save some code duplication, we have a
-				   loop that we go through exactly twice; the
-				   first time deals with p (searching from the
-				   start) and the second time deals with q
-				   (searching from the goal). */
-
-				for( int i = 0; i < 2; ++i ) {
-
-					// "e" for "existingNode"
-					SearchNode e = (i == 0) ? p : q;
-
-					if( e == null )
+					int new_z = p.z + zdiff;
+					if( new_z < 0 || new_z >= depth )
 						continue;
 
-					if( i == 1 && ! bidirectional )
-						break;
-
-					if( i == 0 ) {
-						e.searchStatus = CLOSED_FROM_START;
-						closed_from_start.add( e );
-						nodes_as_image[e.z][e.y*width+e.x] = e;
-					} else {
-						e.searchStatus = CLOSED_FROM_GOAL;
-						closed_from_goal.add( e );
-						nodes_as_image[e.z][e.y*width+e.x] = e;
+					if( nodes_as_image[new_z] == null ) {
+						nodes_as_image[new_z] = new SearchNode[width*height];
 					}
 
-					// Now look at the neighbours of e.  We're going to consider
-					// the 26 neighbours in 3D.
+					for( int xdiff = -1; xdiff <= 1; xdiff++ )
+						for( int ydiff = -1; ydiff <= 1; ydiff++ ) {
 
-					for( int zdiff = -1; zdiff <= 1; zdiff++ ) {
+							if( (xdiff == 0) && (ydiff == 0) && (zdiff == 0) )
+								continue;
 
-						int new_z = e.z + zdiff;
-						if( new_z < 0 || new_z >= depth )
-							continue;
+							int new_x = p.x + xdiff;
+							int new_y = p.y + ydiff;
 
-						if( nodes_as_image[new_z] == null ) {
-							nodes_as_image[new_z] = new SearchNode[width*height];
-						}
+							if( new_x < 0 || new_x >= width )
+								continue;
 
-						for( int xdiff = -1; xdiff <= 1; xdiff++ )
-							for( int ydiff = -1; ydiff <= 1; ydiff++ ) {
+							if( new_y < 0 || new_y >= height )
+								continue;
 
-								if( (xdiff == 0) && (ydiff == 0) && (zdiff == 0) )
-									continue;
+							double xdiffsq = (xdiff * x_spacing) * (xdiff * x_spacing);
+							double ydiffsq = (ydiff * y_spacing) * (ydiff * y_spacing);
+							double zdiffsq = (zdiff * z_spacing) * (zdiff * z_spacing);
 
-								int new_x = e.x + xdiff;
-								int new_y = e.y + ydiff;
+							float h_for_new_point = estimateCostToGoal( new_x, new_y, new_z, fromStart );
 
-								if( new_x < 0 || new_x >= width )
-									continue;
-
-								if( new_y < 0 || new_y >= height )
-									continue;
-
-								double xdiffsq = (xdiff * x_spacing) * (xdiff * x_spacing);
-								double ydiffsq = (ydiff * y_spacing) * (ydiff * y_spacing);
-								double zdiffsq = (zdiff * z_spacing) * (zdiff * z_spacing);
-
-								float h_for_new_point = estimateCostToGoal( new_x, new_y, new_z, i );
-
-								double cost_moving_to_new_point = costMovingTo( new_x, new_y, new_z );
-								if( cost_moving_to_new_point < minimum_cost_per_unit_distance ) {
-									cost_moving_to_new_point = minimum_cost_per_unit_distance;
-								}
-
-								float g_for_new_point = (float) ( e.g + Math.sqrt( xdiffsq + ydiffsq + zdiffsq ) * cost_moving_to_new_point );
-
-								float f_for_new_point = h_for_new_point + g_for_new_point;
-
-								SearchNode newNode = createNewNode( new_x, new_y, new_z,
-												    g_for_new_point, h_for_new_point,
-												    e, FREE );
-
-
-								// Is this newNode really new?
-								SearchNode alreadyThere = nodes_as_image[new_z][new_y*width+new_x];
-
-								if( alreadyThere == null ) {
-
-									if( i == 0 ) {
-										newNode.searchStatus = OPEN_FROM_START;
-										open_from_start.add( newNode );
-									} else {
-										newNode.searchStatus = OPEN_FROM_GOAL;
-										open_from_goal.add( newNode );
-									}
-									addingNode( newNode );
-									nodes_as_image[new_z][new_y*width+new_x] = newNode;
-
-								} else {
-
-									if( bidirectional ) {
-
-										Path result = null;
-										boolean done = false;
-
-										// If either of the next two if conditions are true
-										// then we've finished.
-
-										if( (i == 0) && ((alreadyThere.searchStatus == OPEN_FROM_GOAL) ||
-												 (alreadyThere.searchStatus == CLOSED_FROM_GOAL)) ) {
-
-											if (verbose) System.out.println("Trying to add a new node from start, found a node in the goal search already there.");
-											result = e.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
-											if (verbose) System.out.println("e.asPath() is: "+e.asPath( x_spacing, y_spacing, z_spacing, spacing_units ));
-											Path fromGoalReversed = alreadyThere.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units );
-											if (verbose) System.out.println("fromGoalReversed is: "+fromGoalReversed);
-											result.add( fromGoalReversed );
-											if (verbose) System.out.println("added, that is: "+result);
-											done = true;
-
-										} else if( (i == 1) && ((alreadyThere.searchStatus == OPEN_FROM_START) ||
-													(alreadyThere.searchStatus == CLOSED_FROM_START)) ) {
-											
-
-											if (verbose) System.out.println("Trying to add a new node from goal, found a node in the start search already there.");
-											result = alreadyThere.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
-											if (verbose) System.out.println("alreadyThere.asPath() is "+alreadyThere.asPath( x_spacing, y_spacing, z_spacing, spacing_units ));
-											if (verbose) System.out.println("now the path from goal reversed is: "+e.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ));
-											result.add( e.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
-											if (verbose) System.out.println("added, that is: "+result);
-											done = true;
-										}
-
-										if( done ) {
-											if (verbose) System.out.println("Searches met!");
-											foundGoal( result );
-											setExitReason(SUCCESS);
-											reportFinished( true );
-											return;
-										}
-
-									}
-
-									// The other alternative is that this node is already in one
-									// of the lists working from the start but has a better way
-									// of getting to that point.
-									
-									if( alreadyThere.f > f_for_new_point ) {
-										
-										if( i == 0 ) {
-											
-											if( alreadyThere.searchStatus == OPEN_FROM_START ) {
-												
-												open_from_start.remove( alreadyThere );
-												alreadyThere.setFrom( newNode );
-												alreadyThere.searchStatus = OPEN_FROM_START;
-												open_from_start.add( alreadyThere );
-												continue;
-												
-											} else if( alreadyThere.searchStatus == CLOSED_FROM_START ) {
-												
-												closed_from_start.remove( alreadyThere );
-												alreadyThere.setFrom( newNode );
-												alreadyThere.searchStatus = OPEN_FROM_START;
-												open_from_start.add( alreadyThere );
-												continue;
-												
-											}
-											
-										} else if( i == 1 ) {
-											
-											if( alreadyThere.searchStatus == OPEN_FROM_GOAL ) {
-												
-												open_from_goal.remove( alreadyThere );
-												alreadyThere.setFrom( newNode );
-												alreadyThere.searchStatus = OPEN_FROM_GOAL;
-												open_from_goal.add( alreadyThere );
-												continue;
-												
-											} else if( alreadyThere.searchStatus == CLOSED_FROM_GOAL ) {
-												
-												closed_from_goal.remove( alreadyThere );
-												alreadyThere.setFrom( newNode );
-												alreadyThere.searchStatus = OPEN_FROM_GOAL;
-												open_from_goal.add( alreadyThere );
-												continue;
-												
-											}
-											
-										}
-										
-									}
-									
-								}
-								
+							double cost_moving_to_new_point = costMovingTo( new_x, new_y, new_z );
+							if( cost_moving_to_new_point < minimum_cost_per_unit_distance ) {
+								cost_moving_to_new_point = minimum_cost_per_unit_distance;
 							}
-					}
+
+							float g_for_new_point = (float) ( p.g + Math.sqrt( xdiffsq + ydiffsq + zdiffsq ) * cost_moving_to_new_point );
+
+							float f_for_new_point = h_for_new_point + g_for_new_point;
+
+							SearchNode newNode = createNewNode( new_x, new_y, new_z,
+											    g_for_new_point, h_for_new_point,
+											    p, FREE );
+
+							// Is this newNode really new?
+							SearchNode alreadyThere = nodes_as_image[new_z][new_y*width+new_x];
+
+							if( alreadyThere == null ) {
+
+								newNode.searchStatus = fromStart ? OPEN_FROM_START : OPEN_FROM_GOAL;
+								open_queue.add( newNode );
+								addingNode( newNode );
+								nodes_as_image[new_z][new_y*width+new_x] = newNode;
+
+							} else {
+
+								if( bidirectional ) {
+
+									Path result = null;
+									boolean done = false;
+
+									// If either of the next two if conditions are true
+									// then we've finished.
+
+									if( fromStart && ((alreadyThere.searchStatus == OPEN_FROM_GOAL) ||
+											  (alreadyThere.searchStatus == CLOSED_FROM_GOAL)) ) {
+
+										if (verbose) System.out.println("Trying to add a new node from start, found a node in the goal search already there.");
+										result = p.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
+										if (verbose) System.out.println("p.asPath() is: "+p.asPath( x_spacing, y_spacing, z_spacing, spacing_units ));
+										Path fromGoalReversed = alreadyThere.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units );
+										if (verbose) System.out.println("fromGoalReversed is: "+fromGoalReversed);
+										result.add( fromGoalReversed );
+										if (verbose) System.out.println("added, that is: "+result);
+										done = true;
+
+									} else if( (! fromStart) && ((alreadyThere.searchStatus == OPEN_FROM_START) ||
+												     (alreadyThere.searchStatus == CLOSED_FROM_START)) ) {
+
+
+										if (verbose) System.out.println("Trying to add a new node from goal, found a node in the start search already there.");
+										result = alreadyThere.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
+										if (verbose) System.out.println("alreadyThere.asPath() is "+alreadyThere.asPath( x_spacing, y_spacing, z_spacing, spacing_units ));
+										if (verbose) System.out.println("now the path from goal reversed is: "+p.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ));
+										result.add( p.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
+										if (verbose) System.out.println("added, that is: "+result);
+										done = true;
+									}
+
+									if( done ) {
+										if (verbose) System.out.println("Searches met!");
+										foundGoal( result );
+										setExitReason(SUCCESS);
+										reportFinished( true );
+										return;
+									}
+
+								}
+
+								// The other alternative is that this node is already in one
+								// of the lists working from the start but has a better way
+								// of getting to that point.
+
+								if( alreadyThere.f > f_for_new_point ) {
+
+									if( alreadyThere.searchStatus == (fromStart ? OPEN_FROM_START : OPEN_FROM_GOAL) ) {
+
+										open_queue.remove( alreadyThere );
+										alreadyThere.setFrom( newNode );
+										alreadyThere.searchStatus = fromStart ? OPEN_FROM_START : OPEN_FROM_GOAL;
+										open_queue.add( alreadyThere );
+
+									} else if( alreadyThere.searchStatus == (fromStart ? CLOSED_FROM_START : CLOSED_FROM_GOAL) ) {
+
+										closed_queue.remove( alreadyThere );
+										alreadyThere.setFrom( newNode );
+										alreadyThere.searchStatus = fromStart ? OPEN_FROM_START : OPEN_FROM_GOAL;
+										open_queue.add( alreadyThere );
+
+									}
+
+								}
+
+							}
+
+						}
 				}
-				
+
 				++ loops;
 			}
 
@@ -712,7 +635,7 @@ public abstract class SearchThread extends Thread {
 			   programmer hasn't populated the open list to start
 			   with.)  However, in this case let's return the best
 			   path so far anyway... */
-			
+
 			if (verbose) System.out.println( "FAILED to find a route.  Shouldn't happen..." );
 			setExitReason(POINTS_EXHAUSTED);
 			reportFinished( false );
@@ -731,7 +654,7 @@ public abstract class SearchThread extends Thread {
 	 * defined goal in this default superclass implementation, so
 	 * always return 0 so we end up with Dijkstra's algorithm. */
 
-	float estimateCostToGoal( int current_x, int current_y, int current_z, int to_start_or_goal ) {
+	float estimateCostToGoal( int current_x, int current_y, int current_z, boolean fromStart ) {
 		return 0;
 	}
 

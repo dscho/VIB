@@ -48,15 +48,12 @@ public class TracerThread extends SearchThread {
 
         Path result;
 
-
 	@Override
-	protected boolean atStart( int x, int y, int z ) {
-		return (x == start_x) && (y == start_y) && (z == start_z);
-	}
-
-	@Override
-	protected boolean atGoal( int x, int y, int z ) {
-		return (x == goal_x) && (y == goal_y) && (z == goal_z);
+	protected boolean atGoal( int x, int y, int z, boolean fromStart ) {
+		if( fromStart )
+			return (x == goal_x) && (y == goal_y) && (z == goal_z);
+		else
+			return (x == start_x) && (y == start_y) && (z == start_z);
 	}
 
 	@Override
@@ -135,13 +132,13 @@ public class TracerThread extends SearchThread {
 
 		SearchNode s = createNewNode( start_x, start_y, start_z,
 					      0,
-					      estimateCostToGoal( start_x, start_y, start_z, 0 ),
+					      estimateCostToGoal( start_x, start_y, start_z, true ),
 					      null, OPEN_FROM_START );
 		addNode(s);
 
 		SearchNode g = createNewNode( goal_x, goal_y, goal_z,
 					      0,
-					      estimateCostToGoal( goal_x, goal_y, goal_z, 1 ),
+					      estimateCostToGoal( goal_x, goal_y, goal_z, false ),
 					      null, OPEN_FROM_GOAL );
 
 		addNode(g);
@@ -297,11 +294,11 @@ public class TracerThread extends SearchThread {
         }
 
 	@Override
-        float estimateCostToGoal( int current_x, int current_y, int current_z, int to_goal_or_start ) {
+        float estimateCostToGoal( int current_x, int current_y, int current_z, boolean fromStart ) {
 
-                double xdiff = (((to_goal_or_start == 0) ? goal_x : start_x) - current_x) * x_spacing;
-                double ydiff = (((to_goal_or_start == 0) ? goal_y : start_y) - current_y) * y_spacing;
-                double zdiff = (((to_goal_or_start == 0) ? goal_z : start_z) - current_z) * z_spacing;
+                double xdiff = ((fromStart ? goal_x : start_x) - current_x) * x_spacing;
+                double ydiff = ((fromStart ? goal_y : start_y) - current_y) * y_spacing;
+                double zdiff = ((fromStart ? goal_z : start_z) - current_z) * z_spacing;
 
                 double distance = Math.sqrt( xdiff * xdiff + ydiff * ydiff + zdiff * zdiff );
 
