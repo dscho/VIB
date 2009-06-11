@@ -107,8 +107,10 @@ public class Install_J3D implements PlugIn {
 	 * Depending on the architecture, the corresponding files are
 	 * downloaded and extracted, as the files of j3djre.zip, to
 	 * the 1st extension directory of java.
+	 *
+	 * @return true on success
 	 */
-	public static void autoInstall() {
+	public static boolean autoInstall() {
 		String filename = null;
 		if(IJ.isLinux())
 			filename = IJ.is64Bit() ? LIN_64 : LIN_32;
@@ -119,7 +121,7 @@ public class Install_J3D implements PlugIn {
 		
 		if(filename == null) {
 			println("could not detect operating system");
-			return;
+			return false;
 		}
 
 		try {
@@ -132,9 +134,10 @@ public class Install_J3D implements PlugIn {
 			IJ.error(e.getMessage());
 			println(e.getMessage());
 			e.printStackTrace();
-			return;
+			return false;
 		}
 		print("Installation successful!");
+		return true;
 	}
 
 	/**

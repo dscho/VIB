@@ -22,11 +22,6 @@ public class ImageJ3DViewer implements PlugIn {
 
 	public void run(String arg) {
 		ImagePlus image = WindowManager.getCurrentImage();
-		if(checkJava3D()) {
-			IJ.showMessage("Please restart ImageJ now");
-			return;
-		}
-
 		try {
 			Image3DUniverse univ = new Image3DUniverse();
 			univ.show();
@@ -56,24 +51,6 @@ public class ImageJ3DViewer implements PlugIn {
 			}
 			new ij.text.TextWindow("Error", buf.toString(), 500, 400);
 		}
-	}
-
-	public static boolean checkJava3D() {
-		String version = Install_J3D.getJava3DVersion();
-		System.out.println("version = " + version);
-		if(version != null && Float.parseFloat(version) >= 1.5)
-			return false;
-
-		boolean inst = IJ.showMessageWithCancel("Outdated Java 3D version",
-			"Java 3D version " + version + " detected,\n" +
-			"but version >= 1.5 is required.\n" +
-			"Auto-install new version?");
-
-		if(inst) {
-			Install_J3D.autoInstall();
-			return true;
-		}
-		return false;
 	}
 
 	private static Image3DUniverse getUniv() {
