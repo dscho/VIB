@@ -48,7 +48,7 @@ public class FillerThread extends SearchThread {
 		int y = (int)Math.round( yd );
 		int z = (int)Math.round( zd );
 
-                SearchNode [] slice = nodes_as_image[z];
+                SearchNode [] slice = nodes_as_image_from_start[z];
                 if( slice == null )
 			return -1.0f;
 		
@@ -189,10 +189,10 @@ public class FillerThread extends SearchThread {
 			}
 			if( n.open ) {
 				s.searchStatus = OPEN_FROM_START;
-				result.addNode( s );
+				result.addNode( s, true );
 			} else {
 				s.searchStatus = CLOSED_FROM_START;
-				result.addNode( s );
+				result.addNode( s, true );
 			}
 		}
 		result.setSourcePaths( fill.sourcePaths );
@@ -250,7 +250,7 @@ public class FillerThread extends SearchThread {
 							       0,
                                                                null,
 							       OPEN_FROM_START );
-				addNode(f);
+				addNode(f,true);
                         }
 		}
 	}
@@ -279,11 +279,11 @@ public class FillerThread extends SearchThread {
                 ImageStack stack = new ImageStack(width,height);
 		
                 for( int z = 0; z < depth; ++z ) {
-			SearchNode [] nodes_this_slice=nodes_as_image[z];
+			SearchNode [] nodes_this_slice=nodes_as_image_from_start[z];
 			if( nodes_this_slice != null )
 				for( int y = 0; y < height; ++y ) {
 					for( int x = 0; x < width; ++x ) {
-						SearchNode s = nodes_as_image[z][y*width+x];
+						SearchNode s = nodes_as_image_from_start[z][y*width+x];
 						if( (s != null) && (s.g <= threshold) ) {	
 							switch( imageType ) {
 							case ImagePlus.GRAY8:

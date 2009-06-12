@@ -134,14 +134,14 @@ public class TracerThread extends SearchThread {
 					      0,
 					      estimateCostToGoal( start_x, start_y, start_z, true ),
 					      null, OPEN_FROM_START );
-		addNode(s);
+		addNode(s,true);
 
 		SearchNode g = createNewNode( goal_x, goal_y, goal_z,
 					      0,
 					      estimateCostToGoal( goal_x, goal_y, goal_z, false ),
 					      null, OPEN_FROM_GOAL );
 
-		addNode(g);
+		addNode(g,false);
 
                 this.result = null;
         }
