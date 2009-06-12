@@ -677,6 +677,24 @@ public abstract class SearchThread extends Thread {
 		return exitReason;
 	}
 
+	SearchNode anyNodeUnderThreshold( int x, int y, int z, double threshold ) {
+		SearchNode [] startSlice = nodes_as_image_from_start[z];
+		SearchNode [] goalSlice = nodes_as_image_from_goal[z];
+		int index = y*width+x;
+		SearchNode n = null;
+		if( startSlice != null ) {
+			n = startSlice[index];
+			if( n != null && threshold >= 0 && n.g > threshold )
+				n = null;
+			if( n == null && goalSlice != null ) {
+				n = goalSlice[index];
+				if( threshold >= 0 && n.g > threshold )
+					n = null;
+			}
+		}
+		return n;
+	}
+
 	/* This draws over the Graphics object the current progress of
 	   the search at this slice.  If openColor or closedColor are
 	   null then that means "don't bother to draw that list". */
@@ -708,19 +726,10 @@ public abstract class SearchThread extends Thread {
 				int z = currentSliceInPlane;
 				for( int y = 0; y < height; ++y )
 					for( int x = 0; x < width; ++x ) {
-						SearchNode [] startSlice = nodes_as_image_from_start[z];
-						SearchNode [] goalSlice = nodes_as_image_from_goal[z];
-						int index = y*width+x;
-						SearchNode n = null;
-						if( startSlice != null )
-							n = startSlice[index];
-						if( n == null && goalSlice != null )
-							n = goalSlice[index];
-						if( n == null )
+						SearchNode n = anyNodeUnderThreshold(x,y,z,drawingThreshold);
+						if (n == null)
 							continue;
 						byte status = n.searchStatus;
-						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
-							continue;
 						if( status == start_status || status == goal_status )
 							g.fillRect( canvas.myScreenX(x) - pixel_size / 2, canvas.myScreenY(y) - pixel_size / 2, pixel_size, pixel_size );
 					}
@@ -728,19 +737,10 @@ public abstract class SearchThread extends Thread {
 				int y = currentSliceInPlane;
 				for( int z = 0; z < depth; ++ z )
 					for( int x = 0; x < width; ++x ) {
-						SearchNode [] startSlice = nodes_as_image_from_start[z];
-						SearchNode [] goalSlice = nodes_as_image_from_goal[z];
-						int index = y*width+x;
-						SearchNode n = null;
-						if( startSlice != null )
-							n = startSlice[index];
-						if( n == null && goalSlice != null )
-							n = goalSlice[index];
-						if( n == null )
+						SearchNode n = anyNodeUnderThreshold(x,y,z,drawingThreshold);
+						if (n == null)
 							continue;
 						byte status = n.searchStatus;
-						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
-							continue;
 						if( status == start_status || status == goal_status )
 							g.fillRect( canvas.myScreenX(x) - pixel_size / 2, canvas.myScreenY(z) - pixel_size / 2, pixel_size, pixel_size );
 					}
@@ -748,19 +748,10 @@ public abstract class SearchThread extends Thread {
 				int x = currentSliceInPlane;
 				for( int y = 0; y < height; ++y )
 					for( int z = 0; z < depth; ++z ) {
-						SearchNode [] startSlice = nodes_as_image_from_start[z];
-						SearchNode [] goalSlice = nodes_as_image_from_goal[z];
-						int index = y*width+x;
-						SearchNode n = null;
-						if( startSlice != null )
-							n = startSlice[index];
-						if( n == null && goalSlice != null )
-							n = goalSlice[index];
-						if( n == null )
+						SearchNode n = anyNodeUnderThreshold(x,y,z,drawingThreshold);
+						if (n == null)
 							continue;
 						byte status = n.searchStatus;
-						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
-							continue;
 						if( status == start_status || status == goal_status )
 							g.fillRect( canvas.myScreenX(z) - pixel_size / 2, canvas.myScreenY(y) - pixel_size / 2, pixel_size, pixel_size );
 					}
