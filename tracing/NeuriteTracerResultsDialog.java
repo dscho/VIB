@@ -562,8 +562,8 @@ class NeuriteTracerResultsDialog
 			co.gridy = 0;
 			otherOptionsPanel.add(viewPathChoice,co);
 
+			paths3DChoice = new Choice();
 			if( plugin != null && plugin.use3DViewer ) {
-				paths3DChoice = new Choice();
 				for( int choice = 1; choice < paths3DChoicesStrings.length; ++choice )
 					paths3DChoice.addItem(paths3DChoicesStrings[choice]);
 				paths3DChoice.addItemListener(this);
