@@ -27,12 +27,16 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
 import ij.IJ;
+import ij.text.TextWindow;
 
 import stacks.ThreePanes;
 
 import java.util.*;
 import java.awt.Color;
 import java.awt.Graphics;
+
+import java.io.CharArrayWriter;
+import java.io.PrintWriter;
 
 /* This is the thread that explores the image using a variety of
    strategies, for example to trace tubular structures or surfaces. */
@@ -645,6 +649,20 @@ public abstract class SearchThread extends Thread {
 			IJ.error("Out of memory while searching for a path");
 			setExitReason(OUT_OF_MEMORY);
 			reportFinished( false );
+		} catch( Throwable t ) {
+			// This is more-or-less based on the catch( Throwable )
+			// in Excecuter.java in ImageJ.  FIXME: change this to
+			// call the Bug_Submitter directly...
+			CharArrayWriter caw = new CharArrayWriter();
+			PrintWriter pw = new PrintWriter(caw);
+			t.printStackTrace(pw);
+			String s = "There was an exception in the search thread:\n";
+			s += caw.toString();
+			int w=350, h=250;
+			if (IJ.getInstance()!=null)
+				new TextWindow("Exception in SearchThread", s, w, h);
+			else
+				IJ.log(s);
 		}
 		return;
 
