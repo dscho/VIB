@@ -654,6 +654,7 @@ class NeuriteTracerResultsDialog
 			showOrHideFillList.addActionListener(this);
 			hideWindowsPanel.add( showOrHidePathList );
 			hideWindowsPanel.add( showOrHideFillList );
+			c.fill = GridBagConstraints.HORIZONTAL;
 			add( hideWindowsPanel, c );
 		}
 
@@ -687,14 +688,18 @@ class NeuriteTracerResultsDialog
 			c.anchor = GridBagConstraints.CENTER;
 			c.fill = GridBagConstraints.NONE;
 
-			loadLabelsButton = new Button("Load Labels");
-			loadLabelsButton.addActionListener( this );
-			add(loadLabelsButton,c);
+			Panel otherImportExportPanel = new Panel();
+			{
+				loadLabelsButton = new Button("Load Labels");
+				loadLabelsButton.addActionListener( this );
 
-			++c.gridy;
-			exportCSVButton = new Button("Export as CSV");
-			exportCSVButton.addActionListener( this );
-			add(exportCSVButton,c);
+				exportCSVButton = new Button("Export as CSV");
+				exportCSVButton.addActionListener( this );
+
+				otherImportExportPanel.add(loadLabelsButton);
+				otherImportExportPanel.add(exportCSVButton);
+			}
+			add(otherImportExportPanel,c);
 
 			++c.gridy;
 			showCorrespondencesToButton = new Button("Show Correspondences to Traces...");
