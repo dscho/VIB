@@ -301,20 +301,24 @@ public class Biorad_Reader extends ImagePlus implements PlugIn {
 	f.close();
 	
 	return hasLut;
-    }
+	}
 
-    /* Extracts a certain field from a string. A space is considered
-       as the field delimiter. */
+    /* Extracts a certain field from a string. One (or more) spaces are 
+        considered the field delimiter. This version corrects a 
+        long-standing bug that resulted in spaces being prepended to units. */
     String getField(String str, int fieldIndex) {
-	char delimiter = ' ';
-	int startIndex=0, endIndex;
-	for (int i=1; i<fieldIndex; i++)
-	    startIndex = str.indexOf(delimiter, startIndex+1);
-	endIndex = str.indexOf(delimiter, startIndex+1);
-	if (startIndex>=0 && endIndex>=0)
-	    return str.substring(startIndex, endIndex); 
-	else
-	    return "";
+        char delimiter = ' ';
+        int startIndex=0, endIndex;
+        for (int i=1; i<fieldIndex; i++)
+            startIndex = str.indexOf(delimiter, startIndex)+1;
+        // NB This means that each field must be at least length 1
+        endIndex = str.indexOf(delimiter, startIndex+1);
+        // If we can't find another instance of delim, read to end of Note
+        if(endIndex==-1) endIndex=str.length();
+        if (startIndex>=0 && endIndex>=0)
+            return str.substring(startIndex, endIndex); 
+        else
+            return "";
     }
 	
     /** Converts a string to a double. Returns 1.0 if the string does
