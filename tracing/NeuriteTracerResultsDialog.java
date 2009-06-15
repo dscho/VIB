@@ -122,7 +122,6 @@ class NeuriteTracerResultsDialog
 
 	Button loadLabelsButton;
 
-	Button importSWCButton;
 	Button exportCSVButton;
 	Button showCorrespondencesToButton;
 
@@ -279,7 +278,6 @@ class NeuriteTracerResultsDialog
 		paths3DChoice.setEnabled(false);
 		preprocess.setEnabled(false);
 
-		importSWCButton.setEnabled(false);
 		exportCSVButton.setEnabled(false);
 		showCorrespondencesToButton.setEnabled(false);
 		saveButton.setEnabled(false);
@@ -323,7 +321,6 @@ class NeuriteTracerResultsDialog
 
 			saveButton.setEnabled(true);
 			loadButton.setEnabled(true);
-			importSWCButton.setEnabled(true);
 			exportCSVButton.setEnabled(true);
 			showCorrespondencesToButton.setEnabled(true);
 			if( uploadButton != null ) {
@@ -650,16 +647,14 @@ class NeuriteTracerResultsDialog
 
 		{
 			++ c.gridy;
+			Panel hideWindowsPanel = new Panel();
 			showOrHidePathList = new Button("Show / Hide Path List");
-			add( showOrHidePathList, c);
 			showOrHidePathList.addActionListener(this);
-		}
-
-		{
-			++ c.gridy;
 			showOrHideFillList = new Button("Show / Hide Fill List");
-			add( showOrHideFillList, c);
 			showOrHideFillList.addActionListener(this);
+			hideWindowsPanel.add( showOrHidePathList );
+			hideWindowsPanel.add( showOrHideFillList );
+			add( hideWindowsPanel, c );
 		}
 
 		{ /* The panel with options for saving, loading, network storage, etc. */
@@ -697,11 +692,6 @@ class NeuriteTracerResultsDialog
 			add(loadLabelsButton,c);
 
 			++c.gridy;
-			importSWCButton = new Button("Import SWC File");
-			importSWCButton.addActionListener( this );
-			add(importSWCButton,c);
-
-			++c.gridy;
 			exportCSVButton = new Button("Export as CSV");
 			exportCSVButton.addActionListener( this );
 			add(exportCSVButton,c);
@@ -713,7 +703,7 @@ class NeuriteTracerResultsDialog
 
 			saveButton = new Button("Save Traces File");
 			saveButton.addActionListener( this );
-			loadButton = new Button("Load Traces File");
+			loadButton = new Button("Load Traces / SWC File");
 			loadButton.addActionListener( this );
 			ct.gridx = 0;
 			ct.gridy = 1;
@@ -850,21 +840,6 @@ class NeuriteTracerResultsDialog
 			int preLoadingState = currentState;
 			changeState( LOADING );
 			plugin.loadTracings();
-			changeState( preLoadingState );
-
-		} else if( source == importSWCButton ) {
-
-			if( plugin.pathsUnsaved() ) {
-				YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(), "Warning",
-									     "There are unsaved paths. Do you really want to import an SWC file?" );
-
-				if( ! d.yesPressed() )
-					return;
-			}
-
-			int preLoadingState = currentState;
-			changeState( LOADING );
-			plugin.importSWC();
 			changeState( preLoadingState );
 
 		} else if( source == exportCSVButton ) {

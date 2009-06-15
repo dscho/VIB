@@ -1528,6 +1528,18 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	public boolean load( String filename ) {
 
+		/* Look at the magic bytes at the start of the file:
+
+		   If this looks as if it's gzip compressed, assume
+		   it's a compressed traces file - the native format
+		   of this plugin.
+
+                   If it begins "<?xml", assume it's an uncompressed
+                   traces file.
+
+		   Otherwise, try to import it as an SWC file.
+		*/
+
 		File f = new File(filename);
 		if( ! f.exists() ) {
 			IJ.error("The traces file '"+filename+"' does not exist.");
@@ -1535,16 +1547,21 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 
 		boolean gzipped = false;
+		boolean uncompressedXML = false;
 
 		try {
 			InputStream is;
-			byte[] buf = new byte[2];
+			byte[] buf = new byte[8];
 			is = new FileInputStream(filename);
-			is.read(buf, 0, 2);
+			is.read(buf, 0, 8);
 			is.close();
 			if (verbose) System.out.println("buf[0]: "+buf[0]+", buf[1]: "+buf[1]);
 			if( ((buf[0]&0xFF) == 0x1F) && ((buf[1]&0xFF) == 0x8B) )
 				gzipped = true;
+			else if( ((buf[0] == '<') && (buf[1] == '?') &&
+				  (buf[2] == 'x') && (buf[3] == 'm') &&
+				  (buf[4] == 'l') && (buf[5] == ' ')) )
+				uncompressedXML = true;
 
 		} catch (IOException e) {
 			IJ.error("Couldn't read from file: "+filename);
@@ -1556,18 +1573,23 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		try {
 
-			if( gzipped ) {
-				if (verbose) System.out.println("Loading gzipped file...");
-				is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(filename)));
+			if( gzipped || uncompressedXML ) {
+				if( gzipped ) {
+					if (verbose) System.out.println("Loading gzipped file...");
+					is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(filename)));
+				} else if( uncompressedXML ) {
+					if (verbose) System.out.println("Loading uncompressed file...");
+					is = new BufferedInputStream(new FileInputStream(filename));
+				}
+
+				result = load(is,null);
+
+				if( is != null )
+					is.close();
 			} else {
-				if (verbose) System.out.println("Loading uncompressed file...");
-				is = new BufferedInputStream(new FileInputStream(filename));
+				// Assume it's SWC:
+				result = importSWC( filename );
 			}
-
-			result = load(is,null);
-
-			if( is != null )
-				is.close();
 
 		} catch( IOException ioe ) {
 			IJ.error("Couldn't open file '"+filename+"' for reading.");
