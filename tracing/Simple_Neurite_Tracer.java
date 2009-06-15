@@ -86,7 +86,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 	// Not A Little Square" error...
 	static final boolean fudgeCoordinates = true;
 
-	public static final String PLUGIN_VERSION = "1.5.0";
+	public static final String PLUGIN_VERSION = "1.6.0";
 	static final boolean verbose = false;
 
 	static final int DISPLAY_PATHS_SURFACE = 1;
