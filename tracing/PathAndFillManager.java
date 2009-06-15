@@ -2094,8 +2094,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 			boolean selected = p.getSelected();
 
-			System.out.println("In update3DViewerContents, selected "+selected+" for "+p);
-
 			p.updateContent3D(
 				plugin.univ, // The appropriate 3D universe
 				(selected || ! showOnlySelectedPaths), // Visible at all?

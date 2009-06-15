@@ -584,7 +584,6 @@ class NeuriteTracerResultsDialog
 			co.anchor = GridBagConstraints.LINE_START;
 			otherOptionsPanel.add(new Label("Click to change Path colours:"),co);
 
-			System.out.println("Creating with plugin: "+plugin);
 			pathColorsCanvas = new PathColorsCanvas( plugin, 150, 18 );
 			co.gridx = 0;
 			++ co.gridy;

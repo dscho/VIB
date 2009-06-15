@@ -1693,7 +1693,6 @@ public class Path implements Comparable {
 		}
 
 		// Is the color wrong?
-		System.out.println("   color should be "+color);
 		if( (pathToUse.content3D != null && ! pathToUse.content3D.getColor().equals(color)) ||
 		    (pathToUse.content3DExtra != null && ! pathToUse.content3DExtra.getColor().equals(color))) {
 			pathToUse.removeFrom3DViewer(univ);
