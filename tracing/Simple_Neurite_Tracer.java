@@ -1316,7 +1316,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 							    Content.VOLUME);
 				c.setLocked(true);
 				c.setTransparency(0.5f);
-				univ.resetView();
+				if( ! reusing )
+					univ.resetView();
 				univ.setAutoAdjustView(false);
 			}
 
