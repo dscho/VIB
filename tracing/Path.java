@@ -1924,6 +1924,14 @@ public class Path implements Comparable {
 		return selected;
 	}
 
+	public boolean versionInUse() {
+		if( fittedVersionOf != null )
+			return fittedVersionOf.useFitted;
+		else {
+			return ! useFitted;
+		}
+	}
+
 	/* This doesn't deal with the startJoins, endJoins or fitted
 	   fields, since they involve other paths which were probably
 	   also transformed by the caller. */
