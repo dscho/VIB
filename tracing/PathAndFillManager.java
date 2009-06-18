@@ -388,6 +388,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		if( p.getID() < 0 ) {
 			p.setID(++maxUsedID);
 		}
+		if( maxUsedID < p.getID() )
+			maxUsedID = p.getID();
 		if(p.name == null || forceNewName) {
 			String suggestedName = getDefaultName(p);
 			p.setName(suggestedName);
