@@ -135,7 +135,7 @@ public class PathWindow extends JFrame implements PathAndFillListener, TreeSelec
 					}
 					if( p.fitted == null ) {
 						// There's not already a fitted version:
-						Path fitted = p.fitCircles( 40, plugin, (e.getModifiers() & ActionEvent.SHIFT_MASK) > 0 );
+						Path fitted = p.fitCircles( 40, plugin.getImagePlus(), (e.getModifiers() & ActionEvent.SHIFT_MASK) > 0, plugin );
 						p.setFitted(fitted);
 						p.setUseFitted(true, plugin);
 						pathAndFillManager.addPath( fitted );

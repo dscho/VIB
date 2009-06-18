@@ -973,7 +973,206 @@ public class Path implements Comparable {
 		result[2] = precise_z_positions[max_index] - precise_z_positions[min_index];
 	}
 
-	public Path fitCircles( int side, Simple_Neurite_Tracer plugin, boolean display ) {
+	public byte [] squareNormalToVector( int side,        // The number of samples in x and y in the plane, separated by step
+					     double step,     // step is in the same units as the _spacing, etc. variables.
+					     double ox,      /* These are scaled now */
+					     double oy,
+					     double oz,
+					     double nx,
+					     double ny,
+					     double nz,
+					     double [] x_basis_vector, /* The basis vectors are returned here  */
+					     double [] y_basis_vector, /* they *are* scaled by _spacing        */
+					     ImagePlus image ) {
+
+		byte [] result = new byte[side*side];
+
+		double epsilon = 0.000001;
+
+		/* To find an arbitrary vector in the normal plane, do
+		   the cross product with (0,0,1), unless the normal
+		   is parallel to that, in which case we cross it with
+		   (0,1,0) instead... */
+
+		double ax, ay, az;
+
+		if( Math.abs(nx) < epsilon && Math.abs(ny) < epsilon ) {
+			// Cross with (0,1,0):
+			ax = nz;
+			ay = 0;
+			az = -nx;
+		} else {
+			// Cross with (0,0,1):
+			ax = -ny;
+			ay = nx;
+			az = 0;
+		}
+
+		/* Now to find the other vector in that plane, do the
+		 * cross product of (ax,ay,az) with (nx,ny,nz) */
+
+		double bx = ay * nz - az * ny;
+		double by = az * nx - ax * nz;
+		double bz = ax * ny - ay * nx;
+
+		/* Normalize a and b */
+
+		double a_size = Math.sqrt( ax*ax + ay*ay + az*az );
+		ax = ax / a_size; ay = ay / a_size; az = az / a_size;
+
+		double b_size = Math.sqrt( bx*bx + by*by + bz*bz );
+		bx = bx / b_size; by = by / b_size; bz = bz / b_size;
+
+		/* Scale them with spacing... */
+
+		double ax_s = ax * step;
+		double ay_s = ay * step;
+		double az_s = az * step;
+
+		double bx_s = bx * step;
+		double by_s = by * step;
+		double bz_s = bz * step;
+
+		if( verbose ) {
+			System.out.println( "a (in normal plane) is "+ax+","+ay+","+az);
+			System.out.println( "b (in normal plane) is "+bx+","+by+","+bz);
+		}
+
+		if( true  ) {
+
+			// a and b must be perpendicular:
+			double a_dot_b = ax * bx + ay * by + az * bz;
+
+			// ... and each must be perpendicular to the normal
+			double a_dot_n = ax * nx + ay * ny + az * nz;
+			double b_dot_n = bx * nx + by * ny + bz * nz;
+
+			if( verbose ) {
+				System.out.println("a_dot_b: "+a_dot_b);
+				System.out.println("a_dot_n: "+a_dot_n);
+				System.out.println("b_dot_n: "+b_dot_n);
+			}
+
+		}
+
+		// FIXME: do other image types too...
+		int width = image.getWidth();
+		int height = image.getHeight();
+		int depth = image.getStackSize();
+		byte [][] v = new byte[depth][];
+		ImageStack s = image.getStack();
+		for( int z = 0; z < depth; ++z )
+			v[z] = (byte []) s.getPixels( z + 1 );
+
+		for( int grid_i = 0; grid_i < side; ++grid_i ) {
+			for( int grid_j = 0; grid_j < side; ++grid_j ) {
+
+				double midside_grid = ((side - 1) / 2.0f);
+
+				double gi = midside_grid - grid_i;
+				double gj = midside_grid - grid_j;
+
+				double vx = ox + gi * ax_s + gj * bx_s;
+				double vy = oy + gi * ay_s + gj * by_s;
+				double vz = oz + gi * az_s + gj * bz_s;
+
+				// So now denormalize to pixel co-ordinates:
+
+				double image_x = vx / x_spacing;
+				double image_y = vy / y_spacing;
+				double image_z = vz / z_spacing;
+
+				/* And do a trilinear interpolation to
+				   find the value there: */
+
+				double x_d = image_x - Math.floor(image_x);
+				double y_d = image_y - Math.floor(image_y);
+				double z_d = image_z - Math.floor(image_z);
+
+				int x_f = (int)Math.floor(image_x); int x_c = (int)Math.ceil(image_x);
+				int y_f = (int)Math.floor(image_y); int y_c = (int)Math.ceil(image_y);
+				int z_f = (int)Math.floor(image_z); int z_c = (int)Math.ceil(image_z);
+
+				/* Check that these values aren't
+				   poking off the edge of the screen -
+				   if so then make them zero. */
+
+				double fff;
+				double cff;
+				double fcf;
+				double ccf;
+
+				double ffc;
+				double cfc;
+				double fcc;
+				double ccc;
+
+				if( (x_f < 0) || (x_c < 0) || (y_f < 0) || (y_c < 0) || (z_f < 0) || (z_c < 0) ||
+				    (x_f >= width) || (x_c >= width) || (y_f >= height) || (y_c >= height) || (z_f >= depth) || (z_c >= depth) ) {
+
+					fff = 0;
+					cff = 0;
+					fcf = 0;
+					ccf = 0;
+					ffc = 0;
+					cfc = 0;
+					fcc = 0;
+					ccc = 0;
+
+				} else {
+
+					fff = v[z_f][width*y_f+x_f]&0xFF;
+					cff = v[z_c][width*y_f+x_f]&0xFF;
+
+					fcf = v[z_f][width*y_c+x_f]&0xFF;
+					ccf = v[z_c][width*y_c+x_f]&0xFF;
+
+					ffc = v[z_f][width*y_f+x_c]&0xFF;
+					cfc = v[z_c][width*y_f+x_c]&0xFF;
+
+					fcc = v[z_f][width*y_c+x_c]&0xFF;
+					ccc = v[z_c][width*y_c+x_c]&0xFF;
+
+				}
+
+				// Now we should be OK to do the interpolation for real:
+
+				double i1 = (1 - z_d) * (fff) + (cff) * z_d;
+				double i2 = (1 - z_d) * (fcf) + (ccf) * z_d;
+
+				double j1 = (1 - z_d) * (ffc) + (cfc) * z_d;
+				double j2 = (1 - z_d) * (fcc) + (ccc) * z_d;
+
+				double w1 = i1 * (1 - y_d) + i2 * y_d;
+				double w2 = j1 * (1 - y_d) + j2 * y_d;
+
+				double value_f = w1 * (1 - x_d) + w2 * x_d;
+
+				int value = (int)value_f;
+				if( (value < 0) || (value > 255) ) {
+					System.out.println("BUG: Out of range value!");
+				}
+
+				result[grid_j*side+grid_i] = (byte)value;
+			}
+		}
+
+		x_basis_vector[0] = ax_s;
+		x_basis_vector[1] = ay_s;
+		x_basis_vector[2] = az_s;
+
+		y_basis_vector[0] = bx_s;
+		y_basis_vector[1] = by_s;
+		y_basis_vector[2] = bz_s;
+
+		return result;
+	}
+
+	public Path fitCircles( int side, ImagePlus image, boolean display ) {
+		return fitCircles( side, image, display, null );
+	}
+
+	public Path fitCircles( int side, ImagePlus image, boolean display, Simple_Neurite_Tracer plugin ) {
 
 		Path fitted = new Path( x_spacing, y_spacing, z_spacing, spacing_units );
 
@@ -984,18 +1183,14 @@ public class Path implements Comparable {
 		if( verbose )
 			System.out.println("There are: "+totalPoints+ " in the stack.");
 
-		double x_spacing = plugin.x_spacing;
-		double y_spacing = plugin.y_spacing;
-		double z_spacing = plugin.z_spacing;
-
 		int pointsEitherSide = 4;
 
 		if( verbose )
 			System.out.println("Using spacing: "+x_spacing+","+y_spacing+","+z_spacing);
 
-		int width = plugin.width;
-		int height = plugin.height;
-		int depth = plugin.depth;
+		int width = image.getWidth();
+		int height = image.getHeight();
+		int depth = image.getStackSize();
 
 		ImageStack stack = new ImageStack( side, side );
 
@@ -1024,7 +1219,7 @@ public class Path implements Comparable {
 		int [] ys_in_image = new int[totalPoints];
 		int [] zs_in_image = new int[totalPoints];
 
-		double scaleInNormalPlane = plugin.getMinimumSeparation();
+		double scaleInNormalPlane = getMinimumSeparation();
 
 		double [] tangent = new double[3];
 
@@ -1041,7 +1236,7 @@ public class Path implements Comparable {
 			double [] x_basis_in_plane = new double[3];
 			double [] y_basis_in_plane = new double[3];
 
-			byte [] normalPlane = plugin.squareNormalToVector(
+			byte [] normalPlane = squareNormalToVector(
 				side,
 				scaleInNormalPlane,   // This is in the same units as the _spacing, etc. variables.
 				x_world,      // These are scaled now
@@ -1051,7 +1246,8 @@ public class Path implements Comparable {
 				tangent[1],
 				tangent[2],
 				x_basis_in_plane,
-				y_basis_in_plane );
+				y_basis_in_plane,
+				image );
 
 			/* Now at this stage, try to optimize
 			   a circle in there... */
