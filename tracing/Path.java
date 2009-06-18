@@ -1636,7 +1636,6 @@ public class Path implements Comparable {
 
 	        updateContent3D
 	        addTo3DViewer
-		addPossiblyFittedTo3DViewer
 	        removeFrom3DViewer
 	*/
 	int paths3DDisplay = 1;
@@ -1644,14 +1643,6 @@ public class Path implements Comparable {
 	Content content3DExtra;
 	String nameWhenAddedToViewer;
 	String nameWhenAddedToViewerExtra;
-
-	synchronized void addPossiblyFittedTo3DViewer(Image3DUniverse univ,Color3f c) {
-		if( useFitted ) {
-			fitted.addTo3DViewer(univ,c);
-		} else {
-			addTo3DViewer(univ,c);
-		}
-	}
 
 	synchronized void removeIncludingFittedFrom3DViewer(Image3DUniverse univ) {
 		removeFrom3DViewer(univ);
