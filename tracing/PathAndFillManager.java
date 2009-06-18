@@ -1187,7 +1187,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	@Override
-	public void endElement(String uri, String localName, String qName) {
+	public void endElement(String uri, String localName, String qName) throws TracesFileFormatException {
 
 		if( qName.equals("path") ) {
 
@@ -1239,12 +1239,34 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					Path fittedVersionOf = getPathFromID(fittedVersionOfID);
 					p.fittedVersionOf = fittedVersionOf;
 				}
+			}
 
+			// Do some checks that the fitted and fittedVersionOf fields match up:
+			for( int i = 0; i < allPaths.size(); ++i ) {
+				Path p = allPaths.get(i);
+				if( p.fitted != null ) {
+					if( p.fitted.fittedVersionOf == null )
+						throw new TracesFileFormatException("Malformed traces file: p.fitted.fittedVersionOf was null");
+					else if( p != p.fitted.fittedVersionOf )
+						throw new TracesFileFormatException("Malformed traces file: p didn't match p.fitted.fittedVersionOf");
+				} else if( p.fittedVersionOf != null ) {
+					if( p.fittedVersionOf.fitted == null )
+						throw new TracesFileFormatException("Malformed traces file: p.fittedVersionOf.fitted was null");
+					else if( p != p.fittedVersionOf.fitted )
+						throw new TracesFileFormatException("Malformed traces file: p didn't match p.fittedVersionOf.fitted");
+				}
+				if( p.useFitted && p.fitted == null ) {
+					throw new TracesFileFormatException("Malformed traces file: p.useFitted was true but p.fitted was null");
+				}
+			}
+
+			// Now we're safe to add them all to the 3D Viewer
+			for( int i = 0; i < allPaths.size(); ++i ) {
+				Path p = allPaths.get(i);
 				addTo3DViewer( p );
 			}
 
 			// Now turn the source paths into real paths...
-
 			for( int i = 0; i < allFills.size(); ++i ) {
 				Fill f = allFills.get(i);
 				int [] sourcePathIDs = sourcePathIDForFills.get(i);
