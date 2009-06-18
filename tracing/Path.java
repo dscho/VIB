@@ -919,6 +919,10 @@ public class Path implements Comparable {
 
 	}
 
+	public boolean isFittedVersionOfAnotherPath() {
+		return fittedVersionOf != null;
+	}
+
 	Path fitted; // If this path has a fitted version, this is it.
 	boolean useFitted = false; // Use the fitted version in preference to this path
 	Path fittedVersionOf; // If this path is a fitted version of another one, this is the original
