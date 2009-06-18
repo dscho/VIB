@@ -2111,6 +2111,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	/** A base class for all the methods we might want to use to
 	    transform paths. */
 
+	// Note that this will transform fitted Paths but lose the radiuses
+
 	public PathAndFillManager transformPaths( PathTransformer transformation, ImagePlus templateImage ) {
 
 		double pixelWidth = 1;
