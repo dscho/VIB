@@ -332,6 +332,10 @@ public class Path implements Comparable {
 	double z_spacing;
 	String spacing_units;
 
+	public double getMinimumSeparation() {
+		return Math.min(Math.abs(x_spacing),Math.min(Math.abs(y_spacing),Math.abs(z_spacing)));
+	}
+
 	Path( double x_spacing, double y_spacing, double z_spacing, String spacing_units ) {
 		this.x_spacing = x_spacing;
 		this.y_spacing = y_spacing;
