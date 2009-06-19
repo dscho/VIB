@@ -951,6 +951,10 @@ public class Path implements Comparable {
 		return useFitted;
 	}
 
+	public Path getFitted( ) {
+		return fitted;
+	}
+
 	public void setGuessedTangents( int pointsEitherSide ) {
 		if( tangents_x == null || tangents_y == null || tangents_z == null )
 			throw new RuntimeException("BUG: setGuessedTangents called with one of the tangent arrays null");
