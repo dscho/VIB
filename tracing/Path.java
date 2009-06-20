@@ -1286,7 +1286,11 @@ public class Path implements Comparable {
 				maxValueInSquare,
 				side );
 
-			optimizer.optimize( attempt, startValues, 2, 2 );
+			try {
+				optimizer.optimize( attempt, startValues, 2, 2 );
+			} catch( ConjugateDirectionSearch.OptimizationError e ) {
+				return null;
+			}
 
 			if( verbose )
 				// System.out.println("u is: "+u[0]+","+u[1]+","+u[2]);
