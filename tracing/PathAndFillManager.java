@@ -2161,8 +2161,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				endJoinsPoints[i] = null;
 			} else {
 				startJoinsIndices[i] = allPaths.indexOf(startJoin);
-				startJoinsPoints[i] =
-					p.getStartJoinsPoint().transform( transformation );
+				PointInImage transformedPoint = p.getStartJoinsPoint().transform( transformation );
+				if( transformedPoint.isReal() )
+					startJoinsPoints[i] = transformedPoint;
 			}
 
 			Path endJoin = p.getEndJoins();
@@ -2171,8 +2172,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				endJoinsPoints[i] = null;
 			} else {
 				endJoinsIndices[i] = allPaths.indexOf(endJoin);
-				endJoinsPoints[i] =
-					p.getEndJoinsPoint().transform( transformation );
+				PointInImage transformedPoint = p.getEndJoinsPoint().transform( transformation );
+				if( transformedPoint.isReal() )
+					endJoinsPoints[i] = transformedPoint;
 			}
 
 			Path transformedPath = p.transform( transformation, templateImage, imagePlus );
