@@ -113,7 +113,7 @@ public class PointListPanel extends Panel
 			addEmptyRow();
 		for (BenesNamedPoint p : points)
 			addRow(p, i++);
-		validate();
+		layoutWindow();
 	}
 
 	/**
@@ -160,7 +160,7 @@ public class PointListPanel extends Panel
 		label.setName(p.getName());
 		label.setFont(new Font("Verdana", Font.BOLD, 12));
 		label.setForeground(Color.BLUE);
-		if(row % 2 == 1)
+		if(row % 2 == 0)
 			label.setBackground(grey);
 		label.addMouseListener(new MouseAdapter(){
 			public void mousePressed(MouseEvent e){
@@ -186,9 +186,22 @@ public class PointListPanel extends Panel
 		Label coordinateLabel = new Label(df.format(p.x) + "    " +
 			df.format(p.y) + "    " + df.format(p.z));
 		coordinateLabel.setFont(new Font("Verdana", Font.PLAIN, 12));
-		if(row % 2 == 1)
+		if(row % 2 == 0)
 			coordinateLabel.setBackground(grey);
 		add(coordinateLabel,c);
+	}
+
+	/**
+	 * Helper method to layout the window, after e.g. a point has been
+	 * added.
+	 */
+	private void layoutWindow() {
+		Container pa = getParent();
+		while(pa != null && !(pa instanceof java.awt.Window)) {
+			pa = pa.getParent();
+		}
+		if(pa != null)
+			pa.validate();
 	}
 
 	/**
@@ -233,11 +246,8 @@ public class PointListPanel extends Panel
 		if(i == 1) {
 			recreatePointsPanel();
 		} else {
-			addRow(p, points.size());
-			Container parent = getParent();
-			while(parent.getParent() != null)
-				parent = parent.getParent();
-			parent.validate();
+			addRow(p, points.size() - 1);
+			layoutWindow();
 		}
 	}
 
