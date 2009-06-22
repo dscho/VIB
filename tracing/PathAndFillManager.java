@@ -2176,17 +2176,23 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			}
 
 			Path transformedPath = p.transform( transformation, templateImage, imagePlus );
-			addedPaths[i] = transformedPath;
-			pafmResult.addPath( transformedPath );
+			if( transformedPath.size() >= 2 ) {
+				addedPaths[i] = transformedPath;
+				pafmResult.addPath( transformedPath );
+			}
 
 			++i;
 		}
 
 		for( i = 0; i < size(); ++i ) {
-			if( startJoinsIndices[i] >= 0 )
-				addedPaths[i].setStartJoin( addedPaths[startJoinsIndices[i]], startJoinsPoints[i] );
-			if( endJoinsIndices[i] >= 0 )
-				addedPaths[i].setEndJoin( addedPaths[endJoinsIndices[i]], endJoinsPoints[i] );
+			int si = startJoinsIndices[i];
+			int ei = endJoinsIndices[i];
+			if( addedPaths[i] != null ) {
+				if( si >= 0 && addedPaths[si] != null && startJoinsPoints[i] != null )
+					addedPaths[i].setStartJoin( addedPaths[si], startJoinsPoints[i] );
+				if( ei >= 0 && addedPaths[ei] != null && endJoinsPoints[i] != null )
+					addedPaths[i].setEndJoin( addedPaths[ei], endJoinsPoints[i] );
+			}
 		}
 
 		return pafmResult;
