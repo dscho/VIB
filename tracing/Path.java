@@ -1696,12 +1696,20 @@ public class Path implements Comparable {
 		if( (pathToUse.content3D != null && ! pathToUse.content3D.getColor().equals(color)) ||
 		    (pathToUse.content3DExtra != null && ! pathToUse.content3DExtra.getColor().equals(color))) {
 			pathToUse.removeFrom3DViewer(univ);
+			pathToUse.paths3DDisplay = paths3DDisplay;
 			pathToUse.addTo3DViewer(univ,color);
+			return;
 		}
 
 		// Is the the display (lines-and-discs or surfaces) right?
 		if( pathToUse.paths3DDisplay != paths3DDisplay ) {
 			pathToUse.removeFrom3DViewer(univ);
+			pathToUse.paths3DDisplay = paths3DDisplay;
+			pathToUse.addTo3DViewer(univ,color);
+			return;
+		}
+
+		if( pathToUse.nameWhenAddedToViewer == null || ! univ.contains(pathToUse.nameWhenAddedToViewer) ) {
 			pathToUse.paths3DDisplay = paths3DDisplay;
 			pathToUse.addTo3DViewer(univ,color);
 		}
@@ -1922,6 +1930,14 @@ public class Path implements Comparable {
 
 	public boolean getSelected() {
 		return selected;
+	}
+
+	public boolean versionInUse() {
+		if( fittedVersionOf != null )
+			return fittedVersionOf.useFitted;
+		else {
+			return ! useFitted;
+		}
 	}
 
 	/* This doesn't deal with the startJoins, endJoins or fitted

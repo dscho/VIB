@@ -1316,7 +1316,8 @@ public class Simple_Neurite_Tracer extends ThreePanes
 							    Content.VOLUME);
 				c.setLocked(true);
 				c.setTransparency(0.5f);
-				univ.resetView();
+				if( ! reusing )
+					univ.resetView();
 				univ.setAutoAdjustView(false);
 			}
 
@@ -1757,9 +1758,9 @@ public class Simple_Neurite_Tracer extends ThreePanes
 				linePoints.add(new Point3f((float)(np.nearX + (fudgeCoordinates ? (x_spacing / 2) : 0)),
 							   (float)(np.nearY + (fudgeCoordinates ? (y_spacing / 2) : 0)),
 							   (float)(np.nearZ + (fudgeCoordinates ? (z_spacing / 2) : 0))));
-				linePoints.add(new Point3f((float)(np.pathPointX + (fudgeCoordinates ? (x_spacing / 2) : 0)),
-							   (float)(np.pathPointY + (fudgeCoordinates ? (y_spacing / 2) : 0)),
-							   (float)(np.pathPointZ + (fudgeCoordinates ? (z_spacing / 2) : 0))));
+				linePoints.add(new Point3f((float)(np.closestIntersection.x + (fudgeCoordinates ? (x_spacing / 2) : 0)),
+							   (float)(np.closestIntersection.y + (fudgeCoordinates ? (y_spacing / 2) : 0)),
+							   (float)(np.closestIntersection.z + (fudgeCoordinates ? (z_spacing / 2) : 0))));
 
 				String ballName = univ.getSafeContentName("ball "+done);
 				List sphere = Mesh_Maker.createSphere( np.nearX + (fudgeCoordinates ? (x_spacing / 2) : 0),

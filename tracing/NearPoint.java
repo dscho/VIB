@@ -93,6 +93,7 @@ public class NearPoint implements Comparable {
 			xdiff * xdiff +
 			ydiff * ydiff +
 			zdiff * zdiff;
+		closestIntersection = null;
 	}
 
 	private Path path;
@@ -116,6 +117,8 @@ public class NearPoint implements Comparable {
 			"  distanceSquared: "+distanceSquared+"\n"+
 			"  cachedDistanceToPathNearPoint: "+cachedDistanceToPathNearPoint;
 	}
+
+	IntersectionOnLine closestIntersection;
 
 	/* If we can find a corresponding point on the path,
 	   returns the distance to the path.  Returns -1 if no
@@ -150,12 +153,19 @@ public class NearPoint implements Comparable {
 				endY = pathPointY;
 				endZ = pathPointZ;
 			}
-			double d = distanceToLineSegment(
+			IntersectionOnLine intersection = distanceToLineSegment(
 				nearX, nearY, nearZ,
 				startX, startY, startZ,
 				endX, endY, endZ );
-			cachedDistanceToPathNearPoint = new Double( d );
-			return d;
+			if( intersection == null ) {
+				closestIntersection = null;
+				cachedDistanceToPathNearPoint = new Double( -1 );
+				return -1;
+			} else {
+				closestIntersection = intersection;
+				cachedDistanceToPathNearPoint = new Double( intersection.distance );
+				return intersection.distance;
+			}
 		} else {
 			// There's a point on either size:
 			double previousX = path.precise_x_positions[indexInPath-1];
@@ -164,21 +174,30 @@ public class NearPoint implements Comparable {
 			double nextX = path.precise_x_positions[indexInPath+1];
 			double nextY = path.precise_y_positions[indexInPath+1];
 			double nextZ = path.precise_z_positions[indexInPath+1];
-			double distanceToA = distanceToLineSegment(
+			IntersectionOnLine intersectionA = distanceToLineSegment(
 				nearX, nearY, nearZ,
 				previousX, previousY, previousZ,
 				pathPointX, pathPointY, pathPointZ );
-			double distanceToB = distanceToLineSegment(
+			IntersectionOnLine intersectionB = distanceToLineSegment(
 				nearX, nearY, nearZ,
 				pathPointX, pathPointY, pathPointZ,
 				nextX, nextY, nextZ );
-			double smallestDistance;
-			if( distanceToA < 0 )
-				smallestDistance = distanceToB;
-			else if( distanceToB < 0 )
-				smallestDistance = distanceToA;
-			else
-				smallestDistance = Math.min( distanceToA, distanceToB );
+			double smallestDistance = -1;
+			if( intersectionA == null && intersectionB != null ) {
+				smallestDistance = intersectionB.distance;
+				closestIntersection = intersectionB;
+			} else if( intersectionA != null && intersectionB == null ) {
+				smallestDistance = intersectionA.distance;
+				closestIntersection = intersectionA;
+			} else if( intersectionA != null && intersectionB != null ) {
+				if( intersectionA.distance < intersectionB.distance ) {
+					smallestDistance = intersectionA.distance;
+					closestIntersection = intersectionA;
+				} else {
+					smallestDistance = intersectionB.distance;
+					closestIntersection = intersectionB;
+				}
+			}
 			if( smallestDistance >= 0 ) {
 				cachedDistanceToPathNearPoint = new Double( smallestDistance );
 				return smallestDistance;
@@ -198,21 +217,28 @@ public class NearPoint implements Comparable {
 					nearX, nearY, nearZ );
 			if( afterPlaneAtEndOfPrevious && beforePlaneAtStartOfNext ) {
 				// Then just return the distance to the point:
-				double d = distanceToPathPoint();
-				cachedDistanceToPathNearPoint = new Double( d );
-				return d;
+				closestIntersection = new IntersectionOnLine();
+				closestIntersection.distance = distanceToPathPoint();
+				closestIntersection.x = pathPointX;
+				closestIntersection.y = pathPointY;
+				closestIntersection.z = pathPointZ;
+				closestIntersection.fromPerpendicular = false;
+				cachedDistanceToPathNearPoint = new Double( closestIntersection.distance );
+				return closestIntersection.distance;
 			} else {
+				closestIntersection = null;
 				cachedDistanceToPathNearPoint = new Double( -1 );
 				return -1;
 			}
 		}
 	}
 
-	/* This returns -1 if the perpendicular dropped to the
-	   line doesn't lie within the segment.  Otherwise it
-	   returns the shortest distance to this line segment. */
+	/* This returns null if the perpendicular dropped to the line
+	   doesn't lie within the segment.  Otherwise it returns the
+	   shortest distance to this line segment and the point of
+	   intersection in an IntersectionOnLine object */
 
-	public static double distanceToLineSegment(
+	public static IntersectionOnLine distanceToLineSegment(
 		double x, double y, double z,
 		double startX, double startY, double startZ,
 		double endX, double endY, double endZ ) {
@@ -231,7 +257,7 @@ public class NearPoint implements Comparable {
 				endX - startX, endY - startY, endZ - startZ,
 				x, y, z );
 		else
-			return -1;
+			return null;
 	}
 
 	public double distanceToPathPoint() {
@@ -284,25 +310,33 @@ public class NearPoint implements Comparable {
 	   b = [ (x - ax) * vx + (y - ay) * vy + (z - az) * vz ] / (vx * vx + vy * vy + vz * vz)
 	*/
 
-	public static double distanceFromPointToLine( double x, double y, double z,
-						      double ax, double ay, double az,
-						      double vx, double vy, double vz ) {
+	static class IntersectionOnLine {
+		double x, y, z, distance;
+		boolean fromPerpendicular = true;
+	}
+
+	public static IntersectionOnLine distanceFromPointToLine( double ax, double ay, double az,
+								  double vx, double vy, double vz,
+								  double x, double y, double z ) {
 		double b = ( (x - ax) * vx +
 			     (y - ay) * vy +
 			     (z - az) * vz ) /
 			(vx * vx + vy * vy + vz * vz);
 
-		double ix = ax + b * vx;
-		double iy = ay + b * vy;
-		double iz = az + b * vz;
+		IntersectionOnLine i = new IntersectionOnLine();
 
-		double xdiff = ix - x;
-		double ydiff = iy - y;
-		double zdiff = iz - z;
+		i.x = ax + b * vx;
+		i.y = ay + b * vy;
+		i.z = az + b * vz;
 
-		return Math.sqrt( xdiff * xdiff +
-				  ydiff * ydiff +
-				  zdiff * zdiff );
+		double xdiff = i.x - x;
+		double ydiff = i.y - y;
+		double zdiff = i.z - z;
+
+		i.distance = Math.sqrt( xdiff * xdiff +
+					ydiff * ydiff +
+					zdiff * zdiff );
+		return i;
 	}
 
 }

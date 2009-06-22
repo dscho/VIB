@@ -1902,6 +1902,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return new AllPointsIterator();
 	}
 
+	/* Note that this returns the number of points in th
+	   currently in-use version of each path. */
+
 	public int pointsInAllPaths( ) {
 		AllPointsIterator a = allPointsIterator();
 		int points = 0;
@@ -1935,8 +1938,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				int tmpPathIndex = currentPathIndex + 1;
 				while( tmpPathIndex < numberOfPaths ) {
 					Path p = allPaths.get( tmpPathIndex );
-					if( p.size() > 0 )
+					if( p.size() > 0 && p.versionInUse() )
 						return true;
+					++tmpPathIndex;
 				}
 				return false;
 			}
@@ -1955,7 +1959,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					if( currentPathIndex == numberOfPaths )
 						throw new java.util.NoSuchElementException();
 					currentPath = allPaths.get( currentPathIndex );
-					if( currentPath.size() > 0 )
+					if( currentPath.size() > 0 && currentPath.versionInUse() )
 						break;
 				}
 			} else
