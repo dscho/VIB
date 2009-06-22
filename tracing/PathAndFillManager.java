@@ -643,28 +643,36 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				if( p.startJoins != null ) {
 					int startPathID = ((pathToID.get(p.startJoins))).intValue();
 					// Find the nearest index for backward compatability:
-					int nearestIndexOnStartPath = p.startJoins.indexNearestTo(
-						p.startJoinsPoint.x,
-						p.startJoinsPoint.y,
-						p.startJoinsPoint.z );
+					int nearestIndexOnStartPath = -1;
+					if( p.startJoins.size() > 0 ) {
+						nearestIndexOnStartPath = p.startJoins.indexNearestTo(
+							p.startJoinsPoint.x,
+							p.startJoinsPoint.y,
+							p.startJoinsPoint.z );
+					}
 					startsString = " startson=\"" + startPathID + "\"" +
-						" startsindex=\"" + nearestIndexOnStartPath + "\"" +
 						" startx=\"" + p.startJoinsPoint.x + "\"" +
 						" starty=\"" + p.startJoinsPoint.y + "\"" +
 						" startz=\"" + p.startJoinsPoint.z + "\"";
+					if( nearestIndexOnStartPath >= 0 )
+						startsString += " startsindex=\"" + nearestIndexOnStartPath + "\"";
 				}
 				if( p.endJoins != null ) {
 					int endPathID = ((pathToID.get(p.endJoins))).intValue();
 					// Find the nearest index for backward compatability:
-					int nearestIndexOnEndPath = p.endJoins.indexNearestTo(
-						p.endJoinsPoint.x,
-						p.endJoinsPoint.y,
-						p.endJoinsPoint.z );
+					int nearestIndexOnEndPath = -1;
+					if( p.endJoins.size() > 0 ) {
+						nearestIndexOnEndPath = p.endJoins.indexNearestTo(
+							p.endJoinsPoint.x,
+							p.endJoinsPoint.y,
+							p.endJoinsPoint.z );
+					}
 					endsString = " endson=\"" + endPathID + "\"" +
-						" endsindex=\"" + nearestIndexOnEndPath + "\""+
 						" endsx=\"" + p.endJoinsPoint.x + "\"" +
 						" endsy=\"" + p.endJoinsPoint.y + "\"" +
 						" endsz=\"" + p.endJoinsPoint.z + "\"";
+					if( nearestIndexOnEndPath >= 0 )
+						endsString += " endsindex=\"" + nearestIndexOnEndPath + "\"";
 				}
 				if( p.getPrimary() )
 					pw.print(" primary=\"true\"");
