@@ -1,6 +1,6 @@
 /* -*- mode: java; c-basic-offset: 8; indent-tabs-mode: t; tab-width: 8 -*- */
 
-/* Some very basic unit tests for the distance.Correlation class */
+/* Some very basic unit tests for tracing through a simple image */
 
 package tracing;
 

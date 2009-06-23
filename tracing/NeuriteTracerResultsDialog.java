@@ -32,6 +32,8 @@ import java.awt.event.*;
 import java.io.*;
 
 import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import features.Sigma_Palette;
 import ij.gui.GenericDialog;
@@ -99,6 +101,14 @@ class NeuriteTracerResultsDialog
 	PathColorsCanvas pathColorsCanvas;
 
 	Checkbox justShowSelected;
+
+	Choice paths3DChoice;
+	String [] paths3DChoicesStrings = {
+		"BUG",
+		"as surface reconstructions",
+		"as lines",
+		"as lines and discs" };
+
 	Checkbox preprocess;
 	Checkbox usePreprocessed;
 
@@ -112,8 +122,8 @@ class NeuriteTracerResultsDialog
 
 	Button loadLabelsButton;
 
-	Button importSWCButton;
 	Button exportCSVButton;
+	Button showCorrespondencesToButton;
 
 	Button saveButton;
 	Button loadButton;
@@ -265,10 +275,11 @@ class NeuriteTracerResultsDialog
 		sigmaWizard.setEnabled(false);
 
 		viewPathChoice.setEnabled(false);
+		paths3DChoice.setEnabled(false);
 		preprocess.setEnabled(false);
 
-		importSWCButton.setEnabled(false);
 		exportCSVButton.setEnabled(false);
+		showCorrespondencesToButton.setEnabled(false);
 		saveButton.setEnabled(false);
 		loadButton.setEnabled(false);
 		if( uploadButton != null ) {
@@ -298,6 +309,7 @@ class NeuriteTracerResultsDialog
 			junkSegment.setVisible(false);
 
 			viewPathChoice.setEnabled(true);
+			paths3DChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
 			editSigma.setEnabled( ! preprocess.getState() );
@@ -309,8 +321,8 @@ class NeuriteTracerResultsDialog
 
 			saveButton.setEnabled(true);
 			loadButton.setEnabled(true);
-			importSWCButton.setEnabled(true);
 			exportCSVButton.setEnabled(true);
+			showCorrespondencesToButton.setEnabled(true);
 			if( uploadButton != null ) {
 				uploadButton.setEnabled(true);
 				fetchButton.setEnabled(true);
@@ -335,6 +347,7 @@ class NeuriteTracerResultsDialog
 			cancelPath.setEnabled(true);
 
 			viewPathChoice.setEnabled(true);
+			paths3DChoice.setEnabled(true);
 			preprocess.setEnabled(true);
 
 			editSigma.setEnabled( ! preprocess.getState() );
@@ -529,7 +542,7 @@ class NeuriteTracerResultsDialog
 			viewPathChoice = new Choice();
 			viewPathChoice.addItem(projectionChoice);
 			viewPathChoice.addItem(partsNearbyChoice);
-			viewPathChoice.addItemListener( this );
+			viewPathChoice.addItemListener(this);
 
 			Panel nearbyPanel = new Panel();
 			nearbyPanel.setLayout(new BorderLayout());
@@ -541,10 +554,23 @@ class NeuriteTracerResultsDialog
 
 			co.gridx = 0;
 			co.gridy = 0;
-			otherOptionsPanel.add(new Label("View paths: "),co);
+			otherOptionsPanel.add(new Label("View paths (2D): "),co);
 			co.gridx = 1;
 			co.gridy = 0;
 			otherOptionsPanel.add(viewPathChoice,co);
+
+			paths3DChoice = new Choice();
+			if( plugin != null && plugin.use3DViewer ) {
+				for( int choice = 1; choice < paths3DChoicesStrings.length; ++choice )
+					paths3DChoice.addItem(paths3DChoicesStrings[choice]);
+				paths3DChoice.addItemListener(this);
+
+				co.gridx = 0;
+				++ co.gridy;
+				otherOptionsPanel.add(new Label("View paths (3D): "),co);
+				co.gridx = 1;
+				otherOptionsPanel.add(paths3DChoice,co);
+			}
 
 			co.gridx = 0;
 			++ co.gridy;
@@ -558,7 +584,6 @@ class NeuriteTracerResultsDialog
 			co.anchor = GridBagConstraints.LINE_START;
 			otherOptionsPanel.add(new Label("Click to change Path colours:"),co);
 
-			System.out.println("Creating with plugin: "+plugin);
 			pathColorsCanvas = new PathColorsCanvas( plugin, 150, 18 );
 			co.gridx = 0;
 			++ co.gridy;
@@ -621,16 +646,15 @@ class NeuriteTracerResultsDialog
 
 		{
 			++ c.gridy;
+			Panel hideWindowsPanel = new Panel();
 			showOrHidePathList = new Button("Show / Hide Path List");
-			add( showOrHidePathList, c);
 			showOrHidePathList.addActionListener(this);
-		}
-
-		{
-			++ c.gridy;
 			showOrHideFillList = new Button("Show / Hide Fill List");
-			add( showOrHideFillList, c);
 			showOrHideFillList.addActionListener(this);
+			hideWindowsPanel.add( showOrHidePathList );
+			hideWindowsPanel.add( showOrHideFillList );
+			c.fill = GridBagConstraints.HORIZONTAL;
+			add( hideWindowsPanel, c );
 		}
 
 		{ /* The panel with options for saving, loading, network storage, etc. */
@@ -663,23 +687,27 @@ class NeuriteTracerResultsDialog
 			c.anchor = GridBagConstraints.CENTER;
 			c.fill = GridBagConstraints.NONE;
 
-			loadLabelsButton = new Button("Load Labels");
-			loadLabelsButton.addActionListener( this );
-			add(loadLabelsButton,c);
+			Panel otherImportExportPanel = new Panel();
+			{
+				loadLabelsButton = new Button("Load Labels");
+				loadLabelsButton.addActionListener( this );
+
+				exportCSVButton = new Button("Export as CSV");
+				exportCSVButton.addActionListener( this );
+
+				otherImportExportPanel.add(loadLabelsButton);
+				otherImportExportPanel.add(exportCSVButton);
+			}
+			add(otherImportExportPanel,c);
 
 			++c.gridy;
-			importSWCButton = new Button("Import SWC File");
-			importSWCButton.addActionListener( this );
-			add(importSWCButton,c);
-
-			++c.gridy;
-			exportCSVButton = new Button("Export as CSV");
-			exportCSVButton.addActionListener( this );
-			add(exportCSVButton,c);
+			showCorrespondencesToButton = new Button("Show Correspondences to Traces...");
+			showCorrespondencesToButton.addActionListener( this );
+			add(showCorrespondencesToButton,c);
 
 			saveButton = new Button("Save Traces File");
 			saveButton.addActionListener( this );
-			loadButton = new Button("Load Traces File");
+			loadButton = new Button("Load Traces / SWC File");
 			loadButton.addActionListener( this );
 			ct.gridx = 0;
 			ct.gridy = 1;
@@ -818,21 +846,6 @@ class NeuriteTracerResultsDialog
 			plugin.loadTracings();
 			changeState( preLoadingState );
 
-		} else if( source == importSWCButton ) {
-
-			if( plugin.pathsUnsaved() ) {
-				YesNoCancelDialog d = new YesNoCancelDialog( IJ.getInstance(), "Warning",
-									     "There are unsaved paths. Do you really want to import an SWC file?" );
-
-				if( ! d.yesPressed() )
-					return;
-			}
-
-			int preLoadingState = currentState;
-			changeState( LOADING );
-			plugin.importSWC();
-			changeState( preLoadingState );
-
 		} else if( source == exportCSVButton ) {
 
 			FileInfo info = plugin.file_info;
@@ -883,6 +896,45 @@ class NeuriteTracerResultsDialog
 			}
 			IJ.showStatus("Export complete.");
 			changeState( preExportingState );
+
+		} else if( source == showCorrespondencesToButton ) {
+
+
+			// Ask for the traces file to show correspondences to:
+
+			String fileName = null;
+			String directory = null;
+
+			OpenDialog od;
+			od = new OpenDialog("Select other traces file...",
+					    directory,
+					    null );
+
+			fileName = od.getFileName();
+			directory = od.getDirectory();
+
+			if( fileName != null ) {
+
+				File tracesFile = new File( directory, fileName );
+				if( ! tracesFile.exists() ) {
+					IJ.error("The file '"+tracesFile.getAbsolutePath()+"' does not exist.");
+					return;
+				}
+
+				/* FIXME: test code: */
+
+				// File tracesFile = new File("/media/LaCie/corpus/flybrain/Data/1/lo15r202.fitted.traces");
+				// File fittedTracesFile = new File("/media/LaCie/corpus/flybrain/Data/1/LO15R202.traces");
+
+				// plugin.showCorrespondencesTo( tracesFile, Color.YELLOW, 2.5 );
+				// plugin.showCorrespondencesTo( fittedTracesFile, Color.RED, 2.5 );
+
+				plugin.showCorrespondencesTo( tracesFile, Color.YELLOW, 2.5 );
+
+				/* end of FIXME */
+
+			}
+
 
 		} else if( source == loadLabelsButton ) {
 
@@ -1038,6 +1090,11 @@ class NeuriteTracerResultsDialog
 		}  else if( source == justShowSelected ) {
 
 			plugin.setShowOnlySelectedPaths( justShowSelected.getState() );
+
+		} else if( source == paths3DChoice ) {
+
+			int selectedIndex = paths3DChoice.getSelectedIndex();
+			plugin.setPaths3DDisplay( selectedIndex + 1 );
 
 		}
 

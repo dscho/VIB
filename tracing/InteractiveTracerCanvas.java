@@ -136,11 +136,11 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 		if( ! tracerPlugin.isReady() )
 			return;
 
-		double last_x_in_pane_precise = myOffScreenXD(e.getX());
-		double last_y_in_pane_precise = myOffScreenYD(e.getY());
+		int rawX = e.getX();
+		int rawY = e.getY();
 
-		last_x_in_pane = (int)last_x_in_pane_precise;
-		last_y_in_pane = (int)last_y_in_pane_precise;
+		double last_x_in_pane_precise = myOffScreenXD(rawX);
+		double last_y_in_pane_precise = myOffScreenYD(rawY);
 
 		boolean mac = IJ.isMacintosh();
 
@@ -179,7 +179,7 @@ public class InteractiveTracerCanvas extends TracerCanvas implements KeyListener
 
 		} else if( tracerPlugin.setupTrace ) {
 			boolean join = IJ.isMacintosh() ? e.isAltDown() : e.isControlDown();
-			tracerPlugin.clickForTrace( myOffScreenX(e.getX()), myOffScreenY(e.getY()), plane, join );
+			tracerPlugin.clickForTrace( myOffScreenXD(e.getX()), myOffScreenYD(e.getY()), plane, join );
 		} else
 			IJ.error( "BUG: No operation chosen" );
 	}

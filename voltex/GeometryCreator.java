@@ -24,7 +24,7 @@ public class GeometryCreator implements AxisConstants {
 	 * @param volume
 	 */
 	public GeometryCreator(VoltexVolume volume) {
-		this.volume = volume;
+		setVolume(volume);
 	}
 
 	/**

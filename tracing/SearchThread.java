@@ -27,12 +27,16 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.Calibration;
 import ij.IJ;
+import ij.text.TextWindow;
 
 import stacks.ThreePanes;
 
 import java.util.*;
 import java.awt.Color;
 import java.awt.Graphics;
+
+import java.io.CharArrayWriter;
+import java.io.PrintWriter;
 
 /* This is the thread that explores the image using a variety of
    strategies, for example to trace tubular structures or surfaces. */
@@ -118,11 +122,7 @@ public abstract class SearchThread extends Thread {
 		   exciting news. */
 	}
 
-	protected boolean atStart( int x, int y, int z ) {
-		return false;
-	}
-
-	protected boolean atGoal( int x, int y, int z ) {
+	protected boolean atGoal( int x, int y, int z, boolean fromStart ) {
 		return false;
 	}
 
@@ -349,12 +349,13 @@ public abstract class SearchThread extends Thread {
 			open_from_goal = new PriorityQueue<SearchNode>();
 		}
 
-		nodes_as_image = new SearchNode[depth][];
+		nodes_as_image_from_start = new SearchNode[depth][];
+		if( bidirectional )
+			nodes_as_image_from_goal = new SearchNode[depth][];
 
 		minimum_cost_per_unit_distance = minimumCostPerUnitDistance();
 
 		progressListeners = new ArrayList< SearchProgressCallback >();
-
 	}
 
 	PriorityQueue<SearchNode> closed_from_start;
@@ -364,7 +365,18 @@ public abstract class SearchThread extends Thread {
 	PriorityQueue<SearchNode> closed_from_goal;
 	PriorityQueue<SearchNode> open_from_goal;
 
-	SearchNode [][] nodes_as_image;
+	SearchNode [][] nodes_as_image_from_start;
+	SearchNode [][] nodes_as_image_from_goal;
+
+	public void printStatus() {
+		System.out.println("... with " + open_from_start.size() + " open nodes at the start" );
+		System.out.println(" ... and " + closed_from_start.size() + " closed nodes at the start" );
+		if( bidirectional ) {
+			System.out.println("... with " + open_from_goal.size() + " open nodes at the goal" );
+			System.out.println(" ... and " + closed_from_goal.size() + " closed nodes at the goal" );
+		} else
+			System.out.println(" ... unidirectional search");
+	}
 
 	@Override
 	public void run( ) {
@@ -372,31 +384,12 @@ public abstract class SearchThread extends Thread {
 		try {
 
 			if (verbose) System.out.println("New SearchThread running!");
-			if (verbose) System.out.println("... with " + open_from_start.size() + " open nodes at the start" );
-			if (verbose) System.out.println(" ... and " + closed_from_start.size() + " closed nodes at the start" );
-			if( bidirectional ) {
-				if (verbose) System.out.println("... with " + open_from_goal.size() + " open nodes at the goal" );
-				if (verbose) System.out.println(" ... and " + closed_from_goal.size() + " closed nodes at the goal" );
-			} else
-				if (verbose) System.out.println(" ... unidirectional search");
+			if (verbose) printStatus();
+			if (verbose) System.out.println("... was asked to start it in the " + (startPaused ? "paused" : "unpaused") + " state.");
 
-
-			if( startPaused ) {
-				if (verbose) System.out.println("... was asked to start it in the paused state.");
-			} else {
-				if (verbose) System.out.println("... was asked to start it unpaused.");
-			}
-
-			if( startPaused ) {
-				synchronized (this) {
-					threadStatus = PAUSED;
-					reportThreadStatus();
-				}
-			} else {
-				synchronized (this) {
-					threadStatus = RUNNING;
-					reportThreadStatus();
-				}
+			synchronized (this) {
+				threadStatus = startPaused ? PAUSED : RUNNING;
+				reportThreadStatus();
 			}
 
 			long started_at = lastReportMilliseconds = System.currentTimeMillis();
@@ -455,254 +448,164 @@ public abstract class SearchThread extends Thread {
 						if (verbose) System.out.println( "milliseconds per loop: " +
 										 ( since_last_report / (double)loops_since_last_report ) );
 
+						if (verbose) printStatus();
+
 						reportPointsInSearch();
 
 						loops_at_last_report = loops;
 					}
 				}
 
-				boolean verbose = false;
+				boolean fromStart = true;
+				if( bidirectional )
+					fromStart = open_from_goal.size() > open_from_start.size();
+
+				PriorityQueue<SearchNode> open_queue = fromStart ? open_from_start : open_from_goal;
+				PriorityQueue<SearchNode> closed_queue = fromStart ? closed_from_start : closed_from_goal;
+
+				SearchNode [][] nodes_as_image_this_search = fromStart ? nodes_as_image_from_start : nodes_as_image_from_goal;
+				SearchNode [][] nodes_as_image_other_search = fromStart ? nodes_as_image_from_goal : nodes_as_image_from_start;
 
 				SearchNode p = null;
-				SearchNode q = null;
 
-				if( open_from_start.size() > 0 ) {
+				if( open_queue.size() == 0 )
+					continue;
 
-					// p = get_highest_priority( open_from_start, open_from_start_hash );
-					p = open_from_start.poll();
-					nodes_as_image[p.z][p.y*width+p.x] = null;
-				}
-
-				if( bidirectional && (open_from_goal.size() > 0) ) {
-
-					// q = get_highest_priority( open_from_goal, open_from_goal_hash );
-					q = open_from_goal.poll();
-					nodes_as_image[q.z][q.y*width+q.x] = null;
-				}
+				// p = get_highest_priority( open_from_start, open_from_start_hash );
+				p = open_queue.poll();
+				if( p == null )
+					continue;
 
 				// Has the route from the start found the goal?
-
-				if( definedGoal && (p != null) && atGoal( p.x, p.y, p.z ) ) {
-					if (verbose) System.out.println( "Found the goal! (from start to end)" );
-					foundGoal( p.asPath( x_spacing, y_spacing, z_spacing, spacing_units ) );
+				if( definedGoal && atGoal( p.x, p.y, p.z, fromStart ) ) {
+					if (verbose) System.out.println( "Found the goal!" );
+					if( fromStart )
+						foundGoal( p.asPath( x_spacing, y_spacing, z_spacing, spacing_units ) );
+					else
+						foundGoal( p.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
 					setExitReason(SUCCESS);
 					reportFinished( true );
 					return;
 				}
 
-				// Has the route from the goal found the start?
+				p.searchStatus = fromStart ? CLOSED_FROM_START : CLOSED_FROM_GOAL;
+				closed_queue.add( p );
+				nodes_as_image_this_search[p.z][p.y*width+p.x] = p;
 
-				if( bidirectional && definedGoal && (q != null) && atStart( q.x, q.y, q.z ) ) {
-					if (verbose) System.out.println( "Found the goal! (from end to start)" );
-					foundGoal( q.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
-					setExitReason(SUCCESS);
-					reportFinished( true );
-					return;
-				}
+				// Now look at the neighbours of p.  We're going to consider
+				// the 26 neighbours in 3D.
 
-				if( verbose ) {
+				for( int zdiff = -1; zdiff <= 1; zdiff++ ) {
 
-					if (verbose) System.out.println( "at loop: " + loops + " open_from_start: " +
-									 open_from_start.size() + " closed_from_start:" +
-									 closed_from_start.size() );
-
-					if (verbose) System.out.println( "         " + loops + " open_from_goal: " +
-									 open_from_goal.size() + " closed_from_goal: " +
-									 closed_from_goal.size() );
-
-				}
-
-				/* To save some code duplication, we have a
-				   loop that we go through exactly twice; the
-				   first time deals with p (searching from the
-				   start) and the second time deals with q
-				   (searching from the goal). */
-
-				for( int i = 0; i < 2; ++i ) {
-
-					// "e" for "existingNode"
-					SearchNode e = (i == 0) ? p : q;
-
-					if( e == null )
+					int new_z = p.z + zdiff;
+					if( new_z < 0 || new_z >= depth )
 						continue;
 
-					if( i == 1 && ! bidirectional )
-						break;
-
-					if( i == 0 ) {
-						e.searchStatus = CLOSED_FROM_START;
-						closed_from_start.add( e );
-						nodes_as_image[e.z][e.y*width+e.x] = e;
-					} else {
-						e.searchStatus = CLOSED_FROM_GOAL;
-						closed_from_goal.add( e );
-						nodes_as_image[e.z][e.y*width+e.x] = e;
+					if( nodes_as_image_this_search[new_z] == null ) {
+						nodes_as_image_this_search[new_z] = new SearchNode[width*height];
 					}
 
-					// Now look at the neighbours of e.  We're going to consider
-					// the 26 neighbours in 3D.
+					for( int xdiff = -1; xdiff <= 1; xdiff++ )
+						for( int ydiff = -1; ydiff <= 1; ydiff++ ) {
 
-					for( int zdiff = -1; zdiff <= 1; zdiff++ ) {
+							if( (xdiff == 0) && (ydiff == 0) && (zdiff == 0) )
+								continue;
 
-						int new_z = e.z + zdiff;
-						if( new_z < 0 || new_z >= depth )
-							continue;
+							int new_x = p.x + xdiff;
+							int new_y = p.y + ydiff;
 
-						if( nodes_as_image[new_z] == null ) {
-							nodes_as_image[new_z] = new SearchNode[width*height];
-						}
+							if( new_x < 0 || new_x >= width )
+								continue;
 
-						for( int xdiff = -1; xdiff <= 1; xdiff++ )
-							for( int ydiff = -1; ydiff <= 1; ydiff++ ) {
+							if( new_y < 0 || new_y >= height )
+								continue;
 
-								if( (xdiff == 0) && (ydiff == 0) && (zdiff == 0) )
-									continue;
+							double xdiffsq = (xdiff * x_spacing) * (xdiff * x_spacing);
+							double ydiffsq = (ydiff * y_spacing) * (ydiff * y_spacing);
+							double zdiffsq = (zdiff * z_spacing) * (zdiff * z_spacing);
 
-								int new_x = e.x + xdiff;
-								int new_y = e.y + ydiff;
+							float h_for_new_point = estimateCostToGoal( new_x, new_y, new_z, fromStart );
 
-								if( new_x < 0 || new_x >= width )
-									continue;
-
-								if( new_y < 0 || new_y >= height )
-									continue;
-
-								double xdiffsq = (xdiff * x_spacing) * (xdiff * x_spacing);
-								double ydiffsq = (ydiff * y_spacing) * (ydiff * y_spacing);
-								double zdiffsq = (zdiff * z_spacing) * (zdiff * z_spacing);
-
-								float h_for_new_point = estimateCostToGoal( new_x, new_y, new_z, i );
-
-								double cost_moving_to_new_point = costMovingTo( new_x, new_y, new_z );
-								if( cost_moving_to_new_point < minimum_cost_per_unit_distance ) {
-									cost_moving_to_new_point = minimum_cost_per_unit_distance;
-								}
-
-								float g_for_new_point = (float) ( e.g + Math.sqrt( xdiffsq + ydiffsq + zdiffsq ) * cost_moving_to_new_point );
-
-								float f_for_new_point = h_for_new_point + g_for_new_point;
-
-								SearchNode newNode = createNewNode( new_x, new_y, new_z,
-												    g_for_new_point, h_for_new_point,
-												    e, FREE );
-
-
-								// Is this newNode really new?
-								SearchNode alreadyThere = nodes_as_image[new_z][new_y*width+new_x];
-
-								if( alreadyThere == null ) {
-
-									if( i == 0 ) {
-										newNode.searchStatus = OPEN_FROM_START;
-										open_from_start.add( newNode );
-									} else {
-										newNode.searchStatus = OPEN_FROM_GOAL;
-										open_from_goal.add( newNode );
-									}
-									addingNode( newNode );
-									nodes_as_image[new_z][new_y*width+new_x] = newNode;
-
-								} else {
-
-									if( bidirectional ) {
-
-										Path result = null;
-										boolean done = false;
-
-										// If either of the next two if conditions are true
-										// then we've finished.
-
-										if( (i == 0) && ((alreadyThere.searchStatus == OPEN_FROM_GOAL) ||
-												 (alreadyThere.searchStatus == CLOSED_FROM_GOAL)) ) {
-
-											if (verbose) System.out.println("Trying to add a new node from start, found a node in the goal search already there.");
-											result = e.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
-											if (verbose) System.out.println("e.asPath() is: "+e.asPath( x_spacing, y_spacing, z_spacing, spacing_units ));
-											Path fromGoalReversed = alreadyThere.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units );
-											if (verbose) System.out.println("fromGoalReversed is: "+fromGoalReversed);
-											result.add( fromGoalReversed );
-											if (verbose) System.out.println("added, that is: "+result);
-											done = true;
-
-										} else if( (i == 1) && ((alreadyThere.searchStatus == OPEN_FROM_START) ||
-													(alreadyThere.searchStatus == CLOSED_FROM_START)) ) {
-											
-
-											if (verbose) System.out.println("Trying to add a new node from goal, found a node in the start search already there.");
-											result = alreadyThere.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
-											if (verbose) System.out.println("alreadyThere.asPath() is "+alreadyThere.asPath( x_spacing, y_spacing, z_spacing, spacing_units ));
-											if (verbose) System.out.println("now the path from goal reversed is: "+e.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ));
-											result.add( e.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
-											if (verbose) System.out.println("added, that is: "+result);
-											done = true;
-										}
-
-										if( done ) {
-											if (verbose) System.out.println("Searches met!");
-											foundGoal( result );
-											setExitReason(SUCCESS);
-											reportFinished( true );
-											return;
-										}
-
-									}
-
-									// The other alternative is that this node is already in one
-									// of the lists working from the start but has a better way
-									// of getting to that point.
-									
-									if( alreadyThere.f > f_for_new_point ) {
-										
-										if( i == 0 ) {
-											
-											if( alreadyThere.searchStatus == OPEN_FROM_START ) {
-												
-												open_from_start.remove( alreadyThere );
-												alreadyThere.setFrom( newNode );
-												alreadyThere.searchStatus = OPEN_FROM_START;
-												open_from_start.add( alreadyThere );
-												continue;
-												
-											} else if( alreadyThere.searchStatus == CLOSED_FROM_START ) {
-												
-												closed_from_start.remove( alreadyThere );
-												alreadyThere.setFrom( newNode );
-												alreadyThere.searchStatus = OPEN_FROM_START;
-												open_from_start.add( alreadyThere );
-												continue;
-												
-											}
-											
-										} else if( i == 1 ) {
-											
-											if( alreadyThere.searchStatus == OPEN_FROM_GOAL ) {
-												
-												open_from_goal.remove( alreadyThere );
-												alreadyThere.setFrom( newNode );
-												alreadyThere.searchStatus = OPEN_FROM_GOAL;
-												open_from_goal.add( alreadyThere );
-												continue;
-												
-											} else if( alreadyThere.searchStatus == CLOSED_FROM_GOAL ) {
-												
-												closed_from_goal.remove( alreadyThere );
-												alreadyThere.setFrom( newNode );
-												alreadyThere.searchStatus = OPEN_FROM_GOAL;
-												open_from_goal.add( alreadyThere );
-												continue;
-												
-											}
-											
-										}
-										
-									}
-									
-								}
-								
+							double cost_moving_to_new_point = costMovingTo( new_x, new_y, new_z );
+							if( cost_moving_to_new_point < minimum_cost_per_unit_distance ) {
+								cost_moving_to_new_point = minimum_cost_per_unit_distance;
 							}
-					}
+
+							float g_for_new_point = (float) ( p.g + Math.sqrt( xdiffsq + ydiffsq + zdiffsq ) * cost_moving_to_new_point );
+
+							float f_for_new_point = h_for_new_point + g_for_new_point;
+
+							SearchNode newNode = createNewNode( new_x, new_y, new_z,
+											    g_for_new_point, h_for_new_point,
+											    p, FREE );
+
+							// Is this newNode really new?
+							SearchNode alreadyThereInThisSearch = nodes_as_image_this_search[new_z][new_y*width+new_x];
+
+							if( alreadyThereInThisSearch == null ) {
+
+								newNode.searchStatus = fromStart ? OPEN_FROM_START : OPEN_FROM_GOAL;
+								open_queue.add( newNode );
+								addingNode( newNode );
+								nodes_as_image_this_search[new_z][new_y*width+new_x] = newNode;
+
+							} else {
+
+								// The other alternative is that this node is already in one
+								// of the lists working from the start but has a better way
+								// of getting to that point.
+
+								if( alreadyThereInThisSearch.f > f_for_new_point ) {
+
+									if( alreadyThereInThisSearch.searchStatus == (fromStart ? OPEN_FROM_START : OPEN_FROM_GOAL) ) {
+
+										open_queue.remove( alreadyThereInThisSearch );
+										alreadyThereInThisSearch.setFrom( newNode );
+										alreadyThereInThisSearch.searchStatus = fromStart ? OPEN_FROM_START : OPEN_FROM_GOAL;
+										open_queue.add( alreadyThereInThisSearch );
+
+									} else if( alreadyThereInThisSearch.searchStatus == (fromStart ? CLOSED_FROM_START : CLOSED_FROM_GOAL) ) {
+
+										closed_queue.remove( alreadyThereInThisSearch );
+										alreadyThereInThisSearch.setFrom( newNode );
+										alreadyThereInThisSearch.searchStatus = fromStart ? OPEN_FROM_START : OPEN_FROM_GOAL;
+										open_queue.add( alreadyThereInThisSearch );
+									}
+								}
+							}
+
+							if( bidirectional && nodes_as_image_other_search[new_z] != null ) {
+
+								SearchNode alreadyThereInOtherSearch = nodes_as_image_other_search[new_z][new_y*width+new_x];
+								if( alreadyThereInOtherSearch != null ) {
+
+									Path result = null;
+
+									// If either of the next two if conditions are true
+									// then we've finished.
+
+									if( alreadyThereInOtherSearch != null &&
+									    (alreadyThereInOtherSearch.searchStatus == CLOSED_FROM_START ||
+									     alreadyThereInOtherSearch.searchStatus == CLOSED_FROM_GOAL) ) {
+
+										if( fromStart ) {
+											result = p.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
+											Path fromGoalReversed = alreadyThereInOtherSearch.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units );
+											result.add( fromGoalReversed );
+										} else {
+											result = alreadyThereInOtherSearch.asPath( x_spacing, y_spacing, z_spacing, spacing_units );
+											result.add( p.asPathReversed( x_spacing, y_spacing, z_spacing, spacing_units ) );
+										}
+										if (verbose) System.out.println("Searches met!");
+										foundGoal( result );
+										setExitReason(SUCCESS);
+										reportFinished( true );
+										return;
+									}
+								}
+							}
+						}
 				}
-				
 				++ loops;
 			}
 
@@ -712,7 +615,7 @@ public abstract class SearchThread extends Thread {
 			   programmer hasn't populated the open list to start
 			   with.)  However, in this case let's return the best
 			   path so far anyway... */
-			
+
 			if (verbose) System.out.println( "FAILED to find a route.  Shouldn't happen..." );
 			setExitReason(POINTS_EXHAUSTED);
 			reportFinished( false );
@@ -722,6 +625,20 @@ public abstract class SearchThread extends Thread {
 			IJ.error("Out of memory while searching for a path");
 			setExitReason(OUT_OF_MEMORY);
 			reportFinished( false );
+		} catch( Throwable t ) {
+			// This is more-or-less based on the catch( Throwable )
+			// in Excecuter.java in ImageJ.  FIXME: change this to
+			// call the Bug_Submitter directly...
+			CharArrayWriter caw = new CharArrayWriter();
+			PrintWriter pw = new PrintWriter(caw);
+			t.printStackTrace(pw);
+			String s = "There was an exception in the search thread:\n";
+			s += caw.toString();
+			int w=350, h=250;
+			if (IJ.getInstance()!=null)
+				new TextWindow("Exception in SearchThread", s, w, h);
+			else
+				IJ.log(s);
 		}
 		return;
 
@@ -731,7 +648,7 @@ public abstract class SearchThread extends Thread {
 	 * defined goal in this default superclass implementation, so
 	 * always return 0 so we end up with Dijkstra's algorithm. */
 
-	float estimateCostToGoal( int current_x, int current_y, int current_z, int to_start_or_goal ) {
+	float estimateCostToGoal( int current_x, int current_y, int current_z, boolean fromStart ) {
 		return 0;
 	}
 
@@ -758,6 +675,24 @@ public abstract class SearchThread extends Thread {
 	   listeners to do that. */
 	int getExitReason( ) {
 		return exitReason;
+	}
+
+	SearchNode anyNodeUnderThreshold( int x, int y, int z, double threshold ) {
+		SearchNode [] startSlice = nodes_as_image_from_start[z];
+		SearchNode [] goalSlice = nodes_as_image_from_goal[z];
+		int index = y*width+x;
+		SearchNode n = null;
+		if( startSlice != null ) {
+			n = startSlice[index];
+			if( n != null && threshold >= 0 && n.g > threshold )
+				n = null;
+			if( n == null && goalSlice != null ) {
+				n = goalSlice[index];
+				if( threshold >= 0 && n.g > threshold )
+					n = null;
+			}
+		}
+		return n;
 	}
 
 	/* This draws over the Graphics object the current progress of
@@ -791,15 +726,10 @@ public abstract class SearchThread extends Thread {
 				int z = currentSliceInPlane;
 				for( int y = 0; y < height; ++y )
 					for( int x = 0; x < width; ++x ) {
-						SearchNode [] slice = nodes_as_image[z];
-						if( slice == null )
-							continue;
-						SearchNode n = slice[y*width+x];
-						if( n == null )
+						SearchNode n = anyNodeUnderThreshold(x,y,z,drawingThreshold);
+						if (n == null)
 							continue;
 						byte status = n.searchStatus;
-						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
-							continue;
 						if( status == start_status || status == goal_status )
 							g.fillRect( canvas.myScreenX(x) - pixel_size / 2, canvas.myScreenY(y) - pixel_size / 2, pixel_size, pixel_size );
 					}
@@ -807,15 +737,10 @@ public abstract class SearchThread extends Thread {
 				int y = currentSliceInPlane;
 				for( int z = 0; z < depth; ++ z )
 					for( int x = 0; x < width; ++x ) {
-						SearchNode [] slice = nodes_as_image[z];
-						if( slice == null )
-							continue;
-						SearchNode n = slice[y*width+x];
-						if( n == null )
+						SearchNode n = anyNodeUnderThreshold(x,y,z,drawingThreshold);
+						if (n == null)
 							continue;
 						byte status = n.searchStatus;
-						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
-							continue;
 						if( status == start_status || status == goal_status )
 							g.fillRect( canvas.myScreenX(x) - pixel_size / 2, canvas.myScreenY(z) - pixel_size / 2, pixel_size, pixel_size );
 					}
@@ -823,15 +748,10 @@ public abstract class SearchThread extends Thread {
 				int x = currentSliceInPlane;
 				for( int y = 0; y < height; ++y )
 					for( int z = 0; z < depth; ++z ) {
-						SearchNode [] slice = nodes_as_image[z];
-						if( slice == null )
-							continue;
-						SearchNode n = slice[y*width+x];
-						if( n == null )
+						SearchNode n = anyNodeUnderThreshold(x,y,z,drawingThreshold);
+						if (n == null)
 							continue;
 						byte status = n.searchStatus;
-						if( (drawingThreshold >= 0) && (n.g > drawingThreshold) )
-							continue;
 						if( status == start_status || status == goal_status )
 							g.fillRect( canvas.myScreenX(z) - pixel_size / 2, canvas.myScreenY(y) - pixel_size / 2, pixel_size, pixel_size );
 					}
@@ -841,7 +761,9 @@ public abstract class SearchThread extends Thread {
 
 	// Add a node, ignoring requests to add duplicate nodes:
 
-	public void addNode( SearchNode n ) {
+	public void addNode( SearchNode n, boolean fromStart ) {
+
+		SearchNode [][] nodes_as_image = fromStart ? nodes_as_image_from_start : nodes_as_image_from_goal;
 
 		if( nodes_as_image[n.z] == null ) {
 			nodes_as_image[n.z] = new SearchNode[width*height];

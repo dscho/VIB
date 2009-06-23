@@ -274,7 +274,7 @@ public class MeshExporter {
 			// make list of vertices
 			String title = mob.getName().replaceAll(" ", "_").replaceAll("#", "--");
 			Hashtable ht_points = new Hashtable(); // because we like inefficiency
-			w_obj.write("o ");
+			w_obj.write("g ");
 			w_obj.write(title);
 			w_obj.write('\n');
 			final int len = triangles.size();

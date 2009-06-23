@@ -1206,21 +1206,21 @@ public class Executer {
 	 * Recording methods
 	 * *********************************************************/
 	private static void record(String command) {
-		command = "ImageJ_3D_Viewer." + command;
+		command = "ij3d.Image3DViewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call", command);
 		}
 	}
 	
 	private static void record(String command, String a1) {
-		command = "ImageJ_3D_Viewer." + command;
+		command = "ij3d.Image3DViewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call", command, a1);
 		}
 	}
 
 	private static void record(String command, String a1, String a2) {
-		command = "ImageJ_3D_Viewer." + command;
+		command = "ij3d.Image3DViewer." + command;
 		if(ij.plugin.frame.Recorder.record) {
 			ij.plugin.frame.Recorder.record("call",command,a1,a2);
 		}
@@ -1228,7 +1228,7 @@ public class Executer {
 
 	private static void record(String command, String a1, 
 						String a2, String a3) {
-		command = "call(\"ImageJ_3D_Viewer." + command + "\", " + 
+		command = "call(\"ij3d.Image3DViewer." + command + "\", " + 
 				"\"" + a1 + "\"," + 
 				"\"" + a2 + "\"," + 
 				"\"" + a3 + "\")"; 
@@ -1238,7 +1238,7 @@ public class Executer {
 	}
 
 	private static void record(String command, String[] args) {
-		command = "call(\"ImageJ_3D_Viewer." + command + "\"";
+		command = "call(\"ij3d.Image3DViewer." + command + "\"";
 		for(int i = 0; i < args.length; i++) {
 			command += ", \"" + args[i] + "\"";
 		}

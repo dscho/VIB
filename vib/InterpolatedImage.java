@@ -15,6 +15,7 @@ public class InterpolatedImage {
 	private byte[][] pixels;
 	private float[][] pixelsFloat;
 	private short[][] pixelsShort;
+	private int[][] pixelsInt;
 	public Interpolate interpol;
 	int type;
 
@@ -49,6 +50,14 @@ public class InterpolatedImage {
 				pixelsShort[i] = (short[])stack.getPixels(i+1);
 
 			interpol = new AverageShort();
+		} else if (type == ImagePlus.COLOR_RGB) {
+			pixelsInt = new int[d][];
+			for (int i = 0; i < d; i++)
+				pixelsInt[i] = (int[])stack.getPixels(i+1);
+
+			interpol = new AverageInt();
+		} else {
+			throw new RuntimeException("Image type not supported");
 		}
 	}
 
@@ -96,6 +105,15 @@ public class InterpolatedImage {
 						yD += j * val;
 						zD += k * val;
 						totalD += val;
+					} else if(type == ImagePlus.COLOR_RGB) {
+						int val = getNoInterpolInt(i, j, k);
+						int sum = (val & 0xff0000) >> 16 +
+								(val & 0xff00) >> 8 +
+								(val & 0xff);
+						x += i * sum;
+						y += j * sum;
+						z += k * sum;
+						total += sum;
 					} else {
 						int val = -1;
 						if (type==ImagePlus.GRAY8||type==ImagePlus.COLOR_256)
@@ -406,6 +424,73 @@ public class InterpolatedImage {
 		pixelsFloat[z][x + w * y] = value;
 	}
 
+	/* int */
+	class AverageInt implements Interpolate {
+		public double get(double x, double y, double z) {
+			int x1 = (int)Math.floor(x);
+			int y1 = (int)Math.floor(y);
+			int z1 = (int)Math.floor(z);
+			double xR = x1 + 1 - x;
+			double yR = y1 + 1 - y;
+			double zR = z1 + 1 - z;
+
+			int v000 = getNoInterpolInt(x1, y1, z1),
+				v001 = getNoInterpolInt(x1, y1, z1 + 1),
+				v010 = getNoInterpolInt(x1, y1 + 1, z1),
+				v011 = getNoInterpolInt(x1, y1 + 1, z1 + 1),
+				v100 = getNoInterpolInt(x1 + 1, y1, z1),
+				v101 = getNoInterpolInt(x1 + 1, y1, z1 + 1),
+				v110 = getNoInterpolInt(x1 + 1, y1 + 1, z1),
+				v111 = getNoInterpolInt(x1 + 1, y1 + 1, z1 + 1);
+
+			int red = (int)Math.round(xR * (yR * (zR * r(v000) + (1 - zR) * r(v001))
+				+ (1 - yR) * (zR * r(v010) + (1 - zR) * r(v011)))
+				+ (1 - xR) * (yR * (zR * r(v100) + (1 - zR) * r(v101))
+				+ (1 - yR) * (zR * r(v110) + (1 - zR) * r(v111))));
+
+			int green = (int)Math.round(xR * (yR * (zR * g(v000) + (1 - zR) * g(v001))
+				+ (1 - yR) * (zR * g(v010) + (1 - zR) * g(v011)))
+				+ (1 - xR) * (yR * (zR * g(v100) + (1 - zR) * g(v101))
+				+ (1 - yR) * (zR * g(v110) + (1 - zR) * g(v111))));
+
+			int blue = (int)Math.round(xR * (yR * (zR * b(v000) + (1 - zR) * b(v001))
+				+ (1 - yR) * (zR * b(v010) + (1 - zR) * b(v011)))
+				+ (1 - xR) * (yR * (zR * b(v100) + (1 - zR) * b(v101))
+				+ (1 - yR) * (zR * b(v110) + (1 - zR) * b(v111))));
+			
+			return (red << 16) + (green << 8) + blue;
+		}
+
+		private double r(int v) {
+			return (double)((v & 0xff0000) >> 16);
+		}
+
+		private double g(int v) {
+			return (double)((v & 0xff00) >> 8);
+		}
+
+		private double b(int v) {
+			return (double)(v & 0xff);
+		}
+	}
+	
+	public int getNoCheckInt(int x, int y, int z) {
+		/* no check; we know exactly that it is inside */
+		return pixelsInt[z][x + w * y];
+	}
+	
+	public int getNoInterpolInt(int x, int y, int z) {
+		if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d)
+			return 0;
+		return getNoCheckInt(x, y, z);
+	}
+	
+	public void setInt(int x, int y, int z, int value) {
+		if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d)
+			return;
+		pixelsInt[z][x + w * y] = value;
+	}
+	
 	/* short */
 	class AverageShort implements Interpolate {
 		public double get(double x, double y, double z) {
@@ -473,6 +558,11 @@ public class InterpolatedImage {
 			case ImagePlus.GRAY16:
 				result.pixelsShort = new short[result.d][];
 				break;
+			case ImagePlus.COLOR_RGB:
+				result.pixelsInt = new int[result.d][];
+				break;
+			default:
+				throw new RuntimeException("Image type not supported");
 		}
 
 		ImageStack stack = new ImageStack(result.w, result.h, null);
@@ -493,6 +583,11 @@ public class InterpolatedImage {
 				result.pixelsShort[i] =
 					new short[result.w * result.h];
 				stack.addSlice("", result.pixelsShort[i]);
+				break;
+			case ImagePlus.COLOR_RGB:
+				result.pixelsInt[i] =
+					new int[result.w * result.h];
+				stack.addSlice("", result.pixelsInt[i]);
 				break;
 			}
 
@@ -519,6 +614,11 @@ public class InterpolatedImage {
 				case ImagePlus.GRAY16:
 					System.arraycopy(pixelsShort[k], 0,
 							 res.pixelsShort[k],
+							 0, w * h);
+					break;
+				case ImagePlus.COLOR_RGB:
+					System.arraycopy(pixelsInt[k], 0,
+							 res.pixelsInt[k],
 							 0, w * h);
 					break;
 			}

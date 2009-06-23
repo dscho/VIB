@@ -97,18 +97,26 @@ public class AppearanceCreator implements AxisConstants {
 		this.volume = v;
 		zTg = new TexCoordGeneration();
 		zTg.setPlaneS(new Vector4f(v.xTexGenScale, 0f, 0f,
+				// move it to pixel center
+				(float)(0.5f * v.pw * v.xTexGenScale)
+				// translate it to the origin
 				-(float)(v.xTexGenScale * v.minCoord.x)));
 		zTg.setPlaneT(new Vector4f(0f, v.yTexGenScale, 0f,
+				(float)(0.5f * v.ph * v.yTexGenScale)
 				-(float)(v.yTexGenScale * v.minCoord.y)));
 		yTg = new TexCoordGeneration();
 		yTg.setPlaneS(new Vector4f(v.xTexGenScale, 0f, 0f,
+				(float)(0.5f * v.pw * v.xTexGenScale)
 				-(float)(v.xTexGenScale * v.minCoord.x)));
 		yTg.setPlaneT(new Vector4f(0f, 0f, v.zTexGenScale,
+				(float)(0.5f * v.pd * v.zTexGenScale)
 				-(float)(v.zTexGenScale * v.minCoord.z)));
 		xTg = new TexCoordGeneration();
 		xTg.setPlaneS(new Vector4f(0f, v.yTexGenScale, 0f,
+				(float)(0.5f * v.ph * v.yTexGenScale)
 				-(float)(v.yTexGenScale * v.minCoord.y)));
 		xTg.setPlaneT(new Vector4f(0f, 0f, v.zTexGenScale,
+				(float)(0.5f * v.pd * v.zTexGenScale)
 				-(float)(v.zTexGenScale * v.minCoord.z)));
 		boolean rgb = v.getDataType() == VoltexVolume.INT_DATA;
 

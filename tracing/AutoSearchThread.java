@@ -74,7 +74,7 @@ public class AutoSearchThread extends SearchThread {
 					      0,
 					      estimateCostToGoal( start_x, start_y, start_z, 0 ),
 					      null, OPEN_FROM_START );
-		addNode(s);
+		addNode(s,true);
 	}
 
 	protected double costMovingTo( int new_x, int new_y, int new_z ) {
@@ -109,7 +109,7 @@ public class AutoSearchThread extends SearchThread {
         }
 
 	Path getPathBack( int from_x, int from_y, int from_z ) {
-		return nodes_as_image[from_z][from_y*width+from_x].asPath( x_spacing, y_spacing, z_spacing, spacing_units );
+		return nodes_as_image_from_start[from_z][from_y*width+from_x].asPath( x_spacing, y_spacing, z_spacing, spacing_units );
 	}
 
 }

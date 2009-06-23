@@ -4,6 +4,9 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
 import ij.process.StackConverter;
+import ij.plugin.filter.RGBStackSplitter;
+import ij.measure.Calibration;
+import ij.io.FileInfo;
 
 import java.io.File;
 import java.awt.image.ColorModel;
@@ -17,7 +20,7 @@ public class SplitChannels extends Module {
 	protected String getMessage() { return "Splitting channels"; }
 
 	protected void run(State state, int index) {
-		
+
 		prereqsDone(state, index);
 
 		int numChannels = state.options.numChannels;
@@ -40,26 +43,32 @@ public class SplitChannels extends Module {
 
 		if (upToDate)
 			return;
-		
+
 		ImagePlus [] allChannels = BatchOpener.open(path);
+
+		// In case the channels are encoded in an RGB image, split them.
+		if(allChannels.length == 1 &&
+				allChannels[0].getType() == ImagePlus.COLOR_RGB)
+			allChannels = splitRGBStack(allChannels[0]);
+
 		for(int i = 0; i < allChannels.length; i++) {
 			new StackConverter(allChannels[i]).convertToGray8();
 		}
-		
+
 		int channelsInFile = allChannels.length;
-		
+
 		if(channelsInFile < numChannels) {
 			if (index < 0 && channelsInFile == 1) {
-				// be graceful when the template has 
+				// be graceful when the template has
 				// only one channel
 				path = state.getImagePath(refChannel, index);
 				if(!state.save(allChannels[0], path))
 					throw new RuntimeException("Could not "
-						+ "save " + path);	
+						+ "save " + path);
 				return;
 			}
-			throw new RuntimeException("Found unexpectedly " 
-				+ channelsInFile + " channels " 
+			throw new RuntimeException("Found unexpectedly "
+				+ channelsInFile + " channels "
 				+ " in " + path);
 		}
 		// save reference channel last, to avoid unnecessary loading
@@ -69,7 +78,7 @@ public class SplitChannels extends Module {
 			ImagePlus img = allChannels[i];
 			path = state.getImagePath(i, index);
 			if(!state.save(img, path))
-				throw new RuntimeException("Could not save " + 
+				throw new RuntimeException("Could not save " +
 					path);
 			new File(path).setLastModified(file.lastModified());
 		}
@@ -78,5 +87,29 @@ public class SplitChannels extends Module {
 			throw new RuntimeException("Could not save " + path);
 		new File(path).setLastModified(file.lastModified());
 
+	}
+
+	private ImagePlus[] splitRGBStack(ImagePlus rgb) {
+		Calibration cal = rgb.getCalibration();
+		FileInfo fi = rgb.getOriginalFileInfo();
+
+		RGBStackSplitter splitter = new RGBStackSplitter();
+		splitter.split(rgb.getStack(), false);
+		rgb.close();
+
+		ImagePlus[] ret = new ImagePlus[3];
+		ret[0] = new ImagePlus(rgb.getTitle(), splitter.red);
+		ret[0].setCalibration(cal);
+		ret[0].setFileInfo(fi);
+
+		ret[1] = new ImagePlus(rgb.getTitle(), splitter.green);
+		ret[1].setCalibration(cal);
+		ret[1].setFileInfo(fi);
+
+		ret[2] = new ImagePlus(rgb.getTitle(), splitter.blue);
+		ret[2].setCalibration(cal);
+		ret[2].setFileInfo(fi);
+
+		return ret;
 	}
 }

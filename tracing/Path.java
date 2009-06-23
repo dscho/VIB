@@ -23,7 +23,8 @@
 
 package tracing;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics;
 
 import ij.gui.*;
 import ij.*;
@@ -37,7 +38,9 @@ import stacks.ThreePanes;
 import ij3d.Image3DUniverse;
 import ij3d.Content;
 import ij3d.Pipe;
+import ij3d.Mesh_Maker;
 import javax.vecmath.Color3f;
+import javax.vecmath.Point3f;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -46,6 +49,7 @@ import java.util.Set;
 import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Arrays;
+import java.util.List;
 
 import util.CMTK_Transformation;
 
@@ -932,17 +936,6 @@ public class Path implements Comparable {
 		if( useFitted && fitted == null )
 			throw new RuntimeException("BUG: setUseFitted(true) was called, but the 'fitted' member was null");
 
-		if( plugin != null && plugin.use3DViewer ) {
-			// Swap them around in the 3D viewer:
-			if( useFitted ) {
-				removeFrom3DViewer( plugin.univ );
-				fitted.addTo3DViewer( plugin.univ );
-			} else {
-				fitted.removeFrom3DViewer( plugin.univ );
-				addTo3DViewer( plugin.univ );
-			}
-		}
-
 		this.useFitted = useFitted;
 	}
 
@@ -1637,29 +1630,186 @@ public class Path implements Comparable {
 	}
 */
 
+	/* These are various fields that have the current 3D
+	   representations of this path.  They should only be updated
+	   by synchronized methods, currently:
+
+	        updateContent3D
+	        addTo3DViewer
+		addPossiblyFittedTo3DViewer
+	        removeFrom3DViewer
+	*/
+	int paths3DDisplay = 1;
 	Content content3D;
+	Content content3DExtra;
 	String nameWhenAddedToViewer;
+	String nameWhenAddedToViewerExtra;
+
+	synchronized void addPossiblyFittedTo3DViewer(Image3DUniverse univ,Color3f c) {
+		if( useFitted ) {
+			fitted.addTo3DViewer(univ,c);
+		} else {
+			addTo3DViewer(univ,c);
+		}
+	}
+
+	synchronized void removeIncludingFittedFrom3DViewer(Image3DUniverse univ) {
+		removeFrom3DViewer(univ);
+		if( useFitted )
+			fitted.removeFrom3DViewer(univ);
+	}
+
+	synchronized void updateContent3D( Image3DUniverse univ,
+					   boolean visible,
+					   int paths3DDisplay,
+					   Color3f color ) {
+
+		// So, go through each of the reasons why we might
+		// have to remove (and possibly add back) the path:
+
+		if( ! visible ) {
+			/* It shouldn't be visible - if any of the
+			   contents are non-null, remove them: */
+			removeIncludingFittedFrom3DViewer(univ);
+			return;
+		}
+
+		// Now we know it should be visible.
+
+		Path pathToUse = null;
+
+		if( useFitted ) {
+			/* If the non-fitted versions are currently
+			   being displayed, remove them: */
+			removeFrom3DViewer(univ);
+			pathToUse = fitted;
+		} else {
+			/* If the fitted version is currently being
+			   displayed, remove it: */
+			if( fitted != null ) {
+				fitted.removeFrom3DViewer(univ);
+			}
+			pathToUse = this;
+		}
+
+		// Is the color wrong?
+		if( (pathToUse.content3D != null && ! pathToUse.content3D.getColor().equals(color)) ||
+		    (pathToUse.content3DExtra != null && ! pathToUse.content3DExtra.getColor().equals(color))) {
+			pathToUse.removeFrom3DViewer(univ);
+			pathToUse.paths3DDisplay = paths3DDisplay;
+			pathToUse.addTo3DViewer(univ,color);
+			return;
+		}
+
+		// Is the the display (lines-and-discs or surfaces) right?
+		if( pathToUse.paths3DDisplay != paths3DDisplay ) {
+			pathToUse.removeFrom3DViewer(univ);
+			pathToUse.paths3DDisplay = paths3DDisplay;
+			pathToUse.addTo3DViewer(univ,color);
+			return;
+		}
+
+		if( pathToUse.nameWhenAddedToViewer == null || ! univ.contains(pathToUse.nameWhenAddedToViewer) ) {
+			pathToUse.paths3DDisplay = paths3DDisplay;
+			pathToUse.addTo3DViewer(univ,color);
+		}
+	}
 
 	/* FIXME: this should be based on distance between points in
 	   the path, not a static number: */
 	public static final int noMoreThanOneEvery = 2;
 
-	public void removeFrom3DViewer(Image3DUniverse univ) {
+	synchronized public void removeFrom3DViewer(Image3DUniverse univ) {
 		if( content3D != null ) {
 			univ.removeContent( nameWhenAddedToViewer );
 			content3D = null;
 		}
+		if( content3DExtra != null ) {
+			univ.removeContent( nameWhenAddedToViewerExtra );
+			content3DExtra = null;
+		}
 	}
 
-	public Content addTo3DViewer(Image3DUniverse univ) {
-		return addTo3DViewer( univ, null );
+	public java.util.List<Point3f> getPoint3fList() {
+		ArrayList<Point3f> linePoints = new ArrayList<Point3f>();
+		for( int i = 0; i < points; ++i ) {
+			linePoints.add( new Point3f( (float)precise_x_positions[i] + (float)(Simple_Neurite_Tracer.fudgeCoordinates ? (x_spacing / 2) : 0),
+						     (float)precise_y_positions[i] + (float)(Simple_Neurite_Tracer.fudgeCoordinates ? (y_spacing / 2) : 0),
+						     (float)precise_z_positions[i] + (float)(Simple_Neurite_Tracer.fudgeCoordinates ? (z_spacing / 2) : 0)) );
+		}
+		return linePoints;
 	}
 
-	public Content addTo3DViewer(Image3DUniverse univ, Color c) {
+	public Content addAsLinesTo3DViewer(Image3DUniverse univ, Color c ) {
+		return addAsLinesTo3DViewer(univ,new Color3f(c));
+	}
+
+	public Content addAsLinesTo3DViewer(Image3DUniverse univ, Color3f c ) {
+		String safeName = univ.getSafeContentName(getName()+" as lines");
+		return univ.addLineMesh( getPoint3fList(), c, safeName, true );
+	}
+
+	public Content addDiscsTo3DViewer(Image3DUniverse univ, Color c) {
+		return addDiscsTo3DViewer(univ,new Color3f(c));
+	}
+
+	public Content addDiscsTo3DViewer(Image3DUniverse  univ, Color3f c ) {
+		if( ! hasCircles() )
+			return null;
+
+		int edges = 8;
+		List<Point3f> allTriangles = new ArrayList<Point3f>(edges*points);
+		for( int i = 0; i < points; ++i ) {
+			List<Point3f> discMesh =
+				Mesh_Maker.createDisc( precise_x_positions[i] + (Simple_Neurite_Tracer.fudgeCoordinates ? (x_spacing / 2) : 0),
+						       precise_y_positions[i] + (Simple_Neurite_Tracer.fudgeCoordinates ? (y_spacing / 2) : 0),
+						       precise_z_positions[i] + (Simple_Neurite_Tracer.fudgeCoordinates ? (z_spacing / 2) : 0),
+						       tangents_x[i],
+						       tangents_y[i],
+						       tangents_z[i],
+						       radiuses[i],
+						       8 );
+			allTriangles.addAll(discMesh);
+		}
+		return univ.addTriangleMesh( allTriangles,
+					     c,
+					     univ.getSafeContentName("Discs for path "+getName()) );
+	}
+
+	synchronized public void addTo3DViewer(Image3DUniverse univ, Color c) {
+		if( c == null )
+			throw new RuntimeException("In addTo3DViewer, Color can no longer be null");
+		addTo3DViewer(univ, new Color3f(c));
+	}
+
+	synchronized public void addTo3DViewer(Image3DUniverse univ, Color3f c ) {
+		if( c == null )
+			throw new RuntimeException("In addTo3DViewer, Color3f can no longer be null");
+
+		Color3f realColor = (c == null) ? new Color3f(Color.magenta) : c;
 
 		if(points <= 1) {
 			content3D = null;
-			return null;
+			content3DExtra = null;
+			return;
+		}
+
+		if( paths3DDisplay == Simple_Neurite_Tracer.DISPLAY_PATHS_LINES ||
+		    paths3DDisplay == Simple_Neurite_Tracer.DISPLAY_PATHS_LINES_AND_DISCS ) {
+			content3D = addAsLinesTo3DViewer(univ,realColor);
+			content3D.setLocked(true);
+			nameWhenAddedToViewer = content3D.getName();
+			if( paths3DDisplay == Simple_Neurite_Tracer.DISPLAY_PATHS_LINES_AND_DISCS ) {
+				content3DExtra = addDiscsTo3DViewer(univ,realColor);
+				if( content3DExtra == null ) {
+					nameWhenAddedToViewerExtra = null;
+				} else {
+					content3DExtra.setLocked(true);
+					nameWhenAddedToViewerExtra = content3DExtra.getName();
+				}
+			}
+			// univ.resetView();
+			return;
 		}
 
 		int pointsToUse = -1;
@@ -1742,20 +1892,35 @@ public class Path implements Comparable {
 							12);     // "parallels" (12 means cross-sections are dodecagons)
 		if( allPoints == null ) {
 			content3D = null;
-			return null;
+			content3DExtra = null;
+			return;
 		}
 
 		java.util.List triangles = Pipe.generateTriangles(allPoints,
 								  1); // scale
 
+		if( Simple_Neurite_Tracer.fudgeCoordinates ) {
+
+			for( Object o : triangles ) {
+				Point3f p = (Point3f)o;
+				p.x +=  (float)(x_spacing / 2);
+				p.y +=  (float)(y_spacing / 2);
+				p.z +=  (float)(z_spacing / 2);
+			}
+		}
+
 		nameWhenAddedToViewer = univ.getSafeContentName( getName() );
-		univ.resetView();
+		// univ.resetView();
 		content3D = univ.addTriangleMesh(triangles,
-						 c == null ? new Color3f(Color.magenta) : new Color3f(c),
+						 realColor,
 						 nameWhenAddedToViewer);
 		content3D.setLocked(true);
-		univ.resetView();
-		return content3D;
+
+		content3DExtra = null;
+		nameWhenAddedToViewerExtra = null;
+
+		// univ.resetView();
+		return;
 	}
 
 	public void setSelected(boolean newSelectedStatus) {
@@ -1765,6 +1930,14 @@ public class Path implements Comparable {
 
 	public boolean getSelected() {
 		return selected;
+	}
+
+	public boolean versionInUse() {
+		if( fittedVersionOf != null )
+			return fittedVersionOf.useFitted;
+		else {
+			return ! useFitted;
+		}
 	}
 
 	/* This doesn't deal with the startJoins, endJoins or fitted

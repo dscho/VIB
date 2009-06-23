@@ -407,7 +407,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		   update3DViewerContents: */
 		if( plugin != null && plugin.use3DViewer ) {
 			p.removeFrom3DViewer( plugin.univ );
-			p.addTo3DViewer( plugin.univ );
+			p.addTo3DViewer( plugin.univ, plugin.deselectedColor3f );
 		}
 		allPaths.add(p);
 		resetListeners( p );
@@ -1349,13 +1349,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		   calculate the minimum and maximum in each axis to
 		   test for this: */
 
-		double minX = Math.min( 0 * x_spacing, width * x_spacing );
-		double minY = Math.min( 0 * y_spacing, width * y_spacing );
-		double minZ = Math.min( 0 * z_spacing, width * z_spacing );
+		double minX = Math.min( 0, width * x_spacing );
+		double minY = Math.min( 0, width * y_spacing );
+		double minZ = Math.min( 0, width * z_spacing );
 
-		double maxX = Math.max( 0 * x_spacing, width * x_spacing );
-		double maxY = Math.max( 0 * y_spacing, width * y_spacing );
-		double maxZ = Math.max( 0 * z_spacing, width * z_spacing );
+		double maxX = Math.max( 0, width * x_spacing );
+		double maxY = Math.max( 0, width * y_spacing );
+		double maxZ = Math.max( 0, width * z_spacing );
 
 		String line;
 		while( (line = br.readLine()) != null ) {
@@ -1491,12 +1491,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			p.setStartJoin( previousPath, pointInImage );
 		}
 
-		for( Iterator<Path> i = allPaths.iterator();
-		     i.hasNext(); ) {
-			Path p = i.next();
-			addTo3DViewer( p );
-		}
-
 		resetListeners( null, true );
 		return true;
 	}
@@ -1534,6 +1528,18 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	public boolean load( String filename ) {
 
+		/* Look at the magic bytes at the start of the file:
+
+		   If this looks as if it's gzip compressed, assume
+		   it's a compressed traces file - the native format
+		   of this plugin.
+
+                   If it begins "<?xml", assume it's an uncompressed
+                   traces file.
+
+		   Otherwise, try to import it as an SWC file.
+		*/
+
 		File f = new File(filename);
 		if( ! f.exists() ) {
 			IJ.error("The traces file '"+filename+"' does not exist.");
@@ -1541,16 +1547,21 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 
 		boolean gzipped = false;
+		boolean uncompressedXML = false;
 
 		try {
 			InputStream is;
-			byte[] buf = new byte[2];
+			byte[] buf = new byte[8];
 			is = new FileInputStream(filename);
-			is.read(buf, 0, 2);
+			is.read(buf, 0, 8);
 			is.close();
 			if (verbose) System.out.println("buf[0]: "+buf[0]+", buf[1]: "+buf[1]);
 			if( ((buf[0]&0xFF) == 0x1F) && ((buf[1]&0xFF) == 0x8B) )
 				gzipped = true;
+			else if( ((buf[0] == '<') && (buf[1] == '?') &&
+				  (buf[2] == 'x') && (buf[3] == 'm') &&
+				  (buf[4] == 'l') && (buf[5] == ' ')) )
+				uncompressedXML = true;
 
 		} catch (IOException e) {
 			IJ.error("Couldn't read from file: "+filename);
@@ -1562,18 +1573,23 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		try {
 
-			if( gzipped ) {
-				if (verbose) System.out.println("Loading gzipped file...");
-				is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(filename)));
+			if( gzipped || uncompressedXML ) {
+				if( gzipped ) {
+					if (verbose) System.out.println("Loading gzipped file...");
+					is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(filename)));
+				} else if( uncompressedXML ) {
+					if (verbose) System.out.println("Loading uncompressed file...");
+					is = new BufferedInputStream(new FileInputStream(filename));
+				}
+
+				result = load(is,null);
+
+				if( is != null )
+					is.close();
 			} else {
-				if (verbose) System.out.println("Loading uncompressed file...");
-				is = new BufferedInputStream(new FileInputStream(filename));
+				// Assume it's SWC:
+				result = importSWC( filename );
 			}
-
-			result = load(is,null);
-
-			if( is != null )
-				is.close();
 
 		} catch( IOException ioe ) {
 			IJ.error("Couldn't open file '"+filename+"' for reading.");
@@ -1886,6 +1902,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return new AllPointsIterator();
 	}
 
+	/* Note that this returns the number of points in th
+	   currently in-use version of each path. */
+
 	public int pointsInAllPaths( ) {
 		AllPointsIterator a = allPointsIterator();
 		int points = 0;
@@ -1919,8 +1938,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				int tmpPathIndex = currentPathIndex + 1;
 				while( tmpPathIndex < numberOfPaths ) {
 					Path p = allPaths.get( tmpPathIndex );
-					if( p.size() > 0 )
+					if( p.size() > 0 && p.versionInUse() )
 						return true;
+					++tmpPathIndex;
 				}
 				return false;
 			}
@@ -1939,7 +1959,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					if( currentPathIndex == numberOfPaths )
 						throw new java.util.NoSuchElementException();
 					currentPath = allPaths.get( currentPathIndex );
-					if( currentPath.size() > 0 )
+					if( currentPath.size() > 0 && currentPath.versionInUse() )
 						break;
 				}
 			} else
@@ -2058,9 +2078,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	/* Whatever the state of the paths, update the 3D viewer to
 	   make sure that they're the right colour, the right version
-	   (fitted or unfitted) is being used and whether the path
-	   should be displayed at all - it shouldn't if the "Show only
-	   selected paths" option is set. */
+	   (fitted or unfitted) is being used, whether the line or
+	   surface representation is being used, or whether the path
+	   should be displayed at all (it shouldn't if the "Show only
+	   selected paths" option is set.) */
 
 	public void update3DViewerContents() {
 		if( plugin != null && ! plugin.use3DViewer )
@@ -2075,54 +2096,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			if( p.fittedVersionOf != null )
 				continue;
 
-			Content c = null;
-			Content cWrong = null;
-
-			if( p.getUseFitted() ) {
-				c = p.fitted.content3D;
-				cWrong = p.content3D;
-			} else {
-				c = p.content3D;
-				if( p.fitted != null )
-					cWrong = p.fitted.content3D;
-			}
 			boolean selected = p.getSelected();
 
-			if( c == null )
-				throw new RuntimeException( "content3D should never be null for any path if use3DViewer is true");
-
-			String contentName = c.getName();
-			Color3f contentColor = c.getColor();
-
-			String wrongContentName = null;
-			if( cWrong != null )
-				wrongContentName = cWrong.getName();
-
-			// Check that the color is right:
-			if( selected && ! contentColor.equals(plugin.selectedColor3f) )
-				c.setColor( plugin.selectedColor3f );
-			if( ! selected && ! contentColor.equals(plugin.deselectedColor3f ) )
-				c.setColor( plugin.deselectedColor3f );
-
-			boolean in3DViewer = plugin.univ.contains(contentName);
-
-			if( selected || ! showOnlySelectedPaths ) {
-				// Then this path should be in the
-				if( ! in3DViewer ) {
-					plugin.univ.resetView();
-					plugin.univ.addContent( c );
-					c.setLocked(true);
-					plugin.univ.resetView();
-				}
-			} else {
-				if( in3DViewer )
-					plugin.univ.removeContent(contentName);
-			}
-
-			// If the wrong content is in the viewer, remove that:
-			if( wrongContentName != null && plugin.univ.contains(wrongContentName) )
-				plugin.univ.removeContent(wrongContentName);
-
+			p.updateContent3D(
+				plugin.univ, // The appropriate 3D universe
+				(selected || ! showOnlySelectedPaths), // Visible at all?
+				plugin.getPaths3DDisplay(), // How to display?
+				selected ? plugin.selectedColor3f : plugin.deselectedColor3f ); // Colour?
 		}
 	}
 
