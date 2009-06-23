@@ -246,7 +246,8 @@ public class BatchOpener {
 
 					ImagePlus [] result;
 					Object invokeResult = m.invoke(newInstance,parameters);
-					if( invokeResult instanceof CompositeImage ) {
+					if( invokeResult instanceof ImagePlus &&
+						((ImagePlus)invokeResult).isComposite()) {
 						CompositeImage composite = (CompositeImage)invokeResult;
 						result = splitChannelsToArray(composite,true);
 					} else if( invokeResult instanceof ImagePlus ) {
@@ -396,7 +397,8 @@ public class BatchOpener {
 			ImagePlus invokeResult = IJ.openImage(path);
 			ImagePlus[] result;
 
-			if( invokeResult instanceof CompositeImage ) {
+			if( invokeResult instanceof ImagePlus &&
+				((ImagePlus)invokeResult).isComposite()) {
 				CompositeImage composite = (CompositeImage)invokeResult;
 				result = splitChannelsToArray(composite,true);
 			} else {
