@@ -77,11 +77,22 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	int maxUsedID = -1;
 
+	boolean needImageDataFromTracesFile;
+
 	public PathAndFillManager( ) {
 		allPaths = new ArrayList< Path >();
 		allFills = new ArrayList< Fill >();
 		listeners = new ArrayList< PathAndFillListener >();
 		selectedPathsSet = new HashSet();
+		needImageDataFromTracesFile = true;
+		this.imagePlus = null;
+		this.x_spacing = Double.MIN_VALUE;
+		this.y_spacing = Double.MIN_VALUE;
+		this.z_spacing = Double.MIN_VALUE;
+		this.spacing_units = null;
+		this.width = Integer.MIN_VALUE;
+		this.height = Integer.MIN_VALUE;
+		this.depth = Integer.MIN_VALUE;
 	}
 
 	public PathAndFillManager( ImagePlus imagePlus ) {
@@ -97,6 +108,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		this.width = imagePlus.getWidth();
 		this.height = imagePlus.getHeight();
 		this.depth = imagePlus.getStackSize();
+		needImageDataFromTracesFile = false;
 	}
 
 	public PathAndFillManager( Simple_Neurite_Tracer plugin ) {
@@ -109,6 +121,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		this.width = plugin.width;
 		this.height = plugin.height;
 		this.depth = plugin.depth;
+		needImageDataFromTracesFile = false;
 	}
 
 	public PathAndFillManager( int width, int height, int depth, float x_spacing, float y_spacing, float z_spacing, String spacing_units ) {
@@ -121,6 +134,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		this.depth = depth;
 		if( spacing_units == null )
 			this.spacing_units = "unknown";
+		needImageDataFromTracesFile = false;
 	}
 
 	int width;
@@ -795,9 +809,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				parsed_height = Integer.parseInt(heightString);
 				parsed_depth = Integer.parseInt(depthString);
 
-				if( ! ((parsed_width == width) &&
-				       (parsed_height == height) &&
-				       (parsed_depth == depth)) ) {
+				if( needImageDataFromTracesFile ) {
+					this.width = parsed_width;
+					this.height = parsed_height;
+					this.depth = parsed_depth;
+				} else if( ! ((parsed_width == width) &&
+					      (parsed_height == height) &&
+					      (parsed_depth == depth)) ) {
 					throw new TracesFileFormatException("The image size in the traces file didn't match - it's probably for another image");
 				}
 
@@ -817,6 +835,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				parsed_x_spacing = Double.parseDouble(xString);
 				parsed_y_spacing = Double.parseDouble(yString);
 				parsed_z_spacing = Double.parseDouble(zString);
+
+				if( needImageDataFromTracesFile ) {
+					this.x_spacing = parsed_x_spacing;
+					this.y_spacing = parsed_y_spacing;
+					this.z_spacing = parsed_z_spacing;
+					this.spacing_units = parsed_units;
+				}
 
 			} catch( NumberFormatException e ) {
 				throw new TracesFileFormatException("There was an invalid attribute to <samplespacing/>: "+e);
@@ -900,20 +925,20 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				if( id > maxUsedID )
 					maxUsedID = id;
 
-				if( startsonString == null )
+				if( startsonString == null ) {
 					startson = startsindex = -1;
-				else {
+				} else {
 					startson = Integer.parseInt(startsonString);
 					startsOnInteger = new Integer( startson );
 
-					if( startsxString != null ) {
-						startJoinPoint = new PointInImage( Double.parseDouble( startsxString ),
-										   Double.parseDouble( startsyString ),
-										   Double.parseDouble( startszString ) );
-					} else {
+					if( startsxString == null ) {
 						// The index (older file format) was supplied:
 						startsindex = Integer.parseInt(startsindexString);
 						startsIndexInteger = new Integer( startsindexString );
+					} else {
+						startJoinPoint = new PointInImage( Double.parseDouble( startsxString ),
+										   Double.parseDouble( startsyString ),
+										   Double.parseDouble( startszString ) );
 					}
 				}
 
@@ -959,8 +984,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			if( endJoinPoint != null )
 				endJoinsPoints.put( id, endJoinPoint );
 
-			if( startsIndexInteger != null )
+			if( startsIndexInteger != null ) {
 				startJoinsIndices.put( id, startsIndexInteger );
+			}
 			if( endsIndexInteger != null )
 				endJoinsIndices.put( id, endsIndexInteger );
 
@@ -1237,6 +1263,14 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	}
 
+	public static PathAndFillManager createFromTracesFile( String filename ) {
+		PathAndFillManager pafm = new PathAndFillManager();
+		if( pafm.load(filename) )
+			return pafm;
+		else
+			return null;
+	}
+
 	public boolean loadFromString( String tracesFileAsString ) {
 
 		StringReader reader=new StringReader(tracesFileAsString);
@@ -1260,6 +1294,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				InputSource inputSource=new InputSource(reader);
 				parser.parse( inputSource, this );
 			}
+
+			// We must have got the image data if we've got to this stage...
+			needImageDataFromTracesFile = false;
 
 		} catch( javax.xml.parsers.ParserConfigurationException e ) {
 
@@ -1343,6 +1380,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	public boolean importSWC( BufferedReader br ) throws IOException {
+
+		if( needImageDataFromTracesFile )
+			throw new RuntimeException( "[BUG] Trying to load SWC file while we still need image data information" );
 
 		clearPathsAndFills( );
 
