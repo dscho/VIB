@@ -162,6 +162,8 @@ public class Install_J3D implements PlugIn {
 		List<File> files = unzip(downloaded, tempdir, null);
 
 		String extdir = getFirstExtDir();
+		if(!new File(extdir).exists())
+			new File(extdir).mkdir();
 		if(!new File(extdir).canWrite())
 			throw new Exception("No permissions to write to " + extdir);
 		for(File file : files) {
@@ -222,6 +224,8 @@ public class Install_J3D implements PlugIn {
 		 */
 		files = unzip(j3djre, tempdir, null);
 		String extdir = getFirstExtDir();
+		if(!new File(extdir).exists())
+			new File(extdir).mkdir();
 		println("Found java extension folder: " + extdir);
 		if(!new File(extdir).canWrite())
 			throw new Exception("No permissions to write to " + extdir);
