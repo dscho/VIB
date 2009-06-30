@@ -80,6 +80,8 @@ public class Transform_IO implements PlugIn {
 		OpenDialog od = new OpenDialog("Open Affine Transformation...", "");
 		String directory = od.getDirectory();
 		String fileName = od.getFileName();
+		if (fileName == null)
+			return null;
 		return openAffineTransform((new File(directory,fileName)).getPath());
 	}
 	
