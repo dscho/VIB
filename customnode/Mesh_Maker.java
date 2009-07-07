@@ -20,6 +20,7 @@ import java.awt.Color;
 import ij3d.Image3DUniverse;
 import ij3d.Content;
 import ij3d.Pipe;
+import ij3d.ImageWindow3D;
 
 public class Mesh_Maker implements PlugIn {
 
