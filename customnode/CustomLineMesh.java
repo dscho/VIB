@@ -99,8 +99,8 @@ public class CustomLineMesh extends CustomMesh {
 		PolygonAttributes polyAttrib = new PolygonAttributes();
 		polyAttrib.setCapability(PolygonAttributes.ALLOW_MODE_WRITE);
 		polyAttrib.setPolygonMode(PolygonAttributes.POLYGON_FILL);
-		polyAttrib.setCullFace(PolygonAttributes.CULL_BACK);
-		polyAttrib.setBackFaceNormalFlip(false);
+		polyAttrib.setCullFace(PolygonAttributes.CULL_NONE);
+		polyAttrib.setBackFaceNormalFlip(true);
 		appearance.setPolygonAttributes(polyAttrib);
 
 		ColoringAttributes colorAttrib = new ColoringAttributes();
