@@ -167,6 +167,11 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 		released.put(e.getKeyCode(), when);
 	}
 
+	public synchronized void releaseKey(int keycode) {
+		pressed.remove(keycode);
+		released.remove(keycode);
+	}
+
 	public synchronized boolean isKeyDown(int keycode) {
 		if(!pressed.containsKey(keycode))
 			return false;
