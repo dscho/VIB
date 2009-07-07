@@ -119,14 +119,18 @@ public class Mesh_Maker implements PlugIn {
 		final ArrayList list = new ArrayList();
 		for (int j=0; j<globe.length-1; j++) { // the parallels
 			for (int k=0; k<globe[0].length -1; k++) { // meridian points
-				// half quadrant (a triangle)
-				list.add(new Point3f((float)globe[j][k][0], (float)globe[j][k][1], (float)globe[j][k][2]));
-				list.add(new Point3f((float)globe[j+1][k+1][0], (float)globe[j+1][k+1][1], (float)globe[j+1][k+1][2]));
-				list.add(new Point3f((float)globe[j+1][k][0], (float)globe[j+1][k][1], (float)globe[j+1][k][2]));
-				// the other half quadrant
-				list.add(new Point3f((float)globe[j][k][0], (float)globe[j][k][1], (float)globe[j][k][2]));
-				list.add(new Point3f((float)globe[j][k+1][0], (float)globe[j][k+1][1], (float)globe[j][k+1][2]));
-				list.add(new Point3f((float)globe[j+1][k+1][0], (float)globe[j+1][k+1][1], (float)globe[j+1][k+1][2]));
+				if(j != globe.length-2) {
+					// half quadrant (a triangle)
+					list.add(new Point3f((float)globe[j+1][k+1][0], (float)globe[j+1][k+1][1], (float)globe[j+1][k+1][2]));
+					list.add(new Point3f((float)globe[j][k][0], (float)globe[j][k][1], (float)globe[j][k][2]));
+					list.add(new Point3f((float)globe[j+1][k][0], (float)globe[j+1][k][1], (float)globe[j+1][k][2]));
+				}
+				if(j != 0) {
+					// the other half quadrant
+					list.add(new Point3f((float)globe[j][k][0], (float)globe[j][k][1], (float)globe[j][k][2]));
+					list.add(new Point3f((float)globe[j+1][k+1][0], (float)globe[j+1][k+1][1], (float)globe[j+1][k+1][2]));
+					list.add(new Point3f((float)globe[j][k+1][0], (float)globe[j][k+1][1], (float)globe[j][k+1][2]));
+				}
 			}
 		}
 		return list;
