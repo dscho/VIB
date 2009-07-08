@@ -63,6 +63,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private MenuItem j3dproperties;
 	private MenuItem viewer4d;
 	private CheckboxMenuItem coordinateSystem;
+	private CheckboxMenuItem boundingBox;
 	private CheckboxMenuItem allCoordinateSystems;
 	private CheckboxMenuItem lock;
 	private CheckboxMenuItem show;
@@ -356,6 +357,11 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		coordinateSystem.addItemListener(this);
 		hide.add(coordinateSystem);
 
+		boundingBox = new CheckboxMenuItem(
+					"Show bounding box", false);
+		boundingBox.addItemListener(this);
+		hide.add(boundingBox);
+
 		allCoordinateSystems = new CheckboxMenuItem(
 				"Show all coordinate systems", true);
 		allCoordinateSystems.addItemListener(this);
@@ -522,6 +528,9 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		else if (src == allCoordinateSystems)
 			executer.showAllCoordinateSystems(
 				allCoordinateSystems.getState());
+		else if(src == boundingBox)
+			executer.showBoundingBox(
+				c, boundingBox.getState());
 		else if(src == show)
 			executer.showContent(c, show.getState());
 		else if(src == lock)

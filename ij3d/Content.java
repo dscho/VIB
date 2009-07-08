@@ -45,6 +45,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	// visibility flags
 	private boolean locked = false;
 	private boolean visible = true;
+	private boolean bbVisible = false;
 	private boolean coordVisible = UniverseSettings.
 					showLocalCoordinateSystemsByDefault;
 	private boolean showPL = false;
@@ -68,9 +69,10 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	// global constants
 	public static final int CO = 0;
-	public static final int BB = 1;
-	public static final int CS = 2;
-	public static final int PL = 3;
+	public static final int BS = 1;
+	public static final int BB = 2;
+	public static final int CS = 3;
+	public static final int PL = 4;
 
 	public static final int VOLUME = 0;
 	public static final int ORTHO = 1;
@@ -171,6 +173,9 @@ public class Content extends BranchGroup implements UniverseListener {
 		BoundingBox bb = new BoundingBox(min, max);
 		bb.setPickable(false);
 		bbSwitch.addChild(bb);
+		bb = new BoundingBox(min, max, new Color3f(0, 1, 0));
+		bb.setPickable(false);
+		bbSwitch.addChild(bb);
 
 		// create coordinate system and add it to the switch
 		float cl = (float)Math.abs(max.x - min.x) / 5f;
@@ -183,7 +188,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		bbSwitch.addChild(plShape);
 
 		// initialize child mask of the switch
-		whichChild.set(BB, selected);
+		whichChild.set(BS, selected);
 		whichChild.set(CS, coordVisible);
 		whichChild.set(CO, visible);
 		whichChild.set(PL, showPL);
@@ -202,6 +207,7 @@ public class Content extends BranchGroup implements UniverseListener {
 		visible = b;
 		whichChild.set(CO, b);
 		whichChild.set(CS, b && coordVisible);
+		whichChild.set(BB, b && bbVisible);
 		// only if hiding, hide the point list
 		if(!b) {
 			showPointList(false);
@@ -210,6 +216,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	}
 
 	public void showBoundingBox(boolean b) {
+		bbVisible = b;
 		whichChild.set(BB, b);
 		bbSwitch.setChildMask(whichChild);
 	}
@@ -223,7 +230,8 @@ public class Content extends BranchGroup implements UniverseListener {
 
 	public void setSelected(boolean selected) {
 		this.selected = selected;
-		showBoundingBox(selected);
+		whichChild.set(BS, selected);
+		bbSwitch.setChildMask(whichChild);
 	}
 
 	/* ************************************************************

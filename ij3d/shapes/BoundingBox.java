@@ -17,6 +17,10 @@ public class BoundingBox extends BranchGroup {
 	public BoundingBox(Point3f min, Point3f max) {
 		this(min, max, new Color3f(1, 0, 0));
 	}
+
+	public BoundingBox(Point3d minp, Point3d maxp, Color3f color) {
+		this(new Point3f(minp), new Point3f(maxp), color);
+	}
 	
 	public BoundingBox(Point3f minp, Point3f maxp, Color3f color) {
 		setCapability(BranchGroup.ALLOW_DETACH);
@@ -43,42 +47,42 @@ public class BoundingBox extends BranchGroup {
 
 		coords[0] = p[0];
 		coords[1] = p[1];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[1];
 		coords[1] = p[2];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[2];
 		coords[1] = p[3];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[3];
 		coords[1] = p[0];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 
 		coords[0] = p[4];
 		coords[1] = p[5];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[5];
 		coords[1] = p[6];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[6];
 		coords[1] = p[7];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[7];
 		coords[1] = p[4];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		
 		coords[0] = p[0];
 		coords[1] = p[4];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[1];
 		coords[1] = p[5];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[2];
 		coords[1] = p[6];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		coords[0] = p[3];
 		coords[1] = p[7];
-		shape.addGeometry(makeLine(coords));
+		shape.addGeometry(makeLine(coords, color));
 		
 		Appearance a = new Appearance();
 		PolygonAttributes pa = new PolygonAttributes();
@@ -95,17 +99,16 @@ public class BoundingBox extends BranchGroup {
 		addChild(shape);
 	}
 
-	private Geometry makeLine(Point3f[] coords) {
+	private Geometry makeLine(Point3f[] coords, Color3f color) {
 		LineArray ga = new LineArray(2, 
 				GeometryArray.COORDINATES |
 				GeometryArray.COLOR_3 |
 				GeometryArray.NORMALS);
 //		ga.setCapability(GeometryArray.ALLOW_INTERSECT);
 		ga.setCoordinates(0, coords);
-		Color3f red = new Color3f(1, 0, 0);
 		Color3f[] col = new Color3f[2];
 		for(int i = 0; i < 2; i++) 
-			col[i] = red;
+			col[i] = color;
 		ga.setColors(0, col);
 		return ga;
 	}

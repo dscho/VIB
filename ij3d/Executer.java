@@ -741,6 +741,12 @@ public class Executer {
 		record(SET_CS, Boolean.toString(b));
 	}
 
+	public void showBoundingBox(Content c, boolean b) {
+		if(!checkSel(c))
+			return;
+		c.showBoundingBox(b);
+	}
+
 	public void showContent(Content c, boolean b) {
 		if(!checkSel(c))
 			return;
