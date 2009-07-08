@@ -201,7 +201,7 @@ public class Content extends BranchGroup implements UniverseListener {
 	public void setVisible(boolean b) {
 		visible = b;
 		whichChild.set(CO, b);
-		whichChild.set(CS, b);
+		whichChild.set(CS, b && coordVisible);
 		// only if hiding, hide the point list
 		if(!b) {
 			showPointList(false);
@@ -216,6 +216,7 @@ public class Content extends BranchGroup implements UniverseListener {
 
 
 	public void showCoordinateSystem(boolean b) {
+		coordVisible = b;
 		whichChild.set(CS, b);
 		bbSwitch.setChildMask(whichChild);
 	}
