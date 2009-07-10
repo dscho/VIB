@@ -2033,7 +2033,7 @@ public class Path implements Comparable {
 				x_points_d[i] = precise_x_positions[i];
 				y_points_d[i] = precise_y_positions[i];
 				z_points_d[i] = precise_z_positions[i];
-				radiuses_d[i] = x_spacing * 1.5;
+				radiuses_d[i] = getMinimumSeparation() * 2;
 			}
 			pointsToUse = points;
 		}
