@@ -65,6 +65,8 @@ public class VIB_Protocol implements PlugIn, ActionListener {
 		button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				OpenDialog d = new OpenDialog("Load", "");
+				if (d.getFileName() == null)
+					return; // canceled
 				String f = d.getDirectory() + d.getFileName();
 				confTF.setText(f);
 				gd.repaint();
