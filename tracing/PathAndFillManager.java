@@ -1919,9 +1919,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		for( Iterator< Path > i = allPaths.iterator();
 		     i.hasNext(); ) {
 			Path path = i.next();
-			if( path.useFitted )
-				continue;
-			if( path.fittedVersionOf != null && ! path.fittedVersionOf.useFitted )
+			if( ! path.versionInUse() )
 				continue;
 			for( int j = 0; j < path.size(); ++j ) {
 				pq.add( new NearPoint( x, y, z, path, j ) );
