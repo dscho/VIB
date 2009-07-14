@@ -97,8 +97,7 @@ SOURCES(Three_Pane_Crop.jar)=stacks/PaneOwner.java \
 SOURCES(Unpack_To_PNG.jar)=stacks/Unpack_To_PNG.java \
 	amira/AmiraParameters.java \
 	amira/AmiraTable.java \
-	util/BatchOpener.java \
-	zeiss/LSM_Reader.java
+	util/BatchOpener.java
 SOURCES(Find_Connected_Regions.jar)=util/Find_Connected_Regions.java \
 	amira/AmiraParameters.java \
 	amira/AmiraTable.java
