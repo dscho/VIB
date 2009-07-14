@@ -372,7 +372,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 	boolean loading = false;
 
-	synchronized public void loadTracings( ) {
+	synchronized public void loadTracings( boolean ignoreCalibration ) {
 
 		loading = true;
 
@@ -400,7 +400,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 					if( d.yesPressed() ) {
 
-						if( pathAndFillManager.load(path) )
+						if( pathAndFillManager.load(path, ignoreCalibration) )
 							unsavedPaths = false;
 
 						loading = false;
@@ -429,7 +429,7 @@ public class Simple_Neurite_Tracer extends ThreePanes
 
 		if( fileName != null ) {
 
-			if( pathAndFillManager.load( directory + fileName ) )
+			if( pathAndFillManager.load( directory + fileName, ignoreCalibration ) )
 				unsavedPaths = false;
 
 			loading = false;

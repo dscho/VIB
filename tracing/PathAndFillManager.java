@@ -1404,7 +1404,43 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 	}
 
-	public boolean importSWC( BufferedReader br ) throws IOException {
+	/* The two useful documents about the SWC file formats are:
+
+	   doi:10.1016/S0165-0270(98)00091-0
+	   http://linkinghub.elsevier.com/retrieve/pii/S0165027098000910
+	   J Neurosci Methods. 1998 Oct 1;84(1-2):49-54.Links
+	   "An on-line archive of reconstructed hippocampal neurons."
+	   Cannon RC, Turner DA, Pyapali GK, Wheal HV.
+
+	   http://www.personal.soton.ac.uk/dales/morpho/morpho_doc/index.html
+
+	   Annoyingly, some published SWC files use world coordinates
+	   in microns (correct as I understand the specification)
+	   while some others use image coordinates (incorrect and less
+	   useful).  An example of the latter seems to part of the
+	   DIADEM Challenge data set.
+
+	   There aren't any really good workarounds for this, since if
+	   we try to guess whether the files are broken or not, there
+	   are always going to be odd cases where the heuristics fail.
+	   In addition, it's not at all clear what the "radius" column
+	   is meant to mean in these files.
+
+	   So, the extent to which I'm going to work around these
+	   broken files is that there's a flag to this method which
+	   says "assume that the coordinates are image coordinates".
+	   The broken files also seem to require that you scale the
+	   radius by the minimum voxel separation (!) so that flag
+	   also turns on that workaround.
+
+	   In interactive use, you can enable this flag by holding
+	   down "Control" while clicking on the "Load Traces / SWC
+	   File" button.  In programmatic use, the developer is
+	   expected to figure out whether then need to set this flag
+	   or not.
+	*/
+
+	public boolean importSWC( BufferedReader br, boolean assumeCoordinatesIndexVoxels ) throws IOException {
 
 		if( needImageDataFromTracesFile )
 			throw new RuntimeException( "[BUG] Trying to load SWC file while we still need image data information" );
@@ -1419,10 +1455,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		List<SWCPoint> primaryPoints = new ArrayList<SWCPoint>();
 
-		/* The SWC files I've tried use world co-ordinates
+		/* Some SWC files I've tried use world co-ordinates
 		   (good) but some seem to have the sign wrong, so
-		   calculate the minimum and maximum in each axis to
-		   test for this: */
+		   calculate what should be the minimum and maximum
+		   value in each axis so we can test for this later. */
 
 		double minX = Math.min( 0, width * x_spacing );
 		double minY = Math.min( 0, height * y_spacing );
@@ -1452,13 +1488,27 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				double x = Double.parseDouble(fields[2]);
 				double y = Double.parseDouble(fields[3]);
 				double z = Double.parseDouble(fields[4]);
+				if( assumeCoordinatesIndexVoxels ) {
+					x *= x_spacing;
+					y *= y_spacing;
+					z *= z_spacing;
+				}
 				double radius = Double.parseDouble(fields[5]);
+				if( assumeCoordinatesIndexVoxels ) {
+					/* See the comment above; this just seems to be the
+					   convention in the broken files that I've come across: */
+					radius *= minimumVoxelSpacing;
+				}
 				int previous = Integer.parseInt(fields[6]);
 				if( alreadySeen.contains(id) ) {
 					IJ.error("Point with ID "+id+" found more than once");
 					return false;
 				}
 				alreadySeen.add( id );
+
+				/* FIXME: this fudge is broken - should be checking if all of the points
+				   are outside the range, and negating all if so.  (There may be files
+				   that validly have points that lie outside the image stack.) */
 
 				if( (x < 0) && ! (x >= minX && x <= maxX) )
 					x = Math.abs( x );
@@ -1572,7 +1622,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return true;
 	}
 
-	public boolean importSWC( String filename ) {
+	public boolean importSWC( String filename, boolean ignoreCalibration ) {
 
 		File f = new File(filename);
 		if( ! f.exists() ) {
@@ -1588,7 +1638,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			is = new BufferedInputStream(new FileInputStream(filename));
 			BufferedReader br = new BufferedReader(new InputStreamReader(is,"UTF-8"));
 
-			result = importSWC(br);
+			result = importSWC(br,ignoreCalibration);
 
 			if( is != null )
 				is.close();
@@ -1604,6 +1654,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	public boolean load( String filename ) {
+		return load( filename, false );
+	}
+
+	public boolean load( String filename, boolean ignoreCalibration ) {
 
 		/* Look at the magic bytes at the start of the file:
 
@@ -1665,7 +1719,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					is.close();
 			} else {
 				// Assume it's SWC:
-				result = importSWC( filename );
+				result = importSWC( filename, ignoreCalibration );
 			}
 
 		} catch( IOException ioe ) {
