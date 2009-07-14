@@ -1425,12 +1425,14 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		   test for this: */
 
 		double minX = Math.min( 0, width * x_spacing );
-		double minY = Math.min( 0, width * y_spacing );
-		double minZ = Math.min( 0, width * z_spacing );
+		double minY = Math.min( 0, height * y_spacing );
+		double minZ = Math.min( 0, depth * z_spacing );
 
 		double maxX = Math.max( 0, width * x_spacing );
-		double maxY = Math.max( 0, width * y_spacing );
-		double maxZ = Math.max( 0, width * z_spacing );
+		double maxY = Math.max( 0, height * y_spacing );
+		double maxZ = Math.max( 0, depth * z_spacing );
+
+		double minimumVoxelSpacing = Math.min(Math.abs(x_spacing),Math.min(Math.abs(y_spacing),Math.abs(z_spacing)));
 
 		String line;
 		while( (line = br.readLine()) != null ) {
