@@ -213,8 +213,12 @@ public class Exposure_Blend_Two_Stacks implements PlugIn {
 			TransformedImage ti = new TransformedImage(
 			    sourceImages[0],
 			    sourceImages[1]);
+
 			float[] range = ti.getValuesRange();
 
+			IJ.error("FIXME: deliberately broken for the moment...");
+
+/*
 			Histogram_2D histogram = new Histogram_2D();
 
 			histogram.start2DHistogram(
@@ -268,10 +272,12 @@ public class Exposure_Blend_Two_Stacks implements PlugIn {
 			
 			int[] valuesArray = new int[imagesToBlend];
 			double[] startValues = new double[1];
+*/
 
 			/* Now go through the images finding pairs of values and working
 			 * out what fluorescence value would map to these most closely. */
 
+/*
 			ImageStack finalStack = new ImageStack(width, height);
 
 			for (int z = 0; z < depth; ++z) {
@@ -332,10 +338,8 @@ public class Exposure_Blend_Two_Stacks implements PlugIn {
 
 			}
 
-
 			ImagePlus finalImage = new ImagePlus("final blended image", finalStack);
-
-		}
+*/		}
 	}
 }
 

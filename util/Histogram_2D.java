@@ -37,6 +37,7 @@ public class Histogram_2D implements PlugIn {
 	float rangeWidth;
 
 	// Use these to keep statistics on the image:
+	/*
 	boolean keepStatistics = false;
 	boolean correlationCalculated = false;
 	float statsMinValue;
@@ -48,6 +49,18 @@ public class Histogram_2D implements PlugIn {
 	long statsValues;
 	float fittedGradient;
 	float fittedYIntercept;
+	*/
+	// FIXME: remove the above?
+
+	int width, depth, height;
+	int typeA, typeB;
+	int bitDepthA, bitDepthB;
+
+	byte[] pixelsABytes = null;
+	byte[] pixelsBBytes = null;
+
+	short[] pixelsAShorts = null;
+	short[] pixelsBShorts = null;
 
 	public void collectStatisticsFor(float statsMinValue, float statsMaxValue) {
 		this.statsMinValue = statsMinValue;
@@ -60,6 +73,28 @@ public class Histogram_2D implements PlugIn {
 		keepStatistics = true;
 		fittedGradient = 0;
 		fittedYIntercept = 0;
+	}
+
+	// This helper inner class is to return 
+
+	public class Statistics {
+		public double sumX = 0;
+		public double sumY = 0;
+		public double sumXY = 0;
+		public double n = 0;
+		public double fittedGradient = Float.MIN_VALUE;
+		public double fittedYIntercept = Float.MIN_VALUE;
+		public double minimumXThreshold = Float.MIN_VALUE;
+		public double minimumYThreshold = Float.MIN_VALUE;
+		public double maximumXThreshold = Float.MAX_VALUE;
+		public double maximumYThreshold = Float.MAX_VALUE;
+	}
+
+	public Statistics getStatistics( double minimumXThreshold,
+					 double maximumXThreshold,
+					 double minimumYThreshold,
+					 double maximumYThreshold ) {
+		
 	}
 
 	public void start2DHistogram(
@@ -85,19 +120,25 @@ public class Histogram_2D implements PlugIn {
 		ImageStack stackA = imageA.getStack();
 		ImageStack stackB = imageB.getStack();
 
-		int depth = imageA.getStackSize();
-		int width = imageA.getWidth();
-		int height = imageA.getHeight();
+		depth = imageA.getStackSize();
+		width = imageA.getWidth();
+		height = imageA.getHeight();
 
 		int depthB = imageB.getStackSize();
 		int widthB = imageB.getWidth();
 		int heightB = imageB.getHeight();
 
-		int typeA=imageA.getType();
-		int typeB=imageB.getType();
+		typeA=imageA.getType();
+		typeB=imageB.getType();
 
-		int bitDepthA=imageA.getBitDepth();
-		int bitDepthB=imageB.getBitDepth();
+		bitDepthA=imageA.getBitDepth();
+		bitDepthB=imageB.getBitDepth();
+
+		pixelsABytes = null;
+		pixelsBBytes = null;
+
+		pixelsAShorts = null;
+		pixelsBShorts = null;
 
 		if( depth != depthB ||
 		    width != widthB ||
@@ -124,12 +165,6 @@ public class Histogram_2D implements PlugIn {
 		IJ.showProgress(0);
 
 		for (int z = 0; z < depth; ++z) {
-
-			byte[] pixelsABytes = null;
-			byte[] pixelsBBytes = null;
-
-			short[] pixelsAShorts = null;
-			short[] pixelsBShorts = null;
 
 			if( bitDepthA == 8 ) {
 				pixelsABytes = (byte[]) stackA.getPixels(z + 1);
