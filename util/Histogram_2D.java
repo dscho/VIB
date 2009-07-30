@@ -164,7 +164,7 @@ public class Histogram_2D implements PlugIn {
 		this.minValueB = minValueB;
 		this.maxValueB = maxValueB;
 		this.rangeWidthA = maxValueA - minValueA;
-		this.rangeWidthA = maxValueB - minValueB;
+		this.rangeWidthB = maxValueB - minValueB;
 		countMin = Long.MAX_VALUE;
 		countMax = Long.MIN_VALUE;
 	}
