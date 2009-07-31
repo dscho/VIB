@@ -8,7 +8,12 @@ import ij.plugin.*;
 import ij.io.*;
 
 public class Limits {
-	public static float[] getStackLimits( ImagePlus imagePlus ){
+
+	public static float[] getStackLimits( ImagePlus imagePlus ) {
+		return getStackLimits(imagePlus,false);
+	}
+
+	public static float[] getStackLimits( ImagePlus imagePlus, boolean mustBeFinite ) {
 
 		int depth = imagePlus.getStackSize();
 
@@ -46,10 +51,12 @@ public class Limits {
 				float [] pixels = (float[])stack.getPixels(z+1);
 				for( int i = 0; i < pixels.length; ++i ) {
 					float value = pixels[i];
-					if( value > maxValue )
-						maxValue = value;
-					if( value < minValue )
-						minValue = value;
+					if( ! (mustBeFinite && (Float.isNaN(value) || Float.isInfinite(value))) ) {
+						if( value > maxValue )
+							maxValue = value;
+						if( value < minValue )
+							minValue = value;
+					}
 				}
 			}
 		}
