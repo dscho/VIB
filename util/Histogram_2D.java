@@ -225,8 +225,8 @@ public class Histogram_2D implements PlugIn {
 		ImagePlus imageB,
 		int bins ) {
 		// Now find the maximum ranges in each to use as defaults:
-		float [] valueRangeA = Limits.getStackLimits( imageA );
-		float [] valueRangeB = Limits.getStackLimits( imageB );
+		float [] valueRangeA = Limits.getStackLimits( imageA, true );
+		float [] valueRangeB = Limits.getStackLimits( imageB, true );
 		return addImagePlusPair(
 			imageA,
 			imageB,
@@ -307,6 +307,9 @@ public class Histogram_2D implements PlugIn {
 		IJ.showStatus( "Binning image values..." );
 		IJ.showProgress(0);
 
+		float valueA = -1;
+		float valueB = -1;
+
 		for (int z = 0; z < depth; ++z) {
 
 			if( bitDepthA == 8 ) {
@@ -327,9 +330,6 @@ public class Histogram_2D implements PlugIn {
 
 			for (int y = 0; y < height; ++y) {
 				for (int x = 0; x < width; ++x) {
-
-					float valueA = -1;
-					float valueB = -1;
 
 					if( bitDepthA == 8 ) {
 						valueA = pixelsABytes[y * width + x] & 0xFF;
@@ -360,6 +360,7 @@ public class Histogram_2D implements PlugIn {
 			}
 			IJ.showProgress(z/(double)depth);
 		}
+		IJ.showProgress(1);
 		for( int a = 0; a < binsA; ++a ) {
 			for( int b = 0; b < binsB; ++b ) {
 				if( counts[a][b] < countMin )
@@ -368,7 +369,6 @@ public class Histogram_2D implements PlugIn {
 					countMax = counts[a][b];
 			}
 		}
-		IJ.showProgress(1);
 
 		return true;
 	}
@@ -440,6 +440,13 @@ public class Histogram_2D implements PlugIn {
 		result[PROBABILITIES] = probImagePlus;
 		result[LOG_PROBABILITIES] = logProbImagePlus;
 		result[SELF_INFORMATION] = selfNewImagePlus;
+
+		IJ.showStatus("Setting limits for each histogram");
+		for( ImagePlus i : result ) {
+			float [] valueRange = Limits.getStackLimits(i,true);
+			System.out.println("Got valueRange: "+valueRange[0]+" -> "+valueRange[1]);
+			i.getProcessor().setMinAndMax(valueRange[0],valueRange[1]);
+		}
 
 		return result;
 	}
@@ -673,7 +680,7 @@ public class Histogram_2D implements PlugIn {
 					int yBin = (int)Math.floor((realY - minValueB) * binsB / rangeWidthB);
 					System.out.println("bin: ("+xBin+","+yBin+")");
 					if( yBin >= 0 && yBin < binsB ) {
-						newFP.setValue( (xBin % 2) == 0 ? countMin : countMax );
+						newFP.setValue( (xBin % 2) == 0 ? oldMin : oldMax );
 						newFP.drawPixel( leftBorder+xBin, topBorder+oldHeight-yBin );
 					}
 				}
@@ -687,7 +694,7 @@ public class Histogram_2D implements PlugIn {
 					int xBin = (int)Math.floor((realX - minValueA) * binsA / rangeWidthA);
 					System.out.println("bin: ("+xBin+","+yBin+")");
 					if( xBin >= 0 && xBin < binsB ) {
-						newFP.setValue( (yBin % 2) == 0 ? countMin : countMax );
+						newFP.setValue( (yBin % 2) == 0 ? oldMin : oldMax );
 						newFP.drawPixel( leftBorder+xBin, topBorder+oldHeight-yBin );
 					}
 				}
@@ -761,8 +768,8 @@ public class Histogram_2D implements PlugIn {
 
 		// Now ask about the limits on each axis:
 
-		float [] valueRangeA = Limits.getStackLimits( imageA );
-		float [] valueRangeB = Limits.getStackLimits( imageB );
+		float [] valueRangeA = Limits.getStackLimits( imageA, true );
+		float [] valueRangeB = Limits.getStackLimits( imageB, true );
 
 		double minimumA = valueRangeA[0];
 		double maximumA = valueRangeA[1];
