@@ -11,6 +11,7 @@ import ij.gui.ImageCanvas;
 import ij.plugin.PlugIn;
 import ij.process.FloatProcessor;
 import java.awt.Font;
+import java.awt.Dialog;
 import java.awt.FontMetrics;
 import java.awt.image.ColorModel;
 import vib.TransformedImage;
@@ -901,4 +902,11 @@ public class Histogram_2D implements PlugIn {
 			allValues);
 	}
 
+
+	public class HistogramOptionsDialog extends Dialog {
+		HistogramOptionsDialog() {
+			super(IJ.getInstance());
+		}
+
+	}
 }
