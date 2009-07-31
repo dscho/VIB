@@ -779,8 +779,8 @@ public class Histogram_2D implements PlugIn {
 		GenericDialog limitsDialog = new GenericDialog("2D Histogram Limits");
 		limitsDialog.addMessage("(If in doubt, leave these at the default values.)");
 		limitsDialog.addNumericField("Minimum in "+imageA.getTitle(), minimumA, 10, 15, "");
-		limitsDialog.addNumericField("Maximum in "+imageB.getTitle(), maximumB, 10, 15, "");
-		limitsDialog.addNumericField("Minimum in "+imageA.getTitle(), minimumA, 10, 15, "");
+		limitsDialog.addNumericField("Maximum in "+imageA.getTitle(), maximumA, 10, 15, "");
+		limitsDialog.addNumericField("Minimum in "+imageB.getTitle(), minimumB, 10, 15, "");
 		limitsDialog.addNumericField("Maximum in "+imageB.getTitle(), maximumB, 10, 15, "");
 		limitsDialog.addMessage("");
 		int binsA = 256;
@@ -834,4 +834,5 @@ public class Histogram_2D implements PlugIn {
 			method,
 			allValues);
 	}
+
 }
