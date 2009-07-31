@@ -71,13 +71,26 @@ public class Histogram_2D implements PlugIn {
 		public double minimumYThreshold = Float.MIN_VALUE;
 		public double maximumXThreshold = Float.MAX_VALUE;
 		public double maximumYThreshold = Float.MAX_VALUE;
-
-		public double getFittedGradient() {
-			return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+		public double meanX;
+		public double meanY;
+		public double numeratorSum;
+		public double denominatorSum;
+		public void print() {
+			System.out.println("== meanX: "+meanX);
+			System.out.println("== meanY: "+meanY);
+			System.out.println("== numeratorSum:" +numeratorSum);
+			System.out.println("== denominatorSum:" +denominatorSum);
+			System.out.println("== n: "+n);
+			System.out.println("== sumX: "+sumX);
+			System.out.println("== sumY: "+sumY);
+			System.out.println("== sumXX: "+sumXX);
+			System.out.println("== sumXY: "+sumXY);
 		}
-
+		public double getFittedGradient() {
+			return numeratorSum / denominatorSum;
+		}
 		public double getFittedYIntercept() {
-			return (sumY - getFittedGradient() * sumX) / n;
+			return meanY - getFittedGradient() * meanX;
 		}
 	}
 
@@ -91,45 +104,58 @@ public class Histogram_2D implements PlugIn {
 		double sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
 		long n = 0;
 
+		IJ.showStatus("Calculating statistics");
 		IJ.showProgress(0);
 
-		for (int z = 0; z < depth; ++z) {
+		double meanX = 0;
+		double meanY = 0;
 
-			for (int y = 0; y < height; ++y) {
-				for (int x = 0; x < width; ++x) {
+		double numeratorSum = 0;
+		double denominatorSum = 0;
 
-					float valueA = -1;
-					float valueB = -1;
-
-					if( bitDepthA == 8 ) {
-						valueA = pixelsABytes[y * width + x] & 0xFF;
-					} else if( bitDepthA == 16 ) {
-						valueA = pixelsAShorts[y * width + x];
-					} else if( bitDepthA == 32 ) {
-						valueA = pixelsAFloats[y * width + x];
-					}
-
-					if( bitDepthB == 8 ) {
-						valueB = pixelsBBytes[y * width + x] & 0xFF;
-					} else if( bitDepthB == 16 ) {
-						valueB = pixelsBShorts[y * width + x];
-					} else if( bitDepthB == 32 ) {
-						valueB = pixelsBFloats[y * width + x];
-					}
-
-					if( (valueA >= minimumXThreshold) &&
-					    (valueB >= minimumYThreshold) &&
-					    (valueA <= maximumXThreshold) &&
-					    (valueB <= maximumYThreshold) ) {
-						sumX += valueA;
-						sumY += valueB;
-						sumXX += valueA * valueA;
-						sumXY += valueA * valueB;
-						++ n;
+		for( int pass = 0; pass < 2; ++pass ) {
+			for (int z = 0; z < depth; ++z) {
+				for (int y = 0; y < height; ++y) {
+					for (int x = 0; x < width; ++x) {
+						float valueA = -1;
+						float valueB = -1;
+						if( bitDepthA == 8 ) {
+							valueA = pixelsABytes[y * width + x] & 0xFF;
+						} else if( bitDepthA == 16 ) {
+							valueA = pixelsAShorts[y * width + x];
+						} else if( bitDepthA == 32 ) {
+							valueA = pixelsAFloats[y * width + x];
+						}
+						if( bitDepthB == 8 ) {
+							valueB = pixelsBBytes[y * width + x] & 0xFF;
+						} else if( bitDepthB == 16 ) {
+							valueB = pixelsBShorts[y * width + x];
+						} else if( bitDepthB == 32 ) {
+							valueB = pixelsBFloats[y * width + x];
+						}
+						if( pass == 0 ) {
+							if( (valueA >= minimumXThreshold) &&
+							    (valueB >= minimumYThreshold) &&
+							    (valueA <= maximumXThreshold) &&
+							    (valueB <= maximumYThreshold) ) {
+								sumX += valueA;
+								sumY += valueB;
+								sumXX += valueA * valueA;
+								sumXY += valueA * valueB;
+								++ n;
+							}
+						} else {
+							double xResidual = valueA - meanX;
+							double yResidual = valueB - meanY;
+							numeratorSum += xResidual * yResidual;
+							denominatorSum +=  xResidual * xResidual;
+						}
 					}
 				}
+				IJ.showProgress(z/(double)depth);
 			}
-			IJ.showProgress(z/depth);
+			meanX = sumX / (double)n;
+			meanY = sumY / (double)n;
 		}
 		IJ.showProgress(1);
 
@@ -143,6 +169,11 @@ public class Histogram_2D implements PlugIn {
 		result.minimumYThreshold = minimumYThreshold;
 		result.maximumXThreshold = maximumXThreshold;
 		result.maximumYThreshold = maximumYThreshold;
+
+		result.meanX = meanX;
+		result.meanY = meanY;
+		result.numeratorSum = numeratorSum;
+		result.denominatorSum = denominatorSum;
 
 		return result;
 	}
@@ -327,7 +358,7 @@ public class Histogram_2D implements PlugIn {
 					++totalValues;
 				}
 			}
-			IJ.showProgress(z/depth);
+			IJ.showProgress(z/(double)depth);
 		}
 		for( int a = 0; a < binsA; ++a ) {
 			for( int b = 0; b < binsB; ++b ) {
@@ -772,7 +803,15 @@ public class Histogram_2D implements PlugIn {
 
 		addImagePlusPair( imageA, imageB, minimumA, maximumA, minimumB, maximumB, binsA, binsB );
 
-		Statistics allValues = getStatistics( minimumA, maximumA, minimumB, maximumB );
+		double binWidthA = rangeWidthA / binsA;
+		double binWidthB = rangeWidthB / binsB;
+
+		Statistics allValues = getStatistics( minimumA + binWidthA, maximumA - binWidthA, minimumB + binWidthB, maximumB - binWidthB );
+		System.out.println("--------------------------------------------");
+		allValues.print();
+
+		System.out.println("fitted gradient is: "+allValues.getFittedGradient());
+		System.out.println("fitted Y intercept is: "+allValues.getFittedYIntercept());
 
 		ImagePlus[] results = getHistogramImages();
 
