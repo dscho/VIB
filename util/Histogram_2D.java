@@ -66,6 +66,7 @@ public class Histogram_2D implements PlugIn {
 		public double sumY;
 		public double sumXY;
 		public double sumXX;
+		public double sumYY;
 		public long n;
 		public double minimumXThreshold = Float.MIN_VALUE;
 		public double minimumYThreshold = Float.MIN_VALUE;
@@ -73,18 +74,27 @@ public class Histogram_2D implements PlugIn {
 		public double maximumYThreshold = Float.MAX_VALUE;
 		public double meanX;
 		public double meanY;
+		public double sdX;
+		public double sdY;
+		public double varX;
+		public double varY;
 		public double numeratorSum;
 		public double denominatorSum;
+		public double covariance;
+		public double correlation;
 		public void print() {
 			System.out.println("== meanX: "+meanX);
 			System.out.println("== meanY: "+meanY);
-			System.out.println("== numeratorSum:" +numeratorSum);
-			System.out.println("== denominatorSum:" +denominatorSum);
+			System.out.println("== covariance: "+covariance);
+			System.out.println("== correlation: "+correlation);
+			System.out.println("== fitted gradient: "+getFittedGradient());
+			System.out.println("== fitted Y intercept: "+getFittedYIntercept());
 			System.out.println("== n: "+n);
 			System.out.println("== sumX: "+sumX);
 			System.out.println("== sumY: "+sumY);
 			System.out.println("== sumXX: "+sumXX);
 			System.out.println("== sumXY: "+sumXY);
+			System.out.println("== sumYY: "+sumYY);
 		}
 		public double getFittedGradient() {
 			return numeratorSum / denominatorSum;
@@ -101,7 +111,7 @@ public class Histogram_2D implements PlugIn {
 
 		Statistics result = new Statistics();
 
-		double sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+		double sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0;
 		long n = 0;
 
 		IJ.showStatus("Calculating statistics");
@@ -109,9 +119,22 @@ public class Histogram_2D implements PlugIn {
 
 		double meanX = 0;
 		double meanY = 0;
+		double varX = 0;
+		double varY = 0;
+		double sdX = 0;
+		double sdY = 0;
+
+		double correlation = 0;
 
 		double numeratorSum = 0;
 		double denominatorSum = 0;
+
+		double covarianceSum = 0;
+		double covariance = 0;
+
+		/* You can almost certainly do this in one pass, but
+		   it's more obviously correct if you calculate the
+		   means after the first time through. */
 
 		for( int pass = 0; pass < 2; ++pass ) {
 			for (int z = 0; z < depth; ++z) {
@@ -142,6 +165,7 @@ public class Histogram_2D implements PlugIn {
 								sumY += valueB;
 								sumXX += valueA * valueA;
 								sumXY += valueA * valueB;
+								sumYY += valueB * valueB;
 								++ n;
 							}
 						} else {
@@ -149,13 +173,20 @@ public class Histogram_2D implements PlugIn {
 							double yResidual = valueB - meanY;
 							numeratorSum += xResidual * yResidual;
 							denominatorSum +=  xResidual * xResidual;
+							covarianceSum += xResidual * yResidual;
 						}
 					}
 				}
 				IJ.showProgress(z/(double)depth);
 			}
-			meanX = sumX / (double)n;
-			meanY = sumY / (double)n;
+			if( pass == 0 ) {
+				meanX = sumX / (double)n;
+				meanY = sumY / (double)n;
+				varX = sumXX / (double)n - meanX * meanX;
+				varY = sumYY / (double)n - meanY * meanY;
+				sdX = Math.sqrt(varX);
+				sdY = Math.sqrt(varY);
+			}
 		}
 		IJ.showProgress(1);
 
@@ -163,6 +194,7 @@ public class Histogram_2D implements PlugIn {
 		result.sumY = sumY;
 		result.sumXX = sumXX;
 		result.sumXY = sumXY;
+		result.sumYY = sumYY;
 		result.n = n;
 
 		result.minimumXThreshold = minimumXThreshold;
@@ -172,9 +204,41 @@ public class Histogram_2D implements PlugIn {
 
 		result.meanX = meanX;
 		result.meanY = meanY;
+		result.varX = varX;
+		result.varY = varY;
+		result.sdX = sdX;
+		result.sdY = sdY;
 		result.numeratorSum = numeratorSum;
 		result.denominatorSum = denominatorSum;
 
+		result.covariance = covarianceSum / n;
+		result.correlation = (covarianceSum / n) / (sdX * sdY);
+
+		return result;
+	}
+
+
+	public double [] getMinimumThresholdsForCorrelation(Statistics overall) {
+		double [] result = new double[2];
+		double thresholdA = maxValueA;
+		while( true ) {
+			double thresholdB = thresholdA * overall.getFittedGradient() + overall.getFittedYIntercept();
+			// Still not sure if it's a good idea to leave out the zero pixels:
+			Statistics s = getStatistics( minValueA, thresholdA,
+						      minValueB, thresholdB );
+			System.out.println("Width thresholdA: "+thresholdA+", thresholdB: "+thresholdB+" got correlation: "+s.correlation);
+			thresholdA -= rangeWidthA / binsA;
+
+			if( s.correlation <= 0 ) {
+				result[0] = thresholdA;
+				result[1] = thresholdB;
+				return result;
+			}
+			if( thresholdA < minValueA )
+				break;
+		}
+		result[0] = minValueA;
+		result[1] = minValueB;
 		return result;
 	}
 
@@ -821,6 +885,8 @@ public class Histogram_2D implements PlugIn {
 		System.out.println("fitted Y intercept is: "+allValues.getFittedYIntercept());
 
 		ImagePlus[] results = getHistogramImages();
+
+		double [] correlationThresholds = getMinimumThresholdsForCorrelation(allValues);
 
 		IJ.runPlugIn( results[method], "ij.plugin.LutLoader", "fire" );
 
