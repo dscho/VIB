@@ -16,6 +16,7 @@ import ij.macro.Interpreter;
 import java.awt.AWTException;
 import java.awt.Label;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.BorderLayout;
 import java.awt.Graphics;
@@ -65,6 +66,10 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 
 		WindowManager.addWindow(this);
 		WindowManager.setCurrentWindow(this);
+
+		// remove the existing children
+		for (Component component : getComponents())
+			remove(component);
 
 		add(canvas3D, -1);
 		status.setText("");
