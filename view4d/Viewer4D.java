@@ -108,6 +108,7 @@ public class Viewer4D {
 		current++;
 		contents[current].setVisible(true);
 		univ.setStatus((current+1) + "/" + contents.length);
+		univ.fireContentChanged(contents[current]);
 	}
 
 	/**
@@ -122,6 +123,7 @@ public class Viewer4D {
 		current--;
 		contents[current].setVisible(true);
 		univ.setStatus((current+1) + "/" + contents.length);
+		univ.fireContentChanged(contents[current]);
 	}
 
 	/**
@@ -136,6 +138,7 @@ public class Viewer4D {
 		current = 0;
 		contents[current].setVisible(true);
 		univ.setStatus((current+1) + "/" + contents.length);
+		univ.fireContentChanged(contents[current]);
 	}
 
 	/**
@@ -150,6 +153,7 @@ public class Viewer4D {
 		current = contents.length - 1;
 		contents[current].setVisible(true);
 		univ.setStatus((current+1) + "/" + contents.length);
+		univ.fireContentChanged(contents[current]);
 	}
 
 	/**
