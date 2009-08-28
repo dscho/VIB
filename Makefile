@@ -201,8 +201,7 @@ Three_Pane_Crop.jar: SOURCES=stacks/PaneOwner.java \
 Unpack_To_PNG.jar: SOURCES=stacks/Unpack_To_PNG.java \
 	amira/AmiraParameters.java \
 	amira/AmiraTable.java \
-	util/BatchOpener.java \
-	zeiss/LSM_Reader.java
+	util/BatchOpener.java
 
 Find_Connected_Regions.jar: SOURCES=util/Find_Connected_Regions.java \
 	amira/AmiraParameters.java \
