@@ -317,6 +317,10 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		if (null == universe) return;
 		universe.removeUniverseListener(this);
 
+		// Destroy executor service:
+		if (universe instanceof Image3DUniverse)
+			((Image3DUniverse)universe).getExecuter().flush();
+
 		// Must remove the listener so this instance can be garbage
 		// collected and removed from the Canvas3D, overcomming the limit
 		// of 32 total Canvas3D instances.
