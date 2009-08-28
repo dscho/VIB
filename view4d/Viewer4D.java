@@ -81,7 +81,7 @@ public class Viewer4D {
 					try {
 						Thread.sleep(delay);
 					} catch(Exception e) {
-						shouldPause = false;
+						shouldPause = true;
 					}
 				}
 				shouldPause = false;
