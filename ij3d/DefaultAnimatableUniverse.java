@@ -139,8 +139,10 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			return;
 
 		// create a new stack
+		win.updateImagePlus();
 		ImageProcessor ip = win.getImagePlus().getProcessor();
 		freehandStack = new ImageStack(ip.getWidth(), ip.getHeight());
+		freehandStack.addSlice("", ip);
 	}
 
 	/**
