@@ -139,8 +139,10 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 			return;
 
 		// create a new stack
+		win.updateImagePlus();
 		ImageProcessor ip = win.getImagePlus().getProcessor();
 		freehandStack = new ImageStack(ip.getWidth(), ip.getHeight());
+		freehandStack.addSlice("", ip);
 	}
 
 	/**
@@ -148,7 +150,7 @@ public abstract class DefaultAnimatableUniverse extends DefaultUniverse {
 	 * Returns an ImagePlus whose stack contains the frames of the movie.
 	 */
 	public ImagePlus stopFreehandRecording() {
-		if(freehandStack == null || freehandStack.getSize() == 0)
+		if(freehandStack == null || freehandStack.getSize() == 1)
 			return null;
 
 		ImagePlus imp = new ImagePlus("Movie", freehandStack);
