@@ -23,10 +23,12 @@
 
 package tracing;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
 import java.util.PriorityQueue;
@@ -51,6 +53,7 @@ import org.xml.sax.SAXException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Map;
 import java.util.HashMap;
 
 import java.awt.Color;
@@ -77,11 +80,22 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 	int maxUsedID = -1;
 
+	boolean needImageDataFromTracesFile;
+
 	public PathAndFillManager( ) {
 		allPaths = new ArrayList< Path >();
 		allFills = new ArrayList< Fill >();
 		listeners = new ArrayList< PathAndFillListener >();
 		selectedPathsSet = new HashSet();
+		needImageDataFromTracesFile = true;
+		this.imagePlus = null;
+		this.x_spacing = Double.MIN_VALUE;
+		this.y_spacing = Double.MIN_VALUE;
+		this.z_spacing = Double.MIN_VALUE;
+		this.spacing_units = null;
+		this.width = Integer.MIN_VALUE;
+		this.height = Integer.MIN_VALUE;
+		this.depth = Integer.MIN_VALUE;
 	}
 
 	public PathAndFillManager( ImagePlus imagePlus ) {
@@ -97,6 +111,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		this.width = imagePlus.getWidth();
 		this.height = imagePlus.getHeight();
 		this.depth = imagePlus.getStackSize();
+		needImageDataFromTracesFile = false;
 	}
 
 	public PathAndFillManager( Simple_Neurite_Tracer plugin ) {
@@ -109,6 +124,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		this.width = plugin.width;
 		this.height = plugin.height;
 		this.depth = plugin.depth;
+		needImageDataFromTracesFile = false;
 	}
 
 	public PathAndFillManager( int width, int height, int depth, float x_spacing, float y_spacing, float z_spacing, String spacing_units ) {
@@ -121,6 +137,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		this.depth = depth;
 		if( spacing_units == null )
 			this.spacing_units = "unknown";
+		needImageDataFromTracesFile = false;
 	}
 
 	int width;
@@ -388,6 +405,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		if( p.getID() < 0 ) {
 			p.setID(++maxUsedID);
 		}
+		if( maxUsedID < p.getID() )
+			maxUsedID = p.getID();
 		if(p.name == null || forceNewName) {
 			String suggestedName = getDefaultName(p);
 			p.setName(suggestedName);
@@ -641,28 +660,36 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				if( p.startJoins != null ) {
 					int startPathID = ((pathToID.get(p.startJoins))).intValue();
 					// Find the nearest index for backward compatability:
-					int nearestIndexOnStartPath = p.startJoins.indexNearestTo(
-						p.startJoinsPoint.x,
-						p.startJoinsPoint.y,
-						p.startJoinsPoint.z );
+					int nearestIndexOnStartPath = -1;
+					if( p.startJoins.size() > 0 ) {
+						nearestIndexOnStartPath = p.startJoins.indexNearestTo(
+							p.startJoinsPoint.x,
+							p.startJoinsPoint.y,
+							p.startJoinsPoint.z );
+					}
 					startsString = " startson=\"" + startPathID + "\"" +
-						" startsindex=\"" + nearestIndexOnStartPath + "\"" +
 						" startx=\"" + p.startJoinsPoint.x + "\"" +
 						" starty=\"" + p.startJoinsPoint.y + "\"" +
 						" startz=\"" + p.startJoinsPoint.z + "\"";
+					if( nearestIndexOnStartPath >= 0 )
+						startsString += " startsindex=\"" + nearestIndexOnStartPath + "\"";
 				}
 				if( p.endJoins != null ) {
 					int endPathID = ((pathToID.get(p.endJoins))).intValue();
 					// Find the nearest index for backward compatability:
-					int nearestIndexOnEndPath = p.endJoins.indexNearestTo(
-						p.endJoinsPoint.x,
-						p.endJoinsPoint.y,
-						p.endJoinsPoint.z );
+					int nearestIndexOnEndPath = -1;
+					if( p.endJoins.size() > 0 ) {
+						nearestIndexOnEndPath = p.endJoins.indexNearestTo(
+							p.endJoinsPoint.x,
+							p.endJoinsPoint.y,
+							p.endJoinsPoint.z );
+					}
 					endsString = " endson=\"" + endPathID + "\"" +
-						" endsindex=\"" + nearestIndexOnEndPath + "\""+
 						" endsx=\"" + p.endJoinsPoint.x + "\"" +
 						" endsy=\"" + p.endJoinsPoint.y + "\"" +
 						" endsz=\"" + p.endJoinsPoint.z + "\"";
+					if( nearestIndexOnEndPath >= 0 )
+						endsString += " endsindex=\"" + nearestIndexOnEndPath + "\"";
 				}
 				if( p.getPrimary() )
 					pw.print(" primary=\"true\"");
@@ -785,9 +812,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				parsed_height = Integer.parseInt(heightString);
 				parsed_depth = Integer.parseInt(depthString);
 
-				if( ! ((parsed_width == width) &&
-				       (parsed_height == height) &&
-				       (parsed_depth == depth)) ) {
+				if( needImageDataFromTracesFile ) {
+					this.width = parsed_width;
+					this.height = parsed_height;
+					this.depth = parsed_depth;
+				} else if( ! ((parsed_width == width) &&
+					      (parsed_height == height) &&
+					      (parsed_depth == depth)) ) {
 					throw new TracesFileFormatException("The image size in the traces file didn't match - it's probably for another image");
 				}
 
@@ -807,6 +838,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				parsed_x_spacing = Double.parseDouble(xString);
 				parsed_y_spacing = Double.parseDouble(yString);
 				parsed_z_spacing = Double.parseDouble(zString);
+
+				if( needImageDataFromTracesFile ) {
+					this.x_spacing = parsed_x_spacing;
+					this.y_spacing = parsed_y_spacing;
+					this.z_spacing = parsed_z_spacing;
+					this.spacing_units = parsed_units;
+				}
 
 			} catch( NumberFormatException e ) {
 				throw new TracesFileFormatException("There was an invalid attribute to <samplespacing/>: "+e);
@@ -890,20 +928,20 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				if( id > maxUsedID )
 					maxUsedID = id;
 
-				if( startsonString == null )
+				if( startsonString == null ) {
 					startson = startsindex = -1;
-				else {
+				} else {
 					startson = Integer.parseInt(startsonString);
 					startsOnInteger = new Integer( startson );
 
-					if( startsxString != null ) {
-						startJoinPoint = new PointInImage( Double.parseDouble( startsxString ),
-										   Double.parseDouble( startsyString ),
-										   Double.parseDouble( startszString ) );
-					} else {
+					if( startsxString == null ) {
 						// The index (older file format) was supplied:
 						startsindex = Integer.parseInt(startsindexString);
 						startsIndexInteger = new Integer( startsindexString );
+					} else {
+						startJoinPoint = new PointInImage( Double.parseDouble( startsxString ),
+										   Double.parseDouble( startsyString ),
+										   Double.parseDouble( startszString ) );
 					}
 				}
 
@@ -949,8 +987,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			if( endJoinPoint != null )
 				endJoinsPoints.put( id, endJoinPoint );
 
-			if( startsIndexInteger != null )
+			if( startsIndexInteger != null ) {
 				startJoinsIndices.put( id, startsIndexInteger );
+			}
 			if( endsIndexInteger != null )
 				endJoinsIndices.put( id, endsIndexInteger );
 
@@ -1151,7 +1190,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	@Override
-	public void endElement(String uri, String localName, String qName) {
+	public void endElement(String uri, String localName, String qName) throws TracesFileFormatException {
 
 		if( qName.equals("path") ) {
 
@@ -1203,12 +1242,34 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					Path fittedVersionOf = getPathFromID(fittedVersionOfID);
 					p.fittedVersionOf = fittedVersionOf;
 				}
+			}
 
+			// Do some checks that the fitted and fittedVersionOf fields match up:
+			for( int i = 0; i < allPaths.size(); ++i ) {
+				Path p = allPaths.get(i);
+				if( p.fitted != null ) {
+					if( p.fitted.fittedVersionOf == null )
+						throw new TracesFileFormatException("Malformed traces file: p.fitted.fittedVersionOf was null");
+					else if( p != p.fitted.fittedVersionOf )
+						throw new TracesFileFormatException("Malformed traces file: p didn't match p.fitted.fittedVersionOf");
+				} else if( p.fittedVersionOf != null ) {
+					if( p.fittedVersionOf.fitted == null )
+						throw new TracesFileFormatException("Malformed traces file: p.fittedVersionOf.fitted was null");
+					else if( p != p.fittedVersionOf.fitted )
+						throw new TracesFileFormatException("Malformed traces file: p didn't match p.fittedVersionOf.fitted");
+				}
+				if( p.useFitted && p.fitted == null ) {
+					throw new TracesFileFormatException("Malformed traces file: p.useFitted was true but p.fitted was null");
+				}
+			}
+
+			// Now we're safe to add them all to the 3D Viewer
+			for( int i = 0; i < allPaths.size(); ++i ) {
+				Path p = allPaths.get(i);
 				addTo3DViewer( p );
 			}
 
 			// Now turn the source paths into real paths...
-
 			for( int i = 0; i < allFills.size(); ++i ) {
 				Fill f = allFills.get(i);
 				int [] sourcePathIDs = sourcePathIDForFills.get(i);
@@ -1225,6 +1286,14 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				plugin.repaintAllPanes();
 		}
 
+	}
+
+	public static PathAndFillManager createFromTracesFile( String filename ) {
+		PathAndFillManager pafm = new PathAndFillManager();
+		if( pafm.load(filename) )
+			return pafm;
+		else
+			return null;
 	}
 
 	public boolean loadFromString( String tracesFileAsString ) {
@@ -1250,6 +1319,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				InputSource inputSource=new InputSource(reader);
 				parser.parse( inputSource, this );
 			}
+
+			// We must have got the image data if we've got to this stage...
+			needImageDataFromTracesFile = false;
 
 		} catch( javax.xml.parsers.ParserConfigurationException e ) {
 
@@ -1332,30 +1404,71 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		}
 	}
 
-	public boolean importSWC( BufferedReader br ) throws IOException {
+	/* The two useful documents about the SWC file formats are:
+
+	   doi:10.1016/S0165-0270(98)00091-0
+	   http://linkinghub.elsevier.com/retrieve/pii/S0165027098000910
+	   J Neurosci Methods. 1998 Oct 1;84(1-2):49-54.Links
+	   "An on-line archive of reconstructed hippocampal neurons."
+	   Cannon RC, Turner DA, Pyapali GK, Wheal HV.
+
+	   http://www.personal.soton.ac.uk/dales/morpho/morpho_doc/index.html
+
+	   Annoyingly, some published SWC files use world coordinates
+	   in microns (correct as I understand the specification)
+	   while some others use image coordinates (incorrect and less
+	   useful).  An example of the latter seems to part of the
+	   DIADEM Challenge data set.
+
+	   There aren't any really good workarounds for this, since if
+	   we try to guess whether the files are broken or not, there
+	   are always going to be odd cases where the heuristics fail.
+	   In addition, it's not at all clear what the "radius" column
+	   is meant to mean in these files.
+
+	   So, the extent to which I'm going to work around these
+	   broken files is that there's a flag to this method which
+	   says "assume that the coordinates are image coordinates".
+	   The broken files also seem to require that you scale the
+	   radius by the minimum voxel separation (!) so that flag
+	   also turns on that workaround.
+
+	   In interactive use, you can enable this flag by holding
+	   down "Control" while clicking on the "Load Traces / SWC
+	   File" button.  In programmatic use, the developer is
+	   expected to figure out whether then need to set this flag
+	   or not.
+	*/
+
+	public boolean importSWC( BufferedReader br, boolean assumeCoordinatesIndexVoxels ) throws IOException {
+
+		if( needImageDataFromTracesFile )
+			throw new RuntimeException( "[BUG] Trying to load SWC file while we still need image data information" );
 
 		clearPathsAndFills( );
 
 		Pattern pEmpty = Pattern.compile("^\\s*$");
 		Pattern pComment = Pattern.compile("^([^#]*)#.*$");
 
-		HashSet< Integer > alreadySeen = new HashSet< Integer >();
-		HashMap< Integer, SWCPoint > idToSWCPoint = new HashMap< Integer, SWCPoint >();
+		Set< Integer > alreadySeen = new HashSet< Integer >();
+		Map< Integer, SWCPoint > idToSWCPoint = new HashMap< Integer, SWCPoint >();
 
-		ArrayList<SWCPoint> primaryPoints = new ArrayList<SWCPoint>();
+		List<SWCPoint> primaryPoints = new ArrayList<SWCPoint>();
 
-		/* The SWC files I've tried use world co-ordinates
+		/* Some SWC files I've tried use world co-ordinates
 		   (good) but some seem to have the sign wrong, so
-		   calculate the minimum and maximum in each axis to
-		   test for this: */
+		   calculate what should be the minimum and maximum
+		   value in each axis so we can test for this later. */
 
 		double minX = Math.min( 0, width * x_spacing );
-		double minY = Math.min( 0, width * y_spacing );
-		double minZ = Math.min( 0, width * z_spacing );
+		double minY = Math.min( 0, height * y_spacing );
+		double minZ = Math.min( 0, depth * z_spacing );
 
 		double maxX = Math.max( 0, width * x_spacing );
-		double maxY = Math.max( 0, width * y_spacing );
-		double maxZ = Math.max( 0, width * z_spacing );
+		double maxY = Math.max( 0, height * y_spacing );
+		double maxZ = Math.max( 0, depth * z_spacing );
+
+		double minimumVoxelSpacing = Math.min(Math.abs(x_spacing),Math.min(Math.abs(y_spacing),Math.abs(z_spacing)));
 
 		String line;
 		while( (line = br.readLine()) != null ) {
@@ -1375,13 +1488,27 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				double x = Double.parseDouble(fields[2]);
 				double y = Double.parseDouble(fields[3]);
 				double z = Double.parseDouble(fields[4]);
+				if( assumeCoordinatesIndexVoxels ) {
+					x *= x_spacing;
+					y *= y_spacing;
+					z *= z_spacing;
+				}
 				double radius = Double.parseDouble(fields[5]);
+				if( assumeCoordinatesIndexVoxels ) {
+					/* See the comment above; this just seems to be the
+					   convention in the broken files that I've come across: */
+					radius *= minimumVoxelSpacing;
+				}
 				int previous = Integer.parseInt(fields[6]);
 				if( alreadySeen.contains(id) ) {
 					IJ.error("Point with ID "+id+" found more than once");
 					return false;
 				}
 				alreadySeen.add( id );
+
+				/* FIXME: this fudge is broken - should be checking if all of the points
+				   are outside the range, and negating all if so.  (There may be files
+				   that validly have points that lie outside the image stack.) */
 
 				if( (x < 0) && ! (x >= minX && x <= maxX) )
 					x = Math.abs( x );
@@ -1495,7 +1622,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		return true;
 	}
 
-	public boolean importSWC( String filename ) {
+	public boolean importSWC( String filename, boolean ignoreCalibration ) {
 
 		File f = new File(filename);
 		if( ! f.exists() ) {
@@ -1511,7 +1638,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			is = new BufferedInputStream(new FileInputStream(filename));
 			BufferedReader br = new BufferedReader(new InputStreamReader(is,"UTF-8"));
 
-			result = importSWC(br);
+			result = importSWC(br,ignoreCalibration);
 
 			if( is != null )
 				is.close();
@@ -1527,6 +1654,10 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	}
 
 	public boolean load( String filename ) {
+		return load( filename, false );
+	}
+
+	public boolean load( String filename, boolean ignoreCalibration ) {
 
 		/* Look at the magic bytes at the start of the file:
 
@@ -1588,7 +1719,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 					is.close();
 			} else {
 				// Assume it's SWC:
-				result = importSWC( filename );
+				result = importSWC( filename, ignoreCalibration );
 			}
 
 		} catch( IOException ioe ) {
@@ -1598,171 +1729,6 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 
 		return result;
 	}
-
-/* FIXME: new format now... */
-/*
-	public boolean getTracings( boolean mineOnly, ArchiveClient archiveClient ) {
-
-		Hashtable<String,String> parameters = new Hashtable<String,String>();
-
-		parameters.put("method","most-recent-annotation");
-		parameters.put("type","traces");
-		parameters.put("variant","basic");
-		parameters.put("md5sum",archiveClient.getValue("md5sum"));
-		if( mineOnly )
-			parameters.put("for_user",archiveClient.getValue("user"));
-		else
-			parameters.put("for_user","");
-
-		ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, null );
-
-		String [] first_line = tsv_results.get(0);
-		int urls_found;
-		String bestUrl = null;
-		if( first_line[0].equals("success") ) {
-			urls_found = Integer.parseInt(first_line[1]);
-			if( urls_found == 0 ) {
-				IJ.error( "No anntation files by " + (mineOnly ? archiveClient.getValue("user") : "any user") + " found." );
-				return false;
-			} else {
-				bestUrl = (tsv_results.get(1))[1];
-				// IJ.error( "Got the URL: " + bestUrl );
-			}
-		} else if( first_line[0].equals("error") ) {
-			IJ.error("There was an error while getting the most recent annotation: "+first_line[1]);
-			return false;
-		} else {
-			IJ.error("There was an unknown response to request for an annotation file: " + first_line[0]);
-			return false;
-		}
-
-		// Now fetch that file:
-
-		// FIXME:
-
-		if( bestUrl == null )
-			return false;
-
-		// FIXME: This doesn't make much sense now that these files
-		// might be gzipped and very large.  Save as a local file
-		// instead use that (asuuming the security model allows that.)
-
-		String fileContents =  ArchiveClient.justGetFileAsString( bestUrl );
-
-		// IJ.error( "got fileContents: " +fileContents);
-
-		if( fileContents == null ) {
-			return false;
-		} else {
-			// FIXME: new format
-			//  allPaths = loadFromString(fileContents);
-
-			// return true;
-			IJ.error("BUG: not implemented yet...");
-			return false;
-		}
-
-	}
-*/
-
-	// This method outputs the wrong format now.  FIXME
-/*
-	@Deprecated
-	public static byte [] tracesAsBytes( ArrayList< Path > all_paths ) {
-		String s = tracesAsString( all_paths );
-		try {
-			byte [] bytes = s.getBytes("UTF-8");
-			return bytes;
-		} catch( UnsupportedEncodingException e ) {
-			return null;
-		}
-	}
-*/
-
-	// This method outputs the wrong format now.  FIXME
-/*
-	@Deprecated
-	public static String tracesAsString( ArrayList< Path > all_paths ) {
-
-		StringBuffer sb = new StringBuffer();
-
-		// if (verbose) System.out.println("Have some all_paths paths to draw.");
-		int paths = all_paths.size();
-		// if (verbose) System.out.println("Paths to draw: "+paths);
-		for( int i = 0; i < paths; ++i ) {
-
-			double last_x = Double.MIN_VALUE;
-			double last_y = Double.MIN_VALUE;
-			double last_z = Double.MIN_VALUE;
-
-			Path path = all_paths.get(i);
-
-			for( int k = 0; k < path.size(); ++k ) {
-				double xd = path.precise_x_positions[k];
-				double yd = path.precise_y_positions[k];
-				double zd = path.precise_z_positions[k];
-				if( (last_x == xd) && (last_y == yd) && (last_z == zd) ) {
-					// Skip this, it's just the same.
-				} else {
-					String toWrite = "" + i + "\t" +
-						xd + "\t" +
-						yd + "\t" +
-						zd + "\t" +
-						(path.startJoins != null) + "\n";
-					// if (verbose) System.out.println( "Writing line: " + toWrite );
-					sb.append( toWrite );
-				}
-				last_x = xd;
-				last_y = yd;
-				last_z = zd;
-			}
-		}
-
-		return sb.toString();
-
-	}
-*/
-
-/* FIXME: should change this to upload XML instead */
-/*
-	public boolean uploadTracings( ArchiveClient archiveClient ) {
-
-		if( archiveClient == null ) {
-			IJ.error("This version of Simple Neurite Tracer doesn't seem to have been launched from an online archive, so you can't upload.");
-			return false;
-		}
-
-		Hashtable<String,String> parameters = new Hashtable<String,String>();
-
-		parameters.put("method","upload-annotation");
-		parameters.put("type","traces");
-		parameters.put("variant","basic");
-		parameters.put("md5sum",archiveClient.getValue("md5sum"));
-
-		// Need to included data too....
-
-		byte [] fileAsBytes;
-
-		synchronized(this) {
-			fileAsBytes = tracesAsBytes( allPaths );
-		}
-
-		ArrayList< String [] > tsv_results = archiveClient.synchronousRequest( parameters, fileAsBytes );
-
-		String [] first_line = tsv_results.get(0);
-		if( first_line[0].equals("success") ) {
-			IJ.error("Annotations uploaded successfully!");
-			return true;
-		} else if( first_line[0].equals("error") ) {
-			IJ.error("There was an error while uploading the annotation file: "+first_line[1]);
-			return false;
-		} else {
-			IJ.error("There was an unknown response to the annotation file upload request: " + first_line[0]);
-			return false;
-		}
-
-	}
-*/
 
 	/* This method will set all the points in array that
 	 * correspond to points on one of the paths to 255, leaving
@@ -1869,9 +1835,7 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 		for( Iterator< Path > i = allPaths.iterator();
 		     i.hasNext(); ) {
 			Path path = i.next();
-			if( path.useFitted )
-				continue;
-			if( path.fittedVersionOf != null && ! path.fittedVersionOf.useFitted )
+			if( ! path.versionInUse() )
 				continue;
 			for( int j = 0; j < path.size(); ++j ) {
 				pq.add( new NearPoint( x, y, z, path, j ) );
@@ -2109,6 +2073,8 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 	/** A base class for all the methods we might want to use to
 	    transform paths. */
 
+	// Note that this will transform fitted Paths but lose the radiuses
+
 	public PathAndFillManager transformPaths( PathTransformer transformation, ImagePlus templateImage ) {
 
 		double pixelWidth = 1;
@@ -2149,8 +2115,9 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				endJoinsPoints[i] = null;
 			} else {
 				startJoinsIndices[i] = allPaths.indexOf(startJoin);
-				startJoinsPoints[i] =
-					p.getStartJoinsPoint().transform( transformation );
+				PointInImage transformedPoint = p.getStartJoinsPoint().transform( transformation );
+				if( transformedPoint.isReal() )
+					startJoinsPoints[i] = transformedPoint;
 			}
 
 			Path endJoin = p.getEndJoins();
@@ -2159,22 +2126,29 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				endJoinsPoints[i] = null;
 			} else {
 				endJoinsIndices[i] = allPaths.indexOf(endJoin);
-				endJoinsPoints[i] =
-					p.getEndJoinsPoint().transform( transformation );
+				PointInImage transformedPoint = p.getEndJoinsPoint().transform( transformation );
+				if( transformedPoint.isReal() )
+					endJoinsPoints[i] = transformedPoint;
 			}
 
 			Path transformedPath = p.transform( transformation, templateImage, imagePlus );
-			addedPaths[i] = transformedPath;
-			pafmResult.addPath( transformedPath );
+			if( transformedPath.size() >= 2 ) {
+				addedPaths[i] = transformedPath;
+				pafmResult.addPath( transformedPath );
+			}
 
 			++i;
 		}
 
 		for( i = 0; i < size(); ++i ) {
-			if( startJoinsIndices[i] >= 0 )
-				addedPaths[i].setStartJoin( addedPaths[startJoinsIndices[i]], startJoinsPoints[i] );
-			if( endJoinsIndices[i] >= 0 )
-				addedPaths[i].setEndJoin( addedPaths[endJoinsIndices[i]], endJoinsPoints[i] );
+			int si = startJoinsIndices[i];
+			int ei = endJoinsIndices[i];
+			if( addedPaths[i] != null ) {
+				if( si >= 0 && addedPaths[si] != null && startJoinsPoints[i] != null )
+					addedPaths[i].setStartJoin( addedPaths[si], startJoinsPoints[i] );
+				if( ei >= 0 && addedPaths[ei] != null && endJoinsPoints[i] != null )
+					addedPaths[i].setEndJoin( addedPaths[ei], endJoinsPoints[i] );
+			}
 		}
 
 		return pafmResult;

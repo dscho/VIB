@@ -24,6 +24,14 @@ package pal.math;
  */
 public class ConjugateDirectionSearch extends MultivariateMinimum 
 {
+	// Just put this in here so we can have a public class which
+	// doesn't need to be in its own file:
+	public static class OptimizationError extends RuntimeException {
+		public OptimizationError(String s) {
+			super(s);
+		}
+	}
+
 	//
 	// Public stuff
 	//
@@ -963,8 +971,9 @@ public class ConjugateDirectionSearch extends MultivariateMinimum
 			if (!converged)
 			{
 				e[k] = 0.0;
-				System.out.println("\n+++ qr failed\n");
-				System.exit(1);
+				// System.out.println("\n+++ qr failed\n");
+				// System.exit(1);
+				throw new OptimizationError("ConjugateDirectionSearch: +++ qr failed");
 			}
 
  

@@ -66,4 +66,9 @@ public class PointInImage {
 		return new PointInImage( result[0], result[1], result[2] );
 	}
 
+	public boolean isReal() {
+		return ! (Double.isNaN(x) || Double.isNaN(y) || Double.isNaN(z) ||
+			  Double.isInfinite(x) || Double.isInfinite(y) || Double.isInfinite(z));
+	}
+
 }

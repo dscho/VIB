@@ -1161,6 +1161,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				}
 				univ.fireContentAdded(c);
 				univ.addUniverseListener(c);
+				univ.waitForNextFrame();
 				univ.fireTransformationUpdated();
 				return c;
 			}
@@ -1230,6 +1231,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 					univ.ensureScale(range);
 				}
 				// Notify listeners
+				univ.waitForNextFrame();
 				univ.fireTransformationUpdated();
 				return true;
 			}

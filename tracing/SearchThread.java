@@ -679,7 +679,9 @@ public abstract class SearchThread extends Thread {
 
 	SearchNode anyNodeUnderThreshold( int x, int y, int z, double threshold ) {
 		SearchNode [] startSlice = nodes_as_image_from_start[z];
-		SearchNode [] goalSlice = nodes_as_image_from_goal[z];
+		SearchNode [] goalSlice = null;
+		if( nodes_as_image_from_goal != null )
+			goalSlice = nodes_as_image_from_goal[z];
 		int index = y*width+x;
 		SearchNode n = null;
 		if( startSlice != null ) {
