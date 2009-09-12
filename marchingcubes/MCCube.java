@@ -56,11 +56,17 @@ public final class MCCube {
 	 */
 	private boolean computeEdge(Point3f v1, Point3f v2, 
 				Point3f result, final Carrier car) {
+
 		// 30 --- 50 --- 70 : t=0.5
 		// 70 --- 50 --- 30 : t=0.5
-		float t = (car.threshold - car.intensity(v1))/
-				(float) (car.intensity(v2) - car.intensity(v1));
+		int i1 = car.intensity(v1);
+		int i2 = car.intensity(v2);
+		if(i2 < i1)
+			return computeEdge(v2, v1, result, car);
+
+		float t = (car.threshold - i1) / (float) (i2 - i1);
 		if (t >= 0 && t <= 1) {
+			t = Math.max(0.01f, Math.min(0.99f, t));
 			// v1 + t*(v2-v1)
 			result.set(v2);
 			result.sub(v1);

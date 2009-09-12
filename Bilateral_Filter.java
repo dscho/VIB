@@ -80,8 +80,9 @@ public class Bilateral_Filter implements PlugInFilter {
 		float[] kernel = new float[size];
 		float total = 0;
 		for (int i=0; i<size; i++) {
-			double v = (i + 1 - radius) / (radius * 2) / 0.2;
-			kernel[i] = (float)Math.exp(-0.5 * v * v);
+			double x = (i + 1 - radius) / (radius * 2) / 0.2;
+			float v = (float)Math.exp(-0.5 * x * x);
+			kernel[i] = v;
 			total += v;
 		}
 		if (total <= 0.0)
