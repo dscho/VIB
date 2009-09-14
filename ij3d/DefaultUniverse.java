@@ -403,6 +403,8 @@ public abstract class DefaultUniverse extends SimpleUniverse
 	 * Waits until the next frame is rendered.
 	 */
 	public void waitForNextFrame() {
+		if (win == null)
+			return;
 		frameBehavior.postId(WaitForNextFrameBehavior.TRIGGER_ID);
 		synchronized(frameBehavior) {
 			try {
