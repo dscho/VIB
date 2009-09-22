@@ -3,7 +3,7 @@ all <- VIB_.jar
 
 CLASSPATH=$CLASSPATH:junit-4.4.jar:.
 VIB_.jar <- **/*.java \
-	vib/FloatMatrix.java math3d/FloatMatrixN.java FibonacciHeapInt.java \
+	vib/FloatMatrix.java math3d/FloatMatrixN.java plugin/FibonacciHeapInt.java \
 	math3d/JacobiFloat.java math3d/Eigensystem3x3Float.java \
 	math3d/Eigensystem2x2Float.java \
 	vib/segment/materials/* \
@@ -22,7 +22,7 @@ math3d/Eigensystem3x3Float.java[sed.py $PRE $TARGET] <- \
 	math3d/Eigensystem3x3Double.java
 math3d/Eigensystem2x2Float.java[sed.py $PRE $TARGET] <- \
 	math3d/Eigensystem2x2Double.java
-FibonacciHeapInt.java[sed.py $PRE $TARGET] <- FibonacciHeap.java
+#plugin/FibonacciHeapInt.java[sed.py $PRE $TARGET] <- plugin/FibonacciHeap.java
 
 # single-plugin jars
 
@@ -197,6 +197,6 @@ SOURCES(VIB_Protocol.jar)=vib/app/*.java \
 SOURCES(Average_Color.jar)=Average_Color.java CIELAB.java
 SOURCES(Bilateral_Filter.jar)=Bilateral_Filter.java \
 	vib/InterpolatedImage.java math3d/Point3d.java
-SOURCES(Lasso_.jar)=Lasso_.java FibonacciHeapDouble.java
+SOURCES(Lasso_.jar)=plugin/Lasso_.java plugin/FibonacciHeapDouble.java
 
 *.jar <- $SOURCES
