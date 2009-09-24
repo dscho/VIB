@@ -39,20 +39,20 @@ public class Lasso_ implements PlugIn {
 		"    } else {\n" +
 		"        if (!isKeyDown('space')) {\n" +
 		"            spacePressed = 0;\n" +
-		"            call('Lasso_.toggleMode');\n" +
+		"            call('plugin.Lasso_.toggleMode');\n" +
 		"        }\n" +
 		"    }\n" +
 		"    getCursorLoc(x, y, z, flags);\n" +
 		"    if (!clicked) {\n" +
 		"        if ((flags & leftClick) != 0) {\n" +
 		"            clicked = 1;\n" +
-		"            call('Lasso_.start', x, y);\n" +
+		"            call('plugin.Lasso_.start', x, y);\n" +
 		"        }\n" +
 		"    } else {\n" +
 		"        if ((flags & leftClick) == 0)\n" +
 		"            clicked = 0;\n" +
 		"        else if (x != currentX || y != currentY) {\n" +
-		"            call('Lasso_.move', x, y);\n" +
+		"            call('plugin.Lasso_.move', x, y);\n" +
 		"            currentX = x;\n" +
 		"            currentY = y;\n" +
 		"        }\n" +
@@ -62,7 +62,7 @@ public class Lasso_ implements PlugIn {
 		"}\n" +
 		"\n" +
 		"macro 'Lasso Tool Options' {\n" +
-		"    call('Lasso_.callOptionDialog');\n" +
+		"    call('plugin.Lasso_.callOptionDialog');\n" +
 		"}\n";
 
 	protected boolean macroInstalled = false;
@@ -110,7 +110,6 @@ public class Lasso_ implements PlugIn {
 
 	public synchronized static void start(String x_, String y_) {
 		if (null == instance || IJ.getImage() != instance.getImage()) {
-			IJ.log("made new instance from start");
 			instance = new Lasso(IJ.getImage());
 		}
 		int x = (int)Float.parseFloat(x_);
