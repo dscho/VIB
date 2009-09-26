@@ -1,6 +1,6 @@
-import ij.IJ;
+package plugin;
+
 import ij.ImagePlus;
-import ij.WindowManager;
 
 import ij.gui.GenericDialog;
 import ij.gui.PolygonRoi;
@@ -20,117 +20,53 @@ import ij.plugin.filter.ThresholdToSelection;
 
 import java.util.TreeMap;
 
-public class Lasso_ implements PlugIn {
+public class Lasso {
+	public final static int BLOW = 0;
+	public final static int LASSO = 1;
+	public final static int MIN_LASSO = 2;
+	public final static int MAX_TOOL = 2;
+
+	public final static String[] modeTitles = {
+		"Blow tool", "Lasso tool", "Lasso minimum tool"
+	};
+
+	private int mode = BLOW;
 	private Difference difference;
 	private double[] dijkstra;
 	private int[] previous;
+	private ImagePlus imp;
 
-	private int w, h;
+	public final int w, h;
 	private Roi originalRoi;
 
-	/*
+	/**
 	 * Multiply the spatial distance with this factor before adding to
 	 * the color distance.
 	 */
 	private double ratioSpaceColor = 1;
 
-	public static final String MACRO_CMD =
-		"var clicked = 0;\n" +
-		"var spacePressed = 0;\n" +
-		"var leftClick = 16;\n" +
-		"var currentX = -1;\n" +
-		"var currentY = -1;\n" +
-		"\n" +
-		"macro 'Lasso Tool - C000Pdaa79796a6c4c2a1613215276998a6a70' {\n" +
-		"  tool = toolID();\n" +
-		"  while (tool == toolID()) {\n" +
-		"    if (!spacePressed) {\n" +
-		"        if (isKeyDown('space'))\n" +
-		"            spacePressed = 1;\n" +
-		"    } else {\n" +
-		"        if (!isKeyDown('space')) {\n" +
-		"            spacePressed = 0;\n" +
-		"            call('Lasso_.toggleMode');\n" +
-		"        }\n" +
-		"    }\n" +
-		"    getCursorLoc(x, y, z, flags);\n" +
-		"    if (!clicked) {\n" +
-		"        if ((flags & leftClick) != 0) {\n" +
-		"            clicked = 1;\n" +
-		"            call('Lasso_.start', x, y);\n" +
-		"        }\n" +
-		"    } else {\n" +
-		"        if ((flags & leftClick) == 0)\n" +
-		"            clicked = 0;\n" +
-		"        else if (x != currentX || y != currentY) {\n" +
-		"            call('Lasso_.move', x, y);\n" +
-		"            currentX = x;\n" +
-		"            currentY = y;\n" +
-		"        }\n" +
-		"    }\n" +
-		"    wait(100);\n" +
-		"  }\n" +
-		"}\n" +
-		"\n" +
-		"macro 'Lasso Tool Options' {\n" +
-		"    call('Lasso_.callOptionDialog');\n" +
-		"}\n";
-
-	protected boolean macroInstalled = false;
-
-	public void run(String arg){
-		if (IJ.versionLessThan("1.37j"))
-			return;
-
-		if (macroInstalled)
-			return;
-		MacroInstaller installer = new MacroInstaller();
-		installer.install(MACRO_CMD);
-		Toolbar.getInstance().setTool(Toolbar.SPARE1);
-		macroInstalled = true;
+	/** Create an uninitialized Lasso.
+	 *  To initialize it, call initDijkstra(x,y,IJ.shiftKeyDown()); */
+	public Lasso(ImagePlus imp, int mode) {
+		this.imp = imp;
+		this.mode = mode;
+		this.w = imp.getWidth();
+		this.h = imp.getHeight();
 	}
 
-	private static Lasso_ instance;
-
-	private final static int BLOW = 0;
-	private final static int LASSO = 1;
-	private final static int MIN_LASSO = 2;
-	private final static int MAX_TOOL = 2;
-	private final static String[] modeTitles = {
-		"Blow tool", "Lasso tool", "Lasso minimum tool"
-	};
-	private int mode = BLOW;
-
-	public synchronized static void setMode(int mode) {
-		if (instance == null)
-			instance = new Lasso_();
-		instance.mode = mode;
-		IJ.showStatus(modeTitles[mode]);
+	public Lasso(ImagePlus imp) {
+		this(imp, BLOW);
 	}
 
-	public synchronized static void setMode(String mode) {
-		if (mode.equals("lasso"))
-			setMode(LASSO);
-		else if (mode.equals("blow"))
-			setMode(BLOW);
-		else
-			IJ.error("Unknown Lasso/Blow mode: " + mode);
-	}
-
-	public synchronized static void toggleMode() {
-		int mode = instance == null ? 0 : instance.mode;
-		setMode((mode + 1) % (MAX_TOOL + 1));
-	}
-
-	public synchronized static void callOptionDialog() {
-		if (instance == null)
-			instance = new Lasso_();
-		instance.optionDialog();
+	/** Create and initialize a Lasso at point x,y. */
+	public Lasso(ImagePlus imp, int mode, int x, int y, boolean shiftKeyDown) {
+		this(imp, mode);
+		initDijkstra(x, y, shiftKeyDown);
 	}
 
 	public void optionDialog() {
 		GenericDialog gd = new GenericDialog("Lasso Tool Options");
-		gd.addChoice("mode", modeTitles, modeTitles[mode]);
+		gd.addChoice("mode", Lasso.modeTitles, Lasso.modeTitles[mode]);
 		gd.addNumericField("ratio space/color", ratioSpaceColor, 2);
 		gd.showDialog();
 		if (gd.wasCanceled())
@@ -139,33 +75,17 @@ public class Lasso_ implements PlugIn {
 		ratioSpaceColor = gd.getNextNumber();
 	}
 
-	public synchronized static void start(String x_, String y_) {
-		if (instance == null)
-			instance = new Lasso_();
-		int x = (int)Float.parseFloat(x_);
-		int y = (int)Float.parseFloat(y_);
-		instance.initDijkstra(x, y);
+	public ImagePlus getImage() {
+		return imp;
 	}
 
-	public synchronized static void move(String x_, String y_) {
-		int x = (int)Float.parseFloat(x_);
-		int y = (int)Float.parseFloat(y_);
-		if (x < 0) x = 0;
-		if (x >= instance.w) x = instance.w - 1;
-		if (y < 0) y = 0;
-		if (y >= instance.h) y = instance.h - 1;
-		try {
-				if (instance.mode == BLOW)
-					instance.moveBlow(x, y);
-				else
-					instance.moveLasso(x, y);
-		} catch (Throwable t) {
-			System.err.println("Caught throwable " + t);
-			t.printStackTrace();
-		}
+	public void setMode(int mode) {
+		this.mode = mode;
 	}
 
-	private void moveLasso(int x, int y) {
+	public int getMode() { return mode; }
+
+	public void moveLasso(int x, int y) {
 		getDijkstra(x, y);
 		int[] xPoints = new int[w * h];
 		int[] yPoints = new int[w * h];
@@ -184,12 +104,11 @@ public class Lasso_ implements PlugIn {
 				PolygonRoi.FREELINE);
 		if (originalRoi != null)
 			roi = new ShapeRoi(originalRoi).or(new ShapeRoi(roi));
-		ImagePlus image = WindowManager.getCurrentImage();
-		image.setRoi(roi);
-		image.updateAndDraw();
+		imp.setRoi(roi);
+		imp.updateAndDraw();
 	}
 
-	private void moveBlow(int x, int y) {
+	public void moveBlow(int x, int y) {
 		getDijkstra(x, y);
 		FloatProcessor fp = new FloatProcessor(w, h, dijkstra);
 		fp.setThreshold(Double.MIN_VALUE, dijkstra[x + w * y] + 1,
@@ -201,9 +120,8 @@ public class Lasso_ implements PlugIn {
 		Roi roi = blowImage.getRoi();
 		if (originalRoi != null)
 			roi = new ShapeRoi(originalRoi).or(new ShapeRoi(roi));
-		ImagePlus image = WindowManager.getCurrentImage();
-		image.setRoi(roi);
-		image.updateAndDraw();
+		imp.setRoi(roi);
+		imp.updateAndDraw();
 	}
 
 	Difference getDifference(ImageProcessor ip) {
@@ -332,13 +250,10 @@ public class Lasso_ implements PlugIn {
 	FibonacciHeapDouble queue;
 	int startX, startY;
 
-	private void initDijkstra(int x, int y) {
-		ImagePlus image = WindowManager.getCurrentImage();
-		originalRoi = IJ.shiftKeyDown() ? image.getRoi() : null;
+	public void initDijkstra(int x, int y, boolean shiftKeyDown) {
+		originalRoi = shiftKeyDown ? imp.getRoi() : null;
 
-		ImageProcessor ip = image.getProcessor();
-		w = ip.getWidth();
-		h = ip.getHeight();
+		ImageProcessor ip = imp.getProcessor();
 
 		difference = getDifference(ip);
 		previous = new int[w * h];
@@ -381,3 +296,4 @@ public class Lasso_ implements PlugIn {
 		}
 	}
 }
+
