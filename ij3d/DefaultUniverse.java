@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import com.sun.j3d.utils.universe.MultiTransformGroup;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 
 import ij3d.behaviors.BehaviorCallback;
@@ -328,6 +329,37 @@ public abstract class DefaultUniverse extends SimpleUniverse
 	 */
 	public TransformGroup getAnimationTG() {
 		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(ANIMATE_TG);
+	}
+
+	public static class GlobalTransform {
+		Transform3D[] transforms;
+	}
+
+	public void getGlobalTransform(GlobalTransform transform) {
+		MultiTransformGroup group =
+			getViewingPlatform().getMultiTransformGroup();
+		int num = group.getNumTransforms();
+		if (transform.transforms == null ||
+				transform.transforms.length != num) {
+			transform.transforms = new Transform3D[num];
+			for (int i = 0; i < num; i++)
+				transform.transforms[i] = new Transform3D();
+		}
+		for (int i = 0; i < num; i++)
+			group.getTransformGroup(i)
+				.getTransform(transform.transforms[i]);
+	}
+
+	public void setGlobalTransform(GlobalTransform transform) {
+		MultiTransformGroup group =
+			getViewingPlatform().getMultiTransformGroup();
+		int num = group.getNumTransforms();
+		if (transform.transforms == null ||
+				transform.transforms.length != num)
+			throw new RuntimeException("Internal 3D Viewer error");
+		for (int i = 0; i < num; i++)
+			group.getTransformGroup(i)
+				.setTransform(transform.transforms[i]);
 	}
 
 	/**
