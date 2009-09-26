@@ -331,10 +331,13 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		return getViewingPlatform().getMultiTransformGroup().getTransformGroup(ANIMATE_TG);
 	}
 
+	/** Stores the list of Transform3D that describe the view. */
 	public static class GlobalTransform {
 		Transform3D[] transforms;
 	}
 
+	/** Obtain a copy of all the Transform3D that describe the view
+	 *  such as zoom, pan, and rotation. */
 	public void getGlobalTransform(GlobalTransform transform) {
 		MultiTransformGroup group =
 			getViewingPlatform().getMultiTransformGroup();
@@ -350,6 +353,7 @@ public abstract class DefaultUniverse extends SimpleUniverse
 				.getTransform(transform.transforms[i]);
 	}
 
+	/** Set the transforms for zoom, pan, and rotation. */
 	public void setGlobalTransform(GlobalTransform transform) {
 		MultiTransformGroup group =
 			getViewingPlatform().getMultiTransformGroup();
@@ -360,6 +364,9 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		for (int i = 0; i < num; i++)
 			group.getTransformGroup(i)
 				.setTransform(transform.transforms[i]);
+
+		waitForNextFrame();
+		fireTransformationUpdated();
 	}
 
 	/**
