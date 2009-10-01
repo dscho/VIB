@@ -64,6 +64,10 @@ public class Lasso {
 		initDijkstra(x, y, shiftKeyDown);
 	}
 
+	public void setRatioSpaceColor(double ratioSpaceColor) {
+		this.ratioSpaceColor = ratioSpaceColor;
+	}
+
 	public void optionDialog() {
 		GenericDialog gd = new GenericDialog("Lasso Tool Options");
 		gd.addChoice("mode", Lasso.modeTitles, Lasso.modeTitles[mode]);
