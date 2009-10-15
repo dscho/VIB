@@ -1,3 +1,4 @@
+package plugin;
 /*
  * This class does not implement a complete Fibonacci Heap:
  *
@@ -6,16 +7,16 @@
  * of the queue, we do not need DecreaseKey, Union, and Cut.
  */
 
-public class FibonacciHeapInt
+public class FibonacciHeapDouble
 {
 	private static class Node {
-		int key;
+		double key;
 		Object object;
 		Node next, previous, parent, firstChild;
 		int degree;
 		boolean marked;
 
-		public Node(int key, Object object, Node parent) {
+		public Node(double key, Object object, Node parent) {
 			this.key = key;
 			this.object = object;
 			this.parent = parent;
@@ -70,11 +71,11 @@ public class FibonacciHeapInt
 	private Node min;
 	int count;
 
-	public FibonacciHeapInt() {
+	public FibonacciHeapDouble() {
 		root = new Node(0, null, null);
 	}
 
-	public void add(int key, Object object) {
+	public void add(double key, Object object) {
 		Node node = new Node(key, object, root);
 		if (min == null || min.key- key > 0)
 			min = node;
@@ -116,7 +117,7 @@ public class FibonacciHeapInt
 		return root.firstChild != null;
 	}
 
-	public int compareTo(int other) {
+	public double compareTo(double other) {
 		return min == null ? 1 : min.key- other;
 	}
 
@@ -172,13 +173,13 @@ public class FibonacciHeapInt
 	}
 
 	public static void main(String[] args) {
-		FibonacciHeapInt heap = new FibonacciHeapInt();
+		FibonacciHeapDouble heap = new FibonacciHeapDouble();
 		double[] prios = {
 			9, -5, Math.PI, 132, 15.223, 9e5, 1997, 0.001, 0.0012, 0
 		};
 		for (int i = 0; i < prios.length; i++) {
 			Double p = new Double(prios[i]);
-			heap.add((int)prios[i], new Double((int)prios[i]));
+			heap.add(prios[i], new Double((int)prios[i]));
 		}
 		int i = 0;
 		while (heap.hasMore()) {

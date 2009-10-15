@@ -47,6 +47,9 @@ import octree.FilePreparer;
 import octree.OctreeDialog;
 import octree.VolumeOctree;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class Executer {
 
 	// These strings are the names of the static methods in
@@ -1330,5 +1333,26 @@ public class Executer {
 				}
 			}
 		}
+	}
+
+	ExecutorService exec = Executors.newSingleThreadExecutor();
+
+	/** Destroy the ExecutorService that runs Runnable tasks. */
+	public void flush() {
+		if (null != exec) {
+			synchronized (exec) {
+				exec.shutdownNow();
+				exec = null;
+			}
+		}
+	}
+
+	/** Submit a task for execution, to the single-threaded executor. */
+	public void execute(Runnable task) {
+		if (null == exec) {
+			IJ.log("The executer service has been shut down!");
+			return;
+		}
+		exec.submit(task);
 	}
 }

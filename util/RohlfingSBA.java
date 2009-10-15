@@ -4,6 +4,7 @@ package util;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 import process3d.Distance_Transform_3D;
 
@@ -36,6 +37,15 @@ public class RohlfingSBA implements PlugIn {
 	private int w, h, d, L, K;
 
 	public void run(String arg) {
+
+		Pattern macOSPattern = Pattern.compile("^Mac ?OS.*$",Pattern.CASE_INSENSITIVE);
+		String osName = (String)System.getProperties().get("os.name");
+		if( osName != null && macOSPattern.matcher(osName).matches() ) {
+			IJ.error("The Shaped-Based Averaging plugin "+
+				 "is currently disabled on Mac OS due to Bug 29.");
+			return;
+		}
+
 		GenericDialog gd = new GenericDialog("Rohlfing");
 		fg = new FileGroup("files");
 		FileGroupDialog fgd = new FileGroupDialog(fg, false);

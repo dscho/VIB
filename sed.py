@@ -18,7 +18,7 @@ elif sys.argv[2] in ["math3d/Eigensystem3x3Float.java", \
 		"math3d/Eigensystem2x2Float.java"]:
 	replace = [r"/\*change\*/double", r"float",
 		r"Double", r"Float"]
-elif sys.argv[2] == "FibonacciHeapInt.java":
+elif sys.argv[2] == "plugin/FibonacciHeapInt.java":
 	replace = [r"FibonacciHeap", r"FibonacciHeapInt",
 		r" implements Comparable", r"",
 		r"Comparable", r"int",

@@ -67,6 +67,7 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 	private CheckboxMenuItem allCoordinateSystems;
 	private CheckboxMenuItem lock;
 	private CheckboxMenuItem show;
+	private MenuItem viewposXY, viewposXZ, viewposYZ, viewnegXY, viewnegXZ, viewnegYZ;
 
 	private Menu transformMenu;
 	private Menu editMenu;
@@ -264,6 +265,15 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 		fitViewToContent = new MenuItem("Selected content");
 		fitViewToContent.addActionListener(this);
 		menu.add(fitViewToContent);
+		view.add(menu);
+
+		menu = new Menu("Set view");
+		viewposXY = new MenuItem("+ XY"); viewposXY.addActionListener(this); menu.add(viewposXY);
+		viewposXZ = new MenuItem("+ XZ"); viewposXZ.addActionListener(this); menu.add(viewposXZ);
+		viewposYZ = new MenuItem("+ YZ"); viewposYZ.addActionListener(this); menu.add(viewposYZ);
+		viewnegXY = new MenuItem("- XY"); viewnegXY.addActionListener(this); menu.add(viewnegXY);
+		viewnegXZ = new MenuItem("- XZ"); viewnegXZ.addActionListener(this); menu.add(viewnegXZ);
+		viewnegYZ = new MenuItem("- YZ"); viewnegYZ.addActionListener(this); menu.add(viewnegYZ);
 		view.add(menu);
 
 		view.addSeparator();
@@ -517,6 +527,18 @@ public class Image3DMenubar extends MenuBar implements ActionListener,
 			executer.viewPreferences();
 		else if(src == j3dproperties)
 			executer.j3dproperties();
+		else if (viewposXY == src)
+			executer.execute(new Runnable() { public void run() { univ.rotateToPositiveXY(); }});
+		else if (viewposXZ == src)
+			executer.execute(new Runnable() { public void run() { univ.rotateToPositiveXZ(); }});
+		else if (viewposYZ == src)
+			executer.execute(new Runnable() { public void run() { univ.rotateToPositiveYZ(); }});
+		else if (viewnegXY == src)
+			executer.execute(new Runnable() { public void run() { univ.rotateToNegativeXY(); }});
+		else if (viewnegXZ == src)
+			executer.execute(new Runnable() { public void run() { univ.rotateToNegativeXZ(); }});
+		else if (viewnegYZ == src)
+			executer.execute(new Runnable() { public void run() { univ.rotateToNegativeYZ(); }});
 	}
 
 	public void itemStateChanged(ItemEvent e) {
