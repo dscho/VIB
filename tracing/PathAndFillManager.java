@@ -1990,7 +1990,13 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 				      "StartsOnPath",
 				      "EndsOnPath",
 				      "ConnectedPathIDs",
-				      "ChildPathIDs" };
+				      "ChildPathIDs",
+				      "StartX",
+				      "StartY",
+				      "StartZ",
+				      "EndX",
+				      "EndY",
+				      "EndZ" };
 
 		Path [] primaryPaths = getPathsStructured();
 		HashSet<Path> h = new HashSet<Path>();
@@ -2034,6 +2040,26 @@ public class PathAndFillManager extends DefaultHandler implements UniverseListen
 			pw.print(stringForCSV(p.somehowJoinsAsString()));
 			pw.print(",");
 			pw.print(stringForCSV(p.childrenAsString()));
+			pw.print(",");
+
+			double [] startPoint = new double[3];
+			double [] endPoint = new double[3];
+
+			pForLengthAndName.getPointDouble(0,startPoint);
+			pForLengthAndName.getPointDouble(pForLengthAndName.size()-1,endPoint);
+
+			pw.print(""+startPoint[0]);
+			pw.print(",");
+			pw.print(""+startPoint[1]);
+			pw.print(",");
+			pw.print(""+startPoint[2]);
+			pw.print(",");
+			pw.print(""+endPoint[0]);
+			pw.print(",");
+			pw.print(""+endPoint[1]);
+			pw.print(",");
+			pw.print(""+endPoint[2]);
+
 			pw.print("\r\n");
 			pw.flush();
 		}

@@ -696,7 +696,6 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * For more details on custom meshes, read the package API docs of
 	 * the package customnode.
 	 * @param mesh the CustomMesh to display
-	 * @param col the color used for the custom mesh
 	 * @param name the name for the added Content
 	 * @return the added Content
 	 */
@@ -705,6 +704,22 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 			IJ.error("Mesh named '"+name+"' exists already");
 			return null;
 		}
+		return addContent(createContent(mesh, name));
+	}
+
+	/**
+	 * Create a Content object from the mesh.
+	 *
+	 * Does not add the Content to the view; it merely creates it
+	 * with all the appropriate default parameters.
+	 * Does not check if the view already contains a Content object
+	 * with the same name, which is not allowed.
+	 *
+	 * @param mesh the CustomMesh to display
+	 * @param name the name for the added Content
+	 * @return the created Content
+	 */
+	public Content createContent(CustomMesh mesh, String name) {
 		Content content = new Content(name);
 		content.color = mesh.getColor();
 		content.transparency = mesh.getTransparency();
@@ -713,7 +728,7 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 				UniverseSettings.showLocalCoordinateSystemsByDefault);
 		content.display(new CustomMeshNode(mesh, content));
 		content.setPointListDialog(plDialog);
-		return addContent(content);
+		return content;
 	}
 
 	/**

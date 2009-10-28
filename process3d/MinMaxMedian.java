@@ -105,7 +105,21 @@ public class MinMaxMedian {
 		for(int z = 0; z < d; z++) {
 			stack.addSlice("", slices_out[z].getProcessor());
 		}
-		ImagePlus result = new ImagePlus("", stack);
+
+		String title = "";
+		switch (method) {
+			case MINIMUM:
+				title = "Minimum";
+				break;
+			case MAXIMUM:
+				title = "Maximum";
+				break;
+			case MEDIAN:
+				title = "Median";
+				break;
+		}
+
+		ImagePlus result = new ImagePlus(title + " of " + image.getTitle(), stack);
 		result.setCalibration(image.getCalibration());
 		return result;
 	}
