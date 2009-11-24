@@ -182,39 +182,46 @@ public class VoltexGroup extends ContentNode {
 		volumeToImagePlate(volToIP);
 
 		VoltexVolume vol = renderer.getVolume();
+		Point2d onCanvas = new Point2d();
 		for(int z = 0; z < vol.zDim; z++) {
 			for(int y = 0; y < vol.yDim; y++) {
 				for(int x = 0; x < vol.xDim; x++) {
-					Point2d onCanvas = volumePointInCanvas(
-							canvas, volToIP, x, y, z);
+					volumePointInCanvas(canvas, volToIP,
+							x, y, z, onCanvas);
 					if(p.contains(onCanvas.x, onCanvas.y)) {
-						vol.setNoCheck(x, y, z, fillValue);
+						vol.setNoCheckNoUpdate(
+							x, y, z, fillValue);
 					}
 				}
 			}
 			IJ.showStatus("Filling...");
 			IJ.showProgress(z, vol.zDim);
 		}
-		renderer.fullReload();
+		vol.updateData();
+
 		// also fill the original image
 		ImagePlus image = c.getImage();
 		int factor = c.getResamplingFactor();
 		if(image == null || factor == 1)
 			return;
 
-		vol = new VoltexVolume(image);
-		for(int z = 0; z < vol.zDim; z++) {
-			for(int y = 0; y < vol.yDim; y++) {
-				for(int x = 0; x < vol.xDim; x++) {
-					Point2d onCanvas = volumePointInCanvas( canvas, 
-						volToIP, x/factor, y/factor, z/factor);
+		ij3d.Volume volu = new ij3d.Volume(image);
+		for(int z = 0; z < volu.zDim; z++) {
+			for(int y = 0; y < volu.yDim; y++) {
+				for(int x = 0; x < volu.xDim; x++) {
+					volumePointInCanvas(canvas,
+							volToIP,
+							x/factor,
+							y/factor,
+							z/factor,
+							onCanvas);
 					if(p.contains(onCanvas.x, onCanvas.y)) {
-						vol.set(x, y, z, fillValue);
+						volu.set(x, y, z, fillValue);
 					}
 				}
 			}
 			IJ.showStatus("Filling...");
-			IJ.showProgress(z, vol.zDim);
+			IJ.showProgress(z, volu.zDim);
 		}
 	}
 
@@ -228,21 +235,18 @@ public class VoltexGroup extends ContentNode {
 	 * @param z
 	 * @return
 	 */
-	private Point2d volumePointInCanvas(Canvas3D canvas, Transform3D volToIP,
-							int x, int y, int z) {
-		
+	private void volumePointInCanvas(Canvas3D canvas,
+		Transform3D volToIP, int x, int y, int z, Point2d ret) {
+
 		VoltexVolume vol = renderer.volume;
 		double px = x * vol.pw;
 		double py = y * vol.ph;
 		double pz = z * vol.pd;
 		Point3d locInImagePlate = new Point3d(px, py, pz);
-		
+
 		volToIP.transform(locInImagePlate);
 
-		Point2d onCanvas = new Point2d();
-		canvas.getPixelLocationFromImagePlate(locInImagePlate, onCanvas);
-
-		return onCanvas;
+		canvas.getPixelLocationFromImagePlate(locInImagePlate, ret);
 	}
 
 	/**
