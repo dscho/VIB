@@ -24,10 +24,10 @@ import javax.vecmath.Point3d;
  * retrieving data. It is possible to control the loaded color channels of
  * RGB images, and to specify whether or not to average several channels
  * (and merge them in this way into one byte per pixel).
- * 
+ *
  * Depending on these settings, and on the type of image given at construction
  * time, the returned data type is one of INT_DATA or BYTE_DATA.
- * 
+ *
  * @author Benjamin Schmid
  */
 public class VoltexVolume extends Volume {
@@ -46,11 +46,11 @@ public class VoltexVolume extends Volume {
 
 	/** The ColorModel used for RGB textures */
 	protected static final ColorModel rgbCM = createRGBColorModel();
-	
+
 	protected ComponentCreator compCreator;
-	
+
 	private ImageUpdater updater = new ImageUpdater();
-	
+
 	private byte[][] xy;
 	private byte[][] xz;
 	private byte[][] yz;
@@ -142,7 +142,7 @@ public class VoltexVolume extends Volume {
 	 */
 	@Override
 	protected void initLoader() {}
-	
+
 	private void initLoader2() {
 		boolean[] c = channels;
 		int usedCh = 0;
@@ -181,7 +181,7 @@ public class VoltexVolume extends Volume {
 					}
 				}
 				break;
-			default: 
+			default:
 				IJ.error("image format not supported");
 				break;
 		}
@@ -244,26 +244,26 @@ public class VoltexVolume extends Volume {
 				cs, nBits, true, false, BufferedImage.TRANSLUCENT,
 				DataBuffer.TYPE_BYTE);
 	}
-	
+
 	/* **********************************************************************
 	 * The ImageUpdater which is needed for dynamically updating the textures
 	 ***********************************************************************/
-	
+
 	private class ImageUpdater implements ImageComponent2D.Updater {
 		public void updateData(ImageComponent2D comp, int x, int y, int w, int h) {
 		}
 	}
-	
+
 	/* **********************************************************************
 	 * The ComponentCreator interface and implementing classes
 	 ***********************************************************************/
-	
+
 	/**
 	 * Abstract class which defines the interface for creating the
 	 * different ImageComponents.
 	 */
 	private abstract class ComponentCreator {
-		
+
 		ComponentCreator() {
 			xyComp = new ImageComponent2D[zDim];
 			xzComp = new ImageComponent2D[yDim];
@@ -276,7 +276,7 @@ public class VoltexVolume extends Volume {
 		 */
 		abstract ImageComponent2D createImageComponent(byte[] pix, int w, int h);
 	}
-	
+
 	/**
 	 * Creates an ImageComponent2D for 8-bit textures.
 	 */
@@ -296,7 +296,7 @@ public class VoltexVolume extends Volume {
 			return bComp;
 		}
 	}
-	
+
 	/**
 	 * Loads the ImageComponent2Ds for RGBA-textures.
 	 */
@@ -317,7 +317,7 @@ public class VoltexVolume extends Volume {
 			return bComp;
 		}
 	}
-	
+
 	/* **********************************************************************
 	 * The Loader interface and the implementing classes
 	 * *********************************************************************/
@@ -331,13 +331,13 @@ public class VoltexVolume extends Volume {
 		 * (x changes fastest) and stores the data in the provided object
 		 */
 		void loadZ(int z, byte[] dst);
-		
+
 		/**
 		 * Loads an xz-slice, with the given y value
 		 * (x changes fastest) and stores the data in the provided object
 		 */
 		void loadY(int y, byte[] dst);
-		
+
 		/**
 		 * Loads an yz-slice, with the given x value
 		 * (y changes fastest) and stores the data in the provided object
@@ -355,12 +355,12 @@ public class VoltexVolume extends Volume {
 			xz = new byte[yDim][xTexSize * zTexSize];
 			yz = new byte[xDim][yTexSize * zTexSize];
 		}
-		
+
 		public void setNoCheck(int x, int y, int z, int v) {
 			super.setNoCheck(x, y, z, v);
 			xy[z][y * xTexSize + x] = (byte)v;
 			xz[y][z * xTexSize + x] = (byte)v;
-			yz[x][z * yTexSize + y] = (byte)v;	
+			yz[x][z * yTexSize + y] = (byte)v;
 			xyComp[z].updateData(updater, x, y, 1, 1);
 			xzComp[y].updateData(updater, x, z, 1, 1);
 			yzComp[x].updateData(updater, y, z, 1, 1);
@@ -420,20 +420,20 @@ public class VoltexVolume extends Volume {
 			int r = (v & 0xff0000) >> 16;
 			int g = (v & 0xff00) >> 8;
 			int b = (v & 0xff);
-			
+
 			int i = 4 * (y * xTexSize + x);
 			xy[z][i++] = (byte)r;
 			xy[z][i++] = (byte)g;
 			xy[z][i++] = (byte)b;
 			xy[z][i++] = (byte)a;
 			xyComp[z].updateData(updater, x, y, 1, 1);
-			
+
 			i = 4 * (z * xTexSize + x);
 			xz[y][i++] = (byte)r;
 			xz[y][i++] = (byte)g;
 			xz[y][i++] = (byte)b;
 			xz[y][i++] = (byte)a;
-			xzComp[y].updateData(updater, x, z, 1, 1);			
+			xzComp[y].updateData(updater, x, z, 1, 1);
 
 			i = 4 * (z * yTexSize + y);
 			yz[x][i++] = (byte)r;
@@ -442,7 +442,7 @@ public class VoltexVolume extends Volume {
 			yz[x][i++] = (byte)a;
 			yzComp[x].updateData(updater, y, z, 1, 1);
 		}
-		
+
 		public void set(int x, int y, int z, int v) {
 			if(x >= 0 && x < xDim &&
 					y >= 0 && y < yDim && z >= 0 && z < zDim) {
@@ -526,20 +526,20 @@ public class VoltexVolume extends Volume {
 			int r = (v & 0xff0000) >> 16;
 			int g = (v & 0xff00) >> 8;
 			int b = (v & 0xff);
-			
+
 			int i = 4 * (y * xTexSize + x);
 			xy[z][i++] = ch[0] ? (byte)r : 0;
 			xy[z][i++] = ch[1] ? (byte)g : 0;
 			xy[z][i++] = ch[2] ? (byte)b : 0;
 			xy[z][i++] = (byte)a;
 			xyComp[z].updateData(updater, x, y, 1, 1);
-			
+
 			i = 4 * (z * xTexSize + x);
 			xz[y][i++] = ch[0] ? (byte)r : 0;
 			xz[y][i++] = ch[1] ? (byte)g : 0;
 			xz[y][i++] = ch[2] ? (byte)b : 0;
 			xz[y][i++] = (byte)a;
-			xzComp[y].updateData(updater, x, z, 1, 1);			
+			xzComp[y].updateData(updater, x, z, 1, 1);
 
 			i = 4 * (z * yTexSize + y);
 			yz[x][i++] = ch[0] ? (byte)r : 0;
@@ -548,7 +548,7 @@ public class VoltexVolume extends Volume {
 			yz[x][i++] = (byte)a;
 			yzComp[x].updateData(updater, y, z, 1, 1);
 		}
-		
+
 		public void set(int x, int y, int z, int v) {
 			if(x >= 0 && x < xDim &&
 					y >= 0 && y < yDim && z >= 0 && z < zDim) {
@@ -634,12 +634,12 @@ public class VoltexVolume extends Volume {
 			l /= usedCh;
 			xy[z][y * xTexSize + x] = (byte)l;
 			xz[y][z * xTexSize + x] = (byte)l;
-			yz[x][z * yTexSize + y] = (byte)l;	
+			yz[x][z * yTexSize + y] = (byte)l;
 			xyComp[z].updateData(updater, x, y, 1, 1);
 			xzComp[y].updateData(updater, x, z, 1, 1);
 			yzComp[x].updateData(updater, y, z, 1, 1);
 		}
-		
+
 		public void set(int x, int y, int z, int v) {
 			if(x >= 0 && x < xDim &&
 					y >= 0 && y < yDim && z >= 0 && z < zDim) {
