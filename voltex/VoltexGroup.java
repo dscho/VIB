@@ -23,7 +23,7 @@ import vib.Resample_;
 /**
  * This class extends ContentNode to display a Content as a
  * Volume Rendering.
- * 
+ *
  * @author Benjamin Schmid
  */
 public class VoltexGroup extends ContentNode {
@@ -65,8 +65,8 @@ public class VoltexGroup extends ContentNode {
 			throw new IllegalArgumentException("VoltexGroup can only" +
 				"be initialized from a Content that holds an image.");
 		this.c = c;
-		ImagePlus imp = c.getResamplingFactor() == 1 
-			? c.getImage() 
+		ImagePlus imp = c.getResamplingFactor() == 1
+			? c.getImage()
 			: Resample_.resample(c.getImage(), c.getResamplingFactor());
 		renderer = new VolumeRenderer(imp, c.getColor(),
 				c.getTransparency(), c.getChannels());
@@ -74,7 +74,7 @@ public class VoltexGroup extends ContentNode {
 		calculateMinMaxCenterPoint();
 		addChild(renderer.getVolumeNode());
 	}
-	
+
 	/**
 	 * Get a reference VolumeRenderer which is used by this class
 	 */
@@ -293,6 +293,6 @@ public class VoltexGroup extends ContentNode {
 		volume = (float)(vol * cal.pixelWidth
 				* cal.pixelHeight
 				* cal.pixelDepth);
-		
+
 	}
 }
