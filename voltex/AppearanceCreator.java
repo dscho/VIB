@@ -266,24 +266,23 @@ public class AppearanceCreator implements AxisConstants {
 	 * @param transparency
 	 */
 	private void initAttributes(Color3f color, float transparency) {
+
 		texAttr = new TextureAttributes();
-		texAttr.setTextureMode(TextureAttributes.COMBINE);
-		texAttr.setCombineRgbMode(TextureAttributes.COMBINE_MODULATE);
+		texAttr.setTextureMode(TextureAttributes.MODULATE);
 		texAttr.setPerspectiveCorrectionMode(TextureAttributes.NICEST);
-		//texAttr.setCombineRgbMode(TextureAttributes.COMBINE_REPLACE);
 
 		transAttr = new TransparencyAttributes();
-		transAttr.setTransparency(0.1f);
 		transAttr.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
 		transAttr.setTransparencyMode(TransparencyAttributes.BLENDED);
+		transAttr.setSrcBlendFunction(TransparencyAttributes.BLEND_SRC_ALPHA);
+		transAttr.setDstBlendFunction(TransparencyAttributes.BLEND_ONE_MINUS_SRC_ALPHA);
 		transAttr.setTransparency(transparency);
 
 		polyAttr = new PolygonAttributes();
 		polyAttr.setCullFace(PolygonAttributes.CULL_NONE);
 
 		material = new Material();
-// 		material.setLightingEnable(true);
-		material.setLightingEnable(false);
+		material.setLightingEnable(true);
 
 		colAttr = new ColoringAttributes();
 		colAttr.setCapability(ColoringAttributes.ALLOW_COLOR_WRITE);
