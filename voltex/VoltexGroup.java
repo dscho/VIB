@@ -82,6 +82,10 @@ public class VoltexGroup extends ContentNode {
 		return renderer;
 	}
 
+	public Mask createMask() {
+		return renderer.createMask();
+	}
+
 	/**
 	 * @see ContentNode#getMin(Tupe3d) getMin
 	 */

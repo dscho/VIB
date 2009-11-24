@@ -4,6 +4,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij3d.AxisConstants;
 
+import javax.media.j3d.TextureUnitState;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
@@ -109,6 +110,41 @@ public class VolumeRenderer implements AxisConstants {
 	 */
 	public VoltexVolume getVolume() {
 		return volume;
+	}
+
+	/**
+	 * Get the Appearance object for the Shape3D of the specified
+	 * axis; Note that both front and back shapes share the same
+	 * Appearance.
+	 */
+	public Appearance getAppearance(int axis, int index) {
+		Group frontGroup = (Group)axisSwitch.
+			getChild(axisIndex[axis][FRONT]);
+		return ((Shape3D)((Group)frontGroup.
+			getChild(index)).getChild(0)).getAppearance();
+	}
+
+	/**
+	 * Create a mask to this volume.
+	 */
+	public Mask createMask() {
+		Mask mask = new Mask(volume, root);
+
+		Group frontGroup = null;
+		Group backGroup = null;
+
+		int[] size = new int[] {volume.xDim, volume.yDim, volume.zDim};
+
+		for(int axis = 0; axis < 3; axis++) {
+			for(int i = 0; i < size[axis]; i++) {
+				Appearance app = getAppearance(axis, i);
+				app.setTextureUnitState(1, new TextureUnitState(
+					appCreator.getTexture(axis, i, mask),
+					mask.getMaskAttributes(),
+					appCreator.getTg(axis)));
+			}
+		}
+		return mask;
 	}
 
 	/**
