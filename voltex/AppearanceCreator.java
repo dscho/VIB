@@ -9,6 +9,7 @@ import javax.media.j3d.Material;
 import javax.media.j3d.PolygonAttributes;
 import javax.media.j3d.RenderingAttributes;
 import javax.media.j3d.TexCoordGeneration;
+import javax.media.j3d.TextureUnitState;
 import javax.media.j3d.Texture;
 import javax.media.j3d.Texture2D;
 import javax.media.j3d.TextureAttributes;
@@ -157,6 +158,7 @@ public class AppearanceCreator implements AxisConstants {
 	 */
 	public Appearance getAppearance(int direction, int index) {
 		Appearance a = new Appearance();
+		a.setCapability(Appearance.ALLOW_TEXTURE_UNIT_STATE_WRITE);
 		a.setCapability(Appearance.ALLOW_TEXTURE_WRITE);
 		a.setCapability(Appearance.ALLOW_TEXGEN_WRITE);
 		a.setMaterial(material);
@@ -165,9 +167,13 @@ public class AppearanceCreator implements AxisConstants {
 		a.setColoringAttributes(colAttr);
 		a.setRenderingAttributes(rendAttr);
 
-		a.setTexture(getTexture(direction, index));
-		a.setTexCoordGeneration(getTg(direction));
-		a.setTextureAttributes(texAttr);
+		TextureUnitState[] tus = new TextureUnitState[2];
+		tus[0] = new TextureUnitState(
+			getTexture(direction, index, volume),
+			texAttr,
+			getTg(direction));
+		tus[1] = null;
+		a.setTextureUnitState(tus);
 		return a;
 	}
 
