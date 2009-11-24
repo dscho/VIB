@@ -213,23 +213,34 @@ public class AppearanceCreator implements AxisConstants {
 	 * @return
 	 */
 	public Texture2D getTexture(int axis, int index) {
+		return getTexture(axis, index, volume);
+	}
+
+	/**
+	 * Returns the texture for the specified axis and slice
+	 * @param axis
+	 * @param index
+	 * @param vol
+	 * @return
+	 */
+	public Texture2D getTexture(int axis, int index, VoltexVolume vol) {
 		int sSize = 0, tSize = 0;
 		ImageComponent2D pArray = null;
 		switch (axis) {
 			case Z_AXIS:
-				sSize = volume.xTexSize;
-				tSize = volume.yTexSize;
-				pArray = volume.getImageComponentZ(index);
+				sSize = vol.xTexSize;
+				tSize = vol.yTexSize;
+				pArray = vol.getImageComponentZ(index);
 				break;
 			case Y_AXIS:
-				sSize = volume.xTexSize;
-				tSize = volume.zTexSize;
-				pArray = volume.getImageComponentY(index);
+				sSize = vol.xTexSize;
+				tSize = vol.zTexSize;
+				pArray = vol.getImageComponentY(index);
 				break;
 			case X_AXIS:
-				sSize = volume.yTexSize;
-				tSize = volume.zTexSize;
-				pArray = volume.getImageComponentX(index);
+				sSize = vol.yTexSize;
+				tSize = vol.zTexSize;
+				pArray = vol.getImageComponentX(index);
 				break;
 		}
 		Texture2D tex = new Texture2D(Texture.BASE_LEVEL,
