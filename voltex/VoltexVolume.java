@@ -98,14 +98,14 @@ public class VoltexVolume extends Volume {
 		volRefPt.x = (maxCoord.x + minCoord.x) / 2;
 		volRefPt.y = (maxCoord.y + minCoord.y) / 2;
 		volRefPt.z = (maxCoord.z + minCoord.z) / 2;
-		
+
 		initLoader2();
-		
-		updateData();
+
 		createImageComponents();
+		updateData();
 	}
-	
-	public void createImageComponents() {
+
+	private void createImageComponents() {
 		for(int z = 0; z < zDim; z++)
 			xyComp[z] = compCreator.createImageComponent(xy[z], xTexSize, yTexSize);
 		for(int y = 0; y < yDim; y++)
@@ -113,24 +113,30 @@ public class VoltexVolume extends Volume {
 		for(int x = 0; x < xDim; x++)
 			yzComp[x] = compCreator.createImageComponent(yz[x], yTexSize, zTexSize);
 	}
-	
+
 	public void updateData() {
-		for(int z = 0; z < zDim; z++)
+		for(int z = 0; z < zDim; z++) {
 			loadZ(z, xy[z]);
-		for(int y = 0; y < yDim; y++)
+			xyComp[z].updateData(updater, 0, 0, xTexSize, yTexSize);
+		}
+		for(int y = 0; y < yDim; y++) {
 			loadY(y, xz[y]);
-		for(int x = 0; x < xDim; x++)
+			xzComp[y].updateData(updater, 0, 0, xTexSize, zTexSize);
+		}
+		for(int x = 0; x < xDim; x++) {
 			loadX(x, yz[x]);
+			yzComp[x].updateData(updater, 0, 0, yTexSize, zTexSize);
+		}
 	}
 
 	public ImageComponent2D getImageComponentZ(int index) {
 		return xyComp[index];
 	}
-	
+
 	public ImageComponent2D getImageComponentY(int index) {
 		return xzComp[index];
 	}
-	
+
 	public ImageComponent2D getImageComponentX(int index) {
 		return yzComp[index];
 	}
