@@ -121,11 +121,6 @@ public class VolumeRenderer implements AxisConstants {
 			Point3d  volRefPt = volume.volRefPt;
 			eyeVec.sub(eyePt, volRefPt);
 
-			// compensate for different xyz resolution/scale
-// 			eyeVec.x /= volume.pw;
-// 			eyeVec.y /= volume.ph;
-// 			eyeVec.z /= volume.pd;
-
 			// select the axis with the greatest magnitude
 			int axis = X_AXIS;
 			double value = eyeVec.x;
