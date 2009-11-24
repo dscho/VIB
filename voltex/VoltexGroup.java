@@ -268,13 +268,14 @@ public class VoltexGroup extends ContentNode {
 		max.y = 0;
 		max.z = 0;
 
-		long vol = 0;
+		float vol = 0;
 		for(int zi = 0; zi < d; zi++) {
 			float z = zi * (float)cal.pixelDepth;
 			ImageProcessor ip = imp.getStack().getProcessor(zi+1);
+
 			int wh = w * h;
 			for(int i = 0; i < wh; i++) {
-				int v = ip.get(i);
+				float v = ip.getf(i);
 				if(v == 0) continue;
 				vol += v;
 				float x = (i % w) * (float)cal.pixelWidth;
