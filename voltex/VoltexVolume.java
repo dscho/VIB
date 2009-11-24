@@ -141,6 +141,10 @@ public class VoltexVolume extends Volume {
 		return yzComp[index];
 	}
 
+	public void setNoCheckNoUpdate(int x, int y, int z, int v) {
+		((Loader)loader).setNoCheckNoUpdate(x, y, z, v);
+	}
+
 	/*
 	 * Initializes the specific loader which is used for the current
 	 * settings. The choice depends on the specific values of channels,
@@ -349,6 +353,11 @@ public class VoltexVolume extends Volume {
 		 * (y changes fastest) and stores the data in the provided object
 		 */
 		void loadX(int x, byte[] dst);
+
+		/**
+		 * Only set the values, without updating the ImageComponent2Ds.
+		 */
+		void setNoCheckNoUpdate(int x, int y, int z, int v);
 	}
 
 	/**
@@ -371,7 +380,11 @@ public class VoltexVolume extends Volume {
 			xzComp[y].updateData(updater, x, z, 1, 1);
 			yzComp[x].updateData(updater, y, z, 1, 1);
 		}
-		
+
+		public void setNoCheckNoUpdate(int x, int y, int z, int v) {
+			super.setNoCheck(x, y, z, v);
+		}
+
 		public void set(int x, int y, int z, int v) {
 			if(x >= 0 && x < xDim &&
 					y >= 0 && y < yDim && z >= 0 && z < zDim) {
@@ -418,6 +431,10 @@ public class VoltexVolume extends Volume {
 			xy = new byte[zDim][4 * xTexSize * yTexSize];
 			xz = new byte[yDim][4 * xTexSize * zTexSize];
 			yz = new byte[xDim][4 * yTexSize * zTexSize];
+		}
+
+		public void setNoCheckNoUpdate(int x, int y, int z, int v) {
+			super.setNoCheck(x, y, z, v);
 		}
 
 		public void setNoCheck(int x, int y, int z, int v) {
@@ -526,6 +543,10 @@ public class VoltexVolume extends Volume {
 			yz = new byte[xDim][4 * yTexSize * zTexSize];
 		}
 
+		public void setNoCheckNoUpdate(int x, int y, int z, int v) {
+			super.setNoCheck(x, y, z, v);
+		}
+
 		public void setNoCheck(int x, int y, int z, int v) {
 			super.setNoCheck(x, y, z, v);
 			int a = (v & 0xff000000) >> 24;
@@ -629,6 +650,10 @@ public class VoltexVolume extends Volume {
 			xy = new byte[zDim][xTexSize * yTexSize];
 			xz = new byte[yDim][xTexSize * zTexSize];
 			yz = new byte[xDim][yTexSize * zTexSize];
+		}
+
+		public void setNoCheckNoUpdate(int x, int y, int z, int v) {
+			super.setNoCheck(x, y, z, v);
 		}
 
 		public void setNoCheck(int x, int y, int z, int v) {
