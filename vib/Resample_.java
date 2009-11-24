@@ -73,7 +73,6 @@ public class Resample_ implements PlugInFilter {
 			highest = -1;
 			indexOfHighest = -1;
 			System.arraycopy(empty,0,histo,0,max+1);
-			max = 0;
 		}
 		public void add(int value) {
 			histo[value]++;
