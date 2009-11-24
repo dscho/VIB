@@ -25,7 +25,7 @@ public class Volume {
 	public static final int BYTE_DATA = 1;
 	
 	/** The image holding the data */
-	protected final ImagePlus imp;
+	public final ImagePlus imp;
 
 	/** The loader, initialized depending on the data type */
 	protected Loader loader;
