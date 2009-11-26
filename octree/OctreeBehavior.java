@@ -101,8 +101,7 @@ public class OctreeBehavior extends Behavior {
 		Arrays.sort(shapes);
 
 		octree.setCombinedWhichChild();
-		OrderedGroup og = octree.getOrderedGroup(VolumeOctree.DETAIL_AXIS);
-		displayShapes(og, shapes, octree.curDir);
+		displayShapes(shapes, octree.curDir);
 
 		// add the ShapeGroups of the collected cubes to the scenegraph
 		CubeDataRecycler.instance().clearAll();
@@ -117,7 +116,11 @@ public class OctreeBehavior extends Behavior {
 		finished = true;
 	}
 
-	private final void displayShapes(OrderedGroup og, ShapeGroup[] shapes, int dir) {
+	private final void displayShapes(ShapeGroup[] shapes, int dir) {
+		OrderedGroup og = octree.getOrderedGroup(VolumeOctree.DETAIL_AXIS);
+		View view = canvas.getView();
+		view.stopView();
+		int t = shapes.length / 20;
 		if(dir == VolumeOctree.FRONT) {
 			for(int i = shapes.length - 1; i >= 0 && !cancelled; i--) {
 				if(!shapes[i].cube.cubeDataUpToDate())
@@ -125,10 +128,10 @@ public class OctreeBehavior extends Behavior {
 				BranchGroup bg = VolumeOctree.getBranchGroup();
 				bg.addChild(shapes[i].shape);
 				og.insertChild(bg, 0);
-				try {
-					Thread.sleep(3);
-				} catch(InterruptedException e) {}
-				IJ.showProgress(shapes.length-i, shapes.length);
+				if(i % t == 0) {
+					IJ.showProgress(shapes.length-i, shapes.length);
+					view.renderOnce();
+				}
 			}
 		} else {
 			for(int i = 0; i < shapes.length && !cancelled; i++) {
@@ -137,12 +140,13 @@ public class OctreeBehavior extends Behavior {
 				BranchGroup bg = VolumeOctree.getBranchGroup();
 				bg.addChild(shapes[i].shape);
 				og.insertChild(bg, 0);
-				try {
-					Thread.sleep(3);
-				} catch(InterruptedException e) {}
-				IJ.showProgress(i, shapes.length);
+				if(i % t == 0) {
+					IJ.showProgress(i, shapes.length);
+					view.renderOnce();
+				}
 			}
 		}
+		view.startView();
 		IJ.showProgress(1);
 	}
 }
