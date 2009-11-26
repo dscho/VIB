@@ -103,9 +103,10 @@ public class AppearanceCreator implements AxisConstants {
 
 		// Avoid rendering of voxels having an alpha value of zero
 		rendAttr = new RenderingAttributes();
+		rendAttr.setDepthTestFunction(RenderingAttributes.ALWAYS);
 		rendAttr.setCapability(
 			RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
- 		rendAttr.setAlphaTestValue(0.1f);
-		rendAttr.setAlphaTestFunction(RenderingAttributes.GREATER);
+//  		rendAttr.setAlphaTestValue(0.2f);
+// 		rendAttr.setAlphaTestFunction(RenderingAttributes.GREATER);
 	}
 }
