@@ -132,24 +132,21 @@ public class Cube implements AxisConstants {
 	}
 
 	public void update(Canvas3D paramCanvas3D, Transform3D paramTransform3D) {
+		// give the renderer a chance
+		Thread.yield();
 		int i = checkResolution(paramCanvas3D, paramTransform3D);
-		if (i == 2) {
-			System.out.println("outside canvas");
+		if (i == OUTSIDE_CANVAS) {
 			hideSelf();
 			hideSubtree();
 			return;
 		}
-		if ((i == 1) && (this.children != null)) {
-			System.out.println("res unsufficient && children not null");
-
+		if ((i == RESOLUTION_UNSUFFICIENT) && (this.children != null)) {
 			hideSelf();
 			this.subtreeVisible = true;
 			for (Cube localCube : this.children)
 				if (localCube != null)
 					localCube.update(paramCanvas3D, paramTransform3D);
 		} else {
-			System.out.println("res sufficient || children null: show me");
-
 			showSelf();
 			hideSubtree();
 		}
@@ -160,7 +157,7 @@ public class Cube implements AxisConstants {
 			volumePointInCanvas(paramCanvas3D, paramTransform3D, this.corners[i], this.cornersInCanvas[i]);
 		}
 		if (outsideCanvas(paramCanvas3D)) {
-			return 2;
+			return OUTSIDE_CANVAS;
 		}
 
 		double d2 = this.cornersInCanvas[0].distance(this.cornersInCanvas[7]);
@@ -168,14 +165,13 @@ public class Cube implements AxisConstants {
 		d1 = this.cornersInCanvas[2].distance(this.cornersInCanvas[5]); if (d1 > d2) d2 = d1;
 		d1 = this.cornersInCanvas[3].distance(this.cornersInCanvas[4]); if (d1 > d2) d2 = d1;
 
-		return ((d2 <= 256.0D) ? 0 : 1);
+		return ((d2 <= RES_THRESHOLD) ? RESOLUTION_SUFFICIENT : RESOLUTION_UNSUFFICIENT);
 	}
 
 	public void createChildren() {
 		if(level == 1)
 			return;
 		int l = level >> 1;
-		System.out.println("l = " + l);
 		int s = VolumeOctree.SIZE;
 		children = new Cube[8];
 		children[0] = createCube(octree, dir, x,     y,     z,     l);

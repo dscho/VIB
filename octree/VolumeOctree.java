@@ -41,6 +41,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 
 	private final Cube rootCube;
 	private final BranchGroup rootBranchGroup;
+	private final UpdaterThread updater;
 
 	int curAxis = Z_AXIS;
 	int curDir = BACK;
@@ -96,6 +97,9 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		} catch(Exception e) {
 			throw new RuntimeException("Error in property file.", e);
 		}
+
+		updater = new UpdaterThread(canvas);
+		updater.run();
 	}
 
 // 	public void update() {
@@ -196,21 +200,22 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		addEmptyGroups(curAxis, curDir);
 	}
 
-	private Transform3D volToIP = new Transform3D();
 	private Transform3D toVWorld = new Transform3D();
+	final void volumeToIP(Canvas3D canvas, Transform3D ret) {
+		canvas.getImagePlateToVworld(ret);
+		ret.invert();
+		rootBranchGroup.getLocalToVworld(toVWorld);
+		ret.mul(toVWorld);
+	}
+
+	private Transform3D volToIP = new Transform3D();
 	final void updateCubes(Canvas3D canvas) {
 		System.out.println("updateCubes");
 		// TODO new thread?
 
-		// calculate volume-to-imageplate
-		canvas.getImagePlateToVworld(volToIP);
-		volToIP.invert();
-		rootBranchGroup.getLocalToVworld(toVWorld);
-		volToIP.mul(toVWorld);
-
+		volumeToIP(canvas, volToIP);
 		// update cubes
-		rootCube.update(canvas, volToIP);
-		System.out.println("updateCubes finished");
+		updater.submit(volToIP);
 	}
 
 	final void setWhichChild(int child) {
@@ -323,6 +328,56 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		parentInv.transform(viewPosition);
 
 		return viewPosition;
+	}
+
+	private class UpdaterThread {
+
+		private Canvas3D canvas;
+		private Transform3D nextT = new Transform3D();
+		private Transform3D runningT = new Transform3D();
+		private boolean available = false;
+		private Thread thread;
+
+		public UpdaterThread(Canvas3D canvas) {
+			this.canvas = canvas;
+		}
+
+		public synchronized void submit(Transform3D t) {
+			System.out.println("submit");
+			nextT.set(t);
+			available = true;
+			notify();
+			System.out.println("submit done");
+		}
+
+
+		private synchronized void fetchNext() {
+			if(!available) {
+				try {
+					wait();
+				} catch(InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			runningT.set(nextT);
+			available = false;
+		}
+
+		public void run() {
+			thread = new Thread() {
+				public void run() {
+					while(true) {
+						fetchNext();
+						rootCube.update(canvas, runningT);
+						System.out.println("updateCubes finished");
+					}
+				}
+			};
+			thread.setPriority(Thread.MIN_PRIORITY);
+			thread.start();
+		}
+
+		// TODO cancel thread
 	}
 }
 
