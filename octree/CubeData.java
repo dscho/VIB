@@ -14,10 +14,11 @@ public class CubeData implements AxisConstants {
 	private static final int SIZE = VolumeOctree.SIZE;
 	private static final int B_IMG_TYPE = BufferedImage.TYPE_BYTE_GRAY;
 
-	String path;
-	float[] cal = new float[3];
-	float[] min = new float[3];
-	float[] max = new float[3];
+	final String path;
+	final float[] cal = new float[3];
+	final float[] min = new float[3];
+	final float[] max = new float[3];
+
 	int axis;
 
 	BufferedImage[] images;
@@ -25,27 +26,9 @@ public class CubeData implements AxisConstants {
 	TexCoordGeneration tg;
 	ShapeGroup[] shapes;
 	Cube cube;
+	boolean empty;
 
 	public CubeData(Cube c) {
-		setCube(c);
-
-		images = new BufferedImage[SIZE];
-		pixels = new byte[SIZE][];
-		shapes = new ShapeGroup[SIZE];
-		for(int i = 0; i < SIZE; i++) {
-			images[i] = new BufferedImage(SIZE, SIZE, B_IMG_TYPE);
-			pixels[i] = ((DataBufferByte) images[i].getRaster().getDataBuffer()).getData();
-			shapes[i] = new ShapeGroup(c);
-		}
-	}
-
-	public void prepareForAxis(int axis) {
-		this.axis = axis;
-		for(int i = 0; i < SIZE; i++)
-			shapes[i].pos = min[axis] + cal[axis] * i;
-	}
-
-	public void setCube(Cube c) {
 		this.cube = c;
 		this.path = c.path;
 		min[0] = (float)c.corners[0].x;
@@ -54,19 +37,58 @@ public class CubeData implements AxisConstants {
 		cal[0] = c.pw;
 		cal[1] = c.ph;
 		cal[2] = c.pd;
+
+		images = new BufferedImage[SIZE];
+		pixels = new byte[SIZE][];
+		shapes = new ShapeGroup[SIZE];
+		for(int i = 0; i < SIZE; i++)
+			shapes[i] = new ShapeGroup();
+
+		empty = true;
 	}
 
-	public void createData() throws Exception {
+	public void prepareForAxis(int axis) {
+		this.axis = axis;
+		for(int i = 0; i < SIZE; i++)
+			shapes[i].prepareForAxis(min[axis] + cal[axis] * i);
+	}
+
+	public void show() {
+		try {
+			createData();
+		} catch(Exception e) {
+			throw new RuntimeException(e);
+		}
+		for(int i = 0; i < SIZE; i++)
+			shapes[i].show(this, i);
+	}
+
+	public void hide() {
+		for(int i = 0; i < SIZE; i++)
+			shapes[i].hide();
+		releaseData();
+	}
+
+	private void createData() throws Exception {
+		for(int i = 0; i < SIZE; i++) {
+			images[i] = new BufferedImage(SIZE, SIZE, B_IMG_TYPE);
+			pixels[i] = ((DataBufferByte) images[i].getRaster().getDataBuffer()).getData();
+		}
 		switch(axis) {
 			case X_AXIS: createXData(); break;
 			case Y_AXIS: createYData(); break;
 			case Z_AXIS: createZData(); break;
 		}
+		empty = false;
 	}
 
-	private void createShapes() {
-		for(int i = 0; i < SIZE; i++)
-			shapes[i].setCubeData(cube, this, i);
+	private void releaseData() {
+		tg = null;
+		for(int i = 0; i < SIZE; i++) {
+			pixels[i] = null;
+			images[i] = null;
+		}
+		empty = true;
 	}
 
 	private final void createZData() throws Exception {
@@ -76,8 +98,6 @@ public class CubeData implements AxisConstants {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * min[0])));
 		tg.setPlaneT(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * min[1])));
-		axis = Z_AXIS;
-		createShapes();
 	}
 
 	private final void createXData() throws Exception {
@@ -98,8 +118,6 @@ public class CubeData implements AxisConstants {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(0f, yTexGenScale, 0f, -(float)(yTexGenScale * min[1])));
 		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * min[2])));
-		axis = X_AXIS;
-		createShapes();
 	}
 
 	private final void createYData() throws Exception {
@@ -117,8 +135,6 @@ public class CubeData implements AxisConstants {
 		tg = new TexCoordGeneration();
 		tg.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * min[0])));
 		tg.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * min[2])));
-		axis = Y_AXIS;
-		createShapes();
 	}
 
 	public static final float[] readCalibration(String path, float[] ret) {

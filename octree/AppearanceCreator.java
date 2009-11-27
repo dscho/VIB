@@ -12,7 +12,7 @@ public class AppearanceCreator implements AxisConstants {
 	private static final boolean BY_REF = true;
 	private static final boolean Y_UP = true;
 	private static final int SIZE = VolumeOctree.SIZE;
-	
+
 	private TextureAttributes texAttr;
 	private TransparencyAttributes transAttr;
 	private PolygonAttributes polyAttr;
@@ -106,7 +106,7 @@ public class AppearanceCreator implements AxisConstants {
 		rendAttr.setDepthTestFunction(RenderingAttributes.ALWAYS);
 		rendAttr.setCapability(
 			RenderingAttributes.ALLOW_ALPHA_TEST_VALUE_WRITE);
-//  		rendAttr.setAlphaTestValue(0.2f);
-// 		rendAttr.setAlphaTestFunction(RenderingAttributes.GREATER);
+ 		rendAttr.setAlphaTestValue(0f);
+		rendAttr.setAlphaTestFunction(RenderingAttributes.GREATER);
 	}
 }

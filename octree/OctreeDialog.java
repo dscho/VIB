@@ -48,7 +48,7 @@ public class OctreeDialog {
 		});
 		p.add(b);
 		gd.addPanel(p);
-	
+
 
 		gd.addMessage("For displaying large volumes, much data has to be\n" +
 				"precomputed. Please specify an empty directory where\n" +

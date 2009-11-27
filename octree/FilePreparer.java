@@ -44,7 +44,7 @@ public class FilePreparer {
 				byte[][] pixels = new byte[size][];
 				for(int zi = 0; zi < size; zi++) {
 					if(z + zi < image.getStackSize())
-						pixels[zi] = (byte[])image.getStack().getPixels(z + zi + 1); 
+						pixels[zi] = (byte[])image.getStack().getPixels(z + zi + 1);
 					else
 						pixels[zi] = new byte[image.getWidth() * image.getHeight()];
 				}
@@ -66,7 +66,6 @@ public class FilePreparer {
 			if(factorX == 1 && factorY == 1 && factorZ == 1)
 				break;
 			image = resample(image, factorX, factorY, factorZ, accu);
-			image.show();
 			w = image.getWidth();
 			h = image.getHeight();
 			d = image.getStackSize();
@@ -83,7 +82,7 @@ public class FilePreparer {
 		Calibration cal = image.getCalibration();
 		for(int z = 0; z < size; z++)
 			data[z] = (byte[])stack.getPixels(z+1);
-		CubeData.writeZData(path, data, 
+		CubeData.writeZData(path, data,
 			(float)cal.pixelWidth,
 			(float)cal.pixelHeight,
 			(float)cal.pixelDepth);
@@ -125,7 +124,7 @@ public class FilePreparer {
 		ret.setCalibration(image.getCalibration());
 		return ret;
 	}
-		
+
 	private final int nextPow2(int n) {
 		int retval = 2;
 		while (retval < n) {
@@ -177,7 +176,7 @@ public class FilePreparer {
 				IJ.showProgress(z * hs + y + 1, hs*ds);
 			}
 			result.addSlice(null,newSlice);
-			
+
 		}
 
 		ImagePlus res = new ImagePlus(image.getTitle()+" resampled",

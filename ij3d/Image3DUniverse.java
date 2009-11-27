@@ -366,8 +366,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * plugin.
 	 */
 	public void updateOctree() {
-		if(octree != null)
-			octree.update();
+// 		if(octree != null)
+// 			octree.update();
 	}
 
 	/**
@@ -375,8 +375,8 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 	 * plugin.
 	 */
 	public void cancelOctree() {
-		if(octree != null)
-			octree.cancel();
+// 		if(octree != null)
+// 			octree.cancel();
 	}
 
 	/**

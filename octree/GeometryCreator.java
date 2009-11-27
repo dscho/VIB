@@ -18,7 +18,7 @@ public class GeometryCreator implements AxisConstants {
 
 	public GeometryArray getQuad(CubeData cdata, int index) {
 		calculateQuad(cdata, index);
-		QuadArray quadArray = new QuadArray(4, 
+		QuadArray quadArray = new QuadArray(4,
 					GeometryArray.COORDINATES);
 
 		quadArray.setCoordinates(0, quadCoords);
@@ -33,20 +33,20 @@ public class GeometryCreator implements AxisConstants {
 
 	private void calculateQuad(CubeData cdata, int index) {
 		switch(cdata.axis) {
-			case X_AXIS: 	
+			case X_AXIS:
 				setCoordsY(cdata);
 				setCoordsZ(cdata);
-				setCurCoordX(index, cdata); 
+				setCurCoordX(index, cdata);
 				break;
 			case Y_AXIS:
 				setCoordsX(cdata);
 				setCoordsZ(cdata);
-				setCurCoordY(index, cdata); 
+				setCurCoordY(index, cdata);
 				break;
 			case Z_AXIS:
 				setCoordsX(cdata);
 				setCoordsY(cdata);
-				setCurCoordZ(index, cdata); 
+				setCurCoordZ(index, cdata);
 				break;
 		}
 	}
