@@ -10,6 +10,11 @@ public class ShapeGroup implements Comparable {
 	float pos;
 	Shape3D shape;
 
+	/* This is only used for creating the sorting indices for
+	 * the parent OrderedGroup. Not very nice...
+	 */
+	int indexInParent;
+
 	public ShapeGroup() {
 		shape = new Shape3D();
 		shape.setCapability(Shape3D.ALLOW_GEOMETRY_WRITE);
@@ -53,6 +58,7 @@ public class ShapeGroup implements Comparable {
 		ShapeGroup ret = new ShapeGroup();
 		ret.shape.setGeometry(shape.getGeometry());
 		ret.shape.setAppearance(shape.getAppearance());
+		ret.pos = pos;
 		return ret;
 	}
 }

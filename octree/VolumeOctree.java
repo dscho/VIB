@@ -29,11 +29,13 @@ import ij3d.AxisConstants;
 
 public class VolumeOctree implements UniverseListener, AxisConstants {
 
-	public static final int SIZE = 64;
+	public static final int SIZE = 128;
 
 	static final int DETAIL_AXIS = 6;
 
 	private static final int[][] axisIndex = new int[3][2];
+
+	private int[][] sortingIndices;
 
 	private final Switch axisSwitch;
 
@@ -72,7 +74,6 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		}
 
 		rootBranchGroup = new BranchGroup();
-		rootBranchGroup.addChild(axisSwitch);
 		rootBranchGroup.setCapability(BranchGroup.ALLOW_DETACH);
 		rootBranchGroup.setCapability(BranchGroup.ALLOW_LOCAL_TO_VWORLD_READ);
 
@@ -97,6 +98,9 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		} catch(Exception e) {
 			throw new RuntimeException("Error in property file.", e);
 		}
+
+		addEmptyGroups(curAxis, curDir);
+		createSortingIndices();
 
 		updater = new UpdaterThread(canvas);
 		updater.run();
@@ -132,7 +136,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		int[] axis = new int[] {X_AXIS, Y_AXIS, Z_AXIS};
 
 		for(int ai = 0; ai < 3; ai++) {
-			CubeData cdata = rootCube.cdata;
+			CubeData cdata = new CubeData(rootCube);
 			cdata.prepareForAxis(axis[ai]);
 			cdata.show();
 
@@ -140,14 +144,11 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 			OrderedGroup fg = getOrderedGroup(axisIndex[axis[ai]][FRONT]);
 			OrderedGroup bg = getOrderedGroup(axisIndex[axis[ai]][BACK]);
 			for(int i = 0; i < SIZE; i++) {
-				BranchGroup br = newBranchGroup();
-				br.addChild(cdata.shapes[i].duplicate().shape);
-				fg.addChild(br);
-				br = newBranchGroup();
-				br.addChild(cdata.shapes[i].duplicate().shape);
-				bg.insertChild(br, 0);
+				fg.addChild(cdata.shapes[i].duplicate().shape);
+				bg.addChild(cdata.shapes[i].duplicate().shape);
 			}
 		}
+		rootBranchGroup.addChild(axisSwitch);
 		setWhichChild(axisIndex[curAxis][curDir]);
 		System.out.println("# shapes: " + countInitialShapes());
 	}
@@ -162,8 +163,39 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		}
 	}
 
-	final void addEmptyGroups(int axis, int dir) {
-		// TODO needed to make a new one each time?
+	private final void createSortingIndices() {
+		int[] axis = new int[] {X_AXIS, Y_AXIS, Z_AXIS};
+		int[] dir = new int[] {FRONT, BACK};
+		sortingIndices = new int[6][];
+
+		List<Cube> cubes = new ArrayList<Cube>();
+		for(int a : axis) {
+			cubes.clear();
+			rootCube.collectCubes(cubes, a);
+			ShapeGroup[] shapes = new ShapeGroup[cubes.size() * SIZE];
+			int i = 0;
+			for(Cube c : cubes) {
+				for(ShapeGroup sg : c.cdata.shapes) {
+					shapes[i] = sg;
+					shapes[i].indexInParent = i;
+					i++;
+				}
+			}
+			Arrays.sort(shapes);
+
+			int aif = axisIndex[a][FRONT];
+			int aib = axisIndex[a][BACK];
+			sortingIndices[aif] = new int[shapes.length];
+			sortingIndices[aib] = new int[shapes.length];
+			for(i = 0; i < shapes.length; i++) {
+				int j = shapes.length - 1 - i;
+				sortingIndices[aif][i] = shapes[i].indexInParent;
+				sortingIndices[aib][j] = shapes[i].indexInParent;
+			}
+		}
+	}
+
+	private final void addEmptyGroups(int axis, int dir) {
 		List<Cube> cubes = new ArrayList<Cube>();
 		rootCube.collectCubes(cubes, axis);
 
@@ -172,32 +204,20 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		for(Cube c : cubes)
 			for(ShapeGroup sg : c.cdata.shapes)
 				shapes[i++] = sg;
-		Arrays.sort(shapes);
-		// TODO could we pre-sort all cubes
 		OrderedGroup og = getOrderedGroup(DETAIL_AXIS);
-		if(dir == FRONT) {
-			for(i = shapes.length - 1; i >= 0; i--) {
-				BranchGroup bg = newBranchGroup();
-				bg.addChild(shapes[i].shape);
-				// TODO could we now invert the loop?
-				og.insertChild(bg, 0);
-			}
-		} else {
-			for(i = 0; i < shapes.length ; i++) {
-				BranchGroup bg = newBranchGroup();
-				bg.addChild(shapes[i].shape);
-				// TODO same here
-				og.insertChild(bg, 0);
-			}
-		}
+		for(i = 0; i < shapes.length; i++)
+			og.addChild(shapes[i].shape);
 	}
 
 	final void axisChanged() {
+		System.out.println("**** AXIS CHANGED ****");
+		setWhichChild(axisIndex[curAxis][curDir]);
 		rootCube.hideSelf();
 		rootCube.hideSubtree();
-		// TODO this should go better
-		removeAllCubes();
-		addEmptyGroups(curAxis, curDir);
+		rootCube.prepareForAxis(curAxis);
+		getOrderedGroup(DETAIL_AXIS).setChildIndexOrder(sortingIndices[axisIndex[curAxis][curDir]]);
+		setWhichChild(DETAIL_AXIS);
+		System.out.println("**** AXIS CHANGED DONE ****");
 	}
 
 	private Transform3D toVWorld = new Transform3D();
@@ -209,13 +229,12 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 	}
 
 	private Transform3D volToIP = new Transform3D();
-	final void updateCubes(Canvas3D canvas) {
-		System.out.println("updateCubes");
+	final void updateCubes(Canvas3D canvas, boolean axisChanged) {
 		// TODO new thread?
 
 		volumeToIP(canvas, volToIP);
 		// update cubes
-		updater.submit(volToIP);
+		updater.submit(volToIP, axisChanged);
 	}
 
 	final void setWhichChild(int child) {
@@ -252,6 +271,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		OrderedGroup og = new OrderedGroup();
 		og.setCapability(Group.ALLOW_CHILDREN_EXTEND);
 		og.setCapability(Group.ALLOW_CHILDREN_WRITE);
+		og.setCapability(OrderedGroup.ALLOW_CHILD_INDEX_ORDER_WRITE);
 		return og;
 	}
 
@@ -282,15 +302,15 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 
 		// select the direction based on the sign of the magnitude
 		int dir = value > 0.0 ? FRONT : BACK;
+		Canvas3D canvas = view.getCanvas3D(0);
 
 		if ((axis != curAxis) || (dir != curDir)) {
 			curAxis = axis;
 			curDir = dir;
-			setWhichChild(axisIndex[curAxis][curDir]);
-			axisChanged();
-			setWhichChild(DETAIL_AXIS);
+			updateCubes(canvas, true);
+		} else {
+			updateCubes(canvas, false);
 		}
-		updateCubes(view.getCanvas3D(0));
 	}
 
 	public void transformationStarted(View view){
@@ -335,21 +355,31 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		private Canvas3D canvas;
 		private Transform3D nextT = new Transform3D();
 		private Transform3D runningT = new Transform3D();
-		private boolean available = false;
 		private Thread thread;
+
+		/* This flag is set to true if a new update was submitted */
+		private boolean available = false;
+
+		/* This flag is set when a axis-change task was submitted */
+		private boolean axisChanged = false;
 
 		public UpdaterThread(Canvas3D canvas) {
 			this.canvas = canvas;
 		}
 
-		public synchronized void submit(Transform3D t) {
-			System.out.println("submit");
+		/*
+		 * Should be called when the transformation was changed
+		 * but the axis stay the same.
+		 */
+		public synchronized void submit(Transform3D t, boolean axisChanged) {
+			if(axisChanged) {
+				this.axisChanged = axisChanged;
+				System.out.println("SUBMIT AXIS CHANGE");
+			}
 			nextT.set(t);
 			available = true;
 			notify();
-			System.out.println("submit done");
 		}
-
 
 		private synchronized void fetchNext() {
 			if(!available) {
@@ -368,8 +398,14 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 				public void run() {
 					while(true) {
 						fetchNext();
+						if(axisChanged) {
+							axisChanged = false;
+							axisChanged();
+						}
+						System.out.println("updateCubes");
 						rootCube.update(canvas, runningT);
 						System.out.println("updateCubes finished");
+
 					}
 				}
 			};

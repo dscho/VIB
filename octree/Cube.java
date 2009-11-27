@@ -90,6 +90,15 @@ public class Cube implements AxisConstants {
 		return children;
 	}
 
+	public void prepareForAxis(int axis) {
+		cdata.prepareForAxis(axis);
+		if(children == null)
+			return;
+		for(Cube c : children)
+			if(c != null)
+				c.prepareForAxis(axis);
+	}
+
 	/**
 	 * axis One of X_AXIS, Y_AXIS or Z_AXIS
 	 */
@@ -133,7 +142,9 @@ public class Cube implements AxisConstants {
 
 	public void update(Canvas3D paramCanvas3D, Transform3D paramTransform3D) {
 		// give the renderer a chance
-		Thread.yield();
+		try {
+			Thread.sleep(50);
+		} catch(InterruptedException e) {}
 		int i = checkResolution(paramCanvas3D, paramTransform3D);
 		if (i == OUTSIDE_CANVAS) {
 			hideSelf();

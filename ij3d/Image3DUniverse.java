@@ -413,11 +413,11 @@ public class Image3DUniverse extends DefaultAnimatableUniverse {
 		}
 		try {
 			octree = new VolumeOctree(imageDir, canvas);
+			octree.displayInitial();
 			octree.getRootBranchGroup().compile();
 			scene.addChild(octree.getRootBranchGroup());
-			octree.displayInitial();
-			this.addUniverseListener(octree);
 			ensureScale(octree.realWorldXDim());
+			this.addUniverseListener(octree);
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
