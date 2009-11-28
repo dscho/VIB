@@ -141,6 +141,9 @@ public class Cube implements AxisConstants {
 	}
 
 	public void update(Canvas3D paramCanvas3D, Transform3D paramTransform3D) {
+		if(octree.stopUpdating)
+			return;
+
 		// give the renderer a chance
 		try {
 			Thread.sleep(50);

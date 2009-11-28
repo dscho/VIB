@@ -54,6 +54,12 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 	private final Point3d refPt;
 
 
+	/* This flag is set here and the cubes check it repeatedly
+	 * when they are updating, to be able to cancel.
+	 */
+	boolean stopUpdating = false;
+
+
 	public VolumeOctree(String imageDir, Canvas3D canvas) throws RuntimeException {
 		this.imageDir = imageDir;
 
@@ -378,6 +384,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 			}
 			nextT.set(t);
 			available = true;
+			stopUpdating = true;
 			notify();
 		}
 
@@ -403,6 +410,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 							axisChanged();
 						}
 						System.out.println("updateCubes");
+						stopUpdating = false;
 						rootCube.update(canvas, runningT);
 						System.out.println("updateCubes finished");
 
