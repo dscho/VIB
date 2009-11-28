@@ -152,11 +152,11 @@ public class Cube implements AxisConstants {
 			return;
 		}
 		if ((i == RESOLUTION_UNSUFFICIENT) && (this.children != null)) {
-			hideSelf();
 			this.subtreeVisible = true;
 			for (Cube localCube : this.children)
 				if (localCube != null)
 					localCube.update(paramCanvas3D, paramTransform3D);
+			hideSelf();
 		} else {
 			showSelf();
 			hideSubtree();
