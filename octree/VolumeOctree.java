@@ -59,7 +59,6 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 	 */
 	boolean stopUpdating = false;
 
-
 	public VolumeOctree(String imageDir, Canvas3D canvas) throws RuntimeException {
 		this.imageDir = imageDir;
 
@@ -215,12 +214,12 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 			og.addChild(shapes[i].group);
 	}
 
-	final void axisChanged() {
+	final void axisChanged(Point3d eyePosInLocal) {
 		System.out.println("**** AXIS CHANGED ****");
 		setWhichChild(axisIndex[curAxis][curDir]);
 		rootCube.hideSelf();
 		rootCube.hideSubtree();
-		rootCube.prepareForAxis(curAxis);
+		rootCube.prepareForAxis(curAxis, eyePosInLocal);
 		getOrderedGroup(DETAIL_AXIS).setChildIndexOrder(sortingIndices[axisIndex[curAxis][curDir]]);
 		setWhichChild(DETAIL_AXIS);
 		System.out.println("**** AXIS CHANGED DONE ****");
@@ -235,12 +234,10 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 	}
 
 	private Transform3D volToIP = new Transform3D();
-	final void updateCubes(Canvas3D canvas, boolean axisChanged) {
-		// TODO new thread?
-
+	final void updateCubes(Canvas3D canvas, Point3d eyePosInLocal, boolean axisChanged) {
 		volumeToIP(canvas, volToIP);
 		// update cubes
-		updater.submit(volToIP, axisChanged);
+		updater.submit(volToIP, eyePosInLocal, axisChanged);
 	}
 
 	final void setWhichChild(int child) {
@@ -313,9 +310,9 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		if ((axis != curAxis) || (dir != curDir)) {
 			curAxis = axis;
 			curDir = dir;
-			updateCubes(canvas, true);
+			updateCubes(canvas, eyePt, true);
 		} else {
-			updateCubes(canvas, false);
+			updateCubes(canvas, eyePt, false);
 		}
 	}
 
@@ -359,8 +356,13 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 	private class UpdaterThread {
 
 		private Canvas3D canvas;
+
 		private Transform3D nextT = new Transform3D();
+		private Point3d nextEyePosInLocal = new Point3d();
+
 		private Transform3D runningT = new Transform3D();
+		private Point3d runningEyePosInLocal = new Point3d();
+
 		private Thread thread;
 
 		/* This flag is set to true if a new update was submitted */
@@ -377,12 +379,13 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		 * Should be called when the transformation was changed
 		 * but the axis stay the same.
 		 */
-		public synchronized void submit(Transform3D t, boolean axisChanged) {
+		public synchronized void submit(Transform3D t, Point3d eyePosInLocal, boolean axisChanged) {
 			if(axisChanged) {
 				this.axisChanged = axisChanged;
 				System.out.println("SUBMIT AXIS CHANGE");
 			}
 			nextT.set(t);
+			nextEyePosInLocal.set(eyePosInLocal);
 			available = true;
 			stopUpdating = true;
 			notify();
@@ -397,6 +400,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 				}
 			}
 			runningT.set(nextT);
+			runningEyePosInLocal.set(nextEyePosInLocal);
 			available = false;
 		}
 
@@ -407,7 +411,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 						fetchNext();
 						if(axisChanged) {
 							axisChanged = false;
-							axisChanged();
+							axisChanged(runningEyePosInLocal);
 						}
 						System.out.println("updateCubes");
 						stopUpdating = false;

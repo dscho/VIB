@@ -2,6 +2,7 @@ package octree;
 
 import java.io.File;
 
+import java.util.Arrays;
 import java.util.List;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.Transform3D;
@@ -9,7 +10,7 @@ import javax.vecmath.Point2d;
 import javax.vecmath.Point3d;
 import ij3d.AxisConstants;
 
-public class Cube implements AxisConstants {
+public class Cube implements AxisConstants, Comparable<Cube> {
 
 	public static final int RESOLUTION_SUFFICIENT   = 0;
 	public static final int RESOLUTION_UNSUFFICIENT = 1;
@@ -24,6 +25,7 @@ public class Cube implements AxisConstants {
 	final String dir;
 
 	private Cube[] children;
+	final Point3d midp;
 	final Point3d[] corners;
 	private Point2d[] cornersInCanvas;
 	private boolean visible = false;
@@ -32,6 +34,7 @@ public class Cube implements AxisConstants {
 	final CubeData cdata;
 
 	private VolumeOctree octree;
+	private double distSqFromEye;
 
 	public Cube(VolumeOctree oct, String dir, int x, int y, int z, int l) {
 		this.dir = dir + "/";
@@ -66,11 +69,14 @@ public class Cube implements AxisConstants {
 			corners[5] = new Point3d(maxx, miny, maxz);
 			corners[6] = new Point3d(minx, maxy, maxz);
 			this.cdata = new CubeData(this);
+			this.midp = new Point3d(
+				minx + lx/2, miny + ly/2, minz + lz/2);
 		} else {
 			// such an object is hopefully never used.
 			pw = ph = pd = -1;
 			corners = null;
 			this.cdata = null;
+			this.midp = null;
 		}
 	}
 
@@ -90,13 +96,21 @@ public class Cube implements AxisConstants {
 		return children;
 	}
 
-	public void prepareForAxis(int axis) {
+	public void prepareForAxis(int axis, Point3d eyePosInLocal) {
 		cdata.prepareForAxis(axis);
 		if(children == null)
 			return;
-		for(Cube c : children)
-			if(c != null)
-				c.prepareForAxis(axis);
+
+		for(Cube c : children) {
+			if(c != null) {
+				c.prepareForAxis(axis, eyePosInLocal);
+				c.calcDistSqFromEye(eyePosInLocal);
+			}
+		}
+	}
+
+	private void calcDistSqFromEye(Point3d eyePosInLocal) {
+		distSqFromEye =  eyePosInLocal.distanceSquared(midp);
 	}
 
 	/**
@@ -250,6 +264,16 @@ public class Cube implements AxisConstants {
 		}
 		if(found) return true;
 		return false;
+	}
+
+	public int compareTo(Cube other) {
+		if(other == null)
+			return -1;
+		if(distSqFromEye < other.distSqFromEye)
+			return -1;
+		if(distSqFromEye > other.distSqFromEye)
+			return +1;
+		return 0;
 	}
 
 	@Override
