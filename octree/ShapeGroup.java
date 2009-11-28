@@ -1,5 +1,6 @@
 package octree;
 
+import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.ImageComponent2D;
@@ -9,6 +10,8 @@ public class ShapeGroup implements Comparable {
 
 	float pos;
 	Shape3D shape;
+	BranchGroup group;
+	BranchGroup child;
 
 	/* This is only used for creating the sorting indices for
 	 * the parent OrderedGroup. Not very nice...
@@ -16,9 +19,11 @@ public class ShapeGroup implements Comparable {
 	int indexInParent;
 
 	public ShapeGroup() {
-		shape = new Shape3D();
-		shape.setCapability(Shape3D.ALLOW_GEOMETRY_WRITE);
-		shape.setCapability(Shape3D.ALLOW_APPEARANCE_WRITE);
+		group = new BranchGroup();
+		group.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
+		group.setCapability(BranchGroup.ALLOW_CHILDREN_EXTEND);
+		child = new BranchGroup();
+		child.setCapability(BranchGroup.ALLOW_DETACH);
 	}
 
 	public void prepareForAxis(float pos) {
@@ -26,13 +31,16 @@ public class ShapeGroup implements Comparable {
 	}
 
 	public void show(CubeData cdata, int index) {
-		shape.setGeometry(createGeometry(cdata, index));
-		shape.setAppearance(createAppearance(cdata, index));
+		shape = new Shape3D(createGeometry(cdata, index),
+			createAppearance(cdata, index));
+		child.addChild(shape);
+		group.addChild(child);
 	}
 
 	public void hide() {
-		shape.setGeometry(null);
-		shape.setAppearance(null);
+		child.detach();
+		child.removeAllChildren();
+		shape = null;
 	}
 
 	private static GeometryArray createGeometry(CubeData cdata, int index) {
@@ -56,8 +64,12 @@ public class ShapeGroup implements Comparable {
 	 */
 	public ShapeGroup duplicate() {
 		ShapeGroup ret = new ShapeGroup();
-		ret.shape.setGeometry(shape.getGeometry());
-		ret.shape.setAppearance(shape.getAppearance());
+		if(shape != null) {
+			ret.shape = new Shape3D(
+				shape.getGeometry(),
+				shape.getAppearance());
+			ret.group.addChild(ret.shape);
+		}
 		ret.pos = pos;
 		return ret;
 	}

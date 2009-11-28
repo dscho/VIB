@@ -144,8 +144,8 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 			OrderedGroup fg = getOrderedGroup(axisIndex[axis[ai]][FRONT]);
 			OrderedGroup bg = getOrderedGroup(axisIndex[axis[ai]][BACK]);
 			for(int i = 0; i < SIZE; i++) {
-				fg.addChild(cdata.shapes[i].duplicate().shape);
-				bg.addChild(cdata.shapes[i].duplicate().shape);
+				fg.addChild(cdata.shapes[i].duplicate().group);
+				bg.addChild(cdata.shapes[i].duplicate().group);
 			}
 		}
 		rootBranchGroup.addChild(axisSwitch);
@@ -206,7 +206,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 				shapes[i++] = sg;
 		OrderedGroup og = getOrderedGroup(DETAIL_AXIS);
 		for(i = 0; i < shapes.length; i++)
-			og.addChild(shapes[i].shape);
+			og.addChild(shapes[i].group);
 	}
 
 	final void axisChanged() {
