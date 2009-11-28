@@ -140,7 +140,7 @@ public class Cube implements AxisConstants {
 		}
 	}
 
-	public void update(Canvas3D paramCanvas3D, Transform3D paramTransform3D) {
+	public void update(Canvas3D canvas, Transform3D volToIP) {
 		if(octree.stopUpdating)
 			return;
 
@@ -148,7 +148,7 @@ public class Cube implements AxisConstants {
 		try {
 			Thread.sleep(50);
 		} catch(InterruptedException e) {}
-		int i = checkResolution(paramCanvas3D, paramTransform3D);
+		int i = checkResolution(canvas, volToIP);
 		if (i == OUTSIDE_CANVAS) {
 			hideSelf();
 			hideSubtree();
@@ -158,7 +158,7 @@ public class Cube implements AxisConstants {
 			this.subtreeVisible = true;
 			for (Cube localCube : this.children)
 				if (localCube != null)
-					localCube.update(paramCanvas3D, paramTransform3D);
+					localCube.update(canvas, volToIP);
 			hideSelf();
 		} else {
 			showSelf();
@@ -166,13 +166,11 @@ public class Cube implements AxisConstants {
 		}
 	}
 
-	public int checkResolution(Canvas3D paramCanvas3D, Transform3D paramTransform3D) {
-		for (int i = 0; i < this.corners.length; ++i) {
-			volumePointInCanvas(paramCanvas3D, paramTransform3D, this.corners[i], this.cornersInCanvas[i]);
-		}
-		if (outsideCanvas(paramCanvas3D)) {
+	public int checkResolution(Canvas3D canvas, Transform3D volToIP) {
+		for (int i = 0; i < this.corners.length; ++i)
+			volumePointInCanvas(canvas, volToIP, this.corners[i], this.cornersInCanvas[i]);
+		if (outsideCanvas(canvas))
 			return OUTSIDE_CANVAS;
-		}
 
 		double d2 = this.cornersInCanvas[0].distance(this.cornersInCanvas[7]);
 		double d1 = this.cornersInCanvas[1].distance(this.cornersInCanvas[6]); if (d1 > d2) d2 = d1;
