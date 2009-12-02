@@ -1,13 +1,12 @@
 package octree;
 
+import java.io.RandomAccessFile;
 import java.io.IOException;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.DataOutputStream;
-import java.nio.channels.FileChannel;
-import java.nio.MappedByteBuffer;
 
+import java.util.Arrays;
 import java.util.Properties;
 import vib.Resample_;
 
@@ -16,43 +15,42 @@ public class FilePreparer {
 	private static final Resample_.Averager accu = new Resample_.Averager();
 
 	private static final class Volume {
-		private MappedByteBuffer data;
-		private FileChannel fc;
 		private int w, h, d;
 		private double pw, ph, pd;
 		private int wh;
+		private RandomAccessFile ra;
 
 		Volume(File file, int w, int h, int d,
 			double pw, double ph, double pd) throws IOException {
 
-			FileInputStream fis = new FileInputStream(file);
-			fc = fis.getChannel();
-			int sz = (int)fc.size();
-			this.data = fc.map(FileChannel.MapMode.READ_ONLY, 0, sz);
-
+			ra = new RandomAccessFile(file, "rw");
 			this.w = w; this.h = h; this.d = d;
 			this.pw = pw; this.ph = ph; this.pd = pd;
 			this.wh = w * h;
 		}
 
 		final void close() throws IOException {
-			fc.close();
+			ra.close();
 		}
 
-		final int get(int x, int y, int z) {
+		final int get(int x, int y, int z) throws IOException {
 			if(x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d)
 				return 0;
 			int i = z * wh + y * w + x;
-			return (int)(0xff & data.get(i));
+			ra.seek(i);
+			return (int)(0xff & ra.readByte());
 		}
 
 		final void createBlock(int x, int y, int z, String dir, String file, int size) throws IOException {
 			byte[] blob = new byte[size * size * size];
 			int i = 0;
-			for(int iz = 0; iz < size; iz++)
-				for(int iy = 0; iy < size; iy++)
-					for(int ix = 0; ix < size; ix++)
-						blob[i++] = (byte)get(x + ix, y + iy, z + iz);
+			for(int iz = 0; iz < size && z + iz < d; iz++) {
+				for(int iy = 0; iy < size && y + iy < h; iy++, i += size) {
+					int n = Math.min(size, w - x);
+					ra.seek((z + iz) * wh + (y + iy) * w + x);
+					ra.readFully(blob, i, n);
+				}
+			}
 
 			DataOutputStream fos = new DataOutputStream(
 				new FileOutputStream(dir + "/" + file + ".info"));
@@ -77,26 +75,28 @@ public class FilePreparer {
 			fos.close();
 		}
 
-		final byte[] createYBlobFromZ(byte[] blob, int size) {
+		static final byte[] createYBlobFromZ(byte[] blob, int size) {
 			byte[] ret = new byte[blob.length];
+			int s2 = size * size;
 			for(int y = 0; y < size; y++) {
 				for(int z = 0; z < size; z++) {
 					System.arraycopy(blob,
-						z * size * size + y * size,
+						z * s2 + y * size,
 						ret,
-						y * size * size + z * size,
+						y * s2 + z * size,
 						size);
 				}
 			}
 			return ret;
 		}
 
-		final byte[] createXBlobFromZ(byte[] blob, int size) {
+		static final byte[] createXBlobFromZ(byte[] blob, int size) {
 			byte[] ret = new byte[blob.length];
+			int s2 = size * size;
 			for(int z = 0; z < size; z++) {
 				for(int y = 0; y < size; y++) {
 					for(int x = 0; x < size; x++) {
-						ret[x * size * size + z * size + y] = blob[z * size * size + y * size + x];
+						ret[x * s2 + z * size + y] = blob[z * s2 + y * size + x];
 					}
 				}
 			}
@@ -109,17 +109,41 @@ public class FilePreparer {
 			int ws = nextPow2(w), hs = nextPow2(h), ds = nextPow2(d);
 			int wn = ws / fx, hn = hs / fy, dn = ds / fz;
 			byte[] bytes = new byte[wn];
-			for(int z = 0; z < ds; z += fz) {
-				for(int y = 0; y < hs; y += fy) {
+			byte[][] cache = new byte[fz * fy][ws];
+			for(int tmp = 0; tmp < fz*fy; tmp++)
+				Arrays.fill(cache[tmp], (byte)0);
+			int z = 0, y = 0;
+			for(z = 0; z < ds; z += fz) {
+				// update cache
+				System.arraycopy(cache, fy, cache, 0, (fz - 1) * fy);
+				for(int ytmp = 0; ytmp < fy; ytmp++) {
+					Arrays.fill(cache[(fz - 1) * fy], (byte)0);
+					if(y + ytmp < h) {
+						ra.seek(z * wh + (y + ytmp) * w);
+						ra.readFully(cache[(fz - 1) * fy]);
+					}
+				}
+
+				for(y = 0; y < hs; y += fy) {
+					// update cache
+					for(int ztmp = 0; ztmp < fz; ztmp++) {
+						System.arraycopy(cache, ztmp * fy + 1, cache, ztmp * fy, fy - 1);
+						Arrays.fill(cache[ztmp + fy - 1], (byte)0);
+						if(z + ztmp < d) {
+							ra.seek((z+ztmp) * wh + (y+fy-1) * w);
+							ra.readFully(cache[ztmp + fy - 1]);
+						}
+					}
+
 					for(int x = 0; x < ws; x += fx) {
 						accu.reset();
-						for(int i = 0; i < fx; i++) {
-							int ix = x + i;
+						for(int k = 0; k < fz; k++) {
+							int iz = z + k;
 							for(int j = 0; j < fy; j++) {
 								int iy = y + j;
-								for(int k = 0; k < fz; k++) {
-									int iz = z + k;
-									accu.add(get(ix, iy, iz));
+								for(int i = 0; i < fx; i++) {
+									int ix = x + i;
+									accu.add((int)(0xff & cache[k * fy + j][ix]));
 								}
 							}
 						}
