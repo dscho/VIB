@@ -323,12 +323,8 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		}
 	}
 
-	public void transformationStarted(View view){
-// 		cancel();
-	}
-	public void transformationFinished(View view){
-// 		update();
-	}
+	public void transformationStarted(View view){}
+	public void transformationFinished(View view){}
 	public void contentAdded(Content c){}
 	public void contentRemoved(Content c){}
 	public void contentChanged(Content c){}
@@ -416,8 +412,8 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 				public void run() {
 					while(true) {
 						fetchNext();
+						setWhichChild(axisIndex[curAxis][curDir]);
 						if(axisChanged) {
-// 							setCombinedWhichChild(axisIndex[curAxis][curDir]);
 							axisChanged = false;
 							axisChanged(runningEyePosInLocal);
 							setWhichChild(DETAIL_AXIS);
@@ -425,6 +421,7 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 						System.out.println("updateCubes");
 						stopUpdating = false;
 						rootCube.update(canvas, runningT);
+						setWhichChild(DETAIL_AXIS);
 						System.out.println("updateCubes finished");
 					}
 				}

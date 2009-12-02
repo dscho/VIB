@@ -149,9 +149,9 @@ public class Cube implements AxisConstants, Comparable<Cube> {
 			return;
 
 		// give the renderer a chance
-		try {
-			Thread.sleep(50);
-		} catch(InterruptedException e) {}
+// 		try {
+// 			Thread.sleep(50);
+// 		} catch(InterruptedException e) {}
 		int i = checkResolution(canvas, volToIP);
 		if (i == OUTSIDE_CANVAS) {
 			hideSelf();

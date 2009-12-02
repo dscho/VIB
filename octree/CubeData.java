@@ -1,12 +1,16 @@
 package octree;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+
+import java.io.IOException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
+import javax.media.j3d.NioImageBuffer;
 import javax.media.j3d.TexCoordGeneration;
 import javax.vecmath.Vector4f;
 import ij3d.AxisConstants;
@@ -14,18 +18,20 @@ import ij3d.AxisConstants;
 public class CubeData implements AxisConstants {
 
 	private static final int SIZE = VolumeOctree.SIZE;
-	private static final int B_IMG_TYPE = BufferedImage.TYPE_BYTE_GRAY;
 
 	final float[] cal = new float[3];
 	final float[] min = new float[3];
 	final float[] max = new float[3];
 
+	NioImageBuffer[] zBuffer = new NioImageBuffer[SIZE];
+	NioImageBuffer[] yBuffer = new NioImageBuffer[SIZE];
+	NioImageBuffer[] xBuffer = new NioImageBuffer[SIZE];
+	NioImageBuffer[] buffer;
+
 	private final TexCoordGeneration tgx, tgy, tgz;
-	private byte[][] pixels;
 
 	int axis;
 
-	BufferedImage[] images;
 	TexCoordGeneration tg;
 	ShapeGroup[] shapes;
 	Cube cube;
@@ -58,26 +64,29 @@ public class CubeData implements AxisConstants {
 		tgy.setPlaneS(new Vector4f(xTexGenScale, 0f, 0f, -(float)(xTexGenScale * min[0])));
 		tgy.setPlaneT(new Vector4f(0f, 0f, zTexGenScale, -(float)(zTexGenScale * min[2])));
 
-		images = new BufferedImage[SIZE];
-		pixels = new byte[SIZE][];
 		shapes = new ShapeGroup[SIZE];
 		for(int i = 0; i < SIZE; i++)
 			shapes[i] = new ShapeGroup();
 
+		try {
+			createData();
+		} catch(IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public void prepareForAxis(int axis) {
 		this.axis = axis;
 		for(int i = 0; i < SIZE; i++)
 			shapes[i].prepareForAxis(min[axis] + cal[axis] * i);
+		switch(axis) {
+			case X_AXIS: tg = tgx; buffer = xBuffer; break;
+			case Y_AXIS: tg = tgy; buffer = yBuffer; break;
+			case Z_AXIS: tg = tgz; buffer = zBuffer; break;
+		}
 	}
 
 	public void show() {
-		try {
-			createData();
-		} catch(Exception e) {
-			throw new RuntimeException(e);
-		}
 		for(int i = 0; i < SIZE; i++)
 			shapes[i].show(this, i);
 	}
@@ -85,42 +94,14 @@ public class CubeData implements AxisConstants {
 	public void hide() {
 		for(int i = 0; i < SIZE; i++)
 			shapes[i].hide();
-		releaseData();
 	}
 
-	private void createData() throws Exception {
+	private void createData() throws IOException {
 		for(int i = 0; i < SIZE; i++) {
-			images[i] = new BufferedImage(SIZE, SIZE, B_IMG_TYPE);
-			pixels[i] = ((DataBufferByte) images[i].getRaster().getDataBuffer()).getData();
+			createNioBuffers(zBuffer, cube.dir + "/z/" + cube.name);
+			createNioBuffers(yBuffer, cube.dir + "/y/" + cube.name);
+			createNioBuffers(xBuffer, cube.dir + "/x/" + cube.name);
 		}
-		switch(axis) {
-			case X_AXIS: createXData(); break;
-			case Y_AXIS: createYData(); break;
-			case Z_AXIS: createZData(); break;
-		}
-	}
-
-	private void releaseData() {
-		tg = null;
-		for(int i = 0; i < SIZE; i++) {
-			pixels[i] = null;
-			images[i] = null;
-		}
-	}
-
-	private final void createZData() throws Exception {
-		loadData(cube.dir + "/z/" + cube.name);
-		tg = tgz;
-	}
-
-	private final void createXData() throws Exception {
-		loadData(cube.dir + "/x/" + cube.name);
-		tg = tgx;
-	}
-
-	private final void createYData() throws Exception {
-		loadData(cube.dir + "/y/" + cube.name);
-		tg = tgy;
 	}
 
 	public static final float[] readCalibration(String path, float[] ret) {
@@ -143,19 +124,19 @@ public class CubeData implements AxisConstants {
 		return ret;
 	}
 
-	private void loadData(String path) throws Exception {
-		File f = new File(path);
-		DataInputStream in = new DataInputStream(
-			new FileInputStream(f));
-		for (int z = 0; z < SIZE; z++) {
-			byte[] pix= pixels[z];
-			int nPixels = pix.length;
-			int read = 0;
-			while (read < nPixels) {
-				read += in.read(pix, read, nPixels - read);
-			}
+	private void createNioBuffers(NioImageBuffer[] buffer, String path) throws IOException {
+		FileInputStream fis = new FileInputStream(path);
+		FileChannel fc = fis.getChannel();
+		int sz = (int)fc.size();
+		MappedByteBuffer whole = fc.map(FileChannel.MapMode.READ_ONLY, 0, sz);
+		int s2 = SIZE * SIZE;
+		NioImageBuffer.ImageType type = NioImageBuffer.ImageType.TYPE_BYTE_GRAY;
+		for(int i = 0; i < SIZE; i++) {
+			whole.position(i * s2);
+			ByteBuffer bi = whole.slice();
+			bi.limit(s2);
+			buffer[i] = new NioImageBuffer(SIZE, SIZE, type, bi);
 		}
-		in.close();
 	}
 }
 
