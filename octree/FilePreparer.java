@@ -1,193 +1,205 @@
 package octree;
 
-import ij.IJ;
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.measure.Calibration;
+import java.io.IOException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.DataOutputStream;
+import java.nio.channels.FileChannel;
+import java.nio.MappedByteBuffer;
+
 import java.util.Properties;
 import vib.Resample_;
 
 public class FilePreparer {
 
-	private ImagePlus image;
-	private int size;
-	private String outdir;
-	private Resample_.Averager accu = new Resample_.Averager();
+	private static final Resample_.Averager accu = new Resample_.Averager();
 
-	public FilePreparer(String imagePath, int size, String outdir) {
-		this(IJ.openImage(imagePath), size, outdir);
-	}
+	private static final class Volume {
+		private MappedByteBuffer data;
+		private FileChannel fc;
+		private int w, h, d;
+		private double pw, ph, pd;
+		private int wh;
 
-	public FilePreparer(ImagePlus image, int size, String outdir) {
-		this.image = image;
-		this.size = size;
-		this.outdir = outdir;
-	}
+		Volume(File file, int w, int h, int d,
+			double pw, double ph, double pd) throws IOException {
 
-	public int createFiles() throws Exception {
-		System.out.println("create Files");
-		int w = nextPow2(image.getWidth());
-		int h = nextPow2(image.getHeight());
-		int d = nextPow2(image.getStackSize());
-		System.out.println("w = " + w);
-		System.out.println("h = " + h);
-		System.out.println("d = " + d);
-		int l = 1;
-		Calibration c = image.getCalibration().copy();
+			FileInputStream fis = new FileInputStream(file);
+			fc = fis.getChannel();
+			int sz = (int)fc.size();
+			this.data = fc.map(FileChannel.MapMode.READ_ONLY, 0, sz);
 
-		int wOrig = w, hOrig = h, dOrig = d;
+			this.w = w; this.h = h; this.d = d;
+			this.pw = pw; this.ph = ph; this.pd = pd;
+			this.wh = w * h;
+		}
 
-		while(true) {
-			for(int z = 0; z < d; z += size) {
-				byte[][] pixels = new byte[size][];
-				for(int zi = 0; zi < size; zi++) {
-					if(z + zi < image.getStackSize())
-						pixels[zi] = (byte[])image.getStack().getPixels(z + zi + 1);
-					else
-						pixels[zi] = new byte[image.getWidth() * image.getHeight()];
+		final void close() throws IOException {
+			fc.close();
+		}
+
+		final int get(int x, int y, int z) {
+			if(x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d)
+				return 0;
+			int i = z * wh + y * w + x;
+			return (int)(0xff & data.get(i));
+		}
+
+		final void createBlock(int x, int y, int z, String dir, String file, int size) throws IOException {
+			byte[] blob = new byte[size * size * size];
+			int i = 0;
+			for(int iz = 0; iz < size; iz++)
+				for(int iy = 0; iy < size; iy++)
+					for(int ix = 0; ix < size; ix++)
+						blob[i++] = (byte)get(x + ix, y + iy, z + iz);
+
+			DataOutputStream fos = new DataOutputStream(
+				new FileOutputStream(dir + "/" + file + ".info"));
+			fos.writeFloat((float)pw);
+			fos.writeFloat((float)ph);
+			fos.writeFloat((float)pd);
+			fos.close();
+
+			writeBlob(blob, dir + "/z/" + file);
+
+			byte[] b = createYBlobFromZ(blob, size);
+			writeBlob(b, dir + "/y/" + file);
+
+			b = createXBlobFromZ(blob, size);
+			writeBlob(b, dir + "/x/" + file);
+		}
+
+		final void writeBlob(byte[] blob, String file) throws IOException {
+			DataOutputStream fos = new DataOutputStream(
+				new FileOutputStream(file));
+			fos.write(blob, 0, blob.length);
+			fos.close();
+		}
+
+		final byte[] createYBlobFromZ(byte[] blob, int size) {
+			byte[] ret = new byte[blob.length];
+			for(int y = 0; y < size; y++) {
+				for(int z = 0; z < size; z++) {
+					System.arraycopy(blob,
+						z * size * size + y * size,
+						ret,
+						y * size * size + z * size,
+						size);
 				}
-				System.out.println("create cubes for z = " + z);
+			}
+			return ret;
+		}
 
-				for(int y = 0; y < h; y += size) {
-					for(int x = 0; x < w; x += size) {
-						String path = outdir + "/" + (x*l) + "_" + (y*l) + "_" + (z*l) + "_" + l + ".tif";
-						if(new File(path).exists())
-							continue;
-						ImagePlus im = createSubvolume(pixels, x, y);
-						saveCube(im, path);
+		final byte[] createXBlobFromZ(byte[] blob, int size) {
+			byte[] ret = new byte[blob.length];
+			for(int z = 0; z < size; z++) {
+				for(int y = 0; y < size; y++) {
+					for(int x = 0; x < size; x++) {
+						ret[x * size * size + z * size + y] = blob[z * size * size + y * size + x];
 					}
 				}
 			}
-			int factorX = w > size ? 2 : 1;
-			int factorY = h > size ? 2 : 1;
-			int factorZ = d > size ? 2 : 1;
-			if(factorX == 1 && factorY == 1 && factorZ == 1)
-				break;
-			image = resample(image, factorX, factorY, factorZ, accu);
-			w = image.getWidth();
-			h = image.getHeight();
-			d = image.getStackSize();
-			l = l << 1;
+			return ret;
 		}
-		writeProperties(wOrig, hOrig, dOrig, l, c);
-		System.out.println("Finished create files");
-		return l;
+
+		final void downsample(String file, int fx, int fy, int fz) throws IOException {
+			FileOutputStream out = new FileOutputStream(file);
+
+			int ws = nextPow2(w), hs = nextPow2(h), ds = nextPow2(d);
+			int wn = ws / fx, hn = hs / fy, dn = ds / fz;
+			byte[] bytes = new byte[wn];
+			for(int z = 0; z < ds; z += fz) {
+				for(int y = 0; y < hs; y += fy) {
+					for(int x = 0; x < ws; x += fx) {
+						accu.reset();
+						for(int i = 0; i < fx; i++) {
+							int ix = x + i;
+							for(int j = 0; j < fy; j++) {
+								int iy = y + j;
+								for(int k = 0; k < fz; k++) {
+									int iz = z + k;
+									accu.add(get(ix, iy, iz));
+								}
+							}
+						}
+						bytes[x / fx] = (byte)accu.get();
+					}
+					out.write(bytes, 0, wn);
+				}
+			}
+		}
 	}
 
-	private void saveCube(ImagePlus image, String path) throws Exception {
-		byte[][] data = new byte[size][];
-		ImageStack stack = image.getStack();
-		Calibration cal = image.getCalibration();
-		for(int z = 0; z < size; z++)
-			data[z] = (byte[])stack.getPixels(z+1);
-		CubeData.writeZData(path, data,
-			(float)cal.pixelWidth,
-			(float)cal.pixelHeight,
-			(float)cal.pixelDepth);
+	public static final void createFiles(String path, int size, String dir,
+			int w, int h, int d,
+			double pw, double ph, double pd) throws IOException {
+
+		int wOrg = w, hOrg = h, dOrg = d;
+		double pwOrg = pw, phOrg = ph, pdOrg = pd;
+		int level = 1;
+
+		new File(dir, "x").mkdir();
+		new File(dir, "y").mkdir();
+		new File(dir, "z").mkdir();
+
+		while(true) {
+			File file = new File(path);
+			Volume v = new Volume(file, w, h, d, pw, ph, pd);
+			for(int z = 0; z < d; z += size) {
+				for(int y = 0; y < h; y += size) {
+					for(int x = 0; x < w; x += size) {
+						String n = (x*level) + "_" + (y*level) + "_" + (z*level) + "_" + level;
+						v.createBlock(x, y, z, dir, n, size);
+					}
+				}
+			}
+			int fx = w > size ? 2 : 1;
+			int fy = h > size ? 2 : 1;
+			int fz = d > size ? 2 : 1;
+
+			if(fx == 1 && fy == 1 && fz == 1)
+				break;
+
+			File downs = new File(dir, file.getName() + ".l" + level);
+			v.downsample(downs.getPath(), fx, fy, fz);
+			v.close();
+			pw *= fx;
+			ph *= fy;
+			pd *= fz;
+			w = nextPow2(w) / fx;
+			h = nextPow2(h) / fy;
+			d = nextPow2(d) / fz;
+
+			path = downs.getPath();
+			level <<= 1;
+		}
+		writeProperties(wOrg, hOrg, dOrg, pwOrg, phOrg, pdOrg, level, dir + "/props.txt");
 	}
 
-	private void writeProperties(int w, int h, int d, int l, Calibration c) throws Exception {
+	private static final void writeProperties(int w, int h, int d,
+			double pw, double ph, double pd,
+			int l, String path) throws IOException {
+
 		Properties props = new Properties();
 		props.setProperty("width", Integer.toString(w));
 		props.setProperty("height", Integer.toString(h));
 		props.setProperty("depth", Integer.toString(d));
 		props.setProperty("level", Integer.toString(l));
-		props.setProperty("pixelWidth", Float.toString((float)c.pixelWidth));
-		props.setProperty("pixelHeight", Float.toString((float)c.pixelHeight));
-		props.setProperty("pixelDepth", Float.toString((float)c.pixelDepth));
-		FileOutputStream fw = new FileOutputStream(new File(outdir, "props.txt"));
+		props.setProperty("pixelWidth", Float.toString((float)pw));
+		props.setProperty("pixelHeight", Float.toString((float)ph));
+		props.setProperty("pixelDepth", Float.toString((float)pd));
+
+		FileOutputStream fw = new FileOutputStream(new File(path));
 		props.store(fw, "octree");
 	}
 
-	private ImagePlus createSubvolume(byte[][] pixels, int x, int y) {
-		int w = image.getWidth(), h = image.getHeight();
-		int d = image.getStackSize();
-
-		ImageStack newStack = new ImageStack(size, size);
-
-		for(int zi = 0; zi < size; zi++) {
-			byte[] p_old = pixels[zi];
-			byte[] p_new = new byte[size * size];
-			for(int yi = 0; yi < size; yi++) {
-				for(int xi = 0; xi < size; xi++) {
-					if(x + xi >= w || y + yi >= h)
-						p_new[yi * size + xi] = (byte)0;
-					else
-						p_new[yi * size + xi] = p_old[(yi + y) * w + (xi + x)];
-				}
-			}
-			newStack.addSlice("", p_new);
-		}
-		ImagePlus ret = new ImagePlus("", newStack);
-		ret.setCalibration(image.getCalibration());
-		return ret;
-	}
-
-	private final int nextPow2(int n) {
+	private static final int nextPow2(int n) {
 		int retval = 2;
 		while (retval < n) {
 			retval = retval << 1;
 		}
 		return retval;
 	}
-
-	public ImagePlus resample(ImagePlus image, int factorX, int factorY,
-			int factorZ, Resample_.Averager accu) {
-
-		int type = image.getType();
-		if(type != ImagePlus.GRAY8)
-			throw new RuntimeException("Only 8bit images supported at the moment");
-		ImageStack stack = image.getStack();
-		int w = image.getWidth(), h = image.getHeight(), d = stack.getSize();
-		int ws = nextPow2(w), hs = nextPow2(h), ds = nextPow2(d);
-		int wn = ws / 2, hn = hs / 2, dn = ds / 2;
-
-		ImageStack result = new ImageStack(wn, hn);
-
-		for(int z = 0; z < ds; z += factorZ) {
-
-			byte[][] slices = new byte[factorZ][];
-			for(int k = 0; k < factorZ; k++) {
-				if(z + k < d)
-					slices[k] = (byte[])stack.getPixels(z + k + 1);
-				else
-					slices[k] = new byte[w * h];
-			}
-
-			byte[] newSlice = new byte[wn * hn];
-
-			for(int y = 0; y < hs; y += factorY) {
-				for(int x = 0; x < ws; x += factorX) {
-					accu.reset();
-					for(int i = 0; i < factorX; i++) {
-						int ix = x + i;
-						for(int j = 0; j < factorY; j++) {
-							int iy = y + j;
-							for(int k = 0; k < factorZ; k++) {
-								if(ix >= w || iy >= h) accu.add(0);
-								else accu.add((int)(slices[k][iy * w + ix]&0xff));
-							}
-						}
-					}
-					newSlice[(x / factorX) + wn * (y / factorY)] = (byte)accu.get();
-				}
-				IJ.showProgress(z * hs + y + 1, hs*ds);
-			}
-			result.addSlice(null,newSlice);
-
-		}
-
-		ImagePlus res = new ImagePlus(image.getTitle()+" resampled",
-				result);
-
-		Calibration cal = image.getCalibration().copy();
-		cal.pixelWidth  *= factorX;
-		cal.pixelHeight *= factorY;
-		cal.pixelDepth  *= factorZ;
-		res.setCalibration(cal);
-
-		return res;
-	}
 }
+

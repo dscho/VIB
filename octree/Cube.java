@@ -19,21 +19,19 @@ public class Cube implements AxisConstants, Comparable<Cube> {
 	public static final double RES_THRESHOLD = VolumeOctree.SIZE * 4;//Math.sqrt(3);
 
 	final int x, y, z, level;
-	final float pw, ph, pd;
-	final String path;
 	final String name;
 	final String dir;
 
 	private Cube[] children;
-	final Point3d midp;
-	final Point3d[] corners;
+	private final Point3d midp;
+	private final Point3d[] corners;
 	private Point2d[] cornersInCanvas;
 	private boolean visible = false;
 	private boolean subtreeVisible = false;
 
 	final CubeData cdata;
 
-	private VolumeOctree octree;
+	final VolumeOctree octree;
 	private double distSqFromEye;
 
 	public Cube(VolumeOctree oct, String dir, int x, int y, int z, int l) {
@@ -44,36 +42,33 @@ public class Cube implements AxisConstants, Comparable<Cube> {
 		this.z = z;
 		this.level = l;
 		this.name = x + "_" + y + "_" + z + "_" + l;
-		this.path = this.dir + name + ".tif";
-		if(exists()) {
-			float[] cal = CubeData.readCalibration(path, null);
-			pw = cal[0];
-			ph = cal[1];
-			pd = cal[2];
-			double lx = VolumeOctree.SIZE * pw;
-			double ly = VolumeOctree.SIZE * ph;
-			double lz = VolumeOctree.SIZE * pd;
-			cornersInCanvas = new Point2d[8];
-			for(int i = 0; i < 8; i++)
-				cornersInCanvas[i] = new Point2d();
-			double minx = x * octree.pw, maxx = minx + lx;
-			double miny = y * octree.ph, maxy = miny + ly;
-			double minz = z * octree.pd, maxz = minz + lz;
-			corners = new Point3d[8];
-			corners[0] = new Point3d(minx, miny, minz);
-			corners[7] = new Point3d(maxx, maxy, maxz);
-			corners[1] = new Point3d(maxx, miny, minz);
-			corners[2] = new Point3d(minx, maxy, minz);
-			corners[3] = new Point3d(maxx, maxy, minz);
-			corners[4] = new Point3d(minx, miny, maxz);
-			corners[5] = new Point3d(maxx, miny, maxz);
-			corners[6] = new Point3d(minx, maxy, maxz);
+		if(new File(this.dir + name + ".info").exists()) {
 			this.cdata = new CubeData(this);
+
+			corners = new Point3d[8];
+			cornersInCanvas = new Point2d[8];
+			for(int i = 0; i < 8; i++) {
+				cornersInCanvas[i] = new Point2d();
+				corners[i] = new Point3d();
+			}
+
+			float[] min = cdata.min;
+			float[] max = cdata.max;
+
+			corners[0].set(min[0], min[1], min[2]);
+			corners[7].set(max[0], max[1], max[2]);
+			corners[1].set(max[0], min[1], min[2]);
+			corners[2].set(min[0], max[1], min[2]);
+			corners[3].set(max[0], max[1], min[2]);
+			corners[4].set(min[0], min[1], max[2]);
+			corners[5].set(max[0], min[1], max[2]);
+			corners[6].set(min[0], max[1], max[2]);
 			this.midp = new Point3d(
-				minx + lx/2, miny + ly/2, minz + lz/2);
+				min[0] + (max[0] - min[0]) / 2,
+				min[1] + (max[1] - min[1]) / 2,
+				min[2] + (max[2] - min[2]) / 2);
 		} else {
 			// such an object is hopefully never used.
-			pw = ph = pd = -1;
 			corners = null;
 			this.cdata = null;
 			this.midp = null;
@@ -83,13 +78,9 @@ public class Cube implements AxisConstants, Comparable<Cube> {
 	public Cube createCube(VolumeOctree oct,
 			String dir, int x, int y, int z, int l) {
 		String name = x + "_" + y + "_" + z + "_" + l;
-		if(new File(dir, name + ".tif").exists())
+		if(new File(dir, name + ".info").exists())
 			return new Cube(oct, dir, x, y, z, l);
 		return null;
-	}
-
-	public boolean exists() {
-		return new File(path).exists();
 	}
 
 	public Cube[] getChildren() {
@@ -146,8 +137,7 @@ public class Cube implements AxisConstants, Comparable<Cube> {
 		}
 	}
 
-	private void showSelf()
-	{
+	private void showSelf() {
 		if (!(this.visible)) {
 			this.cdata.show();
 			this.visible = true;
@@ -170,13 +160,13 @@ public class Cube implements AxisConstants, Comparable<Cube> {
 		}
 		if ((i == RESOLUTION_UNSUFFICIENT) && (this.children != null)) {
 			this.subtreeVisible = true;
+			hideSelf();
 			for (Cube localCube : this.children)
 				if (localCube != null)
 					localCube.update(canvas, volToIP);
-			hideSelf();
 		} else {
-			showSelf();
 			hideSubtree();
+			showSelf();
 		}
 	}
 

@@ -216,12 +216,10 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 
 	final void axisChanged(Point3d eyePosInLocal) {
 		System.out.println("**** AXIS CHANGED ****");
-		setWhichChild(axisIndex[curAxis][curDir]);
 		rootCube.hideSelf();
 		rootCube.hideSubtree();
 		rootCube.prepareForAxis(curAxis, eyePosInLocal);
 		getOrderedGroup(DETAIL_AXIS).setChildIndexOrder(sortingIndices[axisIndex[curAxis][curDir]]);
-		setWhichChild(DETAIL_AXIS);
 		System.out.println("**** AXIS CHANGED DONE ****");
 	}
 
@@ -238,6 +236,15 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 		volumeToIP(canvas, volToIP);
 		// update cubes
 		updater.submit(volToIP, eyePosInLocal, axisChanged);
+	}
+
+	private BitSet bitset = new BitSet(6);
+	final void setCombinedWhichChild(int child) {
+		axisSwitch.setWhichChild(Switch.CHILD_MASK);
+		bitset.clear();
+		bitset.set(DETAIL_AXIS, true);
+		bitset.set(child, true);
+		axisSwitch.setChildMask(bitset);
 	}
 
 	final void setWhichChild(int child) {
@@ -410,14 +417,15 @@ public class VolumeOctree implements UniverseListener, AxisConstants {
 					while(true) {
 						fetchNext();
 						if(axisChanged) {
+// 							setCombinedWhichChild(axisIndex[curAxis][curDir]);
 							axisChanged = false;
 							axisChanged(runningEyePosInLocal);
+							setWhichChild(DETAIL_AXIS);
 						}
 						System.out.println("updateCubes");
 						stopUpdating = false;
 						rootCube.update(canvas, runningT);
 						System.out.println("updateCubes finished");
-
 					}
 				}
 			};

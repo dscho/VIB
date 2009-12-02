@@ -43,7 +43,6 @@ import customnode.CustomTriangleMesh;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.vecmath.Point3d;
-import octree.FilePreparer;
 import octree.OctreeDialog;
 import octree.VolumeOctree;
 
@@ -217,29 +216,29 @@ public class Executer {
 		record(DELETE);
 	}
 
-	public void loadOctree() {
-		OctreeDialog od = new OctreeDialog();
-		od.showDialog();
-		if(!od.checkUserInput())
-			return;
-		String dir = od.getImageDir();
-		String name = od.getName();
-		String path = od.getImagePath();
-		if(od.shouldCreateData()) {
-			try {
-				new FilePreparer(path, VolumeOctree.SIZE, dir).createFiles();
-			} catch(Exception e) {
-				IJ.error(e.getMessage());
-				e.printStackTrace();
-				return;
-			}
-		}
-		univ.addOctree(dir, name);
-	}
-
-	public void removeOctree() {
-		univ.removeOctree();
-	}
+// 	public void loadOctree() {
+// 		OctreeDialog od = new OctreeDialog();
+// 		od.showDialog();
+// 		if(!od.checkUserInput())
+// 			return;
+// 		String dir = od.getImageDir();
+// 		String name = od.getName();
+// 		String path = od.getImagePath();
+// 		if(od.shouldCreateData()) {
+// 			try {
+// 				new FilePreparer(path, VolumeOctree.SIZE, dir).createFiles();
+// 			} catch(Exception e) {
+// 				IJ.error(e.getMessage());
+// 				e.printStackTrace();
+// 				return;
+// 			}
+// 		}
+// 		univ.addOctree(dir, name);
+// 	}
+// 
+// 	public void removeOctree() {
+// 		univ.removeOctree();
+// 	}
 
 	public void load4D() {
 		if(!univ.getContents().isEmpty()) {
