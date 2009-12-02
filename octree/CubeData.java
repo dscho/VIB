@@ -21,15 +21,14 @@ public class CubeData implements AxisConstants {
 	final float[] max = new float[3];
 
 	private final TexCoordGeneration tgx, tgy, tgz;
+	private byte[][] pixels;
 
 	int axis;
 
 	BufferedImage[] images;
-	byte[][] pixels;
 	TexCoordGeneration tg;
 	ShapeGroup[] shapes;
 	Cube cube;
-	boolean empty;
 
 	public CubeData(Cube c) {
 		this.cube = c;
@@ -65,7 +64,6 @@ public class CubeData implements AxisConstants {
 		for(int i = 0; i < SIZE; i++)
 			shapes[i] = new ShapeGroup();
 
-		empty = true;
 	}
 
 	public void prepareForAxis(int axis) {
@@ -100,7 +98,6 @@ public class CubeData implements AxisConstants {
 			case Y_AXIS: createYData(); break;
 			case Z_AXIS: createZData(); break;
 		}
-		empty = false;
 	}
 
 	private void releaseData() {
@@ -109,7 +106,6 @@ public class CubeData implements AxisConstants {
 			pixels[i] = null;
 			images[i] = null;
 		}
-		empty = true;
 	}
 
 	private final void createZData() throws Exception {
