@@ -6,28 +6,34 @@ import ij3d.behaviors.InteractiveBehavior;
 import ij.gui.Toolbar;
 import ij.ImagePlus;
 
+import java.awt.GraphicsEnvironment;
+import java.awt.GraphicsConfiguration;
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.awt.image.BufferedImage;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.BitSet;
 
 import com.sun.j3d.utils.universe.MultiTransformGroup;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 
 import ij3d.behaviors.BehaviorCallback;
-
 import ij3d.behaviors.Picker;
 import ij3d.behaviors.WaitForNextFrameBehavior;
 import ij3d.behaviors.ContentTransformer;
 import ij3d.behaviors.InteractiveViewPlatformTransformer;
-import java.util.BitSet;
 
+import javax.media.j3d.ImageComponent2D;
+import javax.media.j3d.Canvas3D;
+import javax.media.j3d.Screen3D;
+import javax.media.j3d.GraphicsConfigTemplate3D;
 import javax.media.j3d.AmbientLight;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
@@ -539,6 +545,38 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		return win.getImagePlus();
 	}
 
+	/**
+	 * Returns a snapshot of the given size.
+	 */
+	public ImagePlus takeSnapshot(int w, int h) {
+		GraphicsConfigTemplate3D templ = new GraphicsConfigTemplate3D();
+		templ.setDoubleBuffer(GraphicsConfigTemplate3D.UNNECESSARY);
+		GraphicsConfiguration gc = GraphicsEnvironment.
+				getLocalGraphicsEnvironment().
+				getDefaultScreenDevice().
+				getBestConfiguration(templ);
+		Canvas3D onCanvas = getCanvas();
+		Canvas3D offCanvas = new Canvas3D(gc, true);
+		Screen3D sOn = onCanvas.getScreen3D();
+		Screen3D sOff = offCanvas.getScreen3D();
+		sOff.setSize(sOn.getSize());
+		sOff.setPhysicalScreenWidth(sOn.getPhysicalScreenWidth());
+		sOff.setPhysicalScreenHeight(sOn.getPhysicalScreenHeight());
+		getViewer().getView().addCanvas3D(offCanvas);
+
+		BufferedImage bImage = new BufferedImage(
+				w, h, BufferedImage.TYPE_INT_ARGB);
+		ImageComponent2D ic2d = new ImageComponent2D(
+				ImageComponent2D.FORMAT_RGBA, bImage);
+
+		offCanvas.setOffScreenBuffer(ic2d);
+		offCanvas.renderOffScreenBuffer();
+		offCanvas.waitForOffScreenRendering();
+		bImage = offCanvas.getOffScreenBuffer().getImage();
+
+		getViewer().getView().removeCanvas3D(offCanvas);
+		return new ImagePlus("Snapshot", bImage);
+	}
 
 	/**
 	 * Register the specified UniverseListener
