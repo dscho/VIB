@@ -61,7 +61,7 @@ public class AppearanceCreator implements AxisConstants {
 	private Texture2D getTexture(CubeData cdata, int index) {
 		Texture2D tex = new Texture2D(Texture.BASE_LEVEL, TEX_MODE, SIZE, SIZE);
 		ImageComponent2D pArray = new ImageComponent2D(COMP_TYPE, SIZE, SIZE, BY_REF, Y_UP);
-		pArray.set(cdata.buffer[index]);
+		pArray.set(cdata.images[index]);
 
 		tex.setImage(0, pArray);
 		tex.setEnable(true);
