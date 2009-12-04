@@ -17,7 +17,7 @@ public class FilePreparer {
 	private static final class Volume {
 		private int w, h, d;
 		private double pw, ph, pd;
-		private int wh;
+		private long wh;
 		private RandomAccessFile ra;
 
 		Volume(File file, int w, int h, int d,
@@ -36,7 +36,7 @@ public class FilePreparer {
 		final int get(int x, int y, int z) throws IOException {
 			if(x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d)
 				return 0;
-			int i = z * wh + y * w + x;
+			long i = z * wh + y * w + x;
 			ra.seek(i);
 			return (int)(0xff & ra.readByte());
 		}
@@ -47,7 +47,8 @@ public class FilePreparer {
 			for(int iz = 0; iz < size && z + iz < d; iz++) {
 				for(int iy = 0; iy < size && y + iy < h; iy++, i += size) {
 					int n = Math.min(size, w - x);
-					ra.seek((z + iz) * wh + (y + iy) * w + x);
+					long pos = (z + iz) * wh + (y + iy) * w + x;
+					ra.seek(pos);
 					ra.readFully(blob, i, n);
 				}
 			}
@@ -119,7 +120,8 @@ public class FilePreparer {
 				for(int ytmp = 0; ytmp < fy; ytmp++) {
 					Arrays.fill(cache[(fz - 1) * fy], (byte)0);
 					if(y + ytmp < h) {
-						ra.seek(z * wh + (y + ytmp) * w);
+						long pos = z * wh + (y + ytmp) * w;
+						ra.seek(pos);
 						ra.readFully(cache[(fz - 1) * fy]);
 					}
 				}
@@ -130,7 +132,8 @@ public class FilePreparer {
 						System.arraycopy(cache, ztmp * fy + 1, cache, ztmp * fy, fy - 1);
 						Arrays.fill(cache[ztmp + fy - 1], (byte)0);
 						if(z + ztmp < d) {
-							ra.seek((z+ztmp) * wh + (y+fy-1) * w);
+							long pos = (z+ztmp) * wh + (y+fy-1) * w;
+							ra.seek(pos);
 							ra.readFully(cache[ztmp + fy - 1]);
 						}
 					}
@@ -195,6 +198,8 @@ public class FilePreparer {
 			h = nextPow2(h) / fy;
 			d = nextPow2(d) / fz;
 
+			if(level > 1)
+				file.delete();
 			path = downs.getPath();
 			level <<= 1;
 		}
