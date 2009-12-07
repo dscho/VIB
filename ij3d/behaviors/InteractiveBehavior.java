@@ -26,7 +26,7 @@ import voltex.VolumeRenderer;
  * This class interprets mouse and keyboard events and invokes the
  * desired actions. It uses the ContentTransformer, Picker and
  * ViewPlatformTransformer objects of the universe as helpers.
- * 
+ *
  * @author Benjamin Schmid
  */
 public class InteractiveBehavior extends Behavior {
@@ -165,15 +165,33 @@ public class InteractiveBehavior extends Behavior {
 		boolean consumed = true;
 		try {
 		if(e.isShiftDown()) {
+			if(c != null && !c.isLocked())
+				contentTransformer.init(c, 0, 0);
 			switch(code) {
 				case KeyEvent.VK_RIGHT:
-					viewTransformer.translateXY(2, 0); return;
+					if(c != null && !c.isLocked())
+						contentTransformer.translate(2, 0);
+					else
+						viewTransformer.translateXY(2, 0);
+					return;
 				case KeyEvent.VK_LEFT:
-					viewTransformer.translateXY(-2, 0);return;
+					if(c != null && !c.isLocked())
+						contentTransformer.translate(-2, 0);
+					else
+						viewTransformer.translateXY(-2, 0);
+					return;
 				case KeyEvent.VK_UP:
-					viewTransformer.translateXY(0, -2);return;
+					if(c != null && !c.isLocked())
+						contentTransformer.translate(0, -2);
+					else
+						viewTransformer.translateXY(0, -2);
+					return;
 				case KeyEvent.VK_DOWN:
-					viewTransformer.translateXY(0, 2); return;
+					if(c != null && !c.isLocked())
+						contentTransformer.translate(0, 2);
+					else
+						viewTransformer.translateXY(0, 2);
+					return;
 			}
 		} else if(e.isAltDown()) {
 			switch(code) {
@@ -191,15 +209,33 @@ public class InteractiveBehavior extends Behavior {
 					!og.isVisible(axis)); return;
 			}
 		} else {
+			if(c != null && !c.isLocked())
+				contentTransformer.init(c, 0, 0);
 			switch(code) {
 				case KeyEvent.VK_RIGHT:
-					viewTransformer.rotateY(-TWO_RAD); return;
+					if(c != null && !c.isLocked())
+						contentTransformer.rotate(5, 0);
+					else
+						viewTransformer.rotateY(-TWO_RAD);
+					return;
 				case KeyEvent.VK_LEFT:
-					viewTransformer.rotateY(TWO_RAD); return;
+					if(c != null && !c.isLocked())
+						contentTransformer.rotate(-5, 0);
+					else
+						viewTransformer.rotateY(TWO_RAD);
+					return;
 				case KeyEvent.VK_UP:
-					viewTransformer.rotateX(TWO_RAD); return;
+					if(c != null && !c.isLocked())
+						contentTransformer.rotate(0, -5);
+					else
+						viewTransformer.rotateX(TWO_RAD);
+					return;
 				case KeyEvent.VK_DOWN:
-					viewTransformer.rotateX(-TWO_RAD); return;
+					if(c != null && !c.isLocked())
+						contentTransformer.rotate(0, 5);
+					else
+						viewTransformer.rotateX(-TWO_RAD);
+					return;
 				case KeyEvent.VK_PAGE_UP:
 					viewTransformer.zoom(1); return;
 				case KeyEvent.VK_PAGE_DOWN:

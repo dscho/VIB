@@ -90,7 +90,7 @@ public class ContentTransformer {
 	private Point3d v1 = new Point3d();
 	private Point3d v2 = new Point3d();
 
-	private void translate(int xNew, int yNew) {
+	void translate(int xNew, int yNew) {
 		if(content == null || content.isLocked())
 			return;
 		int dx = xNew - xLast;
@@ -111,7 +111,7 @@ public class ContentTransformer {
 
 	private Transform3D rotateNew = new Transform3D();
 	private Transform3D rotateOld = new Transform3D();
-	private void rotate(int xNew, int yNew) {
+	void rotate(int xNew, int yNew) {
 		if(content == null || content.isLocked())
 			return;
 
