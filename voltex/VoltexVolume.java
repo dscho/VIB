@@ -203,7 +203,7 @@ public class VoltexVolume extends Volume {
 	 * @return
 	 */
 	protected static int powerOfTwo(int value) {
-		int retval = 16;
+		int retval = 1;
 		while (retval < value) {
 			retval *= 2;
 		}
