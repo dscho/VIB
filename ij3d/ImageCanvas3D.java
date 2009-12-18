@@ -33,8 +33,7 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 	private RoiImagePlus roiImagePlus;
 	private ImageCanvas roiImageCanvas;
 	private Map<Integer, Long> pressed, released; 
-	private Background background = new Background(
-			new Color3f(UniverseSettings.defaultBackground));
+	private Background background;
 	final private ExecutorService exec = Executors.newSingleThreadExecutor();
 
 	protected void flush() {
@@ -70,7 +69,9 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 		roiImageCanvas.removeKeyListener(ij.IJ.getInstance());
 		roiImageCanvas.disablePopupMenu(true);
 
-		getGraphicsContext3D().setBackground(background);
+		background = new Background(
+			new Color3f(UniverseSettings.defaultBackground));
+		background.setCapability(Background.ALLOW_COLOR_WRITE);
 
 		addListeners();
 		addMouseListener(roiImageCanvas);
@@ -138,11 +139,6 @@ public class ImageCanvas3D extends Canvas3D implements KeyListener {
 
 	public Roi getRoi() {
 		return roiImagePlus.getRoi();
-	}
-
-	public void preRender() {
-		super.getGraphicsContext3D().clear(); // so background is painted
-		super.preRender();
 	}
 
 	public void render() {

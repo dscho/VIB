@@ -43,6 +43,7 @@ import javax.media.j3d.PointLight;
 import javax.media.j3d.Switch;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
+import javax.media.j3d.Background;
 import javax.vecmath.Color3f;
 import javax.vecmath.Point3d;
 
@@ -200,6 +201,10 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		scene.setCapability(Group.ALLOW_CHILDREN_EXTEND);
 		scene.setCapability(Group.ALLOW_CHILDREN_READ);
 		scene.setCapability(Group.ALLOW_CHILDREN_WRITE);
+
+		Background bg = ((ImageCanvas3D)getCanvas()).getBG();
+		bg.setApplicationBounds(bounds);
+		scene.addChild(bg);
 
 		attributesSwitch = new Switch();
 		attributesSwitch.setWhichChild(Switch.CHILD_MASK);
@@ -563,6 +568,9 @@ public abstract class DefaultUniverse extends SimpleUniverse
 		sOff.setPhysicalScreenWidth(sOn.getPhysicalScreenWidth());
 		sOff.setPhysicalScreenHeight(sOn.getPhysicalScreenHeight());
 		getViewer().getView().addCanvas3D(offCanvas);
+
+		Color3f bg = new Color3f();
+		((ImageCanvas3D)onCanvas).getBG().getColor(bg);
 
 		BufferedImage bImage = new BufferedImage(
 				w, h, BufferedImage.TYPE_INT_ARGB);
