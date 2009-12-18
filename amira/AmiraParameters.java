@@ -74,13 +74,27 @@ public class AmiraParameters {
 			initDefaults(stack.getWidth(),stack.getHeight(),stack.getSize());
 		Calibration cal = imp.getCalibration();
 		if(cal != null) {
+			// Amira's bounding box is actually the range of the CENTRES
+			// of the outer voxels.
+			// Of course this means that the bounding box is defined if any of x,y,z are 1
+			// This is ususally only going to be a problem in z
+			int zPosToGet = (stack==null?1:stack.getSize())-1;
+			// investigating what amira does in these circs suggests that
+			// it actually pretends that a single slice image does have a z thickness
+			// equivalent to that of a 2 slice image
+			if (zPosToGet==0) zPosToGet=1;
+			// None of this determines what to do with the origin
+			// it could reasonably be suggested that if an Amira image has origin 0,0,0
+			// then the imagej origin should be displaced by dx/2,dy/2,dz/2 
+			// ie half a voxel dimension in each axis
+			// But since nearly everyone expects the default origin to be 0,0,0 
+			// in both programs we are sligtly stuck.
 			put("BoundingBox", cal.getX(0)+" "+
-					cal.getX(imp.getWidth())+" "+
+					cal.getX(imp.getWidth()-1)+" "+
 					cal.getY(0)+" "+
-					cal.getY(imp.getHeight())+" "+
+					cal.getY(imp.getHeight()-1)+" "+
 					cal.getZ(0)+" "+
-					cal.getZ((stack==null?1:
-							stack.getSize())));
+					cal.getZ(zPosToGet));
 		}
 	}
 	public static boolean isAmiraMesh(ImagePlus imp) {
