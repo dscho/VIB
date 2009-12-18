@@ -239,7 +239,7 @@ public class ImageWindow3D extends ImageWindow implements UniverseListener,
 		if (getWidth() <= 0 || getHeight() <= 0)
 			return makeDummyImagePlus();
 		if (noOffScreen) {
-			if (universe.getUseToFront())
+			if (universe != null && universe.getUseToFront())
 				toFront();
 			Point p = canvas3D.getLocationOnScreen();
 			int w = canvas3D.getWidth();
